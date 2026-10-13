@@ -1,0 +1,258 @@
+{
+  "session": "d60f5b36-0885-4f44-98fb-b2b067ad500d",
+  "startedAtMs": 1791865726237,
+  "pid": 10573,
+  "uid": 10389,
+  "model": "M154FF",
+  "android": "17",
+  "sdk": 37,
+  "debuggable": false,
+  "debuggerConnected": false,
+  "checks": [
+    {
+      "name": "ordinary-uid",
+      "passed": true,
+      "actual": 10389
+    },
+    {
+      "name": "non-debuggable",
+      "passed": true,
+      "actual": false
+    },
+    {
+      "name": "no-debugger",
+      "passed": true,
+      "actual": false
+    },
+    {
+      "name": "baseline\/Java",
+      "passed": true,
+      "actual": "original:phone"
+    },
+    {
+      "name": "baseline\/Native",
+      "passed": true,
+      "actual": 10
+    },
+    {
+      "name": "enabled\/Java",
+      "passed": true,
+      "actual": "hook:phone"
+    },
+    {
+      "name": "enabled\/Native",
+      "passed": true,
+      "actual": 503
+    },
+    {
+      "name": "native-machine-code-patched",
+      "passed": true,
+      "actual": true
+    },
+    {
+      "name": "hot-update\/Java",
+      "passed": true,
+      "actual": "live:phone"
+    },
+    {
+      "name": "hot-update\/Native",
+      "passed": true,
+      "actual": 903
+    },
+    {
+      "name": "invalid-update-rejected",
+      "passed": true,
+      "actual": {
+        "ok": false,
+        "error": "HookError: delayMs: below minimum",
+        "enabled": true,
+        "revision": 3
+      }
+    },
+    {
+      "name": "failed-update-keeps-revision",
+      "passed": true,
+      "actual": 3
+    },
+    {
+      "name": "after-rejection\/Java",
+      "passed": true,
+      "actual": "live:phone"
+    },
+    {
+      "name": "after-rejection\/Native",
+      "passed": true,
+      "actual": 903
+    },
+    {
+      "name": "rollback\/Java",
+      "passed": true,
+      "actual": "hook:phone"
+    },
+    {
+      "name": "rollback\/Native",
+      "passed": true,
+      "actual": 503
+    },
+    {
+      "name": "1000-paired-hook-calls",
+      "passed": true,
+      "actual": true
+    },
+    {
+      "name": "both-callbacks-hit",
+      "passed": true,
+      "actual": {
+        "ok": true,
+        "backend": "embedded-frida",
+        "frida": "17.23.3",
+        "enabled": true,
+        "revision": 4,
+        "javaHits": 1004,
+        "nativeHits": 1004,
+        "params": {
+          "message": "hook:",
+          "delayMs": 500
+        },
+        "evidence": {
+          "id": "d60f5b36-0885-4f44-98fb-b2b067ad500d",
+          "source": "guest-agent",
+          "target": {
+            "packageName": "dev.tripoder.hooklab",
+            "versionCode": "1",
+            "apkSha256": "88bfc7dbf9125645641a9e82c12bec0cbe39ffd9a8a04b85f186340e4bf5f6fe"
+          },
+          "processInstanceId": "10573:d60f5b36-0885-4f44-98fb-b2b067ad500d",
+          "abi": "arm64-v8a",
+          "capabilities": [
+            "java-hook",
+            "native-hook"
+          ],
+          "symbols": [
+            {
+              "id": "greet",
+              "kind": "java",
+              "loaded": true,
+              "className": "dev.tripoder.hooklab.TestTarget",
+              "methodName": "greet",
+              "classLoaderId": "dalvik.system.PathClassLoader[DexPathList[[zip file \"\/data\/app\/~~8Q1BdoLmrRNp2cEG6OYmpg==\/dev.tripoder.hooklab-th2Z6Hjn_xl6XcV50uPsqA==\/base.apk\"],nativeLibraryDirectories=[\/data\/app\/~~8Q1BdoLmrRNp2cEG6OYmpg==\/dev.tripoder.hooklab-th2Z6Hjn_xl6XcV50uPsqA==\/lib\/arm64, \/data\/app\/~~8Q1BdoLmrRNp2cEG6OYmpg==\/dev.tripoder.hooklab-th2Z6Hjn_xl6XcV50uPsqA==\/base.apk!\/lib\/arm64-v8a, \/system\/lib64, \/system_ext\/lib64]]]",
+              "argumentTypes": [
+                "java.lang.String"
+              ],
+              "returnType": "java.lang.String"
+            },
+            {
+              "id": "delay",
+              "kind": "native",
+              "loaded": true,
+              "moduleName": "libhooktarget.so",
+              "symbol": "retry_delay_ms",
+              "buildId": "43fd596fb8eb79e127a296f4937bdf7ea73e20bf",
+              "argumentTypes": [
+                "int32"
+              ],
+              "returnType": "int32",
+              "signatureSource": "confirmed"
+            }
+          ]
+        },
+        "nativeAddress": "0x6cedb205a8",
+        "nativeCodeChanged": true
+      }
+    },
+    {
+      "name": "uninstalled\/Java",
+      "passed": true,
+      "actual": "original:phone"
+    },
+    {
+      "name": "uninstalled\/Native",
+      "passed": true,
+      "actual": 10
+    },
+    {
+      "name": "native-machine-code-restored",
+      "passed": true,
+      "actual": false
+    },
+    {
+      "name": "reinstalled\/Java",
+      "passed": true,
+      "actual": "hook:phone"
+    },
+    {
+      "name": "reinstalled\/Native",
+      "passed": true,
+      "actual": 503
+    },
+    {
+      "name": "final-original\/Java",
+      "passed": true,
+      "actual": "original:phone"
+    },
+    {
+      "name": "final-original\/Native",
+      "passed": true,
+      "actual": 10
+    }
+  ],
+  "finalAgent": {
+    "ok": true,
+    "backend": "embedded-frida",
+    "frida": "17.23.3",
+    "enabled": false,
+    "revision": 7,
+    "javaHits": 1005,
+    "nativeHits": 1005,
+    "params": {
+      "message": "hook:",
+      "delayMs": 500
+    },
+    "evidence": {
+      "id": "d60f5b36-0885-4f44-98fb-b2b067ad500d",
+      "source": "guest-agent",
+      "target": {
+        "packageName": "dev.tripoder.hooklab",
+        "versionCode": "1",
+        "apkSha256": "88bfc7dbf9125645641a9e82c12bec0cbe39ffd9a8a04b85f186340e4bf5f6fe"
+      },
+      "processInstanceId": "10573:d60f5b36-0885-4f44-98fb-b2b067ad500d",
+      "abi": "arm64-v8a",
+      "capabilities": [
+        "java-hook",
+        "native-hook"
+      ],
+      "symbols": [
+        {
+          "id": "greet",
+          "kind": "java",
+          "loaded": true,
+          "className": "dev.tripoder.hooklab.TestTarget",
+          "methodName": "greet",
+          "classLoaderId": "dalvik.system.PathClassLoader[DexPathList[[zip file \"\/data\/app\/~~8Q1BdoLmrRNp2cEG6OYmpg==\/dev.tripoder.hooklab-th2Z6Hjn_xl6XcV50uPsqA==\/base.apk\"],nativeLibraryDirectories=[\/data\/app\/~~8Q1BdoLmrRNp2cEG6OYmpg==\/dev.tripoder.hooklab-th2Z6Hjn_xl6XcV50uPsqA==\/lib\/arm64, \/data\/app\/~~8Q1BdoLmrRNp2cEG6OYmpg==\/dev.tripoder.hooklab-th2Z6Hjn_xl6XcV50uPsqA==\/base.apk!\/lib\/arm64-v8a, \/system\/lib64, \/system_ext\/lib64]]]",
+          "argumentTypes": [
+            "java.lang.String"
+          ],
+          "returnType": "java.lang.String"
+        },
+        {
+          "id": "delay",
+          "kind": "native",
+          "loaded": true,
+          "moduleName": "libhooktarget.so",
+          "symbol": "retry_delay_ms",
+          "buildId": "43fd596fb8eb79e127a296f4937bdf7ea73e20bf",
+          "argumentTypes": [
+            "int32"
+          ],
+          "returnType": "int32",
+          "signatureSource": "confirmed"
+        }
+      ]
+    },
+    "nativeAddress": "0x6cedb205a8",
+    "nativeCodeChanged": false
+  },
+  "passed": true,
+  "finishedAtMs": 1791865726478
+}

@@ -1,0 +1,72 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { prepareDraft, draftTemplate } from "../src/draft.js";
+import { HookSimulator } from "../src/simulator.js";
+import type { EvidenceSnapshot } from "../src/evidence.js";
+
+const evidence: EvidenceSnapshot = {
+  id: "draft-test", source: "fixture", processInstanceId: "1:draft-test", abi: "arm64-v8a",
+  target: { packageName: "test.fixture", versionCode: "1", apkSha256: "a".repeat(64) },
+  capabilities: ["java-hook", "native-hook"], symbols: [
+    { id: "greet", kind: "java", loaded: true, className: "test.Greeter", methodName: "greet", classLoaderId: "one", argumentTypes: ["java.lang.String"], returnType: "java.lang.String" },
+    { id: "delay", kind: "native", loaded: true, moduleName: "libtest.so", symbol: "delay", buildId: "abc", argumentTypes: ["int32"], returnType: "int32", signatureSource: "confirmed" },
+  ],
+};
+const script = (body: string) => `import { definePlan } from "@abox/hook";
+export default definePlan({ id:"test", target, params:{}, setup(ctx) {
+ctx.java.method(symbols.greet.className,"greet",["java.lang.String"]).replace(({args}) => { ${body} });
+}});`;
+
+test("standard TS template prepares and replaces both targets with dynamic parameters", () => {
+  const plan = prepareDraft(draftTemplate(), evidence);
+  const simulator = new HookSimulator(evidence); simulator.activate(plan);
+  assert.equal(simulator.invoke("greet", ["phone"], () => "original").value, "script:PHONE");
+  assert.equal(simulator.invoke("delay", [3], () => 16).value, 706);
+  simulator.updateParameters({ message: "new:" });
+  assert.equal(simulator.invoke("greet", ["phone"], () => "original").value, "new:PHONE");
+});
+test("TS annotations, destructuring, conditional and template literals retain standard semantics", () => {
+  const plan = prepareDraft(script('const name: string = String(args[0]); if (name.length > 2) return `Hi ${name.toUpperCase()}`; return "short";'), evidence);
+  const sim = new HookSimulator(evidence); sim.activate(plan);
+  assert.equal(sim.invoke("greet", ["phone"], () => "original").value, "Hi PHONE");
+});
+test("before and after preserve original call once", () => {
+  const code = script('return args[0];').replace('.replace(({args}) => { return args[0]; })', '.before(({args}) => [String(args[0]).toUpperCase()]).after(({result}) => "after:" + result)');
+  const sim = new HookSimulator(evidence); sim.activate(prepareDraft(code, evidence)); let calls = 0;
+  assert.equal(sim.invoke("greet", ["phone"], args => { calls++; return "original:" + args[0]; }).value, "after:original:PHONE");
+  assert.equal(calls, 1);
+});
+test("unknown globals and dynamic property escapes fail without calling original twice", () => {
+  for (const body of ['return globalThis;', 'return Java.use("X");', 'return String["con" + "structor"]("return 7")();', 'return args["__proto__"];', 'return Math.max({ valueOf: () => 1 });']) {
+    let calls = 0; const sim = new HookSimulator(evidence);
+    sim.activate(prepareDraft(script(body), evidence));
+    const r = sim.invoke("greet", ["phone"], () => { calls++; return "original"; });
+    assert.equal(r.hookOutcome, "failed"); assert.equal(r.value, "original"); assert.equal(calls, 1);
+  }
+});
+test("unsupported code is rejected even in an unexecuted branch", () => {
+  for (const body of ['if(false) { while(true) {} } return "x";', 'return new Function("return 1")();', 'const f = async () => 1; return "x";', 'args[0] = "changed"; return "x";', 'return {get value(){return 1;}};']) {
+    assert.throws(() => prepareDraft(script(body), evidence), /DRAFT/);
+  }
+});
+test("cannot load modules or invent native signatures", () => {
+  assert.throws(() => prepareDraft('import { readFile } from "node:fs";\n' + draftTemplate(), evidence), /Only @abox/);
+  assert.throws(() => prepareDraft(draftTemplate().replace('buildId: symbols.delay.buildId', 'buildId: "wrong"'), evidence), /Build ID/);
+});
+test("self recursion is bounded across interpreted function calls", () => {
+  const sim = new HookSimulator(evidence);
+  sim.activate(prepareDraft(script('const recurse = () => recurse(); return recurse();'), evidence));
+  const r = sim.invoke("greet", ["phone"], () => "original");
+  assert.equal(r.hookOutcome, "failed"); assert.equal(r.value, "original");
+});
+test("oversized source, AST and expanding strings are bounded", () => {
+  assert.throws(() => prepareDraft(" ".repeat(32769), evidence), /32 KiB/);
+  const sim = new HookSimulator(evidence);
+  sim.activate(prepareDraft(script('const f = (s) => s.length > 8000 ? s + s : f(s+s); return f("xxxxxxxx");'), evidence));
+  assert.equal(sim.invoke("greet", ["phone"], () => "original").hookOutcome, "failed");
+});
+test("a rejected draft never mutates an already prepared plan", () => {
+  const sim = new HookSimulator(evidence); sim.activate(prepareDraft(draftTemplate(), evidence));
+  assert.throws(() => prepareDraft(draftTemplate().replace('target,', 'target: { packageName:"wrong",versionCode:"1",apkSha256:"b" },'), evidence));
+  assert.equal(sim.invoke("greet", ["phone"], () => "original").value, "script:PHONE");
+});

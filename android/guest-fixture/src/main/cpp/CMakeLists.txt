@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(tripoder_guest_fixture CXX)
+add_library(guestfixture SHARED guest.cpp)
+target_compile_options(guestfixture PRIVATE -O0 -fno-inline)
+target_link_options(guestfixture PRIVATE -Wl,--build-id=sha1)
+target_link_libraries(guestfixture dl)

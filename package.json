@@ -1,0 +1,44 @@
+{
+  "name": "@abox/hook",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "TypeScript Hook SDK, simulator and owned Android APK with embedded Java/Native Hooks",
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./simulator": {
+      "types": "./src/simulator.ts",
+      "default": "./dist/src/simulator.js"
+    },
+    "./ai-context": {
+      "types": "./src/ai-context.ts",
+      "default": "./dist/src/ai-context.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test dist/test/*.test.js",
+    "demo": "npm run build && node dist/examples/demo.js",
+    "android:agent": "tsc -p android/agent/tsconfig.json && node android/scripts/build-agent.mjs",
+    "android:prepare": "python3 android/scripts/fetch-gadget.py && npm run android:agent",
+    "android:build": "npm run android:prepare && cd android && ./gradlew :app:assembleRelease"
+  },
+  "devDependencies": {
+    "@types/frida-gum": "19.12.0",
+    "@types/node": "24.19.2",
+    "buffer": "6.0.3",
+    "esbuild": "0.28.2",
+    "frida-java-bridge": "7.0.13",
+    "typescript": "7.0.2"
+  },
+  "dependencies": {
+    "@babel/parser": "8.0.7"
+  }
+}

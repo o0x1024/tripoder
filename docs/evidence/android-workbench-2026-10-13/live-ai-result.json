@@ -1,0 +1,122 @@
+{
+  "liveModelVerified": true,
+  "model": "deepseek-flash",
+  "providerHost": "api.deepseek.com",
+  "generatedAtMs": 1791873213587,
+  "source": "import { definePlan, param } from \"@abox/hook\";\n\nexport default definePlan({\n  id: \"fixture-greet-uppercase-delay-scaled\",\n  target,\n  params: {\n    message: param.string(\"script:\", { description: \"Prefix for the uppercased greeting\" }),\n    delayMs: param.integer(700, { minimum: 0, maximum: 10000, description: \"Native additive delay offset\" })\n  },\n  setup(ctx) {\n    ctx.java\n      .method(symbols.greet.className, symbols.greet.methodName, symbols.greet.argumentTypes)\n      .replace(({ args, params }) => {\n        const original = String(args[0]);\n        return params.message + original.toUpperCase();\n      });\n\n    ctx.native\n      .function(symbols.delay.moduleName, symbols.delay.symbol, {\n        argumentTypes: symbols.delay.argumentTypes,\n        returnType: symbols.delay.returnType,\n        buildId: symbols.delay.buildId\n      })\n      .replace(({ args, params }) => Number(args[0]) * 2 + params.delayMs);\n  }\n});",
+  "sourceSha256": "e8c756a116a056ba7c6d2e8f6757b98604835e4ddde2734b4ab2c49cce6c5bb5",
+  "hostApkSha256": "6634a6a75088ba85ec288b5736f457343fafba4a2f00a8d8f9d63de40c14011f",
+  "evidence": {
+    "id": "1f4f8e92-d94c-4891-9f04-d8f2624be4dc",
+    "source": "guest-agent",
+    "target": {
+      "packageName": "dev.tripoder.fixture",
+      "versionCode": "2",
+      "apkSha256": "f9718932fdbead5ce0158f4302b799a0e7869411d7a001a6ccbaac14618e5ed1"
+    },
+    "processInstanceId": "1564:1f4f8e92-d94c-4891-9f04-d8f2624be4dc",
+    "abi": "arm64-v8a",
+    "capabilities": [
+      "java-hook",
+      "native-hook"
+    ],
+    "symbols": [
+      {
+        "id": "greet",
+        "kind": "java",
+        "loaded": true,
+        "className": "dev.tripoder.fixture.GuestProbe",
+        "methodName": "greet",
+        "classLoaderId": "dalvik.system.DexClassLoader[DexPathList[[zip file \"/data/user/0/dev.tripoder.hooklab/files/guests/f9718932fdbead5ce0158f4302b799a0e7869411d7a001a6ccbaac14618e5ed1/base.apk\"],nativeLibraryDirectories=[/data/user/0/dev.tripoder.hooklab/files/guests/f9718932fdbead5ce0158f4302b799a0e7869411d7a001a6ccbaac14618e5ed1/lib, /system/lib64, /system_ext/lib64]]]",
+        "argumentTypes": [
+          "java.lang.String"
+        ],
+        "returnType": "java.lang.String"
+      },
+      {
+        "id": "delay",
+        "kind": "native",
+        "loaded": true,
+        "moduleName": "libguestfixture.so",
+        "symbol": "guest_delay_ms",
+        "buildId": "efd182946797b85e83ef8c6693817f90f48f563a",
+        "argumentTypes": [
+          "int32"
+        ],
+        "returnType": "int32",
+        "signatureSource": "confirmed"
+      }
+    ]
+  },
+  "draftChecked": true,
+  "deployed": true,
+  "sample": {
+    "java": "script:PHONE",
+    "native": 706,
+    "pid": 1564,
+    "uid": 10389,
+    "session": "1f4f8e92-d94c-4891-9f04-d8f2624be4dc",
+    "agent": {
+      "ok": true,
+      "backend": "embedded-frida",
+      "frida": "17.23.3",
+      "enabled": true,
+      "revision": 2,
+      "javaHits": 1,
+      "nativeHits": 1,
+      "params": {
+        "message": "script:",
+        "delayMs": 700
+      },
+      "evidence": {
+        "id": "1f4f8e92-d94c-4891-9f04-d8f2624be4dc",
+        "source": "guest-agent",
+        "target": {
+          "packageName": "dev.tripoder.fixture",
+          "versionCode": "2",
+          "apkSha256": "f9718932fdbead5ce0158f4302b799a0e7869411d7a001a6ccbaac14618e5ed1"
+        },
+        "processInstanceId": "1564:1f4f8e92-d94c-4891-9f04-d8f2624be4dc",
+        "abi": "arm64-v8a",
+        "capabilities": [
+          "java-hook",
+          "native-hook"
+        ],
+        "symbols": [
+          {
+            "id": "greet",
+            "kind": "java",
+            "loaded": true,
+            "className": "dev.tripoder.fixture.GuestProbe",
+            "methodName": "greet",
+            "classLoaderId": "dalvik.system.DexClassLoader[DexPathList[[zip file \"/data/user/0/dev.tripoder.hooklab/files/guests/f9718932fdbead5ce0158f4302b799a0e7869411d7a001a6ccbaac14618e5ed1/base.apk\"],nativeLibraryDirectories=[/data/user/0/dev.tripoder.hooklab/files/guests/f9718932fdbead5ce0158f4302b799a0e7869411d7a001a6ccbaac14618e5ed1/lib, /system/lib64, /system_ext/lib64]]]",
+            "argumentTypes": [
+              "java.lang.String"
+            ],
+            "returnType": "java.lang.String"
+          },
+          {
+            "id": "delay",
+            "kind": "native",
+            "loaded": true,
+            "moduleName": "libguestfixture.so",
+            "symbol": "guest_delay_ms",
+            "buildId": "efd182946797b85e83ef8c6693817f90f48f563a",
+            "argumentTypes": [
+              "int32"
+            ],
+            "returnType": "int32",
+            "signatureSource": "confirmed"
+          }
+        ]
+      },
+      "mode": "guest",
+      "planId": "fixture-greet-uppercase-delay-scaled",
+      "source": "import { definePlan, param } from \"@abox/hook\";\n\nexport default definePlan({\n  id: \"fixture-greet-uppercase-delay-scaled\",\n  target,\n  params: {\n    message: param.string(\"script:\", { description: \"Prefix for the uppercased greeting\" }),\n    delayMs: param.integer(700, { minimum: 0, maximum: 10000, description: \"Native additive delay offset\" })\n  },\n  setup(ctx) {\n    ctx.java\n      .method(symbols.greet.className, symbols.greet.methodName, symbols.greet.argumentTypes)\n      .replace(({ args, params }) => {\n        const original = String(args[0]);\n        return params.message + original.toUpperCase();\n      });\n\n    ctx.native\n      .function(symbols.delay.moduleName, symbols.delay.symbol, {\n        argumentTypes: symbols.delay.argumentTypes,\n        returnType: symbols.delay.returnType,\n        buildId: symbols.delay.buildId\n      })\n      .replace(({ args, params }) => Number(args[0]) * 2 + params.delayMs);\n  }\n});",
+      "errors": [],
+      "template": "import { definePlan, param } from \"@abox/hook\";\nexport default definePlan({\n  id: \"my-hook\", target,\n  params: { message: param.string(\"script:\"), delayMs: param.integer(700, { minimum: 0, maximum: 10000 }) },\n  setup(ctx) {\n    ctx.java.method(symbols.greet.className, \"greet\", [\"java.lang.String\"])\n      .replace(({ args, params }) => params.message + String(args[0]).toUpperCase());\n    ctx.native.function(symbols.delay.moduleName, symbols.delay.symbol, {\n      argumentTypes: [\"int32\"], returnType: \"int32\", buildId: symbols.delay.buildId\n    }).replace(({ args, params }) => Number(args[0]) * 2 + params.delayMs);\n  }\n});",
+      "nativeAddress": "0x6cfcf67840",
+      "nativeCodeChanged": true
+    }
+  }
+}

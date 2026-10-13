@@ -1,0 +1,213 @@
+{
+  "startedAtMs": 1791872873748,
+  "session": "10b7ba09-a70d-486a-8a1a-95cd09b4204c",
+  "pid": 31967,
+  "uid": 10389,
+  "hostPid": 30990,
+  "guestApkSha256": "f9718932fdbead5ce0158f4302b799a0e7869411d7a001a6ccbaac14618e5ed1",
+  "debuggerConnected": false,
+  "debuggable": false,
+  "hostApkSha256": "6634a6a75088ba85ec288b5736f457343fafba4a2f00a8d8f9d63de40c14011f",
+  "checks": [
+    {
+      "name": "draft-prepares-without-activation",
+      "passed": true,
+      "actual": {
+        "ok": true,
+        "checked": true,
+        "planId": "my-hook",
+        "params": {
+          "message": "script:",
+          "delayMs": 700
+        },
+        "targets": [
+          "greet",
+          "delay"
+        ],
+        "session": "10b7ba09-a70d-486a-8a1a-95cd09b4204c"
+      }
+    },
+    {
+      "name": "source-v1\/Java",
+      "passed": true,
+      "actual": "script:PHONE"
+    },
+    {
+      "name": "source-v1\/Native",
+      "passed": true,
+      "actual": 706
+    },
+    {
+      "name": "source-hot-replacement\/Java",
+      "passed": true,
+      "actual": "changed:PHONE"
+    },
+    {
+      "name": "source-hot-replacement\/Native",
+      "passed": true,
+      "actual": 709
+    },
+    {
+      "name": "source-rollback\/Java",
+      "passed": true,
+      "actual": "script:PHONE"
+    },
+    {
+      "name": "source-rollback\/Native",
+      "passed": true,
+      "actual": 706
+    },
+    {
+      "name": "unreachable-loop-rejected",
+      "passed": true,
+      "actual": true
+    },
+    {
+      "name": "rejected-source-keeps-revision",
+      "passed": true,
+      "actual": 5
+    },
+    {
+      "name": "stale-process-draft-rejected",
+      "passed": true,
+      "actual": true
+    },
+    {
+      "name": "after-draft-rejection\/Java",
+      "passed": true,
+      "actual": "script:PHONE"
+    },
+    {
+      "name": "after-draft-rejection\/Native",
+      "passed": true,
+      "actual": 706
+    },
+    {
+      "name": "before-original-after\/Java",
+      "passed": true,
+      "actual": "after:guest-original:PHONE"
+    },
+    {
+      "name": "before-original-after\/Native",
+      "passed": true,
+      "actual": 38
+    },
+    {
+      "name": "blocked-global-fallback\/Java",
+      "passed": true,
+      "actual": "guest-original:phone"
+    },
+    {
+      "name": "blocked-global-fallback\/Native",
+      "passed": true,
+      "actual": 706
+    },
+    {
+      "name": "script-error-recorded",
+      "passed": true,
+      "actual": true
+    },
+    {
+      "name": "script-uninstalled\/Java",
+      "passed": true,
+      "actual": "guest-original:phone"
+    },
+    {
+      "name": "script-uninstalled\/Native",
+      "passed": true,
+      "actual": 16
+    },
+    {
+      "name": "script-native-bytes-restored",
+      "passed": true,
+      "actual": true
+    },
+    {
+      "name": "chat-completions-http-contract",
+      "passed": true
+    },
+    {
+      "name": "malformed-model-response-rejected",
+      "passed": true
+    },
+    {
+      "name": "model-http-error-rejected",
+      "passed": true
+    },
+    {
+      "name": "cleartext-remote-endpoint-rejected",
+      "passed": true
+    }
+  ],
+  "finalAgent": {
+    "ok": true,
+    "backend": "embedded-frida",
+    "frida": "17.23.3",
+    "enabled": false,
+    "revision": 9,
+    "javaHits": 6,
+    "nativeHits": 6,
+    "params": {
+      "message": "hook:",
+      "delayMs": 500
+    },
+    "evidence": {
+      "id": "10b7ba09-a70d-486a-8a1a-95cd09b4204c",
+      "source": "guest-agent",
+      "target": {
+        "packageName": "dev.tripoder.fixture",
+        "versionCode": "2",
+        "apkSha256": "f9718932fdbead5ce0158f4302b799a0e7869411d7a001a6ccbaac14618e5ed1"
+      },
+      "processInstanceId": "31967:10b7ba09-a70d-486a-8a1a-95cd09b4204c",
+      "abi": "arm64-v8a",
+      "capabilities": [
+        "java-hook",
+        "native-hook"
+      ],
+      "symbols": [
+        {
+          "id": "greet",
+          "kind": "java",
+          "loaded": true,
+          "className": "dev.tripoder.fixture.GuestProbe",
+          "methodName": "greet",
+          "classLoaderId": "dalvik.system.DexClassLoader[DexPathList[[zip file \"\/data\/user\/0\/dev.tripoder.hooklab\/files\/guests\/f9718932fdbead5ce0158f4302b799a0e7869411d7a001a6ccbaac14618e5ed1\/base.apk\"],nativeLibraryDirectories=[\/data\/user\/0\/dev.tripoder.hooklab\/files\/guests\/f9718932fdbead5ce0158f4302b799a0e7869411d7a001a6ccbaac14618e5ed1\/lib, \/system\/lib64, \/system_ext\/lib64]]]",
+          "argumentTypes": [
+            "java.lang.String"
+          ],
+          "returnType": "java.lang.String"
+        },
+        {
+          "id": "delay",
+          "kind": "native",
+          "loaded": true,
+          "moduleName": "libguestfixture.so",
+          "symbol": "guest_delay_ms",
+          "buildId": "efd182946797b85e83ef8c6693817f90f48f563a",
+          "argumentTypes": [
+            "int32"
+          ],
+          "returnType": "int32",
+          "signatureSource": "confirmed"
+        }
+      ]
+    },
+    "mode": "guest",
+    "planId": "android-owned-targets",
+    "source": "",
+    "errors": [
+      {
+        "symbol": "greet",
+        "stage": "replace",
+        "message": "Error: DRAFT: Unknown identifier: globalThis"
+      }
+    ],
+    "template": "import { definePlan, param } from \"@abox\/hook\";\nexport default definePlan({\n  id: \"my-hook\", target,\n  params: { message: param.string(\"script:\"), delayMs: param.integer(700, { minimum: 0, maximum: 10000 }) },\n  setup(ctx) {\n    ctx.java.method(symbols.greet.className, \"greet\", [\"java.lang.String\"])\n      .replace(({ args, params }) => params.message + String(args[0]).toUpperCase());\n    ctx.native.function(symbols.delay.moduleName, symbols.delay.symbol, {\n      argumentTypes: [\"int32\"], returnType: \"int32\", buildId: symbols.delay.buildId\n    }).replace(({ args, params }) => Number(args[0]) * 2 + params.delayMs);\n  }\n});",
+    "nativeAddress": "0x6cfcd82840",
+    "nativeCodeChanged": false
+  },
+  "passed": true,
+  "finishedAtMs": 1791872874031,
+  "liveModelVerified": false
+}

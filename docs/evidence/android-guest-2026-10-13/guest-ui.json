@@ -1,0 +1,44 @@
+{
+  "hostApkSha256": "3a98e63b8c6cf56ec014cf30676cfa509c1d47f139f2f5f1e5d3e4ed5b26f24a",
+  "method": "Observed own app UI text after actual taps",
+  "checks": [
+    {
+      "action": "应用客体参数并调用",
+      "passed": true,
+      "observed": [
+        "客体 Hook 已开启",
+        "Java → guest-ui:phone",
+        "Native → 1203",
+        "Native 指令变化 → true"
+      ]
+    },
+    {
+      "action": "回滚客体参数",
+      "passed": true,
+      "observed": [
+        "客体 Hook 已开启",
+        "Java → guest-hook:phone",
+        "Native → 503",
+        "Native 指令变化 → true"
+      ]
+    },
+    {
+      "action": "卸载客体 Hook 并调用",
+      "passed": true,
+      "observed": [
+        "客体 Hook 已卸载",
+        "Java → guest-original:phone",
+        "Native → 16",
+        "Native 指令变化 → false"
+      ]
+    },
+    {
+      "action": "导入测试 APK",
+      "passed": true,
+      "method": "ACTION_OPEN_DOCUMENT system file picker; selected exact independent fixture APK",
+      "observed": "PASS · 客体 31 项检查",
+      "persistentCounter": 8
+    }
+  ],
+  "passed": true
+}
