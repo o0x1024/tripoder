@@ -1,0 +1,231 @@
+{
+  "runId": "p2-3e00af4c0e104d68",
+  "observedAtUtc": "2026-10-14T05:04:17.068103+00:00",
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "productApkReplaced": false,
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.b"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~9bB-C1jPQrRr70djR5kxWQ==/dev.tripoder.p0.b-0piVzHIxg8oudIcrFxi5Mg==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~9bB-C1jPQrRr70djR5kxWQ==/dev.tripoder.p0.b-0piVzHIxg8oudIcrFxi5Mg==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "4f064ce6ac4a63a8c9ca14ade4497881eadc1276e4c0eb55196b221fd2205aac  /data/app/~~9bB-C1jPQrRr70djR5kxWQ==/dev.tripoder.p0.b-0piVzHIxg8oudIcrFxi5Mg==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "getconf",
+        "PAGESIZE"
+      ],
+      "exitCode": 0,
+      "stdout": "4096\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.a"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-a",
+        "android.intent.action.MAIN",
+        "-c",
+        "android.intent.category.LAUNCHER",
+        "-f",
+        "0x10008000",
+        "-n",
+        "dev.tripoder.runtimeprobe/.P2ProbeActivity",
+        "--es",
+        "runId",
+        "p2-3e00af4c0e104d68"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10008000 cmp=dev.tripoder.runtimeprobe/.P2ProbeActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.runtimeprobe/.P2ProbeActivity\nTotalTime: 97\nWaitTime: 98\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--pid",
+        "26528"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--pid",
+        "26308"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--pid",
+        "27045"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--pid",
+        "26633"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--pid",
+        "26828"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--pid",
+        "26102"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--pid",
+        "27099"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--pid",
+        "26908"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "decoyApkSha256": "4f064ce6ac4a63a8c9ca14ade4497881eadc1276e4c0eb55196b221fd2205aac",
+  "decoyMarkerBefore": false,
+  "pageSize": 4096,
+  "aInstalledInHost": false,
+  "decoyMarkerAfter": false,
+  "hostMatchesBuild": true,
+  "fixturesMatchBuild": true,
+  "p1FixturesMatchBuild": true,
+  "p2FixturesMatchBuild": true,
+  "allDeviceAssertionsPassed": true,
+  "passed": false,
+  "error": "Device assertions failed; inspect device-result.json",
+  "finishedAtUtc": "2026-10-14T05:04:28.308417+00:00"
+}

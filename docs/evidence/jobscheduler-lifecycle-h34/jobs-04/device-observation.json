@@ -1,0 +1,258 @@
+{
+  "runId": "jobs-59bd7e8b44704433",
+  "observedAtUtc": "2026-10-16T08:45:05.174017+00:00",
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "productApkReplaced": false,
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/b.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/runtime-probe.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.b"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~9sAP4e4Pv1LTL6b66AstTQ==/dev.tripoder.p0.b-xv5qoASFAKMdCiuaDgv_vw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~9sAP4e4Pv1LTL6b66AstTQ==/dev.tripoder.p0.b-xv5qoASFAKMdCiuaDgv_vw==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "a89376cda90562079e5f3a7769f19e064ba9f12fb89a3b130570d5c465e9344e  /data/app/~~9sAP4e4Pv1LTL6b66AstTQ==/dev.tripoder.p0.b-xv5qoASFAKMdCiuaDgv_vw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "getconf",
+        "PAGESIZE"
+      ],
+      "exitCode": 0,
+      "stdout": "4096\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.a"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.runtimeprobe uid:10409\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "date \"+%m-%d %H:%M:%S.%3N\""
+      ],
+      "exitCode": 0,
+      "stdout": "10-16 16:45:07.158\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-a",
+        "android.intent.action.MAIN",
+        "-c",
+        "android.intent.category.LAUNCHER",
+        "-f",
+        "0x10008000",
+        "-n",
+        "dev.tripoder.runtimeprobe/.P2ProbeActivity",
+        "--es",
+        "runId",
+        "jobs-59bd7e8b44704433",
+        "--ez",
+        "jobsOnly",
+        "true"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10008000 cmp=dev.tripoder.runtimeprobe/.P2ProbeActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.runtimeprobe/.P2ProbeActivity\nTotalTime: 98\nWaitTime: 101\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 16:45:07.158"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of crash\n10-16 16:47:25.609   339   339 E AndroidRuntime: FATAL EXCEPTION: main\n10-16 16:47:25.609   339   339 E AndroidRuntime: Process: dev.tripoder.runtimeprobe, PID: 339\n10-16 16:47:25.609   339   339 E AndroidRuntime: java.lang.RuntimeException: Failure delivering result ResultInfo{who=null, request=201, result=-1, data=Intent { xflg=0x4 (has extras) }} to activity {dev.tripoder.runtimeprobe/dev.tripoder.runtimeprobe.P2ProbeActivity}\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat android.app.ActivityThread.deliverResults(ActivityThread.java:7312)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat android.app.ActivityThread.handleSendResult(ActivityThread.java:7356)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat android.app.servertransaction.ActivityResultItem.execute(ActivityResultItem.java:81)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat android.app.servertransaction.ActivityTransactionItem.execute(ActivityTransactionItem.java:63)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:136)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:106)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:83)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat android.app.ActivityThread$H.handleMessage(ActivityThread.java:3492)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat android.os.Handler.dispatchMessageImpl(Handler.java:146)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat android.os.Handler.dispatchMessage(Handler.java:129)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat android.os.Looper.loopOnce(Looper.java:315)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat android.os.Looper.loop(Looper.java:419)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat android.app.ActivityThread.main(ActivityThread.java:10847)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat java.lang.reflect.Method.invoke(Native Method)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\n10-16 16:47:25.609   339   339 E AndroidRuntime: Caused by: java.lang.NullPointerException: Attempt to invoke virtual method 'int java.lang.String.length()' on a null object reference\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat org.json.JSONTokener.nextCleanInternal(JSONTokener.java:121)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat org.json.JSONTokener.nextValue(JSONTokener.java:98)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat org.json.JSONObject.<init>(JSONObject.java:168)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat org.json.JSONObject.<init>(JSONObject.java:185)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat dev.tripoder.runtimeprobe.P2ProbeActivity.onActivityResult(P2ProbeActivity.java:580)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat android.app.Activity.onActivityResult(Activity.java:7978)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat android.app.Activity.internalDispatchActivityResult(Activity.java:10118)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat android.app.Activity.dispatchActivityResult(Activity.java:10092)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \tat android.app.ActivityThread.deliverResults(ActivityThread.java:7302)\n10-16 16:47:25.609   339   339 E AndroidRuntime: \t... 15 more\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 16:45:07.158",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 16:45:07.158",
+        "TripoderHook:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 16:45:07.158",
+        "TripoderReceiver:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 16:45:07.158",
+        "TripoderSelfHook:I",
+        "TripoderRuntime:E",
+        "TripoderOwnership:I",
+        "TripoderJobs:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "decoyApkSha256": "a89376cda90562079e5f3a7769f19e064ba9f12fb89a3b130570d5c465e9344e",
+  "decoyMarkerBefore": false,
+  "pageSize": 4096,
+  "aInstalledInHost": false,
+  "ownedUid": 10409,
+  "deviceLogStart": "10-16 16:45:07.158",
+  "passed": false,
+  "error": "No terminal result; device validation is UNKNOWN",
+  "nativeMemoryCrashObserved": false,
+  "nativeFatalSignalObserved": false,
+  "javaFatalObserved": true,
+  "expectedFixtureUncaught": [],
+  "unexpectedJavaFatalObserved": true,
+  "selfHookInstallationSamples": [],
+  "finishedAtUtc": "2026-10-16T08:50:09.714551+00:00"
+}

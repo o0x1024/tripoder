@@ -1,0 +1,13 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tripoder.peer" android:versionCode="1" android:versionName="1">
+  <uses-sdk android:minSdkVersion="36" android:targetSdkVersion="36"/>
+  <uses-permission android:name="dev.tripoder.provideridentity.permission.MESSAGE"/>
+  <application android:debuggable="false" android:allowBackup="false">
+    <provider android:name="dev.tripoder.peer.PeerProvider$Public" android:authorities="dev.tripoder.peer.public" android:exported="true"/>
+    <provider android:name="dev.tripoder.peer.PeerProvider$ReadLocked" android:authorities="dev.tripoder.peer.readlocked" android:exported="true" android:readPermission="dev.tripoder.peer.READ"/>
+    <provider android:name="dev.tripoder.peer.PeerProvider$WriteLocked" android:authorities="dev.tripoder.peer.writelocked" android:exported="true" android:writePermission="dev.tripoder.peer.WRITE"/>
+    <provider android:name="dev.tripoder.peer.PeerProvider$PathLocked" android:authorities="dev.tripoder.peer.pathlocked" android:exported="true">
+      <path-permission android:pathPrefix="/locked/" android:writePermission="dev.tripoder.peer.WRITE"/>
+    </provider>
+    <provider android:name="dev.tripoder.peer.PeerProvider$Private" android:authorities="dev.tripoder.peer.private" android:exported="false"/>
+  </application>
+</manifest>

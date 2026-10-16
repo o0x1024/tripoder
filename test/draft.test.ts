@@ -36,12 +36,13 @@ test("before and after preserve original call once", () => {
   assert.equal(sim.invoke("greet", ["phone"], args => { calls++; return "original:" + args[0]; }).value, "after:original:PHONE");
   assert.equal(calls, 1);
 });
-test("unknown globals and dynamic property escapes fail without calling original twice", () => {
+test("unknown globals and dynamic property escapes throw without calling the original", () => {
   for (const body of ['return globalThis;', 'return Java.use("X");', 'return String["con" + "structor"]("return 7")();', 'return args["__proto__"];', 'return Math.max({ valueOf: () => 1 });']) {
     let calls = 0; const sim = new HookSimulator(evidence);
     sim.activate(prepareDraft(script(body), evidence));
-    const r = sim.invoke("greet", ["phone"], () => { calls++; return "original"; });
-    assert.equal(r.hookOutcome, "failed"); assert.equal(r.value, "original"); assert.equal(calls, 1);
+    assert.throws(() => sim.invoke("greet", ["phone"], () => { calls++; return "original"; }), /DRAFT/);
+    assert.equal(calls, 0);
+    assert.equal(sim.events().filter(e => e.kind === "hook-error" && e.stage === "replace").length, 1);
   }
 });
 test("unsupported code is rejected even in an unexecuted branch", () => {
@@ -56,14 +57,17 @@ test("cannot load modules or invent native signatures", () => {
 test("self recursion is bounded across interpreted function calls", () => {
   const sim = new HookSimulator(evidence);
   sim.activate(prepareDraft(script('const recurse = () => recurse(); return recurse();'), evidence));
-  const r = sim.invoke("greet", ["phone"], () => "original");
-  assert.equal(r.hookOutcome, "failed"); assert.equal(r.value, "original");
+  let calls = 0;
+  assert.throws(() => sim.invoke("greet", ["phone"], () => { calls++; return "original"; }), /DRAFT: Call depth exceeded/);
+  assert.equal(calls, 0);
 });
 test("oversized source, AST and expanding strings are bounded", () => {
   assert.throws(() => prepareDraft(" ".repeat(32769), evidence), /32 KiB/);
   const sim = new HookSimulator(evidence);
   sim.activate(prepareDraft(script('const f = (s) => s.length > 8000 ? s + s : f(s+s); return f("xxxxxxxx");'), evidence));
-  assert.equal(sim.invoke("greet", ["phone"], () => "original").hookOutcome, "failed");
+  let calls = 0;
+  assert.throws(() => sim.invoke("greet", ["phone"], () => { calls++; return "original"; }), /DRAFT: String size limit/);
+  assert.equal(calls, 0);
 });
 test("a rejected draft never mutates an already prepared plan", () => {
   const sim = new HookSimulator(evidence); sim.activate(prepareDraft(draftTemplate(), evidence));

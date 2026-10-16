@@ -1,0 +1,34 @@
+--------- beginning of main
+10-15 02:57:54.634 32665 32665 I TripoderOwnership: {"stage":"before-attach","physical":{"type":"dev.tripoder.runtime.RuntimeApplication","identity":123757791},"guest":{"type":"com.tencent.mm.app.Application","identity":104928556},"physicalBase":{"type":"android.app.ContextImpl","identity":171023349},"guestBase":null,"physicalApk":{"type":"android.app.LoadedApk","identity":153238922},"guestApk":null,"physicalApkApplication":{"type":"dev.tripoder.runtime.RuntimeApplication","identity":123757791},"initialApplication":{"type":"dev.tripoder.runtime.RuntimeApplication","identity":123757791},"reflectedInitialApplication":{"type":"com.tencent.mm.app.Application","identity":104928556},"hostApplicationContext":{"type":"dev.tripoder.runtime.RuntimeApplication","identity":123757791}}
+10-15 02:57:58.083 32665 32665 I TripoderOwnership: {"stage":"after-attach","physical":{"type":"dev.tripoder.runtime.RuntimeApplication","identity":123757791},"guest":{"type":"com.tencent.mm.app.Application","identity":104928556},"physicalBase":{"type":"android.app.ContextImpl","identity":171023349},"guestBase":{"type":"dev.tripoder.runtime.GuestContext","identity":1631015},"physicalApk":{"type":"android.app.LoadedApk","identity":153238922},"guestApk":{"type":"android.app.LoadedApk","identity":116967892},"physicalApkApplication":{"type":"dev.tripoder.runtime.RuntimeApplication","identity":123757791},"initialApplication":{"type":"dev.tripoder.runtime.RuntimeApplication","identity":123757791},"reflectedInitialApplication":{"type":"com.tencent.mm.app.Application","identity":104928556},"hostApplicationContext":{"type":"dev.tripoder.runtime.RuntimeApplication","identity":123757791}}
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: Worker initialization failed
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: java.util.concurrent.ExecutionException: java.lang.UnsupportedOperationException: SYSTEM_SERVICE_UNSUPPORTED:appops
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at java.util.concurrent.FutureTask.report(FutureTask.java:124)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at java.util.concurrent.FutureTask.get(FutureTask.java:207)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at dev.tripoder.runtime.RuntimeEngine.startApplication(RuntimeEngine.java:108)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at dev.tripoder.runtime.RuntimeProcessControl.handle(RuntimeProcessControl.java:21)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at dev.tripoder.runtime.RuntimeWire$Endpoint.onTransact(RuntimeWire.java:29)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at android.os.Binder.execTransactInternal(Binder.java:1371)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at android.os.Binder.execTransact(Binder.java:1330)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: Caused by: java.lang.UnsupportedOperationException: SYSTEM_SERVICE_UNSUPPORTED:appops
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at dev.tripoder.runtime.GuestContext.getSystemService(GuestContext.java:58)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at android.content.ContentProvider.attachInfo(ContentProvider.java:2685)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at android.content.ContentProvider.attachInfo(Native Method)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at android.content.ContentProvider.attachInfo(ContentProvider.java:2671)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at androidx.core.content.FileProvider.attachInfo(SourceFile:0)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at android.support.v4.content.FileProvider.attachInfo(SourceFile:5)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at dev.tripoder.runtime.RuntimeProviders.initialize(RuntimeProviders.java:45)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at dev.tripoder.runtime.RuntimeProviders.initialize(RuntimeProviders.java:35)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at dev.tripoder.runtime.RuntimeEngine.lambda$new$1(RuntimeEngine.java:94)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at dev.tripoder.runtime.RuntimeEngine.$r8$lambda$jpJCnP2gRB-z5cMkw46-QI1yH44(RuntimeEngine.java:0)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at dev.tripoder.runtime.RuntimeEngine$2.call(D8$$SyntheticClass:0)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at java.util.concurrent.FutureTask.run(FutureTask.java:328)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at android.os.Handler.handleCallback(Handler.java:1129)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at android.os.Handler.dispatchMessageImpl(Handler.java:139)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at android.os.Handler.dispatchMessage(Handler.java:129)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at android.os.Looper.loopOnce(Looper.java:315)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at android.os.Looper.loop(Looper.java:419)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at android.app.ActivityThread.main(ActivityThread.java:10847)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at java.lang.reflect.Method.invoke(Native Method)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)
+10-15 02:57:59.321 32665 32685 E TripoderRuntime: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)

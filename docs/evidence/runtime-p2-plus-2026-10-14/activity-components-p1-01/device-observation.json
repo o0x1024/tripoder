@@ -1,0 +1,120 @@
+{
+  "runId": "p1-a17beb5ea0ca45a5",
+  "observedAtUtc": "2026-10-14T04:40:33.185991+00:00",
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "productApkReplaced": false,
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.b"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~6glTwPHLb9-v-KTZva9oag==/dev.tripoder.p0.b-Q6LBzVRR4CWit7iGR2vvgw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~6glTwPHLb9-v-KTZva9oag==/dev.tripoder.p0.b-Q6LBzVRR4CWit7iGR2vvgw==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "c942c270aa55ea08e353e941adeca3400617d0a42c1ca688a208ca6582387f03  /data/app/~~6glTwPHLb9-v-KTZva9oag==/dev.tripoder.p0.b-Q6LBzVRR4CWit7iGR2vvgw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "getconf",
+        "PAGESIZE"
+      ],
+      "exitCode": 0,
+      "stdout": "4096\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.a"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.runtimeprobe/.P1ProbeActivity",
+        "--es",
+        "runId",
+        "p1-a17beb5ea0ca45a5"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.runtimeprobe/.P1ProbeActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.runtimeprobe/.P1ProbeActivity\nTotalTime: 86\nWaitTime: 88\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "decoyApkSha256": "c942c270aa55ea08e353e941adeca3400617d0a42c1ca688a208ca6582387f03",
+  "decoyMarkerBefore": false,
+  "pageSize": 4096,
+  "aInstalledInHost": false,
+  "decoyMarkerAfter": false,
+  "hostMatchesBuild": true,
+  "fixturesMatchBuild": true,
+  "p1FixturesMatchBuild": true,
+  "p2FixturesMatchBuild": true,
+  "allDeviceAssertionsPassed": true,
+  "passed": true,
+  "finishedAtUtc": "2026-10-14T04:41:32.851361+00:00"
+}

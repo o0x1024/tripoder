@@ -1,0 +1,89 @@
+{
+  "runId": "multiprocess-07c2cbfb7ab24b0f",
+  "scope": "normal-android-provider-baseline",
+  "fixtureSha256": "126de0c5779c602517a91ee4014b43a233ddcd0bdb3fec135db578e8904ca057",
+  "commands": [
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/provider-identity.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~aizpnFxReRsp5lqA-Xlm7Q==/dev.tripoder.provideridentity-QUGSUdxau1zhLzttjLHuIQ==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~aizpnFxReRsp5lqA-Xlm7Q==/dev.tripoder.provideridentity-QUGSUdxau1zhLzttjLHuIQ==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "126de0c5779c602517a91ee4014b43a233ddcd0bdb3fec135db578e8904ca057  /data/app/~~aizpnFxReRsp5lqA-Xlm7Q==/dev.tripoder.provideridentity-QUGSUdxau1zhLzttjLHuIQ==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.provideridentity/.MultiprocessActivity",
+        "--es",
+        "baseline",
+        "true",
+        "--es",
+        "runId",
+        "multiprocess-07c2cbfb7ab24b0f"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.provideridentity/.MultiprocessActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.provideridentity/.MultiprocessActivity\nTotalTime: 89\nWaitTime: 91\nComplete\n",
+      "stderr": ""
+    }
+  ],
+  "passed": true,
+  "tripoderRuntimeVerified": false,
+  "checks": [
+    {
+      "name": "main-lazy-local-single-instance",
+      "passed": true
+    },
+    {
+      "name": "peer-lazy-local-single-instance",
+      "passed": true
+    },
+    {
+      "name": "processes-own-distinct-provider-instances",
+      "passed": true
+    },
+    {
+      "name": "later-acquire-retains-local-instance",
+      "passed": true
+    }
+  ]
+}

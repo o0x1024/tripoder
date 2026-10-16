@@ -1,0 +1,138 @@
+
+android/self-hook-probe/build/device-libart.so:	file format elf64-littleaarch64
+
+Disassembly of section .text:
+
+000000000045b1f4:
+  45b40c:      	paciasp
+  45b410:      	sub	sp, sp, #0x80
+  45b414:      	stp	x29, x30, [sp, #0x20]
+  45b418:      	stp	x28, x27, [sp, #0x30]
+  45b41c:      	stp	x26, x25, [sp, #0x40]
+  45b420:      	stp	x24, x23, [sp, #0x50]
+  45b424:      	stp	x22, x21, [sp, #0x60]
+  45b428:      	stp	x20, x19, [sp, #0x70]
+  45b42c:      	add	x29, sp, #0x20
+  45b430:      	str	w6, [sp, #0x4]
+  45b434:      	mrs	x8, TPIDR_EL0
+  45b438:      	adrp	x9, 0xc2f000
+  45b43c:      	str	x8, [sp, #0x8]
+  45b440:      	mov	x27, x0
+  45b444:      	mov	x21, x5
+  45b448:      	ldr	x8, [x8, #0x28]
+  45b44c:      	ldr	x9, [x9, #0xd28]
+  45b450:      	mov	x24, x4
+  45b454:      	mov	x25, x3
+  45b458:      	mov	x26, x2
+  45b45c:      	mov	x19, x1
+  45b460:      	stur	x8, [x29, #-0x8]
+  45b464:      	ldr	x20, [x9]
+  45b468:      	mov	x0, x20
+  45b46c:      	bl	0xaaea30
+  45b470:      	ldr	x23, [x27], #0x8
+  45b474:      	cmp	x23, x27
+  45b478:      	b.eq	0x45b610
+  45b47c:      	ldr	x22, [x23, #0x38]
+  45b480:      	ldr	x8, [x22, #0x30]
+  45b484:      	cmp	x8, x26
+  45b488:      	b.eq	0x45b4c8
+  45b48c:      	ldr	x9, [x23, #0x8]
+  45b490:      	cbz	x9, 0x45b4a4
+  45b494:      	mov	x8, x9
+  45b498:      	ldr	x9, [x9]
+  45b49c:      	cbnz	x9, 0x45b494
+  45b4a0:      	b	0x45b4b8
+  45b4a4:      	ldr	x8, [x23, #0x10]
+  45b4a8:      	ldr	x9, [x8]
+  45b4ac:      	cmp	x23, x9
+  45b4b0:      	mov	x23, x8
+  45b4b4:      	b.ne	0x45b4a4
+  45b4b8:      	cmp	x8, x27
+  45b4bc:      	mov	x23, x8
+  45b4c0:      	b.ne	0x45b47c
+  45b4c4:      	b	0x45b610
+  45b4c8:      	ldrb	w8, [x22, #0x20]
+  45b4cc:      	mov	x0, x22
+  45b4d0:      	mov	x1, x24
+  45b4d4:      	cmp	w8, #0x0
+  45b4d8:      	csel	x28, x25, xzr, ne
+  45b4dc:      	cmp	w8, #0x1
+  45b4e0:      	b.eq	0x45b600
+  45b4e4:      	bl	0x45b61c
+  45b4e8:      	cbnz	x0, 0x45b508
+  45b4ec:      	ldrb	w8, [x22, #0x20]
+  45b4f0:      	mov	x0, x22
+  45b4f4:      	mov	x1, x21
+  45b4f8:      	cmp	w8, #0x1
+  45b4fc:      	b.eq	0x45b5f0
+  45b500:      	bl	0x45b61c
+  45b504:      	cbz	x0, 0x45b48c
+  45b508:      	adrp	x8, 0xc2f000
+  45b50c:      	mov	x23, x0
+  45b510:      	ldr	x8, [x8, #0xa98]
+  45b514:      	ldrb	w8, [x8, #0x9]
+  45b518:      	cmp	w8, #0x1
+  45b51c:      	b.eq	0x45b568
+  45b520:      	mov	x0, x20
+  45b524:      	mov	x1, x19
+  45b528:      	bl	0xaaea40
+  45b52c:      	ldr	x8, [sp, #0x8]
+  45b530:      	ldr	x8, [x8, #0x28]
+  45b534:      	ldur	x9, [x29, #-0x8]
+  45b538:      	cmp	x8, x9
+  45b53c:      	b.ne	0x45b618
+  45b540:      	mov	x0, x23
+  45b544:      	ldp	x20, x19, [sp, #0x70]
+  45b548:      	ldp	x22, x21, [sp, #0x60]
+  45b54c:      	ldp	x24, x23, [sp, #0x50]
+  45b550:      	ldp	x26, x25, [sp, #0x40]
+  45b554:      	ldp	x28, x27, [sp, #0x30]
+  45b558:      	ldp	x29, x30, [sp, #0x20]
+  45b55c:      	add	sp, sp, #0x80
+  45b560:      	autiasp
+  45b564:      	ret
+  45b568:      	mov	w0, #0x2                // =2
+  45b56c:      	mov	x1, xzr
+  45b570:      	bl	0xaaea10
+  45b574:      	tbz	w0, #0x0, 0x45b520
+  45b578:      	bl	0xaaea20
+  45b57c:      	mov	x24, x0
+  45b580:      	ldr	w25, [x0]
+  45b584:      	adrp	x1, 0x8e000
+  45b588:      	add	x1, x1, #0x4a3
+  45b58c:      	add	x0, sp, #0x10
+  45b590:      	mov	w2, #0x159              // =345
+  45b594:      	mov	w3, #0x2                // =2
+  45b598:      	mov	x4, xzr
+  45b59c:      	mov	w5, #-0x1               // =-1
+  45b5a0:      	bl	0xaae950
+  45b5a4:      	add	x0, sp, #0x10
+  45b5a8:      	bl	0xaae960
+  45b5ac:      	adrp	x1, 0x7a000
+  45b5b0:      	add	x1, x1, #0xa40
+  45b5b4:      	bl	0x239800
+  45b5b8:      	mov	x1, x21
+  45b5bc:      	bl	0x234558
+  45b5c0:      	adrp	x1, 0x7a000
+  45b5c4:      	add	x1, x1, #0xa58
+  45b5c8:      	bl	0x239800
+  45b5cc:      	mov	x1, x22
+  45b5d0:      	bl	0x234558
+  45b5d4:      	adrp	x1, 0x5e000
+  45b5d8:      	add	x1, x1, #0x17f
+  45b5dc:      	bl	0x239800
+  45b5e0:      	add	x0, sp, #0x10
+  45b5e4:      	bl	0xaae980
+  45b5e8:      	str	w25, [x24]
+  45b5ec:      	b	0x45b520
+  45b5f0:      	ldr	w3, [sp, #0x4]
+  45b5f4:      	mov	x2, x28
+  45b5f8:      	bl	0x45b334
+  45b5fc:      	b	0x45b504
+  45b600:      	ldr	w3, [sp, #0x4]
+  45b604:      	mov	x2, x25
+  45b608:      	bl	0x45b334
+  45b60c:      	b	0x45b4e8
+  45b610:      	mov	x23, xzr
+  45b614:      	b	0x45b520
+  45b618:      	bl	0xab4170

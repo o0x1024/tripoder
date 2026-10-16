@@ -1,0 +1,877 @@
+{
+  "schema": 1,
+  "scope": "Read-only field and call-only method contracts for Activity/package assembly; no field offsets and no installation receipt.",
+  "inventory": {
+    "path": "android/self-hook/runtime-inventory.json",
+    "sha256": "b06907759900d2f60f0dac78a3c89edce62d2cbee66392f144c6e4be38886ee9",
+    "sourceRun": "de697b64-c689-4d0f-a7ea-648b30d31538",
+    "platform": {
+      "fingerprint": "Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys",
+      "sdk": 37,
+      "abi": "arm64-v8a",
+      "process64Bit": true,
+      "pageSize": 4096,
+      "binaries": {
+        "/apex/com.android.runtime/bin/linker64": "b6dd216b7a775b8f04c825cada286bfe7ddaeecf2c0c10e617287118965abc00",
+        "/apex/com.android.runtime/lib64/bionic/libc.so": "b963b539545b64aa8fbcaed3228d04bcb6466bfd47055aa16e4ccdcadfdc461e",
+        "/apex/com.android.art/lib64/libart.so": "2d4a3575e5b71b537d89c176ac82ad3e32a56a3d43161009de3e728c962fab13"
+      }
+    },
+    "privateFieldLimitation": "runtime-inventory contains publicFields only. Reference-source private descriptors must be verified against exact runtime members before admission."
+  },
+  "missingRequestedSource": [
+    "android/runtime/src/dev/tripoder/runtime/RuntimePackageRoot.java"
+  ],
+  "fields": [
+    {
+      "owner": "android.app.Instrumentation",
+      "name": "mThread",
+      "descriptor": "Landroid/app/ActivityThread;",
+      "static": false,
+      "finalInReferenceSource": false,
+      "accessNeeded": "read",
+      "usage": {
+        "file": "android/runtime/agent/activity-creation.ts",
+        "line": 12,
+        "text": "const bound=Java.cast(instrumentation,Instrumentation).mThread.value;"
+      },
+      "referenceDeclaration": {
+        "file": "core/java/android/app/Instrumentation.java",
+        "line": 126,
+        "declaration": "private ActivityThread mThread = null;"
+      },
+      "layoutOffset": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "fixedRuntimeDescriptor": null,
+      "fixedRuntimeModifiersVerified": false,
+      "requiresDeviceFieldIdentityValidation": true,
+      "sameRegistryAction": "append_exact_named_field_to_existing_registry"
+    },
+    {
+      "owner": "android.app.ActivityThread",
+      "name": "mInstrumentation",
+      "descriptor": "Landroid/app/Instrumentation;",
+      "static": false,
+      "finalInReferenceSource": false,
+      "accessNeeded": "read",
+      "usage": {
+        "file": "android/runtime/agent/activity-creation.ts",
+        "line": 10,
+        "text": "const currentInstrumentation=()=>Thread.currentActivityThread().mInstrumentation.value;"
+      },
+      "referenceDeclaration": {
+        "file": "core/java/android/app/ActivityThread.java",
+        "line": 478,
+        "declaration": "Instrumentation mInstrumentation;"
+      },
+      "layoutOffset": null,
+      "descriptorConfidence": "existing_fixed_F0_contract",
+      "fixedRuntimeDescriptor": "Landroid/app/Instrumentation;",
+      "fixedRuntimeModifiersVerified": true,
+      "requiresDeviceFieldIdentityValidation": false,
+      "sameRegistryAction": "reuse_existing_F0_field_slot_3",
+      "existingContract": {
+        "file": "android/self-hook/native/art_framework.c",
+        "slot": 3,
+        "ownerSlot": 1
+      }
+    },
+    {
+      "owner": "android.app.ActivityThread$ActivityClientRecord",
+      "name": "intent",
+      "descriptor": "Landroid/content/Intent;",
+      "static": false,
+      "finalInReferenceSource": false,
+      "accessNeeded": "read",
+      "usage": {
+        "file": "android/runtime/agent/activity-creation.ts",
+        "line": 50,
+        "text": "if(!Creation.physical(record.intent.value))return launch.call(this,record,custom);"
+      },
+      "referenceDeclaration": {
+        "file": "core/java/android/app/ActivityThread.java",
+        "line": 612,
+        "declaration": "Intent intent;"
+      },
+      "layoutOffset": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "fixedRuntimeDescriptor": null,
+      "fixedRuntimeModifiersVerified": false,
+      "requiresDeviceFieldIdentityValidation": true,
+      "sameRegistryAction": "append_exact_named_field_to_existing_registry"
+    },
+    {
+      "owner": "android.app.ActivityThread$ActivityClientRecord",
+      "name": "token",
+      "descriptor": "Landroid/os/IBinder;",
+      "static": false,
+      "finalInReferenceSource": false,
+      "accessNeeded": "read",
+      "usage": {
+        "file": "android/runtime/agent/activity-creation.ts",
+        "line": 55,
+        "text": "permit.bindRecord(record,record.token.value);"
+      },
+      "referenceDeclaration": {
+        "file": "core/java/android/app/ActivityThread.java",
+        "line": 602,
+        "declaration": "public IBinder token;"
+      },
+      "layoutOffset": null,
+      "descriptorConfidence": "fixed_device_publicField_type_plus_reference",
+      "fixedRuntimeDescriptor": "Landroid/os/IBinder;",
+      "fixedRuntimeModifiersVerified": false,
+      "requiresDeviceFieldIdentityValidation": true,
+      "sameRegistryAction": "append_exact_named_field_to_existing_registry",
+      "inventoryEvidence": {
+        "owner": "android.app.ActivityThread$ActivityClientRecord",
+        "publicFieldEntry": "token:android.os.IBinder",
+        "ownerId": 48
+      }
+    },
+    {
+      "owner": "android.view.ContextThemeWrapper",
+      "name": "mResources",
+      "descriptor": "Landroid/content/res/Resources;",
+      "static": false,
+      "finalInReferenceSource": false,
+      "accessNeeded": "write",
+      "usage": {
+        "file": "android/runtime/agent/index.ts",
+        "line": 56,
+        "text": "Java.cast(activity, Theme).mResources.value = Bridge.resources();"
+      },
+      "referenceDeclaration": {
+        "file": "core/java/android/view/ContextThemeWrapper.java",
+        "line": 42,
+        "declaration": "private Resources mResources;"
+      },
+      "layoutOffset": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "fixedRuntimeDescriptor": null,
+      "fixedRuntimeModifiersVerified": false,
+      "requiresDeviceFieldIdentityValidation": true,
+      "sameRegistryAction": "append_exact_named_field_to_existing_registry"
+    },
+    {
+      "owner": "android.view.ContextThemeWrapper",
+      "name": "mTheme",
+      "descriptor": "Landroid/content/res/Resources$Theme;",
+      "static": false,
+      "finalInReferenceSource": false,
+      "accessNeeded": "write_null",
+      "usage": {
+        "file": "android/runtime/agent/index.ts",
+        "line": 57,
+        "text": "Java.cast(activity, Theme).mTheme.value = null;"
+      },
+      "referenceDeclaration": {
+        "file": "core/java/android/view/ContextThemeWrapper.java",
+        "line": 37,
+        "declaration": "private Resources.Theme mTheme;"
+      },
+      "layoutOffset": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "fixedRuntimeDescriptor": null,
+      "fixedRuntimeModifiersVerified": false,
+      "requiresDeviceFieldIdentityValidation": true,
+      "sameRegistryAction": "append_exact_named_field_to_existing_registry",
+      "note": "Resources.Theme binary name uses Resources$Theme; no offset is inferred."
+    },
+    {
+      "owner": "android.view.ContextThemeWrapper",
+      "name": "mThemeResource",
+      "descriptor": "I",
+      "static": false,
+      "finalInReferenceSource": false,
+      "accessNeeded": "write_zero",
+      "usage": {
+        "file": "android/runtime/agent/index.ts",
+        "line": 58,
+        "text": "Java.cast(activity, Theme).mThemeResource.value = 0;"
+      },
+      "referenceDeclaration": {
+        "file": "core/java/android/view/ContextThemeWrapper.java",
+        "line": 35,
+        "declaration": "private int mThemeResource;"
+      },
+      "layoutOffset": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "fixedRuntimeDescriptor": null,
+      "fixedRuntimeModifiersVerified": false,
+      "requiresDeviceFieldIdentityValidation": true,
+      "sameRegistryAction": "append_exact_named_field_to_existing_registry"
+    },
+    {
+      "owner": "android.app.Activity",
+      "name": "mApplication",
+      "descriptor": "Landroid/app/Application;",
+      "static": false,
+      "finalInReferenceSource": false,
+      "accessNeeded": "write",
+      "usage": {
+        "file": "android/runtime/agent/index.ts",
+        "line": 59,
+        "text": "Java.cast(activity, Activity).mApplication.value = Bridge.application();"
+      },
+      "referenceDeclaration": {
+        "file": "core/java/android/app/Activity.java",
+        "line": 883,
+        "declaration": "private Application mApplication;"
+      },
+      "layoutOffset": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "fixedRuntimeDescriptor": null,
+      "fixedRuntimeModifiersVerified": false,
+      "requiresDeviceFieldIdentityValidation": true,
+      "sameRegistryAction": "append_exact_named_field_to_existing_registry"
+    },
+    {
+      "owner": "android.app.Activity",
+      "name": "mComponent",
+      "descriptor": "Landroid/content/ComponentName;",
+      "static": false,
+      "finalInReferenceSource": false,
+      "accessNeeded": "write",
+      "usage": {
+        "file": "android/runtime/agent/index.ts",
+        "line": 61,
+        "text": "Java.cast(activity, Activity).mComponent.value = visible.getComponent();"
+      },
+      "referenceDeclaration": {
+        "file": "core/java/android/app/Activity.java",
+        "line": 889,
+        "declaration": "private ComponentName mComponent;"
+      },
+      "layoutOffset": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "fixedRuntimeDescriptor": null,
+      "fixedRuntimeModifiersVerified": false,
+      "requiresDeviceFieldIdentityValidation": true,
+      "sameRegistryAction": "append_exact_named_field_to_existing_registry"
+    },
+    {
+      "owner": "android.app.Activity",
+      "name": "mActivityInfo",
+      "descriptor": "Landroid/content/pm/ActivityInfo;",
+      "static": false,
+      "finalInReferenceSource": false,
+      "accessNeeded": "write",
+      "usage": {
+        "file": "android/runtime/agent/index.ts",
+        "line": 62,
+        "text": "Java.cast(activity, Activity).mActivityInfo.value = Bridge.activityInfo(activity);"
+      },
+      "referenceDeclaration": {
+        "file": "core/java/android/app/Activity.java",
+        "line": 891,
+        "declaration": "/*package*/ ActivityInfo mActivityInfo;"
+      },
+      "layoutOffset": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "fixedRuntimeDescriptor": null,
+      "fixedRuntimeModifiersVerified": false,
+      "requiresDeviceFieldIdentityValidation": true,
+      "sameRegistryAction": "append_exact_named_field_to_existing_registry"
+    },
+    {
+      "owner": "android.app.Activity",
+      "name": "mResultCode",
+      "descriptor": "I",
+      "static": false,
+      "finalInReferenceSource": false,
+      "accessNeeded": "read",
+      "usage": {
+        "file": "android/runtime/agent/index.ts",
+        "line": 91,
+        "text": "Bridge.returning(this, this.mResultCode.value, this.mResultData.value);"
+      },
+      "referenceDeclaration": {
+        "file": "core/java/android/app/Activity.java",
+        "line": 990,
+        "declaration": "int mResultCode = RESULT_CANCELED;"
+      },
+      "layoutOffset": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "fixedRuntimeDescriptor": null,
+      "fixedRuntimeModifiersVerified": false,
+      "requiresDeviceFieldIdentityValidation": true,
+      "sameRegistryAction": "append_exact_named_field_to_existing_registry"
+    },
+    {
+      "owner": "android.app.Activity",
+      "name": "mResultData",
+      "descriptor": "Landroid/content/Intent;",
+      "static": false,
+      "finalInReferenceSource": false,
+      "accessNeeded": "read",
+      "usage": {
+        "file": "android/runtime/agent/index.ts",
+        "line": 91,
+        "text": "Bridge.returning(this, this.mResultCode.value, this.mResultData.value);"
+      },
+      "referenceDeclaration": {
+        "file": "core/java/android/app/Activity.java",
+        "line": 993,
+        "declaration": "Intent mResultData = null;"
+      },
+      "layoutOffset": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "fixedRuntimeDescriptor": null,
+      "fixedRuntimeModifiersVerified": false,
+      "requiresDeviceFieldIdentityValidation": true,
+      "sameRegistryAction": "append_exact_named_field_to_existing_registry"
+    },
+    {
+      "owner": "android.app.ApplicationPackageManager",
+      "name": "mPM",
+      "descriptor": "Landroid/content/pm/IPackageManager;",
+      "static": false,
+      "finalInReferenceSource": true,
+      "accessNeeded": "read_write",
+      "usage": {
+        "file": "android/runtime/agent/packages.ts",
+        "line": 12,
+        "text": "const endpoint = field(Manager, \"mPM\"), globalEndpoint = field(Thread, \"sPackageManager\"), services = field(ServiceManager, \"sCache\");"
+      },
+      "referenceDeclaration": {
+        "file": "core/java/android/app/ApplicationPackageManager.java",
+        "line": 3594,
+        "declaration": "private final IPackageManager mPM;"
+      },
+      "layoutOffset": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "fixedRuntimeDescriptor": null,
+      "fixedRuntimeModifiersVerified": false,
+      "requiresDeviceFieldIdentityValidation": true,
+      "sameRegistryAction": "append_exact_named_field_to_existing_registry"
+    },
+    {
+      "owner": "android.app.ActivityThread",
+      "name": "sPackageManager",
+      "descriptor": "Landroid/content/pm/IPackageManager;",
+      "static": true,
+      "finalInReferenceSource": false,
+      "accessNeeded": "read_write",
+      "usage": {
+        "file": "android/runtime/agent/packages.ts",
+        "line": 12,
+        "text": "const endpoint = field(Manager, \"mPM\"), globalEndpoint = field(Thread, \"sPackageManager\"), services = field(ServiceManager, \"sCache\");"
+      },
+      "referenceDeclaration": {
+        "file": "core/java/android/app/ActivityThread.java",
+        "line": 393,
+        "declaration": "static volatile IPackageManager sPackageManager;"
+      },
+      "layoutOffset": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "fixedRuntimeDescriptor": null,
+      "fixedRuntimeModifiersVerified": false,
+      "requiresDeviceFieldIdentityValidation": true,
+      "sameRegistryAction": "append_exact_named_field_to_existing_registry"
+    },
+    {
+      "owner": "android.os.ServiceManager",
+      "name": "sCache",
+      "descriptor": "Ljava/util/Map;",
+      "static": true,
+      "finalInReferenceSource": false,
+      "accessNeeded": "read_map_then_replace_package_entry",
+      "usage": {
+        "file": "android/runtime/agent/packages.ts",
+        "line": 12,
+        "text": "const endpoint = field(Manager, \"mPM\"), globalEndpoint = field(Thread, \"sPackageManager\"), services = field(ServiceManager, \"sCache\");"
+      },
+      "referenceDeclaration": {
+        "file": "core/java/android/os/ServiceManager.java",
+        "line": 56,
+        "declaration": "private static Map<String, IBinder> sCache = new ArrayMap<String, IBinder>();"
+      },
+      "layoutOffset": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "fixedRuntimeDescriptor": null,
+      "fixedRuntimeModifiersVerified": false,
+      "requiresDeviceFieldIdentityValidation": true,
+      "sameRegistryAction": "append_exact_named_field_to_existing_registry",
+      "note": "Declared type is java.util.Map, even though reference initializer constructs ArrayMap. Do not substitute ArrayMap descriptor."
+    },
+    {
+      "owner": "android.app.ContextImpl",
+      "name": "mPackageManager",
+      "descriptor": "Landroid/content/pm/PackageManager;",
+      "static": false,
+      "finalInReferenceSource": false,
+      "accessNeeded": "read_write",
+      "usage": {
+        "file": "android/runtime/agent/packages.ts",
+        "line": 14,
+        "text": "const Wrapper=Java.use(\"android.content.ContextWrapper\"), contextCache=field(Context,\"mPackageManager\");"
+      },
+      "referenceDeclaration": {
+        "file": "core/java/android/app/ContextImpl.java",
+        "line": 288,
+        "declaration": "private PackageManager mPackageManager;"
+      },
+      "layoutOffset": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "fixedRuntimeDescriptor": null,
+      "fixedRuntimeModifiersVerified": false,
+      "requiresDeviceFieldIdentityValidation": true,
+      "sameRegistryAction": "append_exact_named_field_to_existing_registry"
+    }
+  ],
+  "callOnlyMethods": [
+    {
+      "owner": "android.app.ActivityThread",
+      "name": "currentActivityThread",
+      "descriptor": "()Landroid/app/ActivityThread;",
+      "static": true,
+      "purpose": "obtain_physical_thread",
+      "usage": {
+        "file": "android/runtime/agent/activity-creation.ts",
+        "line": 10,
+        "text": "const currentInstrumentation=()=>Thread.currentActivityThread().mInstrumentation.value;"
+      },
+      "hookTarget": false,
+      "layoutOffset": null,
+      "existingFixedAccess": "FrameworkAccess.METHOD_NAMES slot 0",
+      "fixedRuntimeDescriptor": "()Landroid/app/ActivityThread;",
+      "descriptorConfidence": "existing_fixed_access_contract",
+      "referenceDeclaration": {
+        "file": "core/java/android/app/ActivityThread.java",
+        "line": 2884,
+        "declaration": "public static ActivityThread currentActivityThread() {"
+      }
+    },
+    {
+      "owner": "android.app.ActivityThread",
+      "name": "getPackageManager",
+      "descriptor": "()Landroid/content/pm/IPackageManager;",
+      "static": true,
+      "purpose": "capture_physical_endpoint_before_package_activation",
+      "usage": {
+        "file": "android/runtime/agent/packages.ts",
+        "line": 10,
+        "text": "const physical = Java.retain(Thread.getPackageManager());"
+      },
+      "hookTarget": false,
+      "layoutOffset": null,
+      "existingFixedAccess": "ComponentFrameworkAccess fixed owner 1 method getPackageManager",
+      "fixedRuntimeDescriptor": "()Landroid/content/pm/IPackageManager;",
+      "descriptorConfidence": "existing_fixed_access_contract",
+      "referenceDeclaration": {
+        "file": "core/java/android/app/ActivityThread.java",
+        "line": 2925,
+        "declaration": "public static IPackageManager getPackageManager() {"
+      }
+    },
+    {
+      "owner": "android.app.ActivityThread",
+      "name": "getSystemContext",
+      "descriptor": "()Landroid/app/ContextImpl;",
+      "static": false,
+      "purpose": "supply_exact_framework_context_to_RuntimePackages.beginActivation",
+      "usage": {
+        "file": "android/runtime/agent/packages.ts",
+        "line": 26,
+        "text": "Bridge.beginActivation(root,host,Thread.currentActivityThread().getSystemContext());"
+      },
+      "hookTarget": false,
+      "layoutOffset": null,
+      "fixedRuntimeDescriptor": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "requiresDeviceMethodIdentityValidation": true,
+      "referenceDeclaration": {
+        "file": "core/java/android/app/ActivityThread.java",
+        "line": 3215,
+        "declaration": "public ContextImpl getSystemContext() {"
+      }
+    },
+    {
+      "owner": "android.app.ApplicationPackageManager",
+      "name": "<init>",
+      "descriptor": "(Landroid/app/ContextImpl;Landroid/content/pm/IPackageManager;)V",
+      "static": false,
+      "purpose": "construct_separate_logical_facade",
+      "usage": {
+        "file": "android/runtime/agent/packages.ts",
+        "line": 13,
+        "text": "const construct = Manager.$new.overload(\"android.app.ContextImpl\", \"android.content.pm.IPackageManager\");"
+      },
+      "hookTarget": false,
+      "layoutOffset": null,
+      "fixedRuntimeDeclaration": "<init>(Landroid/app/ContextImpl;Landroid/content/pm/IPackageManager;)V:4",
+      "fixedRuntimeDescriptor": "(Landroid/app/ContextImpl;Landroid/content/pm/IPackageManager;)V",
+      "fixedRuntimeModifiers": 4,
+      "descriptorConfidence": "fixed_runtime_inventory",
+      "referenceDeclaration": {
+        "file": "core/java/android/app/ApplicationPackageManager.java",
+        "line": 2201,
+        "declaration": "protected ApplicationPackageManager(ContextImpl context, IPackageManager pm) {"
+      }
+    },
+    {
+      "owner": "android.content.pm.PackageManager",
+      "name": "disableApplicationInfoCache",
+      "descriptor": "()V",
+      "static": true,
+      "purpose": "disable_platform_cache_before_logical_endpoint_publication",
+      "usage": {
+        "file": "android/runtime/agent/packages.ts",
+        "line": 28,
+        "text": "Base.disableApplicationInfoCache();Base.disablePackageInfoCache();Manager.disableGetPackagesForUidCache();"
+      },
+      "hookTarget": false,
+      "layoutOffset": null,
+      "fixedRuntimeDeclaration": "disableApplicationInfoCache()V:9",
+      "fixedRuntimeDescriptor": "()V",
+      "fixedRuntimeModifiers": 9,
+      "descriptorConfidence": "fixed_runtime_inventory"
+    },
+    {
+      "owner": "android.content.pm.PackageManager",
+      "name": "disablePackageInfoCache",
+      "descriptor": "()V",
+      "static": true,
+      "purpose": "disable_platform_cache_before_logical_endpoint_publication",
+      "usage": {
+        "file": "android/runtime/agent/packages.ts",
+        "line": 28,
+        "text": "Base.disableApplicationInfoCache();Base.disablePackageInfoCache();Manager.disableGetPackagesForUidCache();"
+      },
+      "hookTarget": false,
+      "layoutOffset": null,
+      "fixedRuntimeDeclaration": "disablePackageInfoCache()V:9",
+      "fixedRuntimeDescriptor": "()V",
+      "fixedRuntimeModifiers": 9,
+      "descriptorConfidence": "fixed_runtime_inventory"
+    },
+    {
+      "owner": "android.app.ApplicationPackageManager",
+      "name": "disableGetPackagesForUidCache",
+      "descriptor": "()V",
+      "static": true,
+      "purpose": "disable_platform_cache_before_logical_endpoint_publication",
+      "usage": {
+        "file": "android/runtime/agent/packages.ts",
+        "line": 28,
+        "text": "Base.disableApplicationInfoCache();Base.disablePackageInfoCache();Manager.disableGetPackagesForUidCache();"
+      },
+      "hookTarget": false,
+      "layoutOffset": null,
+      "fixedRuntimeDeclaration": "disableGetPackagesForUidCache()V:9",
+      "fixedRuntimeDescriptor": "()V",
+      "fixedRuntimeModifiers": 9,
+      "descriptorConfidence": "fixed_runtime_inventory",
+      "referenceDeclaration": {
+        "file": "core/java/android/app/ApplicationPackageManager.java",
+        "line": 1177,
+        "declaration": "public static void disableGetPackagesForUidCache() {"
+      }
+    },
+    {
+      "owner": "android.view.ViewRootImpl",
+      "name": "getView",
+      "descriptor": "()Landroid/view/View;",
+      "static": false,
+      "purpose": "UI_effect_boundary_read_only_call_from_index",
+      "usage": {
+        "file": "android/runtime/agent/index.ts",
+        "line": 33,
+        "text": "Bridge.playUiSound(this.getView(), effect);"
+      },
+      "hookTarget": false,
+      "layoutOffset": null,
+      "fixedRuntimeDeclaration": "getView()Landroid/view/View;:1",
+      "fixedRuntimeDescriptor": "()Landroid/view/View;",
+      "fixedRuntimeModifiers": 1,
+      "descriptorConfidence": "fixed_runtime_inventory"
+    },
+    {
+      "owner": "android.content.pm.IPackageManager",
+      "name": "getPackageInfo",
+      "descriptor": "(Ljava/lang/String;JI)Landroid/content/pm/PackageInfo;",
+      "static": false,
+      "purpose": "call_captured_physical_endpoint_after_existing_infrastructure_authorization",
+      "usage": {
+        "file": "android/runtime/agent/packages.ts",
+        "line": 20,
+        "text": "Bridge.physicalPackageInfo.implementation = (pkg: any,flags: any,user: number) => {Bridge.requireInfrastructure(\"package\",pkg,null,user);Bridge.infrastructureFlags(\"package\",flags);return physical.getPackageInfo(pkg,flags,user);};"
+      },
+      "hookTarget": false,
+      "layoutOffset": null,
+      "fixedRuntimeDescriptor": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "requiresDeviceMethodIdentityValidation": true,
+      "referenceDeclaration": {
+        "file": "core/java/android/content/pm/IPackageManager.aidl",
+        "line": 77,
+        "declaration": "PackageInfo getPackageInfo(String packageName, long flags, int userId);"
+      },
+      "fixedRegistryOwnerAlreadyPresent": 16
+    },
+    {
+      "owner": "android.content.pm.IPackageManager",
+      "name": "getApplicationInfo",
+      "descriptor": "(Ljava/lang/String;JI)Landroid/content/pm/ApplicationInfo;",
+      "static": false,
+      "purpose": "call_captured_physical_endpoint_after_existing_infrastructure_authorization",
+      "usage": {
+        "file": "android/runtime/agent/packages.ts",
+        "line": 21,
+        "text": "Bridge.physicalApplicationInfo.implementation = (pkg: any,flags: any,user: number) => {Bridge.requireInfrastructure(\"application\",pkg,null,user);Bridge.infrastructureFlags(\"application\",flags);return physical.getApplicationInfo(pkg,flags,user);};"
+      },
+      "hookTarget": false,
+      "layoutOffset": null,
+      "fixedRuntimeDescriptor": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "requiresDeviceMethodIdentityValidation": true,
+      "referenceDeclaration": {
+        "file": "core/java/android/content/pm/IPackageManager.aidl",
+        "line": 88,
+        "declaration": "ApplicationInfo getApplicationInfo(String packageName, long flags, int userId);"
+      },
+      "fixedRegistryOwnerAlreadyPresent": 16
+    },
+    {
+      "owner": "android.content.pm.IPackageManager",
+      "name": "getActivityInfo",
+      "descriptor": "(Landroid/content/ComponentName;JI)Landroid/content/pm/ActivityInfo;",
+      "static": false,
+      "purpose": "call_captured_physical_endpoint_after_existing_infrastructure_authorization",
+      "usage": {
+        "file": "android/runtime/agent/packages.ts",
+        "line": 22,
+        "text": "Bridge.physicalComponent.implementation = (kind: any,name: any,flags: any,user: number) => {const method=String(kind);if(name===null)throw Java.use(\"java.lang.IllegalArgumentException\").$new(\"PHYSICAL_COMPONENT_REQUIRED\");Bridge.requireInfrastructure(method,name.getPackageName(),name,user);Bridge.infrastructureFlags(method,flags);return physical[method](name,flags,user);};"
+      },
+      "hookTarget": false,
+      "layoutOffset": null,
+      "fixedRuntimeDescriptor": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "requiresDeviceMethodIdentityValidation": true,
+      "referenceDeclaration": {
+        "file": "core/java/android/content/pm/IPackageManager.aidl",
+        "line": 95,
+        "declaration": "ActivityInfo getActivityInfo(in ComponentName className, long flags, int userId);"
+      },
+      "fixedRegistryOwnerAlreadyPresent": 16
+    },
+    {
+      "owner": "android.content.pm.IPackageManager",
+      "name": "getServiceInfo",
+      "descriptor": "(Landroid/content/ComponentName;JI)Landroid/content/pm/ServiceInfo;",
+      "static": false,
+      "purpose": "call_captured_physical_endpoint_after_existing_infrastructure_authorization",
+      "usage": {
+        "file": "android/runtime/agent/packages.ts",
+        "line": 22,
+        "text": "Bridge.physicalComponent.implementation = (kind: any,name: any,flags: any,user: number) => {const method=String(kind);if(name===null)throw Java.use(\"java.lang.IllegalArgumentException\").$new(\"PHYSICAL_COMPONENT_REQUIRED\");Bridge.requireInfrastructure(method,name.getPackageName(),name,user);Bridge.infrastructureFlags(method,flags);return physical[method](name,flags,user);};"
+      },
+      "hookTarget": false,
+      "layoutOffset": null,
+      "fixedRuntimeDescriptor": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "requiresDeviceMethodIdentityValidation": true,
+      "referenceDeclaration": {
+        "file": "core/java/android/content/pm/IPackageManager.aidl",
+        "line": 102,
+        "declaration": "ServiceInfo getServiceInfo(in ComponentName className, long flags, int userId);"
+      },
+      "fixedRegistryOwnerAlreadyPresent": 16
+    },
+    {
+      "owner": "android.content.pm.IPackageManager",
+      "name": "getProviderInfo",
+      "descriptor": "(Landroid/content/ComponentName;JI)Landroid/content/pm/ProviderInfo;",
+      "static": false,
+      "purpose": "call_captured_physical_endpoint_after_existing_infrastructure_authorization",
+      "usage": {
+        "file": "android/runtime/agent/packages.ts",
+        "line": 22,
+        "text": "Bridge.physicalComponent.implementation = (kind: any,name: any,flags: any,user: number) => {const method=String(kind);if(name===null)throw Java.use(\"java.lang.IllegalArgumentException\").$new(\"PHYSICAL_COMPONENT_REQUIRED\");Bridge.requireInfrastructure(method,name.getPackageName(),name,user);Bridge.infrastructureFlags(method,flags);return physical[method](name,flags,user);};"
+      },
+      "hookTarget": false,
+      "layoutOffset": null,
+      "fixedRuntimeDescriptor": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "requiresDeviceMethodIdentityValidation": true,
+      "referenceDeclaration": {
+        "file": "core/java/android/content/pm/IPackageManager.aidl",
+        "line": 104,
+        "declaration": "ProviderInfo getProviderInfo(in ComponentName className, long flags, int userId);"
+      },
+      "fixedRegistryOwnerAlreadyPresent": 16
+    },
+    {
+      "owner": "android.content.pm.IPackageManager",
+      "name": "hasSystemFeature",
+      "descriptor": "(Ljava/lang/String;I)Z",
+      "static": false,
+      "purpose": "call_captured_physical_endpoint_after_existing_infrastructure_authorization",
+      "usage": {
+        "file": "android/runtime/agent/packages.ts",
+        "line": 23,
+        "text": "Bridge.physicalFeature.implementation = (name: any,version: number) => physical.hasSystemFeature(name,version);"
+      },
+      "hookTarget": false,
+      "layoutOffset": null,
+      "fixedRuntimeDescriptor": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "requiresDeviceMethodIdentityValidation": true,
+      "referenceDeclaration": {
+        "file": "core/java/android/content/pm/IPackageManager.aidl",
+        "line": 526,
+        "declaration": "boolean hasSystemFeature(String name, int version);"
+      },
+      "fixedRegistryOwnerAlreadyPresent": 16
+    },
+    {
+      "owner": "android.content.pm.IPackageManager",
+      "name": "getSdkSandboxPackageName",
+      "descriptor": "()Ljava/lang/String;",
+      "static": false,
+      "purpose": "call_captured_physical_endpoint_after_existing_infrastructure_authorization",
+      "usage": {
+        "file": "android/runtime/agent/packages.ts",
+        "line": 24,
+        "text": "Bridge.physicalSdkSandboxPackageName.implementation=()=>physical.getSdkSandboxPackageName();"
+      },
+      "hookTarget": false,
+      "layoutOffset": null,
+      "fixedRuntimeDescriptor": null,
+      "descriptorConfidence": "official_reference_source_only",
+      "requiresDeviceMethodIdentityValidation": true,
+      "referenceDeclaration": {
+        "file": "core/java/android/content/pm/IPackageManager.aidl",
+        "line": 672,
+        "declaration": "String getSdkSandboxPackageName();"
+      },
+      "fixedRegistryOwnerAlreadyPresent": 16
+    }
+  ],
+  "logicalInterfaceMethods": [
+    {
+      "owner": "android.content.pm.IPackageManager",
+      "name": "getPackageInfoVersioned",
+      "descriptor": "(Landroid/content/pm/VersionedPackage;JI)Landroid/content/pm/PackageInfo;",
+      "static": false,
+      "purpose": "logical_endpoint_dispatch_not_additional_physical_bypass",
+      "referenceDeclaration": {
+        "file": "core/java/android/content/pm/IPackageManager.aidl",
+        "line": 78,
+        "declaration": "PackageInfo getPackageInfoVersioned(in VersionedPackage versionedPackage,"
+      },
+      "fixedRuntimeDescriptor": null
+    },
+    {
+      "owner": "android.content.pm.IPackageManager",
+      "name": "resolveContentProvider",
+      "descriptor": "(Ljava/lang/String;JI)Landroid/content/pm/ProviderInfo;",
+      "static": false,
+      "purpose": "logical_endpoint_dispatch_not_additional_physical_bypass",
+      "referenceDeclaration": {
+        "file": "core/java/android/content/pm/IPackageManager.aidl",
+        "line": 196,
+        "declaration": "ProviderInfo resolveContentProvider(String name, long flags, int userId);"
+      },
+      "fixedRuntimeDescriptor": null
+    },
+    {
+      "owner": "android.content.pm.IPackageManager",
+      "name": "isInstantApp",
+      "descriptor": "(Ljava/lang/String;I)Z",
+      "static": false,
+      "purpose": "logical_endpoint_dispatch_not_additional_physical_bypass",
+      "referenceDeclaration": {
+        "file": "core/java/android/content/pm/IPackageManager.aidl",
+        "line": 678,
+        "declaration": "boolean isInstantApp(String packageName, int userId);"
+      },
+      "fixedRuntimeDescriptor": null
+    },
+    {
+      "owner": "android.content.pm.IPackageManager",
+      "name": "getPackagesForUid",
+      "descriptor": "(I)[Ljava/lang/String;",
+      "static": false,
+      "purpose": "logical_endpoint_dispatch_not_additional_physical_bypass",
+      "referenceDeclaration": {
+        "file": "core/java/android/content/pm/IPackageManager.aidl",
+        "line": 116,
+        "declaration": "String[] getPackagesForUid(int uid);"
+      },
+      "fixedRuntimeDescriptor": null
+    }
+  ],
+  "referenceSources": {
+    "core/java/android/app/Instrumentation.java": {
+      "url": "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/app/Instrumentation.java",
+      "local": "/tmp/tripoder-framework-source-core-java-android-app-Instrumentation.java",
+      "sha256": "eb74c98eafb8666dc626de15962cc323816c078db708da9ca48a01156f296845",
+      "revisionScope": "Official AOSP main reference declaration; not asserted fixed Xiaomi build source."
+    },
+    "core/java/android/app/ActivityThread.java": {
+      "url": "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/app/ActivityThread.java",
+      "local": "/tmp/tripoder-framework-source-core-java-android-app-ActivityThread.java",
+      "sha256": "f3fc7d6f4245c0d1559fcdae0231b5b667d7b4804c8ced402e3cd6faa5b1391b",
+      "revisionScope": "Official AOSP main reference declaration; not asserted fixed Xiaomi build source."
+    },
+    "core/java/android/view/ContextThemeWrapper.java": {
+      "url": "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/view/ContextThemeWrapper.java",
+      "local": "/tmp/tripoder-framework-source-core-java-android-view-ContextThemeWrapper.java",
+      "sha256": "09361c3ffa454c28c326bbadd78ad0b93cf951eda7a9108901d92291d94017ee",
+      "revisionScope": "Official AOSP main reference declaration; not asserted fixed Xiaomi build source."
+    },
+    "core/java/android/app/Activity.java": {
+      "url": "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/app/Activity.java",
+      "local": "/tmp/tripoder-framework-source-core-java-android-app-Activity.java",
+      "sha256": "3267fa14374df33fbbfc4cb21e3a2daf60e2ab12428f4cef5accd327dab9e781",
+      "revisionScope": "Official AOSP main reference declaration; not asserted fixed Xiaomi build source."
+    },
+    "core/java/android/app/ApplicationPackageManager.java": {
+      "url": "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/app/ApplicationPackageManager.java",
+      "local": "/tmp/tripoder-framework-source-core-java-android-app-ApplicationPackageManager.java",
+      "sha256": "eb5390267096727be5b1fd74a9aa115a41bb9d62fce84e0df640618f6fae49bb",
+      "revisionScope": "Official AOSP main reference declaration; not asserted fixed Xiaomi build source."
+    },
+    "core/java/android/os/ServiceManager.java": {
+      "url": "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/os/ServiceManager.java",
+      "local": "/tmp/tripoder-framework-source-core-java-android-os-ServiceManager.java",
+      "sha256": "14c2a37a3facfbeee7009041bb7be57d0798d516b3988579850adc22aa91d80b",
+      "revisionScope": "Official AOSP main reference declaration; not asserted fixed Xiaomi build source."
+    },
+    "core/java/android/app/ContextImpl.java": {
+      "url": "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/app/ContextImpl.java",
+      "local": "/tmp/tripoder-framework-source-core-java-android-app-ContextImpl.java",
+      "sha256": "76a29831a502680e77166b40b586b72a65db27f32bde0fb2d1a78f9013b33a25",
+      "revisionScope": "Official AOSP main reference declaration; not asserted fixed Xiaomi build source."
+    },
+    "core/java/android/content/pm/IPackageManager.aidl": {
+      "url": "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/content/pm/IPackageManager.aidl",
+      "local": "/tmp/tripoder-framework-source-core-java-android-content-pm-IPackageManager.aidl",
+      "sha256": "8dc40d57953965455619560959631f5a011516134f133a0ec881f38a1b9cd098",
+      "revisionScope": "Official AOSP main reference declaration; not asserted fixed Xiaomi build source."
+    }
+  },
+  "workspaceSources": {
+    "android/runtime/agent/activity-creation.ts": "cb56c7a5ee5c4a0d685a39a7647c7a57b5ac85e60a05851ea8079cf5431a0fd1",
+    "android/runtime/agent/index.ts": "531cd88a12ba317c83a957466f73b9bfeb51c6b896a92caabd880f00de0ad437",
+    "android/runtime/agent/packages.ts": "b2376abc8aa2e35e26961951011df673c4b0eaee04bdc528d201776fc2d5b8f7",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeActivityCreation.java": "f75ae5768f28af924fd2d5253bf277df9481b07235bd0dafede7d36a90e4fb97",
+    "android/runtime/src/dev/tripoder/runtime/RuntimePackages.java": "a9f693f379cb5eb62642e23190b0a4a1fcf0a23e025be0662ac9824aac798823",
+    "android/runtime/src/dev/tripoder/runtime/RuntimePackageBridge.java": "6fc1998fa2f95511da5857985816eb15d7462f6f5cd8059b62aaef8e87125be7",
+    "android/self-hook/native/art_framework.c": "510383ce6fedd9e9803fccdb155f8a1aa58c756636206b11188b6d0c1db35463",
+    "android/self-hook/java/dev/tripoder/selfhook/FrameworkAccess.java": "94268750bec61ffac7213a0f7208879cfbeeddb29071f461ebcf03b20cd9bffa",
+    "android/self-hook/java/dev/tripoder/selfhook/ComponentFrameworkAccess.java": "ba4e6493b51629e419e9f6cb0fc91dd719db6808a84bc3829b1a18cedb5ea2b0"
+  },
+  "notes": [
+    "descriptor is a concrete declaration-backed JVM descriptor, not a guessed layout. fixedRuntimeDescriptor=null means the exact vendor descriptor has not yet been verified; do not promote it to fixed admission merely from AOSP main.",
+    "No new Activity.mToken field is required by the examined source: attachment token is passed as Activity.attach argument 3, while ActivityClientRecord.token is read at launch.",
+    "No ActivityClientRecord.activityInfo/packageInfo field is required by the examined launch adapter; do not add unused hidden capabilities.",
+    "Physical endpoint must be captured before writing ActivityThread.sPackageManager, ServiceManager.sCache[package], or the existing host ApplicationPackageManager.mPM.",
+    "ServiceManager.sCache itself is read as Map; update only the package entry. ContextImpl.mPackageManager is read/replaced per logical Context lookup.",
+    "Public compilable methods such as Activity.setIntent(Intent,ComponentCaller), setTheme(int), ContextWrapper.getBaseContext and IInterface.asBinder do not inherently need a new hidden-field registry entry.",
+    "Activity/newActivity/performLaunchActivity/attach and ContextImpl.getPackageManager/ServiceManager query methods are interception targets, not call-only entries; their selectors are in /tmp/tripoder-runtime-fixed-targets.json.",
+    "The physical IPackageManager list has seven methods. getPackageInfoVersioned is routed by RuntimePackages to its existing logical query and physicalPackageInfo when appropriate; it is not a separate physical bypass in current code."
+  ]
+}

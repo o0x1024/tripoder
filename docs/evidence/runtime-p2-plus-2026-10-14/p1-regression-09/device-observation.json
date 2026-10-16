@@ -1,0 +1,124 @@
+{
+  "runId": "p1-e93dc19c5ae641a5",
+  "observedAtUtc": "2026-10-14T03:37:28.010498+00:00",
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "productApkReplaced": false,
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/b.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/runtime-probe.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.b"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~1fZcIP4wjP2WeW7FtXCxcQ==/dev.tripoder.p0.b-to1fduSzQ7CY2BYjuUG1lw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~1fZcIP4wjP2WeW7FtXCxcQ==/dev.tripoder.p0.b-to1fduSzQ7CY2BYjuUG1lw==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "b3f8465a9488be43290abc6fb9eabfee4ed0cb207c38f64ca5278c1a99629a86  /data/app/~~1fZcIP4wjP2WeW7FtXCxcQ==/dev.tripoder.p0.b-to1fduSzQ7CY2BYjuUG1lw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "getconf",
+        "PAGESIZE"
+      ],
+      "exitCode": 0,
+      "stdout": "4096\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.a"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.runtimeprobe/.P1ProbeActivity",
+        "--es",
+        "runId",
+        "p1-e93dc19c5ae641a5"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.runtimeprobe/.P1ProbeActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.runtimeprobe/.P1ProbeActivity\nTotalTime: 88\nWaitTime: 90\nComplete\n",
+      "stderr": ""
+    }
+  ],
+  "decoyApkSha256": "b3f8465a9488be43290abc6fb9eabfee4ed0cb207c38f64ca5278c1a99629a86",
+  "decoyMarkerBefore": false,
+  "pageSize": 4096,
+  "aInstalledInHost": false,
+  "finishedAtUtc": "2026-10-14T03:39:52.376389+00:00"
+}

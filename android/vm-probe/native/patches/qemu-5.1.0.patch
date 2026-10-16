@@ -1,0 +1,696 @@
+--- a/Makefile.target
++++ b/Makefile.target
+@@ -24,7 +24,7 @@
+ QEMU_PROG_BUILD = $(QEMU_PROG)
+ else
+ # system emulator name
+-QEMU_PROG=qemu-system-$(TARGET_NAME)$(EXESUF)
++QEMU_PROG=libtripoder-qemu.so
+ ifneq (,$(findstring -mwindows,$(SDL_LIBS)))
+ # Terminate program name with a 'w' because the linker builds a windows executable.
+ QEMU_PROGW=qemu-system-$(TARGET_NAME)w$(EXESUF)
+@@ -215,7 +215,8 @@
+ COMMON_LDADDS = ../libqemuutil.a
+ 
+ # build either PROG or PROGW
+-$(QEMU_PROG_BUILD): $(all-obj-y) $(COMMON_LDADDS) $(softmmu-main-y)
++$(QEMU_PROG_BUILD): QEMU_LDFLAGS += -shared -Wl,-soname,libtripoder-qemu.so -Wl,--no-undefined
++$(QEMU_PROG_BUILD): $(all-obj-y) $(COMMON_LDADDS) ../tripoder-jni.o ../coroutine-selftest.o ../crash-diagnostics.o ../tcg-branch-selftest.o ../tcg-simd-selftest.o ../panel-edid.o
+ 	$(call LINK, $(filter-out %.mak, $^))
+ ifdef CONFIG_DARWIN
+ 	$(call quiet-command,Rez -append $(SRC_PATH)/pc-bios/qemu.rsrc -o $@,"REZ","$(TARGET_DIR)$@")
+--- a/util/coroutine-sigaltstack.c
++++ b/util/coroutine-sigaltstack.c
+@@ -21,10 +21,6 @@
+  * License along with this library; if not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-/* XXX Is there a nicer way to disable glibc's stack check for longjmp? */
+-#ifdef _FORTIFY_SOURCE
+-#undef _FORTIFY_SOURCE
+-#endif
+ #include "qemu/osdep.h"
+ #include <pthread.h>
+ #include "qemu-common.h"
+@@ -39,6 +35,8 @@
+     void *stack;
+     size_t stack_size;
+     sigjmp_buf env;
++    pid_t owner_tid;
++    bool terminated;
+ } CoroutineSigAltStack;
+ 
+ /**
+@@ -58,6 +56,8 @@
+ } CoroutineThreadState;
+ 
+ static pthread_key_t thread_state_key;
++/* sigaction is process-wide even though alt stacks and jump buffers are not. */
++static pthread_mutex_t bootstrap_lock = PTHREAD_MUTEX_INITIALIZER;
+ 
+ static CoroutineThreadState *coroutine_get_thread_state(void)
+ {
+@@ -146,9 +146,9 @@
+     coroutine_bootstrap(self, co);
+ }
+ 
+-Coroutine *qemu_coroutine_new(void)
+-{
+-    CoroutineSigAltStack *co;
++static void coroutine_initialize(CoroutineSigAltStack *co)
++{
++    void *entry_arg = co->base.entry_arg;
+     CoroutineThreadState *coTS;
+     struct sigaction sa;
+     struct sigaction osa;
+@@ -167,7 +167,10 @@
+      * sigaltstack way of manipulating stacks.
+      */
+ 
+-    co = g_malloc0(sizeof(*co));
++    if (pthread_mutex_lock(&bootstrap_lock) != 0) {
++        abort();
++    }
++    co->owner_tid = gettid();
+     co->stack_size = COROUTINE_STACK_SIZE;
+     co->stack = qemu_alloc_stack(&co->stack_size);
+     co->base.entry_arg = &old_env; /* stash away our jmp_buf */
+@@ -251,14 +254,26 @@
+      * Ok, we returned again, so now we're finished
+      */
+ 
+-    return &co->base;
++    co->base.entry_arg = entry_arg;
++    if (pthread_mutex_unlock(&bootstrap_lock) != 0) {
++        abort();
++    }
++}
++
++Coroutine *qemu_coroutine_new(void)
++{
++    /* Creation may happen on a submitting thread. Sign the saved context
++     * only when the coroutine is first executed by its actual owner. */
++    return &((CoroutineSigAltStack *)g_malloc0(sizeof(CoroutineSigAltStack)))->base;
+ }
+ 
+ void qemu_coroutine_delete(Coroutine *co_)
+ {
+     CoroutineSigAltStack *co = DO_UPCAST(CoroutineSigAltStack, base, co_);
+ 
+-    qemu_free_stack(co->stack, co->stack_size);
++    if (co->stack) {
++        qemu_free_stack(co->stack, co->stack_size);
++    }
+     g_free(co);
+ }
+ 
+@@ -270,6 +285,28 @@
+     CoroutineThreadState *s = coroutine_get_thread_state();
+     int ret;
+ 
++    if (action == COROUTINE_ENTER && to->terminated &&
++        to->owner_tid != gettid()) {
++        /* Only a completed invocation may discard its old signed frames.
++         * No live/yielded stack is ever re-signed or resumed on another thread. */
++        qemu_free_stack(to->stack, to->stack_size);
++        to->stack = NULL;
++        to->owner_tid = 0;
++    }
++    if (!to->owner_tid) {
++        coroutine_initialize(to);
++    }
++    if (to->owner_tid && to->owner_tid != gettid()) {
++        fprintf(stderr, "TRIPODER_COROUTINE_WRONG_THREAD co=%p owner=%d current=%d action=%d ctx=%p\n",
++                to_, to->owner_tid, gettid(), action, to_->ctx);
++        fflush(stderr);
++        abort();
++    }
++    to->terminated = false;
++    if (action == COROUTINE_TERMINATE) {
++        from->terminated = true;
++    }
++    from->owner_tid = gettid();
+     s->current = to_;
+ 
+     ret = sigsetjmp(from->env, 0);
+--- a/util/qemu-coroutine.c
++++ b/util/qemu-coroutine.c
+@@ -14,6 +14,7 @@
+ 
+ #include "qemu/osdep.h"
+ #include "trace.h"
++#include <pthread.h>
+ #include "qemu/thread.h"
+ #include "qemu/atomic.h"
+ #include "qemu/coroutine.h"
+@@ -24,21 +25,28 @@
+     POOL_BATCH_SIZE = 64,
+ };
+ 
+-/** Free list to speed up creation */
+-static QSLIST_HEAD(, Coroutine) release_pool = QSLIST_HEAD_INITIALIZER(pool);
+-static unsigned int release_pool_size;
++/* A coroutine stack contains PAC-signed return addresses. Never share it
++ * between Android threads, whose APIA keys are deliberately different. */
+ static __thread QSLIST_HEAD(, Coroutine) alloc_pool = QSLIST_HEAD_INITIALIZER(pool);
+ static __thread unsigned int alloc_pool_size;
+-static __thread Notifier coroutine_pool_cleanup_notifier;
++static pthread_key_t pool_cleanup_key;
+ 
+-static void coroutine_pool_cleanup(Notifier *n, void *value)
++static void coroutine_pool_cleanup(void *value)
+ {
+     Coroutine *co;
+-    Coroutine *tmp;
+-
+-    QSLIST_FOREACH_SAFE(co, &alloc_pool, pool_next, tmp) {
++    unsigned freed = alloc_pool_size;
++    while ((co = QSLIST_FIRST(&alloc_pool))) {
+         QSLIST_REMOVE_HEAD(&alloc_pool, pool_next);
+         qemu_coroutine_delete(co);
++    }
++    alloc_pool_size = 0;
++    fprintf(stderr, "TRIPODER_COROUTINE_POOL_CLEANUP tid=%d freed=%u\n", gettid(), freed);
++}
++
++static void __attribute__((constructor)) coroutine_pool_init(void)
++{
++    if (pthread_key_create(&pool_cleanup_key, coroutine_pool_cleanup) != 0) {
++        abort();
+     }
+ }
+ 
+@@ -48,23 +56,6 @@
+ 
+     if (CONFIG_COROUTINE_POOL) {
+         co = QSLIST_FIRST(&alloc_pool);
+-        if (!co) {
+-            if (release_pool_size > POOL_BATCH_SIZE) {
+-                /* Slow path; a good place to register the destructor, too.  */
+-                if (!coroutine_pool_cleanup_notifier.notify) {
+-                    coroutine_pool_cleanup_notifier.notify = coroutine_pool_cleanup;
+-                    qemu_thread_atexit_add(&coroutine_pool_cleanup_notifier);
+-                }
+-
+-                /* This is not exact; there could be a little skew between
+-                 * release_pool_size and the actual size of release_pool.  But
+-                 * it is just a heuristic, it does not need to be perfect.
+-                 */
+-                alloc_pool_size = atomic_xchg(&release_pool_size, 0);
+-                QSLIST_MOVE_ATOMIC(&alloc_pool, &release_pool);
+-                co = QSLIST_FIRST(&alloc_pool);
+-            }
+-        }
+         if (co) {
+             QSLIST_REMOVE_HEAD(&alloc_pool, pool_next);
+             alloc_pool_size--;
+@@ -86,12 +77,11 @@
+     co->caller = NULL;
+ 
+     if (CONFIG_COROUTINE_POOL) {
+-        if (release_pool_size < POOL_BATCH_SIZE * 2) {
+-            QSLIST_INSERT_HEAD_ATOMIC(&release_pool, co, pool_next);
+-            atomic_inc(&release_pool_size);
+-            return;
+-        }
+         if (alloc_pool_size < POOL_BATCH_SIZE) {
++            if (!pthread_getspecific(pool_cleanup_key) &&
++                pthread_setspecific(pool_cleanup_key, (void *)1) != 0) {
++                abort();
++            }
+             QSLIST_INSERT_HEAD(&alloc_pool, co, pool_next);
+             alloc_pool_size++;
+             return;
+--- a/tcg/tcg.c
++++ b/tcg/tcg.c
+@@ -1046,6 +1046,8 @@
+     return tb;
+ }
+ 
++extern void tripoder_crash_diagnostics_code_region(void *base, size_t size);
++
+ void tcg_prologue_init(TCGContext *s)
+ {
+     size_t prologue_size, total_size;
+@@ -1054,6 +1056,7 @@
+     /* Put the prologue at the beginning of code_gen_buffer.  */
+     buf0 = s->code_gen_buffer;
+     total_size = s->code_gen_buffer_size;
++    tripoder_crash_diagnostics_code_region(buf0, total_size);
+     s->code_ptr = buf0;
+     s->code_buf = buf0;
+     s->data_gen_ptr = NULL;
+--- a/tcg/aarch64/tcg-target.inc.c
++++ b/tcg/aarch64/tcg-target.inc.c
+@@ -552,6 +552,39 @@
+     I3606_MVNI      = 0x2f000400,
+     I3606_BIC       = 0x2f001400,
+     I3606_ORR       = 0x0f001400,
++
++    /* AdvSIMD scalar shift by immediate */
++    I3609_SSHR      = 0x5f000400,
++    I3609_SSRA      = 0x5f001400,
++    I3609_SHL       = 0x5f005400,
++    I3609_USHR      = 0x7f000400,
++    I3609_USRA      = 0x7f001400,
++    I3609_SLI       = 0x7f005400,
++
++    /* AdvSIMD scalar three same */
++    I3611_SQADD     = 0x5e200c00,
++    I3611_SQSUB     = 0x5e202c00,
++    I3611_CMGT      = 0x5e203400,
++    I3611_CMGE      = 0x5e203c00,
++    I3611_SSHL      = 0x5e204400,
++    I3611_ADD       = 0x5e208400,
++    I3611_CMTST     = 0x5e208c00,
++    I3611_UQADD     = 0x7e200c00,
++    I3611_UQSUB     = 0x7e202c00,
++    I3611_CMHI      = 0x7e203400,
++    I3611_CMHS      = 0x7e203c00,
++    I3611_USHL      = 0x7e204400,
++    I3611_SUB       = 0x7e208400,
++    I3611_CMEQ      = 0x7e208c00,
++
++    /* AdvSIMD scalar two-reg misc */
++    I3612_CMGT0     = 0x5e208800,
++    I3612_CMEQ0     = 0x5e209800,
++    I3612_CMLT0     = 0x5e20a800,
++    I3612_ABS       = 0x5e20b800,
++    I3612_CMGE0     = 0x7e208800,
++    I3612_CMLE0     = 0x7e209800,
++    I3612_NEG       = 0x7e20b800,
+ 
+     /* AdvSIMD shift by immediate */
+     I3614_SSHR      = 0x0f000400,
+@@ -595,7 +628,7 @@
+     I3617_CMEQ0     = 0x0e209800,
+     I3617_CMLT0     = 0x0e20a800,
+     I3617_CMGE0     = 0x2e208800,
+-    I3617_CMLE0     = 0x2e20a800,
++    I3617_CMLE0     = 0x2e209800,
+     I3617_NOT       = 0x2e205800,
+     I3617_ABS       = 0x0e20b800,
+     I3617_NEG       = 0x2e20b800,
+@@ -767,6 +800,25 @@
+ {
+     tcg_out32(s, insn | q << 30 | op << 29 | cmode << 12 | (rd & 0x1f)
+               | (imm8 & 0xe0) << (16 - 5) | (imm8 & 0x1f) << 5);
++}
++
++static void tcg_out_insn_3609(TCGContext *s, AArch64Insn insn,
++                              TCGReg rd, TCGReg rn, unsigned immhb)
++{
++    tcg_out32(s, insn | immhb << 16 | (rn & 0x1f) << 5 | (rd & 0x1f));
++}
++
++static void tcg_out_insn_3611(TCGContext *s, AArch64Insn insn,
++                              unsigned size, TCGReg rd, TCGReg rn, TCGReg rm)
++{
++    tcg_out32(s, insn | (size << 22) | (rm & 0x1f) << 16
++              | (rn & 0x1f) << 5 | (rd & 0x1f));
++}
++
++static void tcg_out_insn_3612(TCGContext *s, AArch64Insn insn,
++                              unsigned size, TCGReg rd, TCGReg rn)
++{
++    tcg_out32(s, insn | (size << 22) | (rn & 0x1f) << 5 | (rd & 0x1f));
+ }
+ 
+ static void tcg_out_insn_3614(TCGContext *s, AArch64Insn insn, bool q,
+@@ -1343,30 +1395,28 @@
+     }
+ }
+ 
++/* Single-instruction TB linking, adapted from upstream d59d83a + a2495ed.
++ * The target literal lives next to the jump because 5.1 does not have a
++ * separate jmp_target_addr field. Never patch two executable instructions:
++ * another vCPU may already have executed the first one and resume at the second.
++ */
+ void tb_target_set_jmp_target(uintptr_t tc_ptr, uintptr_t jmp_addr,
+                               uintptr_t addr)
+ {
+-    tcg_insn_unit i1, i2;
+-    TCGType rt = TCG_TYPE_I64;
+-    TCGReg  rd = TCG_REG_TMP;
+-    uint64_t pair;
+-
+     ptrdiff_t offset = addr - jmp_addr;
+-
+-    if (offset == sextract64(offset, 0, 26)) {
+-        i1 = I3206_B | ((offset >> 2) & 0x3ffffff);
+-        i2 = NOP;
++    tcg_insn_unit insn;
++
++    /* Both old and new literal values denote valid TB targets. Publish the
++     * new value before making an indirect load reachable. */
++    atomic_set((uint64_t *)(jmp_addr + 8), addr);
++    if (offset == sextract64(offset, 0, 28)) {
++        insn = deposit32(I3206_B, 0, 26, offset >> 2);
+     } else {
+-        offset = (addr >> 12) - (jmp_addr >> 12);
+-
+-        /* patch ADRP */
+-        i1 = I3406_ADRP | (offset & 3) << 29 | (offset & 0x1ffffc) << (5 - 2) | rd;
+-        /* patch ADDI */
+-        i2 = I3401_ADDI | rt << 31 | (addr & 0xfff) << 10 | rd << 5 | rd;
+-    }
+-    pair = (uint64_t)i2 << 32 | i1;
+-    atomic_set((uint64_t *)jmp_addr, pair);
+-    flush_icache_range(jmp_addr, jmp_addr + 8);
++        /* LDR X30, PC+8: imm19 occupies instruction bits [23:5]. */
++        insn = deposit32(I3305_LDR | TCG_REG_TMP, 5, 19, 2);
++    }
++    atomic_set((uint32_t *)jmp_addr, insn);
++    flush_icache_range(jmp_addr, jmp_addr + 4);
+ }
+ 
+ static inline void tcg_out_goto_label(TCGContext *s, TCGLabel *l)
+@@ -1885,24 +1935,22 @@
+ 
+     case INDEX_op_goto_tb:
+         if (s->tb_jmp_insn_offset != NULL) {
+-            /* TCG_TARGET_HAS_direct_jump */
+-            /* Ensure that ADRP+ADD are 8-byte aligned so that an atomic
+-               write can be used to patch the target address. */
++            /* Align the inline 64-bit target literal for atomic updates. */
+             if ((uintptr_t)s->code_ptr & 7) {
+                 tcg_out32(s, NOP);
+             }
+             s->tb_jmp_insn_offset[a0] = tcg_current_code_size(s);
+-            /* actual branch destination will be patched by
+-               tb_target_set_jmp_target later. */
+-            tcg_out_insn(s, 3406, ADRP, TCG_REG_TMP, 0);
+-            tcg_out_insn(s, 3401, ADDI, TCG_TYPE_I64, TCG_REG_TMP, TCG_REG_TMP, 0);
+-        } else {
+-            /* !TCG_TARGET_HAS_direct_jump */
++            /* The initial branch skips BR and the target literal. The
++             * normal reset/link path replaces this one instruction only. */
++            tcg_out_insn(s, 3206, B, 4);
++            tcg_out_insn(s, 3207, BR, TCG_REG_TMP);
++            tcg_out64(s, 0);
++        } else {
+             tcg_debug_assert(s->tb_jmp_target_addr != NULL);
+             intptr_t offset = tcg_pcrel_diff(s, (s->tb_jmp_target_addr + a0)) >> 2;
+             tcg_out_insn(s, 3305, LDR, offset, TCG_REG_TMP);
+-        }
+-        tcg_out_insn(s, 3207, BR, TCG_REG_TMP);
++            tcg_out_insn(s, 3207, BR, TCG_REG_TMP);
++        }
+         set_jmp_reset_offset(s, a0);
+         break;
+ 
+@@ -2276,23 +2324,38 @@
+                            unsigned vecl, unsigned vece,
+                            const TCGArg *args, const int *const_args)
+ {
+-    static const AArch64Insn cmp_insn[16] = {
++    static const AArch64Insn cmp_vec_insn[16] = {
+         [TCG_COND_EQ] = I3616_CMEQ,
+         [TCG_COND_GT] = I3616_CMGT,
+         [TCG_COND_GE] = I3616_CMGE,
+         [TCG_COND_GTU] = I3616_CMHI,
+         [TCG_COND_GEU] = I3616_CMHS,
+     };
+-    static const AArch64Insn cmp0_insn[16] = {
++    static const AArch64Insn cmp_scalar_insn[16] = {
++        [TCG_COND_EQ] = I3611_CMEQ,
++        [TCG_COND_GT] = I3611_CMGT,
++        [TCG_COND_GE] = I3611_CMGE,
++        [TCG_COND_GTU] = I3611_CMHI,
++        [TCG_COND_GEU] = I3611_CMHS,
++    };
++    static const AArch64Insn cmp0_vec_insn[16] = {
+         [TCG_COND_EQ] = I3617_CMEQ0,
+         [TCG_COND_GT] = I3617_CMGT0,
+         [TCG_COND_GE] = I3617_CMGE0,
+         [TCG_COND_LT] = I3617_CMLT0,
+         [TCG_COND_LE] = I3617_CMLE0,
+     };
++    static const AArch64Insn cmp0_scalar_insn[16] = {
++        [TCG_COND_EQ] = I3612_CMEQ0,
++        [TCG_COND_GT] = I3612_CMGT0,
++        [TCG_COND_GE] = I3612_CMGE0,
++        [TCG_COND_LT] = I3612_CMLT0,
++        [TCG_COND_LE] = I3612_CMLE0,
++    };
+ 
+     TCGType type = vecl + TCG_TYPE_V64;
+     unsigned is_q = vecl;
++    bool is_scalar = !is_q && vece == MO_64;
+     TCGArg a0, a1, a2, a3;
+     int cmode, imm8;
+ 
+@@ -2311,19 +2374,35 @@
+         tcg_out_dupm_vec(s, type, vece, a0, a1, a2);
+         break;
+     case INDEX_op_add_vec:
+-        tcg_out_insn(s, 3616, ADD, is_q, vece, a0, a1, a2);
++        if (is_scalar) {
++            tcg_out_insn(s, 3611, ADD, vece, a0, a1, a2);
++        } else {
++            tcg_out_insn(s, 3616, ADD, is_q, vece, a0, a1, a2);
++        }
+         break;
+     case INDEX_op_sub_vec:
+-        tcg_out_insn(s, 3616, SUB, is_q, vece, a0, a1, a2);
++        if (is_scalar) {
++            tcg_out_insn(s, 3611, SUB, vece, a0, a1, a2);
++        } else {
++            tcg_out_insn(s, 3616, SUB, is_q, vece, a0, a1, a2);
++        }
+         break;
+     case INDEX_op_mul_vec:
+         tcg_out_insn(s, 3616, MUL, is_q, vece, a0, a1, a2);
+         break;
+     case INDEX_op_neg_vec:
+-        tcg_out_insn(s, 3617, NEG, is_q, vece, a0, a1);
++        if (is_scalar) {
++            tcg_out_insn(s, 3612, NEG, vece, a0, a1);
++        } else {
++            tcg_out_insn(s, 3617, NEG, is_q, vece, a0, a1);
++        }
+         break;
+     case INDEX_op_abs_vec:
+-        tcg_out_insn(s, 3617, ABS, is_q, vece, a0, a1);
++        if (is_scalar) {
++            tcg_out_insn(s, 3612, ABS, vece, a0, a1);
++        } else {
++            tcg_out_insn(s, 3617, ABS, is_q, vece, a0, a1);
++        }
+         break;
+     case INDEX_op_and_vec:
+         if (const_args[2]) {
+@@ -2377,16 +2456,32 @@
+         tcg_out_insn(s, 3616, EOR, is_q, 0, a0, a1, a2);
+         break;
+     case INDEX_op_ssadd_vec:
+-        tcg_out_insn(s, 3616, SQADD, is_q, vece, a0, a1, a2);
++        if (is_scalar) {
++            tcg_out_insn(s, 3611, SQADD, vece, a0, a1, a2);
++        } else {
++            tcg_out_insn(s, 3616, SQADD, is_q, vece, a0, a1, a2);
++        }
+         break;
+     case INDEX_op_sssub_vec:
+-        tcg_out_insn(s, 3616, SQSUB, is_q, vece, a0, a1, a2);
++        if (is_scalar) {
++            tcg_out_insn(s, 3611, SQSUB, vece, a0, a1, a2);
++        } else {
++            tcg_out_insn(s, 3616, SQSUB, is_q, vece, a0, a1, a2);
++        }
+         break;
+     case INDEX_op_usadd_vec:
+-        tcg_out_insn(s, 3616, UQADD, is_q, vece, a0, a1, a2);
++        if (is_scalar) {
++            tcg_out_insn(s, 3611, UQADD, vece, a0, a1, a2);
++        } else {
++            tcg_out_insn(s, 3616, UQADD, is_q, vece, a0, a1, a2);
++        }
+         break;
+     case INDEX_op_ussub_vec:
+-        tcg_out_insn(s, 3616, UQSUB, is_q, vece, a0, a1, a2);
++        if (is_scalar) {
++            tcg_out_insn(s, 3611, UQSUB, vece, a0, a1, a2);
++        } else {
++            tcg_out_insn(s, 3616, UQSUB, is_q, vece, a0, a1, a2);
++        }
+         break;
+     case INDEX_op_smax_vec:
+         tcg_out_insn(s, 3616, SMAX, is_q, vece, a0, a1, a2);
+@@ -2404,22 +2499,46 @@
+         tcg_out_insn(s, 3617, NOT, is_q, 0, a0, a1);
+         break;
+     case INDEX_op_shli_vec:
+-        tcg_out_insn(s, 3614, SHL, is_q, a0, a1, a2 + (8 << vece));
++        if (is_scalar) {
++            tcg_out_insn(s, 3609, SHL, a0, a1, a2 + (8 << vece));
++        } else {
++            tcg_out_insn(s, 3614, SHL, is_q, a0, a1, a2 + (8 << vece));
++        }
+         break;
+     case INDEX_op_shri_vec:
+-        tcg_out_insn(s, 3614, USHR, is_q, a0, a1, (16 << vece) - a2);
++        if (is_scalar) {
++            tcg_out_insn(s, 3609, USHR, a0, a1, (16 << vece) - a2);
++        } else {
++            tcg_out_insn(s, 3614, USHR, is_q, a0, a1, (16 << vece) - a2);
++        }
+         break;
+     case INDEX_op_sari_vec:
+-        tcg_out_insn(s, 3614, SSHR, is_q, a0, a1, (16 << vece) - a2);
++        if (is_scalar) {
++            tcg_out_insn(s, 3609, SSHR, a0, a1, (16 << vece) - a2);
++        } else {
++            tcg_out_insn(s, 3614, SSHR, is_q, a0, a1, (16 << vece) - a2);
++        }
+         break;
+     case INDEX_op_aa64_sli_vec:
+-        tcg_out_insn(s, 3614, SLI, is_q, a0, a2, args[3] + (8 << vece));
++        if (is_scalar) {
++            tcg_out_insn(s, 3609, SLI, a0, a2, args[3] + (8 << vece));
++        } else {
++            tcg_out_insn(s, 3614, SLI, is_q, a0, a2, args[3] + (8 << vece));
++        }
+         break;
+     case INDEX_op_shlv_vec:
+-        tcg_out_insn(s, 3616, USHL, is_q, vece, a0, a1, a2);
++        if (is_scalar) {
++            tcg_out_insn(s, 3611, USHL, vece, a0, a1, a2);
++        } else {
++            tcg_out_insn(s, 3616, USHL, is_q, vece, a0, a1, a2);
++        }
+         break;
+     case INDEX_op_aa64_sshl_vec:
+-        tcg_out_insn(s, 3616, SSHL, is_q, vece, a0, a1, a2);
++        if (is_scalar) {
++            tcg_out_insn(s, 3611, SSHL, vece, a0, a1, a2);
++        } else {
++            tcg_out_insn(s, 3616, SSHL, is_q, vece, a0, a1, a2);
++        }
+         break;
+     case INDEX_op_cmp_vec:
+         {
+@@ -2428,30 +2547,58 @@
+ 
+             if (cond == TCG_COND_NE) {
+                 if (const_args[2]) {
+-                    tcg_out_insn(s, 3616, CMTST, is_q, vece, a0, a1, a1);
++                    if (is_scalar) {
++                        tcg_out_insn(s, 3611, CMTST, vece, a0, a1, a1);
++                    } else {
++                        tcg_out_insn(s, 3616, CMTST, is_q, vece, a0, a1, a1);
++                    }
+                 } else {
+-                    tcg_out_insn(s, 3616, CMEQ, is_q, vece, a0, a1, a2);
++                    if (is_scalar) {
++                        tcg_out_insn(s, 3611, CMEQ, vece, a0, a1, a2);
++                    } else {
++                        tcg_out_insn(s, 3616, CMEQ, is_q, vece, a0, a1, a2);
++                    }
+                     tcg_out_insn(s, 3617, NOT, is_q, 0, a0, a0);
+                 }
+             } else {
+                 if (const_args[2]) {
+-                    insn = cmp0_insn[cond];
+-                    if (insn) {
+-                        tcg_out_insn_3617(s, insn, is_q, vece, a0, a1);
+-                        break;
++                    if (is_scalar) {
++                        insn = cmp0_scalar_insn[cond];
++                        if (insn) {
++                            tcg_out_insn_3612(s, insn, vece, a0, a1);
++                            break;
++                        }
++                    } else {
++                        insn = cmp0_vec_insn[cond];
++                        if (insn) {
++                            tcg_out_insn_3617(s, insn, is_q, vece, a0, a1);
++                            break;
++                        }
+                     }
+                     tcg_out_dupi_vec(s, type, TCG_VEC_TMP, 0);
+                     a2 = TCG_VEC_TMP;
+                 }
+-                insn = cmp_insn[cond];
+-                if (insn == 0) {
+-                    TCGArg t;
+-                    t = a1, a1 = a2, a2 = t;
+-                    cond = tcg_swap_cond(cond);
+-                    insn = cmp_insn[cond];
+-                    tcg_debug_assert(insn != 0);
++                if (is_scalar) {
++                    insn = cmp_scalar_insn[cond];
++                    if (insn == 0) {
++                        TCGArg t;
++                        t = a1, a1 = a2, a2 = t;
++                        cond = tcg_swap_cond(cond);
++                        insn = cmp_scalar_insn[cond];
++                        tcg_debug_assert(insn != 0);
++                    }
++                    tcg_out_insn_3611(s, insn, vece, a0, a1, a2);
++                } else {
++                    insn = cmp_vec_insn[cond];
++                    if (insn == 0) {
++                        TCGArg t;
++                        t = a1, a1 = a2, a2 = t;
++                        cond = tcg_swap_cond(cond);
++                        insn = cmp_vec_insn[cond];
++                        tcg_debug_assert(insn != 0);
++                    }
++                    tcg_out_insn_3616(s, insn, is_q, vece, a0, a1, a2);
+                 }
+-                tcg_out_insn_3616(s, insn, is_q, vece, a0, a1, a2);
+             }
+         }
+         break;
+@@ -2476,6 +2623,18 @@
+     default:
+         g_assert_not_reached();
+     }
++}
++
++/* Exercise operation selection as well as encoding in the native regression. */
++void tripoder_tcg_emit_cmle_test(uint32_t *code, unsigned size, unsigned q)
++{
++    TCGContext *s = g_new0(TCGContext, 1);
++    const TCGArg args[] = { TCG_REG_V0, TCG_REG_V0, 0, TCG_COND_LE };
++    const int constant[] = { 0, 0, 1, 1 };
++    assert(size <= 3 && q <= 1);
++    s->code_ptr = code;
++    tcg_out_vec_op(s, INDEX_op_cmp_vec, q, size, args, constant);
++    g_free(s);
+ }
+ 
+ int tcg_can_emit_vec_op(TCGOpcode opc, TCGType type, unsigned vece)
+--- a/hw/display/virtio-gpu.c
++++ b/hw/display/virtio-gpu.c
+@@ -206,18 +206,22 @@
+                              sizeof(display_info));
+ }
+ 
++extern size_t tripoder_panel_edid(uint8_t *out, size_t capacity,
++                                  uint32_t width, uint32_t height);
++
+ static void
+ virtio_gpu_generate_edid(VirtIOGPU *g, int scanout,
+                          struct virtio_gpu_resp_edid *edid)
+ {
+     VirtIOGPUBase *b = VIRTIO_GPU_BASE(g);
+-    qemu_edid_info info = {
+-        .prefx = b->req_state[scanout].width,
+-        .prefy = b->req_state[scanout].height,
+-    };
+-
+-    edid->size = cpu_to_le32(sizeof(edid->edid));
+-    qemu_edid_generate(edid->edid, sizeof(edid->edid), &info);
++    size_t size = tripoder_panel_edid(edid->edid, sizeof(edid->edid),
++                                     b->req_state[scanout].width,
++                                     b->req_state[scanout].height);
++    if (!size) {
++        error_report("Tripoder virtual panel requires 1024x768 at 60 Hz");
++        abort();
++    }
++    edid->size = cpu_to_le32(size);
+ }
+ 
+ void virtio_gpu_get_edid(VirtIOGPU *g,

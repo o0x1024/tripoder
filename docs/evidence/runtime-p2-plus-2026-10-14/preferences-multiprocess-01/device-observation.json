@@ -1,0 +1,232 @@
+{
+  "runId": "p3-88f5850fa5894b75",
+  "observedAtUtc": "2026-10-14T17:47:35.723614+00:00",
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "productApkReplaced": false,
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/b.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/runtime-probe.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.b"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~oXIuRZyG-DtT7FqxPYL8rw==/dev.tripoder.p0.b-MHe0EuvStxyzFoXEKMINQw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~oXIuRZyG-DtT7FqxPYL8rw==/dev.tripoder.p0.b-MHe0EuvStxyzFoXEKMINQw==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "135a8024c510051d5f434dac4b8b175af92ef086ec44633d051a3690e825c7e1  /data/app/~~oXIuRZyG-DtT7FqxPYL8rw==/dev.tripoder.p0.b-MHe0EuvStxyzFoXEKMINQw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "getconf",
+        "PAGESIZE"
+      ],
+      "exitCode": 0,
+      "stdout": "4096\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.a"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.runtimeprobe uid:10398\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "date \"+%m-%d %H:%M:%S.%3N\""
+      ],
+      "exitCode": 0,
+      "stdout": "10-15 01:47:37.148\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.runtimeprobe/.P3ProbeActivity",
+        "--es",
+        "runId",
+        "p3-88f5850fa5894b75"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.runtimeprobe/.P3ProbeActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.runtimeprobe/.P3ProbeActivity\nTotalTime: 73\nWaitTime: 74\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 01:47:37.148"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 01:47:37.148",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-15 01:47:38.342  7081  7104 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:47:39.819  7292  7355 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:47:44.358  7686  7703 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:47:46.080  7772  7794 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:47:51.474  7973  7990 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:47:53.251  8071  8089 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:47:57.984  8225  8240 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:47:59.703  8309  8328 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:48:03.300  8561  8590 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:48:05.012  8671  8695 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:48:10.745  8883  8913 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:48:12.468  9069  9136 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 01:47:37.148",
+        "TripoderHook:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 01:47:37.148",
+        "TripoderReceiver:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "decoyApkSha256": "135a8024c510051d5f434dac4b8b175af92ef086ec44633d051a3690e825c7e1",
+  "decoyMarkerBefore": false,
+  "pageSize": 4096,
+  "aInstalledInHost": false,
+  "ownedUid": 10398,
+  "deviceLogStart": "10-15 01:47:37.148",
+  "decoyMarkerAfter": false,
+  "hostMatchesBuild": true,
+  "fixturesMatchBuild": true,
+  "p1FixturesMatchBuild": true,
+  "p2FixturesMatchBuild": true,
+  "allDeviceAssertionsPassed": true,
+  "nativeMemoryCrashObserved": false,
+  "nativeFatalSignalObserved": false,
+  "javaFatalObserved": false,
+  "passed": true,
+  "finishedAtUtc": "2026-10-14T17:48:18.845561+00:00"
+}

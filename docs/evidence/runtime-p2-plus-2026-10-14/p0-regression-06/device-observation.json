@@ -1,0 +1,147 @@
+{
+  "runId": "p0-dfcc6059d39d4d6c",
+  "observedAtUtc": "2026-10-14T02:50:45.694462+00:00",
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "productApkReplaced": false,
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.b"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~ttaVNrW_5hzGNNaBvLOv-w==/dev.tripoder.p0.b-4nEAUmG-o10vPqp8C73BYA==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~ttaVNrW_5hzGNNaBvLOv-w==/dev.tripoder.p0.b-4nEAUmG-o10vPqp8C73BYA==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "b22ffcf9f66a683c7a1cb37ebef5695bb347e059eb3ac8c1b0cd5c6f0db8eef3  /data/app/~~ttaVNrW_5hzGNNaBvLOv-w==/dev.tripoder.p0.b-4nEAUmG-o10vPqp8C73BYA==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "getconf",
+        "PAGESIZE"
+      ],
+      "exitCode": 0,
+      "stdout": "4096\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.a"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.runtimeprobe/.ProbeActivity",
+        "--es",
+        "runId",
+        "p0-dfcc6059d39d4d6c"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.runtimeprobe/.ProbeActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.runtimeprobe/.ProbeActivity\nTotalTime: 107\nWaitTime: 108\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--pid",
+        "9516"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of crash\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: FATAL EXCEPTION: main\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: Process: dev.tripoder.runtimeprobe:slot0, PID: 9516\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: java.lang.RuntimeException: Unable to start activity ComponentInfo{dev.tripoder.runtimeprobe/dev.tripoder.runtime.RuntimeSlot$A}\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.app.ActivityThread.performLaunchActivity(ActivityThread.java:5196)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:5447)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:136)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:106)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:83)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.app.ActivityThread$H.handleMessage(ActivityThread.java:3492)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.os.Handler.dispatchMessageImpl(Handler.java:146)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.os.Handler.dispatchMessage(Handler.java:129)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.os.Looper.loopOnce(Looper.java:315)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.os.Looper.loop(Looper.java:419)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.app.ActivityThread.main(ActivityThread.java:10847)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat java.lang.reflect.Method.invoke(Native Method)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: Caused by: java.lang.IllegalStateException: FIXTURE_A_FAILED\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat dev.tripoder.p0.a.AActivity.onCreate(AActivity.java:23)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.app.Activity.performCreate(Activity.java:9625)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.app.Activity.performCreate(Activity.java:9571)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1559)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.app.ActivityThread.performLaunchActivity(ActivityThread.java:5180)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \t... 14 more\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: Caused by: java.lang.IllegalStateException: PROVIDER_ACQUIRE_FAILED:tripoder.unsupported\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeProviders.acquire(RuntimeProviders.java:64)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeProviders$Router.call(RuntimeProviders.java:76)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.content.ContentResolver.call(ContentResolver.java:2552)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat dev.tripoder.p0.shared.CapabilityChecks.lambda$run$2(CapabilityChecks.java:36)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat dev.tripoder.p0.shared.CapabilityChecks$2.run(D8$$SyntheticClass:0)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat dev.tripoder.p0.shared.CapabilityChecks.denied(CapabilityChecks.java:14)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat dev.tripoder.p0.shared.CapabilityChecks.run(CapabilityChecks.java:36)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat dev.tripoder.p0.a.AActivity.onCreate(AActivity.java:15)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \t... 18 more\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: Caused by: java.lang.IllegalStateException: PROVIDER_NOT_IN_SPACE:tripoder.unsupported\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.os.Parcel.createExceptionOrNull(Parcel.java:3422)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.os.Parcel.createException(Parcel.java:3398)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.os.Parcel.readException(Parcel.java:3381)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat android.os.Parcel.readException(Parcel.java:3323)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeWire.call(RuntimeWire.java:31)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeEngine.brokerCall(RuntimeEngine.java:75)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeProviders.acquire(RuntimeProviders.java:57)\n10-14 10:50:47.910  9516  9516 E AndroidRuntime: \t... 25 more\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--pid",
+        "9550"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "decoyApkSha256": "b22ffcf9f66a683c7a1cb37ebef5695bb347e059eb3ac8c1b0cd5c6f0db8eef3",
+  "decoyMarkerBefore": false,
+  "pageSize": 4096,
+  "aInstalledInHost": false,
+  "decoyMarkerAfter": false,
+  "hostMatchesBuild": true,
+  "fixturesMatchBuild": true,
+  "p1FixturesMatchBuild": true,
+  "p2FixturesMatchBuild": true,
+  "allDeviceAssertionsPassed": true,
+  "passed": false,
+  "error": "Device assertions failed; inspect device-result.json",
+  "finishedAtUtc": "2026-10-14T02:50:48.680791+00:00"
+}

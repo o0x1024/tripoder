@@ -1,0 +1,281 @@
+{
+  "runId": "p2-83c63d25ec77435e",
+  "observedAtUtc": "2026-10-14T20:14:05.750883+00:00",
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "productApkReplaced": false,
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.b"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~Alk4Uk5FiiRvnWTSSid_ww==/dev.tripoder.p0.b-sZxlzMPt2IzXGGLc15TqFw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~Alk4Uk5FiiRvnWTSSid_ww==/dev.tripoder.p0.b-sZxlzMPt2IzXGGLc15TqFw==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "379399dbc84ca91f04162a3f417079bbda7498957159371ac66fe92624fd0cf0  /data/app/~~Alk4Uk5FiiRvnWTSSid_ww==/dev.tripoder.p0.b-sZxlzMPt2IzXGGLc15TqFw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "getconf",
+        "PAGESIZE"
+      ],
+      "exitCode": 0,
+      "stdout": "4096\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.a"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.runtimeprobe uid:10398\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "date \"+%m-%d %H:%M:%S.%3N\""
+      ],
+      "exitCode": 0,
+      "stdout": "10-15 04:14:06.049\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-a",
+        "android.intent.action.MAIN",
+        "-c",
+        "android.intent.category.LAUNCHER",
+        "-f",
+        "0x10008000",
+        "-n",
+        "dev.tripoder.runtimeprobe/.P2ProbeActivity",
+        "--es",
+        "runId",
+        "p2-83c63d25ec77435e"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10008000 cmp=dev.tripoder.runtimeprobe/.P2ProbeActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.runtimeprobe/.P2ProbeActivity\nTotalTime: 81\nWaitTime: 83\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 04:14:06.049"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of crash\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: FATAL EXCEPTION: main\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: Process: dev.tripoder.runtimeprobe:slot7, PID: 3578\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: java.lang.RuntimeException: Unable to start activity ComponentInfo{dev.tripoder.runtimeprobe/dev.tripoder.runtime.generated.TaskP7$F4M0C2}\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.ActivityThread.performLaunchActivity(ActivityThread.java:5196)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:5447)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:136)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:106)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:83)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.ActivityThread$H.handleMessage(ActivityThread.java:3492)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.os.Handler.dispatchMessageImpl(Handler.java:146)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.os.Handler.dispatchMessage(Handler.java:129)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.os.Looper.loopOnce(Looper.java:315)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.os.Looper.loop(Looper.java:419)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.ActivityThread.main(ActivityThread.java:10847)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat java.lang.reflect.Method.invoke(Native Method)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: Caused by: java.lang.IllegalStateException: FIXTURE_CHAIN_FAILED\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat dev.tripoder.p2.Chain.onCreate(Chain.java:24)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.Activity.performCreate(Activity.java:9625)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.Activity.performCreate(Activity.java:9571)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1559)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.ActivityThread.performLaunchActivity(ActivityThread.java:5180)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \t... 14 more\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: Caused by: java.lang.IllegalStateException: PROCESS_CAPACITY_EXHAUSTED\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.os.Parcel.createExceptionOrNull(Parcel.java:3422)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.os.Parcel.createException(Parcel.java:3398)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.os.Parcel.readException(Parcel.java:3381)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.os.Parcel.readException(Parcel.java:3323)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeWire.call(RuntimeWire.java:50)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeEngine.route(RuntimeEngine.java:169)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeBridge.route(RuntimeBridge.java:100)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.Instrumentation.execStartActivity(Native Method)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.Activity.startActivityForResult(Activity.java:6288)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.Activity.startActivityForResult(Activity.java:6245)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat dev.tripoder.p2.Chain.onCreate(Chain.java:23)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \t... 18 more\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 04:14:06.049",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-15 04:14:09.488  3022  3044 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 04:14:12.023  3172  3186 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 04:14:14.632  3300  3341 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 04:14:15.801  3429  3444 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 04:14:17.619  3578  3601 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 04:14:06.049",
+        "TripoderHook:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 04:14:06.049",
+        "TripoderReceiver:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 04:14:06.049"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of crash\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: FATAL EXCEPTION: main\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: Process: dev.tripoder.runtimeprobe:slot7, PID: 3578\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: java.lang.RuntimeException: Unable to start activity ComponentInfo{dev.tripoder.runtimeprobe/dev.tripoder.runtime.generated.TaskP7$F4M0C2}\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.ActivityThread.performLaunchActivity(ActivityThread.java:5196)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:5447)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:136)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:106)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:83)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.ActivityThread$H.handleMessage(ActivityThread.java:3492)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.os.Handler.dispatchMessageImpl(Handler.java:146)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.os.Handler.dispatchMessage(Handler.java:129)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.os.Looper.loopOnce(Looper.java:315)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.os.Looper.loop(Looper.java:419)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.ActivityThread.main(ActivityThread.java:10847)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat java.lang.reflect.Method.invoke(Native Method)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: Caused by: java.lang.IllegalStateException: FIXTURE_CHAIN_FAILED\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat dev.tripoder.p2.Chain.onCreate(Chain.java:24)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.Activity.performCreate(Activity.java:9625)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.Activity.performCreate(Activity.java:9571)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1559)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.ActivityThread.performLaunchActivity(ActivityThread.java:5180)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \t... 14 more\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: Caused by: java.lang.IllegalStateException: PROCESS_CAPACITY_EXHAUSTED\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.os.Parcel.createExceptionOrNull(Parcel.java:3422)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.os.Parcel.createException(Parcel.java:3398)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.os.Parcel.readException(Parcel.java:3381)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.os.Parcel.readException(Parcel.java:3323)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeWire.call(RuntimeWire.java:50)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeEngine.route(RuntimeEngine.java:169)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeBridge.route(RuntimeBridge.java:100)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.Instrumentation.execStartActivity(Native Method)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.Activity.startActivityForResult(Activity.java:6288)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat android.app.Activity.startActivityForResult(Activity.java:6245)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \tat dev.tripoder.p2.Chain.onCreate(Chain.java:23)\n10-15 04:14:17.942  3578  3578 E AndroidRuntime: \t... 18 more\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 04:14:06.049",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-15 04:14:09.488  3022  3044 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 04:14:12.023  3172  3186 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 04:14:14.632  3300  3341 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 04:14:15.801  3429  3444 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 04:14:17.619  3578  3601 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 04:14:06.049",
+        "TripoderHook:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 04:14:06.049",
+        "TripoderReceiver:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "decoyApkSha256": "379399dbc84ca91f04162a3f417079bbda7498957159371ac66fe92624fd0cf0",
+  "decoyMarkerBefore": false,
+  "pageSize": 4096,
+  "aInstalledInHost": false,
+  "ownedUid": 10398,
+  "deviceLogStart": "10-15 04:14:06.049",
+  "decoyMarkerAfter": false,
+  "hostMatchesBuild": true,
+  "fixturesMatchBuild": true,
+  "p1FixturesMatchBuild": true,
+  "p2FixturesMatchBuild": true,
+  "allDeviceAssertionsPassed": true,
+  "nativeMemoryCrashObserved": false,
+  "nativeFatalSignalObserved": false,
+  "javaFatalObserved": true,
+  "expectedFixtureUncaught": [],
+  "unexpectedJavaFatalObserved": true,
+  "passed": false,
+  "error": "Device assertions failed; inspect device-result.json",
+  "finishedAtUtc": "2026-10-14T20:15:21.370704+00:00"
+}

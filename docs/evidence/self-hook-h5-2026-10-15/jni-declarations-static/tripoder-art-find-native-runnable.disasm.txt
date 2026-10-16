@@ -1,0 +1,247 @@
+
+android/self-hook-probe/build/device-libart.so:	file format elf64-littleaarch64
+
+Disassembly of section .text:
+
+00000000004523e0 <_ZNK3art6Thread16GetCurrentMethodEPjbb>:
+  452cdc:      	paciasp
+  452ce0:      	sub	sp, sp, #0x90
+  452ce4:      	stp	x29, x30, [sp, #0x40]
+  452ce8:      	stp	x26, x25, [sp, #0x50]
+  452cec:      	stp	x24, x23, [sp, #0x60]
+  452cf0:      	stp	x22, x21, [sp, #0x70]
+  452cf4:      	stp	x20, x19, [sp, #0x80]
+  452cf8:      	add	x29, sp, #0x40
+  452cfc:      	mrs	x25, TPIDR_EL0
+  452d00:      	add	x1, sp, #0x14
+  452d04:      	mov	w2, #0x1                // =1
+  452d08:      	ldr	x8, [x25, #0x28]
+  452d0c:      	mov	w3, #0x1                // =1
+  452d10:      	mov	x19, x0
+  452d14:      	stur	x8, [x29, #-0x8]
+  452d18:      	str	wzr, [sp, #0x14]
+  452d1c:      	bl	0xab0e30 <_ZNK3art6Thread16GetCurrentMethodEPjbb@plt>
+  452d20:      	adrp	x23, 0xe19000 <_ZN3art20NonDebuggableClasses22non_debuggable_classesE+0xf8>
+  452d24:      	mov	x21, x0
+  452d28:      	ldr	x8, [x23, #0x200]
+  452d2c:      	ldr	x20, [x8, #0x270]
+  452d30:      	ldr	w8, [x0, #0x4]
+  452d34:      	tbnz	w8, #0x8, 0x452e8c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xaac>
+  452d38:      	ldr	w22, [sp, #0x14]
+  452d3c:      	ldr	w8, [x21, #0x4]
+  452d40:      	tbnz	w8, #0x12, 0x452fac <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xbcc>
+  452d44:      	ldr	w8, [x21]
+  452d48:      	ldr	w0, [x8, #0x10]
+  452d4c:      	ldr	xzr, [x0, #0x10]
+  452d50:      	ldr	w8, [x21, #0x4]
+  452d54:      	mov	w9, #0x500              // =1280
+  452d58:      	tst	w8, w9
+  452d5c:      	b.eq	0x452ee4 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xb04>
+  452d60:      	mov	x8, xzr
+  452d64:      	add	x9, x8, #0x10
+  452d68:      	cmp	x8, #0x0
+  452d6c:      	mov	x0, x20
+  452d70:      	csel	x8, xzr, x9, eq
+  452d74:      	mov	x2, x21
+  452d78:      	add	x8, x8, x22, lsl #1
+  452d7c:      	ldrh	w23, [x8, #0x2]
+  452d80:      	mov	w1, w23
+  452d84:      	bl	0x35f860 <_ZN3art8hyperart11incremental15RecordMethodDepEPKNS_7DexFileEjPNS_9ArtMethodE+0x3e8>
+  452d88:      	cbz	x0, 0x452fb8 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xbd8>
+  452d8c:      	ldr	w8, [x21, #0x4]
+  452d90:      	mov	x22, x0
+  452d94:      	tbnz	w8, #0x12, 0x452fc8 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xbe8>
+  452d98:      	ldr	w8, [x21]
+  452d9c:      	ldr	w0, [x8, #0x10]
+  452da0:      	ldr	x21, [x0, #0x10]
+  452da4:      	ldr	x26, [x19, #0xa8]
+  452da8:      	mov	w0, #0x2                // =2
+  452dac:      	bl	0x453144 <_ZNK3art6Thread22AssertPendingExceptionEv+0xa4>
+  452db0:      	mov	w24, w0
+  452db4:      	mov	w0, #0x2                // =2
+  452db8:      	bl	0x453144 <_ZNK3art6Thread22AssertPendingExceptionEv+0xa4>
+  452dbc:      	ldr	x3, [x26, w24, uxtw]
+  452dc0:      	mov	x0, x22
+  452dc4:      	mov	x1, x21
+  452dc8:      	mov	x2, x23
+  452dcc:      	bl	0x49c9a8 <_ZN3art3jit12JitCodeCache18GetProfiledMethodsERKNSt3__13setINS2_12basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEENS2_4lessIS9_EENS7_IS9_EEEERNS2_6vectorINS_17ProfileMethodInfoENS7_ISH_EEEEt+0xfca8>
+  452dd0:      	adrp	x8, 0xc2f000
+  452dd4:      	ldr	x8, [x8, #0xa78]
+  452dd8:      	ldr	w0, [x22]
+  452ddc:      	ldrb	w8, [x8]
+  452de0:      	cmp	w8, #0x1
+  452de4:      	b.eq	0x452fd4 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xbf4>
+  452de8:      	ldr	w8, [x0, #0x68]
+  452dec:      	lsr	w8, w8, #28
+  452df0:      	cmp	w8, #0xe
+  452df4:      	b.ls	0x452e94 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xab4>
+  452df8:      	ldr	x8, [x19, #0xa8]
+  452dfc:      	str	x22, [x8]
+  452e00:      	orr	x8, x8, #0x1
+  452e04:      	str	x8, [x19, #0xa8]
+  452e08:      	mov	x0, x20
+  452e0c:      	mov	x1, x19
+  452e10:      	mov	x2, x22
+  452e14:      	bl	0x4531d4 <_ZNK3art6Thread22AssertPendingExceptionEv+0x134>
+  452e18:      	cbnz	x0, 0x452e5c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xa7c>
+  452e1c:      	ldr	x8, [x19, #0xc8]
+  452e20:      	add	x2, sp, #0x18
+  452e24:      	mov	x1, x22
+  452e28:      	mov	w3, #0x1                // =1
+  452e2c:      	stp	xzr, xzr, [sp, #0x18]
+  452e30:      	ldr	x0, [x8, #0x10]
+  452e34:      	str	xzr, [sp, #0x28]
+  452e38:      	bl	0x45b6e0 <_ZN3art6mirror5Class22ResolveDirectInterfaceEPNS_6ThreadENS_6HandleIS1_EEj+0x4ec>
+  452e3c:      	cbz	x0, 0x452f40 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xb60>
+  452e40:      	mov	x3, x0
+  452e44:      	mov	x0, x20
+  452e48:      	mov	x1, x19
+  452e4c:      	mov	x2, x22
+  452e50:      	bl	0x456080 <_ZN3art6mirror5Class16PrettyDescriptorENS_6ObjPtrIS1_EE+0x19b0>
+  452e54:      	ldrb	w8, [sp, #0x18]
+  452e58:      	tbnz	w8, #0x0, 0x452f8c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xbac>
+  452e5c:      	ldr	x8, [x25, #0x28]
+  452e60:      	ldur	x9, [x29, #-0x8]
+  452e64:      	cmp	x8, x9
+  452e68:      	b.ne	0x452f3c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xb5c>
+  452e6c:      	ldp	x20, x19, [sp, #0x80]
+  452e70:      	ldp	x22, x21, [sp, #0x70]
+  452e74:      	ldp	x24, x23, [sp, #0x60]
+  452e78:      	ldp	x26, x25, [sp, #0x50]
+  452e7c:      	ldp	x29, x30, [sp, #0x40]
+  452e80:      	add	sp, sp, #0x90
+  452e84:      	autiasp
+  452e88:      	ret
+  452e8c:      	mov	x22, x21
+  452e90:      	b	0x452e08 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xa28>
+  452e94:      	movi	v0.2s, #0x1
+  452e98:      	ldr	x8, [x19, #0x118]
+  452e9c:      	add	x9, sp, #0x18
+  452ea0:      	str	x9, [x19, #0x118]
+  452ea4:      	add	x2, x9, #0x10
+  452ea8:      	mov	x1, x19
+  452eac:      	str	w0, [sp, #0x28]
+  452eb0:      	mov	x0, x20
+  452eb4:      	mov	w3, #0x1                // =1
+  452eb8:      	mov	w4, #0x1                // =1
+  452ebc:      	stur	x19, [sp, #0x2c]
+  452ec0:      	str	x8, [sp, #0x18]
+  452ec4:      	str	d0, [sp, #0x20]
+  452ec8:      	bl	0xaaf550 <_ZN3art11ClassLinker17EnsureInitializedEPNS_6ThreadENS_6HandleINS_6mirror5ClassEEEbb@plt>
+  452ecc:      	ldur	x8, [sp, #0x2c]
+  452ed0:      	ldr	x9, [x8, #0x118]
+  452ed4:      	ldr	x9, [x9]
+  452ed8:      	str	x9, [x8, #0x118]
+  452edc:      	tbnz	w0, #0x0, 0x452df8 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xa18>
+  452ee0:      	b	0x452fc0 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xbe0>
+  452ee4:      	ldr	w8, [x21, #0x8]
+  452ee8:      	cmn	w8, #0x1
+  452eec:      	b.eq	0x452d60 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x980>
+  452ef0:      	ldr	w8, [x21]
+  452ef4:      	ldr	w9, [x8, #0x38]
+  452ef8:      	tbnz	w9, #0x12, 0x452d60 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x980>
+  452efc:      	ldr	x9, [x23, #0x200]
+  452f00:      	ldr	x11, [x9, #0x270]
+  452f04:      	ldr	x10, [x9, #0x298]
+  452f08:      	ldr	w23, [x11, #0x170]
+  452f0c:      	cbz	x10, 0x453004 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xc24>
+  452f10:      	ldr	x10, [x10, #0x10]
+  452f14:      	ldrb	w10, [x10]
+  452f18:      	tbz	w10, #0x0, 0x453004 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xc24>
+  452f1c:      	add	w8, w23, #0xf
+  452f20:      	neg	w9, w23
+  452f24:      	cmp	w23, #0x4
+  452f28:      	and	w8, w8, w9
+  452f2c:      	b.eq	0x453040 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xc60>
+  452f30:      	ldr	x8, [x21, w8, uxtw]
+  452f34:      	and	x8, x8, #0xfffffffffffffffe
+  452f38:      	b	0x452d64 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x984>
+  452f3c:      	bl	0xab4170 <__stack_chk_fail@plt>
+  452f40:      	mov	w0, #0x4                // =4
+  452f44:      	mov	x1, xzr
+  452f48:      	bl	0xaaea10 <_ZN7android4base9ShouldLogENS0_11LogSeverityEPKc@plt>
+  452f4c:      	tbnz	w0, #0x0, 0x453048 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xc68>
+  452f50:      	ldrb	w8, [sp, #0x18]
+  452f54:      	ldr	x9, [sp, #0x28]
+  452f58:      	mov	x0, x19
+  452f5c:      	tst	w8, #0x1
+  452f60:      	add	x8, sp, #0x18
+  452f64:      	csinc	x20, x9, x8, ne
+  452f68:      	mov	x1, x20
+  452f6c:      	bl	0xab3980 <_ZNK3art6Thread39AssertNoPendingExceptionForNewExceptionEPKc@plt>
+  452f70:      	adrp	x1, 0x65000
+  452f74:      	add	x1, x1, #0x45c
+  452f78:      	mov	x0, x19
+  452f7c:      	mov	x2, x20
+  452f80:      	bl	0xab0530 <_ZN3art6Thread24ThrowNewWrappedExceptionEPKcS2_@plt>
+  452f84:      	mov	x0, xzr
+  452f88:      	b	0x452e54 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xa74>
+  452f8c:      	ldr	x8, [sp, #0x28]
+  452f90:      	ldr	x9, [sp, #0x18]
+  452f94:      	mov	x19, x0
+  452f98:      	and	x1, x9, #0xfffffffffffffffe
+  452f9c:      	mov	x0, x8
+  452fa0:      	bl	0xaae9b0 <_ZdlPvm@plt>
+  452fa4:      	mov	x0, x19
+  452fa8:      	b	0x452e5c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xa7c>
+  452fac:      	mov	x0, x21
+  452fb0:      	bl	0xaaed80 <_ZN3art9ArtMethod19GetObsoleteDexCacheILNS_17ReadBarrierOptionE1EEENS_6ObjPtrINS_6mirror8DexCacheEEEv@plt>
+  452fb4:      	b	0x452d4c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x96c>
+  452fb8:      	mov	x0, x19
+  452fbc:      	bl	0xaaf610 <_ZNK3art6Thread22AssertPendingExceptionEv@plt>
+  452fc0:      	mov	x0, xzr
+  452fc4:      	b	0x452e5c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xa7c>
+  452fc8:      	mov	x0, x21
+  452fcc:      	bl	0xaaed80 <_ZN3art9ArtMethod19GetObsoleteDexCacheILNS_17ReadBarrierOptionE1EEENS_6ObjPtrINS_6mirror8DexCacheEEEv@plt>
+  452fd0:      	b	0x452da0 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x9c0>
+  452fd4:      	adrp	x8, 0xc2f000
+  452fd8:      	ldr	x8, [x8, #0xa60]
+  452fdc:      	ldrb	w8, [x8]
+  452fe0:      	cmp	w8, #0x1
+  452fe4:      	b.ne	0x452de8 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xa08>
+  452fe8:      	mrs	x8, TPIDR_EL0
+  452fec:      	ldr	x8, [x8, #0x38]
+  452ff0:      	cbz	x8, 0x452de8 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xa08>
+  452ff4:      	ldr	w8, [x8, #0x20]
+  452ff8:      	cbz	w8, 0x452de8 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xa08>
+  452ffc:      	bl	0x207210 <_ZN3art10ThreadList9ResumeAllEv+0x28a4>
+  453000:      	b	0x452de8 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xa08>
+  453004:      	ldr	x9, [x9, #0x60]
+  453008:      	cbz	x9, 0x452f1c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xb3c>
+  45300c:      	ldr	w9, [x21, #0x4]
+  453010:      	tbnz	w9, #0x12, 0x453094 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xcb4>
+  453014:      	ldr	w0, [x8, #0x10]
+  453018:      	add	w9, w23, #0xf
+  45301c:      	neg	w10, w23
+  453020:      	ldr	x8, [x0, #0x10]
+  453024:      	and	w9, w9, w10
+  453028:      	cmp	w23, #0x4
+  45302c:      	ldr	w9, [x21, w9, uxtw]
+  453030:      	cbz	w9, 0x452d60 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x980>
+  453034:      	ldr	x8, [x8, #0x18]
+  453038:      	add	x8, x8, w9, uxtw
+  45303c:      	b	0x452d64 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x984>
+  453040:      	ldr	w8, [x21, w8, uxtw]
+  453044:      	b	0x452f34 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xb54>
+  453048:      	bl	0xaaea20 <__errno@plt>
+  45304c:      	mov	x20, x0
+  453050:      	ldr	w21, [x0]
+  453054:      	adrp	x1, 0x67000
+  453058:      	add	x1, x1, #0xea5
+  45305c:      	add	x0, sp, #0x8
+  453060:      	mov	w2, #0x74               // =116
+  453064:      	mov	w3, #0x4                // =4
+  453068:      	mov	x4, xzr
+  45306c:      	mov	w5, #-0x1               // =-1
+  453070:      	bl	0xaae950 <_ZN7android4base10LogMessageC1EPKcjNS0_11LogSeverityES3_i@plt>
+  453074:      	add	x0, sp, #0x8
+  453078:      	bl	0xaae960 <_ZN7android4base10LogMessage6streamEv@plt>
+  45307c:      	add	x1, sp, #0x18
+  453080:      	bl	0x234558 <_ZN3art9ArtMethod12PrettyMethodEb+0x45c>
+  453084:      	add	x0, sp, #0x8
+  453088:      	bl	0xaae980 <_ZN7android4base10LogMessageD1Ev@plt>
+  45308c:      	str	w21, [x20]
+  453090:      	b	0x452f50 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xb70>
+  453094:      	mov	x0, x21
+  453098:      	bl	0xaaed80 <_ZN3art9ArtMethod19GetObsoleteDexCacheILNS_17ReadBarrierOptionE1EEENS_6ObjPtrINS_6mirror8DexCacheEEEv@plt>
+  45309c:      	b	0x453018 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0xc38>

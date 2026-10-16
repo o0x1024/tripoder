@@ -1,0 +1,1706 @@
+{
+  "schema": 1,
+  "phase": "P1",
+  "runId": "p1-a8d417934eca4c31",
+  "startedAt": 1791942606606,
+  "hostApkSha256": "1f85c77299e3a8901b5ca7b28988864835ed1f7c461b5640139f3a586e0e6d00",
+  "deviceBuild": "Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys",
+  "api": 37,
+  "abi": "arm64-v8a",
+  "hostUid": 10398,
+  "hostPid": 11248,
+  "fixtures": {
+    "a": {
+      "packageName": "dev.tripoder.p0.a",
+      "sha256": "22337c30ed2bc9bc9aaee48e0644d43aa2ebe3278c79474ba5814af7d1c4ba8a",
+      "apkRewritten": false,
+      "signatureVerifiedBy": "apksigner",
+      "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+    },
+    "b": {
+      "packageName": "dev.tripoder.p0.b",
+      "sha256": "5727eb16765e8bad7e0c18b4c641d856782d942da9f9437cd05883b99ec2c3ea",
+      "apkRewritten": false,
+      "signatureVerifiedBy": "apksigner",
+      "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+    }
+  },
+  "p1Fixtures": {
+    "schema": 1,
+    "packageName": "dev.tripoder.p1.split",
+    "cases": {
+      "base-only": {
+        "files": [
+          {
+            "asset": "p1-base.apk",
+            "sha256": "f201fd8baad5bd517aaf22793d1afdc374fbabfa9b9aa5973a106825407ea436"
+          }
+        ],
+        "accepted": true,
+        "error": "",
+        "parts": 1
+      },
+      "complete-splits": {
+        "files": [
+          {
+            "asset": "p1-base.apk",
+            "sha256": "f201fd8baad5bd517aaf22793d1afdc374fbabfa9b9aa5973a106825407ea436"
+          },
+          {
+            "asset": "p1-feature.apk",
+            "sha256": "daaa7af2504df0bf5196fec61465854b9e164e3afb01705886f541c17465d70e"
+          },
+          {
+            "asset": "p1-config.apk",
+            "sha256": "5933071bc4bc6b58e4ba33c01f1504bbf5b668d4bc0823a550ba3e15f5d2fcf7"
+          }
+        ],
+        "accepted": true,
+        "error": "",
+        "parts": 3
+      },
+      "native": {
+        "files": [
+          {
+            "asset": "p1-native.apk",
+            "sha256": "cedf6e0b121dcaf5a9d0b1b8993c8a6296b5188b8d0d8e690b290163227f4e84"
+          }
+        ],
+        "accepted": true,
+        "error": "",
+        "parts": 1
+      },
+      "missing-feature": {
+        "files": [
+          {
+            "asset": "p1-base.apk",
+            "sha256": "f201fd8baad5bd517aaf22793d1afdc374fbabfa9b9aa5973a106825407ea436"
+          },
+          {
+            "asset": "p1-config.apk",
+            "sha256": "5933071bc4bc6b58e4ba33c01f1504bbf5b668d4bc0823a550ba3e15f5d2fcf7"
+          }
+        ],
+        "accepted": false,
+        "error": "SPLIT_DEPENDENCY_MISSING",
+        "parts": 0
+      },
+      "missing-dependency": {
+        "files": [
+          {
+            "asset": "p1-base.apk",
+            "sha256": "f201fd8baad5bd517aaf22793d1afdc374fbabfa9b9aa5973a106825407ea436"
+          },
+          {
+            "asset": "p1-dependent.apk",
+            "sha256": "7f026c5aa1f04f7ac882bc61a6b8da6f082f03a25893a575a550062f45dd95d4"
+          }
+        ],
+        "accepted": false,
+        "error": "SPLIT_DEPENDENCY_MISSING",
+        "parts": 0
+      },
+      "version-mismatch": {
+        "files": [
+          {
+            "asset": "p1-base.apk",
+            "sha256": "f201fd8baad5bd517aaf22793d1afdc374fbabfa9b9aa5973a106825407ea436"
+          },
+          {
+            "asset": "p1-version2.apk",
+            "sha256": "07bbd73fcc91f0a2eb6f208db5f1310bc0e2f92c1cbb226760e9d4e1bcd1308d"
+          }
+        ],
+        "accepted": false,
+        "error": "APK_SET_IDENTITY_MISMATCH",
+        "parts": 0
+      },
+      "signer-mismatch": {
+        "files": [
+          {
+            "asset": "p1-base.apk",
+            "sha256": "f201fd8baad5bd517aaf22793d1afdc374fbabfa9b9aa5973a106825407ea436"
+          },
+          {
+            "asset": "p1-other-signer.apk",
+            "sha256": "79c8a1068e1dd282ad998e51e8adc4a7700b230569c6e1911d164360d6e8a268"
+          }
+        ],
+        "accepted": false,
+        "error": "APK_SET_SIGNER_MISMATCH",
+        "parts": 0
+      },
+      "package-mismatch": {
+        "files": [
+          {
+            "asset": "p1-base.apk",
+            "sha256": "f201fd8baad5bd517aaf22793d1afdc374fbabfa9b9aa5973a106825407ea436"
+          },
+          {
+            "asset": "p1-other-package.apk",
+            "sha256": "085e0d6a3cd0d53ecf652adfdce070652eea6698395b642cc3209ba8b5bc9ea3"
+          }
+        ],
+        "accepted": false,
+        "error": "APK_SET_IDENTITY_MISMATCH",
+        "parts": 0
+      },
+      "dependency-cycle": {
+        "files": [
+          {
+            "asset": "p1-base.apk",
+            "sha256": "f201fd8baad5bd517aaf22793d1afdc374fbabfa9b9aa5973a106825407ea436"
+          },
+          {
+            "asset": "p1-cycle-a.apk",
+            "sha256": "480915b0a14eac060bc6c6aec871db995afc0183ad8296063985d1a24807dacc"
+          },
+          {
+            "asset": "p1-cycle-b.apk",
+            "sha256": "b199d1135ce520d3e36cafa7edce221b5d65b50e4b69d3ca9418c7069c6f67a9"
+          }
+        ],
+        "accepted": false,
+        "error": "SPLIT_DEPENDENCY_CYCLE",
+        "parts": 0
+      },
+      "required-split": {
+        "files": [
+          {
+            "asset": "p1-required.apk",
+            "sha256": "03442c9b0946a7ea2b10929cec5f7544b3b544fe3e36cc05479c1f20792e1339"
+          }
+        ],
+        "accepted": false,
+        "error": "REQUIRED_SPLIT_MISSING",
+        "parts": 0
+      },
+      "bad-native": {
+        "files": [
+          {
+            "asset": "p1-bad-native.apk",
+            "sha256": "32d60db46a54cebcafd14f47b481b320b767d953dc283f0432bad469dc6ec5f3"
+          }
+        ],
+        "accepted": false,
+        "error": "NATIVE_ELF_NOT_ARM64_SHARED",
+        "parts": 0
+      },
+      "wrong-abi": {
+        "files": [
+          {
+            "asset": "p1-wrong-abi.apk",
+            "sha256": "df1ee47c7e005f43f7a0b6c798e1be229ca49f05888a5ba258eacad97d9742d8"
+          }
+        ],
+        "accepted": false,
+        "error": "ABI_OR_LIBRARY_UNSUPPORTED",
+        "parts": 0
+      },
+      "bad-signature": {
+        "files": [
+          {
+            "asset": "p1-tampered.apk",
+            "sha256": "e07b70c7b916dd46aa4fc08668387a0326751017592c0ca1bd0b2b625457e3f1"
+          }
+        ],
+        "accepted": false,
+        "error": "APK_SIGNATURE_INVALID",
+        "parts": 0
+      },
+      "zip-traversal": {
+        "files": [
+          {
+            "asset": "p1-zip-traversal.apk",
+            "sha256": "b5b819effdc7a09e65c94b7aad798b3f67051abb41102438f20c7c5c49586bde"
+          }
+        ],
+        "accepted": false,
+        "error": "UNSAFE_ZIP_PATH",
+        "parts": 0
+      },
+      "zip-symlink": {
+        "files": [
+          {
+            "asset": "p1-zip-symlink.apk",
+            "sha256": "4690f817c3fd8e366c71eeb2836f579bc0a55d0c764705fd18e62f334d785138"
+          }
+        ],
+        "accepted": false,
+        "error": "ZIP_LINK_OR_SPECIAL_FILE",
+        "parts": 0
+      },
+      "zip-duplicate": {
+        "files": [
+          {
+            "asset": "p1-zip-duplicate.apk",
+            "sha256": "32828e8e19b0d61657bd0cd9dca89df45afc88cea022bc153219bf71af54ad00"
+          }
+        ],
+        "accepted": false,
+        "error": "ZIP_DUPLICATE_ENTRY",
+        "parts": 0
+      }
+    },
+    "apkMetadata": {
+      "base": {
+        "asset": "p1-base.apk",
+        "sha256": "f201fd8baad5bd517aaf22793d1afdc374fbabfa9b9aa5973a106825407ea436",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "feature": {
+        "asset": "p1-feature.apk",
+        "sha256": "daaa7af2504df0bf5196fec61465854b9e164e3afb01705886f541c17465d70e",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "feature",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "config": {
+        "asset": "p1-config.apk",
+        "sha256": "5933071bc4bc6b58e4ba33c01f1504bbf5b668d4bc0823a550ba3e15f5d2fcf7",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "config.en",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "dependent": {
+        "asset": "p1-dependent.apk",
+        "sha256": "7f026c5aa1f04f7ac882bc61a6b8da6f082f03a25893a575a550062f45dd95d4",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "dependent",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "version2": {
+        "asset": "p1-version2.apk",
+        "sha256": "07bbd73fcc91f0a2eb6f208db5f1310bc0e2f92c1cbb226760e9d4e1bcd1308d",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 2,
+        "splitName": "feature",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "other-signer": {
+        "asset": "p1-other-signer.apk",
+        "sha256": "79c8a1068e1dd282ad998e51e8adc4a7700b230569c6e1911d164360d6e8a268",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "feature",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P1 Other Test Only\nV3.0 Signer: certificate SHA-256 digest: 61a1ef26f134681548110536d3a6cbc5cef5756b8bd0cf347a992f9466d11102\nV3.0 Signer: certificate SHA-1 digest: 4b3ff0953af8cce2bc37bf17a2d6e2d8225f0436\nV3.0 Signer: certificate MD5 digest: 6822fda7b7401861f6de8dc46ab5a950\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: f2433072668a36fe0ea257b92106788aea75a04d88020228c94a1ba0e2a12fbb\nV3.0 Signer: public key SHA-1 digest: 4112c814dee3836a082ba20002db925b239e4734\nV3.0 Signer: public key MD5 digest: 1c95edcaf4a174744db291070748a96f\n"
+      },
+      "other-package": {
+        "asset": "p1-other-package.apk",
+        "sha256": "085e0d6a3cd0d53ecf652adfdce070652eea6698395b642cc3209ba8b5bc9ea3",
+        "packageName": "dev.tripoder.p1.other",
+        "versionCode": 1,
+        "splitName": "feature",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "native": {
+        "asset": "p1-native.apk",
+        "sha256": "cedf6e0b121dcaf5a9d0b1b8993c8a6296b5188b8d0d8e690b290163227f4e84",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "bad-native": {
+        "asset": "p1-bad-native.apk",
+        "sha256": "32d60db46a54cebcafd14f47b481b320b767d953dc283f0432bad469dc6ec5f3",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "wrong-abi": {
+        "asset": "p1-wrong-abi.apk",
+        "sha256": "df1ee47c7e005f43f7a0b6c798e1be229ca49f05888a5ba258eacad97d9742d8",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "cycle-a": {
+        "asset": "p1-cycle-a.apk",
+        "sha256": "480915b0a14eac060bc6c6aec871db995afc0183ad8296063985d1a24807dacc",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "cycle_a",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "cycle-b": {
+        "asset": "p1-cycle-b.apk",
+        "sha256": "b199d1135ce520d3e36cafa7edce221b5d65b50e4b69d3ca9418c7069c6f67a9",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "cycle_b",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "required": {
+        "asset": "p1-required.apk",
+        "sha256": "03442c9b0946a7ea2b10929cec5f7544b3b544fe3e36cc05479c1f20792e1339",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "tampered": {
+        "asset": "p1-tampered.apk",
+        "sha256": "e07b70c7b916dd46aa4fc08668387a0326751017592c0ca1bd0b2b625457e3f1",
+        "signatureVerified": false
+      },
+      "zip-traversal": {
+        "asset": "p1-zip-traversal.apk",
+        "sha256": "b5b819effdc7a09e65c94b7aad798b3f67051abb41102438f20c7c5c49586bde",
+        "signatureVerified": false
+      },
+      "zip-symlink": {
+        "asset": "p1-zip-symlink.apk",
+        "sha256": "4690f817c3fd8e366c71eeb2836f579bc0a55d0c764705fd18e62f334d785138",
+        "signatureVerified": false
+      },
+      "zip-duplicate": {
+        "asset": "p1-zip-duplicate.apk",
+        "sha256": "32828e8e19b0d61657bd0cd9dca89df45afc88cea022bc153219bf71af54ad00",
+        "signatureVerified": false
+      }
+    },
+    "scope": "signed-metadata-installation-only-no-component-execution",
+    "upgrade": {
+      "asset": "a-upgrade.apk",
+      "sha256": "ca670a78a44181cd91a4977fb9217fc980079ef0f57a34b9be94960a956ed53c"
+    }
+  },
+  "priorOwnedProbeTasksRemoved": [],
+  "passed": true,
+  "checks": [
+    {
+      "name": "authority-separate-process",
+      "passed": true,
+      "observed": {
+        "pid": 13531,
+        "authority": "55e295e6-85dc-4346-9f10-af460e9d8b4c"
+      }
+    },
+    {
+      "name": "second-writer-rejected",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "cross-process-second-writer-rejected",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "closed-writer-cannot-reopen",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "actual-authority-death-CLOSED_WRITER",
+      "passed": true,
+      "observed": "CLOSED_WRITER"
+    },
+    {
+      "name": "fault-point-reached-CLOSED_WRITER",
+      "passed": true,
+      "observed": {
+        "point": "CLOSED_WRITER",
+        "pid": 13531,
+        "time": 1791942606951
+      }
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 13560,
+        "authority": "2cb6fae5-9f6d-4c94-8929-04de87204fd4"
+      }
+    },
+    {
+      "name": "migration-source-boundaries",
+      "passed": true,
+      "observed": {
+        "passed": true,
+        "scope": "synthetic-source-inspection-only",
+        "checks": [
+          {
+            "name": "source-package-is-metadata",
+            "passed": true
+          },
+          {
+            "name": "all-files-including-hidden",
+            "passed": true
+          },
+          {
+            "name": "runtime-and-empty-directory-preserved",
+            "passed": true
+          },
+          {
+            "name": "stable-source-digest",
+            "passed": true
+          },
+          {
+            "name": "runtime-byte-change-invalidates-digest",
+            "passed": true
+          },
+          {
+            "name": "empty-directory-change-invalidates-digest",
+            "passed": true
+          },
+          {
+            "name": "rename-invalidates-digest",
+            "passed": true
+          },
+          {
+            "name": "root-symlink-rejected",
+            "passed": true
+          },
+          {
+            "name": "nested-symlink-rejected",
+            "passed": true
+          },
+          {
+            "name": "single-file-limit",
+            "passed": true
+          },
+          {
+            "name": "total-content-limit",
+            "passed": true
+          },
+          {
+            "name": "file-count-limit",
+            "passed": true
+          },
+          {
+            "name": "directory-count-limit",
+            "passed": true
+          },
+          {
+            "name": "directory-depth-limit",
+            "passed": true
+          },
+          {
+            "name": "missing-project-json",
+            "passed": true
+          },
+          {
+            "name": "unsupported-source-schema",
+            "passed": true
+          },
+          {
+            "name": "fractional-schema-rejected",
+            "passed": true
+          },
+          {
+            "name": "runtime-file-is-not-data-tree",
+            "passed": true
+          },
+          {
+            "name": "backslash-path-rejected",
+            "passed": true
+          },
+          {
+            "name": "regular-file-is-not-export-tree",
+            "passed": true
+          },
+          {
+            "name": "trailing-metadata-rejected",
+            "passed": true
+          },
+          {
+            "name": "inspection-never-creates-runtime-authority",
+            "passed": true
+          }
+        ],
+        "work": "/data/user/0/dev.tripoder.runtimeprobe/files/migration-source-tests-5846d2e6-a65c-4ce9-bea2-ea222a1c6e41"
+      }
+    },
+    {
+      "name": "controller-fd-install-committed",
+      "passed": true,
+      "observed": "5af11f86-b457-46bc-a031-ccffe85cf4c9"
+    },
+    {
+      "name": "nonempty-space-delete-rejected",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "empty-space-deleted",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "apk-set-base-only",
+      "passed": true,
+      "observed": {
+        "apk": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/artifacts/fce372e1-a194-416d-953d-74ffa23b0763/p1-base.apk",
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p1-a8d417934eca4c31-case-base-only/dev.tripoder.p1.split/2b072f4c-8160-42cd-90f4-00760e2eda03",
+        "parts": 1,
+        "generation": "fce372e1-a194-416d-953d-74ffa23b0763",
+        "version": 1,
+        "descriptorSha": "88620958fffedc9b09a1c7fafff93129fc0147e55fcad7a328ceea50ada89dda"
+      }
+    },
+    {
+      "name": "apk-set-complete-splits",
+      "passed": true,
+      "observed": {
+        "apk": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/artifacts/a5235172-484b-4bd9-897d-e0ea2f59781b/p1-base.apk",
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p1-a8d417934eca4c31-case-complete-splits/dev.tripoder.p1.split/a0a01720-8435-48db-801e-8dc7eca6fb68",
+        "parts": 3,
+        "generation": "a5235172-484b-4bd9-897d-e0ea2f59781b",
+        "version": 1,
+        "descriptorSha": "fe14ba19919eba07bfd46a9f969044078bab9fcd2a0f6213ce8907af47e1138e"
+      }
+    },
+    {
+      "name": "apk-set-native",
+      "passed": true,
+      "observed": {
+        "apk": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/artifacts/e6d49320-427a-464b-a08f-71946e240538/p1-native.apk",
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p1-a8d417934eca4c31-case-native/dev.tripoder.p1.split/579dcd7e-0852-46e4-898e-d3e069a3335d",
+        "parts": 1,
+        "generation": "e6d49320-427a-464b-a08f-71946e240538",
+        "version": 1,
+        "descriptorSha": "890fc1b0b85c856c4f6043c81311bc2be4b3cd2f4d3549152daf722657bd7c93"
+      }
+    },
+    {
+      "name": "reject-missing-feature",
+      "passed": true,
+      "observed": "SPLIT_DEPENDENCY_MISSING"
+    },
+    {
+      "name": "rejected-set-not-installed-missing-feature",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "reject-missing-dependency",
+      "passed": true,
+      "observed": "SPLIT_DEPENDENCY_MISSING"
+    },
+    {
+      "name": "rejected-set-not-installed-missing-dependency",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "reject-version-mismatch",
+      "passed": true,
+      "observed": "APK_SET_IDENTITY_MISMATCH"
+    },
+    {
+      "name": "rejected-set-not-installed-version-mismatch",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "reject-signer-mismatch",
+      "passed": true,
+      "observed": "APK_SET_SIGNER_MISMATCH"
+    },
+    {
+      "name": "rejected-set-not-installed-signer-mismatch",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "reject-package-mismatch",
+      "passed": true,
+      "observed": "APK_SET_IDENTITY_MISMATCH"
+    },
+    {
+      "name": "rejected-set-not-installed-package-mismatch",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "reject-dependency-cycle",
+      "passed": true,
+      "observed": "SPLIT_DEPENDENCY_CYCLE"
+    },
+    {
+      "name": "rejected-set-not-installed-dependency-cycle",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "reject-required-split",
+      "passed": true,
+      "observed": "REQUIRED_SPLIT_MISSING"
+    },
+    {
+      "name": "rejected-set-not-installed-required-split",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "reject-bad-native",
+      "passed": true,
+      "observed": "NATIVE_ELF_NOT_ARM64_SHARED"
+    },
+    {
+      "name": "rejected-set-not-installed-bad-native",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "reject-wrong-abi",
+      "passed": true,
+      "observed": "ABI_OR_LIBRARY_UNSUPPORTED"
+    },
+    {
+      "name": "rejected-set-not-installed-wrong-abi",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "reject-bad-signature",
+      "passed": true,
+      "observed": "APK_SIGNATURE_INVALID"
+    },
+    {
+      "name": "rejected-set-not-installed-bad-signature",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "reject-zip-traversal",
+      "passed": true,
+      "observed": "UNSAFE_ZIP_PATH"
+    },
+    {
+      "name": "rejected-set-not-installed-zip-traversal",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "reject-zip-symlink",
+      "passed": true,
+      "observed": "ZIP_LINK_OR_SPECIAL_FILE"
+    },
+    {
+      "name": "rejected-set-not-installed-zip-symlink",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "reject-zip-duplicate",
+      "passed": true,
+      "observed": "ZIP_DUPLICATE_ENTRY"
+    },
+    {
+      "name": "rejected-set-not-installed-zip-duplicate",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "recovery-no-unreferenced-artifacts",
+      "passed": true,
+      "observed": {
+        "orphans": 0,
+        "staged": 0
+      }
+    },
+    {
+      "name": "actual-authority-death-AFTER_ACCEPT",
+      "passed": true,
+      "observed": "AFTER_ACCEPT"
+    },
+    {
+      "name": "fault-point-reached-AFTER_ACCEPT",
+      "passed": true,
+      "observed": {
+        "point": "AFTER_ACCEPT",
+        "pid": 13560,
+        "time": 1791942607779
+      }
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 13594,
+        "authority": "ca57820b-a277-470b-96c0-1749e3830e8d"
+      }
+    },
+    {
+      "name": "install-state-AFTER_ACCEPT",
+      "passed": true,
+      "observed": {
+        "detail": "BROKER_RECOVERY",
+        "result": "",
+        "state": "UNKNOWN",
+        "evidence": ""
+      }
+    },
+    {
+      "name": "incomplete-install-not-visible-AFTER_ACCEPT",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "unknown-install-not-replayed-AFTER_ACCEPT",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "recovery-no-unreferenced-artifacts",
+      "passed": true,
+      "observed": {
+        "orphans": 0,
+        "staged": 0
+      }
+    },
+    {
+      "name": "actual-authority-death-AFTER_COPY",
+      "passed": true,
+      "observed": "AFTER_COPY"
+    },
+    {
+      "name": "fault-point-reached-AFTER_COPY",
+      "passed": true,
+      "observed": {
+        "point": "AFTER_COPY",
+        "pid": 13594,
+        "time": 1791942608072
+      }
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 13647,
+        "authority": "b73293fb-3494-4729-bec3-0dcb5739747f"
+      }
+    },
+    {
+      "name": "install-state-AFTER_COPY",
+      "passed": true,
+      "observed": {
+        "detail": "BROKER_RECOVERY",
+        "result": "",
+        "state": "UNKNOWN",
+        "evidence": ""
+      }
+    },
+    {
+      "name": "incomplete-install-not-visible-AFTER_COPY",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "unknown-install-not-replayed-AFTER_COPY",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "recovery-no-unreferenced-artifacts",
+      "passed": true,
+      "observed": {
+        "orphans": 0,
+        "staged": 0
+      }
+    },
+    {
+      "name": "actual-authority-death-AFTER_VERIFY",
+      "passed": true,
+      "observed": "AFTER_VERIFY"
+    },
+    {
+      "name": "fault-point-reached-AFTER_VERIFY",
+      "passed": true,
+      "observed": {
+        "point": "AFTER_VERIFY",
+        "pid": 13647,
+        "time": 1791942608386
+      }
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 13691,
+        "authority": "a0812b53-2651-4d23-8b07-a06ab1c36de1"
+      }
+    },
+    {
+      "name": "install-state-AFTER_VERIFY",
+      "passed": true,
+      "observed": {
+        "detail": "BROKER_RECOVERY",
+        "result": "",
+        "state": "UNKNOWN",
+        "evidence": ""
+      }
+    },
+    {
+      "name": "incomplete-install-not-visible-AFTER_VERIFY",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "unknown-install-not-replayed-AFTER_VERIFY",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "recovery-no-unreferenced-artifacts",
+      "passed": true,
+      "observed": {
+        "orphans": 0,
+        "staged": 0
+      }
+    },
+    {
+      "name": "actual-authority-death-AFTER_PUBLISH",
+      "passed": true,
+      "observed": "AFTER_PUBLISH"
+    },
+    {
+      "name": "fault-point-reached-AFTER_PUBLISH",
+      "passed": true,
+      "observed": {
+        "point": "AFTER_PUBLISH",
+        "pid": 13691,
+        "time": 1791942608868
+      }
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 13728,
+        "authority": "4521a22a-36d8-49cb-9aa5-53ed14c3e394"
+      }
+    },
+    {
+      "name": "install-state-AFTER_PUBLISH",
+      "passed": true,
+      "observed": {
+        "detail": "BROKER_RECOVERY",
+        "result": "",
+        "state": "UNKNOWN",
+        "evidence": ""
+      }
+    },
+    {
+      "name": "incomplete-install-not-visible-AFTER_PUBLISH",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "unknown-install-not-replayed-AFTER_PUBLISH",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "recovery-no-unreferenced-artifacts",
+      "passed": true,
+      "observed": {
+        "orphans": 0,
+        "staged": 0
+      }
+    },
+    {
+      "name": "actual-authority-death-AFTER_METADATA",
+      "passed": true,
+      "observed": "AFTER_METADATA"
+    },
+    {
+      "name": "fault-point-reached-AFTER_METADATA",
+      "passed": true,
+      "observed": {
+        "point": "AFTER_METADATA",
+        "pid": 13728,
+        "time": 1791942609382
+      }
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 13764,
+        "authority": "5c77383c-c809-4118-8efb-5ecdf8ed7972"
+      }
+    },
+    {
+      "name": "install-state-AFTER_METADATA",
+      "passed": true,
+      "observed": {
+        "detail": "BROKER_RECOVERY",
+        "result": "",
+        "state": "UNKNOWN",
+        "evidence": ""
+      }
+    },
+    {
+      "name": "incomplete-install-not-visible-AFTER_METADATA",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "unknown-install-not-replayed-AFTER_METADATA",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "recovery-no-unreferenced-artifacts",
+      "passed": true,
+      "observed": {
+        "orphans": 0,
+        "staged": 0
+      }
+    },
+    {
+      "name": "actual-authority-death-BEFORE_COMMIT",
+      "passed": true,
+      "observed": "BEFORE_COMMIT"
+    },
+    {
+      "name": "fault-point-reached-BEFORE_COMMIT",
+      "passed": true,
+      "observed": {
+        "point": "BEFORE_COMMIT",
+        "pid": 13764,
+        "time": 1791942609944
+      }
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 13813,
+        "authority": "47227bcd-5f5e-467f-850f-9ded337192de"
+      }
+    },
+    {
+      "name": "install-state-BEFORE_COMMIT",
+      "passed": true,
+      "observed": {
+        "detail": "BROKER_RECOVERY",
+        "result": "",
+        "state": "UNKNOWN",
+        "evidence": ""
+      }
+    },
+    {
+      "name": "incomplete-install-not-visible-BEFORE_COMMIT",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "unknown-install-not-replayed-BEFORE_COMMIT",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "recovery-no-unreferenced-artifacts",
+      "passed": true,
+      "observed": {
+        "orphans": 0,
+        "staged": 0
+      }
+    },
+    {
+      "name": "actual-authority-death-AFTER_COMMIT",
+      "passed": true,
+      "observed": "AFTER_COMMIT"
+    },
+    {
+      "name": "fault-point-reached-AFTER_COMMIT",
+      "passed": true,
+      "observed": {
+        "point": "AFTER_COMMIT",
+        "pid": 13813,
+        "time": 1791942610626
+      }
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 13880,
+        "authority": "6be50c0f-3110-4297-91da-6a83775bf3fd"
+      }
+    },
+    {
+      "name": "install-state-AFTER_COMMIT",
+      "passed": true,
+      "observed": {
+        "detail": "",
+        "result": "99ae4efb-e018-4f74-a281-85392010fa4f",
+        "state": "SUCCEEDED",
+        "evidence": ""
+      }
+    },
+    {
+      "name": "committed-retry-query-only",
+      "passed": true,
+      "observed": {
+        "apk": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/artifacts/99ae4efb-e018-4f74-a281-85392010fa4f/a.apk",
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p1-a8d417934eca4c31-install-AFTER_COMMIT/dev.tripoder.p0.a/e6f84b64-9feb-4310-8830-1320892a437d",
+        "parts": 1,
+        "generation": "99ae4efb-e018-4f74-a281-85392010fa4f",
+        "version": 1,
+        "descriptorSha": "53b58328c440709fe604e3c85e8d4c9734d7c30f81f928c424be55d7efbb6ab5"
+      }
+    },
+    {
+      "name": "recovery-no-unreferenced-artifacts",
+      "passed": true,
+      "observed": {
+        "orphans": 0,
+        "staged": 0
+      }
+    },
+    {
+      "name": "stale-uninstall-rejected",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "stale-uninstall-terminal-failure",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "actual-authority-death-AFTER_PUBLISH",
+      "passed": true,
+      "observed": "AFTER_PUBLISH"
+    },
+    {
+      "name": "fault-point-reached-AFTER_PUBLISH",
+      "passed": true,
+      "observed": {
+        "point": "AFTER_PUBLISH",
+        "pid": 13880,
+        "time": 1791942611194
+      }
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 13910,
+        "authority": "39f35a55-f153-41b9-be9f-04da6ed89741"
+      }
+    },
+    {
+      "name": "upgrade-atomic-AFTER_PUBLISH",
+      "passed": true,
+      "observed": {
+        "apk": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/artifacts/d056ed51-cd76-4a51-add5-be0c9e09b978/a.apk",
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p1-a8d417934eca4c31-upgrade-AFTER_PUBLISH/dev.tripoder.p0.a/bc95eb06-d116-4d45-8a0d-8aa78edac2c7",
+        "parts": 1,
+        "generation": "d056ed51-cd76-4a51-add5-be0c9e09b978",
+        "version": 1,
+        "descriptorSha": "53b58328c440709fe604e3c85e8d4c9734d7c30f81f928c424be55d7efbb6ab5"
+      }
+    },
+    {
+      "name": "upgrade-stale-generation-rejected",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "recovery-no-unreferenced-artifacts",
+      "passed": true,
+      "observed": {
+        "orphans": 0,
+        "staged": 0
+      }
+    },
+    {
+      "name": "actual-authority-death-AFTER_METADATA",
+      "passed": true,
+      "observed": "AFTER_METADATA"
+    },
+    {
+      "name": "fault-point-reached-AFTER_METADATA",
+      "passed": true,
+      "observed": {
+        "point": "AFTER_METADATA",
+        "pid": 13910,
+        "time": 1791942611795
+      }
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 13944,
+        "authority": "c19331cd-cdf8-4b7d-9384-bbd172fa9e71"
+      }
+    },
+    {
+      "name": "upgrade-atomic-AFTER_METADATA",
+      "passed": true,
+      "observed": {
+        "apk": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/artifacts/59f3a51b-4bba-4849-9fd3-5547def8935b/a.apk",
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p1-a8d417934eca4c31-upgrade-AFTER_METADATA/dev.tripoder.p0.a/1afe59d1-e0b8-40fa-87d7-5b5bb27b558d",
+        "parts": 1,
+        "generation": "59f3a51b-4bba-4849-9fd3-5547def8935b",
+        "version": 1,
+        "descriptorSha": "53b58328c440709fe604e3c85e8d4c9734d7c30f81f928c424be55d7efbb6ab5"
+      }
+    },
+    {
+      "name": "upgrade-stale-generation-rejected",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "recovery-no-unreferenced-artifacts",
+      "passed": true,
+      "observed": {
+        "orphans": 0,
+        "staged": 0
+      }
+    },
+    {
+      "name": "actual-authority-death-AFTER_COMMIT",
+      "passed": true,
+      "observed": "AFTER_COMMIT"
+    },
+    {
+      "name": "fault-point-reached-AFTER_COMMIT",
+      "passed": true,
+      "observed": {
+        "point": "AFTER_COMMIT",
+        "pid": 13944,
+        "time": 1791942612563
+      }
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 13990,
+        "authority": "a78f3b1a-7385-4642-a4d9-b6f53fb66927"
+      }
+    },
+    {
+      "name": "upgrade-atomic-AFTER_COMMIT",
+      "passed": true,
+      "observed": {
+        "apk": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/artifacts/10e80798-ff55-4023-912f-64b3568874a3/a-upgrade.apk",
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p1-a8d417934eca4c31-upgrade-AFTER_COMMIT/dev.tripoder.p0.a/1770116b-8b6d-43b5-8b83-b782562a3f58",
+        "parts": 1,
+        "generation": "10e80798-ff55-4023-912f-64b3568874a3",
+        "version": 2,
+        "descriptorSha": "a8fefdb222ba0c545f4f1bfee16514bc3994d844dbfd48981461a7f696aa210b"
+      }
+    },
+    {
+      "name": "upgrade-stale-generation-rejected",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "recovery-no-unreferenced-artifacts",
+      "passed": true,
+      "observed": {
+        "orphans": 0,
+        "staged": 0
+      }
+    },
+    {
+      "name": "actual-authority-death-UNINSTALL_BEFORE_COMMIT",
+      "passed": true,
+      "observed": "UNINSTALL_BEFORE_COMMIT"
+    },
+    {
+      "name": "fault-point-reached-UNINSTALL_BEFORE_COMMIT",
+      "passed": true,
+      "observed": {
+        "point": "UNINSTALL_BEFORE_COMMIT",
+        "pid": 13990,
+        "time": 1791942613097
+      }
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 14025,
+        "authority": "c3a6f3b7-6ca0-4391-9857-8cdaa741c5f6"
+      }
+    },
+    {
+      "name": "uninstall-state-UNINSTALL_BEFORE_COMMIT",
+      "passed": true,
+      "observed": false
+    },
+    {
+      "name": "uninstall-rollback-preserved",
+      "passed": true,
+      "observed": "6cd70e84-7c77-4bcf-98ad-9f33c49ad9c6"
+    },
+    {
+      "name": "recovery-no-unreferenced-artifacts",
+      "passed": true,
+      "observed": {
+        "orphans": 0,
+        "staged": 0
+      }
+    },
+    {
+      "name": "actual-authority-death-UNINSTALL_AFTER_COMMIT",
+      "passed": true,
+      "observed": "UNINSTALL_AFTER_COMMIT"
+    },
+    {
+      "name": "fault-point-reached-UNINSTALL_AFTER_COMMIT",
+      "passed": true,
+      "observed": {
+        "point": "UNINSTALL_AFTER_COMMIT",
+        "pid": 14025,
+        "time": 1791942613627
+      }
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 14066,
+        "authority": "3aba7ac7-b16d-4238-b0c5-64c8be153014"
+      }
+    },
+    {
+      "name": "uninstall-state-UNINSTALL_AFTER_COMMIT",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "uninstall-absent",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "recovery-no-unreferenced-artifacts",
+      "passed": true,
+      "observed": {
+        "orphans": 0,
+        "staged": 0
+      }
+    },
+    {
+      "name": "real-worker-before-owner-death",
+      "passed": true,
+      "observed": {
+        "pid": 14095,
+        "uid": 10398,
+        "generation": "4ab5013ba71c9e1f738061cc8a1d707776b3d435b39c1a9328956beaff932f19"
+      }
+    },
+    {
+      "name": "runtime-artifact-remains-sealed",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "live-upgrade-rejected",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "live-uninstall-rejected",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "actual-authority-death-OWNER_DIED",
+      "passed": true,
+      "observed": "OWNER_DIED"
+    },
+    {
+      "name": "fault-point-reached-OWNER_DIED",
+      "passed": true,
+      "observed": {
+        "point": "OWNER_DIED",
+        "pid": 14066,
+        "time": 1791942614873
+      }
+    },
+    {
+      "name": "guest-dies-with-authority",
+      "passed": true,
+      "observed": "4ab5013ba71c9e1f738061cc8a1d707776b3d435b39c1a9328956beaff932f19"
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 14138,
+        "authority": "640c3937-e1c8-470d-87cb-c18ff6f5288f"
+      }
+    },
+    {
+      "name": "dead-process-releases-install",
+      "passed": true,
+      "observed": {
+        "generation": "47a12f0f-4ffd-4204-bca7-b36cbd0fb7c5",
+        "descriptorSha": "a8fefdb222ba0c545f4f1bfee16514bc3994d844dbfd48981461a7f696aa210b"
+      }
+    },
+    {
+      "name": "actual-authority-death-AFTER_EFFECT",
+      "passed": true,
+      "observed": "AFTER_EFFECT"
+    },
+    {
+      "name": "fault-point-reached-AFTER_EFFECT",
+      "passed": true,
+      "observed": {
+        "point": "AFTER_EFFECT",
+        "pid": 14138,
+        "time": 1791942615411
+      }
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 14171,
+        "authority": "cfdbe0f1-d141-4f0f-83a4-47cf86d62beb"
+      }
+    },
+    {
+      "name": "crash-reopen-operation-unknown",
+      "passed": true,
+      "observed": {
+        "detail": "BROKER_RECOVERY",
+        "result": "",
+        "state": "UNKNOWN",
+        "evidence": ""
+      }
+    },
+    {
+      "name": "crash-reopen-no-effect-replay",
+      "passed": true,
+      "observed": {
+        "state": "UNKNOWN",
+        "content": "effect\n",
+        "created": false
+      }
+    },
+    {
+      "name": "actual-authority-death-AFTER_RECONCILE",
+      "passed": true,
+      "observed": "AFTER_RECONCILE"
+    },
+    {
+      "name": "fault-point-reached-AFTER_RECONCILE",
+      "passed": true,
+      "observed": {
+        "point": "AFTER_RECONCILE",
+        "pid": 14171,
+        "time": 1791942615882
+      }
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 14201,
+        "authority": "80670019-f309-4fa4-8efa-2470cc24ead2"
+      }
+    },
+    {
+      "name": "reconciliation-survives-process-death",
+      "passed": true,
+      "observed": {
+        "detail": "",
+        "result": "one-effect",
+        "state": "SUCCEEDED",
+        "evidence": "file-sha256=0387c08e7b6bbc4c688b4fabc855b5227b90a0b3fe348a818c73e1e2cfda2ef0"
+      }
+    },
+    {
+      "name": "migration-data-0",
+      "passed": true,
+      "observed": {
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p1-a8d417934eca4c31-project-0/dev.tripoder.p0.a/6102a33f-a3e9-40a1-954f-1550a9128ce5",
+        "value": "owned-data-0",
+        "generation": "28ac4bbb-f0c0-476d-b4df-cdba30418717"
+      }
+    },
+    {
+      "name": "upgrade-invalidates-project-0",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "migration-data-1",
+      "passed": true,
+      "observed": {
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p1-a8d417934eca4c31-project-1/dev.tripoder.p0.a/5c3072b0-d570-4d98-a0dd-76fb5b42d02c",
+        "value": "owned-data-1",
+        "generation": "bb5feabb-cfc4-4aa7-95b1-a6baaeeabe88"
+      }
+    },
+    {
+      "name": "upgrade-invalidates-project-1",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "migration-projects-never-merge-data",
+      "passed": true,
+      "observed": [
+        "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p1-a8d417934eca4c31-project-0/dev.tripoder.p0.a/6102a33f-a3e9-40a1-954f-1550a9128ce5",
+        "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p1-a8d417934eca4c31-project-1/dev.tripoder.p0.a/5c3072b0-d570-4d98-a0dd-76fb5b42d02c"
+      ]
+    },
+    {
+      "name": "actual-authority-death-MIGRATION_AFTER_COPY",
+      "passed": true,
+      "observed": "MIGRATION_AFTER_COPY"
+    },
+    {
+      "name": "fault-point-reached-MIGRATION_AFTER_COPY",
+      "passed": true,
+      "observed": {
+        "point": "MIGRATION_AFTER_COPY",
+        "pid": 14201,
+        "time": 1791942616811
+      }
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 14238,
+        "authority": "af886264-eeec-4c10-9104-f300059cb578"
+      }
+    },
+    {
+      "name": "migration-state-MIGRATION_AFTER_COPY",
+      "passed": true,
+      "observed": false
+    },
+    {
+      "name": "migration-incomplete-unbound-MIGRATION_AFTER_COPY",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "migration-unknown-not-replayed-MIGRATION_AFTER_COPY",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "recovery-no-unreferenced-artifacts",
+      "passed": true,
+      "observed": {
+        "orphans": 0,
+        "staged": 0
+      }
+    },
+    {
+      "name": "actual-authority-death-MIGRATION_AFTER_PUBLISH",
+      "passed": true,
+      "observed": "MIGRATION_AFTER_PUBLISH"
+    },
+    {
+      "name": "fault-point-reached-MIGRATION_AFTER_PUBLISH",
+      "passed": true,
+      "observed": {
+        "point": "MIGRATION_AFTER_PUBLISH",
+        "pid": 14238,
+        "time": 1791942617372
+      }
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 14283,
+        "authority": "a9a88d48-b84f-446b-a37b-a199fca8370f"
+      }
+    },
+    {
+      "name": "migration-state-MIGRATION_AFTER_PUBLISH",
+      "passed": true,
+      "observed": false
+    },
+    {
+      "name": "migration-incomplete-unbound-MIGRATION_AFTER_PUBLISH",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "migration-unknown-not-replayed-MIGRATION_AFTER_PUBLISH",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "recovery-no-unreferenced-artifacts",
+      "passed": true,
+      "observed": {
+        "orphans": 0,
+        "staged": 0
+      }
+    },
+    {
+      "name": "actual-authority-death-MIGRATION_BEFORE_COMMIT",
+      "passed": true,
+      "observed": "MIGRATION_BEFORE_COMMIT"
+    },
+    {
+      "name": "fault-point-reached-MIGRATION_BEFORE_COMMIT",
+      "passed": true,
+      "observed": {
+        "point": "MIGRATION_BEFORE_COMMIT",
+        "pid": 14283,
+        "time": 1791942617968
+      }
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 14336,
+        "authority": "3fb67829-030d-4a1a-87b2-ccb58f2a484c"
+      }
+    },
+    {
+      "name": "migration-state-MIGRATION_BEFORE_COMMIT",
+      "passed": true,
+      "observed": false
+    },
+    {
+      "name": "migration-incomplete-unbound-MIGRATION_BEFORE_COMMIT",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "migration-unknown-not-replayed-MIGRATION_BEFORE_COMMIT",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "recovery-no-unreferenced-artifacts",
+      "passed": true,
+      "observed": {
+        "orphans": 0,
+        "staged": 0
+      }
+    },
+    {
+      "name": "actual-authority-death-MIGRATION_AFTER_COMMIT",
+      "passed": true,
+      "observed": "MIGRATION_AFTER_COMMIT"
+    },
+    {
+      "name": "fault-point-reached-MIGRATION_AFTER_COMMIT",
+      "passed": true,
+      "observed": {
+        "point": "MIGRATION_AFTER_COMMIT",
+        "pid": 14336,
+        "time": 1791942618464
+      }
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 14374,
+        "authority": "d77f939b-34a8-44b4-b435-7d98b6f6ea75"
+      }
+    },
+    {
+      "name": "migration-state-MIGRATION_AFTER_COMMIT",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "migration-commit-durable",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "recovery-no-unreferenced-artifacts",
+      "passed": true,
+      "observed": {
+        "orphans": 0,
+        "staged": 0
+      }
+    },
+    {
+      "name": "legacy-runnable-not-install-proof",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "changed-source-rejected",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "source-project-identity-mismatch-rejected",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "native-corruption-rejected",
+      "passed": true,
+      "observed": {
+        "corruptSha": "3ba405b82a725d75d7600cb976d04ca797c879042c90fa0550c736d70bc29f57"
+      }
+    },
+    {
+      "name": "actual-authority-death-CORRUPTION_PERSISTED",
+      "passed": true,
+      "observed": "CORRUPTION_PERSISTED"
+    },
+    {
+      "name": "fault-point-reached-CORRUPTION_PERSISTED",
+      "passed": true,
+      "observed": {
+        "point": "CORRUPTION_PERSISTED",
+        "pid": 14374,
+        "time": 1791942619134
+      }
+    },
+    {
+      "name": "authority-pid-changed",
+      "passed": true,
+      "observed": {
+        "pid": 14489,
+        "authority": "a5327da1-c35e-471a-b50c-be4f3702e7f6"
+      }
+    },
+    {
+      "name": "corrupt-install-not-repaired",
+      "passed": true,
+      "observed": true
+    }
+  ],
+  "finishedAt": 1791942619802,
+  "productMigrated": false,
+  "strongIsolationVerified": false,
+  "genericApkExecutionVerified": false
+}

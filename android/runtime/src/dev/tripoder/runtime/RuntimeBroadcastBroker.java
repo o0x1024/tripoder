@@ -1,0 +1,100 @@
+package dev.tripoder.runtime;
+
+import android.content.*;
+import android.os.Bundle;
+import java.util.*;
+
+/** Matching is local to the caller's space; raw logical actions never reach Android. */
+final class RuntimeBroadcastBroker {
+    private final RuntimeBroker broker;
+    RuntimeBroadcastBroker(RuntimeBroker broker){this.broker=broker;}
+    Bundle handle(int code,Bundle input,String generation)throws Exception{
+        if(code==RuntimeWire.BROADCAST_ROUTE)return route(input,broker.contract.getSession(generation));
+        var db=broker.store.getWritableDatabase();db.beginTransaction();try{Bundle result=handleTransaction(code,input,generation);db.setTransactionSuccessful();return result;}finally{db.endTransaction();}
+    }
+    private Bundle handleTransaction(int code,Bundle input,String generation)throws Exception{
+        BroadcastLedger ledger=broker.broadcasts;Bundle out=new Bundle();var source=broker.contract.getSession(generation);
+        if(code==RuntimeWire.BROADCAST_REGISTER){
+            byte[] filter=input.getByteArray("filter");IntentFilter declared=RuntimeBroadcastIntent.filter(filter);
+            if(input.getBoolean("stickyQuery")){
+                if(declared.countActions()!=1||!RuntimeSystemBroadcasts.STICKY.contains(declared.getAction(0))||input.getString("permission")!=null)throw new UnsupportedOperationException("STICKY_QUERY_SHAPE_UNSUPPORTED");
+                Intent sticky=broker.host.registerReceiver(null,declared,null,null,Context.RECEIVER_NOT_EXPORTED);
+                if(sticky!=null){if(!RuntimeBroadcastIntent.matches(declared,sticky))throw new SecurityException("STICKY_QUERY_FILTER_MISMATCH");out.putByteArray("payload",RuntimeSystemBroadcasts.encode(sticky,Set.of()));}return out;
+            }
+            if(input.getString("permission")!=null)RuntimeSystemBroadcasts.permission(broker.apks.get(source.identity.spaceId,source.identity.packageName).info,input.getString("permission"),input.getBoolean("exported"));
+            boolean media=false;for(int i=0;i<declared.countActions();i++)media|=RuntimeSystemBroadcasts.MEDIA.contains(declared.getAction(i));
+            Set<String> roots=media?RuntimeSystemBroadcasts.roots(broker.host):Set.of();
+            String id=ledger.registration(source,filter,input.getBoolean("exported"),roots,input.getString("permission"));out.putString("registration",id);out.putString("action",BroadcastLedger.action(id));return out;
+        }
+        if(code==RuntimeWire.BROADCAST_STICKY_VIEW){
+            String registration=RuntimeWire.required(input,"registration");Intent sticky=RuntimeBroadcastIntent.decode(input.getByteArray("payload"));
+            if(!RuntimeSystemBroadcasts.STICKY.contains(sticky.getAction())||!RuntimeBroadcastIntent.matches(RuntimeBroadcastIntent.filter(ledger.activeFilter(registration,generation)),sticky))throw new SecurityException("STICKY_RETURN_FILTER_MISMATCH");
+            out.putByteArray("payload",RuntimeSystemBroadcasts.encode(sticky,ledger.activeRoots(registration,generation)));return out;
+        }
+        if(code==RuntimeWire.BROADCAST_SYSTEM_CLAIM){
+            String registration=RuntimeWire.required(input,"registration"),instance=RuntimeWire.required(input,"instance");
+            if(!ledger.registrationActive(registration,generation)){out.putBoolean("rejectedClosedRegistration",true);return out;}
+            Set<String> roots=ledger.activeRoots(registration,generation);
+            Intent observedIntent=RuntimeBroadcastIntent.decode(input.getByteArray("payload"));boolean media=observedIntent.getAction()!=null&&RuntimeSystemBroadcasts.MEDIA.contains(observedIntent.getAction());
+            if(media){Set<String> observed=new HashSet<>(roots);observed.addAll(RuntimeSystemBroadcasts.roots(broker.host));roots=Set.copyOf(observed);}
+            Intent logical=RuntimeSystemBroadcasts.visible(observedIntent,roots);
+            if(!RuntimeSystemBroadcasts.ownPackageEvent(logical,source.identity.packageName))throw new SecurityException("PACKAGE_EVENT_NOT_VISIBLE");
+            if(!RuntimeBroadcastIntent.matches(RuntimeBroadcastIntent.filter(ledger.activeFilter(registration,generation)),logical))throw new SecurityException("SYSTEM_RECEIVER_FILTER_MISMATCH");
+            if(media)ledger.rememberRoots(registration,generation,roots);
+            byte[] payload=RuntimeSystemBroadcasts.encode(logical,roots);String operation="system-receiver-"+UUID.randomUUID();
+            broker.contract.accept(operation,source.identity.key(),RuntimeBroadcastIntent.digest(payload));broker.contract.start(operation);
+            String ticket=ledger.prepareSystem(operation,source,registration,payload);Bundle claimed=ledger.claim(ticket,generation,"",registration,instance);claimed.putString("ticket",ticket);return claimed;
+        }
+        if(code==RuntimeWire.BROADCAST_REGISTRATION){String state=RuntimeWire.required(input,"state");String prior=state.equals("ACTIVE")||input.getBoolean("failed")?"PREPARED":"ACTIVE";if(!Set.of("ACTIVE","CLOSED").contains(state))throw new SecurityException("RECEIVER_STATE_INVALID");String registration=RuntimeWire.required(input,"registration");ledger.registrationState(registration,generation,prior,state);if(state.equals("CLOSED"))ledger.closePending(registration,generation,broker.contract);return out;}
+        String ticket=RuntimeWire.required(input,"ticket");
+        if(code==RuntimeWire.BROADCAST_CLAIM){
+            boolean prepare=input.getBoolean("prepare");Bundle b=ledger.get(ticket);
+            if(!generation.equals(b.getString("target")))throw new SecurityException("BROADCAST_TARGET_MISMATCH");
+            if(prepare){if(!b.getString("state").equals("PREPARED"))throw new SecurityException("BROADCAST_TARGET_MISMATCH");if(b.getString("component").isEmpty())throw new SecurityException("BROADCAST_STATIC_COMPONENT_REQUIRED");return b;}
+            return ledger.claim(ticket,generation,input.getString("component",""),input.getString("registration",""),RuntimeWire.required(input,"instance"));
+        }
+        if(code==RuntimeWire.BROADCAST_EVENT){ledger.event(ticket,generation,input.getString("instance",""),RuntimeWire.required(input,"event"),broker.contract);return out;}
+        throw new IllegalArgumentException("BROADCAST_PROTOCOL_UNSUPPORTED");
+    }
+    private Bundle route(Bundle input,ExecutionContract.Session source)throws Exception{
+        byte[] payload=input.getByteArray("payload");Intent intent=RuntimeBroadcastIntent.decode(payload);RuntimeBroadcastIntent.encode(intent);
+        boolean ordered=input.getBoolean("ordered");List<Bundle> targets=new ArrayList<>();
+        String receiverPermission=input.getString("receiverPermission");var sender=broker.apks.get(source.identity.spaceId,source.identity.packageName);
+        if(receiverPermission!=null)RuntimeSystemBroadcasts.permission(sender.info,receiverPermission,true);
+        if(intent.getComponent()!=null){
+            var component=intent.getComponent();if(intent.getPackage()!=null&&!intent.getPackage().equals(component.getPackageName()))throw new SecurityException("BROADCAST_PACKAGE_MISMATCH");
+            var install=broker.apks.get(source.identity.spaceId,component.getPackageName());var declared=RuntimeComponents.declared(install,"receiver",component.getClassName());RuntimeComponents.authorize(declared,install.info.packageName,source.identity.packageName);
+            if(receiverPermission==null||RuntimeSystemBroadcasts.holds(install,sender,receiverPermission)){var to=broker.processes.reserveComponent(install,declared.process);Bundle target=new Bundle();target.putString("target",to.allocation.session.processGeneration);target.putString("component",declared.name);target.putString("registration","");target.putString("stub",RuntimeReceiverSlots.type(RuntimeSlot.index(to.activityStub)).getName());targets.add(target);}
+        }else{
+            // Until manifest-filter matching is implemented, an implicit broadcast may only
+            // address dynamic registrations. A matching static declaration must not vanish.
+            try(var installs=broker.store.getReadableDatabase().rawQuery("SELECT package FROM installs WHERE space=?",new String[]{source.identity.spaceId})){
+                while(installs.moveToNext()){String pkg=installs.getString(0);if(intent.getPackage()!=null&&!intent.getPackage().equals(pkg))continue;
+                    var install=broker.apks.get(source.identity.spaceId,pkg);for(var c:install.components())if(c.enabled&&c.type.equals("receiver"))for(var filter:c.declaration.children)if(filter.name.equals("intent-filter"))for(var action:filter.children)if(action.name.equals("action")&&Objects.equals(action.android("name",""),intent.getAction()))throw new UnsupportedOperationException("MANIFEST_IMPLICIT_BROADCAST_NOT_IMPLEMENTED");
+                }
+            }
+            for(Bundle registration:broker.broadcasts.registrations(source.identity.spaceId)){
+                if(intent.getPackage()!=null&&!intent.getPackage().equals(registration.getString("package")))continue;
+                if(!registration.getBoolean("exported")&&!source.identity.packageName.equals(registration.getString("package")))continue;
+                if(!RuntimeBroadcastIntent.matches(RuntimeBroadcastIntent.filter(registration.getByteArray("filter")),intent))continue;
+                var owner=broker.apks.get(source.identity.spaceId,registration.getString("package"));
+                if(receiverPermission!=null&&!RuntimeSystemBroadcasts.holds(owner,sender,receiverPermission))continue;
+                String permission=registration.getString("permission");
+                if(!permission.isEmpty()){
+                    if(!RuntimeSystemBroadcasts.holds(sender,owner,permission))continue;
+                }
+                broker.requiredSlot(registration.getString("target"));Bundle target=new Bundle();target.putString("target",registration.getString("target"));target.putString("component","");target.putString("registration",registration.getString("registration"));target.putString("action",BroadcastLedger.action(registration.getString("registration")));targets.add(target);
+            }
+        }
+        if(targets.size()>32)throw new IllegalArgumentException("BROADCAST_FANOUT_LIMIT");
+        if(ordered&&targets.size()!=1)throw new UnsupportedOperationException("ORDERED_BROADCAST_SINGLE_TARGET_REQUIRED");
+        String operation=RuntimeWire.required(input,"operation");ArrayList<Bundle> deliveries=new ArrayList<>();
+        var db=broker.store.getWritableDatabase();db.beginTransaction();try{for(int i=0;i<targets.size();i++){
+            Bundle target=targets.get(i);String op=operation+"-"+i;
+            String digest=ApkStore.textDigest(RuntimeBroadcastIntent.digest(payload)+"/"+target.getString("target")+"/"+target.getString("component")+"/"+target.getString("registration")+"/"+ordered+"/receiverPermission="+receiverPermission);
+            if(!broker.contract.accept(op,source.identity.key(),digest).created)throw new SecurityException("BROADCAST_ALREADY_ADMITTED_QUERY_REQUIRED");broker.contract.start(op);
+            String ticket=broker.broadcasts.prepare(op,source,target.getString("target"),target.getString("component"),target.getString("registration"),payload,ordered);target.putString("ticket",ticket);deliveries.add(target);
+        }db.setTransactionSuccessful();}finally{db.endTransaction();}
+        Bundle out=new Bundle();out.putParcelableArrayList("deliveries",deliveries);return out;
+    }
+}

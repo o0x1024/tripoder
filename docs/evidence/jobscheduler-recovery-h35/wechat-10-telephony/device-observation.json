@@ -1,0 +1,356 @@
+{
+  "runId": "target-088dee91222e49bf",
+  "observedAtUtc": "2026-10-16T10:41:18.295392+00:00",
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "productApkReplaced": false,
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/b.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/runtime-probe.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.b"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~5lhUiN-k0LhwZBjkGQV62A==/dev.tripoder.p0.b-nSyQES3OW7vrjX1Mqn3gQw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~5lhUiN-k0LhwZBjkGQV62A==/dev.tripoder.p0.b-nSyQES3OW7vrjX1Mqn3gQw==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "d9f7bbc71c8577e988dc70da315fcf1635b5ee3770d151ffec5221c173ebe085  /data/app/~~5lhUiN-k0LhwZBjkGQV62A==/dev.tripoder.p0.b-nSyQES3OW7vrjX1Mqn3gQw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "getconf",
+        "PAGESIZE"
+      ],
+      "exitCode": 0,
+      "stdout": "4096\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.a"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.runtimeprobe uid:10409\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "date \"+%m-%d %H:%M:%S.%3N\""
+      ],
+      "exitCode": 0,
+      "stdout": "10-16 18:41:20.207\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.runtimeprobe/.ArtifactProbeActivity",
+        "--es",
+        "runId",
+        "target-088dee91222e49bf",
+        "--ez",
+        "launchTargets",
+        "true",
+        "--es",
+        "targetPackage",
+        "com.tencent.mm",
+        "--es",
+        "targetSpace",
+        "target-3be31e2dd7434859-wechat"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.runtimeprobe/.ArtifactProbeActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.runtimeprobe/.ArtifactProbeActivity\nTotalTime: 99\nWaitTime: 100\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 18:41:20.207"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 18:41:20.207",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 18:41:20.207",
+        "TripoderHook:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 18:41:20.207",
+        "TripoderReceiver:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 18:41:20.207",
+        "TripoderSelfHook:I",
+        "TripoderRuntime:E",
+        "TripoderOwnership:I",
+        "TripoderJobs:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-16 18:41:41.269 24692 24715 I TripoderSelfHook: INSTALLING:PROCESS_EXECUTION_POLICY\n10-16 18:41:42.334 24692 24715 I TripoderSelfHook: INSTALLED:PROCESS_EXECUTION_POLICY:ns=1065426354\n10-16 18:41:42.334 24692 24715 I TripoderSelfHook: INSTALLING:FRAMEWORK_ACCESS\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: Worker initialization failed\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: java.lang.IllegalStateException: PRODUCT_MEMBER_MISSING:android.content.Context$BindServiceFlags.getValue()J\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.selfhook.FixedFrameworkMembers.member(FixedFrameworkMembers.java:61)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.selfhook.FixedFrameworkMembers.method(FixedFrameworkMembers.java:64)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.selfhook.ComponentFrameworkAccess.<init>(ComponentFrameworkAccess.java:24)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.selfhook.ComponentFrameworkAccess.prepare(ComponentFrameworkAccess.java:33)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeFixedPreparation.framework(RuntimeFixedPreparation.java:15)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookApplication.prepareFramework(RuntimeSelfHookApplication.java:39)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookProduct.lambda$install$1(RuntimeSelfHookProduct.java:24)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookProduct$12.install(D8$$SyntheticClass:0)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookProduct.lambda$install$22(RuntimeSelfHookProduct.java:56)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookProduct$0.install(D8$$SyntheticClass:0)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookBootstrap.install(RuntimeSelfHookBootstrap.java:66)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookProduct.install(RuntimeSelfHookProduct.java:60)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeEngine.<init>(RuntimeEngine.java:95)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeProcessControl.handle(RuntimeProcessControl.java:18)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeWire$Endpoint.onTransact(RuntimeWire.java:31)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat android.os.Binder.execTransactInternal(Binder.java:1371)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat android.os.Binder.execTransact(Binder.java:1330)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 18:41:20.207"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 18:41:20.207",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 18:41:20.207",
+        "TripoderHook:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 18:41:20.207",
+        "TripoderReceiver:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 18:41:20.207",
+        "TripoderSelfHook:I",
+        "TripoderRuntime:E",
+        "TripoderOwnership:I",
+        "TripoderJobs:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-16 18:41:41.269 24692 24715 I TripoderSelfHook: INSTALLING:PROCESS_EXECUTION_POLICY\n10-16 18:41:42.334 24692 24715 I TripoderSelfHook: INSTALLED:PROCESS_EXECUTION_POLICY:ns=1065426354\n10-16 18:41:42.334 24692 24715 I TripoderSelfHook: INSTALLING:FRAMEWORK_ACCESS\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: Worker initialization failed\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: java.lang.IllegalStateException: PRODUCT_MEMBER_MISSING:android.content.Context$BindServiceFlags.getValue()J\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.selfhook.FixedFrameworkMembers.member(FixedFrameworkMembers.java:61)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.selfhook.FixedFrameworkMembers.method(FixedFrameworkMembers.java:64)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.selfhook.ComponentFrameworkAccess.<init>(ComponentFrameworkAccess.java:24)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.selfhook.ComponentFrameworkAccess.prepare(ComponentFrameworkAccess.java:33)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeFixedPreparation.framework(RuntimeFixedPreparation.java:15)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookApplication.prepareFramework(RuntimeSelfHookApplication.java:39)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookProduct.lambda$install$1(RuntimeSelfHookProduct.java:24)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookProduct$12.install(D8$$SyntheticClass:0)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookProduct.lambda$install$22(RuntimeSelfHookProduct.java:56)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookProduct$0.install(D8$$SyntheticClass:0)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookBootstrap.install(RuntimeSelfHookBootstrap.java:66)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookProduct.install(RuntimeSelfHookProduct.java:60)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeEngine.<init>(RuntimeEngine.java:95)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeProcessControl.handle(RuntimeProcessControl.java:18)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeWire$Endpoint.onTransact(RuntimeWire.java:31)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat android.os.Binder.execTransactInternal(Binder.java:1371)\n10-16 18:41:42.424 24692 24715 E TripoderRuntime: \tat android.os.Binder.execTransact(Binder.java:1330)\n",
+      "stderr": ""
+    }
+  ],
+  "decoyApkSha256": "d9f7bbc71c8577e988dc70da315fcf1635b5ee3770d151ffec5221c173ebe085",
+  "decoyMarkerBefore": false,
+  "pageSize": 4096,
+  "aInstalledInHost": false,
+  "ownedUid": 10409,
+  "deviceLogStart": "10-16 18:41:20.207",
+  "decoyMarkerAfter": false,
+  "hostMatchesBuild": true,
+  "fixturesMatchBuild": true,
+  "p1FixturesMatchBuild": true,
+  "p2FixturesMatchBuild": true,
+  "allDeviceAssertionsPassed": false,
+  "nativeMemoryCrashObserved": false,
+  "nativeFatalSignalObserved": false,
+  "javaFatalObserved": false,
+  "expectedFixtureUncaught": [],
+  "unexpectedJavaFatalObserved": false,
+  "selfHookInstallationSamples": [],
+  "passed": false,
+  "error": "Device assertions failed; inspect device-result.json",
+  "finishedAtUtc": "2026-10-16T10:41:44.273874+00:00"
+}

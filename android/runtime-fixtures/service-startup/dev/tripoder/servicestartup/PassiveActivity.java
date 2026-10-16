@@ -1,0 +1,14 @@
+package dev.tripoder.servicestartup;
+
+import android.app.Activity;
+import android.os.*;
+import java.io.*;
+import java.nio.file.Files;
+
+/** Native result transport and gate; the runtime never launches this Activity. */
+public final class PassiveActivity extends Activity {
+    @Override public void onCreate(Bundle state){super.onCreate(state);String run=getIntent().getStringExtra("runId");if(run==null||!run.matches("[a-zA-Z0-9-]{1,80}"))throw new IllegalArgumentException("RUN_ID_INVALID");
+        ((PassiveApplication)getApplication()).approveNative();
+        new Thread(()->{try{File source=new File(getFilesDir(),PassiveApplication.REPORT);long deadline=SystemClock.elapsedRealtime()+35000;while(!source.exists()&&SystemClock.elapsedRealtime()<deadline)Thread.sleep(50);StartupApplication.write(new File(getExternalFilesDir(null),"result-"+run+".json"),Files.readString(source.toPath()));}catch(Exception error){throw new IllegalStateException(error);}},"owned-passive-report").start();
+    }
+}

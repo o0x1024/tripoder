@@ -1,0 +1,39 @@
+--------- beginning of crash
+10-15 05:33:23.882  3588  3588 F libc    : Fatal signal 11 (SIGSEGV), code 2 (SEGV_ACCERR), fault addr 0x7fdfbd5f70 in tid 3588 (timeprobe:slot6), pid 3588 (timeprobe:slot6)
+10-15 05:33:24.411  3719  3719 F DEBUG   : *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+10-15 05:33:24.412  3719  3719 F DEBUG   : Build fingerprint: 'Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys'
+10-15 05:33:24.412  3719  3719 F DEBUG   : Kernel Release: '6.18.21-android17-5-g1d099fcb35e0-abogki540753930-4k'
+10-15 05:33:24.412  3719  3719 F DEBUG   : Revision: '0'
+10-15 05:33:24.412  3719  3719 F DEBUG   : ABI: 'arm64'
+10-15 05:33:24.412  3719  3719 F DEBUG   : Timestamp: 2026-10-15 05:33:24.053075522+0800
+10-15 05:33:24.412  3719  3719 F DEBUG   : Process uptime: 3s
+10-15 05:33:24.412  3719  3719 F DEBUG   : Executable: /system/bin/app_process64
+10-15 05:33:24.412  3719  3719 F DEBUG   : Cmdline: dev.tripoder.runtimeprobe:slot6
+10-15 05:33:24.412  3719  3719 F DEBUG   : pid: 3588, ppid: 1540, tid: 3588, name: timeprobe:slot6  >>> dev.tripoder.runtimeprobe:slot6 <<<
+10-15 05:33:24.412  3719  3719 F DEBUG   : uid: 10398
+10-15 05:33:24.412  3719  3719 F DEBUG   : tagged_addr_ctrl: 0000000000000001 (PR_TAGGED_ADDR_ENABLE)
+10-15 05:33:24.412  3719  3719 F DEBUG   : pac_enabled_keys: 000000000000000f (PR_PAC_APIAKEY, PR_PAC_APIBKEY, PR_PAC_APDAKEY, PR_PAC_APDBKEY)
+10-15 05:33:24.412  3719  3719 F DEBUG   : esr: 0000000092000047 (Data Abort Exception 0x24)
+10-15 05:33:24.412  3719  3719 F DEBUG   : signal 11 (SIGSEGV), code 2 (SEGV_ACCERR), fault addr 0x0000007fdfbd5f70 (write)
+10-15 05:33:24.412  3719  3719 F DEBUG   : Cause: stack pointer is not in a rw map; likely due to stack overflow.
+10-15 05:33:24.412  3719  3719 F DEBUG   : Abort message: 'JNI DETECTED ERROR IN APPLICATION: java_string == null
+10-15 05:33:24.412  3719  3719 F DEBUG   :     in call to GetStringChars
+10-15 05:33:24.412  3719  3719 F DEBUG   :     from void android.net.wifi.p2p.WifiP2pManager$Channel.close()'
+10-15 05:33:24.412  3719  3719 F DEBUG   :     x0  0000007fdfbd8121  x1  0000006cfcc8e93a  x2  000000000000005a  x3  0000000000000070
+10-15 05:33:24.412  3719  3719 F DEBUG   :     x4  0000000000000064  x5  0000000000000000  x6  6f646c68736d7471  x7  7f7f7f7f7f7f7f7f
+10-15 05:33:24.412  3719  3719 F DEBUG   :     x8  0000000000000000  x9  000000000000006d  x10 0000000000000004  x11 0101010101010101
+10-15 05:33:24.412  3719  3719 F DEBUG   :     x12 0000006fda6fe000  x13 0000000000000006  x14 0000000004f079e2  x15 00000543b4e979b7
+10-15 05:33:24.412  3719  3719 F DEBUG   :     x16 0000006cfcc98c10  x17 0000006fbe2c42c0  x18 0000006fda380000  x19 0000007fdfbd7038
+10-15 05:33:24.412  3719  3719 F DEBUG   :     x20 0000007fdfbd8121  x21 0000000000000000  x22 0000000000000061  x23 0000006cfcca1c3c
+10-15 05:33:24.412  3719  3719 F DEBUG   :     x24 0000007fdfbd8121  x25 0000000000000002  x26 0000006fc3b9f938  x27 0000006fc3b9fe80
+10-15 05:33:24.412  3719  3719 F DEBUG   :     x28 b400006d998166f8  x29 0000007fdfbd6fe0
+10-15 05:33:24.412  3719  3719 F DEBUG   :     lr  0000006cfcc937f8  sp  0000007fdfbd5fa0  pc  0000006cfcc938a8  pst 0000000020001000
+10-15 05:33:24.412  3719  3719 F DEBUG   :     esr 0000000092000047  vg  0000000000000002
+10-15 05:33:24.412  3719  3719 F DEBUG   : 4 total frames
+10-15 05:33:24.412  3719  3719 F DEBUG   : backtrace:
+10-15 05:33:24.412  3719  3719 F DEBUG   :       #00 pc 00000000000058a8  /data/app/~~-6tQ84OgrvLNa6C_nHSaQw==/dev.tripoder.runtimeprobe-1VaKXzWy5-tSPWOOK2bZuw==/lib/arm64/libtripoderio.so (prefix+0)
+10-15 05:33:24.412  3719  3719 F DEBUG   :       #01 pc 00000000000057f4  /data/app/~~-6tQ84OgrvLNa6C_nHSaQw==/dev.tripoder.runtimeprobe-1VaKXzWy5-tSPWOOK2bZuw==/lib/arm64/libtripoderio.so (tp_resolve+1324)
+10-15 05:33:24.412  3719  3719 F DEBUG   :       #02 pc 0000000000005ffc  /data/app/~~-6tQ84OgrvLNa6C_nHSaQw==/dev.tripoder.runtimeprobe-1VaKXzWy5-tSPWOOK2bZuw==/lib/arm64/libtripoderio.so (tp_openat+64)
+10-15 05:33:24.412  3719  3719 F DEBUG   :       #03 pc 000000000000050c  <anonymous:6fb877f000>
+10-15 05:33:24.412  3719  3719 F DEBUG   : Note: To display stack pointer information, use the pbtombstone tool:
+10-15 05:33:24.412  3719  3719 F DEBUG   :         pbtombstone --display-sp tombstone_XX.pb

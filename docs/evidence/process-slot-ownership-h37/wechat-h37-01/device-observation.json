@@ -1,0 +1,334 @@
+{
+  "runId": "target-148a91dea0a84cfe",
+  "observedAtUtc": "2026-10-16T13:04:01.109261+00:00",
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "productApkReplaced": false,
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.b"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~GwJrilo7TniPwg35-rFbLg==/dev.tripoder.p0.b-WBfQwr_S8q6ZGAQkOM4KYA==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~GwJrilo7TniPwg35-rFbLg==/dev.tripoder.p0.b-WBfQwr_S8q6ZGAQkOM4KYA==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "f915ea74bffce7dc1e573b15894814b96877e16eef5c5f96f8a4b381b1c5b813  /data/app/~~GwJrilo7TniPwg35-rFbLg==/dev.tripoder.p0.b-WBfQwr_S8q6ZGAQkOM4KYA==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "getconf",
+        "PAGESIZE"
+      ],
+      "exitCode": 0,
+      "stdout": "4096\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.a"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.runtimeprobe uid:10409\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "date \"+%m-%d %H:%M:%S.%3N\""
+      ],
+      "exitCode": 0,
+      "stdout": "10-16 21:04:01.266\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.runtimeprobe/.ArtifactProbeActivity",
+        "--es",
+        "runId",
+        "target-148a91dea0a84cfe",
+        "--ez",
+        "launchTargets",
+        "true",
+        "--es",
+        "targetPackage",
+        "com.tencent.mm",
+        "--es",
+        "targetSpace",
+        "target-3be31e2dd7434859-wechat"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.runtimeprobe/.ArtifactProbeActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.runtimeprobe/.ArtifactProbeActivity\nTotalTime: 86\nWaitTime: 88\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 21:04:01.266"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of crash\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: FATAL EXCEPTION: main\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: Process: dev.tripoder.runtimeprobe:slot3, PID: 22993\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: java.lang.RuntimeException: Unable to create service dev.tripoder.runtime.RuntimeServiceSlots$S3_0\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.app.ActivityThread.handleCreateService(ActivityThread.java:6335)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.app.ActivityThread.-$$Nest$mhandleCreateService(ActivityThread.java:0)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.app.ActivityThread$H.handleMessage(ActivityThread.java:3259)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.os.Handler.dispatchMessageImpl(Handler.java:146)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.os.Handler.dispatchMessage(Handler.java:129)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.os.Looper.loopOnce(Looper.java:315)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.os.Looper.loop(Looper.java:419)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.app.ActivityThread.main(ActivityThread.java:10847)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat java.lang.reflect.Method.invoke(Native Method)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: Caused by: java.lang.IllegalStateException: GUEST_SERVICE_FAILED\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeFactory.instantiateService(RuntimeFactory.java:18)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.app.ActivityThread.handleCreateService(ActivityThread.java:6296)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \t... 10 more\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: Caused by: java.util.concurrent.ExecutionException: java.lang.UnsupportedOperationException: java.lang.UnsupportedOperationException: SYSTEM_BROADCAST_POLICY_UNSUPPORTED:android.intent.action.PACKAGE_REMOVED\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat java.util.concurrent.FutureTask.report(FutureTask.java:124)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat java.util.concurrent.FutureTask.get(FutureTask.java:207)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeEngine.startApplication(RuntimeEngine.java:125)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeServices.instantiate(RuntimeServices.java:21)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \t... 12 more\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: Caused by: java.lang.UnsupportedOperationException: java.lang.UnsupportedOperationException: SYSTEM_BROADCAST_POLICY_UNSUPPORTED:android.intent.action.PACKAGE_REMOVED\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat java.lang.reflect.Constructor.newInstance0(Native Method)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat java.lang.reflect.Constructor.newInstance(Constructor.java:343)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinTask.getThrowableException(ForkJoinTask.java:544)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinTask.reportExecutionException(ForkJoinTask.java:584)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinTask.get(ForkJoinTask.java:997)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat ni5.n0.l(SourceFile:18)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat ni5.n0.a(SourceFile:73)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat pp0.p1.call(SourceFile:47)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat zv5.f.run(SourceFile:44)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat zv5.h.a(SourceFile:81)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat yv5.q.d(SourceFile:124)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat yv5.q.r(SourceFile:41)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat yv5.q.p(SourceFile:3)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.tencent.mm.legacy.app.WeChatSplashStartup.a(SourceFile:433)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.tencent.mm.legacy.app.WeChatSplash.a(SourceFile:123)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat pf5.p.b(SourceFile:362)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.tencent.mm.app.MMApplicationLike.onCreate(SourceFile:145)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.tencent.tinker.entry.TinkerApplicationInlineFence.handleMessageImpl(SourceFile:152)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.tencent.tinker.entry.TinkerApplicationInlineFence.handleMessage_$noinline$(SourceFile:3)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.tencent.tinker.entry.TinkerApplicationInlineFence.handleMessage(SourceFile:0)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.tencent.tinker.loader.app.TinkerInlineFenceAction.callOnCreate(SourceFile:5)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.tencent.tinker.loader.app.TinkerApplication.onCreate(SourceFile:8)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.app.Instrumentation.callApplicationOnCreate(Instrumentation.java:1409)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeEngine.lambda$new$1(RuntimeEngine.java:113)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeEngine.$r8$lambda$jpJCnP2gRB-z5cMkw46-QI1yH44(RuntimeEngine.java:0)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeEngine$2.call(D8$$SyntheticClass:0)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat java.util.concurrent.FutureTask.run(FutureTask.java:328)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeEngine.startApplication(RuntimeEngine.java:124)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \t... 13 more\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: Caused by: java.lang.UnsupportedOperationException: SYSTEM_BROADCAST_POLICY_UNSUPPORTED:android.intent.action.PACKAGE_REMOVED\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeBroadcastIntent.filter(RuntimeBroadcastIntent.java:23)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeReceivers.register(RuntimeReceivers.java:30)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat dev.tripoder.runtime.GuestContext.registerReceiver(GuestContext.java:112)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.content.ContextWrapper.registerReceiver(ContextWrapper.java:809)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.tencent.mm.plugin.normsg.t.ff(SourceFile:66)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat com.tencent.mm.plugin.normsg.t.onCreate(SourceFile:17)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat ni5.w.access$1000(SourceFile:16)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat ni5.u.compute(SourceFile:123)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:391)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinTask.invoke(ForkJoinTask.java:671)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat ni5.v.compute(SourceFile:35)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:391)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinTask.invoke(ForkJoinTask.java:671)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat ni5.w.transitLifecycleStatusOnDemand(SourceFile:254)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat ni5.n0.j(SourceFile:20)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat ni5.g0.run(SourceFile:23)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinTask$AdaptedRunnableAction.exec(ForkJoinTask.java:1408)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:391)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1325)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1856)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1821)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:187)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat ________________________________Stacktraces.below.indicate.where.the.transit.task.being.submitted.________________________________(DividingLine:0)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat ni5.n0.a(SourceFile:21)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \t... 34 more\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 21:04:01.266",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 21:04:01.266",
+        "TripoderHook:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 21:04:01.266",
+        "TripoderReceiver:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 21:04:01.266",
+        "TripoderSelfHook:I",
+        "TripoderRuntime:E",
+        "TripoderOwnership:I",
+        "TripoderJobs:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-16 21:04:22.849 22632 22646 I TripoderSelfHook: INSTALLING:PROCESS_EXECUTION_POLICY\n10-16 21:04:23.913 22632 22646 I TripoderSelfHook: INSTALLED:PROCESS_EXECUTION_POLICY:ns=1063837552\n10-16 21:04:23.913 22632 22646 I TripoderSelfHook: INSTALLING:FRAMEWORK_ACCESS\n10-16 21:04:25.134 22632 22646 I TripoderSelfHook: INSTALLED:FRAMEWORK_ACCESS:ns=1220167083\n10-16 21:04:25.134 22632 22646 I TripoderSelfHook: INSTALLING:APPLICATION_OWNERSHIP\n10-16 21:04:25.134 22632 22646 I TripoderSelfHook: INSTALLED:APPLICATION_OWNERSHIP:ns=591927\n10-16 21:04:25.134 22632 22646 I TripoderSelfHook: INSTALLING:REFLECTION_VIEW\n10-16 21:04:25.245 22632 22646 I TripoderSelfHook: INSTALLED:REFLECTION_VIEW:ns=110463750\n10-16 21:04:25.245 22632 22646 I TripoderSelfHook: INSTALLING:ACTIVITY_CREATION\n10-16 21:04:25.293 22632 22646 I TripoderSelfHook: INSTALLED:ACTIVITY_CREATION:ns=48087760\n10-16 21:04:25.293 22632 22646 I TripoderSelfHook: INSTALLING:ACTIVITY_DELIVERY\n10-16 21:04:25.339 22632 22646 I TripoderSelfHook: INSTALLED:ACTIVITY_DELIVERY:ns=46349115\n10-16 21:04:25.339 22632 22646 I TripoderSelfHook: INSTALLING:ACTIVITY_ROUTING\n10-16 21:04:25.418 22632 22646 I TripoderSelfHook: INSTALLED:ACTIVITY_ROUTING:ns=78819010\n10-16 21:04:25.418 22632 22646 I TripoderSelfHook: INSTALLING:SERVICES\n10-16 21:04:25.504 22632 22646 I TripoderSelfHook: INSTALLED:SERVICES:ns=85734896\n10-16 21:04:25.504 22632 22646 I TripoderSelfHook: INSTALLING:PROVIDERS\n10-16 21:04:25.617 22632 22646 I TripoderSelfHook: INSTALLED:PROVIDERS:ns=113036718\n10-16 21:04:25.617 22632 22646 I TripoderSelfHook: INSTALLING:RECEIVERS\n10-16 21:04:25.644 22632 22646 I TripoderSelfHook: INSTALLED:RECEIVERS:ns=27135364\n10-16 21:04:25.644 22632 22646 I TripoderSelfHook: INSTALLING:PACKAGES\n10-16 21:04:27.035 22632 22646 I TripoderSelfHook: INSTALLED:PACKAGES:ns=1391147551\n10-16 21:04:27.035 22632 22646 I TripoderSelfHook: INSTALLING:STORAGE\n10-16 21:04:27.296 22632 22646 I TripoderSelfHook: INSTALLED:STORAGE:ns=260952917\n10-16 21:04:27.296 22632 22646 I TripoderSelfHook: INSTALLING:ACTIVITY_MANAGER\n10-16 21:04:27.696 22632 22646 I TripoderSelfHook: INSTALLED:ACTIVITY_MANAGER:ns=400093646\n10-16 21:04:27.697 22632 22646 I TripoderSelfHook: INSTALLING:CONNECTIVITY\n10-16 21:04:28.251 22632 22646 I TripoderSelfHook: INSTALLED:CONNECTIVITY:ns=554564739\n10-16 21:04:28.251 22632 22646 I TripoderSelfHook: INSTALLING:WIFI_P2P\n10-16 21:04:28.672 22632 22646 I TripoderSelfHook: INSTALLED:WIFI_P2P:ns=420290625\n10-16 21:04:28.672 22632 22646 I TripoderSelfHook: INSTALLING:NETWORK_STATS\n10-16 21:04:28.972 22632 22646 I TripoderSelfHook: INSTALLED:NETWORK_STATS:ns=300648958\n10-16 21:04:28.972 22632 22646 I TripoderSelfHook: INSTALLING:TELEPHONY\n10-16 21:04:29.918 22632 22646 I TripoderSelfHook: INSTALLED:TELEPHONY:ns=945530677\n10-16 21:04:29.918 22632 22646 I TripoderSelfHook: INSTALLING:AUDIO\n10-16 21:04:30.798 22632 22646 I TripoderSelfHook: INSTALLED:AUDIO:ns=880097291\n10-16 21:04:30.798 22632 22646 I TripoderSelfHook: INSTALLING:BATTERY\n10-16 21:04:30.852 22632 22646 I TripoderSelfHook: INSTALLED:BATTERY:ns=54182708\n10-16 21:04:30.852 22632 22646 I TripoderSelfHook: INSTALLING:POWER\n10-16 21:04:31.100 22632 22646 I TripoderSelfHook: INSTALLED:POWER:ns=247404739\n10-16 21:04:31.100 22632 22646 I TripoderSelfHook: INSTALLING:NOTIFICATIONS\n10-16 21:04:31.381 22632 22646 I TripoderSelfHook: INSTALLED:NOTIFICATIONS:ns=280962448\n10-16 21:04:31.381 22632 22646 I TripoderSelfHook: INSTALLING:SHORTCUTS\n10-16 21:04:31.478 22632 22646 I TripoderSelfHook: INSTALLED:SHORTCUTS:ns=97179583\n10-16 21:04:31.478 22632 22646 I TripoderSelfHook: INSTALLING:JOBS\n10-16 21:04:31.653 22632 22646 I TripoderSelfHook: INSTALLED:JOBS:ns=175050989\n10-16 21:04:31.653 22632 22646 I TripoderSelfHook: INSTALLING:UI_EFFECTS\n10-16 21:04:31.675 22632 22646 I TripoderSelfHook: INSTALLED:UI_EFFECTS:ns=21493541\n10-16 21:04:31.675 22632 22646 I TripoderSelfHook: INSTALLING:FAILURE_DIAGNOSTICS\n10-16 21:04:31.731 22632 22646 I TripoderSelfHook: INSTALLED:FAILURE_DIAGNOSTICS:ns=56243177\n10-16 21:04:31.731 22632 22646 I TripoderSelfHook: INSTALLING:HOOK_CONTROL\n10-16 21:04:32.785 22632 22646 I TripoderSelfHook: INSTALLED:HOOK_CONTROL:ns=1053596458\n10-16 21:04:32.785 22632 22646 I TripoderSelfHook: READY:READY:26/26:bindings=2215:ns=9935436871\n10-16 21:04:32.791 22632 22632 I TripoderOwnership: before-attach host=211551518 guest=187793919 {\"stage\":\"AWAITING_GUEST\",\"constructs\":0,\"attaches\":0,\"physicalChecks\":2,\"retainedGlobalRefs\":10,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":8,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 21:04:35.615 22632 22632 I TripoderOwnership: after-attach host=211551518 guest=187793919 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":7,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":1,\"denials\":0}\n10-16 21:04:36.736 22632 22632 I TripoderOwnership: after-onCreate host=211551518 guest=187793919 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":9,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":1,\"denials\":0}\n10-16 21:04:47.824 22993 22993 I TripoderSelfHook: INSTALLING:PROCESS_EXECUTION_POLICY\n10-16 21:04:49.001 22993 22993 I TripoderSelfHook: INSTALLED:PROCESS_EXECUTION_POLICY:ns=1176915156\n10-16 21:04:49.001 22993 22993 I TripoderSelfHook: INSTALLING:FRAMEWORK_ACCESS\n10-16 21:04:50.344 22993 22993 I TripoderSelfHook: INSTALLED:FRAMEWORK_ACCESS:ns=1342611719\n10-16 21:04:50.344 22993 22993 I TripoderSelfHook: INSTALLING:APPLICATION_OWNERSHIP\n10-16 21:04:50.344 22993 22993 I TripoderSelfHook: INSTALLED:APPLICATION_OWNERSHIP:ns=533073\n10-16 21:04:50.344 22993 22993 I TripoderSelfHook: INSTALLING:REFLECTION_VIEW\n10-16 21:04:50.393 22993 22993 I TripoderSelfHook: INSTALLED:REFLECTION_VIEW:ns=49180417\n10-16 21:04:50.393 22993 22993 I TripoderSelfHook: INSTALLING:ACTIVITY_CREATION\n10-16 21:04:50.443 22993 22993 I TripoderSelfHook: INSTALLED:ACTIVITY_CREATION:ns=49948334\n10-16 21:04:50.443 22993 22993 I TripoderSelfHook: INSTALLING:ACTIVITY_DELIVERY\n10-16 21:04:50.493 22993 22993 I TripoderSelfHook: INSTALLED:ACTIVITY_DELIVERY:ns=49582552\n10-16 21:04:50.493 22993 22993 I TripoderSelfHook: INSTALLING:ACTIVITY_ROUTING\n10-16 21:04:50.576 22993 22993 I TripoderSelfHook: INSTALLED:ACTIVITY_ROUTING:ns=83352864\n10-16 21:04:50.576 22993 22993 I TripoderSelfHook: INSTALLING:SERVICES\n10-16 21:04:50.690 22993 22993 I TripoderSelfHook: INSTALLED:SERVICES:ns=113795729\n10-16 21:04:50.690 22993 22993 I TripoderSelfHook: INSTALLING:PROVIDERS\n10-16 21:04:50.875 22993 22993 I TripoderSelfHook: INSTALLED:PROVIDERS:ns=184704271\n10-16 21:04:50.875 22993 22993 I TripoderSelfHook: INSTALLING:RECEIVERS\n10-16 21:04:50.908 22993 22993 I TripoderSelfHook: INSTALLED:RECEIVERS:ns=32577812\n10-16 21:04:50.908 22993 22993 I TripoderSelfHook: INSTALLING:PACKAGES\n10-16 21:04:52.322 22993 22993 I TripoderSelfHook: INSTALLED:PACKAGES:ns=1414304166\n10-16 21:04:52.322 22993 22993 I TripoderSelfHook: INSTALLING:STORAGE\n10-16 21:04:52.635 22993 22993 I TripoderSelfHook: INSTALLED:STORAGE:ns=313293645\n10-16 21:04:52.635 22993 22993 I TripoderSelfHook: INSTALLING:ACTIVITY_MANAGER\n10-16 21:04:53.105 22993 22993 I TripoderSelfHook: INSTALLED:ACTIVITY_MANAGER:ns=469799479\n10-16 21:04:53.105 22993 22993 I TripoderSelfHook: INSTALLING:CONNECTIVITY\n10-16 21:04:53.724 22993 22993 I TripoderSelfHook: INSTALLED:CONNECTIVITY:ns=618610990\n10-16 21:04:53.724 22993 22993 I TripoderSelfHook: INSTALLING:WIFI_P2P\n10-16 21:04:53.994 22993 22993 I TripoderSelfHook: INSTALLED:WIFI_P2P:ns=269735052\n10-16 21:04:53.994 22993 22993 I TripoderSelfHook: INSTALLING:NETWORK_STATS\n10-16 21:04:54.316 22993 22993 I TripoderSelfHook: INSTALLED:NETWORK_STATS:ns=322461563\n10-16 21:04:54.316 22993 22993 I TripoderSelfHook: INSTALLING:TELEPHONY\n10-16 21:04:55.228 22993 22993 I TripoderSelfHook: INSTALLED:TELEPHONY:ns=911719427\n10-16 21:04:55.228 22993 22993 I TripoderSelfHook: INSTALLING:AUDIO\n10-16 21:04:55.974 22993 22993 I TripoderSelfHook: INSTALLED:AUDIO:ns=745825156\n10-16 21:04:55.974 22993 22993 I TripoderSelfHook: INSTALLING:BATTERY\n10-16 21:04:56.029 22993 22993 I TripoderSelfHook: INSTALLED:BATTERY:ns=55150572\n10-16 21:04:56.029 22993 22993 I TripoderSelfHook: INSTALLING:POWER\n10-16 21:04:56.300 22993 22993 I TripoderSelfHook: INSTALLED:POWER:ns=270686458\n10-16 21:04:56.300 22993 22993 I TripoderSelfHook: INSTALLING:NOTIFICATIONS\n10-16 21:04:56.680 22993 22993 I TripoderSelfHook: INSTALLED:NOTIFICATIONS:ns=379697448\n10-16 21:04:56.680 22993 22993 I TripoderSelfHook: INSTALLING:SHORTCUTS\n10-16 21:04:56.791 22993 22993 I TripoderSelfHook: INSTALLED:SHORTCUTS:ns=111040937\n10-16 21:04:56.791 22993 22993 I TripoderSelfHook: INSTALLING:JOBS\n10-16 21:04:56.981 22993 22993 I TripoderSelfHook: INSTALLED:JOBS:ns=190396666\n10-16 21:04:56.981 22993 22993 I TripoderSelfHook: INSTALLING:UI_EFFECTS\n10-16 21:04:57.004 22993 22993 I TripoderSelfHook: INSTALLED:UI_EFFECTS:ns=22994584\n10-16 21:04:57.004 22993 22993 I TripoderSelfHook: INSTALLING:FAILURE_DIAGNOSTICS\n10-16 21:04:57.039 22993 22993 I TripoderSelfHook: INSTALLED:FAILURE_DIAGNOSTICS:ns=34635104\n10-16 21:04:57.039 22993 22993 I TripoderSelfHook: INSTALLING:HOOK_CONTROL\n10-16 21:04:58.160 22993 22993 I TripoderSelfHook: INSTALLED:HOOK_CONTROL:ns=1120822447\n10-16 21:04:58.160 22993 22993 I TripoderSelfHook: READY:READY:26/26:bindings=2215:ns=10336102340\n10-16 21:04:58.167 22993 22993 I TripoderOwnership: before-attach host=65682380 guest=79416853 {\"stage\":\"AWAITING_GUEST\",\"constructs\":0,\"attaches\":0,\"physicalChecks\":2,\"retainedGlobalRefs\":10,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":8,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 21:04:59.381 22993 22993 I TripoderOwnership: after-attach host=65682380 guest=79416853 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":7,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":1,\"denials\":0}\n10-16 21:05:01.828 22993 22993 I TripoderOwnership: after-onCreate host=65682380 guest=79416853 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":9,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":1,\"denials\":0}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 21:04:01.266"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of crash\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: FATAL EXCEPTION: main\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: Process: dev.tripoder.runtimeprobe:slot3, PID: 22993\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: java.lang.RuntimeException: Unable to create service dev.tripoder.runtime.RuntimeServiceSlots$S3_0\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.app.ActivityThread.handleCreateService(ActivityThread.java:6335)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.app.ActivityThread.-$$Nest$mhandleCreateService(ActivityThread.java:0)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.app.ActivityThread$H.handleMessage(ActivityThread.java:3259)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.os.Handler.dispatchMessageImpl(Handler.java:146)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.os.Handler.dispatchMessage(Handler.java:129)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.os.Looper.loopOnce(Looper.java:315)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.os.Looper.loop(Looper.java:419)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.app.ActivityThread.main(ActivityThread.java:10847)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat java.lang.reflect.Method.invoke(Native Method)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: Caused by: java.lang.IllegalStateException: GUEST_SERVICE_FAILED\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeFactory.instantiateService(RuntimeFactory.java:18)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.app.ActivityThread.handleCreateService(ActivityThread.java:6296)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \t... 10 more\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: Caused by: java.util.concurrent.ExecutionException: java.lang.UnsupportedOperationException: java.lang.UnsupportedOperationException: SYSTEM_BROADCAST_POLICY_UNSUPPORTED:android.intent.action.PACKAGE_REMOVED\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat java.util.concurrent.FutureTask.report(FutureTask.java:124)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat java.util.concurrent.FutureTask.get(FutureTask.java:207)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeEngine.startApplication(RuntimeEngine.java:125)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeServices.instantiate(RuntimeServices.java:21)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \t... 12 more\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: Caused by: java.lang.UnsupportedOperationException: java.lang.UnsupportedOperationException: SYSTEM_BROADCAST_POLICY_UNSUPPORTED:android.intent.action.PACKAGE_REMOVED\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat java.lang.reflect.Constructor.newInstance0(Native Method)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat java.lang.reflect.Constructor.newInstance(Constructor.java:343)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinTask.getThrowableException(ForkJoinTask.java:544)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinTask.reportExecutionException(ForkJoinTask.java:584)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinTask.get(ForkJoinTask.java:997)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat ni5.n0.l(SourceFile:18)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat ni5.n0.a(SourceFile:73)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat pp0.p1.call(SourceFile:47)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat zv5.f.run(SourceFile:44)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat zv5.h.a(SourceFile:81)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat yv5.q.d(SourceFile:124)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat yv5.q.r(SourceFile:41)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat yv5.q.p(SourceFile:3)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.tencent.mm.legacy.app.WeChatSplashStartup.a(SourceFile:433)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.tencent.mm.legacy.app.WeChatSplash.a(SourceFile:123)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat pf5.p.b(SourceFile:362)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.tencent.mm.app.MMApplicationLike.onCreate(SourceFile:145)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.tencent.tinker.entry.TinkerApplicationInlineFence.handleMessageImpl(SourceFile:152)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.tencent.tinker.entry.TinkerApplicationInlineFence.handleMessage_$noinline$(SourceFile:3)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.tencent.tinker.entry.TinkerApplicationInlineFence.handleMessage(SourceFile:0)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.tencent.tinker.loader.app.TinkerInlineFenceAction.callOnCreate(SourceFile:5)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.tencent.tinker.loader.app.TinkerApplication.onCreate(SourceFile:8)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.app.Instrumentation.callApplicationOnCreate(Instrumentation.java:1409)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeEngine.lambda$new$1(RuntimeEngine.java:113)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeEngine.$r8$lambda$jpJCnP2gRB-z5cMkw46-QI1yH44(RuntimeEngine.java:0)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeEngine$2.call(D8$$SyntheticClass:0)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat java.util.concurrent.FutureTask.run(FutureTask.java:328)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeEngine.startApplication(RuntimeEngine.java:124)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \t... 13 more\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: Caused by: java.lang.UnsupportedOperationException: SYSTEM_BROADCAST_POLICY_UNSUPPORTED:android.intent.action.PACKAGE_REMOVED\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeBroadcastIntent.filter(RuntimeBroadcastIntent.java:23)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeReceivers.register(RuntimeReceivers.java:30)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat dev.tripoder.runtime.GuestContext.registerReceiver(GuestContext.java:112)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat android.content.ContextWrapper.registerReceiver(ContextWrapper.java:809)\n10-16 21:05:01.866 22993 22993 E AndroidRuntime: \tat com.tencent.mm.plugin.normsg.t.ff(SourceFile:66)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat com.tencent.mm.plugin.normsg.t.onCreate(SourceFile:17)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat ni5.w.access$1000(SourceFile:16)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat ni5.u.compute(SourceFile:123)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:391)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinTask.invoke(ForkJoinTask.java:671)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat ni5.v.compute(SourceFile:35)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:391)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinTask.invoke(ForkJoinTask.java:671)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat ni5.w.transitLifecycleStatusOnDemand(SourceFile:254)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat ni5.n0.j(SourceFile:20)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat ni5.g0.run(SourceFile:23)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinTask$AdaptedRunnableAction.exec(ForkJoinTask.java:1408)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:391)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1325)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1856)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1821)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:187)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat ________________________________Stacktraces.below.indicate.where.the.transit.task.being.submitted.________________________________(DividingLine:0)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \tat ni5.n0.a(SourceFile:21)\n10-16 21:05:01.868 22993 22993 E AndroidRuntime: \t... 34 more\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 21:04:01.266",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 21:04:01.266",
+        "TripoderHook:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 21:04:01.266",
+        "TripoderReceiver:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-16 21:04:01.266",
+        "TripoderSelfHook:I",
+        "TripoderRuntime:E",
+        "TripoderOwnership:I",
+        "TripoderJobs:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-16 21:04:22.849 22632 22646 I TripoderSelfHook: INSTALLING:PROCESS_EXECUTION_POLICY\n10-16 21:04:23.913 22632 22646 I TripoderSelfHook: INSTALLED:PROCESS_EXECUTION_POLICY:ns=1063837552\n10-16 21:04:23.913 22632 22646 I TripoderSelfHook: INSTALLING:FRAMEWORK_ACCESS\n10-16 21:04:25.134 22632 22646 I TripoderSelfHook: INSTALLED:FRAMEWORK_ACCESS:ns=1220167083\n10-16 21:04:25.134 22632 22646 I TripoderSelfHook: INSTALLING:APPLICATION_OWNERSHIP\n10-16 21:04:25.134 22632 22646 I TripoderSelfHook: INSTALLED:APPLICATION_OWNERSHIP:ns=591927\n10-16 21:04:25.134 22632 22646 I TripoderSelfHook: INSTALLING:REFLECTION_VIEW\n10-16 21:04:25.245 22632 22646 I TripoderSelfHook: INSTALLED:REFLECTION_VIEW:ns=110463750\n10-16 21:04:25.245 22632 22646 I TripoderSelfHook: INSTALLING:ACTIVITY_CREATION\n10-16 21:04:25.293 22632 22646 I TripoderSelfHook: INSTALLED:ACTIVITY_CREATION:ns=48087760\n10-16 21:04:25.293 22632 22646 I TripoderSelfHook: INSTALLING:ACTIVITY_DELIVERY\n10-16 21:04:25.339 22632 22646 I TripoderSelfHook: INSTALLED:ACTIVITY_DELIVERY:ns=46349115\n10-16 21:04:25.339 22632 22646 I TripoderSelfHook: INSTALLING:ACTIVITY_ROUTING\n10-16 21:04:25.418 22632 22646 I TripoderSelfHook: INSTALLED:ACTIVITY_ROUTING:ns=78819010\n10-16 21:04:25.418 22632 22646 I TripoderSelfHook: INSTALLING:SERVICES\n10-16 21:04:25.504 22632 22646 I TripoderSelfHook: INSTALLED:SERVICES:ns=85734896\n10-16 21:04:25.504 22632 22646 I TripoderSelfHook: INSTALLING:PROVIDERS\n10-16 21:04:25.617 22632 22646 I TripoderSelfHook: INSTALLED:PROVIDERS:ns=113036718\n10-16 21:04:25.617 22632 22646 I TripoderSelfHook: INSTALLING:RECEIVERS\n10-16 21:04:25.644 22632 22646 I TripoderSelfHook: INSTALLED:RECEIVERS:ns=27135364\n10-16 21:04:25.644 22632 22646 I TripoderSelfHook: INSTALLING:PACKAGES\n10-16 21:04:27.035 22632 22646 I TripoderSelfHook: INSTALLED:PACKAGES:ns=1391147551\n10-16 21:04:27.035 22632 22646 I TripoderSelfHook: INSTALLING:STORAGE\n10-16 21:04:27.296 22632 22646 I TripoderSelfHook: INSTALLED:STORAGE:ns=260952917\n10-16 21:04:27.296 22632 22646 I TripoderSelfHook: INSTALLING:ACTIVITY_MANAGER\n10-16 21:04:27.696 22632 22646 I TripoderSelfHook: INSTALLED:ACTIVITY_MANAGER:ns=400093646\n10-16 21:04:27.697 22632 22646 I TripoderSelfHook: INSTALLING:CONNECTIVITY\n10-16 21:04:28.251 22632 22646 I TripoderSelfHook: INSTALLED:CONNECTIVITY:ns=554564739\n10-16 21:04:28.251 22632 22646 I TripoderSelfHook: INSTALLING:WIFI_P2P\n10-16 21:04:28.672 22632 22646 I TripoderSelfHook: INSTALLED:WIFI_P2P:ns=420290625\n10-16 21:04:28.672 22632 22646 I TripoderSelfHook: INSTALLING:NETWORK_STATS\n10-16 21:04:28.972 22632 22646 I TripoderSelfHook: INSTALLED:NETWORK_STATS:ns=300648958\n10-16 21:04:28.972 22632 22646 I TripoderSelfHook: INSTALLING:TELEPHONY\n10-16 21:04:29.918 22632 22646 I TripoderSelfHook: INSTALLED:TELEPHONY:ns=945530677\n10-16 21:04:29.918 22632 22646 I TripoderSelfHook: INSTALLING:AUDIO\n10-16 21:04:30.798 22632 22646 I TripoderSelfHook: INSTALLED:AUDIO:ns=880097291\n10-16 21:04:30.798 22632 22646 I TripoderSelfHook: INSTALLING:BATTERY\n10-16 21:04:30.852 22632 22646 I TripoderSelfHook: INSTALLED:BATTERY:ns=54182708\n10-16 21:04:30.852 22632 22646 I TripoderSelfHook: INSTALLING:POWER\n10-16 21:04:31.100 22632 22646 I TripoderSelfHook: INSTALLED:POWER:ns=247404739\n10-16 21:04:31.100 22632 22646 I TripoderSelfHook: INSTALLING:NOTIFICATIONS\n10-16 21:04:31.381 22632 22646 I TripoderSelfHook: INSTALLED:NOTIFICATIONS:ns=280962448\n10-16 21:04:31.381 22632 22646 I TripoderSelfHook: INSTALLING:SHORTCUTS\n10-16 21:04:31.478 22632 22646 I TripoderSelfHook: INSTALLED:SHORTCUTS:ns=97179583\n10-16 21:04:31.478 22632 22646 I TripoderSelfHook: INSTALLING:JOBS\n10-16 21:04:31.653 22632 22646 I TripoderSelfHook: INSTALLED:JOBS:ns=175050989\n10-16 21:04:31.653 22632 22646 I TripoderSelfHook: INSTALLING:UI_EFFECTS\n10-16 21:04:31.675 22632 22646 I TripoderSelfHook: INSTALLED:UI_EFFECTS:ns=21493541\n10-16 21:04:31.675 22632 22646 I TripoderSelfHook: INSTALLING:FAILURE_DIAGNOSTICS\n10-16 21:04:31.731 22632 22646 I TripoderSelfHook: INSTALLED:FAILURE_DIAGNOSTICS:ns=56243177\n10-16 21:04:31.731 22632 22646 I TripoderSelfHook: INSTALLING:HOOK_CONTROL\n10-16 21:04:32.785 22632 22646 I TripoderSelfHook: INSTALLED:HOOK_CONTROL:ns=1053596458\n10-16 21:04:32.785 22632 22646 I TripoderSelfHook: READY:READY:26/26:bindings=2215:ns=9935436871\n10-16 21:04:32.791 22632 22632 I TripoderOwnership: before-attach host=211551518 guest=187793919 {\"stage\":\"AWAITING_GUEST\",\"constructs\":0,\"attaches\":0,\"physicalChecks\":2,\"retainedGlobalRefs\":10,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":8,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 21:04:35.615 22632 22632 I TripoderOwnership: after-attach host=211551518 guest=187793919 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":7,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":1,\"denials\":0}\n10-16 21:04:36.736 22632 22632 I TripoderOwnership: after-onCreate host=211551518 guest=187793919 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":9,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":1,\"denials\":0}\n10-16 21:04:47.824 22993 22993 I TripoderSelfHook: INSTALLING:PROCESS_EXECUTION_POLICY\n10-16 21:04:49.001 22993 22993 I TripoderSelfHook: INSTALLED:PROCESS_EXECUTION_POLICY:ns=1176915156\n10-16 21:04:49.001 22993 22993 I TripoderSelfHook: INSTALLING:FRAMEWORK_ACCESS\n10-16 21:04:50.344 22993 22993 I TripoderSelfHook: INSTALLED:FRAMEWORK_ACCESS:ns=1342611719\n10-16 21:04:50.344 22993 22993 I TripoderSelfHook: INSTALLING:APPLICATION_OWNERSHIP\n10-16 21:04:50.344 22993 22993 I TripoderSelfHook: INSTALLED:APPLICATION_OWNERSHIP:ns=533073\n10-16 21:04:50.344 22993 22993 I TripoderSelfHook: INSTALLING:REFLECTION_VIEW\n10-16 21:04:50.393 22993 22993 I TripoderSelfHook: INSTALLED:REFLECTION_VIEW:ns=49180417\n10-16 21:04:50.393 22993 22993 I TripoderSelfHook: INSTALLING:ACTIVITY_CREATION\n10-16 21:04:50.443 22993 22993 I TripoderSelfHook: INSTALLED:ACTIVITY_CREATION:ns=49948334\n10-16 21:04:50.443 22993 22993 I TripoderSelfHook: INSTALLING:ACTIVITY_DELIVERY\n10-16 21:04:50.493 22993 22993 I TripoderSelfHook: INSTALLED:ACTIVITY_DELIVERY:ns=49582552\n10-16 21:04:50.493 22993 22993 I TripoderSelfHook: INSTALLING:ACTIVITY_ROUTING\n10-16 21:04:50.576 22993 22993 I TripoderSelfHook: INSTALLED:ACTIVITY_ROUTING:ns=83352864\n10-16 21:04:50.576 22993 22993 I TripoderSelfHook: INSTALLING:SERVICES\n10-16 21:04:50.690 22993 22993 I TripoderSelfHook: INSTALLED:SERVICES:ns=113795729\n10-16 21:04:50.690 22993 22993 I TripoderSelfHook: INSTALLING:PROVIDERS\n10-16 21:04:50.875 22993 22993 I TripoderSelfHook: INSTALLED:PROVIDERS:ns=184704271\n10-16 21:04:50.875 22993 22993 I TripoderSelfHook: INSTALLING:RECEIVERS\n10-16 21:04:50.908 22993 22993 I TripoderSelfHook: INSTALLED:RECEIVERS:ns=32577812\n10-16 21:04:50.908 22993 22993 I TripoderSelfHook: INSTALLING:PACKAGES\n10-16 21:04:52.322 22993 22993 I TripoderSelfHook: INSTALLED:PACKAGES:ns=1414304166\n10-16 21:04:52.322 22993 22993 I TripoderSelfHook: INSTALLING:STORAGE\n10-16 21:04:52.635 22993 22993 I TripoderSelfHook: INSTALLED:STORAGE:ns=313293645\n10-16 21:04:52.635 22993 22993 I TripoderSelfHook: INSTALLING:ACTIVITY_MANAGER\n10-16 21:04:53.105 22993 22993 I TripoderSelfHook: INSTALLED:ACTIVITY_MANAGER:ns=469799479\n10-16 21:04:53.105 22993 22993 I TripoderSelfHook: INSTALLING:CONNECTIVITY\n10-16 21:04:53.724 22993 22993 I TripoderSelfHook: INSTALLED:CONNECTIVITY:ns=618610990\n10-16 21:04:53.724 22993 22993 I TripoderSelfHook: INSTALLING:WIFI_P2P\n10-16 21:04:53.994 22993 22993 I TripoderSelfHook: INSTALLED:WIFI_P2P:ns=269735052\n10-16 21:04:53.994 22993 22993 I TripoderSelfHook: INSTALLING:NETWORK_STATS\n10-16 21:04:54.316 22993 22993 I TripoderSelfHook: INSTALLED:NETWORK_STATS:ns=322461563\n10-16 21:04:54.316 22993 22993 I TripoderSelfHook: INSTALLING:TELEPHONY\n10-16 21:04:55.228 22993 22993 I TripoderSelfHook: INSTALLED:TELEPHONY:ns=911719427\n10-16 21:04:55.228 22993 22993 I TripoderSelfHook: INSTALLING:AUDIO\n10-16 21:04:55.974 22993 22993 I TripoderSelfHook: INSTALLED:AUDIO:ns=745825156\n10-16 21:04:55.974 22993 22993 I TripoderSelfHook: INSTALLING:BATTERY\n10-16 21:04:56.029 22993 22993 I TripoderSelfHook: INSTALLED:BATTERY:ns=55150572\n10-16 21:04:56.029 22993 22993 I TripoderSelfHook: INSTALLING:POWER\n10-16 21:04:56.300 22993 22993 I TripoderSelfHook: INSTALLED:POWER:ns=270686458\n10-16 21:04:56.300 22993 22993 I TripoderSelfHook: INSTALLING:NOTIFICATIONS\n10-16 21:04:56.680 22993 22993 I TripoderSelfHook: INSTALLED:NOTIFICATIONS:ns=379697448\n10-16 21:04:56.680 22993 22993 I TripoderSelfHook: INSTALLING:SHORTCUTS\n10-16 21:04:56.791 22993 22993 I TripoderSelfHook: INSTALLED:SHORTCUTS:ns=111040937\n10-16 21:04:56.791 22993 22993 I TripoderSelfHook: INSTALLING:JOBS\n10-16 21:04:56.981 22993 22993 I TripoderSelfHook: INSTALLED:JOBS:ns=190396666\n10-16 21:04:56.981 22993 22993 I TripoderSelfHook: INSTALLING:UI_EFFECTS\n10-16 21:04:57.004 22993 22993 I TripoderSelfHook: INSTALLED:UI_EFFECTS:ns=22994584\n10-16 21:04:57.004 22993 22993 I TripoderSelfHook: INSTALLING:FAILURE_DIAGNOSTICS\n10-16 21:04:57.039 22993 22993 I TripoderSelfHook: INSTALLED:FAILURE_DIAGNOSTICS:ns=34635104\n10-16 21:04:57.039 22993 22993 I TripoderSelfHook: INSTALLING:HOOK_CONTROL\n10-16 21:04:58.160 22993 22993 I TripoderSelfHook: INSTALLED:HOOK_CONTROL:ns=1120822447\n10-16 21:04:58.160 22993 22993 I TripoderSelfHook: READY:READY:26/26:bindings=2215:ns=10336102340\n10-16 21:04:58.167 22993 22993 I TripoderOwnership: before-attach host=65682380 guest=79416853 {\"stage\":\"AWAITING_GUEST\",\"constructs\":0,\"attaches\":0,\"physicalChecks\":2,\"retainedGlobalRefs\":10,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":8,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 21:04:59.381 22993 22993 I TripoderOwnership: after-attach host=65682380 guest=79416853 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":7,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":1,\"denials\":0}\n10-16 21:05:01.828 22993 22993 I TripoderOwnership: after-onCreate host=65682380 guest=79416853 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":9,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":1,\"denials\":0}\n",
+      "stderr": ""
+    }
+  ],
+  "decoyApkSha256": "f915ea74bffce7dc1e573b15894814b96877e16eef5c5f96f8a4b381b1c5b813",
+  "decoyMarkerBefore": false,
+  "pageSize": 4096,
+  "aInstalledInHost": false,
+  "ownedUid": 10409,
+  "deviceLogStart": "10-16 21:04:01.266",
+  "decoyMarkerAfter": false,
+  "hostMatchesBuild": true,
+  "fixturesMatchBuild": true,
+  "p1FixturesMatchBuild": true,
+  "p2FixturesMatchBuild": true,
+  "allDeviceAssertionsPassed": true,
+  "nativeMemoryCrashObserved": false,
+  "nativeFatalSignalObserved": false,
+  "javaFatalObserved": true,
+  "expectedFixtureUncaught": [],
+  "unexpectedJavaFatalObserved": true,
+  "selfHookInstallationSamples": [
+    {
+      "pid": 22632,
+      "bindings": 2215,
+      "durationNs": 9935436871
+    },
+    {
+      "pid": 22993,
+      "bindings": 2215,
+      "durationNs": 10336102340
+    }
+  ],
+  "passed": false,
+  "error": "Java fatal exception observed during this run",
+  "finishedAtUtc": "2026-10-16T13:05:09.923271+00:00"
+}

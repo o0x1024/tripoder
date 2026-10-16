@@ -1,0 +1,28 @@
+
+android/self-hook-probe/build/device-libart.so:	file format elf64-littleaarch64
+
+Disassembly of section .text:
+
+00000000009e72c0:
+  9ecd98:      	ldr	w8, [x0, #0x18]
+  9ecd9c:      	cbz	w8, 0x9ecda8
+  9ecda0:      	mov	w0, wzr
+  9ecda4:      	ret
+  9ecda8:      	mov	x8, xzr
+  9ecdac:      	add	x9, x0, #0xa10
+  9ecdb0:      	add	w10, w8, #0x4d
+  9ecdb4:      	cmp	w10, #0x48
+  9ecdb8:      	b.eq	0x9ecdcc
+  9ecdbc:      	cmp	w10, #0x4b
+  9ecdc0:      	b.eq	0x9ecdcc
+  9ecdc4:      	ldr	x10, [x9, x8, lsl #3]
+  9ecdc8:      	cbnz	x10, 0x9ecda0
+  9ecdcc:      	sub	x8, x8, #0x1
+  9ecdd0:      	cmn	x8, #0x4e
+  9ecdd4:      	b.ne	0x9ecdb0
+  9ecdd8:      	ldr	x8, [x0, #0xa00]
+  9ecddc:      	cbz	x8, 0x9ecde8
+  9ecde0:      	ldr	w8, [x0, #0x38]
+  9ecde4:      	cbnz	w8, 0x9ecda0
+  9ecde8:      	mov	w0, #0x1                // =1
+  9ecdec:      	ret

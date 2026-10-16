@@ -1,0 +1,297 @@
+{
+  "runId": "p0-b0ea8909685f4598",
+  "observedAtUtc": "2026-10-16T02:59:41.539971+00:00",
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "productApkReplaced": false,
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/b.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/runtime-probe.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.b"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~xSvRyyta3GxnOoDNQPyVeA==/dev.tripoder.p0.b-gWcTN495ZJ90VyklAzhQpw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~xSvRyyta3GxnOoDNQPyVeA==/dev.tripoder.p0.b-gWcTN495ZJ90VyklAzhQpw==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "9bcde2318da17e2fd695b3b2e7d953a59f768ae0cc5ad4562f491976992e9e4b  /data/app/~~xSvRyyta3GxnOoDNQPyVeA==/dev.tripoder.p0.b-gWcTN495ZJ90VyklAzhQpw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "getconf",
+        "PAGESIZE"
+      ],
+      "exitCode": 0,
+      "stdout": "4096\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.a"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.runtimeprobe uid:10398\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "date \"+%m-%d %H:%M:%S.%3N\""
+      ],
+      "exitCode": 0,
+      "stdout": "10-16 10:59:42.721\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.runtimeprobe/.ProbeActivity",
+        "--es",
+        "runId",
+        "p0-b0ea8909685f4598"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.runtimeprobe/.ProbeActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.runtimeprobe/.ProbeActivity\nTotalTime: 83\nWaitTime: 84\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-16 10:59:42.721"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of crash\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: FATAL EXCEPTION: main\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: Process: dev.tripoder.runtimeprobe:slot6, PID: 13032\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: java.lang.IllegalStateException: COMPONENT_BOOTSTRAP_FAILED:AUTHORITY_ACQUIRE_FAILED\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.os.Parcel.createExceptionOrNull(Parcel.java:3422)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.os.Parcel.createException(Parcel.java:3398)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.os.Parcel.readException(Parcel.java:3381)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.database.DatabaseUtils.readExceptionFromParcel(DatabaseUtils.java:225)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.database.DatabaseUtils.readExceptionFromParcel(DatabaseUtils.java:177)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.content.ContentProviderProxy.call(ContentProviderNative.java:784)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.content.ContentResolver.call(ContentResolver.java:2562)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.content.ContentResolver.call(ContentResolver.java:2541)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeFactory.bootstrap(RuntimeFactory.java:25)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeActivityCreation.begin(RuntimeActivityCreation.java:42)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookActivities.lambda$creation$1(RuntimeSelfHookActivities.java:27)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookActivities$4.invoke(D8$$SyntheticClass:0)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeManagedInstaller.lambda$install$1(RuntimeManagedInstaller.java:40)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeManagedInstaller$2.invoke(D8$$SyntheticClass:0)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat dev.tripoder.selfhook.ManagedHook.execute(ManagedHook.java:196)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat dev.tripoder.selfhook.ManagedHook.dispatch(ManagedHook.java:190)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat dev.tripoder.selfhook.generated.Entry3.invoke(dex-id-3cf3e9d9ca44ccff731859b7738f7bac3b171ce3:22)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:5447)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:136)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:106)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:83)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.app.ActivityThread$H.handleMessage(ActivityThread.java:3492)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.os.Handler.dispatchMessageImpl(Handler.java:146)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.os.Handler.dispatchMessage(Handler.java:129)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.os.Looper.loopOnce(Looper.java:315)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.os.Looper.loop(Looper.java:419)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.app.ActivityThread.main(ActivityThread.java:10847)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat java.lang.reflect.Method.invoke(Native Method)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: FATAL EXCEPTION: main\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: Process: dev.tripoder.runtimeprobe, PID: 10508\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: java.lang.IllegalStateException: attempt to re-open an already-closed object: SQLiteDatabase: /data/user/0/dev.tripoder.runtimeprobe/databases/tripoder-runtime-v2.db\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat android.database.sqlite.SQLiteClosable.acquireReference(SQLiteClosable.java:73)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat android.database.sqlite.SQLiteDatabase.endTransaction(SQLiteDatabase.java:860)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat dev.tripoder.runtime.ProviderLedger.dead(ProviderLedger.java:72)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeBroker.dead(RuntimeBroker.java:75)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat dev.tripoder.runtime.ProcessSupervisor$Launch.peerDied(ProcessSupervisor.java:162)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat dev.tripoder.runtime.ProcessSupervisor$Launch.$r8$lambda$x0QTJzEl9FJCKSUCJRoZ3KP4wcI(ProcessSupervisor.java:0)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat dev.tripoder.runtime.ProcessSupervisor$Launch$1.run(D8$$SyntheticClass:0)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat android.os.Handler.handleCallback(Handler.java:1129)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat android.os.Handler.dispatchMessageImpl(Handler.java:139)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat android.os.Handler.dispatchMessage(Handler.java:129)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat android.os.Looper.loopOnce(Looper.java:315)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat android.os.Looper.loop(Looper.java:419)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat android.app.ActivityThread.main(ActivityThread.java:10847)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat java.lang.reflect.Method.invoke(Native Method)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: Caused by: java.lang.Exception: closed by android.database.sqlite.SQLiteDatabase.close()\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat android.database.sqlite.SQLiteClosable.close(SQLiteClosable.java:128)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat android.database.sqlite.SQLiteOpenHelper.close(SQLiteOpenHelper.java:468)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeStore.close(RuntimeStore.java:137)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat dev.tripoder.runtimeprobe.ProbeActivity.run(ProbeActivity.java:72)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat dev.tripoder.runtimeprobe.ProbeActivity.$r8$lambda$l5PIVhZW6S2tHPqtifRBDCbATIc(ProbeActivity.java:0)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat dev.tripoder.runtimeprobe.ProbeActivity$0.run(D8$$SyntheticClass:0)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat java.lang.Thread.run(Thread.java:1572)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-16 10:59:42.721",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-16 10:59:42.721",
+        "TripoderHook:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-16 10:59:42.721",
+        "TripoderReceiver:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-16 10:59:42.721"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of crash\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: FATAL EXCEPTION: main\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: Process: dev.tripoder.runtimeprobe:slot6, PID: 13032\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: java.lang.IllegalStateException: COMPONENT_BOOTSTRAP_FAILED:AUTHORITY_ACQUIRE_FAILED\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.os.Parcel.createExceptionOrNull(Parcel.java:3422)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.os.Parcel.createException(Parcel.java:3398)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.os.Parcel.readException(Parcel.java:3381)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.database.DatabaseUtils.readExceptionFromParcel(DatabaseUtils.java:225)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.database.DatabaseUtils.readExceptionFromParcel(DatabaseUtils.java:177)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.content.ContentProviderProxy.call(ContentProviderNative.java:784)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.content.ContentResolver.call(ContentResolver.java:2562)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.content.ContentResolver.call(ContentResolver.java:2541)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeFactory.bootstrap(RuntimeFactory.java:25)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeActivityCreation.begin(RuntimeActivityCreation.java:42)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookActivities.lambda$creation$1(RuntimeSelfHookActivities.java:27)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookActivities$4.invoke(D8$$SyntheticClass:0)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeManagedInstaller.lambda$install$1(RuntimeManagedInstaller.java:40)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeManagedInstaller$2.invoke(D8$$SyntheticClass:0)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat dev.tripoder.selfhook.ManagedHook.execute(ManagedHook.java:196)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat dev.tripoder.selfhook.ManagedHook.dispatch(ManagedHook.java:190)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat dev.tripoder.selfhook.generated.Entry3.invoke(dex-id-3cf3e9d9ca44ccff731859b7738f7bac3b171ce3:22)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:5447)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:136)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:106)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:83)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.app.ActivityThread$H.handleMessage(ActivityThread.java:3492)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.os.Handler.dispatchMessageImpl(Handler.java:146)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.os.Handler.dispatchMessage(Handler.java:129)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.os.Looper.loopOnce(Looper.java:315)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.os.Looper.loop(Looper.java:419)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat android.app.ActivityThread.main(ActivityThread.java:10847)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat java.lang.reflect.Method.invoke(Native Method)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\n10-16 11:00:15.238 13032 13032 E AndroidRuntime: \tat com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: FATAL EXCEPTION: main\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: Process: dev.tripoder.runtimeprobe, PID: 10508\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: java.lang.IllegalStateException: attempt to re-open an already-closed object: SQLiteDatabase: /data/user/0/dev.tripoder.runtimeprobe/databases/tripoder-runtime-v2.db\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat android.database.sqlite.SQLiteClosable.acquireReference(SQLiteClosable.java:73)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat android.database.sqlite.SQLiteDatabase.endTransaction(SQLiteDatabase.java:860)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat dev.tripoder.runtime.ProviderLedger.dead(ProviderLedger.java:72)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeBroker.dead(RuntimeBroker.java:75)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat dev.tripoder.runtime.ProcessSupervisor$Launch.peerDied(ProcessSupervisor.java:162)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat dev.tripoder.runtime.ProcessSupervisor$Launch.$r8$lambda$x0QTJzEl9FJCKSUCJRoZ3KP4wcI(ProcessSupervisor.java:0)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat dev.tripoder.runtime.ProcessSupervisor$Launch$1.run(D8$$SyntheticClass:0)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat android.os.Handler.handleCallback(Handler.java:1129)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat android.os.Handler.dispatchMessageImpl(Handler.java:139)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat android.os.Handler.dispatchMessage(Handler.java:129)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat android.os.Looper.loopOnce(Looper.java:315)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat android.os.Looper.loop(Looper.java:419)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat android.app.ActivityThread.main(ActivityThread.java:10847)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat java.lang.reflect.Method.invoke(Native Method)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: Caused by: java.lang.Exception: closed by android.database.sqlite.SQLiteDatabase.close()\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat android.database.sqlite.SQLiteClosable.close(SQLiteClosable.java:128)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat android.database.sqlite.SQLiteOpenHelper.close(SQLiteOpenHelper.java:468)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeStore.close(RuntimeStore.java:137)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat dev.tripoder.runtimeprobe.ProbeActivity.run(ProbeActivity.java:72)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat dev.tripoder.runtimeprobe.ProbeActivity.$r8$lambda$l5PIVhZW6S2tHPqtifRBDCbATIc(ProbeActivity.java:0)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat dev.tripoder.runtimeprobe.ProbeActivity$0.run(D8$$SyntheticClass:0)\n10-16 11:00:45.356 10508 10508 E AndroidRuntime: \tat java.lang.Thread.run(Thread.java:1572)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-16 10:59:42.721",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-16 10:59:42.721",
+        "TripoderHook:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-16 10:59:42.721",
+        "TripoderReceiver:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "decoyApkSha256": "9bcde2318da17e2fd695b3b2e7d953a59f768ae0cc5ad4562f491976992e9e4b",
+  "decoyMarkerBefore": false,
+  "pageSize": 4096,
+  "aInstalledInHost": false,
+  "ownedUid": 10398,
+  "deviceLogStart": "10-16 10:59:42.721",
+  "decoyMarkerAfter": false,
+  "hostMatchesBuild": true,
+  "fixturesMatchBuild": true,
+  "p1FixturesMatchBuild": true,
+  "p2FixturesMatchBuild": true,
+  "allDeviceAssertionsPassed": true,
+  "nativeMemoryCrashObserved": false,
+  "nativeFatalSignalObserved": false,
+  "javaFatalObserved": true,
+  "expectedFixtureUncaught": [],
+  "unexpectedJavaFatalObserved": true,
+  "passed": false,
+  "error": "Device assertions failed; inspect device-result.json",
+  "finishedAtUtc": "2026-10-16T03:00:48.469831+00:00"
+}

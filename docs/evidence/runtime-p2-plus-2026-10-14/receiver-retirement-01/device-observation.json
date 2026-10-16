@@ -1,0 +1,304 @@
+{
+  "runId": "receiver-369ee8bd42364d40",
+  "observedAtUtc": "2026-10-14T17:06:39.553444+00:00",
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "productApkReplaced": false,
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/b.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/runtime-probe.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.b"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~e-pOFR3MBRi0OUF7T0FXjA==/dev.tripoder.p0.b-saKASkGgAFvDvDCkVx2STg==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~e-pOFR3MBRi0OUF7T0FXjA==/dev.tripoder.p0.b-saKASkGgAFvDvDCkVx2STg==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "88098d93b2f688c73956a4be5cf3afa82f4565d59120d62574b53149cb23b6ce  /data/app/~~e-pOFR3MBRi0OUF7T0FXjA==/dev.tripoder.p0.b-saKASkGgAFvDvDCkVx2STg==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "getconf",
+        "PAGESIZE"
+      ],
+      "exitCode": 0,
+      "stdout": "4096\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.a"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.runtimeprobe uid:10398\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "date \"+%m-%d %H:%M:%S.%3N\""
+      ],
+      "exitCode": 0,
+      "stdout": "10-15 01:06:40.942\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-a",
+        "android.intent.action.MAIN",
+        "-c",
+        "android.intent.category.LAUNCHER",
+        "-f",
+        "0x10008000",
+        "-n",
+        "dev.tripoder.runtimeprobe/.P2ProbeActivity",
+        "--es",
+        "runId",
+        "receiver-369ee8bd42364d40",
+        "--ez",
+        "receiverOnly",
+        "true"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10008000 cmp=dev.tripoder.runtimeprobe/.P2ProbeActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.runtimeprobe/.P2ProbeActivity\nTotalTime: 83\nWaitTime: 84\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 01:06:40.942"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 01:06:40.942",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-15 01:06:42.013 15794 15831 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:06:43.006 15908 15908 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:06:45.220 16037 16057 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:06:46.170 16105 16105 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:06:49.586 16244 16268 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:06:50.432 16288 16301 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 01:06:40.942",
+        "TripoderHook:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 01:06:40.942",
+        "TripoderReceiver:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 01:06:40.942"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 01:06:40.942",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-15 01:06:42.013 15794 15831 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:06:43.006 15908 15908 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:06:45.220 16037 16057 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:06:46.170 16105 16105 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:06:49.586 16244 16268 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 01:06:50.432 16288 16301 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 01:06:40.942",
+        "TripoderHook:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 01:06:40.942",
+        "TripoderReceiver:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "decoyApkSha256": "88098d93b2f688c73956a4be5cf3afa82f4565d59120d62574b53149cb23b6ce",
+  "decoyMarkerBefore": false,
+  "pageSize": 4096,
+  "aInstalledInHost": false,
+  "ownedUid": 10398,
+  "deviceLogStart": "10-15 01:06:40.942",
+  "decoyMarkerAfter": false,
+  "hostMatchesBuild": true,
+  "fixturesMatchBuild": true,
+  "p1FixturesMatchBuild": true,
+  "p2FixturesMatchBuild": true,
+  "allDeviceAssertionsPassed": true,
+  "nativeMemoryCrashObserved": false,
+  "nativeFatalSignalObserved": false,
+  "javaFatalObserved": false,
+  "passed": false,
+  "error": "Device assertions failed; inspect device-result.json",
+  "finishedAtUtc": "2026-10-14T17:07:03.225838+00:00"
+}

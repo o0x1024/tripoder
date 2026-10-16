@@ -1,0 +1,36 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tripoder.provideridentity" android:versionCode="1">
+  <uses-sdk android:minSdkVersion="36" android:targetSdkVersion="36"/>
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+  <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+  <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
+  <permission android:name="dev.tripoder.provideridentity.permission.MESSAGE" android:protectionLevel="signature"/>
+  <uses-permission android:name="dev.tripoder.provideridentity.permission.MESSAGE"/>
+  <permission android:name="dev.tripoder.provideridentity.permission.PRIVATE" android:protectionLevel="signature"/>
+  <uses-permission android:name="dev.tripoder.provideridentity.permission.PRIVATE"/>
+  <permission android:name="dev.tripoder.provideridentity.permission.DECLARED_ONLY" android:protectionLevel="signatureOrSystem"/>
+  <application android:name=".MetadataApplication" android:label="Tripoder Provider Identity" android:allowBackup="false" android:theme="@android:style/Theme.Material.Light.NoActionBar">
+    <meta-data android:name="owned.label" android:value="owned-installation"/>
+    <meta-data android:name="owned.xml" android:resource="@xml/owned_paths"/>
+    <activity android:name=".IdentityActivity" android:exported="true"/>
+    <activity-alias android:name=".IdentityAlias" android:targetActivity=".IdentityActivity" android:exported="false"><meta-data android:name="owned.alias" android:value="alias-metadata"/></activity-alias>
+    <activity android:name=".DisabledActivity" android:process=":metadata" android:enabled="false" android:directBootAware="true" android:exported="false" android:theme="@style/OwnedCreationTheme" android:configChanges="orientation|screenSize"><meta-data android:name="owned.disabled" android:value="disabled-metadata"/></activity>
+    <activity android:name=".PackageResourcesActivity" android:exported="true"/>
+    <activity android:name=".InstrumentationActivity" android:theme="@style/OwnedCreationTheme" android:exported="true"/>
+    <activity android:name=".InstrumentationActivity$Child" android:theme="@style/OwnedCreationTheme" android:exported="false"/>
+    <activity android:name=".FailureDispatchActivity" android:exported="true"/>
+    <activity android:name=".FlagTopActivity" android:exported="true"/>
+    <activity android:name=".FlagTopActivity$Cover" android:exported="false"/>
+    <activity android:name=".MultiprocessActivity" android:exported="true"/>
+    <service android:name=".MultiprocessPeer" android:process=":peer" android:exported="false"><meta-data android:name="owned.service" android:value="owned-service"/></service>
+    <service android:name=".DisabledMetadataService" android:process=":peer" android:enabled="false" android:exported="false" android:directBootAware="true"/>
+    <service android:name=".HistoryFailureService" android:process=":historyfail" android:exported="false"/>
+    <provider android:name=".MultiprocessProvider" android:authorities="dev.tripoder.identity.multi" android:process=":provider" android:multiprocess="true" android:exported="false"/>
+    <provider android:name=".IdentityProvider" android:authorities="dev.tripoder.identity.first" android:exported="false">
+      <meta-data android:name="identity.label" android:value="first"/>
+      <meta-data android:name="owned.xml" android:resource="@xml/owned_paths"/>
+    </provider>
+    <provider android:name=".IdentityProvider" android:authorities="dev.tripoder.identity.second" android:exported="false">
+      <meta-data android:name="identity.label" android:value="second"/>
+    </provider>
+  </application>
+</manifest>

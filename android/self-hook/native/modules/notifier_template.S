@@ -1,0 +1,151 @@
+/* The original fixed linker notifier is BTI c; RET. LTO may rely on every
+ * register surviving that no-op. Preserve ALL GPR/SIMD/status registers, not
+ * just AAPCS64 callee-saved registers. The C observer must not touch errno. */
+.text
+.p2align 2
+.global tp_linker_notifier_relay
+.hidden tp_linker_notifier_relay
+.type tp_linker_notifier_relay,%function
+tp_linker_notifier_relay:
+    .cfi_startproc
+    bti jc
+    sub sp,sp,#800
+    .cfi_def_cfa_offset 800
+    stp x0,x1,[sp,#0]
+    stp x2,x3,[sp,#16]
+    stp x4,x5,[sp,#32]
+    stp x6,x7,[sp,#48]
+    stp x8,x9,[sp,#64]
+    stp x10,x11,[sp,#80]
+    stp x12,x13,[sp,#96]
+    stp x14,x15,[sp,#112]
+    stp x16,x17,[sp,#128]
+    stp x18,x19,[sp,#144]
+    .cfi_offset x19,-648
+    stp x20,x21,[sp,#160]
+    .cfi_offset x20,-640
+    .cfi_offset x21,-632
+    stp x22,x23,[sp,#176]
+    .cfi_offset x22,-624
+    .cfi_offset x23,-616
+    stp x24,x25,[sp,#192]
+    .cfi_offset x24,-608
+    .cfi_offset x25,-600
+    stp x26,x27,[sp,#208]
+    .cfi_offset x26,-592
+    .cfi_offset x27,-584
+    stp x28,x29,[sp,#224]
+    .cfi_offset x28,-576
+    .cfi_offset x29,-568
+    str x30,[sp,#240]
+    .cfi_offset x30,-560
+    mrs x9,nzcv
+    str x9,[sp,#248]
+    stp q0,q1,[sp,#256]
+    stp q2,q3,[sp,#288]
+    stp q4,q5,[sp,#320]
+    stp q6,q7,[sp,#352]
+    stp q8,q9,[sp,#384]
+    .cfi_offset b8,-416
+    .cfi_offset b9,-400
+    stp q10,q11,[sp,#416]
+    .cfi_offset b10,-384
+    .cfi_offset b11,-368
+    stp q12,q13,[sp,#448]
+    .cfi_offset b12,-352
+    .cfi_offset b13,-336
+    stp q14,q15,[sp,#480]
+    .cfi_offset b14,-320
+    .cfi_offset b15,-304
+    stp q16,q17,[sp,#512]
+    stp q18,q19,[sp,#544]
+    stp q20,q21,[sp,#576]
+    stp q22,q23,[sp,#608]
+    stp q24,q25,[sp,#640]
+    stp q26,q27,[sp,#672]
+    stp q28,q29,[sp,#704]
+    stp q30,q31,[sp,#736]
+    mrs x9,fpsr
+    mrs x10,fpcr
+    str x9,[sp,#768]
+    str x10,[sp,#776]
+    adrp x16,tp_linker_notifier_callback
+    ldr x16,[x16,:lo12:tp_linker_notifier_callback]
+    blr x16
+    ldr x9,[sp,#768]
+    ldr x10,[sp,#776]
+    msr fpsr,x9
+    msr fpcr,x10
+    ldp q0,q1,[sp,#256]
+    ldp q2,q3,[sp,#288]
+    ldp q4,q5,[sp,#320]
+    ldp q6,q7,[sp,#352]
+    ldp q8,q9,[sp,#384]
+    .cfi_restore b8
+    .cfi_restore b9
+    ldp q10,q11,[sp,#416]
+    .cfi_restore b10
+    .cfi_restore b11
+    ldp q12,q13,[sp,#448]
+    .cfi_restore b12
+    .cfi_restore b13
+    ldp q14,q15,[sp,#480]
+    .cfi_restore b14
+    .cfi_restore b15
+    ldp q16,q17,[sp,#512]
+    ldp q18,q19,[sp,#544]
+    ldp q20,q21,[sp,#576]
+    ldp q22,q23,[sp,#608]
+    ldp q24,q25,[sp,#640]
+    ldp q26,q27,[sp,#672]
+    ldp q28,q29,[sp,#704]
+    ldp q30,q31,[sp,#736]
+    ldr x9,[sp,#248]
+    msr nzcv,x9
+    ldp x0,x1,[sp,#0]
+    ldp x2,x3,[sp,#16]
+    ldp x4,x5,[sp,#32]
+    ldp x6,x7,[sp,#48]
+    ldp x8,x9,[sp,#64]
+    ldp x10,x11,[sp,#80]
+    ldp x12,x13,[sp,#96]
+    ldp x14,x15,[sp,#112]
+    ldp x16,x17,[sp,#128]
+    ldp x18,x19,[sp,#144]
+    .cfi_restore x19
+    ldp x20,x21,[sp,#160]
+    .cfi_restore x20
+    .cfi_restore x21
+    ldp x22,x23,[sp,#176]
+    .cfi_restore x22
+    .cfi_restore x23
+    ldp x24,x25,[sp,#192]
+    .cfi_restore x24
+    .cfi_restore x25
+    ldp x26,x27,[sp,#208]
+    .cfi_restore x26
+    .cfi_restore x27
+    ldp x28,x29,[sp,#224]
+    .cfi_restore x28
+    .cfi_restore x29
+    ldr x30,[sp,#240]
+    .cfi_restore x30
+    add sp,sp,#800
+    .cfi_def_cfa_offset 0
+    ret
+    .cfi_endproc
+.size tp_linker_notifier_relay,.-tp_linker_notifier_relay
+.section .rodata,"a",%progbits
+.p2align 3
+.global tp_linker_notifier_callback
+.hidden tp_linker_notifier_callback
+.type tp_linker_notifier_callback,%object
+tp_linker_notifier_callback:
+.quad 0
+.size tp_linker_notifier_callback,8
+.section .note.gnu.property,"a",%note
+.p2align 3
+.long 4,16,5
+.asciz "GNU"
+.long 0xc0000000,4,1,0
+.section .note.GNU-stack,"",%progbits

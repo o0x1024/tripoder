@@ -1,0 +1,38 @@
+{
+  "priorRun": "run-1791898366688",
+  "priorFailure": "SurfaceFlinger aborted: No matching frame rate modes for primary range",
+  "priorModeHz": 60.00384,
+  "renderMaximumHz": 60,
+  "displayManagerToleranceHz": 0.01,
+  "surfaceFlingerToleranceHz": 0.001,
+  "repair": "Fixed panel has exactly one 1024x768 detailed timing; 61440000 / (1280 * 800) = 60 Hz. No alternate mode declarations.",
+  "guestPolicyChanged": false,
+  "guestAssertionDisabled": false,
+  "fallbackAdded": false,
+  "remainingDisplayRisk": {
+    "observed": [
+      "present fence sync_wait errno 62",
+      "atomic commit EBUSY",
+      "HWC BAD_DISPLAY"
+    ],
+    "knownMechanism": "HWC waits 500 ms, clears previous fence tracking after timeout, subsequent nonblocking atomic commit may return EBUSY; HWC maps failed present to BAD_DISPLAY.",
+    "rootDelayProven": false,
+    "candidates": [
+      "guest rendering input fence",
+      "guest interrupt/worker scheduling",
+      "QEMU queue/BQL/display callback latency"
+    ],
+    "nextDiagnosticIfNeeded": "Timestamp kick, BH pop, command processing, response and notify in QEMU 2D virtio-gpu path; correlate command/fence IDs.",
+    "kernelReferenceLimitation": "Linux v6.12 mainline source, not a byte audit of the image vendor kernel 6.12.81"
+  },
+  "sources": [
+    "https://github.com/LineageOS/android_frameworks_base/blob/lineage-23.2/services/core/java/com/android/server/display/mode/VoteSummary.java#L247-L264",
+    "https://github.com/LineageOS/android_frameworks_native/blob/lineage-23.2/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp#L1661-L1684",
+    "https://github.com/LineageOS/android_frameworks_native/blob/lineage-23.2/services/surfaceflinger/Scheduler/include/scheduler/Fps.h#L112-L119",
+    "https://github.com/torvalds/linux/blob/v6.12/drivers/gpu/drm/drm_edid.c#L6848-L6879",
+    "https://github.com/torvalds/linux/blob/v6.12/drivers/gpu/drm/virtio/virtgpu_display.c#L160-L179",
+    "https://github.com/LineageOS/android_external_drm_hwcomposer-upstream/blob/8976786556df09c42b4ad41dd93969c6792f324d/drm/DrmAtomicStateManager.cpp#L592-L605",
+    "https://github.com/torvalds/linux/blob/v6.12/drivers/gpu/drm/drm_atomic_helper.c#L2136-L2158",
+    "https://github.com/LineageOS/android_external_drm_hwcomposer-upstream/blob/8976786556df09c42b4ad41dd93969c6792f324d/hwc3/ComposerClient.cpp#L720-L728"
+  ]
+}

@@ -1,0 +1,282 @@
+{
+  "schema": 1,
+  "startedAtUtc": "2026-10-14T23:10:35.405375+00:00",
+  "validatorSha256": "4caf86d954423dde707c3d4d4f3946c58dafb12966ec2b8fdf97124d16eb9a31",
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/product/build/tripoder-engine.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/product/build/tripoder-workbench.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/product/build/tripoder-control-test.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.workbench"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~f6reGVaUBYYIrex0_fSC4w==/dev.tripoder.workbench-whlqfI3353uFa3CiFM-z4w==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~f6reGVaUBYYIrex0_fSC4w==/dev.tripoder.workbench-whlqfI3353uFa3CiFM-z4w==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "90808769de55c3e93ada2cdc4db59e390cc7ebd01a82930d6fcbbdf5a849ced9  /data/app/~~f6reGVaUBYYIrex0_fSC4w==/dev.tripoder.workbench-whlqfI3353uFa3CiFM-z4w==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~kj5vf48zDWOalZjxhAFnFg==/dev.tripoder.engine-uskGwMUjwW3Pd24EHJzWKw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~kj5vf48zDWOalZjxhAFnFg==/dev.tripoder.engine-uskGwMUjwW3Pd24EHJzWKw==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "93e866311dbecc0da5d336ecc3040c9a6de3e3ef9af6a9fef977a0abfd637836  /data/app/~~kj5vf48zDWOalZjxhAFnFg==/dev.tripoder.engine-uskGwMUjwW3Pd24EHJzWKw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.controltest"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~ew77oOAzkyBI83tgvyhC5g==/dev.tripoder.controltest-4_BQ5c-ZpsPdrSpjMUxXsw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~ew77oOAzkyBI83tgvyhC5g==/dev.tripoder.controltest-4_BQ5c-ZpsPdrSpjMUxXsw==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "74dc483b935307c4a9ab2b3f2cb833021dec83edcd3aaa3d8bcc463a0bf9b616  /data/app/~~ew77oOAzkyBI83tgvyhC5g==/dev.tripoder.controltest-4_BQ5c-ZpsPdrSpjMUxXsw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.workbench"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.controltest"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.engine uid:10400\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "date \"+%m-%d %H:%M:%S.%3N\""
+      ],
+      "exitCode": 0,
+      "stdout": "10-15 07:10:37.294\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.controltest/dev.tripoder.controltest.ClientActivity"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.controltest/.ClientActivity }\nStatus: ok\nLaunchState: UNKNOWN (0)\nActivity: dev.tripoder.controltest/.ClientActivity\nWaitTime: 80\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "mkdir",
+        "-p",
+        "/sdcard/Android/data/dev.tripoder.workbench/files/acceptance"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "push",
+        "/Users/like/code/tripoder/android/runtime-probe/build/targets/wechat.apk",
+        "/sdcard/Android/data/dev.tripoder.workbench/files/acceptance/wechat.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "/Users/like/code/tripoder/android/runtime-probe/build/targets/wechat.apk: 1 file pushed, 0 skipped. 277.7 MB/s (285284760 bytes in 0.980s)\n"
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-a",
+        "android.intent.action.MAIN",
+        "-c",
+        "android.intent.category.LAUNCHER",
+        "-n",
+        "dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity }\nStatus: ok\nLaunchState: WARM\nActivity: dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity\nTotalTime: 93\nWaitTime: 94\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "instrument",
+        "-w",
+        "-e",
+        "runId",
+        "control-9f6be8b8eb8a4d75",
+        "-e",
+        "target",
+        "wechat",
+        "dev.tripoder.controltest/dev.tripoder.controltest.TargetLaunchIntegration"
+      ],
+      "exitCode": 0,
+      "stdout": "INSTRUMENTATION_RESULT: result={\"runId\":\"control-9f6be8b8eb8a4d75\",\"startedAt\":1792019438994,\"uid\":10401,\"pid\":32184,\"deviceBuild\":\"Xiaomi\\/madrid\\/madrid:17\\/CP2A.260605.016\\/OS4.0.24.0.XEOCNXM:user\\/release-keys\",\"scope\":\"original-target-first-launch-only\",\"target\":\"com.tencent.mm\",\"apkSha256\":\"f2a725bc04302ad218a563533ae79356e66b64aa711b275bc919a8d432f7e15d\",\"apkRewritten\":false,\"loginAttempted\":false,\"businessScenarioVerified\":false,\"workbenchStartupStatus\":{\"schema\":26,\"hookReady\":true,\"lease\":\"9ffb0456-900c-4540-9026-83b0b624b9f0\",\"enginePid\":32324,\"engineUid\":10400,\"strongIsolation\":false,\"authority\":\"eafbe3da-2865-422c-94e3-a6f1cf3f0a56\",\"controllerUid\":10401},\"targetReceipt\":{\"project\":\"7703bdbe-88a3-4ad9-9f17-71aecb68d6ff\",\"binding\":\"50adface-8c77-4134-9971-768d53a1e067\",\"generation\":\"a776a2fe-6b4d-42bd-9155-f25ed20b02e8\",\"sha256\":\"f2a725bc04302ad218a563533ae79356e66b64aa711b275bc919a8d432f7e15d\"},\"space\":\"p6-20261014\",\"launcher\":{\"component\":\"com.tencent.mm.ui.LauncherUI\",\"launcher\":true,\"supported\":true,\"reason\":\"\"},\"launchOperation\":\"3017c5c3-18f4-4dea-b81f-a48d4dc28f2c\",\"workerPid\":32460,\"workerUid\":10400,\"processGeneration\":\"cd595cbea39468b9357ffa318134344fb6de67cb46ddfadc236e2aa9e1f8ddf9\",\"launchReceipt\":{\"detail\":\"ACTIVITY_DELIVERY_PROCESS_DIED\",\"result\":\"\",\"state\":\"UNKNOWN\",\"evidence\":\"\"},\"error\":\"java.lang.IllegalStateException: ASSERTION_FAILED:target-first-activity-acknowledged\\n\\tat dev.tripoder.controltest.ControlTestBase.check(ControlTestBase.java:57)\\n\\tat dev.tripoder.controltest.TargetLaunchIntegration.test(TargetLaunchIntegration.java:64)\\n\\tat dev.tripoder.controltest.ControlTestBase.onStart(ControlTestBase.java:43)\\n\\tat dev.tripoder.controltest.TargetLaunchIntegration.onStart(TargetLaunchIntegration.java:15)\\n\\tat android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2705)\\n\",\"passed\":false,\"checks\":[{\"name\":\"real-workbench-foreground-startup-connected\",\"passed\":true,\"observed\":\"\"},{\"name\":\"original-apk-digest-matches\",\"passed\":true,\"observed\":\"f2a725bc04302ad218a563533ae79356e66b64aa711b275bc919a8d432f7e15d\"},{\"name\":\"declared-launcher-policy-supported\",\"passed\":true,\"observed\":{\"component\":\"com.tencent.mm.ui.LauncherUI\",\"launcher\":true,\"supported\":true,\"reason\":\"\"}},{\"name\":\"target-application-initialized\",\"passed\":true,\"observed\":{\"component\":\"com.tencent.mm.ui.LauncherUI\",\"installGeneration\":\"a776a2fe-6b4d-42bd-9155-f25ed20b02e8\",\"pid\":32460,\"uid\":10400,\"state\":\"RUNNING\",\"processName\":\"com.tencent.mm\",\"generation\":\"cd595cbea39468b9357ffa318134344fb6de67cb46ddfadc236e2aa9e1f8ddf9\",\"operation\":\"3017c5c3-18f4-4dea-b81f-a48d4dc28f2c\"}},{\"name\":\"target-first-activity-acknowledged\",\"passed\":false,\"observed\":{\"detail\":\"ACTIVITY_DELIVERY_PROCESS_DIED\",\"result\":\"\",\"state\":\"UNKNOWN\",\"evidence\":\"\"}}],\"fullP5Accepted\":false,\"finishedAt\":1792019473844}\nINSTRUMENTATION_CODE: 0\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10400",
+        "-T",
+        "10-15 07:10:37.294"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of crash\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: FATAL EXCEPTION: main\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: Process: dev.tripoder.engine:slot0, PID: 32460\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: java.lang.RuntimeException: Unable to start activity ComponentInfo{dev.tripoder.engine/dev.tripoder.runtime.generated.TaskP0$F0M1C2}\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.app.ActivityThread.performLaunchActivity(ActivityThread.java:5196)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.app.ActivityThread.performLaunchActivity(Native Method)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:5447)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:136)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:106)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:83)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.app.ActivityThread$H.handleMessage(ActivityThread.java:3492)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.os.Handler.dispatchMessageImpl(Handler.java:146)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.os.Handler.dispatchMessage(Handler.java:129)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.os.Looper.loopOnce(Looper.java:315)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.os.Looper.loop(Looper.java:419)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.app.ActivityThread.main(ActivityThread.java:10847)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat java.lang.reflect.Method.invoke(Native Method)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: Caused by: java.lang.IllegalArgumentException: ACTIVITY_EXTRA_TYPE_UNSUPPORTED:java.util.ArrayList\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeActivityValues.value(RuntimeActivityValues.java:46)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeActivityValues.bundle(RuntimeActivityValues.java:21)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeActivityValues.extras(RuntimeActivityValues.java:12)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeActivityIntent.digest(RuntimeActivityIntent.java:25)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeActivityIntent.snapshot(RuntimeActivityIntent.java:17)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeEngine.route(RuntimeEngine.java:174)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeBridge.route(RuntimeBridge.java:135)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.app.Instrumentation.execStartActivity(Native Method)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat java.lang.reflect.Method.invoke(Native Method)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat com.tencent.mm.splash.SplashHackInstrumentation.execStartActivity(SourceFile:226)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.app.Activity.startActivityForResult(Activity.java:6288)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat com.tencent.mm.hellhoundlib.activities.HellActivity.startActivityForResult(SourceFile:7)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat androidx.activity.ComponentActivity.startActivityForResult(SourceFile:2)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat com.tencent.mm.ui.component.UIComponentActivity.startActivityForResult(SourceFile:29)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat com.tencent.mm.ui.MMFragmentActivity.startActivityForResult(SourceFile:13)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat com.tencent.mm.ui.vas.launcher.VASLauncher.startActivityForResult(SourceFile:337)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat com.tencent.mm.ui.LauncherUI.startActivityForResult(SourceFile:21)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.app.Activity.startActivityForResult(Activity.java:6245)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat androidx.activity.ComponentActivity.startActivityForResult(SourceFile:1)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat com.tencent.mm.ui.MMFragmentActivity.startActivityForResult(SourceFile:1)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.app.Activity.startActivity(Activity.java:6748)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat com.tencent.mm.ui.MMFragmentActivity.startActivity(SourceFile:4)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.app.Activity.startActivity(Activity.java:6715)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat com.tencent.mm.ui.component.UIComponentActivity.startActivity(SourceFile:0)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat com.tencent.mm.ui.MMFragmentActivity.startActivity(SourceFile:2)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat com.tencent.mm.ui.LauncherUI.O7(SourceFile:319)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat com.tencent.mm.ui.LauncherUI.onCreate(SourceFile:1369)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.app.Activity.performCreate(Activity.java:9625)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.app.Activity.performCreate(Activity.java:9571)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1559)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \tat android.app.ActivityThread.performLaunchActivity(ActivityThread.java:5180)\n10-15 07:11:12.247 32460 32460 E AndroidRuntime: \t... 15 more\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: FATAL EXCEPTION: main\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: Process: dev.tripoder.engine:slot0, PID: 32276\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: java.lang.RuntimeException: Unable to instantiate activity ComponentInfo{dev.tripoder.engine/dev.tripoder.runtime.generated.TaskP0$F0M1C2}\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.app.ActivityThread.performLaunchActivity(ActivityThread.java:5097)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:5447)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:136)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:106)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:83)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.app.ActivityThread$H.handleMessage(ActivityThread.java:3492)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.os.Handler.dispatchMessageImpl(Handler.java:146)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.os.Handler.dispatchMessage(Handler.java:129)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.os.Looper.loopOnce(Looper.java:315)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.os.Looper.loop(Looper.java:419)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.app.ActivityThread.main(ActivityThread.java:10847)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat java.lang.reflect.Method.invoke(Native Method)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: Caused by: java.lang.IllegalStateException: GUEST_ACTIVITY_FAILED\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeFactory.instantiateActivity(RuntimeFactory.java:38)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.app.Instrumentation.newActivity(Instrumentation.java:1473)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.app.ActivityThread.performLaunchActivity(ActivityThread.java:5083)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \t... 14 more\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: Caused by: java.lang.IllegalStateException: COMPONENT_BOOTSTRAP_FAILED:ACTIVITY_RESTORE_NOT_CONFIRMED\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.os.Parcel.createExceptionOrNull(Parcel.java:3422)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.os.Parcel.createException(Parcel.java:3398)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.os.Parcel.readException(Parcel.java:3381)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.database.DatabaseUtils.readExceptionFromParcel(DatabaseUtils.java:225)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.database.DatabaseUtils.readExceptionFromParcel(DatabaseUtils.java:177)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.content.ContentProviderProxy.call(ContentProviderNative.java:784)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.content.ContentResolver.call(ContentResolver.java:2562)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat android.content.ContentResolver.call(ContentResolver.java:2541)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeFactory.bootstrap(RuntimeFactory.java:25)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeActivityCreation.begin(RuntimeActivityCreation.java:42)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeActivityCreation.cold(RuntimeActivityCreation.java:67)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeFactory.instantiateActivity(RuntimeFactory.java:37)\n10-15 07:11:13.670 32276 32276 E AndroidRuntime: \t... 16 more\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10400",
+        "-T",
+        "10-15 07:10:37.294",
+        "TripoderRuntime:V",
+        "TripoderHook:I",
+        "TripoderOwnership:I",
+        "TripoderStartup:I",
+        "TripoderProvider:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-15 07:10:55.166 32460 32460 I TripoderOwnership: {\"stage\":\"before-attach\",\"physical\":{\"type\":\"dev.tripoder.runtime.RuntimeApplication\",\"identity\":191801430},\"guest\":{\"type\":\"com.tencent.mm.app.Application\",\"identity\":233574615},\"physicalBase\":{\"type\":\"android.app.ContextImpl\",\"identity\":133094852},\"guestBase\":null,\"physicalApk\":{\"type\":\"android.app.LoadedApk\",\"identity\":31347885},\"guestApk\":null,\"physicalApkApplication\":{\"type\":\"dev.tripoder.runtime.RuntimeApplication\",\"identity\":191801430},\"initialApplication\":{\"type\":\"dev.tripoder.runtime.RuntimeApplication\",\"identity\":191801430},\"reflectedInitialApplication\":{\"type\":\"dev.tripoder.runtime.RuntimeApplication\",\"identity\":191801430},\"hostApplicationContext\":{\"type\":\"dev.tripoder.runtime.RuntimeApplication\",\"identity\":191801430}}\n10-15 07:10:58.742 32460 32460 I TripoderOwnership: {\"stage\":\"after-attach\",\"physical\":{\"type\":\"dev.tripoder.runtime.RuntimeApplication\",\"identity\":191801430},\"guest\":{\"type\":\"com.tencent.mm.app.Application\",\"identity\":233574615},\"physicalBase\":{\"type\":\"android.app.ContextImpl\",\"identity\":133094852},\"guestBase\":{\"type\":\"dev.tripoder.runtime.GuestContext\",\"identity\":149729464},\"physicalApk\":{\"type\":\"android.app.LoadedApk\",\"identity\":31347885},\"guestApk\":{\"type\":\"android.app.LoadedApk\",\"identity\":15695505},\"physicalApkApplication\":{\"type\":\"dev.tripoder.runtime.RuntimeApplication\",\"identity\":191801430},\"initialApplication\":{\"type\":\"dev.tripoder.runtime.RuntimeApplication\",\"identity\":191801430},\"reflectedInitialApplication\":{\"type\":\"com.tencent.mm.app.Application\",\"identity\":233574615},\"hostApplicationContext\":{\"type\":\"dev.tripoder.runtime.RuntimeApplication\",\"identity\":191801430}}\n10-15 07:10:58.747 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.google.firebase.provider.FirebaseInitProvider\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.029 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.plugin.base.stub.MMPluginProvider\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.042 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.plugin.base.stub.WXCommProvider\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.077 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"androidx.startup.InitializationProvider\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.189 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.plugin.ext.provider.ExtContentProviderBase\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.223 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.plugin.ext.provider.ExtControlProviderMsg\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.236 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.plugin.ext.provider.ExtControlProviderSearchContact\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.253 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.plugin.ext.provider.ExtControlProviderNearBy\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.267 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.plugin.ext.provider.ExtControlProviderSNS\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.285 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.plugin.ext.provider.ExtControlProviderAccountSync\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.292 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.plugin.ext.provider.ExtControlProviderEntry\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.297 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.app.provider.ShareableChatRecordsProvider\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.305 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.plugin.normsg.NormsgInfoProvider\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.310 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.plugin.lite.storage.LiteAppContentProvider\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.320 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.plugin.sns.waid.WaidProvider\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.327 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.plugin.recordvideo.background.provider.WeSeeProvider\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.335 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.plugin.appbrand.app.AppBrandCriticalDataProvider\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.343 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.plugin.emoji.provider.EmotionContentProvider\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.358 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.plugin.game.download.GameResourceDownloadProvider\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.376 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.plugin.gwallet.GWalletQueryProvider\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.395 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.open_voice_control.OVCInfoProvider\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.416 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.plugin.expansions.ExpansionsGlobal$CP\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.447 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.app.AppForegroundDelegate$Provider\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:10:59.463 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.sdk.platformtools.MultiProcessSharedPreferences\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:11:00.115 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"android.support.v4.content.FileProvider\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:11:00.116 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"androidx.core.content.FileProvider\",\"owned\":false,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:11:00.119 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"com.tencent.mm.recovery.RecoveryFileProvider\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:11:00.359 32460 32460 I TripoderProvider: {\"stage\":\"platform-attach\",\"type\":\"androidx.lifecycle.ProcessLifecycleOwnerInitializer\",\"owned\":true,\"scoped\":true,\"contextType\":\"dev.tripoder.runtime.GuestContext\"}\n10-15 07:11:01.200 32460 32460 I TripoderOwnership: {\"stage\":\"after-onCreate\",\"physical\":{\"type\":\"dev.tripoder.runtime.RuntimeApplication\",\"identity\":191801430},\"guest\":{\"type\":\"com.tencent.mm.app.Application\",\"identity\":233574615},\"physicalBase\":{\"type\":\"android.app.ContextImpl\",\"identity\":133094852},\"guestBase\":{\"type\":\"dev.tripoder.runtime.GuestContext\",\"identity\":149729464},\"physicalApk\":{\"type\":\"android.app.LoadedApk\",\"identity\":31347885},\"guestApk\":{\"type\":\"android.app.LoadedApk\",\"identity\":15695505},\"physicalApkApplication\":{\"type\":\"dev.tripoder.runtime.RuntimeApplication\",\"identity\":191801430},\"initialApplication\":{\"type\":\"dev.tripoder.runtime.RuntimeApplication\",\"identity\":191801430},\"reflectedInitialApplication\":{\"type\":\"com.tencent.mm.app.Application\",\"identity\":233574615},\"hostApplicationContext\":{\"type\":\"dev.tripoder.runtime.RuntimeApplication\",\"identity\":191801430}}\n10-15 07:11:12.242 32460 32460 E TripoderStartup: {\"stage\":\"uncaught\",\"thread\":\"main\",\"causes\":[{\"type\":\"java.lang.RuntimeException\",\"message\":\"Unable to start activity ComponentInfo{dev.tripoder.engine\\/dev.tripoder.runtime.generated.TaskP0$F0M1C2}\",\"frames\":[\"android.app.ActivityThread.performLaunchActivity(ActivityThread.java:5196)\",\"android.app.ActivityThread.performLaunchActivity(Native Method)\",\"android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:5447)\",\"android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)\",\"android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:136)\",\"android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:106)\",\"android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:83)\",\"android.app.ActivityThread$H.handleMessage(ActivityThread.java:3492)\",\"android.os.Handler.dispatchMessageImpl(Handler.java:146)\",\"android.os.Handler.dispatchMessage(Handler.java:129)\",\"android.os.Looper.loopOnce(Looper.java:315)\",\"android.os.Looper.loop(Looper.java:419)\",\"android.app.ActivityThread.main(ActivityThread.java:10847)\",\"java.lang.reflect.Method.invoke(Native Method)\",\"com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\",\"com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\"]},{\"type\":\"java.lang.IllegalArgumentException\",\"message\":\"ACTIVITY_EXTRA_TYPE_UNSUPPORTED:java.util.ArrayList\",\"frames\":[\"dev.tripoder.runtime.RuntimeActivityValues.value(RuntimeActivityValues.java:46)\",\"dev.tripoder.runtime.RuntimeActivityValues.bundle(RuntimeActivityValues.java:21)\",\"dev.tripoder.runtime.RuntimeActivityValues.extras(RuntimeActivityValues.java:12)\",\"dev.tripoder.runtime.RuntimeActivityIntent.digest(RuntimeActivityIntent.java:25)\",\"dev.tripoder.runtime.RuntimeActivityIntent.snapshot(RuntimeActivityIntent.java:17)\",\"dev.tripoder.runtime.RuntimeEngine.route(RuntimeEngine.java:174)\",\"dev.tripoder.runtime.RuntimeBridge.route(RuntimeBridge.java:135)\",\"android.app.Instrumentation.execStartActivity(Native Method)\",\"java.lang.reflect.Method.invoke(Native Method)\",\"com.tencent.mm.splash.SplashHackInstrumentation.execStartActivity(SourceFile:226)\",\"android.app.Activity.startActivityForResult(Activity.java:6288)\",\"com.tencent.mm.hellhoundlib.activities.HellActivity.startActivityForResult(SourceFile:7)\",\"androidx.activity.ComponentActivity.startActivityForResult(SourceFile:2)\",\"com.tencent.mm.ui.component.UIComponentActivity.startActivityForResult(SourceFile:29)\",\"com.tencent.mm.ui.MMFragmentActivity.startActivityForResult(SourceFile:13)\",\"com.tencent.mm.ui.vas.launcher.VASLauncher.startActivityForResult(SourceFile:337)\",\"com.tencent.mm.ui.LauncherUI.startActivityForResult(SourceFile:21)\",\"android.app.Activity.startActivityForResult(Activity.java:6245)\",\"androidx.activity.ComponentActivity.startActivityForResult(SourceFile:1)\",\"com.tencent.mm.ui.MMFragmentActivity.startActivityForResult(SourceFile:1)\",\"android.app.Activity.startActivity(Activity.java:6748)\",\"com.tencent.mm.ui.MMFragmentActivity.startActivity(SourceFile:4)\",\"android.app.Activity.startActivity(Activity.java:6715)\",\"com.tencent.mm.ui.component.UIComponentActivity.startActivity(SourceFile:0)\"]}]}\n10-15 07:11:12.257 32460 32460 E TripoderStartup: {\"stage\":\"thread-group-uncaught\",\"thread\":\"main\",\"causes\":[{\"type\":\"java.lang.RuntimeException\",\"message\":\"Unable to start activity ComponentInfo{dev.tripoder.engine\\/dev.tripoder.runtime.generated.TaskP0$F0M1C2}\",\"frames\":[\"android.app.ActivityThread.performLaunchActivity(ActivityThread.java:5196)\",\"android.app.ActivityThread.performLaunchActivity(Native Method)\",\"android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:5447)\",\"android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)\",\"android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:136)\",\"android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:106)\",\"android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:83)\",\"android.app.ActivityThread$H.handleMessage(ActivityThread.java:3492)\",\"android.os.Handler.dispatchMessageImpl(Handler.java:146)\",\"android.os.Handler.dispatchMessage(Handler.java:129)\",\"android.os.Looper.loopOnce(Looper.java:315)\",\"android.os.Looper.loop(Looper.java:419)\",\"android.app.ActivityThread.main(ActivityThread.java:10847)\",\"java.lang.reflect.Method.invoke(Native Method)\",\"com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\",\"com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\"]},{\"type\":\"java.lang.IllegalArgumentException\",\"message\":\"ACTIVITY_EXTRA_TYPE_UNSUPPORTED:java.util.ArrayList\",\"frames\":[\"dev.tripoder.runtime.RuntimeActivityValues.value(RuntimeActivityValues.java:46)\",\"dev.tripoder.runtime.RuntimeActivityValues.bundle(RuntimeActivityValues.java:21)\",\"dev.tripoder.runtime.RuntimeActivityValues.extras(RuntimeActivityValues.java:12)\",\"dev.tripoder.runtime.RuntimeActivityIntent.digest(RuntimeActivityIntent.java:25)\",\"dev.tripoder.runtime.RuntimeActivityIntent.snapshot(RuntimeActivityIntent.java:17)\",\"dev.tripoder.runtime.RuntimeEngine.route(RuntimeEngine.java:174)\",\"dev.tripoder.runtime.RuntimeBridge.route(RuntimeBridge.java:135)\",\"android.app.Instrumentation.execStartActivity(Native Method)\",\"java.lang.reflect.Method.invoke(Native Method)\",\"com.tencent.mm.splash.SplashHackInstrumentation.execStartActivity(SourceFile:226)\",\"android.app.Activity.startActivityForResult(Activity.java:6288)\",\"com.tencent.mm.hellhoundlib.activities.HellActivity.startActivityForResult(SourceFile:7)\",\"androidx.activity.ComponentActivity.startActivityForResult(SourceFile:2)\",\"com.tencent.mm.ui.component.UIComponentActivity.startActivityForResult(SourceFile:29)\",\"com.tencent.mm.ui.MMFragmentActivity.startActivityForResult(SourceFile:13)\",\"com.tencent.mm.ui.vas.launcher.VASLauncher.startActivityForResult(SourceFile:337)\",\"com.tencent.mm.ui.LauncherUI.startActivityForResult(SourceFile:21)\",\"android.app.Activity.startActivityForResult(Activity.java:6245)\",\"androidx.activity.ComponentActivity.startActivityForResult(SourceFile:1)\",\"com.tencent.mm.ui.MMFragmentActivity.startActivityForResult(SourceFile:1)\",\"android.app.Activity.startActivity(Activity.java:6748)\",\"com.tencent.mm.ui.MMFragmentActivity.startActivity(SourceFile:4)\",\"android.app.Activity.startActivity(Activity.java:6715)\",\"com.tencent.mm.ui.component.UIComponentActivity.startActivity(SourceFile:0)\"]}]}\n10-15 07:11:12.267 32460 32460 E TripoderStartup: {\"stage\":\"thread-group-uncaught\",\"thread\":\"main\",\"causes\":[{\"type\":\"java.lang.RuntimeException\",\"message\":\"Unable to start activity ComponentInfo{dev.tripoder.engine\\/dev.tripoder.runtime.generated.TaskP0$F0M1C2}\",\"frames\":[\"android.app.ActivityThread.performLaunchActivity(ActivityThread.java:5196)\",\"android.app.ActivityThread.performLaunchActivity(Native Method)\",\"android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:5447)\",\"android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)\",\"android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:136)\",\"android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:106)\",\"android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:83)\",\"android.app.ActivityThread$H.handleMessage(ActivityThread.java:3492)\",\"android.os.Handler.dispatchMessageImpl(Handler.java:146)\",\"android.os.Handler.dispatchMessage(Handler.java:129)\",\"android.os.Looper.loopOnce(Looper.java:315)\",\"android.os.Looper.loop(Looper.java:419)\",\"android.app.ActivityThread.main(ActivityThread.java:10847)\",\"java.lang.reflect.Method.invoke(Native Method)\",\"com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\",\"com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\"]},{\"type\":\"java.lang.IllegalArgumentException\",\"message\":\"ACTIVITY_EXTRA_TYPE_UNSUPPORTED:java.util.ArrayList\",\"frames\":[\"dev.tripoder.runtime.RuntimeActivityValues.value(RuntimeActivityValues.java:46)\",\"dev.tripoder.runtime.RuntimeActivityValues.bundle(RuntimeActivityValues.java:21)\",\"dev.tripoder.runtime.RuntimeActivityValues.extras(RuntimeActivityValues.java:12)\",\"dev.tripoder.runtime.RuntimeActivityIntent.digest(RuntimeActivityIntent.java:25)\",\"dev.tripoder.runtime.RuntimeActivityIntent.snapshot(RuntimeActivityIntent.java:17)\",\"dev.tripoder.runtime.RuntimeEngine.route(RuntimeEngine.java:174)\",\"dev.tripoder.runtime.RuntimeBridge.route(RuntimeBridge.java:135)\",\"android.app.Instrumentation.execStartActivity(Native Method)\",\"java.lang.reflect.Method.invoke(Native Method)\",\"com.tencent.mm.splash.SplashHackInstrumentation.execStartActivity(SourceFile:226)\",\"android.app.Activity.startActivityForResult(Activity.java:6288)\",\"com.tencent.mm.hellhoundlib.activities.HellActivity.startActivityForResult(SourceFile:7)\",\"androidx.activity.ComponentActivity.startActivityForResult(SourceFile:2)\",\"com.tencent.mm.ui.component.UIComponentActivity.startActivityForResult(SourceFile:29)\",\"com.tencent.mm.ui.MMFragmentActivity.startActivityForResult(SourceFile:13)\",\"com.tencent.mm.ui.vas.launcher.VASLauncher.startActivityForResult(SourceFile:337)\",\"com.tencent.mm.ui.LauncherUI.startActivityForResult(SourceFile:21)\",\"android.app.Activity.startActivityForResult(Activity.java:6245)\",\"androidx.activity.ComponentActivity.startActivityForResult(SourceFile:1)\",\"com.tencent.mm.ui.MMFragmentActivity.startActivityForResult(SourceFile:1)\",\"android.app.Activity.startActivity(Activity.java:6748)\",\"com.tencent.mm.ui.MMFragmentActivity.startActivity(SourceFile:4)\",\"android.app.Activity.startActivity(Activity.java:6715)\",\"com.tencent.mm.ui.component.UIComponentActivity.startActivity(SourceFile:0)\"]}]}\n10-15 07:11:13.475 32460 32691 E TripoderStartup: {\"stage\":\"thread-group-uncaught\",\"thread\":\"wc_srvinit_9\",\"causes\":[{\"type\":\"java.lang.UnsupportedOperationException\",\"message\":\"SYSTEM_BROADCAST_POLICY_UNSUPPORTED:android.intent.action.BATTERY_OKAY\",\"frames\":[\"dev.tripoder.runtime.RuntimeBroadcastIntent.filter(RuntimeBroadcastIntent.java:21)\",\"dev.tripoder.runtime.RuntimeReceivers.register(RuntimeReceivers.java:31)\",\"dev.tripoder.runtime.GuestContext.registerReceiver(GuestContext.java:110)\",\"android.content.ContextWrapper.registerReceiver(ContextWrapper.java:815)\",\"uh.t.q(SourceFile:101)\",\"uh.u.e(SourceFile:56)\",\"com.tencent.mm.matrix.l.a(SourceFile:3254)\",\"com.tencent.mm.feature.performance.t1.onCreate(SourceFile:496)\",\"ni5.w.access$1000(SourceFile:16)\",\"ni5.u.compute(SourceFile:123)\",\"java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)\",\"java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:391)\",\"java.util.concurrent.ForkJoinTask.invoke(ForkJoinTask.java:671)\",\"ni5.v.compute(SourceFile:35)\",\"java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)\",\"java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:391)\",\"java.util.concurrent.ForkJoinTask.invoke(ForkJoinTask.java:671)\",\"ni5.w.transitLifecycleStatusOnDemand(SourceFile:254)\",\"ni5.n0.j(SourceFile:20)\",\"ni5.g0.run(SourceFile:23)\",\"java.util.concurrent.ForkJoinTask$RunnableExecuteAction.exec(ForkJoinTask.java:1428)\",\"java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:391)\",\"java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1325)\",\"java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1856)\"]}]}\n10-15 07:11:13.485 32460 32691 E TripoderStartup: {\"stage\":\"thread-group-uncaught\",\"thread\":\"wc_srvinit_9\",\"causes\":[{\"type\":\"java.lang.UnsupportedOperationException\",\"message\":\"SYSTEM_BROADCAST_POLICY_UNSUPPORTED:android.intent.action.BATTERY_OKAY\",\"frames\":[\"dev.tripoder.runtime.RuntimeBroadcastIntent.filter(RuntimeBroadcastIntent.java:21)\",\"dev.tripoder.runtime.RuntimeReceivers.register(RuntimeReceivers.java:31)\",\"dev.tripoder.runtime.GuestContext.registerReceiver(GuestContext.java:110)\",\"android.content.ContextWrapper.registerReceiver(ContextWrapper.java:815)\",\"uh.t.q(SourceFile:101)\",\"uh.u.e(SourceFile:56)\",\"com.tencent.mm.matrix.l.a(SourceFile:3254)\",\"com.tencent.mm.feature.performance.t1.onCreate(SourceFile:496)\",\"ni5.w.access$1000(SourceFile:16)\",\"ni5.u.compute(SourceFile:123)\",\"java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)\",\"java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:391)\",\"java.util.concurrent.ForkJoinTask.invoke(ForkJoinTask.java:671)\",\"ni5.v.compute(SourceFile:35)\",\"java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)\",\"java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:391)\",\"java.util.concurrent.ForkJoinTask.invoke(ForkJoinTask.java:671)\",\"ni5.w.transitLifecycleStatusOnDemand(SourceFile:254)\",\"ni5.n0.j(SourceFile:20)\",\"ni5.g0.run(SourceFile:23)\",\"java.util.concurrent.ForkJoinTask$RunnableExecuteAction.exec(ForkJoinTask.java:1428)\",\"java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:391)\",\"java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1325)\",\"java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1856)\"]}]}\n10-15 07:11:13.529 32460 32460 E TripoderStartup: {\"stage\":\"exit:1\",\"thread\":\"main\",\"causes\":[{\"type\":\"java.lang.Throwable\",\"message\":null,\"frames\":[\"java.lang.Runtime.exit(Native Method)\",\"java.lang.System.exit(System.java:1576)\",\"com.tencent.mm.app.l3.uncaughtException(SourceFile:108)\",\"java.lang.ThreadGroup.uncaughtException(ThreadGroup.java:1098)\",\"java.lang.ThreadGroup.uncaughtException(Native Method)\",\"java.lang.ThreadGroup.uncaughtException(ThreadGroup.java:1093)\",\"java.lang.ThreadGroup.uncaughtException(Native Method)\",\"java.lang.Thread.dispatchUncaughtException(Thread.java:3387)\",\"java.lang.Thread.dispatchUncaughtException(Native Method)\"]}]}\n",
+      "stderr": ""
+    }
+  ],
+  "fullP5Accepted": false,
+  "businessScenariosVerified": false,
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "deviceLogStart": "10-15 07:10:37.294",
+  "ownedUid": 10400,
+  "targetApkSha256": "f2a725bc04302ad218a563533ae79356e66b64aa711b275bc919a8d432f7e15d",
+  "passed": false,
+  "error": "DEVICE_ASSERTIONS_FAILED:target-wechat",
+  "nativeFatalSignalObserved": false,
+  "javaFatalExceptionObserved": true,
+  "finishedAtUtc": "2026-10-14T23:11:14.358935+00:00"
+}

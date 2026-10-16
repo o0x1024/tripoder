@@ -1,0 +1,353 @@
+
+android/self-hook-probe/build/device-libart.so:	file format elf64-littleaarch64
+
+Disassembly of section .text:
+
+00000000004523e0 <_ZNK3art6Thread16GetCurrentMethodEPjbb>:
+  452770:      	paciasp
+  452774:      	sub	sp, sp, #0xb0
+  452778:      	stp	x29, x30, [sp, #0x50]
+  45277c:      	stp	x28, x27, [sp, #0x60]
+  452780:      	stp	x26, x25, [sp, #0x70]
+  452784:      	stp	x24, x23, [sp, #0x80]
+  452788:      	stp	x22, x21, [sp, #0x90]
+  45278c:      	stp	x20, x19, [sp, #0xa0]
+  452790:      	add	x29, sp, #0x50
+  452794:      	mrs	x25, TPIDR_EL0
+  452798:      	mov	x19, x0
+  45279c:      	ldr	x8, [x25, #0x28]
+  4527a0:      	stur	x8, [x29, #-0x8]
+  4527a4:      	ldr	x8, [x0, #0xc8]
+  4527a8:      	stp	x0, x8, [sp, #0x20]
+  4527ac:      	cbz	x8, 0x4527b4 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x3d4>
+  4527b0:      	ldr	x8, [x8, #0x10]
+  4527b4:      	mov	w9, #0x4200             // =16896
+  4527b8:      	str	x8, [sp, #0x30]
+  4527bc:      	stp	x19, x9, [sp, #0x38]
+  4527c0:      	cbz	x19, 0x452940 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x560>
+  4527c4:      	ldr	w8, [x19]
+  4527c8:      	lsr	w8, w8, #24
+  4527cc:      	strb	w8, [sp, #0x41]
+  4527d0:      	cbz	w8, 0x452980 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x5a0>
+  4527d4:      	adrp	x26, 0xc2f000
+  4527d8:      	adrp	x27, 0xc2f000
+  4527dc:      	mov	w28, #0xfff7            // =65527
+  4527e0:      	ldr	x26, [x26, #0xad8]
+  4527e4:      	ldr	x27, [x27, #0xae0]
+  4527e8:      	adrp	x20, 0xa1000
+  4527ec:      	add	x20, x20, #0x199
+  4527f0:      	adrp	x21, 0x98000
+  4527f4:      	add	x21, x21, #0x6db
+  4527f8:      	adrp	x22, 0x5d000
+  4527fc:      	add	x22, x22, #0x26e
+  452800:      	movk	w28, #0xff, lsl #16
+  452804:      	adrp	x23, 0x60000
+  452808:      	add	x23, x23, #0x4cc
+  45280c:      	ldr	w24, [x19]
+  452810:      	tst	w24, #0x3f
+  452814:      	b.ne	0x45299c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x5bc>
+  452818:      	and	w1, w24, #0xffffc0
+  45281c:      	mov	w0, w24
+  452820:      	mov	x2, x19
+  452824:      	bl	0x75f7c0 <_ZN3art5debug17MakeMiniDebugInfoENS_14InstructionSetEPKNS_22InstructionSetFeaturesEmmRKNS0_9DebugInfoE+0x13a3c>
+  452828:      	cmp	w0, w24
+  45282c:      	b.ne	0x45280c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x42c>
+  452830:      	ldr	x8, [x19, #0x7a0]
+  452834:      	str	x8, [x19, #0x9e8]
+  452838:      	mov	x0, x19
+  45283c:      	bl	0x452cdc <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x8fc>
+  452840:      	ldrb	w1, [sp, #0x41]
+  452844:      	ldrb	w8, [sp, #0x40]
+  452848:      	mov	x20, x0
+  45284c:      	cmp	w1, w8
+  452850:      	b.eq	0x4528d0 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x4f0>
+  452854:      	cbz	w1, 0x452c4c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x86c>
+  452858:      	cbnz	w8, 0x452908 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x528>
+  45285c:      	mov	w8, #0xfff7             // =65527
+  452860:      	lsl	w23, w1, #24
+  452864:      	add	x22, x19, #0x1, lsl #12 // =0x1000
+  452868:      	movk	w8, #0xff, lsl #16
+  45286c:      	add	w24, w8, #0x2
+  452870:      	ldar	w21, [x19]
+  452874:      	tbnz	w21, #0x1, 0x45289c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x4bc>
+  452878:      	tbnz	w21, #0x2, 0x452914 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x534>
+  45287c:      	and	w8, w21, w24
+  452880:      	mov	w0, w21
+  452884:      	mov	x2, x19
+  452888:      	orr	w1, w8, w23
+  45288c:      	bl	0x75f800 <_ZN3art5debug17MakeMiniDebugInfoENS_14InstructionSetEPKNS_22InstructionSetFeaturesEmmRKNS0_9DebugInfoE+0x13a7c>
+  452890:      	cmp	w0, w21
+  452894:      	b.ne	0x452870 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x490>
+  452898:      	b	0x4528b4 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x4d4>
+  45289c:      	ldrb	w8, [x22, #0xa8a]
+  4528a0:      	mov	x0, x19
+  4528a4:      	add	w8, w8, #0x1
+  4528a8:      	strb	w8, [x22, #0xa8a]
+  4528ac:      	bl	0xaaf040 <_ZN3art6Thread21RunCheckpointFunctionEv@plt>
+  4528b0:      	b	0x452870 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x490>
+  4528b4:      	ldrb	w8, [x22, #0xa89]
+  4528b8:      	add	w8, w8, #0x1
+  4528bc:      	strb	w8, [x22, #0xa89]
+  4528c0:      	str	xzr, [x19, #0x9e8]
+  4528c4:      	ldr	w8, [x19]
+  4528c8:      	tst	w8, #0xe
+  4528cc:      	b.ne	0x452a34 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x654>
+  4528d0:      	ldr	x8, [x25, #0x28]
+  4528d4:      	ldur	x9, [x29, #-0x8]
+  4528d8:      	cmp	x8, x9
+  4528dc:      	b.ne	0x45293c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x55c>
+  4528e0:      	mov	x0, x20
+  4528e4:      	ldp	x20, x19, [sp, #0xa0]
+  4528e8:      	ldp	x22, x21, [sp, #0x90]
+  4528ec:      	ldp	x24, x23, [sp, #0x80]
+  4528f0:      	ldp	x26, x25, [sp, #0x70]
+  4528f4:      	ldp	x28, x27, [sp, #0x60]
+  4528f8:      	ldp	x29, x30, [sp, #0x50]
+  4528fc:      	add	sp, sp, #0xb0
+  452900:      	autiasp
+  452904:      	ret
+  452908:      	mov	x0, x19
+  45290c:      	bl	0x200fa8 <_ZN3art5Mutex13ExclusiveLockEPNS_6ThreadE+0xaa0>
+  452910:      	b	0x4528d0 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x4f0>
+  452914:      	mov	w0, #0x4                // =4
+  452918:      	mov	x1, x19
+  45291c:      	bl	0x85a810 <_ZN3art9ArtMethod18IsImagePointerSizeENS_11PointerSizeE+0x37c>
+  452920:      	adrp	x8, 0xe19000 <_ZN3art20NonDebuggableClasses22non_debuggable_classesE+0xf8>
+  452924:      	mov	x1, x19
+  452928:      	ldr	x8, [x8, #0x200]
+  45292c:      	ldr	x8, [x8, #0x260]
+  452930:      	ldr	x0, [x8, #0x2100]
+  452934:      	bl	0xaaff70 <_ZN3art7Barrier4PassEPNS_6ThreadE@plt>
+  452938:      	b	0x452870 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x490>
+  45293c:      	bl	0xab4170 <__stack_chk_fail@plt>
+  452940:      	adrp	x8, 0xe19000 <_ZN3art20NonDebuggableClasses22non_debuggable_classesE+0xf8>
+  452944:      	add	x19, sp, #0x20
+  452948:      	ldr	x0, [x8, #0x200]
+  45294c:      	cbz	x0, 0x452968 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x588>
+  452950:      	ldrb	w8, [x0, #0x2da]
+  452954:      	cmp	w8, #0x1
+  452958:      	b.ne	0x452968 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x588>
+  45295c:      	mov	x1, xzr
+  452960:      	bl	0xaafe80 <_ZN3art7Runtime14IsShuttingDownEPNS_6ThreadE@plt>
+  452964:      	tbz	w0, #0x0, 0x452c7c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x89c>
+  452968:      	mov	x0, xzr
+  45296c:      	bl	0x452cdc <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x8fc>
+  452970:      	mov	x20, x0
+  452974:      	add	x0, x19, #0x18
+  452978:      	bl	0xaaf070 <_ZN3art23ScopedThreadStateChange33ScopedThreadChangeDestructorCheckEv@plt>
+  45297c:      	b	0x4528d0 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x4f0>
+  452980:      	mov	x0, x19
+  452984:      	mov	w20, w8
+  452988:      	bl	0x452cdc <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x8fc>
+  45298c:      	mov	w1, w20
+  452990:      	mov	x20, x0
+  452994:      	mov	w8, wzr
+  452998:      	b	0x45284c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x46c>
+  45299c:      	str	x25, [sp, #0x10]
+  4529a0:      	tbnz	w24, #0x3, 0x452a98 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x6b8>
+  4529a4:      	tst	w24, #0x6
+  4529a8:      	b.eq	0x452ab4 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x6d4>
+  4529ac:      	mov	w0, #0x6                // =6
+  4529b0:      	mov	x1, xzr
+  4529b4:      	bl	0xaaea10 <_ZN7android4base9ShouldLogENS0_11LogSeverityEPKc@plt>
+  4529b8:      	ldr	x25, [sp, #0x10]
+  4529bc:      	tbz	w0, #0x0, 0x45280c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x42c>
+  4529c0:      	bl	0xaaea20 <__errno@plt>
+  4529c4:      	ldr	w8, [x0]
+  4529c8:      	mov	x25, x0
+  4529cc:      	add	x0, sp, #0x18
+  4529d0:      	mov	x1, x20
+  4529d4:      	mov	w2, #0x182              // =386
+  4529d8:      	mov	w3, #0x6                // =6
+  4529dc:      	mov	x4, xzr
+  4529e0:      	mov	w5, #-0x1               // =-1
+  4529e4:      	str	w8, [sp, #0xc]
+  4529e8:      	bl	0xaae950 <_ZN7android4base10LogMessageC1EPKcjNS0_11LogSeverityES3_i@plt>
+  4529ec:      	add	x0, sp, #0x18
+  4529f0:      	bl	0xaae960 <_ZN7android4base10LogMessage6streamEv@plt>
+  4529f4:      	mov	x1, x21
+  4529f8:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  4529fc:      	mov	x1, x22
+  452a00:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  452a04:      	and	w1, w24, w28
+  452a08:      	bl	0xaaead0 <_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEj@plt>
+  452a0c:      	mov	x1, x23
+  452a10:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  452a14:      	lsr	w1, w24, #24
+  452a18:      	bl	0xaaf000 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_11ThreadStateE@plt>
+  452a1c:      	add	x0, sp, #0x18
+  452a20:      	bl	0xaae980 <_ZN7android4base10LogMessageD1Ev@plt>
+  452a24:      	ldr	w8, [sp, #0xc]
+  452a28:      	str	w8, [x25]
+  452a2c:      	ldr	x25, [sp, #0x10]
+  452a30:      	b	0x45280c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x42c>
+  452a34:      	tbnz	w8, #0x3, 0x452aa8 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x6c8>
+  452a38:      	mov	w0, #0x6                // =6
+  452a3c:      	mov	x1, xzr
+  452a40:      	bl	0xaaea10 <_ZN7android4base9ShouldLogENS0_11LogSeverityEPKc@plt>
+  452a44:      	tbz	w0, #0x0, 0x4528c4 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x4e4>
+  452a48:      	bl	0xaaea20 <__errno@plt>
+  452a4c:      	mov	x21, x0
+  452a50:      	ldr	w22, [x0]
+  452a54:      	adrp	x1, 0xa1000
+  452a58:      	add	x1, x1, #0x199
+  452a5c:      	add	x0, sp, #0x18
+  452a60:      	mov	w2, #0x122              // =290
+  452a64:      	mov	w3, #0x6                // =6
+  452a68:      	mov	x4, xzr
+  452a6c:      	mov	w5, #-0x1               // =-1
+  452a70:      	bl	0xaae950 <_ZN7android4base10LogMessageC1EPKcjNS0_11LogSeverityES3_i@plt>
+  452a74:      	add	x0, sp, #0x18
+  452a78:      	bl	0xaae960 <_ZN7android4base10LogMessage6streamEv@plt>
+  452a7c:      	adrp	x1, 0x73000
+  452a80:      	add	x1, x1, #0xc41
+  452a84:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  452a88:      	add	x0, sp, #0x18
+  452a8c:      	bl	0xaae980 <_ZN7android4base10LogMessageD1Ev@plt>
+  452a90:      	str	w22, [x21]
+  452a94:      	b	0x4528c4 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x4e4>
+  452a98:      	mov	x0, x19
+  452a9c:      	bl	0xaaeff0 <_ZN3art6Thread25PassActiveSuspendBarriersEv@plt>
+  452aa0:      	ldr	x25, [sp, #0x10]
+  452aa4:      	b	0x45280c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x42c>
+  452aa8:      	mov	x0, x19
+  452aac:      	bl	0xaaeff0 <_ZN3art6Thread25PassActiveSuspendBarriersEv@plt>
+  452ab0:      	b	0x4528c4 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x4e4>
+  452ab4:      	tbnz	w24, #0x0, 0x452ae4 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x704>
+  452ab8:      	tbnz	w24, #0x5, 0x452cc8 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x8e8>
+  452abc:      	ldr	x25, [sp, #0x10]
+  452ac0:      	tbz	w24, #0x4, 0x45280c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x42c>
+  452ac4:      	mov	x0, x19
+  452ac8:      	mov	x1, x19
+  452acc:      	mov	x2, x24
+  452ad0:      	mov	x3, xzr
+  452ad4:      	mov	x4, xzr
+  452ad8:      	bl	0xaaf030 <_ZN3art6Thread25EnsureFlipFunctionStartedEPS0_S1_NS0_13StateAndFlagsEPNS_14ThreadExitFlagEPb@plt>
+  452adc:      	tbz	w0, #0x0, 0x45280c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x42c>
+  452ae0:      	b	0x452838 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x458>
+  452ae4:      	ldr	x24, [x26]
+  452ae8:      	mov	x1, xzr
+  452aec:      	mov	x0, x24
+  452af0:      	bl	0xaaea30 <_ZN3art5Mutex13ExclusiveLockEPNS_6ThreadE@plt>
+  452af4:      	ldr	w8, [x19]
+  452af8:      	tbz	w8, #0x0, 0x452b0c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x72c>
+  452afc:      	ldr	x0, [x27]
+  452b00:      	mov	x1, xzr
+  452b04:      	bl	0xaaffe0 <_ZN3art17ConditionVariable16WaitHoldingLocksEPNS_6ThreadE@plt>
+  452b08:      	b	0x452af4 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x714>
+  452b0c:      	mov	x0, x24
+  452b10:      	mov	x1, xzr
+  452b14:      	bl	0xaaea40 <_ZN3art5Mutex15ExclusiveUnlockEPNS_6ThreadE@plt>
+  452b18:      	ldr	x25, [sp, #0x10]
+  452b1c:      	b	0x45280c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x42c>
+  452b20:      	tbnz	w21, #0x3, 0x452bbc <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x7dc>
+  452b24:      	tst	w21, #0x6
+  452b28:      	b.eq	0x452bc8 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x7e8>
+  452b2c:      	mov	w0, #0x6                // =6
+  452b30:      	mov	x1, xzr
+  452b34:      	bl	0xaaea10 <_ZN7android4base9ShouldLogENS0_11LogSeverityEPKc@plt>
+  452b38:      	tbz	w0, #0x0, 0x452c4c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x86c>
+  452b3c:      	bl	0xaaea20 <__errno@plt>
+  452b40:      	mov	x22, x0
+  452b44:      	ldr	w23, [x0]
+  452b48:      	adrp	x1, 0xa1000
+  452b4c:      	add	x1, x1, #0x199
+  452b50:      	add	x0, sp, #0x18
+  452b54:      	mov	w2, #0x182              // =386
+  452b58:      	mov	w3, #0x6                // =6
+  452b5c:      	mov	x4, xzr
+  452b60:      	mov	w5, #-0x1               // =-1
+  452b64:      	bl	0xaae950 <_ZN7android4base10LogMessageC1EPKcjNS0_11LogSeverityES3_i@plt>
+  452b68:      	add	x0, sp, #0x18
+  452b6c:      	bl	0xaae960 <_ZN7android4base10LogMessage6streamEv@plt>
+  452b70:      	adrp	x1, 0x98000
+  452b74:      	add	x1, x1, #0x6db
+  452b78:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  452b7c:      	adrp	x1, 0x5d000
+  452b80:      	add	x1, x1, #0x26e
+  452b84:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  452b88:      	mov	w8, #0xfff7             // =65527
+  452b8c:      	movk	w8, #0xff, lsl #16
+  452b90:      	and	w1, w21, w8
+  452b94:      	bl	0xaaead0 <_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEj@plt>
+  452b98:      	adrp	x1, 0x60000
+  452b9c:      	add	x1, x1, #0x4cc
+  452ba0:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  452ba4:      	lsr	w1, w21, #24
+  452ba8:      	bl	0xaaf000 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_11ThreadStateE@plt>
+  452bac:      	add	x0, sp, #0x18
+  452bb0:      	bl	0xaae980 <_ZN7android4base10LogMessageD1Ev@plt>
+  452bb4:      	str	w23, [x22]
+  452bb8:      	b	0x452c4c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x86c>
+  452bbc:      	mov	x0, x19
+  452bc0:      	bl	0xaaeff0 <_ZN3art6Thread25PassActiveSuspendBarriersEv@plt>
+  452bc4:      	b	0x452c4c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x86c>
+  452bc8:      	tbnz	w21, #0x0, 0x452bf4 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x814>
+  452bcc:      	tbnz	w21, #0x5, 0x452c40 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x860>
+  452bd0:      	tbz	w21, #0x4, 0x452c4c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x86c>
+  452bd4:      	mov	x0, x19
+  452bd8:      	mov	x1, x19
+  452bdc:      	mov	x2, x21
+  452be0:      	mov	x3, xzr
+  452be4:      	mov	x4, xzr
+  452be8:      	bl	0xaaf030 <_ZN3art6Thread25EnsureFlipFunctionStartedEPS0_S1_NS0_13StateAndFlagsEPNS_14ThreadExitFlagEPb@plt>
+  452bec:      	tbz	w0, #0x0, 0x452c4c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x86c>
+  452bf0:      	b	0x4528d0 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x4f0>
+  452bf4:      	adrp	x8, 0xc2f000
+  452bf8:      	mov	x1, xzr
+  452bfc:      	ldr	x8, [x8, #0xad8]
+  452c00:      	ldr	x21, [x8]
+  452c04:      	mov	x0, x21
+  452c08:      	bl	0xaaea30 <_ZN3art5Mutex13ExclusiveLockEPNS_6ThreadE@plt>
+  452c0c:      	ldr	w8, [x19]
+  452c10:      	tbz	w8, #0x0, 0x452c30 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x850>
+  452c14:      	adrp	x22, 0xc2f000
+  452c18:      	ldr	x22, [x22, #0xae0]
+  452c1c:      	ldr	x0, [x22]
+  452c20:      	mov	x1, xzr
+  452c24:      	bl	0xaaffe0 <_ZN3art17ConditionVariable16WaitHoldingLocksEPNS_6ThreadE@plt>
+  452c28:      	ldr	w8, [x19]
+  452c2c:      	tbnz	w8, #0x0, 0x452c1c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x83c>
+  452c30:      	mov	x0, x21
+  452c34:      	mov	x1, xzr
+  452c38:      	bl	0xaaea40 <_ZN3art5Mutex15ExclusiveUnlockEPNS_6ThreadE@plt>
+  452c3c:      	b	0x452c4c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x86c>
+  452c40:      	mov	x0, x19
+  452c44:      	mov	x1, x19
+  452c48:      	bl	0xaaf020 <_ZNK3art6Thread19WaitForFlipFunctionEPS0_@plt>
+  452c4c:      	ldr	w21, [x19]
+  452c50:      	tst	w21, #0x3f
+  452c54:      	b.ne	0x452b20 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x740>
+  452c58:      	and	w1, w21, #0xffffc0
+  452c5c:      	mov	w0, w21
+  452c60:      	mov	x2, x19
+  452c64:      	bl	0x75f7c0 <_ZN3art5debug17MakeMiniDebugInfoENS_14InstructionSetEPKNS_22InstructionSetFeaturesEmmRKNS0_9DebugInfoE+0x13a3c>
+  452c68:      	cmp	w0, w21
+  452c6c:      	b.ne	0x452c4c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x86c>
+  452c70:      	ldr	x8, [x19, #0x7a0]
+  452c74:      	str	x8, [x19, #0x9e8]
+  452c78:      	b	0x4528d0 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x4f0>
+  452c7c:      	adrp	x1, 0x4c000
+  452c80:      	add	x1, x1, #0x990
+  452c84:      	add	x0, sp, #0x18
+  452c88:      	mov	w2, #0x27               // =39
+  452c8c:      	mov	w3, #0x6                // =6
+  452c90:      	mov	x4, xzr
+  452c94:      	mov	w5, #-0x1               // =-1
+  452c98:      	bl	0xaae950 <_ZN7android4base10LogMessageC1EPKcjNS0_11LogSeverityES3_i@plt>
+  452c9c:      	add	x0, sp, #0x18
+  452ca0:      	bl	0xaae960 <_ZN7android4base10LogMessage6streamEv@plt>
+  452ca4:      	adrp	x1, 0x9e000
+  452ca8:      	add	x1, x1, #0x752
+  452cac:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  452cb0:      	adrp	x1, 0x4f000
+  452cb4:      	add	x1, x1, #0xcf
+  452cb8:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  452cbc:      	add	x0, sp, #0x18
+  452cc0:      	bl	0xaae980 <_ZN7android4base10LogMessageD1Ev@plt>
+  452cc4:      	b	0x452968 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x588>
+  452cc8:      	mov	x0, x19
+  452ccc:      	mov	x1, x19
+  452cd0:      	bl	0xaaf020 <_ZNK3art6Thread19WaitForFlipFunctionEPS0_@plt>
+  452cd4:      	ldr	x25, [sp, #0x10]
+  452cd8:      	b	0x45280c <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x42c>

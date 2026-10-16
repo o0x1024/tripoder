@@ -25,7 +25,7 @@ final class GuestRuntime {
     String projectId(){return projectId;}
     JSONObject selectProject(String id) throws Exception {
         ProjectStore projects=new ProjectStore(context);projects.initialize();projects.get(id);
-        if(!projects.runnable(id))throw new IllegalStateException("此应用尚未接入运行器，请先查看兼容性报告");
+        if(!projects.legacyFixtureProject(id))throw new IllegalStateException("此入口仅支持 legacy 自有示例实验，项目未绑定新 runtime 安装");
         if(loader!=null&&!projectId.equals(id))return new JSONObject().put("restartRequired",true).put("activeProject",projectId);
         projectId=id;return new JSONObject().put("projectId",id);
     }
@@ -76,7 +76,7 @@ final class GuestRuntime {
         if (loader != null) return;
         if (!Application.getProcessName().endsWith(":guest")) throw new IllegalStateException("Guest execution requires the guest process");
         store = new GuestStore(context);
-        apk = store.ensureFixture(); library = store.extractLibrary(apk); data = new ProjectStore(context).data(projectId);
+        apk = store.initializeOrVerifyLegacyFixture(); library = store.extractLibrary(apk); data = new ProjectStore(context).data(projectId);
         try { context.getClassLoader().loadClass(GuestStore.CLASS); }
         catch (ClassNotFoundException expected) { hostClassAbsent = true; }
         if (!hostClassAbsent) throw new IllegalStateException("Guest class was accidentally compiled into the host");
@@ -156,9 +156,27 @@ final class GuestRuntime {
                 + "ctx.native.function(symbols.delay.moduleName,symbols.delay.symbol,{argumentTypes:['int32'],returnType:'int32',buildId:symbols.delay.buildId})"
                 + ".before(({args})=>[Number(args[0])+1]).after(({result})=>Number(result)*2);}});";
             script("deploy", phases, session, false); pair(checks, "before-original-after", "after:guest-original:PHONE", 38);
-            script("deploy", source.replace("params.message + String(args[0]).toUpperCase()", "globalThis.secret"), session, false);
-            pair(checks, "blocked-global-fallback", "guest-original:phone", 706);
-            check(checks, "script-error-recorded", command("status", null).getJSONArray("errors").length() > 0, true);
+            String replacement = ".replace(({ args, params }) => params.message + String(args[0]).toUpperCase())";
+            String[] stages = {"before", "replace", "after"};
+            String[] invalidHooks = {".before(() => [1])", ".replace(() => globalThis.secret)", ".after(() => 1)"};
+            if (!source.contains(replacement)) throw new IllegalStateException("Unexpected draft template");
+            for (int i = 0; i < stages.length; i++) {
+                script("deploy", source.replace(replacement, invalidHooks[i]), session, false);
+                boolean invocationFailed = false;
+                try { greet.invoke(null, "phone"); }
+                catch (java.lang.reflect.InvocationTargetException expected) {
+                    Throwable cause = expected.getCause();
+                    invocationFailed = cause instanceof IllegalStateException && cause.getMessage() != null
+                        && cause.getMessage().contains("HOOK_EXECUTION: greet " + stages[i]);
+                }
+                check(checks, "java-" + stages[i] + "-failure-propagated", invocationFailed, invocationFailed);
+                JSONArray failures = command("status", null).getJSONArray("errors");
+                JSONObject latest = failures.getJSONObject(failures.length() - 1);
+                check(checks, "java-" + stages[i] + "-failure-recorded", "greet".equals(latest.getString("symbol"))
+                    && stages[i].equals(latest.getString("stage")), latest);
+            }
+            // Native failure terminates this process and belongs to a separate crash suite.
+            check(checks, "valid-native-hook-still-runs", Integer.valueOf(706).equals(delay.invoke(null, 3)), true);
             command("disable", null); pair(checks, "script-uninstalled", "guest-original:phone", 16);
             check(checks, "script-native-bytes-restored", !command("status", null).getBoolean("nativeCodeChanged"), true);
             passed = true;

@@ -1,0 +1,22 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tripoder.engine" android:versionCode="1" android:versionName="0.1-dev">
+    <uses-sdk android:minSdkVersion="36" android:targetSdkVersion="36"/>
+    <permission android:name="dev.tripoder.engine.permission.CONTROL" android:protectionLevel="signature"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
+    <queries><package android:name="dev.tripoder.workbench"/></queries>
+    <application android:name="dev.tripoder.runtime.RuntimeApplication" android:appComponentFactory="dev.tripoder.runtime.RuntimeFactory" android:label="Tripoder 引擎（开发）" android:allowBackup="false" android:debuggable="false" android:extractNativeLibs="true" android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        <activity android:name="dev.tripoder.runtime.RuntimeControllerGateway" android:exported="true" android:permission="dev.tripoder.engine.permission.CONTROL" android:excludeFromRecents="true"/>
+        <activity android:name="dev.tripoder.runtime.RuntimeGuestGateway" android:process=":authority" android:exported="true" android:permission="dev.tripoder.engine.permission.CONTROL" android:taskAffinity="dev.tripoder.engine.guestentry"/>
+        <service android:name="dev.tripoder.runtime.RuntimeControllerService" android:process=":authority" android:exported="true" android:permission="dev.tripoder.engine.permission.CONTROL" android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="User-controlled execution of imported apps inside Tripoder runtime spaces"/>
+        </service>
+        <provider android:name="dev.tripoder.runtime.RuntimeBootstrapProvider" android:authorities="dev.tripoder.engine.runtime.bootstrap" android:exported="false" android:process=":authority"/>
+        <!-- PROCESS_COMPONENT_POOL -->
+        <!-- JOB_COMPONENT_POOL -->
+        <!-- ACTIVITY_COMPONENT_POOL -->
+    </application>
+</manifest>

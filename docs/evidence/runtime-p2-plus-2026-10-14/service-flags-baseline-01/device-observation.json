@@ -1,0 +1,119 @@
+{
+  "runId": "service-startup-d5b8821c39924f96",
+  "scope": "normal-android-provider-baseline",
+  "scenario": "service-startup",
+  "fixtureSha256": "5f56883c8e49759a3f2abcb546895b9f3bd2bc401db366654127bed522fdd462",
+  "commands": [
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/service-startup.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~boYLW7WfdEm8GGLWi7oTrQ==/dev.tripoder.provideridentity-a2HGhGax23hmYFxDiRrL5w==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~boYLW7WfdEm8GGLWi7oTrQ==/dev.tripoder.provideridentity-a2HGhGax23hmYFxDiRrL5w==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "5f56883c8e49759a3f2abcb546895b9f3bd2bc401db366654127bed522fdd462  /data/app/~~boYLW7WfdEm8GGLWi7oTrQ==/dev.tripoder.provideridentity-a2HGhGax23hmYFxDiRrL5w==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-f",
+        "0x10008000",
+        "-n",
+        "dev.tripoder.provideridentity/dev.tripoder.servicestartup.StartupActivity",
+        "--es",
+        "baseline",
+        "true",
+        "--es",
+        "runId",
+        "service-startup-d5b8821c39924f96",
+        "--es",
+        "mode",
+        "direct"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { flg=0x10008000 cmp=dev.tripoder.provideridentity/dev.tripoder.servicestartup.StartupActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.provideridentity/dev.tripoder.servicestartup.StartupActivity\nTotalTime: 79\nWaitTime: 81\nComplete\n",
+      "stderr": ""
+    }
+  ],
+  "passed": true,
+  "tripoderRuntimeVerified": false,
+  "checks": [
+    {
+      "name": "startService-returns-logical-component-during-attach",
+      "passed": true
+    },
+    {
+      "name": "real-remote-bind-with-platform-scheduling-flags-submitted",
+      "passed": true
+    },
+    {
+      "name": "callback-after-caller-application-created",
+      "passed": true
+    },
+    {
+      "name": "service-connection-logical-name",
+      "passed": true
+    },
+    {
+      "name": "service-really-runs-in-declared-remote-process",
+      "passed": true
+    },
+    {
+      "name": "service-context-and-application-logical",
+      "passed": true
+    },
+    {
+      "name": "real-service-start-and-bind-callbacks",
+      "passed": true
+    },
+    {
+      "name": "attach-start-request-under-two-seconds",
+      "passed": true
+    },
+    {
+      "name": "real-service-stop-accepted",
+      "passed": true
+    },
+    {
+      "name": "native-non-creating-bind-accepted",
+      "passed": true
+    }
+  ]
+}

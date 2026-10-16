@@ -1,0 +1,335 @@
+{
+  "schema": 1,
+  "runId": "control-af05333d22934b1d",
+  "sentinelClientVerified": false,
+  "modelToolUseVerified": false,
+  "fullP5Accepted": false,
+  "businessScenariosVerified": false,
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.workbench"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~B1UQdeLE-uz_M1_4ECffhg==/dev.tripoder.workbench-lgZGY6UFA2HBt-8TMX1ONA==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~B1UQdeLE-uz_M1_4ECffhg==/dev.tripoder.workbench-lgZGY6UFA2HBt-8TMX1ONA==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "fa08dbc217ce01e7f7fe18ffa7c44ef5e6b17cfed5aea7512b2239404e8cb1b0  /data/app/~~B1UQdeLE-uz_M1_4ECffhg==/dev.tripoder.workbench-lgZGY6UFA2HBt-8TMX1ONA==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~W53FFkcn6cgJ52q8fkPLxQ==/dev.tripoder.engine-tT-LaJxGEEEYqc4POCBAMQ==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~W53FFkcn6cgJ52q8fkPLxQ==/dev.tripoder.engine-tT-LaJxGEEEYqc4POCBAMQ==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "182690f7e856ed40a8c157ec50de94ebd4b4347ddc8b54006baf968872f2ecce  /data/app/~~W53FFkcn6cgJ52q8fkPLxQ==/dev.tripoder.engine-tT-LaJxGEEEYqc4POCBAMQ==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.controltest"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~WuxIuHlat1dLQHtvloPkGQ==/dev.tripoder.controltest-QjPV1FKBGPeqfrecqmSaNA==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~WuxIuHlat1dLQHtvloPkGQ==/dev.tripoder.controltest-QjPV1FKBGPeqfrecqmSaNA==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "1249b2437e0c1feaeddad06aa3e11a8b03543d1bc6dc338303b568afa1f174cf  /data/app/~~WuxIuHlat1dLQHtvloPkGQ==/dev.tripoder.controltest-QjPV1FKBGPeqfrecqmSaNA==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.workbench"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.controltest"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.workbench"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.workbench uid:10401\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.engine uid:10400\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "date \"+%m-%d %H:%M:%S.%3N\""
+      ],
+      "exitCode": 0,
+      "stdout": "10-15 03:10:19.622\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.controltest/dev.tripoder.controltest.ClientActivity"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.controltest/.ClientActivity }\nStatus: ok\nLaunchState: UNKNOWN (0)\nActivity: dev.tripoder.controltest/.ClientActivity\nWaitTime: 79\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-a",
+        "android.intent.action.MAIN",
+        "-c",
+        "android.intent.category.LAUNCHER",
+        "-n",
+        "dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity }\nStatus: ok\nLaunchState: WARM\nActivity: dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity\nTotalTime: 60\nWaitTime: 62\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "pull",
+        "/sdcard/Android/data/dev.tripoder.workbench/files/control-af05333d22934b1d-agent-active.png",
+        "/Users/like/code/tripoder/docs/evidence/runtime-p2-plus-2026-10-14/provider-delegate-agent-01/control-af05333d22934b1d-agent-active.png"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "/sdcard/Android/data/dev.tripoder.workbench/files/control-af05333d22934b1d-agent-active.png: 1 file pulled, 0 skipped. 96.3 MB/s (305629 bytes in 0.003s)\n"
+    },
+    {
+      "command": [
+        "pull",
+        "/sdcard/Android/data/dev.tripoder.workbench/files/control-af05333d22934b1d-counter-hooked.png",
+        "/Users/like/code/tripoder/docs/evidence/runtime-p2-plus-2026-10-14/provider-delegate-agent-01/control-af05333d22934b1d-counter-hooked.png"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "/sdcard/Android/data/dev.tripoder.workbench/files/control-af05333d22934b1d-counter-hooked.png: 1 file pulled, 0 skipped. 81.4 MB/s (166611 bytes in 0.002s)\n"
+    },
+    {
+      "command": [
+        "pull",
+        "/sdcard/Android/data/dev.tripoder.workbench/files/control-af05333d22934b1d-counter-restored.png",
+        "/Users/like/code/tripoder/docs/evidence/runtime-p2-plus-2026-10-14/provider-delegate-agent-01/control-af05333d22934b1d-counter-restored.png"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "/sdcard/Android/data/dev.tripoder.workbench/files/control-af05333d22934b1d-counter-restored.png: 1 file pulled, 0 skipped. 86.9 MB/s (160391 bytes in 0.002s)\n"
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10401",
+        "-T",
+        "10-15 03:10:19.622"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10400",
+        "-T",
+        "10-15 03:10:19.622"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "startedAtUtc": "2026-10-14T19:10:18.864473+00:00",
+  "deviceLogStart": "10-15 03:10:19.622",
+  "uids": {
+    "dev.tripoder.workbench": 10401,
+    "dev.tripoder.engine": 10400
+  },
+  "privateConfigRecordedInEvidence": false,
+  "passed": true,
+  "deviceChecks": 12,
+  "mcpChecks": [
+    {
+      "name": "mcp-initialize-exact-version",
+      "passed": true
+    },
+    {
+      "name": "mcp-discovers-11-scoped-tools",
+      "passed": true
+    },
+    {
+      "name": "actual-project-bound",
+      "passed": true
+    },
+    {
+      "name": "actual-worker-pid-bound",
+      "passed": true
+    },
+    {
+      "name": "engine-rejects-unpaired-client-signature",
+      "passed": true
+    },
+    {
+      "name": "same-operation-same-payload-returns-identical-receipt",
+      "passed": true
+    },
+    {
+      "name": "same-operation-different-payload-rejected",
+      "passed": true
+    },
+    {
+      "name": "draft-prepared-without-activation",
+      "passed": true
+    },
+    {
+      "name": "phone-review-required-on-device",
+      "passed": true
+    },
+    {
+      "name": "denied-activation-has-durable-failed-receipt",
+      "passed": true
+    },
+    {
+      "name": "phone-approved-exact-source-hash",
+      "passed": true
+    },
+    {
+      "name": "engine-acknowledges-active",
+      "passed": true
+    },
+    {
+      "name": "two-actual-ui-method-hits-zero-errors",
+      "passed": true
+    },
+    {
+      "name": "engine-acknowledges-disabled",
+      "passed": true
+    },
+    {
+      "name": "actual-original-ui-restored",
+      "passed": true
+    },
+    {
+      "name": "runtime-original-state-idle",
+      "passed": true
+    },
+    {
+      "name": "revoke-accepted",
+      "passed": true
+    },
+    {
+      "name": "revoke-confirmed-closed",
+      "passed": true
+    }
+  ],
+  "workerPid": 21897,
+  "finishedAtUtc": "2026-10-14T19:10:37.654960+00:00",
+  "desktopSourceSha256": {
+    "agent/acceptance-client.mjs": "101436321adcf887ea0397f716f543f76a8afa49e507a738fa83665a904214db",
+    "agent/agent.test.mjs": "b40244dec5306704ad771b70392e033624b7ab10a418d4b7579044eb7df218a6",
+    "agent/audit.mjs": "d77b09f8690fee8d2a75cbb97a2063b9c6bd11dee7729d207aeb80abda9a51c7",
+    "agent/audit.test.mjs": "6a8ae6d8e3648f6e5995d131de01c2503a18d49b44f82e686d8f92377b89ecfa",
+    "agent/pair.mjs": "03c3d95d58722055be7d0003ecf0b36a8e8f7a1ce037ae928ebf3dee39ebf19f",
+    "agent/sentinel-acceptance.mjs": "a5bfe840dc5ecef259c10dbe9d60105377338521c708d7950302353a1bf21b54",
+    "agent/server.mjs": "8848570aecada1d8e3b6bfccf7d3f71bb8b55e850e2d3ada22de426906f2987f",
+    "agent/tools.mjs": "57b6281f91a715b5d20fe0fccc9cc1b23b3ba54eb45db518bc8804ba6bbbd360",
+    "agent/transport.mjs": "a27c80d550aee9670ad90ce35835523048d88755dfa3d80d68aaa7519078862d"
+  }
+}

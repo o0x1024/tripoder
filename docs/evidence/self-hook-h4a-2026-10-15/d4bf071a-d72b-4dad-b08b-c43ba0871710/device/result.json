@@ -1,0 +1,1736 @@
+{
+  "schema": 1,
+  "phase": "H5-owned-script-control",
+  "runId": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+  "artCompilation": "jit",
+  "ownedScopeRequested": true,
+  "productBackend": false,
+  "fullCallerCoverage": false,
+  "authorityApprovalPath": false,
+  "package": "dev.tripoder.selfhookprobe",
+  "uid": 10403,
+  "pid": 1761,
+  "timestampMs": 1792074220500,
+  "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2",
+  "build": {
+    "schema": 1,
+    "buildId": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+    "timestamp": "2026-10-15T14:19:07.649106+00:00",
+    "sourceDigest": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+    "nativeSha256": "4a0ade5268ec0c70b423949297be51ccb65faabb65b79265d2a39726a472561e",
+    "fixtureSha256": "71e223f4177d345697ec30449140e6d5412b1ece25dd56afbb4ace4368d6a9fb",
+    "scope": "H1\/H2a owned ELF, native thread parking and fixed-platform ART with static caller indexing"
+  },
+  "debuggable": false,
+  "platform": {
+    "fingerprint": "Xiaomi\/madrid\/madrid:17\/CP2A.260605.016\/OS4.0.24.0.XEOCNXM:user\/release-keys",
+    "sdk": 37,
+    "abi": "arm64-v8a",
+    "process64Bit": true,
+    "pageSize": 4096,
+    "binaries": {
+      "\/apex\/com.android.runtime\/bin\/linker64": "b6dd216b7a775b8f04c825cada286bfe7ddaeecf2c0c10e617287118965abc00",
+      "\/apex\/com.android.runtime\/lib64\/bionic\/libc.so": "b963b539545b64aa8fbcaed3228d04bcb6466bfd47055aa16e4ccdcadfdc461e",
+      "\/apex\/com.android.art\/lib64\/libart.so": "2d4a3575e5b71b537d89c176ac82ad3e32a56a3d43161009de3e728c962fab13"
+    }
+  },
+  "selinuxContext": "u:r:untrusted_app:s0:c147,c257,c512,c768",
+  "platformGatePassed": true,
+  "nativeSha256": "4a0ade5268ec0c70b423949297be51ccb65faabb65b79265d2a39726a472561e",
+  "fixtureSha256": "71e223f4177d345697ec30449140e6d5412b1ece25dd56afbb4ace4368d6a9fb",
+  "script": {
+    "checks": 473,
+    "scope": "owned-four-methods-four-direct-callers",
+    "productBackend": false,
+    "fullCallerCoverage": false,
+    "authorityApprovalPath": false,
+    "compilerVersion": "tripoder-restricted-source-v1",
+    "sourceFiles": [
+      {
+        "phase": "primary",
+        "file": "script-source-primary.ts",
+        "sha256": "439bbdbdff960f4dde9381135d2906ba1a0bdb4a67bba93132f3e5ad72e114ac",
+        "compilerVersion": "tripoder-restricted-source-v1"
+      },
+      {
+        "phase": "replace",
+        "file": "script-source-replace.ts",
+        "sha256": "f7038ad5eac2fb72967c3de8a8d9dd291f94077e2db4485d72de62f4124ab314",
+        "compilerVersion": "tripoder-restricted-source-v1"
+      },
+      {
+        "phase": "bad-before",
+        "file": "script-source-bad-before.ts",
+        "sha256": "84bfdbc216cd34824d123a20550a40dbd926d75022c93c5da21e7166f583fd5d",
+        "compilerVersion": "tripoder-restricted-source-v1"
+      },
+      {
+        "phase": "bad-after",
+        "file": "script-source-bad-after.ts",
+        "sha256": "03b1f632a4b15fc89a2147653afe6d4bbd0495e35b6f92805a3940affc30265b",
+        "compilerVersion": "tripoder-restricted-source-v1"
+      }
+    ],
+    "commands": [
+      {
+        "sequence": 1,
+        "request": {
+          "command": "observe",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "selectors": [
+            {
+              "id": "integer",
+              "kind": "java",
+              "className": "java.lang.String",
+              "methodName": "length",
+              "argumentTypes": []
+            }
+          ]
+        },
+        "response": {
+          "ok": false,
+          "error": "java.lang.IllegalStateException: OWNED_SCRIPT_TARGET_REQUIRED"
+        }
+      },
+      {
+        "sequence": 2,
+        "request": {
+          "command": "activate",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "token": "0000000000000000000000000000000000000000000000000000000000000000",
+          "sourceSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "response": {
+          "ok": false,
+          "error": "dev.tripoder.runtime.script.ScriptFault: HOOK_PREPARATION_STALE"
+        }
+      },
+      {
+        "sequence": 3,
+        "request": {
+          "command": "observe",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "selectors": [
+            {
+              "id": "integer",
+              "kind": "java",
+              "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+              "methodName": "scriptIntOwned",
+              "argumentTypes": [
+                "int"
+              ]
+            },
+            {
+              "id": "wide",
+              "kind": "java",
+              "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+              "methodName": "scriptLongOwned",
+              "argumentTypes": [
+                "long"
+              ]
+            },
+            {
+              "id": "single",
+              "kind": "java",
+              "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+              "methodName": "scriptFloatOwned",
+              "argumentTypes": [
+                "float"
+              ]
+            },
+            {
+              "id": "failure",
+              "kind": "java",
+              "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+              "methodName": "scriptFailureOwned",
+              "argumentTypes": [
+                "int"
+              ]
+            }
+          ]
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "evidence": {
+              "id": "90c3b8e7084c0a495d694bb31ab1b55b5a452a80e06303f6d6e55b530e3cc567",
+              "source": "guest-agent",
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              },
+              "processInstanceId": "1761:d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "abi": "arm64-v8a",
+              "capabilities": [
+                "java-hook"
+              ],
+              "symbols": [
+                {
+                  "id": "integer",
+                  "kind": "java",
+                  "loaded": true,
+                  "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+                  "methodName": "scriptIntOwned",
+                  "argumentTypes": [
+                    "int"
+                  ],
+                  "returnType": "int",
+                  "classLoaderId": "1389b3de-6ad6-4230-9c87-15c032ab2588"
+                },
+                {
+                  "id": "wide",
+                  "kind": "java",
+                  "loaded": true,
+                  "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+                  "methodName": "scriptLongOwned",
+                  "argumentTypes": [
+                    "long"
+                  ],
+                  "returnType": "long",
+                  "classLoaderId": "1389b3de-6ad6-4230-9c87-15c032ab2588"
+                },
+                {
+                  "id": "single",
+                  "kind": "java",
+                  "loaded": true,
+                  "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+                  "methodName": "scriptFloatOwned",
+                  "argumentTypes": [
+                    "float"
+                  ],
+                  "returnType": "float",
+                  "classLoaderId": "1389b3de-6ad6-4230-9c87-15c032ab2588"
+                },
+                {
+                  "id": "failure",
+                  "kind": "java",
+                  "loaded": true,
+                  "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+                  "methodName": "scriptFailureOwned",
+                  "argumentTypes": [
+                    "int"
+                  ],
+                  "returnType": "int",
+                  "classLoaderId": "1389b3de-6ad6-4230-9c87-15c032ab2588"
+                }
+              ]
+            },
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            },
+            "nativeModules": []
+          }
+        }
+      },
+      {
+        "sequence": 4,
+        "request": {
+          "command": "prepare",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "evidenceId": "90c3b8e7084c0a495d694bb31ab1b55b5a452a80e06303f6d6e55b530e3cc567",
+          "source": "import {definePlan,param} from '@abox\/hook'; export default definePlan({id:'owned-script',target,params:{delta:param.integer(2,{minimum:0,maximum:10})},setup(ctx){ctx.java.method(symbols.integer.className,'scriptIntOwned',['int']).before(({args})=>[args[0]+1]).after(({result,params})=>result+params.delta);ctx.java.method(symbols.wide.className,'scriptLongOwned',['long']).after(({result})=>result+1n);ctx.java.method(symbols.single.className,'scriptFloatOwned',['float']).before(()=>[16777217]).after(({result,args})=>args[0]===16777217?result:0);ctx.java.method(symbols.failure.className,'scriptFailureOwned',['int']).before(({args})=>args).after(({result})=>result);}});"
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "state": "PREPARED",
+            "token": "8e3d01cddf2b7823c9554f638299f102521994d370ea6d0e438e1c67cae10fc7",
+            "sourceSha256": "439bbdbdff960f4dde9381135d2906ba1a0bdb4a67bba93132f3e5ad72e114ac",
+            "evidenceId": "90c3b8e7084c0a495d694bb31ab1b55b5a452a80e06303f6d6e55b530e3cc567",
+            "rules": 4,
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            }
+          }
+        }
+      },
+      {
+        "sequence": 5,
+        "request": {
+          "command": "activate",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "token": "8e3d01cddf2b7823c9554f638299f102521994d370ea6d0e438e1c67cae10fc7",
+          "sourceSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "response": {
+          "ok": false,
+          "error": "dev.tripoder.runtime.script.ScriptFault: HOOK_PREPARATION_STALE"
+        }
+      },
+      {
+        "sequence": 6,
+        "request": {
+          "command": "activate",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "token": "8e3d01cddf2b7823c9554f638299f102521994d370ea6d0e438e1c67cae10fc7",
+          "sourceSha256": "439bbdbdff960f4dde9381135d2906ba1a0bdb4a67bba93132f3e5ad72e114ac"
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "state": "ACTIVE",
+            "revision": "5548aa5d26e98148e43c00e5b255c519fe660533342341976c6ec12922e07102",
+            "sourceSha256": "439bbdbdff960f4dde9381135d2906ba1a0bdb4a67bba93132f3e5ad72e114ac",
+            "parameterVersion": 1,
+            "parameters": {
+              "delta": 2
+            },
+            "hits": 0,
+            "errors": 0,
+            "inFlight": 0,
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            }
+          }
+        }
+      },
+      {
+        "sequence": 7,
+        "request": {
+          "command": "activate",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "token": "8e3d01cddf2b7823c9554f638299f102521994d370ea6d0e438e1c67cae10fc7",
+          "sourceSha256": "439bbdbdff960f4dde9381135d2906ba1a0bdb4a67bba93132f3e5ad72e114ac"
+        },
+        "response": {
+          "ok": false,
+          "error": "dev.tripoder.runtime.script.ScriptFault: HOOK_PREPARATION_STALE"
+        }
+      },
+      {
+        "sequence": 8,
+        "request": {
+          "command": "status",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710"
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "state": "ACTIVE",
+            "revision": "5548aa5d26e98148e43c00e5b255c519fe660533342341976c6ec12922e07102",
+            "sourceSha256": "439bbdbdff960f4dde9381135d2906ba1a0bdb4a67bba93132f3e5ad72e114ac",
+            "parameterVersion": 1,
+            "parameters": {
+              "delta": 2
+            },
+            "hits": 401,
+            "errors": 0,
+            "inFlight": 0,
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            },
+            "moduleEvents": []
+          }
+        }
+      },
+      {
+        "sequence": 9,
+        "request": {
+          "command": "updateParameters",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "revision": "5548aa5d26e98148e43c00e5b255c519fe660533342341976c6ec12922e07102",
+          "parameterVersion": 1,
+          "parameters": {
+            "delta": 5
+          }
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "state": "ACTIVE",
+            "revision": "5548aa5d26e98148e43c00e5b255c519fe660533342341976c6ec12922e07102",
+            "sourceSha256": "439bbdbdff960f4dde9381135d2906ba1a0bdb4a67bba93132f3e5ad72e114ac",
+            "parameterVersion": 2,
+            "parameters": {
+              "delta": 5
+            },
+            "hits": 802,
+            "errors": 0,
+            "inFlight": 1,
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            }
+          }
+        }
+      },
+      {
+        "sequence": 10,
+        "request": {
+          "command": "updateParameters",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "revision": "5548aa5d26e98148e43c00e5b255c519fe660533342341976c6ec12922e07102",
+          "parameterVersion": 1,
+          "parameters": {
+            "delta": 3
+          }
+        },
+        "response": {
+          "ok": false,
+          "error": "dev.tripoder.runtime.script.ScriptFault: HOOK_PARAMETER_VERSION_STALE"
+        }
+      },
+      {
+        "sequence": 11,
+        "request": {
+          "command": "disable",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "revision": "5548aa5d26e98148e43c00e5b255c519fe660533342341976c6ec12922e07102"
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "state": "DRAINING",
+            "revision": "5548aa5d26e98148e43c00e5b255c519fe660533342341976c6ec12922e07102",
+            "sourceSha256": "439bbdbdff960f4dde9381135d2906ba1a0bdb4a67bba93132f3e5ad72e114ac",
+            "parameterVersion": 2,
+            "parameters": {
+              "delta": 5
+            },
+            "hits": 803,
+            "errors": 0,
+            "inFlight": 1,
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            }
+          }
+        }
+      },
+      {
+        "sequence": 12,
+        "request": {
+          "command": "status",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710"
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "state": "DISABLED",
+            "revision": "5548aa5d26e98148e43c00e5b255c519fe660533342341976c6ec12922e07102",
+            "hits": 803,
+            "errors": 0,
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            },
+            "moduleEvents": []
+          }
+        }
+      },
+      {
+        "sequence": 13,
+        "request": {
+          "command": "prepare",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "evidenceId": "90c3b8e7084c0a495d694bb31ab1b55b5a452a80e06303f6d6e55b530e3cc567",
+          "source": "import {definePlan,param} from '@abox\/hook'; export default definePlan({id:'owned-script',target,params:{delta:param.integer(2,{minimum:0,maximum:10})},setup(ctx){ctx.java.method(symbols.integer.className,'scriptIntOwned',['int']).before(({args})=>[args[0]+1]).after(({result,params})=>result+params.delta);ctx.java.method(symbols.wide.className,'scriptLongOwned',['long']).after(({result})=>result+1n);ctx.java.method(symbols.single.className,'scriptFloatOwned',['float']).before(()=>[16777217]).after(({result,args})=>args[0]===16777217?result:0);ctx.java.method(symbols.failure.className,'scriptFailureOwned',['int']).before(({args})=>args).after(({result})=>result);}});"
+        },
+        "response": {
+          "ok": false,
+          "error": "dev.tripoder.runtime.script.ScriptFault: HOOK_EVIDENCE_STALE"
+        }
+      },
+      {
+        "sequence": 14,
+        "request": {
+          "command": "observe",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "selectors": [
+            {
+              "id": "integer",
+              "kind": "java",
+              "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+              "methodName": "scriptIntOwned",
+              "argumentTypes": [
+                "int"
+              ]
+            },
+            {
+              "id": "wide",
+              "kind": "java",
+              "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+              "methodName": "scriptLongOwned",
+              "argumentTypes": [
+                "long"
+              ]
+            },
+            {
+              "id": "single",
+              "kind": "java",
+              "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+              "methodName": "scriptFloatOwned",
+              "argumentTypes": [
+                "float"
+              ]
+            },
+            {
+              "id": "failure",
+              "kind": "java",
+              "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+              "methodName": "scriptFailureOwned",
+              "argumentTypes": [
+                "int"
+              ]
+            }
+          ]
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "evidence": {
+              "id": "edff74dd0d962f8d11bd2cd70fe2b3f99aba6c55f2052e1bb017614e4130de55",
+              "source": "guest-agent",
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              },
+              "processInstanceId": "1761:d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "abi": "arm64-v8a",
+              "capabilities": [
+                "java-hook"
+              ],
+              "symbols": [
+                {
+                  "id": "integer",
+                  "kind": "java",
+                  "loaded": true,
+                  "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+                  "methodName": "scriptIntOwned",
+                  "argumentTypes": [
+                    "int"
+                  ],
+                  "returnType": "int",
+                  "classLoaderId": "1389b3de-6ad6-4230-9c87-15c032ab2588"
+                },
+                {
+                  "id": "wide",
+                  "kind": "java",
+                  "loaded": true,
+                  "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+                  "methodName": "scriptLongOwned",
+                  "argumentTypes": [
+                    "long"
+                  ],
+                  "returnType": "long",
+                  "classLoaderId": "1389b3de-6ad6-4230-9c87-15c032ab2588"
+                },
+                {
+                  "id": "single",
+                  "kind": "java",
+                  "loaded": true,
+                  "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+                  "methodName": "scriptFloatOwned",
+                  "argumentTypes": [
+                    "float"
+                  ],
+                  "returnType": "float",
+                  "classLoaderId": "1389b3de-6ad6-4230-9c87-15c032ab2588"
+                },
+                {
+                  "id": "failure",
+                  "kind": "java",
+                  "loaded": true,
+                  "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+                  "methodName": "scriptFailureOwned",
+                  "argumentTypes": [
+                    "int"
+                  ],
+                  "returnType": "int",
+                  "classLoaderId": "1389b3de-6ad6-4230-9c87-15c032ab2588"
+                }
+              ]
+            },
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            },
+            "nativeModules": []
+          }
+        }
+      },
+      {
+        "sequence": 15,
+        "request": {
+          "command": "prepare",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "evidenceId": "edff74dd0d962f8d11bd2cd70fe2b3f99aba6c55f2052e1bb017614e4130de55",
+          "source": "import {definePlan,param} from '@abox\/hook'; export default definePlan({id:'owned-script',target,params:{delta:param.integer(2,{minimum:0,maximum:10})},setup(ctx){ctx.java.method(symbols.wide.className,'scriptLongOwned',['long']).replace(({args})=>args[0]+2n);ctx.java.method(symbols.single.className,'scriptFloatOwned',['float']).replace(()=>-0);}});"
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "state": "PREPARED",
+            "token": "4bbb77f52c6b63fe2523a603989de1526bf46977e8cb4c4a30473d182de48381",
+            "sourceSha256": "f7038ad5eac2fb72967c3de8a8d9dd291f94077e2db4485d72de62f4124ab314",
+            "evidenceId": "edff74dd0d962f8d11bd2cd70fe2b3f99aba6c55f2052e1bb017614e4130de55",
+            "rules": 2,
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            }
+          }
+        }
+      },
+      {
+        "sequence": 16,
+        "request": {
+          "command": "activate",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "token": "4bbb77f52c6b63fe2523a603989de1526bf46977e8cb4c4a30473d182de48381",
+          "sourceSha256": "f7038ad5eac2fb72967c3de8a8d9dd291f94077e2db4485d72de62f4124ab314"
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "state": "ACTIVE",
+            "revision": "15ac7b566f5b466bb0536eed902b7831f2dbfcd40b17b51e51afc4f2e4ffce7c",
+            "sourceSha256": "f7038ad5eac2fb72967c3de8a8d9dd291f94077e2db4485d72de62f4124ab314",
+            "parameterVersion": 1,
+            "parameters": {
+              "delta": 2
+            },
+            "hits": 0,
+            "errors": 0,
+            "inFlight": 0,
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            }
+          }
+        }
+      },
+      {
+        "sequence": 17,
+        "request": {
+          "command": "disable",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "revision": "15ac7b566f5b466bb0536eed902b7831f2dbfcd40b17b51e51afc4f2e4ffce7c"
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "state": "DISABLED",
+            "revision": "15ac7b566f5b466bb0536eed902b7831f2dbfcd40b17b51e51afc4f2e4ffce7c",
+            "hits": 2,
+            "errors": 0,
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            }
+          }
+        }
+      },
+      {
+        "sequence": 18,
+        "request": {
+          "command": "observe",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "selectors": [
+            {
+              "id": "integer",
+              "kind": "java",
+              "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+              "methodName": "scriptIntOwned",
+              "argumentTypes": [
+                "int"
+              ]
+            },
+            {
+              "id": "wide",
+              "kind": "java",
+              "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+              "methodName": "scriptLongOwned",
+              "argumentTypes": [
+                "long"
+              ]
+            },
+            {
+              "id": "single",
+              "kind": "java",
+              "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+              "methodName": "scriptFloatOwned",
+              "argumentTypes": [
+                "float"
+              ]
+            },
+            {
+              "id": "failure",
+              "kind": "java",
+              "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+              "methodName": "scriptFailureOwned",
+              "argumentTypes": [
+                "int"
+              ]
+            }
+          ]
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "evidence": {
+              "id": "c440a1950e8c04f984920787261fbe8a7e74e8b2c4163815a7145cc29c01ca9d",
+              "source": "guest-agent",
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              },
+              "processInstanceId": "1761:d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "abi": "arm64-v8a",
+              "capabilities": [
+                "java-hook"
+              ],
+              "symbols": [
+                {
+                  "id": "integer",
+                  "kind": "java",
+                  "loaded": true,
+                  "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+                  "methodName": "scriptIntOwned",
+                  "argumentTypes": [
+                    "int"
+                  ],
+                  "returnType": "int",
+                  "classLoaderId": "1389b3de-6ad6-4230-9c87-15c032ab2588"
+                },
+                {
+                  "id": "wide",
+                  "kind": "java",
+                  "loaded": true,
+                  "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+                  "methodName": "scriptLongOwned",
+                  "argumentTypes": [
+                    "long"
+                  ],
+                  "returnType": "long",
+                  "classLoaderId": "1389b3de-6ad6-4230-9c87-15c032ab2588"
+                },
+                {
+                  "id": "single",
+                  "kind": "java",
+                  "loaded": true,
+                  "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+                  "methodName": "scriptFloatOwned",
+                  "argumentTypes": [
+                    "float"
+                  ],
+                  "returnType": "float",
+                  "classLoaderId": "1389b3de-6ad6-4230-9c87-15c032ab2588"
+                },
+                {
+                  "id": "failure",
+                  "kind": "java",
+                  "loaded": true,
+                  "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+                  "methodName": "scriptFailureOwned",
+                  "argumentTypes": [
+                    "int"
+                  ],
+                  "returnType": "int",
+                  "classLoaderId": "1389b3de-6ad6-4230-9c87-15c032ab2588"
+                }
+              ]
+            },
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            },
+            "nativeModules": []
+          }
+        }
+      },
+      {
+        "sequence": 19,
+        "request": {
+          "command": "prepare",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "evidenceId": "c440a1950e8c04f984920787261fbe8a7e74e8b2c4163815a7145cc29c01ca9d",
+          "source": "import {definePlan,param} from '@abox\/hook'; export default definePlan({id:'owned-script',target,params:{delta:param.integer(2,{minimum:0,maximum:10})},setup(ctx){ctx.java.method(symbols.integer.className,'scriptIntOwned',['int']).before(()=>['bad']);}});"
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "state": "PREPARED",
+            "token": "698d5a8077ba809f7efe94a0e82461b39e69fc3dbb7340048dace4df21772591",
+            "sourceSha256": "84bfdbc216cd34824d123a20550a40dbd926d75022c93c5da21e7166f583fd5d",
+            "evidenceId": "c440a1950e8c04f984920787261fbe8a7e74e8b2c4163815a7145cc29c01ca9d",
+            "rules": 1,
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            }
+          }
+        }
+      },
+      {
+        "sequence": 20,
+        "request": {
+          "command": "activate",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "token": "698d5a8077ba809f7efe94a0e82461b39e69fc3dbb7340048dace4df21772591",
+          "sourceSha256": "84bfdbc216cd34824d123a20550a40dbd926d75022c93c5da21e7166f583fd5d"
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "state": "ACTIVE",
+            "revision": "341364e0208dc56721248c17edb8e4a7cb545a925cfdeb7128707c21b9bb32c2",
+            "sourceSha256": "84bfdbc216cd34824d123a20550a40dbd926d75022c93c5da21e7166f583fd5d",
+            "parameterVersion": 1,
+            "parameters": {
+              "delta": 2
+            },
+            "hits": 0,
+            "errors": 0,
+            "inFlight": 0,
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            }
+          }
+        }
+      },
+      {
+        "sequence": 21,
+        "request": {
+          "command": "status",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710"
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "state": "ACTIVE",
+            "revision": "341364e0208dc56721248c17edb8e4a7cb545a925cfdeb7128707c21b9bb32c2",
+            "sourceSha256": "84bfdbc216cd34824d123a20550a40dbd926d75022c93c5da21e7166f583fd5d",
+            "parameterVersion": 1,
+            "parameters": {
+              "delta": 2
+            },
+            "hits": 1,
+            "errors": 1,
+            "inFlight": 0,
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            },
+            "moduleEvents": []
+          }
+        }
+      },
+      {
+        "sequence": 22,
+        "request": {
+          "command": "disable",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "revision": "341364e0208dc56721248c17edb8e4a7cb545a925cfdeb7128707c21b9bb32c2"
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "state": "DISABLED",
+            "revision": "341364e0208dc56721248c17edb8e4a7cb545a925cfdeb7128707c21b9bb32c2",
+            "hits": 1,
+            "errors": 1,
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            }
+          }
+        }
+      },
+      {
+        "sequence": 23,
+        "request": {
+          "command": "observe",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "selectors": [
+            {
+              "id": "integer",
+              "kind": "java",
+              "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+              "methodName": "scriptIntOwned",
+              "argumentTypes": [
+                "int"
+              ]
+            },
+            {
+              "id": "wide",
+              "kind": "java",
+              "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+              "methodName": "scriptLongOwned",
+              "argumentTypes": [
+                "long"
+              ]
+            },
+            {
+              "id": "single",
+              "kind": "java",
+              "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+              "methodName": "scriptFloatOwned",
+              "argumentTypes": [
+                "float"
+              ]
+            },
+            {
+              "id": "failure",
+              "kind": "java",
+              "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+              "methodName": "scriptFailureOwned",
+              "argumentTypes": [
+                "int"
+              ]
+            }
+          ]
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "evidence": {
+              "id": "093b0fe662be0a0de2fb026ebacfa6b2971edbd72d3936c620b62d8fde92f365",
+              "source": "guest-agent",
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              },
+              "processInstanceId": "1761:d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "abi": "arm64-v8a",
+              "capabilities": [
+                "java-hook"
+              ],
+              "symbols": [
+                {
+                  "id": "integer",
+                  "kind": "java",
+                  "loaded": true,
+                  "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+                  "methodName": "scriptIntOwned",
+                  "argumentTypes": [
+                    "int"
+                  ],
+                  "returnType": "int",
+                  "classLoaderId": "1389b3de-6ad6-4230-9c87-15c032ab2588"
+                },
+                {
+                  "id": "wide",
+                  "kind": "java",
+                  "loaded": true,
+                  "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+                  "methodName": "scriptLongOwned",
+                  "argumentTypes": [
+                    "long"
+                  ],
+                  "returnType": "long",
+                  "classLoaderId": "1389b3de-6ad6-4230-9c87-15c032ab2588"
+                },
+                {
+                  "id": "single",
+                  "kind": "java",
+                  "loaded": true,
+                  "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+                  "methodName": "scriptFloatOwned",
+                  "argumentTypes": [
+                    "float"
+                  ],
+                  "returnType": "float",
+                  "classLoaderId": "1389b3de-6ad6-4230-9c87-15c032ab2588"
+                },
+                {
+                  "id": "failure",
+                  "kind": "java",
+                  "loaded": true,
+                  "className": "dev.tripoder.selfhookprobe.ScriptOwnedFixture",
+                  "methodName": "scriptFailureOwned",
+                  "argumentTypes": [
+                    "int"
+                  ],
+                  "returnType": "int",
+                  "classLoaderId": "1389b3de-6ad6-4230-9c87-15c032ab2588"
+                }
+              ]
+            },
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            },
+            "nativeModules": []
+          }
+        }
+      },
+      {
+        "sequence": 24,
+        "request": {
+          "command": "prepare",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "evidenceId": "093b0fe662be0a0de2fb026ebacfa6b2971edbd72d3936c620b62d8fde92f365",
+          "source": "import {definePlan,param} from '@abox\/hook'; export default definePlan({id:'owned-script',target,params:{delta:param.integer(2,{minimum:0,maximum:10})},setup(ctx){ctx.java.method(symbols.integer.className,'scriptIntOwned',['int']).after(()=>'bad');}});"
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "state": "PREPARED",
+            "token": "24e0f7227abe22394959110e501decd079eb184dce0e7bdbfad2be2091b607c8",
+            "sourceSha256": "03b1f632a4b15fc89a2147653afe6d4bbd0495e35b6f92805a3940affc30265b",
+            "evidenceId": "093b0fe662be0a0de2fb026ebacfa6b2971edbd72d3936c620b62d8fde92f365",
+            "rules": 1,
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            }
+          }
+        }
+      },
+      {
+        "sequence": 25,
+        "request": {
+          "command": "activate",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "token": "24e0f7227abe22394959110e501decd079eb184dce0e7bdbfad2be2091b607c8",
+          "sourceSha256": "03b1f632a4b15fc89a2147653afe6d4bbd0495e35b6f92805a3940affc30265b"
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "state": "ACTIVE",
+            "revision": "d99bdddc29b4c48ab6c43ff8a6b8d3e1f84e8cc4b41aaf4ed81dc632c879524a",
+            "sourceSha256": "03b1f632a4b15fc89a2147653afe6d4bbd0495e35b6f92805a3940affc30265b",
+            "parameterVersion": 1,
+            "parameters": {
+              "delta": 2
+            },
+            "hits": 0,
+            "errors": 0,
+            "inFlight": 0,
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            }
+          }
+        }
+      },
+      {
+        "sequence": 26,
+        "request": {
+          "command": "status",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710"
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "state": "ACTIVE",
+            "revision": "d99bdddc29b4c48ab6c43ff8a6b8d3e1f84e8cc4b41aaf4ed81dc632c879524a",
+            "sourceSha256": "03b1f632a4b15fc89a2147653afe6d4bbd0495e35b6f92805a3940affc30265b",
+            "parameterVersion": 1,
+            "parameters": {
+              "delta": 2
+            },
+            "hits": 1,
+            "errors": 1,
+            "inFlight": 0,
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            },
+            "moduleEvents": []
+          }
+        }
+      },
+      {
+        "sequence": 27,
+        "request": {
+          "command": "disable",
+          "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+          "revision": "d99bdddc29b4c48ab6c43ff8a6b8d3e1f84e8cc4b41aaf4ed81dc632c879524a"
+        },
+        "response": {
+          "ok": true,
+          "result": {
+            "state": "DISABLED",
+            "revision": "d99bdddc29b4c48ab6c43ff8a6b8d3e1f84e8cc4b41aaf4ed81dc632c879524a",
+            "hits": 1,
+            "errors": 1,
+            "identity": {
+              "space": "owned-self-hook-probe",
+              "installGeneration": "689e0ed7-6566-4c13-8c64-f3634abeae3e",
+              "descriptorSha256": "2c82f9064f7f83d307cfc0f99a29220c228bd0b2860ea1c4fcf50d1959812be0",
+              "processGeneration": "d4bf071a-d72b-4dad-b08b-c43ba0871710",
+              "pid": 1761,
+              "target": {
+                "packageName": "dev.tripoder.selfhookprobe",
+                "versionCode": "0",
+                "apkSha256": "d07729d93fe98d1767c793c214dc61c095bec8b7bd04874edb0ebdd6d2df22f2"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "compilation": [
+      {
+        "symbol": "integer",
+        "target": {
+          "bound": true,
+          "methodReadable": true,
+          "threadPresent": true,
+          "base": "6d03600000",
+          "thread": "b400006d998790a0",
+          "method": "6fbe21acf8",
+          "suspendResumeCycles": 10,
+          "words": [
+            150902120,
+            279445513,
+            1263,
+            3795779588,
+            2864528944,
+            111,
+            3495732080,
+            0
+          ],
+          "methodMemoryModified": false
+        },
+        "caller": {
+          "bound": true,
+          "methodReadable": true,
+          "threadPresent": true,
+          "base": "6d03600000",
+          "thread": "b400006d998790a0",
+          "method": "6fbe21ada0",
+          "suspendResumeCycles": 10,
+          "words": [
+            150902576,
+            279445513,
+            1257,
+            4001366019,
+            2864528808,
+            111,
+            3495731792,
+            0
+          ],
+          "methodMemoryModified": false
+        },
+        "observedKind": "jit"
+      },
+      {
+        "symbol": "wide",
+        "target": {
+          "bound": true,
+          "methodReadable": true,
+          "threadPresent": true,
+          "base": "6d03600000",
+          "thread": "b400006d998790a0",
+          "method": "6fbe21ad18",
+          "suspendResumeCycles": 10,
+          "words": [
+            243664896,
+            277348361,
+            1264,
+            3966107653,
+            2864529088,
+            111,
+            3495732912,
+            0
+          ],
+          "methodMemoryModified": false
+        },
+        "caller": {
+          "bound": true,
+          "methodReadable": true,
+          "threadPresent": true,
+          "base": "6d03600000",
+          "thread": "b400006d998790a0",
+          "method": "6fbe21adc0",
+          "suspendResumeCycles": 10,
+          "words": [
+            243664688,
+            277348361,
+            1258,
+            4107075588,
+            2864528836,
+            111,
+            3495733248,
+            0
+          ],
+          "methodMemoryModified": false
+        },
+        "observedKind": "jit"
+      },
+      {
+        "symbol": "single",
+        "target": {
+          "bound": true,
+          "methodReadable": true,
+          "threadPresent": true,
+          "base": "6d03600000",
+          "thread": "b400006d998790a0",
+          "method": "6fbe21acd8",
+          "suspendResumeCycles": 10,
+          "words": [
+            243664896,
+            277348361,
+            1262,
+            4116447235,
+            2864528864,
+            111,
+            3495737520,
+            0
+          ],
+          "methodMemoryModified": false
+        },
+        "caller": {
+          "bound": true,
+          "methodReadable": true,
+          "threadPresent": true,
+          "base": "6d03600000",
+          "thread": "b400006d998790a0",
+          "method": "6fbe21ad80",
+          "suspendResumeCycles": 10,
+          "words": [
+            243664688,
+            277348361,
+            1256,
+            4033871874,
+            2864528752,
+            111,
+            3495737936,
+            0
+          ],
+          "methodMemoryModified": false
+        },
+        "observedKind": "jit"
+      },
+      {
+        "symbol": "failure",
+        "target": {
+          "bound": true,
+          "methodReadable": true,
+          "threadPresent": true,
+          "base": "6d03600000",
+          "thread": "b400006d998790a0",
+          "method": "6fbe21acb8",
+          "suspendResumeCycles": 10,
+          "words": [
+            173591840,
+            279445513,
+            1261,
+            3998547970,
+            2864528904,
+            111,
+            3495738352,
+            0
+          ],
+          "methodMemoryModified": false
+        },
+        "caller": {
+          "bound": true,
+          "methodReadable": true,
+          "threadPresent": true,
+          "base": "6d03600000",
+          "thread": "b400006d998790a0",
+          "method": "6fbe21ad60",
+          "suspendResumeCycles": 10,
+          "words": [
+            173704136,
+            279445513,
+            1255,
+            4117233665,
+            2864528780,
+            111,
+            3495738784,
+            0
+          ],
+          "methodMemoryModified": false
+        },
+        "observedKind": "jit"
+      }
+    ],
+    "callerEvidence": {
+      "dexSha256": "ee25f114c41f55a57a345d4cf44afb8793b9c4bb2c08e7da6a56f0cee8b4b09e",
+      "accepted": [
+        {
+          "symbol": "integer",
+          "target": "Ldev\/tripoder\/selfhookprobe\/ScriptOwnedFixture;->scriptIntOwned(I)I",
+          "caller": "Ldev\/tripoder\/selfhookprobe\/ScriptOwnedCaller;->callScriptInt(I)I"
+        },
+        {
+          "symbol": "wide",
+          "target": "Ldev\/tripoder\/selfhookprobe\/ScriptOwnedFixture;->scriptLongOwned(J)J",
+          "caller": "Ldev\/tripoder\/selfhookprobe\/ScriptOwnedCaller;->callScriptLong(J)J"
+        },
+        {
+          "symbol": "single",
+          "target": "Ldev\/tripoder\/selfhookprobe\/ScriptOwnedFixture;->scriptFloatOwned(F)F",
+          "caller": "Ldev\/tripoder\/selfhookprobe\/ScriptOwnedCaller;->callScriptFloat(F)F"
+        },
+        {
+          "symbol": "failure",
+          "target": "Ldev\/tripoder\/selfhookprobe\/ScriptOwnedFixture;->scriptFailureOwned(I)I",
+          "caller": "Ldev\/tripoder\/selfhookprobe\/ScriptOwnedCaller;->callScriptFailure(I)I"
+        }
+      ],
+      "dynamicSites": 275,
+      "externalSites": 6374,
+      "completeRuntimeCoverage": false,
+      "scope": "four-owned-direct-callers-only",
+      "productBackend": false,
+      "classLoaderId": "1389b3de-6ad6-4230-9c87-15c032ab2588",
+      "definingLoaderBound": true
+    },
+    "native": [
+      {
+        "symbol": "integer",
+        "native": {
+          "stage": "DISABLED",
+          "ready": true,
+          "active": false,
+          "transitions": 6,
+          "originals": 504,
+          "retainedRoots": 4,
+          "retainedRelayPages": 1,
+          "knownCallers": 1,
+          "backupRooted": true,
+          "shorty": "II",
+          "instance": false,
+          "relay": "6fc6aae000",
+          "helperMethod": "6fab4e4008",
+          "interpreterBridge": "6d038bc880",
+          "targetFlags": 279445513,
+          "backupFlags": 304611337,
+          "targetQuick": "6d038bc880",
+          "desiredEntry": "6d038bc880",
+          "writerOwnerRegistered": true,
+          "writerInterpositionInstalled": true,
+          "completeEntryWriterClosure": false,
+          "compilationOwnership": "process-interpreter-lease",
+          "processInterpreterOwned": true,
+          "observedInstrumentationLevel": 2,
+          "processPolicyClaims": 1,
+          "fullCallerCoverage": false
+        },
+        "helperSha256": "10f9f6a7cf11485d5fb8599e94b47bf461f16dec130d97b228d9e4ce9f54d3f9",
+        "relaySha256": "d0abb40141446304b696e96c491ca47a60d87abf8598203668c13ae2170299f5"
+      },
+      {
+        "symbol": "wide",
+        "native": {
+          "stage": "DISABLED",
+          "ready": true,
+          "active": false,
+          "transitions": 4,
+          "originals": 100,
+          "retainedRoots": 4,
+          "retainedRelayPages": 1,
+          "knownCallers": 1,
+          "backupRooted": true,
+          "shorty": "JJ",
+          "instance": false,
+          "relay": "6fc6a01000",
+          "helperMethod": "6fbe234008",
+          "interpreterBridge": "6d038bc880",
+          "targetFlags": 277348361,
+          "backupFlags": 302514185,
+          "targetQuick": "6d038bc880",
+          "desiredEntry": "6d038bc880",
+          "writerOwnerRegistered": true,
+          "writerInterpositionInstalled": true,
+          "completeEntryWriterClosure": false,
+          "compilationOwnership": "process-interpreter-lease",
+          "processInterpreterOwned": true,
+          "observedInstrumentationLevel": 2,
+          "processPolicyClaims": 1,
+          "fullCallerCoverage": false
+        },
+        "helperSha256": "fd48be9ab7d2f79f3d7097b705d4ed0149bc9f580d4ca217105b2d31fd84de9a",
+        "relaySha256": "00864b9ead92c3698a601302b693059c321fc6187add410c7e5b1aba8228f6b2"
+      },
+      {
+        "symbol": "single",
+        "native": {
+          "stage": "DISABLED",
+          "ready": true,
+          "active": false,
+          "transitions": 4,
+          "originals": 100,
+          "retainedRoots": 4,
+          "retainedRelayPages": 1,
+          "knownCallers": 1,
+          "backupRooted": true,
+          "shorty": "FF",
+          "instance": false,
+          "relay": "6fc5fc0000",
+          "helperMethod": "6fab44a008",
+          "interpreterBridge": "6d038bc880",
+          "targetFlags": 277348361,
+          "backupFlags": 302514185,
+          "targetQuick": "6d038bc880",
+          "desiredEntry": "6d038bc880",
+          "writerOwnerRegistered": true,
+          "writerInterpositionInstalled": true,
+          "completeEntryWriterClosure": false,
+          "compilationOwnership": "process-interpreter-lease",
+          "processInterpreterOwned": true,
+          "observedInstrumentationLevel": 2,
+          "processPolicyClaims": 1,
+          "fullCallerCoverage": false
+        },
+        "helperSha256": "447bc2742c8551c1b00ff392622142b95e08405ed9768829f5add8d0af9561aa",
+        "relaySha256": "288efb68daf773a8de53d927b5da910af4ea4e194e399e808de53ca56e962c20"
+      },
+      {
+        "symbol": "failure",
+        "native": {
+          "stage": "DISABLED",
+          "ready": true,
+          "active": false,
+          "transitions": 2,
+          "originals": 101,
+          "retainedRoots": 4,
+          "retainedRelayPages": 1,
+          "knownCallers": 1,
+          "backupRooted": true,
+          "shorty": "II",
+          "instance": false,
+          "relay": "6fc5ea1000",
+          "helperMethod": "6fab3f0008",
+          "interpreterBridge": "6d038bc880",
+          "targetFlags": 279445513,
+          "backupFlags": 304611337,
+          "targetQuick": "6d038bc880",
+          "desiredEntry": "6d038bc880",
+          "writerOwnerRegistered": true,
+          "writerInterpositionInstalled": true,
+          "completeEntryWriterClosure": false,
+          "compilationOwnership": "process-interpreter-lease",
+          "processInterpreterOwned": true,
+          "observedInstrumentationLevel": 2,
+          "processPolicyClaims": 1,
+          "fullCallerCoverage": false
+        },
+        "helperSha256": "8a8261025b7edfc89cdc39f26d1f10bfcaa027993237a2fe7b3330f216c52cf9",
+        "relaySha256": "2a17de0e171119a3bc2efad1c8651064673d9fa5a89bbd60d1e4f4745b0d958b"
+      }
+    ],
+    "publications": [
+      {
+        "operation": "publish",
+        "sourceSha256": "439bbdbdff960f4dde9381135d2906ba1a0bdb4a67bba93132f3e5ad72e114ac",
+        "rules": 4
+      },
+      {
+        "operation": "retire",
+        "rules": 4
+      },
+      {
+        "operation": "publish",
+        "sourceSha256": "f7038ad5eac2fb72967c3de8a8d9dd291f94077e2db4485d72de62f4124ab314",
+        "rules": 2
+      },
+      {
+        "operation": "retire",
+        "rules": 2
+      },
+      {
+        "operation": "publish",
+        "sourceSha256": "84bfdbc216cd34824d123a20550a40dbd926d75022c93c5da21e7166f583fd5d",
+        "rules": 1
+      },
+      {
+        "operation": "retire",
+        "rules": 1
+      },
+      {
+        "operation": "publish",
+        "sourceSha256": "03b1f632a4b15fc89a2147653afe6d4bbd0495e35b6f92805a3940affc30265b",
+        "rules": 1
+      },
+      {
+        "operation": "retire",
+        "rules": 1
+      }
+    ],
+    "primaryRounds": 100,
+    "concurrentThreads": 4,
+    "concurrentCalls": 400,
+    "originalThrowableIdentity": true,
+    "inFlightOldParameterSnapshot": true,
+    "physicalBodyDeltas": {
+      "integer": 505,
+      "wide": 100,
+      "single": 100,
+      "failure": 101
+    },
+    "prepareDidNotPublish": true,
+    "unknownTargetRejected": true,
+    "allRetired": true,
+    "requestedCompilation": "jit"
+  },
+  "passed": true,
+  "storage": {
+    "stage": "PREPARED",
+    "allocations": 4,
+    "published": 4,
+    "rootedOutsideDeclaredTables": 4,
+    "observedOwnerMoves": 0,
+    "observedContainerRootMoves": 8,
+    "retainedSlotRoots": 24,
+    "retainedRegistryRoots": 1,
+    "obsoleteFlag": false,
+    "jniIdType": 0,
+    "bootAllocations": 0,
+    "readBarrierAdjustedReads": 0,
+    "rootSnapshots": [
+      {
+        "slot": 0,
+        "rooted": true,
+        "target": "6fbe21acf8",
+        "backup": "6fbe221600",
+        "bootAllocator": false,
+        "ownerBefore": "a58cd20",
+        "ownerAfter": "a58cd20",
+        "targetOwner": "a58cd20",
+        "backupOwner": "a58cd20",
+        "containersBefore": [
+          "9a28f30",
+          "89dcc000",
+          "9a26f10"
+        ],
+        "containersAfter": [
+          "9e86b40",
+          "89dcc000",
+          "9e8c860"
+        ]
+      },
+      {
+        "slot": 1,
+        "rooted": true,
+        "target": "6fbe21ad18",
+        "backup": "6fbe2217f0",
+        "bootAllocator": false,
+        "ownerBefore": "a58cd20",
+        "ownerAfter": "a58cd20",
+        "targetOwner": "a58cd20",
+        "backupOwner": "a58cd20",
+        "containersBefore": [
+          "9a28f30",
+          "89dcc000",
+          "9a26f10"
+        ],
+        "containersAfter": [
+          "9e86b40",
+          "89dcc000",
+          "9e8c860"
+        ]
+      },
+      {
+        "slot": 2,
+        "rooted": true,
+        "target": "6fbe21acd8",
+        "backup": "6fbe221810",
+        "bootAllocator": false,
+        "ownerBefore": "a58cd20",
+        "ownerAfter": "a58cd20",
+        "targetOwner": "a58cd20",
+        "backupOwner": "a58cd20",
+        "containersBefore": [
+          "9a28f30",
+          "89dcc000",
+          "9a26f10"
+        ],
+        "containersAfter": [
+          "9e86b40",
+          "89dcc000",
+          "9e8c860"
+        ]
+      },
+      {
+        "slot": 3,
+        "rooted": true,
+        "target": "6fbe21acb8",
+        "backup": "6fbe221830",
+        "bootAllocator": false,
+        "ownerBefore": "a58cd20",
+        "ownerAfter": "a58cd20",
+        "targetOwner": "a58cd20",
+        "backupOwner": "a58cd20",
+        "containersBefore": [
+          "9a28f30",
+          "89dcc000",
+          "9a26f10"
+        ],
+        "containersAfter": [
+          "9e86b40",
+          "89dcc000",
+          "9e8c860"
+        ]
+      }
+    ]
+  },
+  "mapsSha256": "be71d481ec576f4208cfdd8778895606ee2ae398d187e7e0edc536eef2c6d709",
+  "smapsSha256": "621ab78227eadd43546ae9b60f18aa609589201db965e2d58f025d4caf607bd0"
+}

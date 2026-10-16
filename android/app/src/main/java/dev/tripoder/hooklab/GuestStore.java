@@ -13,7 +13,7 @@ import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-/** Own fixture only. A separate process and directory are not a same-UID security sandbox. */
+/** Legacy owned-fixture experiment only; never the new runtime installation authority. */
 final class GuestStore {
     static final String PACKAGE = "dev.tripoder.fixture";
     static final String CLASS = PACKAGE + ".GuestProbe";
@@ -32,13 +32,38 @@ final class GuestStore {
         }
         if (!expectedHash.matches("[a-f0-9]{64}")) throw new IOException("Invalid fixture manifest");
         root = new File(context.getFilesDir(), "guests/" + expectedHash);
+        if (Files.isSymbolicLink(root.toPath())) throw new IOException("LEGACY_FIXTURE_DIRECTORY_SYMLINK");
         if (!root.isDirectory() && !root.mkdirs()) throw new IOException("Cannot create guest directory");
     }
 
-    synchronized File ensureFixture() throws Exception {
+    /** Called only by the explicit legacy experiment. A missing recorded APK is corruption, not an initialization request. */
+    synchronized File initializeOrVerifyLegacyFixture() throws Exception {
         File apk = new File(root, "base.apk");
-        if (apk.isFile() && expectedHash.equals(sha256(apk))) { assertReadOnly(apk); return apk; }
+        File marker = new File(root, ".legacy-fixture-initialized");
+        boolean initialized = Files.exists(marker.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS);
+        if (initialized) {
+            if (!Files.isRegularFile(marker.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS) || Files.size(marker.toPath()) != 64
+                || !expectedHash.equals(new String(Files.readAllBytes(marker.toPath()), StandardCharsets.US_ASCII)))
+                throw new IOException("LEGACY_FIXTURE_INITIALIZATION_RECORD_CORRUPT");
+        } else if (!Files.notExists(marker.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS)) throw new IOException("LEGACY_FIXTURE_INITIALIZATION_RECORD_UNREADABLE");
+        if (Files.exists(apk.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+            if (!Files.isRegularFile(apk.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS)) throw new IOException("LEGACY_FIXTURE_CORRUPT: expected a regular APK");
+            if (!expectedHash.equals(sha256(apk))) throw new IOException("LEGACY_FIXTURE_CORRUPT: APK digest mismatch");
+            assertReadOnly(apk);
+            if (!initialized) recordLegacyInitialization();
+            return apk;
+        }
+        if (!Files.notExists(apk.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS)) throw new IOException("LEGACY_FIXTURE_UNREADABLE");
+        if (initialized || Files.exists(new File(root, "lib").toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS))
+            throw new IOException("LEGACY_FIXTURE_CORRUPT: initialized APK is missing");
         try (InputStream input = context.getAssets().open("guest-fixture.apk")) { return importApk(input); }
+    }
+
+    /** Local experiment receipt only; it is not a new-runtime install record. */
+    private void recordLegacyInitialization() throws Exception {
+        File marker = new File(root, ".legacy-fixture-initialized");
+        if (Files.isSymbolicLink(marker.toPath())) throw new IOException("LEGACY_FIXTURE_INITIALIZATION_RECORD_SYMLINK");
+        ProjectStore.atomic(marker, expectedHash);
     }
 
     synchronized File importApk(InputStream input) throws Exception {
@@ -51,6 +76,7 @@ final class GuestStore {
                 throw new IllegalArgumentException("FIXTURE_IDENTITY_MISMATCH");
             File apk = new File(root, "base.apk");
             Files.move(temporary.toPath(), apk.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            recordLegacyInitialization();
             return apk;
         } finally { Files.deleteIfExists(temporary.toPath()); }
     }

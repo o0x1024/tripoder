@@ -1,0 +1,159 @@
+{
+  "runId": "activity-flags-b3b89b400ef443c4",
+  "scope": "normal-android-provider-baseline",
+  "scenario": "activity-flags",
+  "fixtureSha256": "086d1db4296b76d6c226421875f546077439c5f42a6ebcf34f39ea3c842f5e40",
+  "commands": [
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/provider-identity.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~nCahYXVdUu9gcAoS64aSqw==/dev.tripoder.provideridentity-ZM_SR0o-Iy5CUCZoSsi_wQ==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~nCahYXVdUu9gcAoS64aSqw==/dev.tripoder.provideridentity-ZM_SR0o-Iy5CUCZoSsi_wQ==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "086d1db4296b76d6c226421875f546077439c5f42a6ebcf34f39ea3c842f5e40  /data/app/~~nCahYXVdUu9gcAoS64aSqw==/dev.tripoder.provideridentity-ZM_SR0o-Iy5CUCZoSsi_wQ==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-f",
+        "0x10008000",
+        "-n",
+        "dev.tripoder.provideridentity/.FlagTopActivity",
+        "--es",
+        "baseline",
+        "true",
+        "--es",
+        "runId",
+        "activity-flags-b3b89b400ef443c4",
+        "--es",
+        "mode",
+        "direct"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { flg=0x10008000 cmp=dev.tripoder.provideridentity/.FlagTopActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.provideridentity/.FlagTopActivity\nTotalTime: 79\nWaitTime: 82\nComplete\n",
+      "stderr": ""
+    }
+  ],
+  "passed": true,
+  "tripoderRuntimeVerified": false,
+  "checks": [
+    {
+      "name": "standard-root-in-own-task",
+      "passed": true
+    },
+    {
+      "name": "empty-filter-registration-zero-flags-not-sticky",
+      "passed": true
+    },
+    {
+      "name": "battery-protected-events-register-zero-flags-not-sticky",
+      "passed": true
+    },
+    {
+      "name": "send-permission-requested-signed-recipient-receives",
+      "passed": true
+    },
+    {
+      "name": "send-permission-unrestricted-broadcast-still-delivers",
+      "passed": true
+    },
+    {
+      "name": "send-permission-declared-without-request-not-delivered",
+      "passed": true
+    },
+    {
+      "name": "empty-filter-no-action-is-not-a-wildcard",
+      "passed": true
+    },
+    {
+      "name": "empty-filter-real-unregister-and-repeat-rejection",
+      "passed": true
+    },
+    {
+      "name": "single-top-delivers-to-existing-standard-instance-1",
+      "passed": true
+    },
+    {
+      "name": "new-intent-does-not-replace-original-intent-1",
+      "passed": true
+    },
+    {
+      "name": "single-top-delivers-to-existing-standard-instance-2",
+      "passed": true
+    },
+    {
+      "name": "new-intent-does-not-replace-original-intent-2",
+      "passed": true
+    },
+    {
+      "name": "standard-without-flag-creates-new-instance",
+      "passed": true
+    },
+    {
+      "name": "activity-extras-null-and-scalar-types",
+      "passed": true
+    },
+    {
+      "name": "activity-extras-real-parcel-arrays",
+      "passed": true
+    },
+    {
+      "name": "activity-extras-nested-bundle",
+      "passed": true
+    },
+    {
+      "name": "activity-extras-real-platform-nested-intent",
+      "passed": true
+    },
+    {
+      "name": "activity-extras-real-string-and-integer-lists",
+      "passed": true
+    },
+    {
+      "name": "single-top-below-another-activity-creates-new-instance",
+      "passed": true
+    },
+    {
+      "name": "real-child-destruction-and-root-return",
+      "passed": true
+    }
+  ]
+}

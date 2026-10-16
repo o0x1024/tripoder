@@ -1,0 +1,175 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "name": "actual-original-guest-ui",
+      "passed": true,
+      "observed": [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "TRIPODER  /  OWNED APP",
+        "空间里的\n小实验。",
+        "这是一个独立 APK，正在客体进程中运行。\n点击计数，退出后再打开，数据会留在这个空间。",
+        "",
+        "本空间的计数",
+        "0",
+        "已从本地数据读取",
+        "＋  计数一次",
+        "重新创建界面",
+        "完成并返回 Tripoder",
+        "真实进程  13244   ·   界面重建  0 次\n空间数据彼此分开；当前仍共享宿主 UID。"
+      ]
+    },
+    {
+      "name": "guest-not-installed-as-host-app",
+      "passed": true,
+      "observed": {
+        "command": [
+          "shell",
+          "pm",
+          "path",
+          "dev.tripoder.previewguest"
+        ],
+        "exitCode": 1,
+        "stdout": "",
+        "stderr": "",
+        "time": "2026-10-14T13:10:33.087801+00:00"
+      }
+    },
+    {
+      "name": "actual-workbench-process-stopped",
+      "passed": true,
+      "observed": [
+        {
+          "command": [
+            "shell",
+            "pidof",
+            "dev.tripoder.workbench"
+          ],
+          "exitCode": 0,
+          "stdout": "6404\n",
+          "stderr": "",
+          "time": "2026-10-14T13:10:32.861215+00:00"
+        },
+        {
+          "command": [
+            "shell",
+            "pidof",
+            "dev.tripoder.workbench"
+          ],
+          "exitCode": 1,
+          "stdout": "",
+          "stderr": "",
+          "time": "2026-10-14T13:10:33.361970+00:00"
+        }
+      ]
+    },
+    {
+      "name": "engine-guest-survives-workbench-stop",
+      "passed": true,
+      "observed": [
+        {
+          "command": [
+            "shell",
+            "ps",
+            "-p",
+            "13244",
+            "-o",
+            "UID,PID,PPID,NAME"
+          ],
+          "exitCode": 0,
+          "stdout": "  UID   PID  PPID NAME                       \n10400 13244  1540 dev.tripoder.engine:slot0\n",
+          "stderr": "",
+          "time": "2026-10-14T13:10:32.976591+00:00"
+        },
+        {
+          "command": [
+            "shell",
+            "ps",
+            "-p",
+            "13244",
+            "-o",
+            "UID,PID,PPID,NAME"
+          ],
+          "exitCode": 0,
+          "stdout": "  UID   PID  PPID NAME                       \n10400 13244  1540 dev.tripoder.engine:slot0\n",
+          "stderr": "",
+          "time": "2026-10-14T13:10:33.433721+00:00"
+        }
+      ]
+    },
+    {
+      "name": "guest-input-and-recreation-after-workbench-death",
+      "passed": true,
+      "observed": [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "TRIPODER  /  OWNED APP",
+        "空间里的\n小实验。",
+        "这是一个独立 APK，正在客体进程中运行。\n点击计数，退出后再打开，数据会留在这个空间。",
+        "",
+        "本空间的计数",
+        "2",
+        "已从本地数据读取",
+        "＋  计数一次",
+        "重新创建界面",
+        "完成并返回 Tripoder",
+        "真实进程  13244   ·   界面重建  1 次\n空间数据彼此分开；当前仍共享宿主 UID。"
+      ]
+    },
+    {
+      "name": "restored-workbench-queries-completed-launch",
+      "passed": true,
+      "observed": [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "Tripoder",
+        "",
+        "",
+        "工作台 · 应用空间与脚本项目",
+        "",
+        "运行引擎",
+        "新内核已连接",
+        "项目文件保存在工作台，应用安装由引擎管理。",
+        "启动空间应用 · 已完成",
+        "应用空间",
+        "",
+        "空间：space-befacb6b  ▾",
+        "",
+        "space-befacb6b",
+        "dev.tripoder.p0.a",
+        "版本 1 · 已安装，尚未验证运行",
+        "dev.tripoder.previewguest",
+        "版本 1 · 已安装，尚未验证运行",
+        "",
+        "创建空间",
+        "导入 APK",
+        "项目与脚本",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "20261014",
+        "dev.tripoder.previewguest · space-befacb6b",
+        "",
+        "新建项目"
+      ]
+    }
+  ],
+  "fullP5Accepted": false,
+  "fullP6Accepted": false,
+  "note": "Fixed launch transaction build; subsequent ART fix is a different build and needs its own validation."
+}

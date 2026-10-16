@@ -13,13 +13,13 @@ type Ast = { type: string; [key: string]: any };
 type Scope = Map<string, unknown>;
 const forbidden = new Set(["constructor", "prototype", "__proto__", "caller", "callee", "arguments"]);
 const allowed = new Set(["File", "Program", "ImportDeclaration", "ImportSpecifier", "ExportDefaultDeclaration",
-  "Identifier", "StringLiteral", "NumericLiteral", "BooleanLiteral", "NullLiteral", "VariableDeclaration", "VariableDeclarator",
+  "Identifier", "StringLiteral", "NumericLiteral", "BigIntLiteral", "BooleanLiteral", "NullLiteral", "VariableDeclaration", "VariableDeclarator",
   "ObjectExpression", "ObjectProperty", "ObjectMethod", "ArrayExpression", "ArrowFunctionExpression", "FunctionExpression",
   "BlockStatement", "ExpressionStatement", "ReturnStatement", "IfStatement", "EmptyStatement", "ObjectPattern", "ArrayPattern",
   "AssignmentPattern", "MemberExpression", "CallExpression", "BinaryExpression", "LogicalExpression", "UnaryExpression",
   "ConditionalExpression", "TemplateLiteral", "TemplateElement", "TSAsExpression", "TSTypeAssertion", "TSNonNullExpression",
   "TSSatisfiesExpression", "TSInterfaceDeclaration", "TSTypeAliasDeclaration"]);
-const scalar = (v: unknown): v is string | number | boolean | null | undefined => v == null || ["string", "number", "boolean"].includes(typeof v);
+const scalar = (v: unknown): v is string | number | bigint | boolean | null | undefined => v == null || ["string", "number", "bigint", "boolean"].includes(typeof v);
 function demand(value: unknown, message: string): asserts value { if (!value) throw new Error("DRAFT: " + message); }
 function keyOf(value: unknown): string {
   demand(typeof value === "string" || typeof value === "number", "Property key must be a string or number");
@@ -59,6 +59,7 @@ export function prepareDraft(source: string, observed: EvidenceSnapshot): Prepar
   function limit(value: unknown): unknown {
     if (typeof value === "string") demand(value.length <= 8192, "String size limit");
     if (typeof value === "number") demand(Number.isFinite(value), "Non-finite number");
+    if (typeof value === "bigint") demand(value >= -(1n << 127n) && value < (1n << 127n), "BigInt size limit");
     if (Array.isArray(value)) demand(value.length <= 64, "Array size limit");
     return value;
   }
@@ -118,6 +119,7 @@ export function prepareDraft(source: string, observed: EvidenceSnapshot): Prepar
     switch (node.type) {
       case "Identifier": demand(scope.has(node.name), "Unknown identifier: " + node.name); return scope.get(node.name);
       case "StringLiteral": case "NumericLiteral": case "BooleanLiteral": return limit(node.value);
+      case "BigIntLiteral": demand(typeof node.value === "bigint", "BigInt AST value required"); return limit(node.value);
       case "NullLiteral": return null;
       case "TSAsExpression": case "TSTypeAssertion": case "TSNonNullExpression": case "TSSatisfiesExpression": return evaluate(node.expression, scope);
       case "ArrayExpression": return Object.freeze(limit(node.elements.map((x: Ast) => { demand(x, "Array holes unavailable"); return evaluate(x, scope); })));
@@ -149,13 +151,21 @@ export function prepareDraft(source: string, observed: EvidenceSnapshot): Prepar
       case "UnaryExpression": {
         const value = evaluate(node.argument, scope); demand(scalar(value), "Unary operand must be scalar");
         if (node.operator === "!") return !value;
-        if (node.operator === "-") return limit(-Number(value));
-        if (node.operator === "+") return limit(Number(value));
+        if (node.operator === "-") return limit(typeof value === "bigint" ? -value : -Number(value));
+        if (node.operator === "+") { demand(typeof value !== "bigint", "Unary plus does not accept BigInt"); return limit(Number(value)); }
         if (node.operator === "typeof") return typeof value;
         throw new Error("DRAFT: Unsupported unary operator");
       }
       case "BinaryExpression": {
         const a = evaluate(node.left, scope), b = evaluate(node.right, scope); demand(scalar(a) && scalar(b), "Binary operands must be scalar");
+        if ((typeof a === "bigint" || typeof b === "bigint") && ["+", "-", "*", "/", "%"].includes(node.operator)
+          && !(node.operator === "+" && (typeof a === "string" || typeof b === "string"))) {
+          demand(typeof a === "bigint" && typeof b === "bigint", "BigInt arithmetic needs two BigInt operands");
+          switch (node.operator) {
+            case "+": return limit(a + b); case "-": return limit(a - b); case "*": return limit(a * b);
+            case "/": return limit(a / b); case "%": return limit(a % b);
+          }
+        }
         switch (node.operator) {
           case "+": return limit(typeof a === "string" || typeof b === "string" ? String(a) + String(b) : Number(a) + Number(b));
           case "-": return limit(Number(a) - Number(b)); case "*": return limit(Number(a) * Number(b));
@@ -200,6 +210,11 @@ export function prepareDraft(source: string, observed: EvidenceSnapshot): Prepar
     symbols: Object.fromEntries(evidence.symbols.map(s => [s.id, s])), undefined,
     String: (v: unknown) => { demand(scalar(v), "String expects scalar"); return String(v); },
     Number: (v: unknown) => { demand(scalar(v), "Number expects scalar"); return limit(Number(v)); },
+    BigInt: (v: unknown) => {
+      demand(typeof v === "bigint" || typeof v === "boolean" || typeof v === "number" && Number.isSafeInteger(v)
+        || typeof v === "string" && v.length <= 40 && /^-?\d+$/.test(v), "BigInt expects a bounded exact integer");
+      return limit(BigInt(v));
+    },
     Boolean: (v: unknown) => { demand(scalar(v), "Boolean expects scalar"); return Boolean(v); },
     Math: Object.fromEntries(Object.entries({ min: Math.min, max: Math.max, floor: Math.floor, ceil: Math.ceil, round: Math.round, abs: Math.abs })
       .map(([name, math]) => [name, (...args: unknown[]) => {

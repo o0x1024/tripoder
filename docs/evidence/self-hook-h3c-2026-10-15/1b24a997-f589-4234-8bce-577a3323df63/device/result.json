@@ -1,0 +1,384 @@
+{
+  "schema": 1,
+  "runId": "1b24a997-f589-4234-8bce-577a3323df63",
+  "package": "dev.tripoder.selfhookprobe",
+  "uid": 10403,
+  "pid": 7586,
+  "timestampMs": 1792037156432,
+  "apkSha256": "ca8bad6526754b05012e4daeaca21f81ceceff3f1a2518fec0391d1185fab675",
+  "build": {
+    "schema": 1,
+    "buildId": "5626ec63-1a65-4799-8cfe-5870092e9ffe",
+    "timestamp": "2026-10-15T04:05:06.517021+00:00",
+    "sourceDigest": "4e9ade6ba4ddec4c694949b85447ca81909bed982d8607ad1078312dd5ec4937",
+    "nativeSha256": "9315f9caf5b078c9c2c7652349ada44b5ad3abe3f982111cc71d879958731fc2",
+    "fixtureSha256": "71e223f4177d345697ec30449140e6d5412b1ece25dd56afbb4ace4368d6a9fb",
+    "scope": "H1 plus H2a real ELF hook in cooperative owned-fixture domain"
+  },
+  "debuggable": false,
+  "platform": {
+    "fingerprint": "Xiaomi\/madrid\/madrid:17\/CP2A.260605.016\/OS4.0.24.0.XEOCNXM:user\/release-keys",
+    "sdk": 37,
+    "abi": "arm64-v8a",
+    "process64Bit": true,
+    "pageSize": 4096,
+    "binaries": {
+      "\/apex\/com.android.runtime\/bin\/linker64": "b6dd216b7a775b8f04c825cada286bfe7ddaeecf2c0c10e617287118965abc00",
+      "\/apex\/com.android.runtime\/lib64\/bionic\/libc.so": "b963b539545b64aa8fbcaed3228d04bcb6466bfd47055aa16e4ccdcadfdc461e",
+      "\/apex\/com.android.art\/lib64\/libart.so": "2d4a3575e5b71b537d89c176ac82ad3e32a56a3d43161009de3e728c962fab13"
+    }
+  },
+  "selinuxContext": "u:r:untrusted_app:s0:c147,c257,c512,c768",
+  "platformGatePassed": true,
+  "nativeSha256": "9315f9caf5b078c9c2c7652349ada44b5ad3abe3f982111cc71d879958731fc2",
+  "fixtureSha256": "71e223f4177d345697ec30449140e6d5412b1ece25dd56afbb4ace4368d6a9fb",
+  "native": {
+    "core": {
+      "checks": 92,
+      "failures": 0,
+      "firstFailure": ""
+    },
+    "execution": {
+      "checks": 16,
+      "failures": 0,
+      "firstFailure": "",
+      "errno": 0,
+      "rwObserved": true,
+      "rxObserved": true,
+      "executed": true
+    },
+    "hwcap": "ffffffff",
+    "hwcap2": "440043cbb73ef",
+    "btiEnforcementTested": false,
+    "javaHook": false,
+    "ownedHook": {
+      "checks": 45,
+      "failures": 0,
+      "firstFailure": "",
+      "lastStatus": 0,
+      "executed": true,
+      "liveElfEntryPatched": true,
+      "cooperativeDomainOnly": true,
+      "cycles": 50,
+      "workerCalls": 525804,
+      "hookedCalls": 240378,
+      "plainCalls": 285426,
+      "callbackFailures": 0,
+      "unloaded": true,
+      "reloaded": true,
+      "firstGeneration": 1,
+      "secondGeneration": 2,
+      "target": "6ce9b36000",
+      "trampoline": "6ce9b37000",
+      "arbitraryThreadsStopped": false,
+      "btiEnforcementTested": false,
+      "javaHook": false,
+      "pages": {
+        "model": "owned-anonymous-page-v1",
+        "stagedRW": 105,
+        "stagedRX": 104,
+        "published": 104,
+        "restored": 3,
+        "liveStagingPages": 0,
+        "peakStagingPages": 3,
+        "liveAnonymousPages": 0,
+        "prepareErrno": 0,
+        "injectedPrepareRejections": 1
+      }
+    }
+  },
+  "art": {
+    "scope": "read-only ART access and public JNI invocation; no hook",
+    "access": {
+      "mappedBase": "6d03600000",
+      "namespaceHandle": false,
+      "namespaceError": "dlopen failed: library \"\/apex\/com.android.art\/lib64\/libart.so\" wasn't loaded and RTLD_NOLOAD prevented it",
+      "symbols": [
+        {
+          "name": "_ZN3art7Runtime9instance_E",
+          "defaultAddress": "0",
+          "handleAddress": "0",
+          "defaultIsArt": false
+        },
+        {
+          "name": "_ZN3art6Thread14CurrentFromGdbEv",
+          "defaultAddress": "0",
+          "handleAddress": "0",
+          "defaultIsArt": false
+        },
+        {
+          "name": "_ZN3art16ScopedSuspendAllC1EPKcb",
+          "defaultAddress": "0",
+          "handleAddress": "0",
+          "defaultIsArt": false
+        },
+        {
+          "name": "_ZN3art16ScopedSuspendAllD1Ev",
+          "defaultAddress": "0",
+          "handleAddress": "0",
+          "defaultIsArt": false
+        },
+        {
+          "name": "_ZN3art3jni12JniIdManager14DecodeMethodIdEP10_jmethodID",
+          "defaultAddress": "0",
+          "handleAddress": "0",
+          "defaultIsArt": false
+        },
+        {
+          "name": "_ZN3art15instrumentation15Instrumentation10DeoptimizeEPNS_9ArtMethodE",
+          "defaultAddress": "0",
+          "handleAddress": "0",
+          "defaultIsArt": false
+        }
+      ]
+    },
+    "methodId": "6fbe214540",
+    "lockedMethod": {
+      "bound": true,
+      "methodReadable": true,
+      "threadPresent": true,
+      "base": "6d03600000",
+      "thread": "b400006d998790a0",
+      "method": "6fbe214540",
+      "suspendResumeCycles": 10,
+      "words": [
+        149079544,
+        270532617,
+        16,
+        4294901761,
+        3641685156,
+        111,
+        59492480,
+        109
+      ],
+      "methodMemoryModified": false
+    },
+    "artMethodFieldReadable": true,
+    "artMethodAddress": "6fbe214540",
+    "checks": 15,
+    "failures": [],
+    "observationPassed": true,
+    "internalArtCalls": true,
+    "methodMemoryModified": false,
+    "javaHook": false,
+    "jitAotVerified": false,
+    "callerSensitiveHookVerified": false
+  },
+  "artNative": {
+    "hotMethodBefore": {
+      "bound": true,
+      "methodReadable": true,
+      "threadPresent": true,
+      "base": "6d03600000",
+      "thread": "b400006d998790a0",
+      "method": "6fbe214710",
+      "suspendResumeCycles": 10,
+      "words": [
+        143130920,
+        279445514,
+        41,
+        3993042950,
+        3641676716,
+        111,
+        3495707600,
+        0
+      ],
+      "methodMemoryModified": false
+    },
+    "requestedCompilation": "jit",
+    "primeRounds": 7,
+    "hotMethodAfter": {
+      "bound": true,
+      "methodReadable": true,
+      "threadPresent": true,
+      "base": "6d03600000",
+      "thread": "b400006d998790a0",
+      "method": "6fbe214710",
+      "suspendResumeCycles": 10,
+      "words": [
+        143130920,
+        279445514,
+        41,
+        3993042950,
+        3641676716,
+        111,
+        3495707984,
+        0
+      ],
+      "methodMemoryModified": false
+    },
+    "hotCalls": 1000000,
+    "hotFailures": 0,
+    "hotIntercepted": 1000000,
+    "hotInvocation": "Method.invoke",
+    "cycles": 20,
+    "workerCalls": 3685663,
+    "workerErrors": 0,
+    "checks": 62,
+    "failures": [],
+    "passed": true,
+    "binding": {
+      "mechanism": "RegisterNatives-exact-Field.get",
+      "enabled": false,
+      "transitions": 42,
+      "callbackCalls": 2308479,
+      "replacements": 1496560,
+      "originalExceptions": 6,
+      "originalFlags": 1344798977,
+      "original": "6d03b02554",
+      "originalQuick": "36a2460",
+      "retainedGlobalRefs": 4,
+      "processLifetimeSlot": true,
+      "genericJavaHook": false
+    },
+    "nativeMethodHook": true,
+    "genericJavaHook": false
+  },
+  "artManaged": {
+    "callerBefore": {
+      "bound": true,
+      "methodReadable": true,
+      "threadPresent": true,
+      "base": "6d03600000",
+      "thread": "b400006d998790a0",
+      "method": "6fbe214cd8",
+      "suspendResumeCycles": 10,
+      "words": [
+        160974704,
+        279445513,
+        68,
+        3999924225,
+        3641680704,
+        111,
+        3495710336,
+        0
+      ],
+      "methodMemoryModified": false
+    },
+    "requestedCompilation": "jit",
+    "before": {
+      "bound": true,
+      "methodReadable": true,
+      "threadPresent": true,
+      "base": "6d03600000",
+      "thread": "b400006d998790a0",
+      "method": "6fbe214c90",
+      "suspendResumeCycles": 10,
+      "words": [
+        160975120,
+        271056905,
+        71,
+        4291887106,
+        3641680760,
+        111,
+        64127040,
+        109
+      ],
+      "methodMemoryModified": false
+    },
+    "active": {
+      "bound": true,
+      "methodReadable": true,
+      "threadPresent": true,
+      "base": "6d03600000",
+      "thread": "b400006d998790a0",
+      "method": "6fbe214c90",
+      "suspendResumeCycles": 10,
+      "words": [
+        142727456,
+        301990153,
+        71,
+        4291887106,
+        3921594276,
+        108,
+        59492112,
+        109
+      ],
+      "methodMemoryModified": false
+    },
+    "hotCalls": 10000,
+    "hotIntercepted": 10000,
+    "hotErrors": 0,
+    "compiledCallerBeforeDeopt": {
+      "calls": 10000,
+      "errors": 10000,
+      "intercepted": 0
+    },
+    "callerAfterDeopt": {
+      "bound": true,
+      "methodReadable": true,
+      "threadPresent": true,
+      "base": "6d03600000",
+      "thread": "b400006d998790a0",
+      "method": "6fbe214cd8",
+      "suspendResumeCycles": 10,
+      "words": [
+        142727248,
+        279445513,
+        68,
+        3999924225,
+        3641680704,
+        111,
+        59492480,
+        109
+      ],
+      "methodMemoryModified": false
+    },
+    "compiledCallerAfterDeopt": {
+      "calls": 10000,
+      "errors": 0,
+      "intercepted": 10000
+    },
+    "after": {
+      "bound": true,
+      "methodReadable": true,
+      "threadPresent": true,
+      "base": "6d03600000",
+      "thread": "b400006d998790a0",
+      "method": "6fbe214c90",
+      "suspendResumeCycles": 10,
+      "words": [
+        144300240,
+        271056905,
+        71,
+        4294901762,
+        3641680760,
+        111,
+        59492480,
+        109
+      ],
+      "methodMemoryModified": false
+    },
+    "checks": 25,
+    "failures": [],
+    "passed": true,
+    "binding": {
+      "ready": true,
+      "enabled": false,
+      "transitions": 2,
+      "callbacks": 20004,
+      "originals": 20004,
+      "retainedGlobalRefs": 8,
+      "slots": 2,
+      "processLifetimeSlot": true,
+      "savedFlags": 271056905,
+      "target": "6fbe214c90",
+      "backup": "6fbe214d88",
+      "genericJavaHook": false
+    },
+    "ownedManagedMethod": true,
+    "genericJavaHook": false,
+    "inliningVerified": false,
+    "gcMovementProven": false
+  },
+  "pageSnapshots": {
+    "prepared": "3a64508b1291fe51effbcdba2d9c2ca64a3d94a0c9ea6df4efea1e780e7cf799",
+    "active": "dd7c9378522837098968b5b23a3414113bee5f5db278b2d7ddc7afce2744e808",
+    "disabled": "dd7c9378522837098968b5b23a3414113bee5f5db278b2d7ddc7afce2744e808",
+    "restored": "e8e1208bbd80e6060014bccc449ed28bba1e210551de86bf11f744a6388dcf87"
+  },
+  "fixtureSha256After": "71e223f4177d345697ec30449140e6d5412b1ece25dd56afbb4ace4368d6a9fb",
+  "mapsSha256": "c65ed72aac85c8c1ccc2b0138ab427f3f739c7fec998c169f44289d74044873f",
+  "forbiddenMappings": [],
+  "passed": true
+}

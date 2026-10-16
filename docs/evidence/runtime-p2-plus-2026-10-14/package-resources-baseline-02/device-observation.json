@@ -1,0 +1,114 @@
+{
+  "runId": "resources-8cec7b38df764e54",
+  "scope": "normal-android-provider-baseline",
+  "scenario": "resources",
+  "fixtureSha256": "229bf361814165a62db370f510b0484f3047f4e450814083aaa3f109ccef87fb",
+  "commands": [
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/provider-identity.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~SD8uZbBowNTVIaLjYUDRfA==/dev.tripoder.provideridentity-uHZbQFxsvPSIxFqXZKLhQw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~SD8uZbBowNTVIaLjYUDRfA==/dev.tripoder.provideridentity-uHZbQFxsvPSIxFqXZKLhQw==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "229bf361814165a62db370f510b0484f3047f4e450814083aaa3f109ccef87fb  /data/app/~~SD8uZbBowNTVIaLjYUDRfA==/dev.tripoder.provideridentity-uHZbQFxsvPSIxFqXZKLhQw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.provideridentity/.PackageResourcesActivity",
+        "--es",
+        "baseline",
+        "true",
+        "--es",
+        "runId",
+        "resources-8cec7b38df764e54"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.provideridentity/.PackageResourcesActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.provideridentity/.PackageResourcesActivity\nTotalTime: 75\nWaitTime: 75\nComplete\n",
+      "stderr": ""
+    }
+  ],
+  "passed": true,
+  "tripoderRuntimeVerified": false,
+  "checks": [
+    {
+      "name": "application-metadata-from-manifest",
+      "passed": true
+    },
+    {
+      "name": "application-metadata-omitted-without-flag",
+      "passed": true
+    },
+    {
+      "name": "application-long-flags-preserve-metadata",
+      "passed": true
+    },
+    {
+      "name": "application-xml-resource-id-present",
+      "passed": true
+    },
+    {
+      "name": "package-xml-null-info",
+      "passed": true
+    },
+    {
+      "name": "package-xml-application-info",
+      "passed": true
+    },
+    {
+      "name": "application-load-xml-metadata",
+      "passed": true
+    },
+    {
+      "name": "provider-load-xml-metadata",
+      "passed": true
+    },
+    {
+      "name": "provider-application-metadata-flag-bound",
+      "passed": true
+    },
+    {
+      "name": "package-missing-xml-is-null",
+      "passed": true
+    }
+  ]
+}

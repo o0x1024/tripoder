@@ -1,0 +1,50 @@
+--------- beginning of crash
+10-15 10:56:58.436 18406 18406 F DEBUG   : *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+10-15 10:56:58.436 18406 18406 F DEBUG   : Build fingerprint: 'Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys'
+10-15 10:56:58.436 18406 18406 F DEBUG   : Kernel Release: '6.18.21-android17-5-g1d099fcb35e0-abogki540753930-4k'
+10-15 10:56:58.436 18406 18406 F DEBUG   : Revision: '0'
+10-15 10:56:58.436 18406 18406 F DEBUG   : ABI: 'arm64'
+10-15 10:56:58.437 18406 18406 F DEBUG   : Timestamp: 2026-10-15 10:56:58.168645323+0800
+10-15 10:56:58.437 18406 18406 F DEBUG   : Process uptime: 873s
+10-15 10:56:58.437 18406 18406 F DEBUG   : Executable: /system/bin/app_process64
+10-15 10:56:58.437 18406 18406 F DEBUG   : Cmdline: dev.tripoder.selfhookprobe
+10-15 10:56:58.437 18406 18406 F DEBUG   : pid: 15570, ppid: 1540, tid: 18387, name: self-hook-probe  >>> dev.tripoder.selfhookprobe <<<
+10-15 10:56:58.437 18406 18406 F DEBUG   : uid: 10403
+10-15 10:56:58.437 18406 18406 F DEBUG   : tagged_addr_ctrl: 0000000000000001 (PR_TAGGED_ADDR_ENABLE)
+10-15 10:56:58.437 18406 18406 F DEBUG   : pac_enabled_keys: 000000000000000f (PR_PAC_APIAKEY, PR_PAC_APIBKEY, PR_PAC_APDAKEY, PR_PAC_APDBKEY)
+10-15 10:56:58.437 18406 18406 F DEBUG   : esr: 0000000092000006 (Data Abort Exception 0x24)
+10-15 10:56:58.437 18406 18406 F DEBUG   : signal 6 (SIGABRT), code -1 (SI_QUEUE), fault addr --------
+10-15 10:56:58.437 18406 18406 F DEBUG   :     x0  0000000000000000  x1  00000000000047d3  x2  0000000000000006  x3  0000006cea8e60f0
+10-15 10:56:58.437 18406 18406 F DEBUG   :     x4  000000000000003f  x5  000000000000003f  x6  000000000000003f  x7  0000000000000000
+10-15 10:56:58.437 18406 18406 F DEBUG   :     x8  00000000000000f0  x9  461b20b6b03f66dc  x10 000000ff00000020  x11 0000006cea8e8040
+10-15 10:56:58.437 18406 18406 F DEBUG   :     x12 0000006fbe27981a  x13 0a20636120656d20  x14 00000000ffffffff  x15 00000000ffffffa5
+10-15 10:56:58.437 18406 18406 F DEBUG   :     x16 0000006fbe34f420  x17 0000006fbe333580  x18 0000006c72738000  x19 0000000000003cd2
+10-15 10:56:58.437 18406 18406 F DEBUG   :     x20 00000000000047d3  x21 00000000ffffffff  x22 0000006ce9aebb7c  x23 00000000d503201f
+10-15 10:56:58.437 18406 18406 F DEBUG   :     x24 0000006cea8e6460  x25 0000006cea8e6210  x26 0000000000000000  x27 b400006e09836270
+10-15 10:56:58.437 18406 18406 F DEBUG   :     x28 0000006ce9aeaf36  x29 0000006cea8e6170
+10-15 10:56:58.437 18406 18406 F DEBUG   :     lr  0000006fbe2cfdec  sp  0000006cea8e60f0  pc  0000006fbe2cfe10  pst 0000000000001000
+10-15 10:56:58.437 18406 18406 F DEBUG   :     esr 0000000092000006  vg  0000000000000002
+10-15 10:56:58.437 18406 18406 F DEBUG   : 20 total frames
+10-15 10:56:58.437 18406 18406 F DEBUG   : backtrace:
+10-15 10:56:58.437 18406 18406 F DEBUG   :       #00 pc 000000000007be10  /apex/com.android.runtime/lib64/bionic/libc.so (abort+160) (BuildId: 48c4b18304acf519b26457ccbc3d435f)
+10-15 10:56:58.437 18406 18406 F DEBUG   :       #01 pc 0000000000007784  /data/app/~~QDuz80GcKHARTwL1Hkzp4Q==/dev.tripoder.selfhookprobe-6Nyia-LODTS90eDJaQWR_Q==/lib/arm64/libtripoderselfhook.so (tp_code_page_write+824) (BuildId: a4b4039eb2ed178198d0f116aa65c44b316c36ce)
+10-15 10:56:58.437 18406 18406 F DEBUG   :       #02 pc 0000000000007a70  /data/app/~~QDuz80GcKHARTwL1Hkzp4Q==/dev.tripoder.selfhookprobe-6Nyia-LODTS90eDJaQWR_Q==/lib/arm64/libtripoderselfhook.so (tp_owned_open+728) (BuildId: a4b4039eb2ed178198d0f116aa65c44b316c36ce)
+10-15 10:56:58.437 18406 18406 F DEBUG   :       #03 pc 0000000000009d88  /data/app/~~QDuz80GcKHARTwL1Hkzp4Q==/dev.tripoder.selfhookprobe-6Nyia-LODTS90eDJaQWR_Q==/lib/arm64/libtripoderselfhook.so (tp_probe_owned+204) (BuildId: a4b4039eb2ed178198d0f116aa65c44b316c36ce)
+10-15 10:56:58.437 18406 18406 F DEBUG   :       #04 pc 00000000000098a0  /data/app/~~QDuz80GcKHARTwL1Hkzp4Q==/dev.tripoder.selfhookprobe-6Nyia-LODTS90eDJaQWR_Q==/lib/arm64/libtripoderselfhook.so (Java_dev_tripoder_selfhookprobe_ProbeActivity_runNative+932) (BuildId: a4b4039eb2ed178198d0f116aa65c44b316c36ce)
+10-15 10:56:58.437 18406 18406 F DEBUG   :       #05 pc 000000000036a7dc  /system/framework/arm64/boot.oat (art_jni_trampoline+124) (BuildId: 927cc20323efe03693524d42e4d024acd48d8ba1)
+10-15 10:56:58.437 18406 18406 F DEBUG   :       #06 pc 000000000073d104  /apex/com.android.art/lib64/libart.so (nterp_helper+116) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-15 10:56:58.437 18406 18406 F DEBUG   :       #07 pc 0000000000001394  /data/app/~~QDuz80GcKHARTwL1Hkzp4Q==/dev.tripoder.selfhookprobe-6Nyia-LODTS90eDJaQWR_Q==/oat/arm64/base.vdex (dev.tripoder.selfhookprobe.ProbeActivity.execute+1004)
+10-15 10:56:58.437 18406 18406 F DEBUG   :       #08 pc 000000000073d884  /apex/com.android.art/lib64/libart.so (nterp_helper+2036) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-15 10:56:58.437 18406 18406 F DEBUG   :       #09 pc 00000000000018e8  /data/app/~~QDuz80GcKHARTwL1Hkzp4Q==/dev.tripoder.selfhookprobe-6Nyia-LODTS90eDJaQWR_Q==/oat/arm64/base.vdex (dev.tripoder.selfhookprobe.ProbeActivity.lambda$onCreate$0+0)
+10-15 10:56:58.437 18406 18406 F DEBUG   :       #10 pc 000000000073d884  /apex/com.android.art/lib64/libart.so (nterp_helper+2036) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-15 10:56:58.437 18406 18406 F DEBUG   :       #11 pc 0000000000000f78  /data/app/~~QDuz80GcKHARTwL1Hkzp4Q==/dev.tripoder.selfhookprobe-6Nyia-LODTS90eDJaQWR_Q==/oat/arm64/base.vdex (dev.tripoder.selfhookprobe.ProbeActivity.$r8$lambda$L7TsadSiYruGSsqEmN1u4mMILQs+0)
+10-15 10:56:58.437 18406 18406 F DEBUG   :       #12 pc 0000000000739c6c  /apex/com.android.art/lib64/libart.so (nterp3_op_invoke_static+44) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-15 10:56:58.437 18406 18406 F DEBUG   :       #13 pc 0000000000000cc0  /data/app/~~QDuz80GcKHARTwL1Hkzp4Q==/dev.tripoder.selfhookprobe-6Nyia-LODTS90eDJaQWR_Q==/oat/arm64/base.vdex (dev.tripoder.selfhookprobe.ProbeActivity$0.run+12)
+10-15 10:56:58.437 18406 18406 F DEBUG   :       #14 pc 00000000000bbe58  /system/framework/arm64/boot.oat (java.lang.Thread.run+72) (BuildId: 927cc20323efe03693524d42e4d024acd48d8ba1)
+10-15 10:56:58.437 18406 18406 F DEBUG   :       #15 pc 00000000002a5394  /apex/com.android.art/lib64/libart.so (art_quick_invoke_stub+612) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-15 10:56:58.437 18406 18406 F DEBUG   :       #16 pc 00000000002a3690  /apex/com.android.art/lib64/libart.so (art::ArtMethod::Invoke(art::Thread*, unsigned int*, unsigned int, art::JValue*, char const*)+148) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-15 10:56:58.437 18406 18406 F DEBUG   :       #17 pc 00000000004e0e38  /apex/com.android.art/lib64/libart.so (art::Thread::CreateCallback(void*)+1656) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-15 10:56:58.437 18406 18406 F DEBUG   :       #18 pc 000000000008e830  /apex/com.android.runtime/lib64/bionic/libc.so (__pthread_start(void*) (.__uniq.67847048707805468364044055584648682506)+184) (BuildId: 48c4b18304acf519b26457ccbc3d435f)
+10-15 10:56:58.437 18406 18406 F DEBUG   :       #19 pc 000000000007fb24  /apex/com.android.runtime/lib64/bionic/libc.so (__start_thread+68) (BuildId: 48c4b18304acf519b26457ccbc3d435f)
+10-15 10:56:58.437 18406 18406 F DEBUG   : Note: To display stack pointer information, use the pbtombstone tool:
+10-15 10:56:58.437 18406 18406 F DEBUG   :         pbtombstone --display-sp tombstone_XX.pb

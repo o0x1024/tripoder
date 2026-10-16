@@ -1,0 +1,122 @@
+
+/Users/like/code/tripoder/android/self-hook-probe/build/entry_leaf_fixture.o:	file format elf64-littleaarch64
+
+Disassembly of section .text:
+
+000000000000001c <tp_entry_fixture_leaf>:
+      1c: 9000000a     	adrp	x10, 0x0 <tp_entry_fixture_routed>
+      20: 9100014a     	add	x10, x10, #0x0
+      24: 52800809     	mov	w9, #0x40               // =64
+      28: c8dffd4b     	ldar	x11, [x10]
+      2c: b400016b     	cbz	x11, 0x58 <tp_entry_fixture_leaf+0x3c>
+      30: f940016c     	ldr	x12, [x11]
+      34: eb00019f     	cmp	x12, x0
+      38: 54000101     	b.ne	0x58 <tp_entry_fixture_leaf+0x3c>
+      3c: f9400d6d     	ldr	x13, [x11, #0x18]
+      40: c8dffdae     	ldar	x14, [x13]
+      44: b400014e     	cbz	x14, 0x6c <tp_entry_fixture_leaf+0x50>
+      48: f24005df     	tst	x14, #0x3
+      4c: 54000101     	b.ne	0x6c <tp_entry_fixture_leaf+0x50>
+      50: aa0e03e1     	mov	x1, x14
+      54: 14000004     	b	0x64 <tp_entry_fixture_leaf+0x48>
+      58: 9100214a     	add	x10, x10, #0x8
+      5c: 71000529     	subs	w9, w9, #0x1
+      60: 54fffe41     	b.ne	0x28 <tp_entry_fixture_leaf+0xc>
+      64: a9be7bfd     	stp	x29, x30, [sp, #-0x20]!
+      68: 17ffffe8     	b	0x8 <tp_entry_fixture_routed+0x8>
+      6c: d420a680     	brk	#0x534
+      70: 17ffffff     	b	0x6c <tp_entry_fixture_leaf+0x50>
+
+/Users/like/code/tripoder/android/self-hook-probe/build/entry_leaf_fixture.o:	file format elf64-littleaarch64
+
+.debug_frame contents:
+
+
+.eh_frame contents:
+
+00000000 00000010 00000000 CIE
+  Format:                DWARF32
+  Version:               1
+  Augmentation:          "zR"
+  Code alignment factor: 1
+  Data alignment factor: -4
+  Return address column: 30
+  Augmentation data:     1B
+
+  DW_CFA_def_cfa: WSP +0
+
+  CFA=WSP
+
+00000014 00000020 00000018 FDE cie=00000000 pc=00000000...0000001c
+  Format:       DWARF32
+  DW_CFA_advance_loc: 4 to 0x4
+  DW_CFA_AARCH64_negate_ra_state:
+  DW_CFA_advance_loc: 4 to 0x8
+  DW_CFA_def_cfa_offset: +32
+  DW_CFA_offset: W29 -32
+  DW_CFA_offset: W30 -24
+  DW_CFA_advance_loc: 12 to 0x14
+  DW_CFA_def_cfa_offset: +0
+  DW_CFA_restore: W29
+  DW_CFA_restore: W30
+  DW_CFA_advance_loc: 4 to 0x18
+  DW_CFA_AARCH64_negate_ra_state:
+  DW_CFA_nop:
+  DW_CFA_nop:
+  DW_CFA_nop:
+
+  0x0: CFA=WSP
+  0x4: CFA=WSP: reg34=1
+  0x8: CFA=WSP+32: W29=[CFA-32], W30=[CFA-24], reg34=1
+  0x14: CFA=WSP: reg34=1
+  0x18: CFA=WSP: reg34=0
+
+00000038 0000001c 0000003c FDE cie=00000000 pc=0000001c...00000074
+  Format:       DWARF32
+  DW_CFA_AARCH64_negate_ra_state:
+  DW_CFA_advance_loc1: 76 to 0x68
+  DW_CFA_def_cfa_offset: +32
+  DW_CFA_offset: W29 -32
+  DW_CFA_offset: W30 -24
+  DW_CFA_advance_loc: 4 to 0x6c
+  DW_CFA_def_cfa_offset: +0
+  DW_CFA_restore: W29
+  DW_CFA_restore: W30
+  DW_CFA_nop:
+
+  0x1c: CFA=WSP: reg34=1
+  0x68: CFA=WSP+32: W29=[CFA-32], W30=[CFA-24], reg34=1
+  0x6c: CFA=WSP: reg34=1
+
+00000058 00000020 0000005c FDE cie=00000000 pc=00000074...00000090
+  Format:       DWARF32
+  DW_CFA_advance_loc: 4 to 0x78
+  DW_CFA_AARCH64_negate_ra_state:
+  DW_CFA_advance_loc: 4 to 0x7c
+  DW_CFA_def_cfa_offset: +16
+  DW_CFA_offset: W29 -16
+  DW_CFA_offset: W30 -8
+  DW_CFA_advance_loc: 12 to 0x88
+  DW_CFA_def_cfa_offset: +0
+  DW_CFA_restore: W29
+  DW_CFA_restore: W30
+  DW_CFA_advance_loc: 4 to 0x8c
+  DW_CFA_AARCH64_negate_ra_state:
+  DW_CFA_nop:
+  DW_CFA_nop:
+  DW_CFA_nop:
+
+  0x74: CFA=WSP
+  0x78: CFA=WSP: reg34=1
+  0x7c: CFA=WSP+16: W29=[CFA-16], W30=[CFA-8], reg34=1
+  0x88: CFA=WSP: reg34=1
+  0x8c: CFA=WSP: reg34=0
+
+0000007c 00000010 00000080 FDE cie=00000000 pc=00000090...0000009c
+  Format:       DWARF32
+  DW_CFA_nop:
+  DW_CFA_nop:
+  DW_CFA_nop:
+
+  0x90: CFA=WSP
+

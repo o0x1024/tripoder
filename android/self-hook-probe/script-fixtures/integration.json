@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "scope": "owned-four-methods-four-direct-callers",
+  "javaSourceRoots": [
+    "android/self-hook-probe/script-fixtures/dev",
+    "android/runtime/src/dev/tripoder/runtime/script"
+  ],
+  "excludeFromApk": [
+    "android/self-hook-probe/script-fixtures/host",
+    "android/self-hook-probe/script-fixtures/build",
+    "android/runtime/script-tests"
+  ],
+  "existingProbeDependencies": ["ProbeEnvironment", "ProbeFiles", "ArtProbe", "ArtCompilation"],
+  "existingCoreDependencies": ["ManagedHook", "OriginalMethodStorage", "dex/AbiSignature", "dex/HelperDex", "dex/DexFile", "dex/DexCallerClosure"],
+  "activity": "dev.tripoder.selfhookprobe.ScriptControlProbeActivity",
+  "requiredExtras": {"runId": "fresh UUID", "artCompilation": "jit or aot", "ownedScriptScope": true},
+  "result": {"schema": 1, "phase": "H5-owned-script-control", "productBackend": false, "fullCallerCoverage": false, "authorityApprovalPath": false},
+  "deviceManagedBy": "root agent only"
+}

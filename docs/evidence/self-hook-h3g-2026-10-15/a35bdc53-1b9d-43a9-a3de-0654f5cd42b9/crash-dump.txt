@@ -1,0 +1,68 @@
+--------- beginning of crash
+10-15 14:28:14.639 19354 19354 F DEBUG   : *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+10-15 14:28:14.639 19354 19354 F DEBUG   : Build fingerprint: 'Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys'
+10-15 14:28:14.639 19354 19354 F DEBUG   : Kernel Release: '6.18.21-android17-5-g1d099fcb35e0-abogki540753930-4k'
+10-15 14:28:14.639 19354 19354 F DEBUG   : Revision: '0'
+10-15 14:28:14.639 19354 19354 F DEBUG   : ABI: 'arm64'
+10-15 14:28:14.639 19354 19354 F DEBUG   : Timestamp: 2026-10-15 14:28:14.517259133+0800
+10-15 14:28:14.639 19354 19354 F DEBUG   : Process uptime: 56s
+10-15 14:28:14.639 19354 19354 F DEBUG   : Executable: /system/bin/app_process64
+10-15 14:28:14.639 19354 19354 F DEBUG   : Cmdline: dev.tripoder.selfhookprobe
+10-15 14:28:14.639 19354 19354 F DEBUG   : pid: 18928, ppid: 1540, tid: 18928, name: r.selfhookprobe  >>> dev.tripoder.selfhookprobe <<<
+10-15 14:28:14.639 19354 19354 F DEBUG   : uid: 10403
+10-15 14:28:14.639 19354 19354 F DEBUG   : tagged_addr_ctrl: 0000000000000001 (PR_TAGGED_ADDR_ENABLE)
+10-15 14:28:14.639 19354 19354 F DEBUG   : pac_enabled_keys: 000000000000000f (PR_PAC_APIAKEY, PR_PAC_APIBKEY, PR_PAC_APDAKEY, PR_PAC_APDBKEY)
+10-15 14:28:14.639 19354 19354 F DEBUG   : esr: 0000000092000006 (Data Abort Exception 0x24)
+10-15 14:28:14.639 19354 19354 F DEBUG   : signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0000000000000010 (read)
+10-15 14:28:14.639 19354 19354 F DEBUG   : Cause: null pointer dereference
+10-15 14:28:14.639 19354 19354 F DEBUG   :     x0  0000000000000000  x1  0000000000000008  x2  00000000d25c4020  x3  0000007fe03cffc8
+10-15 14:28:14.639 19354 19354 F DEBUG   :     x4  0000000000000d68  x5  0000000000000d68  x6  0000000000000080  x7  0000000000333931
+10-15 14:28:14.639 19354 19354 F DEBUG   :     x8  000000003bdf8060  x9  0000000012280009  x10 0000000000000010  x11 00000000fffffff8
+10-15 14:28:14.639 19354 19354 F DEBUG   :     x12 b400006df9814ab0  x13 00000000d25c4000  x14 00000000d25c4000  x15 0000000000000001
+10-15 14:28:14.639 19354 19354 F DEBUG   :     x16 0000006d038bc880  x17 0000006d03d28040  x18 0000006fda380000  x19 00000000d25c7730
+10-15 14:28:14.639 19354 19354 F DEBUG   :     x20 0000006d03d28040  x21 0000000000000001  x22 0000000000000020  x23 0000000000000001
+10-15 14:28:14.639 19354 19354 F DEBUG   :     x24 000000000000ffff  x25 00000000d25c76c0  x26 0000000000000048  x27 00000000d25c7748
+10-15 14:28:14.639 19354 19354 F DEBUG   :     x28 0000000000000500  x29 0000007fe03d01c0
+10-15 14:28:14.639 19354 19354 F DEBUG   :     lr  0000006d039efd88  sp  0000007fe03d0000  pc  0000006d039efecc  pst 0000000000001000
+10-15 14:28:14.639 19354 19354 F DEBUG   :     esr 0000000092000006  vg  0000000000000002
+10-15 14:28:14.639 19354 19354 F DEBUG   : 37 total frames
+10-15 14:28:14.639 19354 19354 F DEBUG   : backtrace:
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #00 pc 00000000003efecc  /apex/com.android.art/lib64/libart.so (art::ClassLinker::AddImageSpace(art::gc::space::ImageSpace*, art::Handle<art::mirror::ClassLoader>, art::ClassLoaderContext*, std::__1::vector<std::__1::unique_ptr<art::DexFile const, std::__1::default_delete<art::DexFile const>>, std::__1::allocator<std::__1::unique_ptr<art::DexFile const, std::__1::default_delete<art::DexFile const>>>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>*)+1524) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #01 pc 000000000054d5e8  /apex/com.android.art/lib64/libart.so (art::OatFileManager::OpenDexFilesFromOat(char const*, _jobject*, _jobjectArray*, art::OatFile const**, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>>*)+3304) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #02 pc 000000000066f508  /apex/com.android.art/lib64/libart.so (art::DexFile_openDexFileNative(_JNIEnv*, _jclass*, _jstring*, _jstring*, int, _jobject*, _jobjectArray*) (.__uniq.325793859780145791435928139633802341359)+188) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #03 pc 00000000000529d8  /system/framework/arm64/boot-core-libart.oat (art_jni_trampoline+168) (BuildId: 5577c6b02a7be09947d60525544bdc3952d05c1a)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #04 pc 000000000001d9a0  /system/framework/arm64/boot-core-libart.oat (dalvik.system.DexFile.openDexFile+240) (BuildId: 5577c6b02a7be09947d60525544bdc3952d05c1a)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #05 pc 000000000001fb7c  /system/framework/arm64/boot-core-libart.oat (dalvik.system.DexPathList.makeDexElements+716) (BuildId: 5577c6b02a7be09947d60525544bdc3952d05c1a)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #06 pc 000000000001f1b4  /system/framework/arm64/boot-core-libart.oat (dalvik.system.DexPathList.<init>+660) (BuildId: 5577c6b02a7be09947d60525544bdc3952d05c1a)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #07 pc 000000000001b2d8  /system/framework/arm64/boot-core-libart.oat (dalvik.system.BaseDexClassLoader.<init>+232) (BuildId: 5577c6b02a7be09947d60525544bdc3952d05c1a)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #08 pc 0000000000a10620  /system/framework/arm64/boot-framework.oat (com.android.internal.os.ClassLoaderFactory.createClassLoader+944) (BuildId: e5e6db191ae9550237704aac7ff28b041753303c)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #09 pc 0000000000a106e4  /system/framework/arm64/boot-framework.oat (com.android.internal.os.ClassLoaderFactory.createClassLoader+100) (BuildId: e5e6db191ae9550237704aac7ff28b041753303c)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #10 pc 00000000002e91a8  /system/framework/arm64/boot-framework.oat (android.app.ApplicationLoaders.getClassLoader+456) (BuildId: e5e6db191ae9550237704aac7ff28b041753303c)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #11 pc 00000000002e9a90  /system/framework/arm64/boot-framework.oat (android.app.ApplicationLoaders.getClassLoaderWithSharedLibraries+96) (BuildId: e5e6db191ae9550237704aac7ff28b041753303c)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #12 pc 0000000000361d24  /system/framework/arm64/boot-framework.oat (android.app.LoadedApk.createOrUpdateClassLoaderLocked+6452) (BuildId: e5e6db191ae9550237704aac7ff28b041753303c)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #13 pc 0000000000362e30  /system/framework/arm64/boot-framework.oat (android.app.LoadedApk.getResourcesInner+960) (BuildId: e5e6db191ae9550237704aac7ff28b041753303c)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #14 pc 00000000003072f0  /system/framework/arm64/boot-framework.oat (android.app.ContextImpl.createAppContext+208) (BuildId: e5e6db191ae9550237704aac7ff28b041753303c)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #15 pc 0000000000307200  /system/framework/arm64/boot-framework.oat (android.app.ContextImpl.createAppContext+48) (BuildId: e5e6db191ae9550237704aac7ff28b041753303c)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #16 pc 00000000002b43d0  /system/framework/arm64/boot-framework.oat (android.app.ActivityThread.handleBindApplication+3808) (BuildId: e5e6db191ae9550237704aac7ff28b041753303c)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #17 pc 00000000002ad390  /system/framework/arm64/boot-framework.oat (android.app.ActivityThread.-$$Nest$mhandleBindApplication+48) (BuildId: e5e6db191ae9550237704aac7ff28b041753303c)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #18 pc 00000000002ab5c0  /system/framework/arm64/boot-framework.oat (android.app.ActivityThread$H.handleMessage+9856) (BuildId: e5e6db191ae9550237704aac7ff28b041753303c)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #19 pc 00000000005bbe58  /system/framework/arm64/boot-framework.oat (android.os.Handler.dispatchMessageImpl+168) (BuildId: e5e6db191ae9550237704aac7ff28b041753303c)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #20 pc 00000000005bbd8c  /system/framework/arm64/boot-framework.oat ([DEDUPED]+44) (BuildId: e5e6db191ae9550237704aac7ff28b041753303c)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #21 pc 000000000064e738  /system/framework/arm64/boot-framework.oat (android.os.Looper.loopOnce+1624) (BuildId: e5e6db191ae9550237704aac7ff28b041753303c)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #22 pc 000000000064e04c  /system/framework/arm64/boot-framework.oat (android.os.Looper.loop+252) (BuildId: e5e6db191ae9550237704aac7ff28b041753303c)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #23 pc 00000000002c13fc  /system/framework/arm64/boot-framework.oat (android.app.ActivityThread.main+1980) (BuildId: e5e6db191ae9550237704aac7ff28b041753303c)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #24 pc 00000000002a5660  /apex/com.android.art/lib64/libart.so (art_quick_invoke_static_stub+640) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-15 14:28:14.639 19354 19354 F DEBUG   :       #25 pc 00000000002959a0  /apex/com.android.art/lib64/libart.so (_jobject* art::InvokeMethod<(art::PointerSize)8>(art::ScopedObjectAccessAlreadyRunnable const&, _jobject*, _jobject*, _jobject*, unsigned long)+552) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-15 14:28:14.640 19354 19354 F DEBUG   :       #26 pc 0000000000639a68  /apex/com.android.art/lib64/libart.so (art::Method_invoke(_JNIEnv*, _jobject*, _jobject*, _jobjectArray*) (.__uniq.165753521025965369065708152063621506277)+36) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-15 14:28:14.640 19354 19354 F DEBUG   :       #27 pc 000000000036a5c4  /system/framework/arm64/boot.oat (art_jni_trampoline+116) (BuildId: 927cc20323efe03693524d42e4d024acd48d8ba1)
+10-15 14:28:14.640 19354 19354 F DEBUG   :       #28 pc 0000000000a191b4  /system/framework/arm64/boot-framework.oat (com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run+132) (BuildId: e5e6db191ae9550237704aac7ff28b041753303c)
+10-15 14:28:14.640 19354 19354 F DEBUG   :       #29 pc 0000000000a20bc0  /system/framework/arm64/boot-framework.oat (com.android.internal.os.ZygoteInit.main+3520) (BuildId: e5e6db191ae9550237704aac7ff28b041753303c)
+10-15 14:28:14.640 19354 19354 F DEBUG   :       #30 pc 00000000002a5660  /apex/com.android.art/lib64/libart.so (art_quick_invoke_static_stub+640) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-15 14:28:14.640 19354 19354 F DEBUG   :       #31 pc 00000000002a2fb0  /apex/com.android.art/lib64/libart.so (art::JValue art::InvokeWithVarArgs<_jmethodID*>(art::ScopedObjectAccessAlreadyRunnable const&, _jobject*, _jmethodID*, std::__va_list)+760) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-15 14:28:14.640 19354 19354 F DEBUG   :       #32 pc 00000000006afbf8  /apex/com.android.art/lib64/libart.so (art::JNI<true>::CallStaticVoidMethodV(_JNIEnv*, _jclass*, _jmethodID*, std::__va_list)+164) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-15 14:28:14.640 19354 19354 F DEBUG   :       #33 pc 0000000000136dac  /system/lib64/libandroid_runtime.so (_JNIEnv::CallStaticVoidMethod(_jclass*, _jmethodID*, ...)+108) (BuildId: 40fc8b54166f31a2a7be6a585cd45153)
+10-15 14:28:14.640 19354 19354 F DEBUG   :       #34 pc 000000000017ad80  /system/lib64/libandroid_runtime.so (android::AndroidRuntime::start(char const*, android::Vector<android::String8> const&, bool)+1068) (BuildId: 40fc8b54166f31a2a7be6a585cd45153)
+10-15 14:28:14.640 19354 19354 F DEBUG   :       #35 pc 0000000000004744  /system/bin/app_process64 (main+1668) (BuildId: 5588260af25ab6d2a489af75f6d5adfc)
+10-15 14:28:14.640 19354 19354 F DEBUG   :       #36 pc 000000000006eee8  /apex/com.android.runtime/lib64/bionic/libc.so (__libc_init+124) (BuildId: 48c4b18304acf519b26457ccbc3d435f)
+10-15 14:28:14.640 19354 19354 F DEBUG   : Note: To display stack pointer information, use the pbtombstone tool:
+10-15 14:28:14.640 19354 19354 F DEBUG   :         pbtombstone --display-sp tombstone_XX.pb

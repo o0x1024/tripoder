@@ -1,0 +1,208 @@
+{
+  "runId": "control-0a6af53d40e847c5",
+  "startedAt": 1792015280328,
+  "uid": 10401,
+  "pid": 27673,
+  "deviceBuild": "Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys",
+  "scope": "external-mcp-owned-counter-native-ui",
+  "approvalByOwnedTestInstrumentation": true,
+  "workbenchStartupStatus": {
+    "schema": 25,
+    "hookReady": true,
+    "lease": "3beeda0d-bc0e-4ed0-92cf-27ff2b54e126",
+    "enginePid": 27820,
+    "engineUid": 10400,
+    "strongIsolation": false,
+    "authority": "1ecc56c1-d327-4b3d-9693-caa0bb025ae6",
+    "controllerUid": 10401
+  },
+  "workerPid": 27872,
+  "workerUid": 10400,
+  "project": "24cc296a-65b0-44b1-b73a-ce401839ee79",
+  "space": "control-0a6af53d40e847c5-agent",
+  "processGeneration": "a1ffb5946cd46973ec06e9e11a5a2a741f1fd332c6b2f2ae4fa62b8e05041ca1",
+  "installGeneration": "04e1c8a2-b5b6-4830-b106-cf22e9ca424f",
+  "ownedApkSha256": "252b8185fb2b3c3552a5854597022250f151fbfc3aec9e2900dd974fe5777046",
+  "apkRewritten": false,
+  "captures": [
+    "control-0a6af53d40e847c5-agent-active.png",
+    "control-0a6af53d40e847c5-counter-hooked.png",
+    "control-0a6af53d40e847c5-counter-restored.png"
+  ],
+  "passed": true,
+  "checks": [
+    {
+      "name": "real-workbench-foreground-startup-connected",
+      "passed": true,
+      "observed": ""
+    },
+    {
+      "name": "endpoint-reopens-after-closed-tcp-connection",
+      "passed": true,
+      "observed": "same fixed loopback port; no authorization existed"
+    },
+    {
+      "name": "phone-ui-pairs-real-process",
+      "passed": true,
+      "observed": {
+        "protocol": 1,
+        "session": "68f7eeed-82a3-4043-9009-298f7eb26fcd",
+        "state": "OPEN",
+        "reason": "",
+        "subjectFingerprint": "2a3fdb3708530450cd63cd80e5fad3d4b444547af8ec15d6b0f6cc32f49b619f",
+        "project": "24cc296a-65b0-44b1-b73a-ce401839ee79",
+        "space": "control-0a6af53d40e847c5-agent",
+        "package": "dev.tripoder.previewguest",
+        "installGeneration": "04e1c8a2-b5b6-4830-b106-cf22e9ca424f",
+        "bindingOperation": "4e312067-ef94-4c21-a047-0efda53943f1",
+        "processGeneration": "a1ffb5946cd46973ec06e9e11a5a2a741f1fd332c6b2f2ae4fa62b8e05041ca1",
+        "remainingMs": 599804,
+        "remainingRequests": 256,
+        "hookState": "IDLE",
+        "reviewRequired": true,
+        "approvedSourceSha256": "",
+        "capabilities": [
+          "session.get",
+          "process.get",
+          "operation.get",
+          "hook.observe",
+          "hook.prepare",
+          "hook.activate",
+          "hook.status",
+          "hook.modules",
+          "hook.disable",
+          "hook.discard",
+          "session.close"
+        ],
+        "processClose": "NOT_REQUESTED",
+        "taskResources": [],
+        "disconnectGraceMs": 45000,
+        "clientConnected": false,
+        "contactRemainingMs": 479804,
+        "strongIsolation": false,
+        "draftSource": ""
+      }
+    },
+    {
+      "name": "only-owned-counter-source-approved",
+      "passed": true,
+      "observed": "03dc989e34469e94818c3649fbdefda651b00a47455ce384511538aa10798026"
+    },
+    {
+      "name": "external-activation-confirmed-by-engine",
+      "passed": true,
+      "observed": {
+        "protocol": 1,
+        "session": "68f7eeed-82a3-4043-9009-298f7eb26fcd",
+        "state": "OPEN",
+        "reason": "",
+        "subjectFingerprint": "2a3fdb3708530450cd63cd80e5fad3d4b444547af8ec15d6b0f6cc32f49b619f",
+        "project": "24cc296a-65b0-44b1-b73a-ce401839ee79",
+        "space": "control-0a6af53d40e847c5-agent",
+        "package": "dev.tripoder.previewguest",
+        "installGeneration": "04e1c8a2-b5b6-4830-b106-cf22e9ca424f",
+        "bindingOperation": "4e312067-ef94-4c21-a047-0efda53943f1",
+        "processGeneration": "a1ffb5946cd46973ec06e9e11a5a2a741f1fd332c6b2f2ae4fa62b8e05041ca1",
+        "remainingMs": 595965,
+        "remainingRequests": 248,
+        "hookState": "ACTIVE",
+        "reviewRequired": true,
+        "approvedSourceSha256": "",
+        "capabilities": [
+          "session.get",
+          "process.get",
+          "operation.get",
+          "hook.observe",
+          "hook.prepare",
+          "hook.activate",
+          "hook.status",
+          "hook.modules",
+          "hook.disable",
+          "hook.discard",
+          "session.close"
+        ],
+        "processClose": "NOT_REQUESTED",
+        "taskResources": [],
+        "disconnectGraceMs": 45000,
+        "clientConnected": true,
+        "contactRemainingMs": 44811,
+        "strongIsolation": false,
+        "draftSource": "import { definePlan } from '@abox/hook';\nexport default definePlan({\n  id: 'counter-mcp', target, params: {},\n  setup(ctx) {\n    ctx.java.method('dev.tripoder.previewguest.CounterActivity', 'formatCount', ['int'])\n      .replace(({args}) => 'Hook ' + args[0]);\n  }\n});\n"
+      }
+    },
+    {
+      "name": "post-review-launch-keeps-exact-process",
+      "passed": true,
+      "observed": "a1ffb5946cd46973ec06e9e11a5a2a741f1fd332c6b2f2ae4fa62b8e05041ca1"
+    },
+    {
+      "name": "actual-counter-calls-hook-twice",
+      "passed": true,
+      "observed": "Hook 0 -> Hook 1"
+    },
+    {
+      "name": "actual-counter-original-restored-after-mcp-disable",
+      "passed": true,
+      "observed": "Hook 1 -> 2 in the same Activity and process"
+    },
+    {
+      "name": "external-draft-does-not-overwrite-editor",
+      "passed": true,
+      "observed": "unchanged"
+    },
+    {
+      "name": "guest-and-controller-have-distinct-uids",
+      "passed": true,
+      "observed": 10400
+    },
+    {
+      "name": "revocation-stop-confirmed",
+      "passed": true,
+      "observed": {
+        "protocol": 1,
+        "session": "68f7eeed-82a3-4043-9009-298f7eb26fcd",
+        "state": "CLOSED",
+        "reason": "AGENT_CLOSED",
+        "subjectFingerprint": "2a3fdb3708530450cd63cd80e5fad3d4b444547af8ec15d6b0f6cc32f49b619f",
+        "project": "24cc296a-65b0-44b1-b73a-ce401839ee79",
+        "space": "control-0a6af53d40e847c5-agent",
+        "package": "dev.tripoder.previewguest",
+        "installGeneration": "04e1c8a2-b5b6-4830-b106-cf22e9ca424f",
+        "bindingOperation": "4e312067-ef94-4c21-a047-0efda53943f1",
+        "processGeneration": "a1ffb5946cd46973ec06e9e11a5a2a741f1fd332c6b2f2ae4fa62b8e05041ca1",
+        "remainingMs": 590841,
+        "remainingRequests": 244,
+        "hookState": "IDLE",
+        "reviewRequired": true,
+        "approvedSourceSha256": "",
+        "capabilities": [
+          "session.get",
+          "process.get",
+          "operation.get",
+          "hook.observe",
+          "hook.prepare",
+          "hook.activate",
+          "hook.status",
+          "hook.modules",
+          "hook.disable",
+          "hook.discard",
+          "session.close"
+        ],
+        "processClose": "NO_ACTIVE_HOOK",
+        "taskResources": [],
+        "disconnectGraceMs": 45000,
+        "clientConnected": true,
+        "contactRemainingMs": 44799,
+        "strongIsolation": false,
+        "draftSource": "import { definePlan } from '@abox/hook';\nexport default definePlan({\n  id: 'counter-mcp', target, params: {},\n  setup(ctx) {\n    ctx.java.method('dev.tripoder.previewguest.CounterActivity', 'formatCount', ['int'])\n      .replace(({args}) => 'Hook ' + args[0]);\n  }\n});\n"
+      }
+    },
+    {
+      "name": "endpoint-stopped",
+      "passed": true,
+      "observed": "closed"
+    }
+  ],
+  "fullP5Accepted": false,
+  "finishedAt": 1792015297787
+}

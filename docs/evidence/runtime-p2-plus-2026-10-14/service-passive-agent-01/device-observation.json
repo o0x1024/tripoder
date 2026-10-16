@@ -1,0 +1,275 @@
+{
+  "schema": 1,
+  "runId": "control-43cc1833a5a1478e",
+  "sentinelClientVerified": false,
+  "modelToolUseVerified": false,
+  "fullP5Accepted": false,
+  "businessScenariosVerified": false,
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/product/build/tripoder-engine.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/product/build/tripoder-workbench.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/product/build/tripoder-control-test.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.workbench"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~iwoPgp9VpmN2rBT3JtdG3w==/dev.tripoder.workbench--ISJSBuVLL-1s005UxPxAQ==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~iwoPgp9VpmN2rBT3JtdG3w==/dev.tripoder.workbench--ISJSBuVLL-1s005UxPxAQ==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "55b462f23735ed3539bb622cb492ce09ef3d43676d7405fc6e416027ba12d0bf  /data/app/~~iwoPgp9VpmN2rBT3JtdG3w==/dev.tripoder.workbench--ISJSBuVLL-1s005UxPxAQ==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~0oIdeSB_rFo1BdXEEnH5wA==/dev.tripoder.engine-wTvZon7D4jc0Cd1qksjzIQ==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~0oIdeSB_rFo1BdXEEnH5wA==/dev.tripoder.engine-wTvZon7D4jc0Cd1qksjzIQ==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "422d64b143829949b9a97be07668f9610a5c81b09399684d66ff4c93021a4172  /data/app/~~0oIdeSB_rFo1BdXEEnH5wA==/dev.tripoder.engine-wTvZon7D4jc0Cd1qksjzIQ==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.controltest"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~A7f5hgPefjVE8Rn3Lan1KA==/dev.tripoder.controltest-HSYHkTBUNM-pjdSC5cW7ug==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~A7f5hgPefjVE8Rn3Lan1KA==/dev.tripoder.controltest-HSYHkTBUNM-pjdSC5cW7ug==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "dbd0c0513e8dbcd06a1716047c2f96a9449483baff55628973809b1cd0d43620  /data/app/~~A7f5hgPefjVE8Rn3Lan1KA==/dev.tripoder.controltest-HSYHkTBUNM-pjdSC5cW7ug==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.workbench"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.controltest"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.workbench"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.workbench uid:10401\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.engine uid:10400\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "date \"+%m-%d %H:%M:%S.%3N\""
+      ],
+      "exitCode": 0,
+      "stdout": "10-15 06:51:07.959\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.controltest/dev.tripoder.controltest.ClientActivity"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.controltest/.ClientActivity }\nStatus: ok\nLaunchState: UNKNOWN (0)\nActivity: dev.tripoder.controltest/.ClientActivity\nWaitTime: 60\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-a",
+        "android.intent.action.MAIN",
+        "-c",
+        "android.intent.category.LAUNCHER",
+        "-n",
+        "dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity }\nStatus: ok\nLaunchState: WARM\nActivity: dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity\nTotalTime: 80\nWaitTime: 81\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.workbench"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10401",
+        "-T",
+        "10-15 06:51:07.959"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of crash\n10-15 06:51:25.207 15529 15554 E AndroidRuntime: FATAL EXCEPTION: Instr: dev.tripoder.controltest.AgentUiIntegration\n10-15 06:51:25.207 15529 15554 E AndroidRuntime: Process: dev.tripoder.workbench, PID: 15529\n10-15 06:51:25.207 15529 15554 E AndroidRuntime: java.lang.RuntimeException: Error while disconnecting UiAutomation@1d0a85d[id=-1, displayId=0, flags=0]\n10-15 06:51:25.207 15529 15554 E AndroidRuntime: \tat android.app.UiAutomation.disconnect(UiAutomation.java:460)\n10-15 06:51:25.207 15529 15554 E AndroidRuntime: \tat android.app.Instrumentation.finish(Instrumentation.java:313)\n10-15 06:51:25.207 15529 15554 E AndroidRuntime: \tat dev.tripoder.controltest.ControlTestBase.onStart(ControlTestBase.java:47)\n10-15 06:51:25.207 15529 15554 E AndroidRuntime: \tat dev.tripoder.controltest.AgentUiIntegration.onStart(AgentUiIntegration.java:16)\n10-15 06:51:25.207 15529 15554 E AndroidRuntime: \tat android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2705)\n10-15 06:51:25.207 15529 15554 E AndroidRuntime: Caused by: android.os.DeadObjectException\n10-15 06:51:25.207 15529 15554 E AndroidRuntime: \tat android.os.BinderProxy.transactNative(Native Method)\n10-15 06:51:25.207 15529 15554 E AndroidRuntime: \tat android.os.BinderProxy.transact(BinderProxy.java:769)\n10-15 06:51:25.207 15529 15554 E AndroidRuntime: \tat android.app.IUiAutomationConnection$Stub$Proxy.disconnect(IUiAutomationConnection.java:563)\n10-15 06:51:25.207 15529 15554 E AndroidRuntime: \tat android.app.UiAutomation.disconnect(UiAutomation.java:458)\n10-15 06:51:25.207 15529 15554 E AndroidRuntime: \t... 4 more\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10400",
+        "-T",
+        "10-15 06:51:07.959"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "startedAtUtc": "2026-10-14T22:51:06.046597+00:00",
+  "deviceLogStart": "10-15 06:51:07.959",
+  "uids": {
+    "dev.tripoder.workbench": 10401,
+    "dev.tripoder.engine": 10400
+  },
+  "privateConfigRecordedInEvidence": false,
+  "passed": false,
+  "error": "MCP_CLIENT_FAILED:file:///Users/like/code/tripoder/agent/acceptance-client.mjs:17\nasync function tool(name,args={},success=true){const result=await rpc('tools/call',{name,arguments:args});if(result.error)throw Error(JSON.stringify(result.error));const receipt=JSON.parse(result.result.content[0].text);assert.equal(result.result.isError,!receipt.ok);if(success&&!receipt.ok)throw Error(JSON.stringify(receipt));return receipt;}\n                                                                                                                                                                                                                                                                                                          ^\n\nError: {\"protocol\":1,\"ok\":false,\"operationId\":\"4be5ed03-a193-4c55-af96-acaa0aca8807\",\"state\":\"UNKNOWN\",\"error\":\"TRANSPORT_EOF_OUTCOME_UNKNOWN\",\"action\":\"Query operation_get using this id. Do not repeat side effects with a new id.\"}\n    at tool (file:///Users/like/code/tripoder/agent/acceptance-client.mjs:17:299)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async file:///Users/like/code/tripoder/agent/acceptance-client.mjs:53:43\n\nNode.js v24.12.0\n",
+  "fatalOrLogFailure": true,
+  "finishedAtUtc": "2026-10-14T22:51:25.614599+00:00",
+  "desktopSourceSha256": {
+    "agent/acceptance-client.mjs": "101436321adcf887ea0397f716f543f76a8afa49e507a738fa83665a904214db",
+    "agent/agent.test.mjs": "b40244dec5306704ad771b70392e033624b7ab10a418d4b7579044eb7df218a6",
+    "agent/audit.mjs": "d77b09f8690fee8d2a75cbb97a2063b9c6bd11dee7729d207aeb80abda9a51c7",
+    "agent/audit.test.mjs": "6a8ae6d8e3648f6e5995d131de01c2503a18d49b44f82e686d8f92377b89ecfa",
+    "agent/pair.mjs": "03c3d95d58722055be7d0003ecf0b36a8e8f7a1ce037ae928ebf3dee39ebf19f",
+    "agent/sentinel-acceptance.mjs": "a5bfe840dc5ecef259c10dbe9d60105377338521c708d7950302353a1bf21b54",
+    "agent/server.mjs": "8848570aecada1d8e3b6bfccf7d3f71bb8b55e850e2d3ada22de426906f2987f",
+    "agent/tools.mjs": "57b6281f91a715b5d20fe0fccc9cc1b23b3ba54eb45db518bc8804ba6bbbd360",
+    "agent/transport.mjs": "a27c80d550aee9670ad90ce35835523048d88755dfa3d80d68aaa7519078862d"
+  }
+}

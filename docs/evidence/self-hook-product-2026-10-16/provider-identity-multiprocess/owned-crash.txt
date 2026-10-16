@@ -1,0 +1,50 @@
+--------- beginning of crash
+10-16 12:38:12.073 15579 16303 E AndroidRuntime: FATAL EXCEPTION: owned-uncaught-handler
+10-16 12:38:12.073 15579 16303 E AndroidRuntime: Process: dev.tripoder.runtimeprobe:slot0, PID: 15579
+10-16 12:38:12.073 15579 16303 E AndroidRuntime: java.lang.RuntimeException: owned-failure-dispatch-contract
+10-16 12:38:12.073 15579 16303 E AndroidRuntime: 	at dev.tripoder.provideridentity.FailureDispatchChecks.inspect(FailureDispatchChecks.java:9)
+10-16 12:38:12.073 15579 16303 E AndroidRuntime: 	at dev.tripoder.provideridentity.PackageResourcesActivity.inspect(PackageResourcesActivity.java:80)
+10-16 12:38:12.073 15579 16303 E AndroidRuntime: 	at dev.tripoder.provideridentity.PackageResourcesActivity.lambda$onCreate$0(PackageResourcesActivity.java:32)
+10-16 12:38:12.073 15579 16303 E AndroidRuntime: 	at dev.tripoder.provideridentity.PackageResourcesActivity.$r8$lambda$hyFKgvRyOlmSSMUR9sOKizg3au4(PackageResourcesActivity.java:0)
+10-16 12:38:12.073 15579 16303 E AndroidRuntime: 	at dev.tripoder.provideridentity.PackageResourcesActivity$1.run(D8$$SyntheticClass:0)
+10-16 12:38:12.073 15579 16303 E AndroidRuntime: 	at java.lang.Thread.run(Thread.java:1572)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: FATAL EXCEPTION: main
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: Process: dev.tripoder.runtimeprobe:slot0, PID: 15579
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: java.lang.RuntimeException: Error receiving broadcast Intent { act=dev.tripoder.runtime.broadcast.c4d3f3b8dd9f2c23152f3b89ccfb4fc6ca21b5b7f4360358e4609efd62fc7b98 flg=0x10 xflg=0x4 pkg=dev.tripoder.runtimeprobe (has extras) } in dev.tripoder.provideridentity.ReceiverConcurrencyChecks$1@6628a54
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at android.app.LoadedApk$ReceiverDispatcher$Args.lambda$getRunnable$0(LoadedApk.java:2181)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at android.app.LoadedApk$ReceiverDispatcher$Args.$r8$lambda$mcNAAl1SQ4MyJPyDg8TJ2x2h0Rk(LoadedApk.java:0)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at android.app.LoadedApk$ReceiverDispatcher$Args$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at android.os.Handler.handleCallback(Handler.java:1129)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at android.os.Handler.dispatchMessageImpl(Handler.java:139)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at android.os.Handler.dispatchMessage(Handler.java:129)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at android.os.Looper.loopOnce(Looper.java:315)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at android.os.Looper.loop(Looper.java:419)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at android.app.ActivityThread.main(ActivityThread.java:10847)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at java.lang.reflect.Method.invoke(Native Method)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: Caused by: java.lang.IllegalStateException: RECEIVER_CLAIM_FAILED
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeReceivers.before(RuntimeReceivers.java:111)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeBridge.receiverBefore(RuntimeBridge.java:129)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeSelfHookComponents$2.before(RuntimeSelfHookComponents.java:68)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeSelfHookLifecycle.receiver(RuntimeSelfHookLifecycle.java:33)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeSelfHookComponents.lambda$installReceiver$0(RuntimeSelfHookComponents.java:97)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeSelfHookComponents$4.invoke(D8$$SyntheticClass:0)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeSelfHookInstallers.lambda$install$1(RuntimeSelfHookInstallers.java:15)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeSelfHookInstallers$1.invoke(D8$$SyntheticClass:0)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeManagedInstaller.lambda$install$1(RuntimeManagedInstaller.java:40)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeManagedInstaller$2.invoke(D8$$SyntheticClass:0)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at dev.tripoder.selfhook.ManagedHook.execute(ManagedHook.java:199)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at dev.tripoder.selfhook.ManagedHook.dispatch(ManagedHook.java:193)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at dev.tripoder.selfhook.generated.Entry2182.invoke(dex-id-54e2548fe74c0dc2a6cf4b9943a36542cb7884ac:22)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at android.app.LoadedApk$ReceiverDispatcher$Args.lambda$getRunnable$0(LoadedApk.java:2170)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	... 11 more
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: Caused by: java.lang.SecurityException: RECEIVER_REGISTRATION_CLOSED
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3414)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at android.os.Parcel.createException(Parcel.java:3398)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at android.os.Parcel.readException(Parcel.java:3381)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at android.os.Parcel.readException(Parcel.java:3323)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeWire.call(RuntimeWire.java:50)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeEngine.brokerCall(RuntimeEngine.java:130)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeReceivers.before(RuntimeReceivers.java:110)
+10-16 12:39:01.330 15579 15579 E AndroidRuntime: 	... 24 more

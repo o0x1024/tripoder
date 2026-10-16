@@ -1,0 +1,21 @@
+{
+  "priorRun": "run-1791900277071",
+  "failure": "SystemUI twice crashed: Can't create root task for unsupported windowingMode=5",
+  "cause": "Upstream low_perf forces ro.config.low_ram=true, disabling framework multi-window/freeform support, while the non-GO tablet desktop overlay and Shell desktop eligibility remain enabled.",
+  "repair": "Derive the audited guest init profile with software execution timeout only, retaining the existing disabled setup wizard setting; restore default RAM/LMK/dexopt policies.",
+  "taskValidationBypassed": false,
+  "forceMultiWindowUsed": false,
+  "securityDisabled": false,
+  "directBootargAloneWorks": false,
+  "directBootargReason": "Android imports androidboot.* to ro.boot.*; this image has no init bridge to ro.hw_timeout_multiplier.",
+  "actualImageProfileReadVerified": true,
+  "sources": [
+    "https://github.com/LineageOS/android_frameworks_base/blob/lineage-23.2/core/java/android/app/ActivityTaskManager.java#L246",
+    "https://github.com/LineageOS/android_frameworks_base/blob/lineage-23.2/services/core/java/com/android/server/wm/ActivityTaskManagerService.java#L982",
+    "https://github.com/LineageOS/android_frameworks_base/blob/lineage-23.2/services/core/java/com/android/server/wm/Task.java#L6923",
+    "https://github.com/LineageOS/android_device_virt_virt-common/blob/lineage-23.2/virt-common.mk#L156",
+    "https://github.com/LineageOS/android_device_virt_virt-common/blob/lineage-23.2/overlays/product_overlay-tablet/frameworks/base/core/res/res/values/config.xml#L22",
+    "https://github.com/LineageOS/android_frameworks_base/blob/lineage-23.2/libs/WindowManager/Shell/shared/src/com/android/wm/shell/shared/desktopmode/DesktopModeStatus.java#L134",
+    "https://github.com/LineageOS/android_system_core/blob/lineage-23.2/init/property_service.cpp#L1310"
+  ]
+}

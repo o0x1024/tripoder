@@ -1,0 +1,101 @@
+--------- beginning of crash
+10-15 01:16:34.237 30741 30834 E AndroidRuntime: FATAL EXCEPTION: CronetInit
+10-15 01:16:34.237 30741 30834 E AndroidRuntime: Process: dev.tripoder.engine:slot0, PID: 30741
+10-15 01:16:34.237 30741 30834 E AndroidRuntime: java.lang.UnsupportedOperationException: SERVICE_INFO_FLAGS_UNSUPPORTED:0xc0280
+10-15 01:16:34.237 30741 30834 E AndroidRuntime: 	at dev.tripoder.runtime.GuestPackageManager.getServiceInfo(GuestPackageManager.java:77)
+10-15 01:16:34.237 30741 30834 E AndroidRuntime: 	at dev.tripoder.runtime.GuestPackageManager.getServiceInfo(GuestPackageManager.java:74)
+10-15 01:16:34.237 30741 30834 E AndroidRuntime: 	at org.chromium.net.impl.CronetManifest.getMetaData(SourceFile:14)
+10-15 01:16:34.237 30741 30834 E AndroidRuntime: 	at org.chromium.net.impl.CronetManifest.shouldReadHttpFlags(SourceFile:0)
+10-15 01:16:34.237 30741 30834 E AndroidRuntime: 	at org.chromium.net.httpflags.HttpFlagsLoader.load(SourceFile:0)
+10-15 01:16:34.237 30741 30834 E AndroidRuntime: 	at org.chromium.net.impl.CronetLibraryLoader.ensureInitializedOnInitThread(SourceFile:9)
+10-15 01:16:34.237 30741 30834 E AndroidRuntime: 	at org.chromium.net.impl.CronetLibraryLoader$1.run(SourceFile:0)
+10-15 01:16:34.237 30741 30834 E AndroidRuntime: 	at android.os.Handler.handleCallback(Handler.java:1129)
+10-15 01:16:34.237 30741 30834 E AndroidRuntime: 	at android.os.Handler.dispatchMessageImpl(Handler.java:139)
+10-15 01:16:34.237 30741 30834 E AndroidRuntime: 	at android.os.Handler.dispatchMessage(Handler.java:129)
+10-15 01:16:34.237 30741 30834 E AndroidRuntime: 	at android.os.Looper.loopOnce(Looper.java:315)
+10-15 01:16:34.237 30741 30834 E AndroidRuntime: 	at android.os.Looper.loop(Looper.java:419)
+10-15 01:16:34.237 30741 30834 E AndroidRuntime: 	at android.os.HandlerThread.run(HandlerThread.java:139)
+10-15 01:16:34.245 30741 30741 E AndroidRuntime: FATAL EXCEPTION: main
+10-15 01:16:34.245 30741 30741 E AndroidRuntime: Process: dev.tripoder.engine:slot0, PID: 30741
+10-15 01:16:34.245 30741 30741 E AndroidRuntime: java.lang.RuntimeException: Unable to instantiate receiver dev.tripoder.runtime.RuntimeReceiverSlots$R0
+10-15 01:16:34.245 30741 30741 E AndroidRuntime: 	at android.app.ActivityThread.handleReceiver(ActivityThread.java:6039)
+10-15 01:16:34.245 30741 30741 E AndroidRuntime: 	at android.app.ActivityThread.-$$Nest$mhandleReceiver(ActivityThread.java:0)
+10-15 01:16:34.245 30741 30741 E AndroidRuntime: 	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3241)
+10-15 01:16:34.245 30741 30741 E AndroidRuntime: 	at android.os.Handler.dispatchMessageImpl(Handler.java:146)
+10-15 01:16:34.245 30741 30741 E AndroidRuntime: 	at android.os.Handler.dispatchMessage(Handler.java:129)
+10-15 01:16:34.245 30741 30741 E AndroidRuntime: 	at android.os.Looper.loopOnce(Looper.java:315)
+10-15 01:16:34.245 30741 30741 E AndroidRuntime: 	at android.os.Looper.loop(Looper.java:419)
+10-15 01:16:34.245 30741 30741 E AndroidRuntime: 	at android.app.ActivityThread.main(ActivityThread.java:10847)
+10-15 01:16:34.245 30741 30741 E AndroidRuntime: 	at java.lang.reflect.Method.invoke(Native Method)
+10-15 01:16:34.245 30741 30741 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)
+10-15 01:16:34.245 30741 30741 E AndroidRuntime: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)
+10-15 01:16:34.245 30741 30741 E AndroidRuntime: Caused by: java.lang.ClassCastException: dev.tripoder.runtime.GuestContext cannot be cast to android.app.ContextImpl
+10-15 01:16:34.245 30741 30741 E AndroidRuntime: 	at android.app.ActivityThread.handleReceiver(ActivityThread.java:6011)
+10-15 01:16:34.245 30741 30741 E AndroidRuntime: 	... 10 more
+10-15 01:16:34.254 30741 30836 E AndroidRuntime: FATAL EXCEPTION: [GT]HotPool#2
+10-15 01:16:34.254 30741 30836 E AndroidRuntime: Process: dev.tripoder.engine:slot0, PID: 30741
+10-15 01:16:34.254 30741 30836 E AndroidRuntime: java.lang.UnsupportedOperationException: RECEIVER_POLICY_UNSUPPORTED
+10-15 01:16:34.254 30741 30836 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeReceivers.register(RuntimeReceivers.java:29)
+10-15 01:16:34.254 30741 30836 E AndroidRuntime: 	at dev.tripoder.runtime.GuestContext.registerReceiver(GuestContext.java:100)
+10-15 01:16:34.254 30741 30836 E AndroidRuntime: 	at android.content.ContextWrapper.registerReceiver(ContextWrapper.java:828)
+10-15 01:16:34.254 30741 30836 E AndroidRuntime: 	at pf5.a$$b.run(SourceFile:167)
+10-15 01:16:34.254 30741 30836 E AndroidRuntime: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:520)
+10-15 01:16:34.254 30741 30836 E AndroidRuntime: 	at java.util.concurrent.FutureTask.run(FutureTask.java:328)
+10-15 01:16:34.254 30741 30836 E AndroidRuntime: 	at s46.l.run(SourceFile:242)
+10-15 01:16:34.254 30741 30836 E AndroidRuntime: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1248)
+10-15 01:16:34.254 30741 30836 E AndroidRuntime: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:650)
+10-15 01:16:34.254 30741 30836 E AndroidRuntime: 	at l46.c.run(SourceFile:2)
+10-15 01:16:34.254 30741 30836 E AndroidRuntime: 	at java.lang.Thread.run(Thread.java:1572)
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: FATAL EXCEPTION: [GT]ColdPool#0
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: Process: dev.tripoder.engine:slot0, PID: 30741
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: java.lang.ExceptionInInitializerError
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: 	at com.tencent.mm.vfs.z6.D(SourceFile:0)
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: 	at com.tencent.mm.vfs.z6.E(SourceFile:13)
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: 	at com.tencent.mm.vfs.c7.<init>(SourceFile:1)
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: 	at l41.ud.<init>(SourceFile:8)
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: 	at l41.td.call(SourceFile:6)
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: 	at java.util.concurrent.FutureTask.run(FutureTask.java:328)
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: 	at s46.l.run(SourceFile:242)
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1248)
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:650)
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: 	at l46.c.run(SourceFile:2)
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: 	at java.lang.Thread.run(Thread.java:1572)
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: Caused by: java.lang.UnsupportedOperationException: SYSTEM_BROADCAST_POLICY_UNSUPPORTED
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeBroadcastIntent.filter(RuntimeBroadcastIntent.java:21)
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeReceivers.register(RuntimeReceivers.java:32)
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: 	at dev.tripoder.runtime.GuestContext.registerReceiver(GuestContext.java:98)
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: 	at android.content.ContextWrapper.registerReceiver(ContextWrapper.java:815)
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: 	at com.tencent.mm.vfs.e3.<clinit>(SourceFile:53)
+10-15 01:16:34.267 30741 30832 E AndroidRuntime: 	... 11 more
+10-15 01:16:34.267 30741 30840 E AndroidRuntime: FATAL EXCEPTION: [GT]HotPool#5
+10-15 01:16:34.267 30741 30840 E AndroidRuntime: Process: dev.tripoder.engine:slot0, PID: 30741
+10-15 01:16:34.267 30741 30840 E AndroidRuntime: java.lang.NoClassDefFoundError: <clinit> failed for class com.tencent.mm.vfs.e3; see exception in other thread
+10-15 01:16:34.267 30741 30840 E AndroidRuntime: 	at com.tencent.mm.vfs.z6.j(SourceFile:14)
+10-15 01:16:34.267 30741 30840 E AndroidRuntime: 	at pf5.e.run(SourceFile:2)
+10-15 01:16:34.267 30741 30840 E AndroidRuntime: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:520)
+10-15 01:16:34.267 30741 30840 E AndroidRuntime: 	at java.util.concurrent.FutureTask.run(FutureTask.java:328)
+10-15 01:16:34.267 30741 30840 E AndroidRuntime: 	at s46.l.run(SourceFile:242)
+10-15 01:16:34.267 30741 30840 E AndroidRuntime: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1248)
+10-15 01:16:34.267 30741 30840 E AndroidRuntime: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:650)
+10-15 01:16:34.267 30741 30840 E AndroidRuntime: 	at l46.c.run(SourceFile:2)
+10-15 01:16:34.267 30741 30840 E AndroidRuntime: 	at java.lang.Thread.run(Thread.java:1572)
+10-15 01:16:34.300 30741 30871 E AndroidRuntime: FATAL EXCEPTION: [GT]HotPool#8
+10-15 01:16:34.300 30741 30871 E AndroidRuntime: Process: dev.tripoder.engine:slot0, PID: 30741
+10-15 01:16:34.300 30741 30871 E AndroidRuntime: java.lang.UnsupportedOperationException: SYSTEM_SERVICE_UNSUPPORTED:phone
+10-15 01:16:34.300 30741 30871 E AndroidRuntime: 	at dev.tripoder.runtime.GuestContext.getSystemService(GuestContext.java:53)
+10-15 01:16:34.300 30741 30871 E AndroidRuntime: 	at android.content.ContextWrapper.getSystemService(ContextWrapper.java:1007)
+10-15 01:16:34.300 30741 30871 E AndroidRuntime: 	at com.tencent.tinker.loader.app.TinkerApplication.getSystemService(SourceFile:0)
+10-15 01:16:34.300 30741 30871 E AndroidRuntime: 	at com.tencent.mm.sdk.platformtools.i0.k(SourceFile:12)
+10-15 01:16:34.300 30741 30871 E AndroidRuntime: 	at com.tencent.mars.comm.NetworkSignalUtilImpl.InitNetworkSignalUtil(SourceFile:2)
+10-15 01:16:34.300 30741 30871 E AndroidRuntime: 	at com.tencent.mars.comm.NetworkSignalUtil.InitNetworkSignalUtil(SourceFile:2)
+10-15 01:16:34.300 30741 30871 E AndroidRuntime: 	at com.tencent.mars.comm.PlatformComm.init(SourceFile:4)
+10-15 01:16:34.300 30741 30871 E AndroidRuntime: 	at com.tencent.mm.xlog.app.XLogSetup.lambda$keep_setupXLog$0(SourceFile:11)
+10-15 01:16:34.300 30741 30871 E AndroidRuntime: 	at com.tencent.mm.xlog.app.XLogSetup.a(SourceFile:0)
+10-15 01:16:34.300 30741 30871 E AndroidRuntime: 	at r06.a$$a.run(SourceFile:0)
+10-15 01:16:34.300 30741 30871 E AndroidRuntime: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:520)
+10-15 01:16:34.300 30741 30871 E AndroidRuntime: 	at java.util.concurrent.FutureTask.run(FutureTask.java:328)
+10-15 01:16:34.300 30741 30871 E AndroidRuntime: 	at s46.l.run(SourceFile:242)
+10-15 01:16:34.300 30741 30871 E AndroidRuntime: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1248)
+10-15 01:16:34.300 30741 30871 E AndroidRuntime: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:650)
+10-15 01:16:34.300 30741 30871 E AndroidRuntime: 	at l46.c.run(SourceFile:2)
+10-15 01:16:34.300 30741 30871 E AndroidRuntime: 	at java.lang.Thread.run(Thread.java:1572)

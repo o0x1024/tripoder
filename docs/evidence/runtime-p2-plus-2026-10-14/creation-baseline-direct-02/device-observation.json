@@ -1,0 +1,159 @@
+{
+  "runId": "creation-0f98560a5b3249e8",
+  "scope": "normal-android-provider-baseline",
+  "scenario": "creation",
+  "fixtureSha256": "972c86fe418e101f51863344d440a837106df1e5d45bbbd9250a56f1e76084b8",
+  "commands": [
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/instrumentation-world.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~0qq5gpFSRTQqzPXKp77xtA==/dev.tripoder.provideridentity-z1WrSbVBYgc2DmeUJy3Q6g==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~0qq5gpFSRTQqzPXKp77xtA==/dev.tripoder.provideridentity-z1WrSbVBYgc2DmeUJy3Q6g==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "972c86fe418e101f51863344d440a837106df1e5d45bbbd9250a56f1e76084b8  /data/app/~~0qq5gpFSRTQqzPXKp77xtA==/dev.tripoder.provideridentity-z1WrSbVBYgc2DmeUJy3Q6g==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-f",
+        "0x10008000",
+        "-n",
+        "dev.tripoder.provideridentity/.InstrumentationActivity",
+        "--es",
+        "baseline",
+        "true",
+        "--es",
+        "runId",
+        "creation-0f98560a5b3249e8",
+        "--es",
+        "mode",
+        "direct"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { flg=0x10008000 cmp=dev.tripoder.provideridentity/.InstrumentationActivity (has extras) }\nStatus: ok\nLaunchState: UNKNOWN (0)\nActivity: dev.tripoder.provideridentity/.InstrumentationActivity$Child\nWaitTime: 112\nComplete\n",
+      "stderr": ""
+    }
+  ],
+  "passed": true,
+  "tripoderRuntimeVerified": false,
+  "checks": [
+    {
+      "name": "instrumentation-receives-logical-class-and-component",
+      "passed": true
+    },
+    {
+      "name": "instrumentation-sees-no-runtime-routing-extras",
+      "passed": true
+    },
+    {
+      "name": "replacement-attach-base-context-is-logical",
+      "passed": true
+    },
+    {
+      "name": "instrumentation-pre-lifecycle-context-Replacement",
+      "passed": true
+    },
+    {
+      "name": "instrumentation-pre-lifecycle-resources-Replacement",
+      "passed": true
+    },
+    {
+      "name": "instrumentation-pre-lifecycle-theme-Replacement",
+      "passed": true
+    },
+    {
+      "name": "instrumentation-pre-lifecycle-private-theme-Replacement",
+      "passed": true
+    },
+    {
+      "name": "actual-root-instance-matches-instrumentation-result",
+      "passed": true
+    },
+    {
+      "name": "root-metadata-keeps-declared-component",
+      "passed": true
+    },
+    {
+      "name": "instrumentation-intent-mutation-reaches-actual-activity",
+      "passed": true
+    },
+    {
+      "name": "only-final-instance-attached",
+      "passed": true
+    },
+    {
+      "name": "runtime-default-thermal-callback-on-real-main",
+      "passed": true
+    },
+    {
+      "name": "child-attach-base-context-is-logical",
+      "passed": true
+    },
+    {
+      "name": "instrumentation-pre-lifecycle-context-ChildReplacement",
+      "passed": true
+    },
+    {
+      "name": "instrumentation-pre-lifecycle-resources-ChildReplacement",
+      "passed": true
+    },
+    {
+      "name": "instrumentation-pre-lifecycle-theme-ChildReplacement",
+      "passed": true
+    },
+    {
+      "name": "instrumentation-pre-lifecycle-private-theme-ChildReplacement",
+      "passed": true
+    },
+    {
+      "name": "super-then-replace-child-registers-final-object",
+      "passed": true
+    },
+    {
+      "name": "replacement-child-retains-original-component",
+      "passed": true
+    },
+    {
+      "name": "replacement-child-real-result",
+      "passed": true
+    }
+  ]
+}

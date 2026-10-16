@@ -1,0 +1,1419 @@
+0000000000020b40 <park_handler>:
+   20b40:      	bti	c
+   20b44:      	cmp	w0, #0x3c
+   20b48:      	b.ne	0x20c20 <park_handler+0xe0>
+   20b4c:      	cbz	x1, 0x20c20 <park_handler+0xe0>
+   20b50:      	cbz	x2, 0x20c20 <park_handler+0xe0>
+   20b54:      	ldr	w8, [x1, #0x8]
+   20b58:      	cmn	w8, #0x1
+   20b5c:      	b.ne	0x20c20 <park_handler+0xe0>
+   20b60:      	adrp	x8, 0x47000 <park+0xf08>
+   20b64:      	ldr	w9, [x1, #0x10]
+   20b68:      	ldr	w8, [x8, #0x108]
+   20b6c:      	cmp	w9, w8
+   20b70:      	b.ne	0x20c20 <park_handler+0xe0>
+   20b74:      	adrp	x8, 0x47000 <park+0xf08>
+   20b78:      	ldr	w9, [x1, #0x14]
+   20b7c:      	ldr	w8, [x8, #0x10c]
+   20b80:      	cmp	w9, w8
+   20b84:      	b.ne	0x20c20 <park_handler+0xe0>
+   20b88:      	ldr	w10, [x1, #0x18]
+   20b8c:      	sub	x8, x10, #0x401
+   20b90:      	cmn	x8, #0x400
+   20b94:      	b.lo	0x20c20 <park_handler+0xe0>
+   20b98:      	adrp	x9, 0x46000 <caller_roots+0x108>
+   20b9c:      	add	x9, x9, #0x100
+   20ba0:      	ldar	w8, [x9]
+   20ba4:      	cmp	x8, x10
+   20ba8:      	b.hs	0x20c00 <park_handler+0xc0>
+   20bac:      	mov	x11, x2
+   20bb0:      	mov	x0, xzr
+   20bb4:      	mov	w8, #0xb2               // =178
+   20bb8:      	mov	w14, #0x1               // =1
+   20bbc:      	mov	w15, #0x2               // =2
+   20bc0:      	mov	x1, xzr
+   20bc4:      	mov	x2, xzr
+   20bc8:      	mov	x3, xzr
+   20bcc:      	mov	x4, xzr
+   20bd0:      	mov	x5, xzr
+   20bd4:      	svc	#0
+   20bd8:      	mov	x8, x11
+   20bdc:      	lsl	x11, x10, #32
+   20be0:      	bfi	x14, x10, #32, #31
+   20be4:      	bfi	x15, x10, #32, #31
+   20be8:      	mov	x12, xzr
+   20bec:      	nop
+   20bf0:      	adr	x16, 0x460f8 <park>
+   20bf4:      	mov	w17, #0x28              // =40
+   20bf8:      	mov	w1, #0x10a8             // =4264
+   20bfc:      	b	0x20c34 <park_handler+0xf4>
+   20c00:      	nop
+   20c04:      	adr	x8, 0x460f8 <park>
+   20c08:      	add	x8, x8, x10, lsl #2
+   20c0c:      	add	x8, x8, #0xc
+   20c10:      	ldxr	w9, [x8]
+   20c14:      	add	w9, w9, #0x1
+   20c18:      	stxr	w10, w9, [x8]
+   20c1c:      	cbnz	w10, 0x20c10 <park_handler+0xd0>
+   20c20:      	ret
+   20c24:      	clrex
+   20c28:      	add	x12, x12, #0x1
+   20c2c:      	cmp	x12, #0x100
+   20c30:      	b.eq	0x20c20 <park_handler+0xe0>
+   20c34:      	madd	x13, x12, x17, x16
+   20c38:      	ldr	w2, [x13, #0x10b0]
+   20c3c:      	cmp	w2, w0
+   20c40:      	b.ne	0x20c28 <park_handler+0xe8>
+   20c44:      	add	x13, x13, x1
+   20c48:      	ldaxr	x2, [x13]
+   20c4c:      	cmp	x2, x14
+   20c50:      	b.ne	0x20c24 <park_handler+0xe4>
+   20c54:      	stlxr	w2, x15, [x13]
+   20c58:      	cbnz	w2, 0x20c48 <park_handler+0x108>
+   20c5c:      	ldr	q0, [x8, #0x1b0]
+   20c60:      	ldr	x8, [x8, #0x1a8]
+   20c64:      	ext	v0.16b, v0.16b, v0.16b, #0x8
+   20c68:      	str	x8, [x13, #0x20]
+   20c6c:      	orr	x8, x11, #0x3
+   20c70:      	str	q0, [x13, #0x10]
+   20c74:      	stlr	x8, [x13]
+   20c78:      	ldar	w2, [x9]
+   20c7c:      	cmp	x2, x10
+   20c80:      	b.hs	0x20ca4 <park_handler+0x164>
+   20c84:      	mov	x0, x9
+   20c88:      	mov	w1, #0x80               // =128
+   20c8c:      	mov	x3, xzr
+   20c90:      	mov	x4, xzr
+   20c94:      	mov	x5, xzr
+   20c98:      	mov	w8, #0x62               // =98
+   20c9c:      	svc	#0
+   20ca0:      	b	0x20c78 <park_handler+0x138>
+   20ca4:      	orr	x8, x11, #0x4
+   20ca8:      	stlr	x8, [x13]
+   20cac:      	ret
+
+0000000000020cb0 <tp_park_begin>:
+   20cb0:      	bti	c
+   20cb4:      	cbz	x0, 0x20d50 <tp_park_begin+0xa0>
+   20cb8:      	paciasp
+   20cbc:      	stp	x29, x30, [sp, #-0x60]!
+   20cc0:      	stp	x28, x27, [sp, #0x10]
+   20cc4:      	stp	x26, x25, [sp, #0x20]
+   20cc8:      	stp	x24, x23, [sp, #0x30]
+   20ccc:      	stp	x22, x21, [sp, #0x40]
+   20cd0:      	stp	x20, x19, [sp, #0x50]
+   20cd4:      	mov	x29, sp
+   20cd8:      	sub	sp, sp, #0x1, lsl #12   // =0x1000
+   20cdc:      	sub	sp, sp, #0x30
+   20ce0:      	nop
+   20ce4:      	adr	x19, 0x460f8 <park>
+   20ce8:      	ldarb	w8, [x19]
+   20cec:      	cmp	w8, #0x1
+   20cf0:      	b.ne	0x20d58 <tp_park_begin+0xa8>
+   20cf4:      	adrp	x22, 0x46000 <caller_roots+0x108>
+   20cf8:      	add	x22, x22, #0xf9
+   20cfc:      	mov	w8, #0x1                // =1
+   20d00:      	ldaxrb	w9, [x22]
+   20d04:      	cbnz	w9, 0x20d60 <tp_park_begin+0xb0>
+   20d08:      	stlxrb	w9, w8, [x22]
+   20d0c:      	cbnz	w9, 0x20d00 <tp_park_begin+0x50>
+   20d10:      	mov	x20, x0
+   20d14:      	mov	x2, sp
+   20d18:      	mov	w0, #0x3c               // =60
+   20d1c:      	mov	x1, xzr
+   20d20:      	bl	0x38158 <sigaction@plt>
+   20d24:      	cbnz	w0, 0x20d44 <tp_park_begin+0x94>
+   20d28:      	ldr	x8, [sp, #0x8]
+   20d2c:      	adrp	x9, 0x20000 <inline_replacement+0xa0>
+   20d30:      	add	x9, x9, #0xb40
+   20d34:      	cmp	x8, x9
+   20d38:      	b.ne	0x20d44 <tp_park_begin+0x94>
+   20d3c:      	ldrb	w8, [sp]
+   20d40:      	tbnz	w8, #0x2, 0x20d90 <tp_park_begin+0xe0>
+   20d44:      	stlrb	wzr, [x22]
+   20d48:      	mov	w0, #0x3                // =3
+   20d4c:      	b	0x20d68 <tp_park_begin+0xb8>
+   20d50:      	mov	w0, #0x1                // =1
+   20d54:      	ret
+   20d58:      	mov	w0, #0x1                // =1
+   20d5c:      	b	0x20d68 <tp_park_begin+0xb8>
+   20d60:      	mov	w0, #0x2                // =2
+   20d64:      	clrex
+   20d68:      	add	sp, sp, #0x1, lsl #12   // =0x1000
+   20d6c:      	add	sp, sp, #0x30
+   20d70:      	ldp	x20, x19, [sp, #0x50]
+   20d74:      	ldp	x22, x21, [sp, #0x40]
+   20d78:      	ldp	x24, x23, [sp, #0x30]
+   20d7c:      	ldp	x26, x25, [sp, #0x20]
+   20d80:      	ldp	x28, x27, [sp, #0x10]
+   20d84:      	ldp	x29, x30, [sp], #0x60
+   20d88:      	autiasp
+   20d8c:      	ret
+   20d90:      	adrp	x21, 0x47000 <park+0xf08>
+   20d94:      	ldr	w8, [x21, #0x114]
+   20d98:      	cmp	w8, #0x400
+   20d9c:      	b.ne	0x20dac <tp_park_begin+0xfc>
+   20da0:      	stlrb	wzr, [x22]
+   20da4:      	mov	w0, #0x5                // =5
+   20da8:      	b	0x20d68 <tp_park_begin+0xb8>
+   20dac:      	add	w8, w8, #0x1
+   20db0:      	adrp	x9, 0x46000 <caller_roots+0x108>
+   20db4:      	add	x9, x9, #0xfc
+   20db8:      	mov	x0, xzr
+   20dbc:      	str	w8, [x9, #0x1018]
+   20dc0:      	movi	v0.2d, #0000000000000000
+   20dc4:      	str	wzr, [x9, #0x101c]
+   20dc8:      	mov	x1, xzr
+   20dcc:      	mov	x2, xzr
+   20dd0:      	str	w8, [x9, #0x103c]
+   20dd4:      	mov	x3, xzr
+   20dd8:      	mov	x4, xzr
+   20ddc:      	mov	x5, xzr
+   20de0:      	mov	w8, #0xb2               // =178
+   20de4:      	svc	#0
+   20de8:      	stlr	w0, [x9]
+   20dec:      	mov	x22, x20
+   20df0:      	ldr	w8, [x9, #0x1018]
+   20df4:      	str	q0, [x22, #0x4]!
+   20df8:      	stur	q0, [x20, #0x14]
+   20dfc:      	str	w8, [x20]
+   20e00:      	str	wzr, [x20, #0x24]
+   20e04:      	bl	0x21330 <tp_park_now>
+   20e08:      	cbz	x0, 0x212f4 <tp_park_begin+0x644>
+   20e0c:      	mov	w8, #0xe100             // =57600
+   20e10:      	add	x10, sp, #0x20
+   20e14:      	mov	w14, #0xca00            // =51712
+   20e18:      	movk	w8, #0x5f5, lsl #16
+   20e1c:      	mov	w27, #0x2f              // =47
+   20e20:      	mov	w28, #0xcccd            // =52429
+   20e24:      	add	x12, x0, x8
+   20e28:      	adrp	x8, 0xa000 <empty+0x1038>
+   20e2c:      	mov	w9, wzr
+   20e30:      	ldr	q0, [x8, #0xc0]
+   20e34:      	adrp	x11, 0x47000 <park+0xf08>
+   20e38:      	add	x13, x10, #0x14
+   20e3c:      	movk	w14, #0x3b9a, lsl #16
+   20e40:      	adrp	x15, 0x47000 <park+0xf08>
+   20e44:      	mov	w17, #0x28              // =40
+   20e48:      	mov	w6, #0x10a8             // =4264
+   20e4c:      	movk	w27, #0x8000, lsl #16
+   20e50:      	movk	w28, #0xcccc, lsl #16
+   20e54:      	mov	w30, #0xa               // =10
+   20e58:      	ldrsw	x0, [x11, #0x110]
+   20e5c:      	mov	x1, xzr
+   20e60:      	mov	x2, xzr
+   20e64:      	mov	x3, xzr
+   20e68:      	mov	x4, xzr
+   20e6c:      	mov	x5, xzr
+   20e70:      	mov	w8, #0x3e               // =62
+   20e74:      	svc	#0
+   20e78:      	tbnz	x0, #0x3f, 0x212d0 <tp_park_begin+0x620>
+   20e7c:      	ldrsw	x0, [x11, #0x110]
+   20e80:      	add	x1, sp, #0x20
+   20e84:      	mov	w2, #0x1000             // =4096
+   20e88:      	mov	x3, xzr
+   20e8c:      	mov	x4, xzr
+   20e90:      	mov	x5, xzr
+   20e94:      	mov	w8, #0x3d               // =61
+   20e98:      	svc	#0
+   20e9c:      	cbz	x0, 0x2109c <tp_park_begin+0x3ec>
+   20ea0:      	mov	w16, wzr
+   20ea4:      	mov	x8, x20
+   20ea8:      	tbnz	x0, #0x3f, 0x212dc <tp_park_begin+0x62c>
+   20eac:      	mov	x25, xzr
+   20eb0:      	b	0x20ecc <tp_park_begin+0x21c>
+   20eb4:      	mov	x8, x20
+   20eb8:      	mov	x0, x7
+   20ebc:      	ldrh	w1, [x26, #0x10]
+   20ec0:      	add	x25, x25, x1
+   20ec4:      	cmp	x25, x0
+   20ec8:      	b.hs	0x2106c <tp_park_begin+0x3bc>
+   20ecc:      	sub	x3, x0, x25
+   20ed0:      	cmp	x3, #0x14
+   20ed4:      	b.lo	0x21290 <tp_park_begin+0x5e0>
+   20ed8:      	add	x26, x10, x25
+   20edc:      	mov	w1, #0x7                // =7
+   20ee0:      	ldrh	w2, [x26, #0x10]
+   20ee4:      	tst	w2, #0x7
+   20ee8:      	b.ne	0x21294 <tp_park_begin+0x5e4>
+   20eec:      	cmp	w2, #0x14
+   20ef0:      	b.lo	0x21294 <tp_park_begin+0x5e4>
+   20ef4:      	cmp	x3, x2
+   20ef8:      	b.lo	0x21294 <tp_park_begin+0x5e4>
+   20efc:      	ldrb	w1, [x26, #0x13]
+   20f00:      	cbz	w1, 0x20ebc <tp_park_begin+0x20c>
+   20f04:      	cmp	w1, #0x2e
+   20f08:      	b.eq	0x20ebc <tp_park_begin+0x20c>
+   20f0c:      	sub	w3, w1, #0x3a
+   20f10:      	cmn	w3, #0xa
+   20f14:      	b.lo	0x21290 <tp_park_begin+0x5e0>
+   20f18:      	sub	w1, w1, #0x30
+   20f1c:      	sub	x2, x2, #0x14
+   20f20:      	add	x3, x13, x25
+   20f24:      	ldrb	w4, [x3], #0x1
+   20f28:      	cbz	w4, 0x20f60 <tp_park_begin+0x2b0>
+   20f2c:      	sub	w5, w4, #0x3a
+   20f30:      	cmn	w5, #0xa
+   20f34:      	b.lo	0x21290 <tp_park_begin+0x5e0>
+   20f38:      	sub	w5, w27, w4
+   20f3c:      	umull	x5, w5, w28
+   20f40:      	lsr	x5, x5, #35
+   20f44:      	cmp	w1, w5
+   20f48:      	b.gt	0x21290 <tp_park_begin+0x5e0>
+   20f4c:      	madd	w1, w1, w30, w4
+   20f50:      	subs	x2, x2, #0x1
+   20f54:      	sub	w1, w1, #0x30
+   20f58:      	b.ne	0x20f24 <tp_park_begin+0x274>
+   20f5c:      	b	0x21290 <tp_park_begin+0x5e0>
+   20f60:      	cmp	w1, #0x1
+   20f64:      	b.lt	0x20ebc <tp_park_begin+0x20c>
+   20f68:      	adrp	x2, 0x46000 <caller_roots+0x108>
+   20f6c:      	ldr	w2, [x2, #0xfc]
+   20f70:      	cmp	w1, w2
+   20f74:      	b.eq	0x20ebc <tp_park_begin+0x20c>
+   20f78:      	ldr	w2, [x15, #0x118]
+   20f7c:      	cbz	w2, 0x20fb8 <tp_park_begin+0x308>
+   20f80:      	adrp	x3, 0x47000 <park+0xf08>
+   20f84:      	add	x3, x3, #0x1a8
+   20f88:      	mov	x4, x2
+   20f8c:      	ldr	w5, [x3]
+   20f90:      	cmp	w5, w1
+   20f94:      	b.eq	0x21050 <tp_park_begin+0x3a0>
+   20f98:      	subs	x4, x4, #0x1
+   20f9c:      	add	x3, x3, #0x28
+   20fa0:      	b.ne	0x20f8c <tp_park_begin+0x2dc>
+   20fa4:      	mov	x7, x0
+   20fa8:      	cmp	w2, #0x100
+   20fac:      	mov	x8, x2
+   20fb0:      	b.ne	0x20fc0 <tp_park_begin+0x310>
+   20fb4:      	b	0x21324 <tp_park_begin+0x674>
+   20fb8:      	mov	x7, x0
+   20fbc:      	mov	x8, xzr
+   20fc0:      	umaddl	x8, w8, w17, x19
+   20fc4:      	add	w0, w2, #0x1
+   20fc8:      	mov	w3, #0x1                // =1
+   20fcc:      	str	w0, [x19, #0x1020]
+   20fd0:      	add	w16, w16, #0x1
+   20fd4:      	mov	x4, xzr
+   20fd8:      	mov	x5, xzr
+   20fdc:      	str	w1, [x8, #0x10b0]
+   20fe0:      	add	x23, x8, x6
+   20fe4:      	mov	w8, #0x1028             // =4136
+   20fe8:      	ldr	w2, [x19, #0x101c]
+   20fec:      	mov	w1, w1
+   20ff0:      	orr	x2, x3, x2, lsl #32
+   20ff4:      	add	x3, x19, x8
+   20ff8:      	mov	w8, #0xf0               // =240
+   20ffc:      	stlr	x2, [x23]
+   21000:      	mov	w2, #0x3c               // =60
+   21004:      	str	w0, [x22]
+   21008:      	ldrsw	x0, [x19, #0x1010]
+   2100c:      	svc	#0
+   21010:      	cbz	x0, 0x20eb4 <tp_park_begin+0x204>
+   21014:      	cmn	x0, #0x3
+   21018:      	mov	x8, x20
+   2101c:      	b.ne	0x212dc <tp_park_begin+0x62c>
+   21020:      	ldr	w2, [x21, #0x114]
+   21024:      	mov	w1, #0x1                // =1
+   21028:      	mov	w3, #0x5                // =5
+   2102c:      	mov	x0, x7
+   21030:      	bfi	x1, x2, #32, #32
+   21034:      	orr	x2, x3, x2, lsl #32
+   21038:      	ldaxr	x3, [x23]
+   2103c:      	cmp	x3, x1
+   21040:      	b.ne	0x21064 <tp_park_begin+0x3b4>
+   21044:      	stlxr	w3, x2, [x23]
+   21048:      	cbnz	w3, 0x21038 <tp_park_begin+0x388>
+   2104c:      	b	0x20ebc <tp_park_begin+0x20c>
+   21050:      	sub	x1, x3, #0x8
+   21054:      	ldar	x1, [x1]
+   21058:      	cmp	w1, #0x5
+   2105c:      	b.ne	0x20ebc <tp_park_begin+0x20c>
+   21060:      	b	0x21290 <tp_park_begin+0x5e0>
+   21064:      	clrex
+   21068:      	b	0x20ebc <tp_park_begin+0x20c>
+   2106c:      	ldrsw	x0, [x11, #0x110]
+   21070:      	add	x1, sp, #0x20
+   21074:      	mov	w2, #0x1000             // =4096
+   21078:      	mov	x3, xzr
+   2107c:      	mov	x4, xzr
+   21080:      	mov	x5, xzr
+   21084:      	mov	w8, #0x3d               // =61
+   21088:      	svc	#0
+   2108c:      	cbnz	x0, 0x20ea4 <tp_park_begin+0x1f4>
+   21090:      	cmp	w16, #0x0
+   21094:      	cset	w16, eq
+   21098:      	b	0x210a0 <tp_park_begin+0x3f0>
+   2109c:      	mov	w16, #0x1               // =1
+   210a0:      	ldr	w0, [x20, #0x10]
+   210a4:      	str	wzr, [x20, #0x18]
+   210a8:      	mov	x8, x20
+   210ac:      	add	w0, w0, #0x1
+   210b0:      	str	w0, [x20, #0x10]
+   210b4:      	ldr	w0, [x15, #0x118]
+   210b8:      	cbz	w0, 0x21234 <tp_park_begin+0x584>
+   210bc:      	mov	x26, xzr
+   210c0:      	mov	w25, wzr
+   210c4:      	mov	w24, wzr
+   210c8:      	mov	w23, wzr
+   210cc:      	madd	x0, x26, x17, x19
+   210d0:      	add	x7, x0, x6
+   210d4:      	ldar	x0, [x7]
+   210d8:      	cmp	w0, #0x5
+   210dc:      	b.eq	0x21178 <tp_park_begin+0x4c8>
+   210e0:      	subs	w1, w0, #0x3
+   210e4:      	b.ne	0x210f0 <tp_park_begin+0x440>
+   210e8:      	add	w24, w24, #0x1
+   210ec:      	b	0x21198 <tp_park_begin+0x4e8>
+   210f0:      	cmn	w1, #0x2
+   210f4:      	b.lo	0x212c8 <tp_park_begin+0x618>
+   210f8:      	cmp	w0, #0x1
+   210fc:      	b.ne	0x21180 <tp_park_begin+0x4d0>
+   21100:      	add	x8, x7, #0x8
+   21104:      	adrp	x0, 0x47000 <park+0xf08>
+   21108:      	mov	x2, xzr
+   2110c:      	ldrsw	x0, [x0, #0x108]
+   21110:      	ldar	w8, [x8]
+   21114:      	mov	x3, xzr
+   21118:      	mov	x4, xzr
+   2111c:      	mov	x5, xzr
+   21120:      	sxtw	x1, w8
+   21124:      	mov	w8, #0x83               // =131
+   21128:      	svc	#0
+   2112c:      	mov	x8, x20
+   21130:      	cbz	x0, 0x21180 <tp_park_begin+0x4d0>
+   21134:      	cmn	x0, #0x3
+   21138:      	b.ne	0x212ec <tp_park_begin+0x63c>
+   2113c:      	ldr	w1, [x21, #0x114]
+   21140:      	mov	w0, #0x1                // =1
+   21144:      	mov	w2, #0x5                // =5
+   21148:      	bfi	x0, x1, #32, #32
+   2114c:      	orr	x1, x2, x1, lsl #32
+   21150:      	ldaxr	x2, [x7]
+   21154:      	cmp	x2, x0
+   21158:      	b.ne	0x2116c <tp_park_begin+0x4bc>
+   2115c:      	stlxr	w2, x1, [x7]
+   21160:      	cbnz	w2, 0x21150 <tp_park_begin+0x4a0>
+   21164:      	mov	w0, #0x1                // =1
+   21168:      	b	0x21174 <tp_park_begin+0x4c4>
+   2116c:      	mov	w0, wzr
+   21170:      	clrex
+   21174:      	tbz	w0, #0x0, 0x21180 <tp_park_begin+0x4d0>
+   21178:      	add	w23, w23, #0x1
+   2117c:      	b	0x21198 <tp_park_begin+0x4e8>
+   21180:      	ldr	w0, [x8, #0x18]
+   21184:      	add	w25, w25, #0x1
+   21188:      	cbnz	w0, 0x21198 <tp_park_begin+0x4e8>
+   2118c:      	add	x0, x7, #0x8
+   21190:      	ldar	w0, [x0]
+   21194:      	str	w0, [x8, #0x18]
+   21198:      	ldr	w0, [x15, #0x118]
+   2119c:      	add	x26, x26, #0x1
+   211a0:      	cmp	x26, x0
+   211a4:      	b.lo	0x210cc <tp_park_begin+0x41c>
+   211a8:      	stp	w24, w23, [x8, #0x8]
+   211ac:      	cbz	w25, 0x21238 <tp_park_begin+0x588>
+   211b0:      	mov	w0, #0x1                // =1
+   211b4:      	mov	w8, #0x71               // =113
+   211b8:      	add	x1, sp, #0x20
+   211bc:      	mov	x2, xzr
+   211c0:      	mov	x3, xzr
+   211c4:      	mov	x4, xzr
+   211c8:      	mov	x5, xzr
+   211cc:      	svc	#0
+   211d0:      	mov	w8, #0x4                // =4
+   211d4:      	cbnz	x0, 0x212f8 <tp_park_begin+0x648>
+   211d8:      	ldp	x0, x1, [sp, #0x20]
+   211dc:      	nop
+   211e0:      	madd	x0, x0, x14, x1
+   211e4:      	cbz	x0, 0x212f8 <tp_park_begin+0x648>
+   211e8:      	cmp	x0, x12
+   211ec:      	b.hs	0x212a8 <tp_park_begin+0x5f8>
+   211f0:      	str	q0, [sp, #0x20]
+   211f4:      	add	x0, sp, #0x20
+   211f8:      	mov	x1, xzr
+   211fc:      	mov	x2, xzr
+   21200:      	mov	x3, xzr
+   21204:      	mov	x4, xzr
+   21208:      	mov	x5, xzr
+   2120c:      	mov	w8, #0x65               // =101
+   21210:      	svc	#0
+   21214:      	str	wzr, [x20, #0x18]
+   21218:      	mov	x26, xzr
+   2121c:      	mov	w25, wzr
+   21220:      	ldr	w0, [x15, #0x118]
+   21224:      	mov	w24, wzr
+   21228:      	mov	x8, x20
+   2122c:      	mov	w23, wzr
+   21230:      	cbnz	w0, 0x210cc <tp_park_begin+0x41c>
+   21234:      	str	xzr, [x8, #0x8]
+   21238:      	mov	w0, #0x1                // =1
+   2123c:      	mov	w8, #0x71               // =113
+   21240:      	add	x1, sp, #0x20
+   21244:      	mov	x2, xzr
+   21248:      	mov	x3, xzr
+   2124c:      	mov	x4, xzr
+   21250:      	mov	x5, xzr
+   21254:      	svc	#0
+   21258:      	mov	w8, #0x4                // =4
+   2125c:      	cbnz	x0, 0x212f8 <tp_park_begin+0x648>
+   21260:      	ldp	x0, x1, [sp, #0x20]
+   21264:      	nop
+   21268:      	madd	x0, x0, x14, x1
+   2126c:      	cbz	x0, 0x212f8 <tp_park_begin+0x648>
+   21270:      	cmp	x0, x12
+   21274:      	b.hs	0x21308 <tp_park_begin+0x658>
+   21278:      	cbnz	w16, 0x21310 <tp_park_begin+0x660>
+   2127c:      	add	w9, w9, #0x1
+   21280:      	mov	w8, #0x5                // =5
+   21284:      	cmp	w9, #0x10
+   21288:      	b.ne	0x20e58 <tp_park_begin+0x1a8>
+   2128c:      	b	0x212f8 <tp_park_begin+0x648>
+   21290:      	mov	w1, #0x7                // =7
+   21294:      	ldr	w9, [x8, #0x10]
+   21298:      	add	w9, w9, #0x1
+   2129c:      	str	w9, [x8, #0x10]
+   212a0:      	mov	w8, w1
+   212a4:      	b	0x212f8 <tp_park_begin+0x648>
+   212a8:      	ldr	w0, [x11, #0x110]
+   212ac:      	ldr	w1, [x20, #0x18]
+   212b0:      	add	x2, x20, #0x20
+   212b4:      	bl	0x22808 <tp_park_blocked_mask>
+   212b8:      	and	w9, w0, #0x1
+   212bc:      	mov	w8, #0x6                // =6
+   212c0:      	str	w9, [x20, #0x1c]
+   212c4:      	b	0x212f8 <tp_park_begin+0x648>
+   212c8:      	mov	w8, #0x7                // =7
+   212cc:      	b	0x212f8 <tp_park_begin+0x648>
+   212d0:      	mov	w1, #0x4                // =4
+   212d4:      	mov	x8, x20
+   212d8:      	b	0x21294 <tp_park_begin+0x5e4>
+   212dc:      	neg	w9, w0
+   212e0:      	mov	w1, #0x4                // =4
+   212e4:      	str	w9, [x8, #0x14]
+   212e8:      	b	0x21294 <tp_park_begin+0x5e4>
+   212ec:      	neg	w9, w0
+   212f0:      	str	w9, [x8, #0x14]
+   212f4:      	mov	w8, #0x4                // =4
+   212f8:      	mov	w19, w8
+   212fc:      	bl	0x21370 <release_all>
+   21300:      	mov	w0, w19
+   21304:      	b	0x20d68 <tp_park_begin+0xb8>
+   21308:      	mov	w8, #0x6                // =6
+   2130c:      	b	0x212f8 <tp_park_begin+0x648>
+   21310:      	adrp	x8, 0x47000 <park+0xf08>
+   21314:      	mov	w9, #0x1                // =1
+   21318:      	mov	w0, wzr
+   2131c:      	strb	w9, [x8, #0x11c]
+   21320:      	b	0x20d68 <tp_park_begin+0xb8>
+   21324:      	mov	w1, #0x5                // =5
+   21328:      	mov	x8, x20
+   2132c:      	b	0x21294 <tp_park_begin+0x5e4>
+
+0000000000021330 <tp_park_now>:
+   21330:      	sub	sp, sp, #0x10
+   21334:      	mov	w0, #0x1                // =1
+   21338:      	mov	x1, sp
+   2133c:      	mov	x2, xzr
+   21340:      	mov	x3, xzr
+   21344:      	mov	x4, xzr
+   21348:      	mov	x5, xzr
+   2134c:      	mov	w8, #0x71               // =113
+   21350:      	svc	#0
+   21354:      	ldp	x8, x10, [sp], #0x10
+   21358:      	mov	w9, #0xca00             // =51712
+   2135c:      	cmp	x0, #0x0
+   21360:      	movk	w9, #0x3b9a, lsl #16
+   21364:      	madd	x8, x8, x9, x10
+   21368:      	csel	x0, x8, xzr, eq
+   2136c:      	ret
+
+0000000000021370 <release_all>:
+   21370:      	sub	sp, sp, #0x10
+   21374:      	adrp	x9, 0x47000 <park+0xf08>
+   21378:      	nop
+   2137c:      	adr	x10, 0x460f8 <park>
+   21380:      	ldr	w8, [x9, #0x118]
+   21384:      	cbz	w8, 0x213e0 <release_all+0x70>
+   21388:      	mov	x8, xzr
+   2138c:      	mov	w11, #0x28              // =40
+   21390:      	mov	w12, #0x10a8            // =4264
+   21394:      	mov	w13, #0x6               // =6
+   21398:      	b	0x213b0 <release_all+0x40>
+   2139c:      	clrex
+   213a0:      	ldr	w14, [x9, #0x118]
+   213a4:      	add	x8, x8, #0x1
+   213a8:      	cmp	x8, x14
+   213ac:      	b.hs	0x213e0 <release_all+0x70>
+   213b0:      	madd	x16, x8, x11, x10
+   213b4:      	ldr	w15, [x10, #0x101c]
+   213b8:      	mov	w14, #0x1               // =1
+   213bc:      	bfi	x14, x15, #32, #32
+   213c0:      	orr	x15, x13, x15, lsl #32
+   213c4:      	add	x16, x16, x12
+   213c8:      	ldaxr	x17, [x16]
+   213cc:      	cmp	x17, x14
+   213d0:      	b.ne	0x2139c <release_all+0x2c>
+   213d4:      	stlxr	w17, x15, [x16]
+   213d8:      	cbnz	w17, 0x213c8 <release_all+0x58>
+   213dc:      	b	0x213a0 <release_all+0x30>
+   213e0:      	adrp	x0, 0x46000 <caller_roots+0x108>
+   213e4:      	add	x0, x0, #0x100
+   213e8:      	mov	w1, #0x81               // =129
+   213ec:      	ldr	w8, [x0, #0x1014]
+   213f0:      	mov	w2, #0x7fffffff         // =2147483647
+   213f4:      	mov	x3, xzr
+   213f8:      	mov	x4, xzr
+   213fc:      	mov	x5, xzr
+   21400:      	stlr	w8, [x0]
+   21404:      	mov	w8, #0x62               // =98
+   21408:      	svc	#0
+   2140c:      	mov	x1, sp
+   21410:      	mov	x2, xzr
+   21414:      	mov	w0, #0x1                // =1
+   21418:      	mov	x3, xzr
+   2141c:      	mov	x4, xzr
+   21420:      	mov	x5, xzr
+   21424:      	mov	w8, #0x71               // =113
+   21428:      	svc	#0
+   2142c:      	cbnz	x0, 0x21554 <release_all+0x1e4>
+   21430:      	ldp	x8, x12, [sp]
+   21434:      	mov	w11, #0xca00            // =51712
+   21438:      	movk	w11, #0x3b9a, lsl #16
+   2143c:      	madd	x12, x8, x11, x12
+   21440:      	cbz	x12, 0x21554 <release_all+0x1e4>
+   21444:      	ldr	w8, [x9, #0x118]
+   21448:      	cbz	w8, 0x2150c <release_all+0x19c>
+   2144c:      	adrp	x13, 0xa000 <empty+0x1038>
+   21450:      	mov	x16, xzr
+   21454:      	mov	w8, wzr
+   21458:      	ldr	q0, [x13, #0xc0]
+   2145c:      	mov	w13, #0x28              // =40
+   21460:      	mov	w14, #0x10a8            // =4264
+   21464:      	sub	x15, x11, #0x1
+   21468:      	madd	x17, x16, x13, x10
+   2146c:      	add	x16, x16, #0x1
+   21470:      	add	x17, x17, x14
+   21474:      	ldar	x17, [x17]
+   21478:      	ldr	w0, [x10, #0x1020]
+   2147c:      	and	x17, x17, #0xfffffffe
+   21480:      	cmp	x17, #0x2
+   21484:      	cset	w17, eq
+   21488:      	cmp	x16, x0
+   2148c:      	orr	w8, w17, w8
+   21490:      	b.lo	0x21468 <release_all+0xf8>
+   21494:      	tbz	w8, #0x0, 0x2150c <release_all+0x19c>
+   21498:      	mov	w0, #0x1                // =1
+   2149c:      	mov	x1, sp
+   214a0:      	mov	x2, xzr
+   214a4:      	mov	x3, xzr
+   214a8:      	mov	x4, xzr
+   214ac:      	mov	x5, xzr
+   214b0:      	mov	w8, #0x71               // =113
+   214b4:      	svc	#0
+   214b8:      	ldp	x8, x16, [sp]
+   214bc:      	cmp	x0, #0x0
+   214c0:      	madd	x8, x8, x11, x16
+   214c4:      	csel	x8, x8, xzr, eq
+   214c8:      	cbz	x8, 0x21530 <release_all+0x1c0>
+   214cc:      	sub	x8, x8, x12
+   214d0:      	cmp	x8, x15
+   214d4:      	b.hi	0x21530 <release_all+0x1c0>
+   214d8:      	str	q0, [sp]
+   214dc:      	mov	x0, sp
+   214e0:      	mov	x1, xzr
+   214e4:      	mov	x2, xzr
+   214e8:      	mov	x3, xzr
+   214ec:      	mov	x4, xzr
+   214f0:      	mov	x5, xzr
+   214f4:      	mov	w8, #0x65               // =101
+   214f8:      	svc	#0
+   214fc:      	ldr	w17, [x9, #0x118]
+   21500:      	mov	x16, xzr
+   21504:      	mov	w8, wzr
+   21508:      	cbnz	w17, 0x21468 <release_all+0xf8>
+   2150c:      	adrp	x8, 0x46000 <caller_roots+0x108>
+   21510:      	add	x8, x8, #0xf9
+   21514:      	mov	w9, #0x1023             // =4131
+   21518:      	add	x10, x8, #0x3
+   2151c:      	strb	wzr, [x8, x9]
+   21520:      	stlr	wzr, [x10]
+   21524:      	stlrb	wzr, [x8]
+   21528:      	add	sp, sp, #0x10
+   2152c:      	ret
+   21530:      	mov	w0, #0xc0               // =192
+   21534:      	mov	x1, xzr
+   21538:      	mov	x2, xzr
+   2153c:      	mov	x3, xzr
+   21540:      	mov	x4, xzr
+   21544:      	mov	x5, xzr
+   21548:      	mov	w8, #0x5e               // =94
+   2154c:      	svc	#0
+   21550:      	brk	#0x1
+   21554:      	mov	w0, #0xc0               // =192
+   21558:      	mov	x1, xzr
+   2155c:      	mov	x2, xzr
+   21560:      	mov	x3, xzr
+   21564:      	mov	x4, xzr
+   21568:      	mov	x5, xzr
+   2156c:      	mov	w8, #0x5e               // =94
+   21570:      	svc	#0
+   21574:      	brk	#0x1
+
+0000000000021578 <tp_park_end>:
+   21578:      	bti	c
+   2157c:      	adrp	x8, 0x46000 <caller_roots+0x108>
+   21580:      	add	x8, x8, #0xfc
+   21584:      	mov	w9, w0
+   21588:      	ldar	w10, [x8]
+   2158c:      	mov	x0, xzr
+   21590:      	mov	x1, xzr
+   21594:      	mov	x2, xzr
+   21598:      	mov	x3, xzr
+   2159c:      	mov	x4, xzr
+   215a0:      	mov	x5, xzr
+   215a4:      	mov	w8, #0xb2               // =178
+   215a8:      	svc	#0
+   215ac:      	cmp	w10, w0
+   215b0:      	b.ne	0x215f8 <tp_park_end+0x80>
+   215b4:      	adrp	x8, 0x47000 <park+0xf08>
+   215b8:      	add	x8, x8, #0x114
+   215bc:      	mov	w0, #0x8                // =8
+   215c0:      	ldrb	w10, [x8, #0x8]
+   215c4:      	cmp	w10, #0x1
+   215c8:      	b.ne	0x215f4 <tp_park_end+0x7c>
+   215cc:      	ldr	w8, [x8]
+   215d0:      	cmp	w9, w8
+   215d4:      	b.ne	0x215f4 <tp_park_end+0x7c>
+   215d8:      	paciasp
+   215dc:      	stp	x29, x30, [sp, #-0x10]!
+   215e0:      	mov	x29, sp
+   215e4:      	bl	0x21370 <release_all>
+   215e8:      	mov	w0, wzr
+   215ec:      	ldp	x29, x30, [sp], #0x10
+   215f0:      	autiasp
+   215f4:      	ret
+   215f8:      	mov	w0, #0x9                // =9
+   215fc:      	ret
+
+0000000000021600 <tp_park_context>:
+   21600:      	bti	c
+   21604:      	adrp	x8, 0x46000 <caller_roots+0x108>
+   21608:      	add	x8, x8, #0xfc
+   2160c:      	mov	w11, w0
+   21610:      	ldar	w12, [x8]
+   21614:      	mov	x0, xzr
+   21618:      	mov	x9, x2
+   2161c:      	mov	w10, w1
+   21620:      	mov	x1, xzr
+   21624:      	mov	x2, xzr
+   21628:      	mov	x3, xzr
+   2162c:      	mov	x4, xzr
+   21630:      	mov	x5, xzr
+   21634:      	mov	w8, #0xb2               // =178
+   21638:      	svc	#0
+   2163c:      	cmp	w12, w0
+   21640:      	b.ne	0x216c8 <tp_park_context+0xc8>
+   21644:      	adrp	x8, 0x47000 <park+0xf08>
+   21648:      	add	x8, x8, #0x114
+   2164c:      	mov	w0, #0x8                // =8
+   21650:      	ldrb	w12, [x8, #0x8]
+   21654:      	cmp	w12, #0x1
+   21658:      	b.ne	0x216c4 <tp_park_context+0xc4>
+   2165c:      	ldr	w8, [x8]
+   21660:      	cmp	w11, w8
+   21664:      	b.ne	0x216c4 <tp_park_context+0xc4>
+   21668:      	mov	w0, #0x7                // =7
+   2166c:      	cbz	x9, 0x216c4 <tp_park_context+0xc4>
+   21670:      	adrp	x8, 0x47000 <park+0xf08>
+   21674:      	ldr	w8, [x8, #0x118]
+   21678:      	cmp	w10, w8
+   2167c:      	b.hs	0x216c4 <tp_park_context+0xc4>
+   21680:      	mov	w8, #0x28               // =40
+   21684:      	nop
+   21688:      	adr	x11, 0x460f8 <park>
+   2168c:      	umaddl	x8, w10, w8, x11
+   21690:      	mov	w10, #0x10a8            // =4264
+   21694:      	add	x8, x8, x10
+   21698:      	ldar	x10, [x8]
+   2169c:      	cmp	w10, #0x3
+   216a0:      	b.ne	0x216c4 <tp_park_context+0xc4>
+   216a4:      	add	x10, x8, #0x8
+   216a8:      	mov	w0, wzr
+   216ac:      	ldar	w10, [x10]
+   216b0:      	ldr	q0, [x8, #0x10]
+   216b4:      	stur	q0, [x9, #0x8]
+   216b8:      	ldr	x8, [x8, #0x20]
+   216bc:      	str	w10, [x9]
+   216c0:      	str	x8, [x9, #0x18]
+   216c4:      	ret
+   216c8:      	mov	w0, #0x9                // =9
+   216cc:      	ret
+
+0000000000022178 <workers_progress>:
+   22178:      	sub	sp, sp, #0x10
+   2217c:      	nop
+   22180:      	adr	x9, 0x499c0 <test>
+   22184:      	mov	w0, #0x1                // =1
+   22188:      	add	x11, x9, #0x40
+   2218c:      	add	x13, x9, #0x80
+   22190:      	add	x14, x9, #0xc0
+   22194:      	mov	x2, xzr
+   22198:      	mov	x3, xzr
+   2219c:      	mov	x4, xzr
+   221a0:      	mov	x5, xzr
+   221a4:      	ldar	x10, [x9]
+   221a8:      	ldar	x12, [x11]
+   221ac:      	ldar	x15, [x13]
+   221b0:      	ldar	x16, [x14]
+   221b4:      	mov	x1, sp
+   221b8:      	mov	w8, #0x71               // =113
+   221bc:      	svc	#0
+   221c0:      	mov	w17, #0xca00            // =51712
+   221c4:      	ldp	x8, x1, [sp]
+   221c8:      	movk	w17, #0x3b9a, lsl #16
+   221cc:      	adrp	x2, 0xa000 <empty+0x1038>
+   221d0:      	cmp	x0, #0x0
+   221d4:      	ldr	q0, [x2, #0xc0]
+   221d8:      	nop
+   221dc:      	madd	x8, x8, x17, x1
+   221e0:      	mov	w1, #0xe100             // =57600
+   221e4:      	movk	w1, #0x5f5, lsl #16
+   221e8:      	add	x8, x8, x1
+   221ec:      	csel	x6, x8, x1, eq
+   221f0:      	ldar	x8, [x9]
+   221f4:      	ldar	x0, [x11]
+   221f8:      	ldar	x1, [x13]
+   221fc:      	ldar	x2, [x14]
+   22200:      	cmp	x0, x12
+   22204:      	cset	w0, hi
+   22208:      	cmp	x8, x10
+   2220c:      	cinc	w8, w0, hi
+   22210:      	cmp	x1, x15
+   22214:      	cinc	w8, w8, hi
+   22218:      	cmp	x2, x16
+   2221c:      	cinc	w7, w8, hi
+   22220:      	cmp	w7, #0x4
+   22224:      	b.eq	0x22288 <workers_progress+0x110>
+   22228:      	mov	w0, #0x1                // =1
+   2222c:      	mov	x1, sp
+   22230:      	mov	x2, xzr
+   22234:      	mov	x3, xzr
+   22238:      	mov	x4, xzr
+   2223c:      	mov	x5, xzr
+   22240:      	mov	w8, #0x71               // =113
+   22244:      	svc	#0
+   22248:      	ldp	x8, x1, [sp]
+   2224c:      	cmp	x0, #0x0
+   22250:      	madd	x8, x8, x17, x1
+   22254:      	csel	x8, x8, xzr, eq
+   22258:      	cmp	x8, x6
+   2225c:      	b.hs	0x22288 <workers_progress+0x110>
+   22260:      	str	q0, [sp]
+   22264:      	mov	x0, sp
+   22268:      	mov	x1, xzr
+   2226c:      	mov	x2, xzr
+   22270:      	mov	x3, xzr
+   22274:      	mov	x4, xzr
+   22278:      	mov	x5, xzr
+   2227c:      	mov	w8, #0x65               // =101
+   22280:      	svc	#0
+   22284:      	b	0x221f0 <workers_progress+0x78>
+   22288:      	cmp	w7, #0x4
+   2228c:      	cset	w0, eq
+   22290:      	add	sp, sp, #0x10
+   22294:      	ret
+
+0000000000022298 <one_cycle>:
+   22298:      	paciasp
+   2229c:      	sub	sp, sp, #0xc0
+   222a0:      	stp	x29, x30, [sp, #0x60]
+   222a4:      	stp	x28, x27, [sp, #0x70]
+   222a8:      	stp	x26, x25, [sp, #0x80]
+   222ac:      	stp	x24, x23, [sp, #0x90]
+   222b0:      	stp	x22, x21, [sp, #0xa0]
+   222b4:      	stp	x20, x19, [sp, #0xb0]
+   222b8:      	add	x29, sp, #0x60
+   222bc:      	mov	x20, x1
+   222c0:      	mov	x19, x0
+   222c4:      	bl	0x20cb0 <tp_park_begin>
+   222c8:      	str	w0, [x20]
+   222cc:      	cbnz	w0, 0x2250c <one_cycle+0x274>
+   222d0:      	add	x0, sp, #0x18
+   222d4:      	bl	0x20cb0 <tp_park_begin>
+   222d8:      	cmp	w0, #0x2
+   222dc:      	b.ne	0x224a4 <one_cycle+0x20c>
+   222e0:      	ldr	w8, [x19]
+   222e4:      	add	w0, w8, #0x1
+   222e8:      	bl	0x21578 <tp_park_end>
+   222ec:      	cmp	w0, #0x8
+   222f0:      	b.ne	0x224a4 <one_cycle+0x20c>
+   222f4:      	nop
+   222f8:      	adr	x26, 0x499c0 <test>
+   222fc:      	add	x8, x26, #0x40
+   22300:      	ldar	x25, [x26]
+   22304:      	add	x9, x26, #0x80
+   22308:      	ldar	x12, [x8]
+   2230c:      	add	x8, x26, #0xc0
+   22310:      	ldar	x11, [x9]
+   22314:      	ldar	x10, [x8]
+   22318:      	ldr	w8, [x19, #0x4]
+   2231c:      	cbz	w8, 0x22408 <one_cycle+0x170>
+   22320:      	mov	w27, wzr
+   22324:      	mov	w21, wzr
+   22328:      	adrp	x28, 0x49000 <park+0x2f08>
+   2232c:      	add	x28, x28, #0x9c8
+   22330:      	mov	w22, #0x2               // =2
+   22334:      	mov	w23, #0x4               // =4
+   22338:      	mov	w24, #0x8               // =8
+   2233c:      	stp	x12, x11, [sp]
+   22340:      	str	x10, [sp, #0x10]
+   22344:      	b	0x223bc <one_cycle+0x124>
+   22348:      	ldr	w8, [x28, #0x120]
+   2234c:      	add	x9, x28, #0x40
+   22350:      	add	x12, x28, #0x80
+   22354:      	add	x14, x28, #0xc0
+   22358:      	add	w8, w8, #0x1
+   2235c:      	str	w8, [x28, #0x120]
+   22360:      	ldur	w8, [x29, #-0x20]
+   22364:      	ldar	w10, [x28]
+   22368:      	ldur	w11, [x29, #-0x20]
+   2236c:      	ldar	w9, [x9]
+   22370:      	ldur	w13, [x29, #-0x20]
+   22374:      	ldar	w12, [x12]
+   22378:      	cmp	w11, w9
+   2237c:      	ldur	w9, [x29, #-0x20]
+   22380:      	ldar	w11, [x14]
+   22384:      	csel	w14, w22, wzr, eq
+   22388:      	cmp	w13, w12
+   2238c:      	csel	w12, w23, wzr, eq
+   22390:      	cmp	w9, w11
+   22394:      	csel	w9, w24, wzr, eq
+   22398:      	cmp	w8, w10
+   2239c:      	cinc	w8, w14, eq
+   223a0:      	orr	w9, w12, w9
+   223a4:      	orr	w8, w8, w9
+   223a8:      	orr	w27, w8, w27
+   223ac:      	ldr	w8, [x19, #0x4]
+   223b0:      	add	w21, w21, #0x1
+   223b4:      	cmp	w21, w8
+   223b8:      	b.hs	0x223f4 <one_cycle+0x15c>
+   223bc:      	ldr	w0, [x19]
+   223c0:      	sub	x2, x29, #0x20
+   223c4:      	mov	w1, w21
+   223c8:      	bl	0x21600 <tp_park_context>
+   223cc:      	cbnz	w0, 0x223ac <one_cycle+0x114>
+   223d0:      	ldur	x8, [x29, #-0x18]
+   223d4:      	tst	x8, #0x3
+   223d8:      	b.ne	0x224a4 <one_cycle+0x20c>
+   223dc:      	cbz	x8, 0x224a4 <one_cycle+0x20c>
+   223e0:      	ldur	x8, [x29, #-0x10]
+   223e4:      	cbz	x8, 0x224a4 <one_cycle+0x20c>
+   223e8:      	and	x8, x8, #0xf
+   223ec:      	cbz	x8, 0x22348 <one_cycle+0xb0>
+   223f0:      	b	0x224a4 <one_cycle+0x20c>
+   223f4:      	ldp	x11, x10, [sp, #0x8]
+   223f8:      	cmp	w27, #0xf
+   223fc:      	ldr	x12, [sp]
+   22400:      	cset	w9, eq
+   22404:      	b	0x2240c <one_cycle+0x174>
+   22408:      	mov	w9, wzr
+   2240c:      	adrp	x8, 0xa000 <empty+0x1038>
+   22410:      	sub	x0, x29, #0x20
+   22414:      	mov	x1, xzr
+   22418:      	ldr	q0, [x8, #0x110]
+   2241c:      	mov	x2, xzr
+   22420:      	mov	x3, xzr
+   22424:      	mov	x4, xzr
+   22428:      	mov	x5, xzr
+   2242c:      	mov	w8, #0x65               // =101
+   22430:      	stur	q0, [x29, #-0x20]
+   22434:      	svc	#0
+   22438:      	cbz	x25, 0x224a4 <one_cycle+0x20c>
+   2243c:      	ldar	x8, [x26]
+   22440:      	mov	w21, wzr
+   22444:      	cmp	x25, x8
+   22448:      	b.ne	0x224a8 <one_cycle+0x210>
+   2244c:      	cbz	x12, 0x224a8 <one_cycle+0x210>
+   22450:      	adrp	x8, 0x49000 <park+0x2f08>
+   22454:      	add	x8, x8, #0xa00
+   22458:      	mov	w21, wzr
+   2245c:      	ldar	x8, [x8]
+   22460:      	cmp	x12, x8
+   22464:      	b.ne	0x224a8 <one_cycle+0x210>
+   22468:      	cbz	x11, 0x224a8 <one_cycle+0x210>
+   2246c:      	adrp	x8, 0x49000 <park+0x2f08>
+   22470:      	add	x8, x8, #0xa40
+   22474:      	mov	w21, wzr
+   22478:      	ldar	x8, [x8]
+   2247c:      	cmp	x11, x8
+   22480:      	b.ne	0x224a8 <one_cycle+0x210>
+   22484:      	cbz	x10, 0x224a8 <one_cycle+0x210>
+   22488:      	adrp	x8, 0x49000 <park+0x2f08>
+   2248c:      	add	x8, x8, #0xa80
+   22490:      	ldar	x8, [x8]
+   22494:      	cmp	x10, x8
+   22498:      	cset	w8, eq
+   2249c:      	and	w21, w8, w9
+   224a0:      	b	0x224a8 <one_cycle+0x210>
+   224a4:      	mov	w21, wzr
+   224a8:      	ldr	w0, [x19]
+   224ac:      	bl	0x21578 <tp_park_end>
+   224b0:      	adrp	x8, 0x49000 <park+0x2f08>
+   224b4:      	str	w0, [x20]
+   224b8:      	ldr	w9, [x19, #0x8]
+   224bc:      	ldr	w10, [x8, #0xae4]
+   224c0:      	cmp	w9, w10
+   224c4:      	b.ls	0x224cc <one_cycle+0x234>
+   224c8:      	str	w9, [x8, #0xae4]
+   224cc:      	cbnz	w0, 0x2250c <one_cycle+0x274>
+   224d0:      	bl	0x22178 <workers_progress>
+   224d4:      	and	w8, w0, w21
+   224d8:      	tbz	w8, #0x0, 0x2250c <one_cycle+0x274>
+   224dc:      	ldr	w8, [x19, #0x10]
+   224e0:      	cmp	w8, #0x2
+   224e4:      	b.lo	0x2250c <one_cycle+0x274>
+   224e8:      	ldr	w8, [x19, #0x8]
+   224ec:      	cmp	w8, #0x4
+   224f0:      	b.lo	0x2250c <one_cycle+0x274>
+   224f4:      	ldr	w9, [x19, #0xc]
+   224f8:      	ldr	w10, [x19, #0x4]
+   224fc:      	add	w8, w9, w8
+   22500:      	cmp	w10, w8
+   22504:      	cset	w0, eq
+   22508:      	b	0x22510 <one_cycle+0x278>
+   2250c:      	mov	w0, wzr
+   22510:      	ldp	x20, x19, [sp, #0xb0]
+   22514:      	ldp	x22, x21, [sp, #0xa0]
+   22518:      	ldp	x24, x23, [sp, #0x90]
+   2251c:      	ldp	x26, x25, [sp, #0x80]
+   22520:      	ldp	x28, x27, [sp, #0x70]
+   22524:      	ldp	x29, x30, [sp, #0x60]
+   22528:      	add	sp, sp, #0xc0
+   2252c:      	autiasp
+   22530:      	ret
+
+0000000000022808 <tp_park_blocked_mask>:
+   22808:      	bti	c
+   2280c:      	cmp	w1, #0x1
+   22810:      	b.lt	0x22878 <tp_park_blocked_mask+0x70>
+   22814:      	str	x29, [sp, #-0x10]!
+   22818:      	sub	sp, sp, #0x1, lsl #12   // =0x1000
+   2281c:      	sub	sp, sp, #0x30
+   22820:      	mov	w8, #0xcccd             // =52429
+   22824:      	add	x11, sp, #0x1, lsl #12  // =0x1000
+   22828:      	mov	w9, wzr
+   2282c:      	movk	w8, #0xcccc, lsl #16
+   22830:      	mov	w10, #0xa               // =10
+   22834:      	add	x11, x11, #0x4
+   22838:      	umull	x12, w1, w8
+   2283c:      	cmp	w1, #0x9
+   22840:      	lsr	x12, x12, #35
+   22844:      	msub	w13, w12, w10, w1
+   22848:      	mov	w1, w12
+   2284c:      	orr	w13, w13, #0x30
+   22850:      	strb	w13, [x11, w9, uxtw]
+   22854:      	add	w9, w9, #0x1
+   22858:      	b.hi	0x22838 <tp_park_blocked_mask+0x30>
+   2285c:      	cbz	w9, 0x22880 <tp_park_blocked_mask+0x78>
+   22860:      	cmp	w9, #0x20
+   22864:      	b.hs	0x2288c <tp_park_blocked_mask+0x84>
+   22868:      	mov	x11, x2
+   2286c:      	mov	x8, xzr
+   22870:      	mov	x10, x9
+   22874:      	b	0x228e8 <tp_park_blocked_mask+0xe0>
+   22878:      	mov	w0, wzr
+   2287c:      	ret
+   22880:      	mov	x11, x2
+   22884:      	mov	w8, wzr
+   22888:      	b	0x22918 <tp_park_blocked_mask+0x110>
+   2288c:      	add	x11, sp, #0x1, lsl #12  // =0x1000
+   22890:      	add	x13, sp, #0x1, lsl #12  // =0x1000
+   22894:      	and	x8, x9, #0xffffffe0
+   22898:      	add	x11, x11, #0x4
+   2289c:      	add	x13, x13, #0x10
+   228a0:      	and	x10, x9, #0x1f
+   228a4:      	add	x11, x11, x9
+   228a8:      	and	x12, x9, #0xffffffe0
+   228ac:      	add	x13, x13, #0x10
+   228b0:      	sub	x11, x11, #0x10
+   228b4:      	ldp	q1, q0, [x11, #-0x10]
+   228b8:      	subs	x12, x12, #0x20
+   228bc:      	sub	x11, x11, #0x20
+   228c0:      	rev64	v0.16b, v0.16b
+   228c4:      	rev64	v1.16b, v1.16b
+   228c8:      	ext	v0.16b, v0.16b, v0.16b, #0x8
+   228cc:      	ext	v1.16b, v1.16b, v1.16b, #0x8
+   228d0:      	stp	q0, q1, [x13, #-0x10]
+   228d4:      	add	x13, x13, #0x20
+   228d8:      	b.ne	0x228b4 <tp_park_blocked_mask+0xac>
+   228dc:      	mov	x11, x2
+   228e0:      	cmp	x8, x9
+   228e4:      	b.eq	0x22918 <tp_park_blocked_mask+0x110>
+   228e8:      	add	x9, sp, #0x1, lsl #12   // =0x1000
+   228ec:      	add	x12, sp, #0x1, lsl #12  // =0x1000
+   228f0:      	mov	x13, x8
+   228f4:      	add	x9, x9, #0x4
+   228f8:      	add	x12, x12, #0x10
+   228fc:      	sub	x9, x9, #0x1
+   22900:      	ldrb	w14, [x9, x10]
+   22904:      	add	x8, x13, #0x1
+   22908:      	subs	x10, x10, #0x1
+   2290c:      	strb	w14, [x12, x13]
+   22910:      	mov	x13, x8
+   22914:      	b.ne	0x22900 <tp_park_blocked_mask+0xf8>
+   22918:      	add	x9, sp, #0x1, lsl #12   // =0x1000
+   2291c:      	mov	w12, #0x2f              // =47
+   22920:      	add	w10, w8, #0x1
+   22924:      	add	x9, x9, #0x10
+   22928:      	mov	w13, #0x73              // =115
+   2292c:      	mov	w14, #0x74              // =116
+   22930:      	strb	w12, [x9, w8, uxtw]
+   22934:      	add	w12, w8, #0x2
+   22938:      	mov	w15, #0x61              // =97
+   2293c:      	strb	w13, [x9, w10, uxtw]
+   22940:      	add	w10, w8, #0x3
+   22944:      	sxtw	x0, w0
+   22948:      	strb	w14, [x9, w12, uxtw]
+   2294c:      	add	w12, w8, #0x4
+   22950:      	add	x1, sp, #0x1, lsl #12   // =0x1000
+   22954:      	strb	w15, [x9, w10, uxtw]
+   22958:      	add	w10, w8, #0x5
+   2295c:      	add	x1, x1, #0x10
+   22960:      	strb	w14, [x9, w12, uxtw]
+   22964:      	add	w12, w8, #0x6
+   22968:      	add	w8, w8, #0x7
+   2296c:      	mov	w14, #0x75              // =117
+   22970:      	strb	w14, [x9, w10, uxtw]
+   22974:      	mov	w2, #0x80000            // =524288
+   22978:      	strb	w13, [x9, w12, uxtw]
+   2297c:      	mov	x3, xzr
+   22980:      	mov	x4, xzr
+   22984:      	strb	wzr, [x9, w8, uxtw]
+   22988:      	mov	x5, xzr
+   2298c:      	mov	w8, #0x38               // =56
+   22990:      	svc	#0
+   22994:      	tbnz	x0, #0x3f, 0x22a80 <tp_park_blocked_mask+0x278>
+   22998:      	mov	x1, sp
+   2299c:      	mov	w2, #0x1000             // =4096
+   229a0:      	mov	x3, xzr
+   229a4:      	mov	x4, xzr
+   229a8:      	mov	x10, x0
+   229ac:      	mov	x5, xzr
+   229b0:      	mov	w8, #0x3f               // =63
+   229b4:      	svc	#0
+   229b8:      	mov	x9, x0
+   229bc:      	mov	x0, x10
+   229c0:      	mov	x1, xzr
+   229c4:      	mov	x2, xzr
+   229c8:      	mov	x3, xzr
+   229cc:      	mov	x4, xzr
+   229d0:      	mov	x5, xzr
+   229d4:      	mov	w8, #0x39               // =57
+   229d8:      	svc	#0
+   229dc:      	cmp	x9, #0x1
+   229e0:      	b.lt	0x22a80 <tp_park_blocked_mask+0x278>
+   229e4:      	cmp	x9, #0x19
+   229e8:      	b.lo	0x22a94 <tp_park_blocked_mask+0x28c>
+   229ec:      	ldr	d0, [sp]
+   229f0:      	mov	x8, #0x6953             // =26963
+   229f4:      	movk	x8, #0x4267, lsl #16
+   229f8:      	fmov	x10, d0
+   229fc:      	movk	x8, #0x6b6c, lsl #32
+   22a00:      	movk	x8, #0x93a, lsl #48
+   22a04:      	cmp	x10, x8
+   22a08:      	b.ne	0x22a88 <tp_park_blocked_mask+0x280>
+   22a0c:      	mov	w12, #0x8               // =8
+   22a10:      	mov	w8, #0x18               // =24
+   22a14:      	mov	x13, sp
+   22a18:      	mov	x10, xzr
+   22a1c:      	mov	x9, xzr
+   22a20:      	add	x12, x13, x12
+   22a24:      	ldrb	w14, [x12, x10]
+   22a28:      	sub	w13, w14, #0x30
+   22a2c:      	cmp	w13, #0x9
+   22a30:      	b.ls	0x22a44 <tp_park_blocked_mask+0x23c>
+   22a34:      	sub	w13, w14, #0x61
+   22a38:      	cmp	w13, #0x5
+   22a3c:      	b.hi	0x22a9c <tp_park_blocked_mask+0x294>
+   22a40:      	sub	w13, w14, #0x57
+   22a44:      	cmp	w13, #0x10
+   22a48:      	b.eq	0x22a9c <tp_park_blocked_mask+0x294>
+   22a4c:      	mov	w13, w13
+   22a50:      	add	x10, x10, #0x1
+   22a54:      	orr	x9, x13, x9, lsl #4
+   22a58:      	cmp	x10, #0x10
+   22a5c:      	b.ne	0x22a24 <tp_park_blocked_mask+0x21c>
+   22a60:      	mov	x10, sp
+   22a64:      	ldrb	w8, [x10, x8]
+   22a68:      	cmp	w8, #0xa
+   22a6c:      	b.ne	0x22a9c <tp_park_blocked_mask+0x294>
+   22a70:      	str	x9, [x11]
+   22a74:      	mov	w9, #0x1                // =1
+   22a78:      	mov	w8, #0x1                // =1
+   22a7c:      	b	0x22aa4 <tp_park_blocked_mask+0x29c>
+   22a80:      	mov	w0, wzr
+   22a84:      	b	0x22aa8 <tp_park_blocked_mask+0x2a0>
+   22a88:      	sub	x10, x9, #0x18
+   22a8c:      	cmp	x10, #0x1
+   22a90:      	b.ne	0x22ab8 <tp_park_blocked_mask+0x2b0>
+   22a94:      	mov	w9, wzr
+   22a98:      	b	0x22aa4 <tp_park_blocked_mask+0x29c>
+   22a9c:      	mov	w8, wzr
+   22aa0:      	mov	w9, #0x1                // =1
+   22aa4:      	and	w0, w9, w8
+   22aa8:      	add	sp, sp, #0x1, lsl #12   // =0x1000
+   22aac:      	add	sp, sp, #0x30
+   22ab0:      	ldr	x29, [sp], #0x10
+   22ab4:      	ret
+   22ab8:      	mov	w12, #0x19              // =25
+   22abc:      	mov	x13, sp
+   22ac0:      	mov	x10, xzr
+   22ac4:      	sub	x9, x12, x9
+   22ac8:      	orr	x12, x13, #0x1
+   22acc:      	b	0x22ae0 <tp_park_blocked_mask+0x2d8>
+   22ad0:      	sub	x10, x10, #0x1
+   22ad4:      	add	x12, x12, #0x1
+   22ad8:      	cmp	x9, x10
+   22adc:      	b.eq	0x22a94 <tp_park_blocked_mask+0x28c>
+   22ae0:      	ldurb	w13, [x12, #-0x1]
+   22ae4:      	cmp	w13, #0xa
+   22ae8:      	b.ne	0x22ad0 <tp_park_blocked_mask+0x2c8>
+   22aec:      	ldr	d0, [x12]
+   22af0:      	fmov	x13, d0
+   22af4:      	cmp	x13, x8
+   22af8:      	b.ne	0x22ad0 <tp_park_blocked_mask+0x2c8>
+   22afc:      	mov	w8, #0x19               // =25
+   22b00:      	mov	w9, #0x9                // =9
+   22b04:      	sub	x8, x8, x10
+   22b08:      	sub	x12, x9, x10
+   22b0c:      	b	0x22a14 <tp_park_blocked_mask+0x20c>
+
+0000000000022b10 <tp_code_page_validate>:
+   22b10:      	bti	c
+   22b14:      	cbz	x0, 0x22b90 <tp_code_page_validate+0x80>
+   22b18:      	ldr	x8, [x0]
+   22b1c:      	cbz	x8, 0x22b94 <tp_code_page_validate+0x84>
+   22b20:      	ldr	x9, [x0, #0x8]
+   22b24:      	cbz	x9, 0x22b90 <tp_code_page_validate+0x80>
+   22b28:      	add	x11, x0, #0x2, lsl #12  // =0x2000
+   22b2c:      	ldrb	w10, [x11, #0x19]
+   22b30:      	tbnz	w10, #0x0, 0x22b90 <tp_code_page_validate+0x80>
+   22b34:      	ldr	x12, [x8]
+   22b38:      	ldr	x10, [x0, #0x10]
+   22b3c:      	cmp	x12, x10
+   22b40:      	b.ne	0x22b90 <tp_code_page_validate+0x80>
+   22b44:      	ldrb	w8, [x8, #0x30]
+   22b48:      	ldrb	w11, [x11, #0x18]
+   22b4c:      	cmp	w8, w11
+   22b50:      	b.ne	0x22b90 <tp_code_page_validate+0x80>
+   22b54:      	mov	x11, xzr
+   22b58:      	ldr	w8, [x10], #0x4
+   22b5c:      	ldr	w12, [x0, #0x18]
+   22b60:      	cmp	w8, w12
+   22b64:      	b.ne	0x22b90 <tp_code_page_validate+0x80>
+   22b68:      	ldr	w8, [x9, x11]
+   22b6c:      	ldr	w12, [x0, #0x1018]
+   22b70:      	cmp	w8, w12
+   22b74:      	b.ne	0x22b90 <tp_code_page_validate+0x80>
+   22b78:      	add	x11, x11, #0x4
+   22b7c:      	add	x0, x0, #0x4
+   22b80:      	mov	w8, #0x1                // =1
+   22b84:      	cmp	x11, #0x1, lsl #12      // =0x1000
+   22b88:      	b.ne	0x22b58 <tp_code_page_validate+0x48>
+   22b8c:      	b	0x22b94 <tp_code_page_validate+0x84>
+   22b90:      	mov	w8, wzr
+   22b94:      	mov	w0, w8
+   22b98:      	ret
+
+0000000000022b9c <tp_code_page_commit>:
+   22b9c:      	paciasp
+   22ba0:      	stp	x29, x30, [sp, #-0x20]!
+   22ba4:      	str	x19, [sp, #0x10]
+   22ba8:      	mov	x29, sp
+   22bac:      	cbz	x0, 0x22c68 <tp_code_page_commit+0xcc>
+   22bb0:      	ldr	x10, [x0]
+   22bb4:      	cbz	x10, 0x22c64 <tp_code_page_commit+0xc8>
+   22bb8:      	ldr	x8, [x0, #0x8]
+   22bbc:      	cbz	x8, 0x22c64 <tp_code_page_commit+0xc8>
+   22bc0:      	add	x19, x0, #0x2, lsl #12  // =0x2000
+   22bc4:      	ldrb	w9, [x19, #0x19]
+   22bc8:      	tbnz	w9, #0x0, 0x22c64 <tp_code_page_commit+0xc8>
+   22bcc:      	ldr	x4, [x10]
+   22bd0:      	ldr	x9, [x0, #0x10]
+   22bd4:      	cmp	x4, x9
+   22bd8:      	b.ne	0x22c64 <tp_code_page_commit+0xc8>
+   22bdc:      	ldrb	w10, [x10, #0x30]
+   22be0:      	ldrb	w11, [x19, #0x18]
+   22be4:      	cmp	w10, w11
+   22be8:      	b.ne	0x22c64 <tp_code_page_commit+0xc8>
+   22bec:      	mov	w10, #0x400             // =1024
+   22bf0:      	mov	x11, x8
+   22bf4:      	mov	x12, x0
+   22bf8:      	ldr	w13, [x9], #0x4
+   22bfc:      	ldr	w14, [x12, #0x18]
+   22c00:      	cmp	w13, w14
+   22c04:      	b.ne	0x22c64 <tp_code_page_commit+0xc8>
+   22c08:      	ldr	w13, [x11]
+   22c0c:      	ldr	w14, [x12, #0x1018]
+   22c10:      	cmp	w13, w14
+   22c14:      	b.ne	0x22c64 <tp_code_page_commit+0xc8>
+   22c18:      	subs	x10, x10, #0x1
+   22c1c:      	add	x12, x12, #0x4
+   22c20:      	add	x11, x11, #0x4
+   22c24:      	b.ne	0x22bf8 <tp_code_page_commit+0x5c>
+   22c28:      	mov	x9, x0
+   22c2c:      	mov	x0, x8
+   22c30:      	mov	w1, #0x1000             // =4096
+   22c34:      	mov	w2, #0x1000             // =4096
+   22c38:      	mov	w3, #0x3                // =3
+   22c3c:      	mov	x5, xzr
+   22c40:      	mov	w8, #0xd8               // =216
+   22c44:      	svc	#0
+   22c48:      	ldr	x8, [x9, #0x10]
+   22c4c:      	cmp	x8, x0
+   22c50:      	b.ne	0x22c78 <tp_code_page_commit+0xdc>
+   22c54:      	bl	0x22c9c <cache_sync>
+   22c58:      	mov	w0, #0x1                // =1
+   22c5c:      	strb	w0, [x19, #0x19]
+   22c60:      	b	0x22c68 <tp_code_page_commit+0xcc>
+   22c64:      	mov	w0, wzr
+   22c68:      	ldr	x19, [sp, #0x10]
+   22c6c:      	ldp	x29, x30, [sp], #0x20
+   22c70:      	autiasp
+   22c74:      	ret
+   22c78:      	mov	w0, #0xc1               // =193
+   22c7c:      	mov	x1, xzr
+   22c80:      	mov	x2, xzr
+   22c84:      	mov	x3, xzr
+   22c88:      	mov	x4, xzr
+   22c8c:      	mov	x5, xzr
+   22c90:      	mov	w8, #0x5e               // =94
+   22c94:      	svc	#0
+   22c98:      	brk	#0x1
+
+0000000000022c9c <cache_sync>:
+   22c9c:      	mrs	x8, CTR_EL0
+   22ca0:      	ubfx	x9, x8, #16, #4
+   22ca4:      	mov	w12, #0x4               // =4
+   22ca8:      	and	x13, x8, #0xf
+   22cac:      	add	x8, x0, #0x1, lsl #12   // =0x1000
+   22cb0:      	lsl	x10, x12, x9
+   22cb4:      	neg	x9, x10
+   22cb8:      	and	x11, x0, x9
+   22cbc:      	lsl	x9, x12, x13
+   22cc0:      	cmp	x11, x8
+   22cc4:      	b.hs	0x22cd8 <cache_sync+0x3c>
+   22cc8:      	dc	cvau, x11
+   22ccc:      	add	x11, x11, x10
+   22cd0:      	cmp	x11, x8
+   22cd4:      	b.lo	0x22cc8 <cache_sync+0x2c>
+   22cd8:      	dsb	ish
+   22cdc:      	neg	x10, x9
+   22ce0:      	and	x10, x0, x10
+   22ce4:      	cmp	x10, x8
+   22ce8:      	b.hs	0x22cfc <cache_sync+0x60>
+   22cec:      	ic	ivau, x10
+   22cf0:      	add	x10, x10, x9
+   22cf4:      	cmp	x10, x8
+   22cf8:      	b.lo	0x22cec <cache_sync+0x50>
+   22cfc:      	dsb	ish
+   22d00:      	isb
+   22d04:      	ret
+
+0000000000023fbc <commit_and_resume>:
+   23fbc:      	paciasp
+   23fc0:      	stp	x29, x30, [sp, #-0x20]!
+   23fc4:      	stp	x20, x19, [sp, #0x10]
+   23fc8:      	mov	x29, sp
+   23fcc:      	mov	w20, w1
+   23fd0:      	bl	0x22b9c <tp_code_page_commit>
+   23fd4:      	mov	w19, w0
+   23fd8:      	mov	w0, w20
+   23fdc:      	bl	0x21578 <tp_park_end>
+   23fe0:      	cbnz	w0, 0x23ff8 <commit_and_resume+0x3c>
+   23fe4:      	mov	w0, w19
+   23fe8:      	ldp	x20, x19, [sp, #0x10]
+   23fec:      	ldp	x29, x30, [sp], #0x20
+   23ff0:      	autiasp
+   23ff4:      	ret
+   23ff8:      	mov	w0, #0xc2               // =194
+   23ffc:      	mov	x1, xzr
+   24000:      	mov	x2, xzr
+   24004:      	mov	x3, xzr
+   24008:      	mov	x4, xzr
+   2400c:      	mov	x5, xzr
+   24010:      	mov	w8, #0x5e               // =94
+   24014:      	svc	#0
+   24018:      	brk	#0x1
+
+0000000000024108 <tp_park_now>:
+   24108:      	sub	sp, sp, #0x10
+   2410c:      	mov	w0, #0x1                // =1
+   24110:      	mov	x1, sp
+   24114:      	mov	x2, xzr
+   24118:      	mov	x3, xzr
+   2411c:      	mov	x4, xzr
+   24120:      	mov	x5, xzr
+   24124:      	mov	w8, #0x71               // =113
+   24128:      	svc	#0
+   2412c:      	ldp	x8, x10, [sp], #0x10
+   24130:      	mov	w9, #0xca00             // =51712
+   24134:      	cmp	x0, #0x0
+   24138:      	movk	w9, #0x3b9a, lsl #16
+   2413c:      	madd	x8, x8, x9, x10
+   24140:      	csel	x0, x8, xzr, eq
+   24144:      	ret
+
+000000000002500c <fixed_commit_batch>:
+   2500c:      	paciasp
+   25010:      	stp	x29, x30, [sp, #-0x20]!
+   25014:      	stp	x20, x19, [sp, #0x10]
+   25018:      	mov	x29, sp
+   2501c:      	mov	w19, w0
+   25020:      	adrp	x0, 0x50000 <fixed+0x5cb0>
+   25024:      	add	x0, x0, #0x3d8
+   25028:      	bl	0x22b10 <tp_code_page_validate>
+   2502c:      	cbz	w0, 0x25068 <fixed_commit_batch+0x5c>
+   25030:      	adrp	x0, 0x52000 <fixed+0x7cb0>
+   25034:      	add	x0, x0, #0x3f8
+   25038:      	bl	0x22b10 <tp_code_page_validate>
+   2503c:      	cbz	w0, 0x25068 <fixed_commit_batch+0x5c>
+   25040:      	adrp	x0, 0x50000 <fixed+0x5cb0>
+   25044:      	add	x0, x0, #0x3d8
+   25048:      	bl	0x22b9c <tp_code_page_commit>
+   2504c:      	cbz	w0, 0x250b0 <fixed_commit_batch+0xa4>
+   25050:      	adrp	x0, 0x52000 <fixed+0x7cb0>
+   25054:      	add	x0, x0, #0x3f8
+   25058:      	bl	0x22b9c <tp_code_page_commit>
+   2505c:      	cbz	w0, 0x250b0 <fixed_commit_batch+0xa4>
+   25060:      	mov	w20, #0x2               // =2
+   25064:      	b	0x2506c <fixed_commit_batch+0x60>
+   25068:      	mov	w20, wzr
+   2506c:      	mov	w0, w19
+   25070:      	bl	0x21578 <tp_park_end>
+   25074:      	cbnz	w0, 0x2508c <fixed_commit_batch+0x80>
+   25078:      	mov	w0, w20
+   2507c:      	ldp	x20, x19, [sp, #0x10]
+   25080:      	ldp	x29, x30, [sp], #0x20
+   25084:      	autiasp
+   25088:      	ret
+   2508c:      	mov	w0, #0xc4               // =196
+   25090:      	mov	x1, xzr
+   25094:      	mov	x2, xzr
+   25098:      	mov	x3, xzr
+   2509c:      	mov	x4, xzr
+   250a0:      	mov	x5, xzr
+   250a4:      	mov	w8, #0x5e               // =94
+   250a8:      	svc	#0
+   250ac:      	brk	#0x1
+   250b0:      	mov	w0, #0xc3               // =195
+   250b4:      	mov	x1, xzr
+   250b8:      	mov	x2, xzr
+   250bc:      	mov	x3, xzr
+   250c0:      	mov	x4, xzr
+   250c4:      	mov	x5, xzr
+   250c8:      	mov	w8, #0x5e               // =94
+   250cc:      	svc	#0
+   250d0:      	brk	#0x1
+

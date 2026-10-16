@@ -1,0 +1,128 @@
+
+android/self-hook-probe/build/device-libart.so:	file format elf64-littleaarch64
+
+Disassembly of section .text:
+
+0000000000216244:
+  220288:      	paciasp
+  22028c:      	sub	sp, sp, #0x70
+  220290:      	stp	x29, x30, [sp, #0x10]
+  220294:      	stp	x28, x27, [sp, #0x20]
+  220298:      	stp	x26, x25, [sp, #0x30]
+  22029c:      	stp	x24, x23, [sp, #0x40]
+  2202a0:      	stp	x22, x21, [sp, #0x50]
+  2202a4:      	stp	x20, x19, [sp, #0x60]
+  2202a8:      	add	x29, sp, #0x10
+  2202ac:      	mrs	x22, TPIDR_EL0
+  2202b0:      	mov	x20, x0
+  2202b4:      	mov	x21, x1
+  2202b8:      	ldr	x8, [x22, #0x28]
+  2202bc:      	str	x8, [sp, #0x8]
+  2202c0:      	ldr	x8, [x0, #0x10]
+  2202c4:      	ldrb	w8, [x8, #0x1b0]
+  2202c8:      	cmp	w8, #0x1
+  2202cc:      	b.ne	0x220404
+  2202d0:      	mov	w0, #0x8                // =8
+  2202d4:      	bl	0xab0910
+  2202d8:      	cbnz	w0, 0x220318
+  2202dc:      	ldr	x8, [x22, #0x28]
+  2202e0:      	ldr	x9, [sp, #0x8]
+  2202e4:      	cmp	x8, x9
+  2202e8:      	b.ne	0x22046c
+  2202ec:      	mov	x0, x20
+  2202f0:      	mov	x1, x21
+  2202f4:      	ldp	x20, x19, [sp, #0x60]
+  2202f8:      	ldp	x22, x21, [sp, #0x50]
+  2202fc:      	ldp	x24, x23, [sp, #0x40]
+  220300:      	ldp	x26, x25, [sp, #0x30]
+  220304:      	ldp	x28, x27, [sp, #0x20]
+  220308:      	ldp	x29, x30, [sp, #0x10]
+  22030c:      	add	sp, sp, #0x70
+  220310:      	autiasp
+  220314:      	b	0x22e0c0
+  220318:      	mov	w19, w0
+  22031c:      	adrp	x21, 0x62000
+  220320:      	add	x21, x21, #0xf27
+  220324:      	adrp	x22, 0x4f000
+  220328:      	add	x22, x22, #0x7df
+  22032c:      	adrp	x23, 0x4f000
+  220330:      	add	x23, x23, #0xcf
+  220334:      	adrp	x24, 0x4f000
+  220338:      	add	x24, x24, #0xb1
+  22033c:      	adrp	x25, 0x8a000
+  220340:      	add	x25, x25, #0x432
+  220344:      	adrp	x26, 0x7c000
+  220348:      	add	x26, x26, #0x8f1
+  22034c:      	adrp	x27, 0x51000
+  220350:      	add	x27, x27, #0xc6a
+  220354:      	adrp	x28, 0x84000
+  220358:      	add	x28, x28, #0xa4e
+  22035c:      	mov	x0, sp
+  220360:      	adrp	x1, 0x9b000
+  220364:      	add	x1, x1, #0xb19
+  220368:      	mov	w2, #0x12d              // =301
+  22036c:      	mov	w3, #0x6                // =6
+  220370:      	mov	x4, xzr
+  220374:      	mov	w5, #-0x1               // =-1
+  220378:      	bl	0xaae950
+  22037c:      	mov	x0, sp
+  220380:      	bl	0xaae960
+  220384:      	mov	x1, x21
+  220388:      	bl	0x239800
+  22038c:      	mov	x1, x22
+  220390:      	bl	0x239800
+  220394:      	mov	x1, x23
+  220398:      	bl	0x239800
+  22039c:      	mov	x1, x24
+  2203a0:      	bl	0x239800
+  2203a4:      	mov	x1, x23
+  2203a8:      	bl	0x239800
+  2203ac:      	mov	x1, x25
+  2203b0:      	bl	0x239800
+  2203b4:      	mov	x1, x26
+  2203b8:      	bl	0x239800
+  2203bc:      	mov	w1, w19
+  2203c0:      	bl	0xaaebb0
+  2203c4:      	mov	x1, x27
+  2203c8:      	bl	0x239800
+  2203cc:      	mov	w1, wzr
+  2203d0:      	bl	0xaaebb0
+  2203d4:      	mov	x1, x28
+  2203d8:      	bl	0x239800
+  2203dc:      	mov	x20, x0
+  2203e0:      	bl	0xaaea20
+  2203e4:      	ldr	w0, [x0]
+  2203e8:      	bl	0xab02f0
+  2203ec:      	mov	x1, x0
+  2203f0:      	mov	x0, x20
+  2203f4:      	bl	0x239800
+  2203f8:      	mov	x0, sp
+  2203fc:      	bl	0xaae980
+  220400:      	b	0x22035c
+  220404:      	adrp	x8, 0xe19000
+  220408:      	mov	x1, x20
+  22040c:      	mov	x2, xzr
+  220410:      	ldr	x8, [x8, #0x200]
+  220414:      	mov	w3, #0x1                // =1
+  220418:      	mov	w4, wzr
+  22041c:      	ldr	x0, [x8, #0x260]
+  220420:      	bl	0xab0370
+  220424:      	add	x1, x20, #0x1a0
+  220428:      	mov	x19, x0
+  22042c:      	bl	0x740110
+  220430:      	cmn	x0, x19
+  220434:      	b.eq	0x2202dc
+  220438:      	ldr	x8, [x22, #0x28]
+  22043c:      	ldr	x9, [sp, #0x8]
+  220440:      	cmp	x8, x9
+  220444:      	b.ne	0x22046c
+  220448:      	ldp	x20, x19, [sp, #0x60]
+  22044c:      	ldp	x22, x21, [sp, #0x50]
+  220450:      	ldp	x24, x23, [sp, #0x40]
+  220454:      	ldp	x26, x25, [sp, #0x30]
+  220458:      	ldp	x28, x27, [sp, #0x20]
+  22045c:      	ldp	x29, x30, [sp, #0x10]
+  220460:      	add	sp, sp, #0x70
+  220464:      	autiasp
+  220468:      	ret
+  22046c:      	bl	0xab4170

@@ -1,0 +1,73 @@
+{
+  "runId": "resources-11afe321681a4932",
+  "scope": "normal-android-provider-baseline",
+  "scenario": "resources",
+  "fixtureSha256": "7b92e78822bb81fb9ad0badc4a329c0c4f3a44a98e8254de469116e0240c6361",
+  "commands": [
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/provider-identity.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~o3ymJEmh5R_3prOcddl3AQ==/dev.tripoder.provideridentity-gggU2VaEgIAGD4lElHfXGA==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~o3ymJEmh5R_3prOcddl3AQ==/dev.tripoder.provideridentity-gggU2VaEgIAGD4lElHfXGA==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "7b92e78822bb81fb9ad0badc4a329c0c4f3a44a98e8254de469116e0240c6361  /data/app/~~o3ymJEmh5R_3prOcddl3AQ==/dev.tripoder.provideridentity-gggU2VaEgIAGD4lElHfXGA==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.provideridentity/.PackageResourcesActivity",
+        "--es",
+        "baseline",
+        "true",
+        "--es",
+        "runId",
+        "resources-11afe321681a4932"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.provideridentity/.PackageResourcesActivity (has extras) }\nWarning: Activity not started, its current task has been brought to the front\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.provideridentity/.PackageResourcesActivity\nTotalTime: 80\nWaitTime: 83\nComplete\n",
+      "stderr": ""
+    }
+  ],
+  "passed": false,
+  "tripoderRuntimeVerified": false,
+  "error": "BASELINE_RESULT_UNKNOWN"
+}

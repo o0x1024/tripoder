@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "date": "2026-10-13",
+  "hostApi": 37,
+  "hostPageBytes": 4096,
+  "hostUid": 10396,
+  "hostRootUsed": false,
+  "adbActivationUsed": false,
+  "adbPurpose": [
+    "deployment",
+    "fixed-action triggering",
+    "evidence collection"
+  ],
+  "qemuNativeLoaded": true,
+  "guestFirmwareExecuted": true,
+  "fullAndroidBoot": "failed-before-kernel",
+  "guestGraphicsPerformance": "not-run-boot-gate-failed",
+  "guestJavaHook": "not-run-boot-gate-failed",
+  "guestNativeHook": "not-run-boot-gate-failed",
+  "physicalUsbDisconnectedLaunch": "not-tested",
+  "runtimeNetworkConfigured": false,
+  "runtimeHostAppBridgeConfigured": false,
+  "crossAppIsolationAcceptance": "not-run-boot-gate-failed",
+  "nativeCrash": {
+    "attempts": 2,
+    "signal": "SIGILL",
+    "signalCode": "ILL_ILLOPN",
+    "esr": "0x72000000",
+    "classification": "PAC Exception",
+    "topFrame": "libc.so siglongjmp+428",
+    "caller": "libqemu-system-aarch64.so qemu_coroutine_switch+100",
+    "exactPacFailureMechanism": "not-yet-proven"
+  },
+  "evidenceNotes": [
+    "run.json remains at starting because the native crash terminates the whole process before the first observation",
+    "repeat/console.txt was not created before the crash",
+    "firmware and data disks were retained between runs"
+  ],
+  "productRuntimeMigrated": false
+}

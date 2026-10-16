@@ -1,0 +1,51 @@
+--------- beginning of crash
+10-14 22:18:12.143 13156 13170 F libc    : Fatal signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x38 in tid 13170 (binder:13156_1), pid 13156 (timeprobe:slot0)
+10-14 22:18:12.379 13323 13323 F DEBUG   : *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+10-14 22:18:12.379 13323 13323 F DEBUG   : Build fingerprint: 'Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys'
+10-14 22:18:12.379 13323 13323 F DEBUG   : Kernel Release: '6.18.21-android17-5-g1d099fcb35e0-abogki540753930-4k'
+10-14 22:18:12.379 13323 13323 F DEBUG   : Revision: '0'
+10-14 22:18:12.379 13323 13323 F DEBUG   : ABI: 'arm64'
+10-14 22:18:12.379 13323 13323 F DEBUG   : Timestamp: 2026-10-14 22:18:12.250753191+0800
+10-14 22:18:12.379 13323 13323 F DEBUG   : Process uptime: 2s
+10-14 22:18:12.379 13323 13323 F DEBUG   : Executable: /system/bin/app_process64
+10-14 22:18:12.379 13323 13323 F DEBUG   : Cmdline: dev.tripoder.runtimeprobe:slot0
+10-14 22:18:12.379 13323 13323 F DEBUG   : pid: 13156, ppid: 1540, tid: 13170, name: binder:13156_1  >>> dev.tripoder.runtimeprobe:slot0 <<<
+10-14 22:18:12.379 13323 13323 F DEBUG   : uid: 10398
+10-14 22:18:12.379 13323 13323 F DEBUG   : tagged_addr_ctrl: 0000000000000001 (PR_TAGGED_ADDR_ENABLE)
+10-14 22:18:12.380 13323 13323 F DEBUG   : pac_enabled_keys: 000000000000000f (PR_PAC_APIAKEY, PR_PAC_APIBKEY, PR_PAC_APDAKEY, PR_PAC_APDBKEY)
+10-14 22:18:12.380 13323 13323 F DEBUG   : esr: 0000000092000006 (Data Abort Exception 0x24)
+10-14 22:18:12.380 13323 13323 F DEBUG   : signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0000000000000038 (read)
+10-14 22:18:12.380 13323 13323 F DEBUG   : Cause: null pointer dereference
+10-14 22:18:12.380 13323 13323 F DEBUG   :     x0  0000006cef75dee0  x1  0000006cea73d258  x2  0000000000000008  x3  0000006cef75dedc
+10-14 22:18:12.380 13323 13323 F DEBUG   :     x4  0000000000000001  x5  0000000000000040  x6  000000000000003f  x7  0000000000000000
+10-14 22:18:12.380 13323 13323 F DEBUG   :     x8  0000000000000000  x9  00000000008b4190  x10 0000000000000000  x11 0000006cea73cd90
+10-14 22:18:12.380 13323 13323 F DEBUG   :     x12 0000000000000001  x13 0000000000000100  x14 0000000000000013  x15 0000000000080000
+10-14 22:18:12.380 13323 13323 F DEBUG   :     x16 0000006d03824508  x17 0ff007ff80000d00  x18 0000006c7e384000  x19 0000006cef75dee0
+10-14 22:18:12.380 13323 13323 F DEBUG   :     x20 0000006cef75dedc  x21 0000000000000000  x22 0000000000000008  x23 0000006cea73d258
+10-14 22:18:12.380 13323 13323 F DEBUG   :     x24 000000000001000a  x25 0000006cef765040  x26 0000000001eda9c0  x27 b400006d9990e880
+10-14 22:18:12.380 13323 13323 F DEBUG   :     x28 b400006d698066e0  x29 0000006cef75de30
+10-14 22:18:12.380 13323 13323 F DEBUG   :     lr  004602ed03825aec  sp  0000006cef75ddf0  pc  0000006d03904638  pst 0000000040001000
+10-14 22:18:12.380 13323 13323 F DEBUG   :     esr 0000000092000006  vg  0000000000000002
+10-14 22:18:12.380 13323 13323 F DEBUG   : 19 total frames
+10-14 22:18:12.380 13323 13323 F DEBUG   : backtrace:
+10-14 22:18:12.380 13323 13323 F DEBUG   :       #00 pc 0000000000304638  /apex/com.android.art/lib64/libart.so (art::FindOatMethodFor(art::ArtMethod*, art::PointerSize, bool*) (.__uniq.231987612005477677052516648077052451092.llvm.7468580772243915393)+340) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-14 22:18:12.380 13323 13323 F DEBUG   :       #01 pc 0000000000225ae8  /apex/com.android.art/lib64/libart.so (void art::StackVisitor::WalkStack<(art::StackVisitor::CountTransitions)0, false>(bool)+5764) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-14 22:18:12.380 13323 13323 F DEBUG   :       #02 pc 00000000008def70  /apex/com.android.art/lib64/libart.so (art::instrumentation::InstrumentationInstallStack(art::Thread*, bool)+148) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-14 22:18:12.380 13323 13323 F DEBUG   :       #03 pc 00000000008df288  /apex/com.android.art/lib64/libart.so (art::instrumentation::Instrumentation::InstrumentAllThreadStacks(bool)+168) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-14 22:18:12.380 13323 13323 F DEBUG   :       #04 pc 00000000008e0228  /apex/com.android.art/lib64/libart.so (art::instrumentation::Instrumentation::Deoptimize(art::ArtMethod*)+168) (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)
+10-14 22:18:12.380 13323 13323 F DEBUG   :       #05 pc 0000000000b2a4f8  /data/app/~~mf6nqGlFvqhMqFA0JY9h-g==/dev.tripoder.runtimeprobe-iON0BjOw7yzro-OyG4nM5w==/lib/arm64/libgadget.so
+10-14 22:18:12.380 13323 13323 F DEBUG   :       #06 pc 0000000000b29fa8  /data/app/~~mf6nqGlFvqhMqFA0JY9h-g==/dev.tripoder.runtimeprobe-iON0BjOw7yzro-OyG4nM5w==/lib/arm64/libgadget.so
+10-14 22:18:12.380 13323 13323 F DEBUG   :       #07 pc 00000000009f8a60  /data/app/~~mf6nqGlFvqhMqFA0JY9h-g==/dev.tripoder.runtimeprobe-iON0BjOw7yzro-OyG4nM5w==/lib/arm64/libgadget.so
+10-14 22:18:12.380 13323 13323 F DEBUG   :       #08 pc 00000000009f85f4  /data/app/~~mf6nqGlFvqhMqFA0JY9h-g==/dev.tripoder.runtimeprobe-iON0BjOw7yzro-OyG4nM5w==/lib/arm64/libgadget.so
+10-14 22:18:12.380 13323 13323 F DEBUG   :       #09 pc 00000000009f8554  /data/app/~~mf6nqGlFvqhMqFA0JY9h-g==/dev.tripoder.runtimeprobe-iON0BjOw7yzro-OyG4nM5w==/lib/arm64/libgadget.so
+10-14 22:18:12.380 13323 13323 F DEBUG   :       #10 pc 0000000000bd6c94  /data/app/~~mf6nqGlFvqhMqFA0JY9h-g==/dev.tripoder.runtimeprobe-iON0BjOw7yzro-OyG4nM5w==/lib/arm64/libgadget.so
+10-14 22:18:12.380 13323 13323 F DEBUG   :       #11 pc 0000000000bd9758  /data/app/~~mf6nqGlFvqhMqFA0JY9h-g==/dev.tripoder.runtimeprobe-iON0BjOw7yzro-OyG4nM5w==/lib/arm64/libgadget.so
+10-14 22:18:12.380 13323 13323 F DEBUG   :       #12 pc 0000000000bd95ac  /data/app/~~mf6nqGlFvqhMqFA0JY9h-g==/dev.tripoder.runtimeprobe-iON0BjOw7yzro-OyG4nM5w==/lib/arm64/libgadget.so
+10-14 22:18:12.380 13323 13323 F DEBUG   :       #13 pc 0000000000bd6a9c  /data/app/~~mf6nqGlFvqhMqFA0JY9h-g==/dev.tripoder.runtimeprobe-iON0BjOw7yzro-OyG4nM5w==/lib/arm64/libgadget.so
+10-14 22:18:12.380 13323 13323 F DEBUG   :       #14 pc 00000000009f4b60  /data/app/~~mf6nqGlFvqhMqFA0JY9h-g==/dev.tripoder.runtimeprobe-iON0BjOw7yzro-OyG4nM5w==/lib/arm64/libgadget.so
+10-14 22:18:12.380 13323 13323 F DEBUG   :       #15 pc 00000000009ff4d0  /data/app/~~mf6nqGlFvqhMqFA0JY9h-g==/dev.tripoder.runtimeprobe-iON0BjOw7yzro-OyG4nM5w==/lib/arm64/libgadget.so
+10-14 22:18:12.380 13323 13323 F DEBUG   :       #16 pc 0000000000b2a2a4  /data/app/~~mf6nqGlFvqhMqFA0JY9h-g==/dev.tripoder.runtimeprobe-iON0BjOw7yzro-OyG4nM5w==/lib/arm64/libgadget.so
+10-14 22:18:12.380 13323 13323 F DEBUG   :       #17 pc 0000000000b2a680  /data/app/~~mf6nqGlFvqhMqFA0JY9h-g==/dev.tripoder.runtimeprobe-iON0BjOw7yzro-OyG4nM5w==/lib/arm64/libgadget.so
+10-14 22:18:12.380 13323 13323 F DEBUG   :       #18 pc 0000000000000048  <anonymous:6fab0e9000>
+10-14 22:18:12.380 13323 13323 F DEBUG   : Note: To display stack pointer information, use the pbtombstone tool:
+10-14 22:18:12.380 13323 13323 F DEBUG   :         pbtombstone --display-sp tombstone_XX.pb

@@ -1,0 +1,2350 @@
+{
+  "schema": 1,
+  "phase": "P4-java-native-hook",
+  "runId": "p4-9dac402cbf73431f",
+  "startedAt": 1792122261068,
+  "hostApkSha256": "8dcb82ba1183956bc6caa23d95f7c0e19ede7be05e7b1047d4d5434660f521b2",
+  "deviceBuild": "Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys",
+  "api": 37,
+  "abi": "arm64-v8a",
+  "hostUid": 10398,
+  "hostPid": 373,
+  "fixtures": {
+    "a": {
+      "packageName": "dev.tripoder.p0.a",
+      "sha256": "7778d1ea0ee1b4b7bc90ebbd0525d9da2cc5392a331f77ec8b7e60eb2f95ad52",
+      "apkRewritten": false,
+      "signatureVerifiedBy": "apksigner",
+      "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+    },
+    "b": {
+      "packageName": "dev.tripoder.p0.b",
+      "sha256": "8b0cce0d739fb67d8f73d08a3b2988ade7298c57800701400e3dd78ed2c98c38",
+      "apkRewritten": false,
+      "signatureVerifiedBy": "apksigner",
+      "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+    }
+  },
+  "p2Fixtures": {
+    "packageName": "dev.tripoder.p2",
+    "asset": "p2.apk",
+    "sha256": "7bb77b707ace3f42c94b4ae11059026475fa63f27a665dd2913cefddb62d3e39",
+    "apkRewritten": false,
+    "upgrade": {
+      "asset": "p2-upgrade.apk",
+      "sha256": "15c897ab9111b7026e7e3ccf2ba4be5265800d5b4dee172112909fac0408f30e"
+    },
+    "providerPeer": {
+      "asset": "provider-peer.apk",
+      "sha256": "9feb30a38eef0d46d76f222ac5925f20b2b53fc113bff04907de13de7407b81a",
+      "packageName": "dev.tripoder.peer"
+    },
+    "providerIdentity": {
+      "asset": "provider-identity.apk",
+      "sha256": "55693eabde8473a093d9c51b2b55faae19c3d49441100777f55f0887ebe2b5b3",
+      "packageName": "dev.tripoder.provideridentity"
+    },
+    "packageWorld": {
+      "asset": "package-world.apk",
+      "sha256": "755dc73854f99ebdb24b530866bcf995ed0fcc6ac96c4eb0c2ad165e00e088d3",
+      "packageName": "dev.tripoder.provideridentity"
+    },
+    "instrumentationWorld": {
+      "asset": "instrumentation-world.apk",
+      "sha256": "874257af04bacfa76751b93080e3310d67e7fdc8b32d2ee790f626f9c4d171e2",
+      "packageName": "dev.tripoder.provideridentity"
+    },
+    "serviceStartup": {
+      "asset": "service-startup.apk",
+      "sha256": "c77ace3620e8c8c799e88f2cd622c76580e124ef77fc271e89698e76a9c5b03d",
+      "packageName": "dev.tripoder.provideridentity"
+    },
+    "servicePassive": {
+      "asset": "service-passive.apk",
+      "sha256": "980463b967efb0f85fbafbb5d60da044a5715b0c7f9b3a63427c1366b695d213",
+      "packageName": "dev.tripoder.provideridentity"
+    }
+  },
+  "priorOwnedProbeTasksRemoved": [],
+  "observedEvidence": {
+    "evidence": {
+      "id": "465bc5aa5c6521b58a7e2dcb586e3608e22cf0c3966cd8b457e90835f4cbc9bc",
+      "source": "guest-agent",
+      "target": {
+        "packageName": "dev.tripoder.p2",
+        "versionCode": "1",
+        "apkSha256": "7bb77b707ace3f42c94b4ae11059026475fa63f27a665dd2913cefddb62d3e39"
+      },
+      "processInstanceId": "3960:ebcb1baa1723d6a9eb898bf8c3bee09059d0a6ea370254d276de6951376b261e",
+      "abi": "arm64-v8a",
+      "capabilities": [
+        "native-hook",
+        "java-hook"
+      ],
+      "symbols": [
+        {
+          "loaded": true,
+          "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+          "returnType": "int",
+          "id": "sum",
+          "methodName": "add",
+          "argumentTypes": [
+            "int",
+            "int"
+          ],
+          "className": "dev.tripoder.p2.Hooks$Target",
+          "kind": "java"
+        },
+        {
+          "loaded": true,
+          "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+          "returnType": "java.lang.String",
+          "id": "text",
+          "methodName": "add",
+          "argumentTypes": [
+            "java.lang.String"
+          ],
+          "className": "dev.tripoder.p2.Hooks$Target",
+          "kind": "java"
+        },
+        {
+          "loaded": true,
+          "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+          "returnType": "long",
+          "id": "exact",
+          "methodName": "exact",
+          "argumentTypes": [
+            "long"
+          ],
+          "className": "dev.tripoder.p2.Hooks$Target",
+          "kind": "java"
+        },
+        {
+          "loaded": true,
+          "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+          "returnType": "int",
+          "id": "throwing",
+          "methodName": "throwing",
+          "argumentTypes": [],
+          "className": "dev.tripoder.p2.Hooks$Target",
+          "kind": "java"
+        },
+        {
+          "loaded": true,
+          "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+          "returnType": "int",
+          "id": "before",
+          "methodName": "beforeFailure",
+          "argumentTypes": [
+            "int"
+          ],
+          "className": "dev.tripoder.p2.Hooks$Target",
+          "kind": "java"
+        },
+        {
+          "loaded": true,
+          "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+          "returnType": "int",
+          "id": "after",
+          "methodName": "afterFailure",
+          "argumentTypes": [
+            "int"
+          ],
+          "className": "dev.tripoder.p2.Hooks$Target",
+          "kind": "java"
+        },
+        {
+          "loaded": true,
+          "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+          "returnType": "int",
+          "id": "recursive",
+          "methodName": "recursive",
+          "argumentTypes": [
+            "int"
+          ],
+          "className": "dev.tripoder.p2.Hooks$Target",
+          "kind": "java"
+        },
+        {
+          "loaded": true,
+          "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+          "returnType": "int",
+          "id": "thread",
+          "methodName": "threaded",
+          "argumentTypes": [
+            "int"
+          ],
+          "className": "dev.tripoder.p2.Hooks$Target",
+          "kind": "java"
+        },
+        {
+          "loaded": true,
+          "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+          "returnType": "int",
+          "id": "blocking",
+          "methodName": "blocking",
+          "argumentTypes": [],
+          "className": "dev.tripoder.p2.Hooks$Target",
+          "kind": "java"
+        }
+      ]
+    },
+    "identity": {
+      "space": "p4-9dac402cbf73431f-hooks",
+      "installGeneration": "e031d747-cc0e-4d4c-9c22-45a0bac7a702",
+      "descriptorSha256": "5c83bbd8f45a7c83bc3b2c0b1d86e21c50e70ab9946071144adde713b5afef90",
+      "processGeneration": "ebcb1baa1723d6a9eb898bf8c3bee09059d0a6ea370254d276de6951376b261e",
+      "pid": 3960,
+      "target": {
+        "packageName": "dev.tripoder.p2",
+        "versionCode": "1",
+        "apkSha256": "7bb77b707ace3f42c94b4ae11059026475fa63f27a665dd2913cefddb62d3e39"
+      }
+    },
+    "nativeModules": []
+  },
+  "expectedHookTerminations": [
+    {
+      "pid": 5281,
+      "reason": "HOOK_TYPE",
+      "startedAt": 1792122293939,
+      "exitInfo": {
+        "pid": 5281,
+        "uid": 10398,
+        "process": "dev.tripoder.runtimeprobe:slot0",
+        "timestamp": 1792122294006,
+        "reason": 2,
+        "status": 9
+      }
+    },
+    {
+      "pid": 686,
+      "reason": "HOOK_ACTIVE_MODULE_UNLOADED",
+      "startedAt": 1792122309459,
+      "exitInfo": {
+        "pid": 686,
+        "uid": 10398,
+        "process": "dev.tripoder.runtimeprobe:slot0",
+        "timestamp": 1792122309524,
+        "reason": 1,
+        "status": 198
+      }
+    }
+  ],
+  "passed": true,
+  "checks": [
+    {
+      "name": "guest-result-1",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "initializations": 0,
+        "request": 101
+      }
+    },
+    {
+      "name": "target-not-initialized-at-bootstrap",
+      "passed": true,
+      "observed": "no Target calls"
+    },
+    {
+      "name": "evidence-actual-process",
+      "passed": true,
+      "observed": {
+        "evidence": {
+          "id": "465bc5aa5c6521b58a7e2dcb586e3608e22cf0c3966cd8b457e90835f4cbc9bc",
+          "source": "guest-agent",
+          "target": {
+            "packageName": "dev.tripoder.p2",
+            "versionCode": "1",
+            "apkSha256": "7bb77b707ace3f42c94b4ae11059026475fa63f27a665dd2913cefddb62d3e39"
+          },
+          "processInstanceId": "3960:ebcb1baa1723d6a9eb898bf8c3bee09059d0a6ea370254d276de6951376b261e",
+          "abi": "arm64-v8a",
+          "capabilities": [
+            "native-hook",
+            "java-hook"
+          ],
+          "symbols": [
+            {
+              "loaded": true,
+              "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+              "returnType": "int",
+              "id": "sum",
+              "methodName": "add",
+              "argumentTypes": [
+                "int",
+                "int"
+              ],
+              "className": "dev.tripoder.p2.Hooks$Target",
+              "kind": "java"
+            },
+            {
+              "loaded": true,
+              "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+              "returnType": "java.lang.String",
+              "id": "text",
+              "methodName": "add",
+              "argumentTypes": [
+                "java.lang.String"
+              ],
+              "className": "dev.tripoder.p2.Hooks$Target",
+              "kind": "java"
+            },
+            {
+              "loaded": true,
+              "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+              "returnType": "long",
+              "id": "exact",
+              "methodName": "exact",
+              "argumentTypes": [
+                "long"
+              ],
+              "className": "dev.tripoder.p2.Hooks$Target",
+              "kind": "java"
+            },
+            {
+              "loaded": true,
+              "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+              "returnType": "int",
+              "id": "throwing",
+              "methodName": "throwing",
+              "argumentTypes": [],
+              "className": "dev.tripoder.p2.Hooks$Target",
+              "kind": "java"
+            },
+            {
+              "loaded": true,
+              "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+              "returnType": "int",
+              "id": "before",
+              "methodName": "beforeFailure",
+              "argumentTypes": [
+                "int"
+              ],
+              "className": "dev.tripoder.p2.Hooks$Target",
+              "kind": "java"
+            },
+            {
+              "loaded": true,
+              "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+              "returnType": "int",
+              "id": "after",
+              "methodName": "afterFailure",
+              "argumentTypes": [
+                "int"
+              ],
+              "className": "dev.tripoder.p2.Hooks$Target",
+              "kind": "java"
+            },
+            {
+              "loaded": true,
+              "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+              "returnType": "int",
+              "id": "recursive",
+              "methodName": "recursive",
+              "argumentTypes": [
+                "int"
+              ],
+              "className": "dev.tripoder.p2.Hooks$Target",
+              "kind": "java"
+            },
+            {
+              "loaded": true,
+              "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+              "returnType": "int",
+              "id": "thread",
+              "methodName": "threaded",
+              "argumentTypes": [
+                "int"
+              ],
+              "className": "dev.tripoder.p2.Hooks$Target",
+              "kind": "java"
+            },
+            {
+              "loaded": true,
+              "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+              "returnType": "int",
+              "id": "blocking",
+              "methodName": "blocking",
+              "argumentTypes": [],
+              "className": "dev.tripoder.p2.Hooks$Target",
+              "kind": "java"
+            }
+          ]
+        },
+        "identity": {
+          "space": "p4-9dac402cbf73431f-hooks",
+          "installGeneration": "e031d747-cc0e-4d4c-9c22-45a0bac7a702",
+          "descriptorSha256": "5c83bbd8f45a7c83bc3b2c0b1d86e21c50e70ab9946071144adde713b5afef90",
+          "processGeneration": "ebcb1baa1723d6a9eb898bf8c3bee09059d0a6ea370254d276de6951376b261e",
+          "pid": 3960,
+          "target": {
+            "packageName": "dev.tripoder.p2",
+            "versionCode": "1",
+            "apkSha256": "7bb77b707ace3f42c94b4ae11059026475fa63f27a665dd2913cefddb62d3e39"
+          }
+        },
+        "nativeModules": []
+      }
+    },
+    {
+      "name": "evidence-nine-exact-overloads",
+      "passed": true,
+      "observed": [
+        {
+          "loaded": true,
+          "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+          "returnType": "int",
+          "id": "sum",
+          "methodName": "add",
+          "argumentTypes": [
+            "int",
+            "int"
+          ],
+          "className": "dev.tripoder.p2.Hooks$Target",
+          "kind": "java"
+        },
+        {
+          "loaded": true,
+          "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+          "returnType": "java.lang.String",
+          "id": "text",
+          "methodName": "add",
+          "argumentTypes": [
+            "java.lang.String"
+          ],
+          "className": "dev.tripoder.p2.Hooks$Target",
+          "kind": "java"
+        },
+        {
+          "loaded": true,
+          "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+          "returnType": "long",
+          "id": "exact",
+          "methodName": "exact",
+          "argumentTypes": [
+            "long"
+          ],
+          "className": "dev.tripoder.p2.Hooks$Target",
+          "kind": "java"
+        },
+        {
+          "loaded": true,
+          "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+          "returnType": "int",
+          "id": "throwing",
+          "methodName": "throwing",
+          "argumentTypes": [],
+          "className": "dev.tripoder.p2.Hooks$Target",
+          "kind": "java"
+        },
+        {
+          "loaded": true,
+          "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+          "returnType": "int",
+          "id": "before",
+          "methodName": "beforeFailure",
+          "argumentTypes": [
+            "int"
+          ],
+          "className": "dev.tripoder.p2.Hooks$Target",
+          "kind": "java"
+        },
+        {
+          "loaded": true,
+          "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+          "returnType": "int",
+          "id": "after",
+          "methodName": "afterFailure",
+          "argumentTypes": [
+            "int"
+          ],
+          "className": "dev.tripoder.p2.Hooks$Target",
+          "kind": "java"
+        },
+        {
+          "loaded": true,
+          "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+          "returnType": "int",
+          "id": "recursive",
+          "methodName": "recursive",
+          "argumentTypes": [
+            "int"
+          ],
+          "className": "dev.tripoder.p2.Hooks$Target",
+          "kind": "java"
+        },
+        {
+          "loaded": true,
+          "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+          "returnType": "int",
+          "id": "thread",
+          "methodName": "threaded",
+          "argumentTypes": [
+            "int"
+          ],
+          "className": "dev.tripoder.p2.Hooks$Target",
+          "kind": "java"
+        },
+        {
+          "loaded": true,
+          "classLoaderId": "3c27890d-f3b2-4049-8c6d-d6b1f5980a2e",
+          "returnType": "int",
+          "id": "blocking",
+          "methodName": "blocking",
+          "argumentTypes": [],
+          "className": "dev.tripoder.p2.Hooks$Target",
+          "kind": "java"
+        }
+      ]
+    },
+    {
+      "name": "guest-result-2",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "initializations": 0,
+        "request": 102
+      }
+    },
+    {
+      "name": "observe-does-not-initialize-target",
+      "passed": true,
+      "observed": "Class.forName false"
+    },
+    {
+      "name": "bad-command-fields",
+      "passed": true,
+      "observed": "java.lang.IllegalArgumentException: dev.tripoder.runtime.script.ScriptFault: HOOK_COMMAND_FIELDS"
+    },
+    {
+      "name": "stale-evidence",
+      "passed": true,
+      "observed": "java.lang.IllegalArgumentException: dev.tripoder.runtime.script.ScriptFault: HOOK_EVIDENCE_STALE"
+    },
+    {
+      "name": "unrestricted-source",
+      "passed": true,
+      "observed": "java.lang.IllegalArgumentException: dev.tripoder.runtime.script.ScriptFault: DRAFT_UNKNOWN_IDENTIFIER:globalThis"
+    },
+    {
+      "name": "prepare-token-not-persisted-in-receipt",
+      "passed": true,
+      "observed": "{\"state\":\"PREPARED\",\"sourceSha256\":\"9a02579c49884768d3ddc87c3ac7ecb102801028fbe40b9fcef6b62a90f37baf\",\"evidenceId\":\"465bc5aa5c6521b58a7e2dcb586e3608e22cf0c3966cd8b457e90835f4cbc9bc\",\"rules\":9,\"identity\":{\"space\":\"p4-9dac402cbf73431f-hooks\",\"installGeneration\":\"e031d747-cc0e-4d4c-9c22-45a0bac7a702\",\"descriptorSha256\":\"5c83bbd8f45a7c83bc3b2c0b1d86e21c50e70ab9946071144adde713b5afef90\",\"processGeneration\":\"ebcb1baa1723d6a9eb898bf8c3bee09059d0a6ea370254d276de6951376b261e\",\"pid\":3960,\"target\":{\"packageName\":\"dev.tripoder.p2\",\"versionCode\":\"1\",\"apkSha256\":\"7bb77b707ace3f42c94b4ae11059026475fa63f27a665dd2913cefddb62d3e39\"}}}"
+    },
+    {
+      "name": "prepared-status-explicit",
+      "passed": true,
+      "observed": "status distinguishes prepared and idle"
+    },
+    {
+      "name": "cancel-preparation",
+      "passed": true,
+      "observed": "no method changed"
+    },
+    {
+      "name": "canceled-token-rejected",
+      "passed": true,
+      "observed": "java.lang.IllegalArgumentException: dev.tripoder.runtime.script.ScriptFault: HOOK_PREPARATION_STALE"
+    },
+    {
+      "name": "prepare-source-bound",
+      "passed": true,
+      "observed": "9a02579c49884768d3ddc87c3ac7ecb102801028fbe40b9fcef6b62a90f37baf"
+    },
+    {
+      "name": "guest-result-3",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "initializations": 0,
+        "request": 103
+      }
+    },
+    {
+      "name": "prepare-does-not-initialize-target",
+      "passed": true,
+      "observed": "before activation"
+    },
+    {
+      "name": "guest-result-4",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "add": 5,
+        "text": "original:owned",
+        "nullText": "original-null",
+        "exact": "9007199254740993",
+        "sameOriginalException": true,
+        "originalException": "java.lang.IllegalArgumentException",
+        "beforeValue": 7,
+        "afterValue": 7,
+        "recursive": 3,
+        "threadSum": 2600,
+        "threadErrors": [],
+        "counts": {
+          "add": 1,
+          "text": 2,
+          "long": 1,
+          "throw": 1,
+          "before": 1,
+          "after": 1,
+          "recursive": 4,
+          "thread": 200
+        },
+        "request": 104
+      }
+    },
+    {
+      "name": "prepared-no-effects",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "add": 5,
+        "text": "original:owned",
+        "nullText": "original-null",
+        "exact": "9007199254740993",
+        "sameOriginalException": true,
+        "originalException": "java.lang.IllegalArgumentException",
+        "beforeValue": 7,
+        "afterValue": 7,
+        "recursive": 3,
+        "threadSum": 2600,
+        "threadErrors": [],
+        "counts": {
+          "add": 1,
+          "text": 2,
+          "long": 1,
+          "throw": 1,
+          "before": 1,
+          "after": 1,
+          "recursive": 4,
+          "thread": 200
+        },
+        "request": 104
+      }
+    },
+    {
+      "name": "wrong-prepare-token",
+      "passed": true,
+      "observed": "java.lang.IllegalArgumentException: dev.tripoder.runtime.script.ScriptFault: HOOK_PREPARATION_STALE"
+    },
+    {
+      "name": "guest-result-5",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "churn": {
+          "threads": 4,
+          "running": true,
+          "iterations": 225
+        },
+        "request": 105
+      }
+    },
+    {
+      "name": "deopt-four-concurrent-stacks-started",
+      "passed": true,
+      "observed": {
+        "threads": 4,
+        "running": true,
+        "iterations": 225
+      }
+    },
+    {
+      "name": "activation-ack",
+      "passed": true,
+      "observed": {
+        "state": "ACTIVE",
+        "revision": "59a6bb733a7a1f358530e4e8bae844d5d88bb996c02e848b88bba4bf5e574423",
+        "sourceSha256": "9a02579c49884768d3ddc87c3ac7ecb102801028fbe40b9fcef6b62a90f37baf",
+        "parameterVersion": 1,
+        "parameters": {
+          "increment": 100
+        },
+        "hits": 0,
+        "errors": 0,
+        "inFlight": 0,
+        "identity": {
+          "space": "p4-9dac402cbf73431f-hooks",
+          "installGeneration": "e031d747-cc0e-4d4c-9c22-45a0bac7a702",
+          "descriptorSha256": "5c83bbd8f45a7c83bc3b2c0b1d86e21c50e70ab9946071144adde713b5afef90",
+          "processGeneration": "ebcb1baa1723d6a9eb898bf8c3bee09059d0a6ea370254d276de6951376b261e",
+          "pid": 3960,
+          "target": {
+            "packageName": "dev.tripoder.p2",
+            "versionCode": "1",
+            "apkSha256": "7bb77b707ace3f42c94b4ae11059026475fa63f27a665dd2913cefddb62d3e39"
+          }
+        }
+      }
+    },
+    {
+      "name": "guest-result-6",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "churn": {
+          "allAliveBeforeStop": true,
+          "allStopped": true,
+          "iterations": 551081,
+          "checksum": 29162754
+        },
+        "request": 106
+      }
+    },
+    {
+      "name": "deopt-concurrent-stacks-survive-and-progress",
+      "passed": true,
+      "observed": {
+        "allAliveBeforeStop": true,
+        "allStopped": true,
+        "iterations": 551081,
+        "checksum": 29162754
+      }
+    },
+    {
+      "name": "operation-not-replayed",
+      "passed": true,
+      "observed": "java.lang.IllegalStateException: HOOK_ALREADY_ACCEPTED_QUERY_REQUIRED"
+    },
+    {
+      "name": "activation-durable-ack",
+      "passed": true,
+      "observed": "{\"state\":\"ACTIVE\",\"revision\":\"59a6bb733a7a1f358530e4e8bae844d5d88bb996c02e848b88bba4bf5e574423\",\"sourceSha256\":\"9a02579c49884768d3ddc87c3ac7ecb102801028fbe40b9fcef6b62a90f37baf\",\"parameterVersion\":1,\"parameters\":{\"increment\":100},\"hits\":0,\"errors\":0,\"inFlight\":0,\"identity\":{\"space\":\"p4-9dac402cbf73431f-hooks\",\"installGeneration\":\"e031d747-cc0e-4d4c-9c22-45a0bac7a702\",\"descriptorSha256\":\"5c83bbd8f45a7c83bc3b2c0b1d86e21c50e70ab9946071144adde713b5afef90\",\"processGeneration\":\"ebcb1baa1723d6a9eb898bf8c3bee09059d0a6ea370254d276de6951376b261e\",\"pid\":3960,\"target\":{\"packageName\":\"dev.tripoder.p2\",\"versionCode\":\"1\",\"apkSha256\":\"7bb77b707ace3f42c94b4ae11059026475fa63f27a665dd2913cefddb62d3e39\"}}}"
+    },
+    {
+      "name": "guest-result-7",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "add": 30,
+        "text": "hook:owned",
+        "nullText": null,
+        "exact": "9007199254740994",
+        "sameOriginalException": true,
+        "originalException": "java.lang.IllegalArgumentException",
+        "beforeError": "java.lang.IllegalStateException:HOOK_EXECUTION:HOOK_TYPE:int",
+        "afterError": "java.lang.IllegalStateException:HOOK_EXECUTION:HOOK_TYPE:int",
+        "recursive": 7,
+        "threadSum": 4400,
+        "threadErrors": [],
+        "counts": {
+          "add": 1,
+          "text": 0,
+          "long": 0,
+          "throw": 1,
+          "before": 0,
+          "after": 1,
+          "recursive": 4,
+          "thread": 0
+        },
+        "request": 107
+      }
+    },
+    {
+      "name": "before-original-after",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "add": 30,
+        "text": "hook:owned",
+        "nullText": null,
+        "exact": "9007199254740994",
+        "sameOriginalException": true,
+        "originalException": "java.lang.IllegalArgumentException",
+        "beforeError": "java.lang.IllegalStateException:HOOK_EXECUTION:HOOK_TYPE:int",
+        "afterError": "java.lang.IllegalStateException:HOOK_EXECUTION:HOOK_TYPE:int",
+        "recursive": 7,
+        "threadSum": 4400,
+        "threadErrors": [],
+        "counts": {
+          "add": 1,
+          "text": 0,
+          "long": 0,
+          "throw": 1,
+          "before": 0,
+          "after": 1,
+          "recursive": 4,
+          "thread": 0
+        },
+        "request": 107
+      }
+    },
+    {
+      "name": "replace-instance-overload-string-null",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "add": 30,
+        "text": "hook:owned",
+        "nullText": null,
+        "exact": "9007199254740994",
+        "sameOriginalException": true,
+        "originalException": "java.lang.IllegalArgumentException",
+        "beforeError": "java.lang.IllegalStateException:HOOK_EXECUTION:HOOK_TYPE:int",
+        "afterError": "java.lang.IllegalStateException:HOOK_EXECUTION:HOOK_TYPE:int",
+        "recursive": 7,
+        "threadSum": 4400,
+        "threadErrors": [],
+        "counts": {
+          "add": 1,
+          "text": 0,
+          "long": 0,
+          "throw": 1,
+          "before": 0,
+          "after": 1,
+          "recursive": 4,
+          "thread": 0
+        },
+        "request": 107
+      }
+    },
+    {
+      "name": "long-exact-beyond-double",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "add": 30,
+        "text": "hook:owned",
+        "nullText": null,
+        "exact": "9007199254740994",
+        "sameOriginalException": true,
+        "originalException": "java.lang.IllegalArgumentException",
+        "beforeError": "java.lang.IllegalStateException:HOOK_EXECUTION:HOOK_TYPE:int",
+        "afterError": "java.lang.IllegalStateException:HOOK_EXECUTION:HOOK_TYPE:int",
+        "recursive": 7,
+        "threadSum": 4400,
+        "threadErrors": [],
+        "counts": {
+          "add": 1,
+          "text": 0,
+          "long": 0,
+          "throw": 1,
+          "before": 0,
+          "after": 1,
+          "recursive": 4,
+          "thread": 0
+        },
+        "request": 107
+      }
+    },
+    {
+      "name": "original-throwable-identity",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "add": 30,
+        "text": "hook:owned",
+        "nullText": null,
+        "exact": "9007199254740994",
+        "sameOriginalException": true,
+        "originalException": "java.lang.IllegalArgumentException",
+        "beforeError": "java.lang.IllegalStateException:HOOK_EXECUTION:HOOK_TYPE:int",
+        "afterError": "java.lang.IllegalStateException:HOOK_EXECUTION:HOOK_TYPE:int",
+        "recursive": 7,
+        "threadSum": 4400,
+        "threadErrors": [],
+        "counts": {
+          "add": 1,
+          "text": 0,
+          "long": 0,
+          "throw": 1,
+          "before": 0,
+          "after": 1,
+          "recursive": 4,
+          "thread": 0
+        },
+        "request": 107
+      }
+    },
+    {
+      "name": "before-error-no-original",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "add": 30,
+        "text": "hook:owned",
+        "nullText": null,
+        "exact": "9007199254740994",
+        "sameOriginalException": true,
+        "originalException": "java.lang.IllegalArgumentException",
+        "beforeError": "java.lang.IllegalStateException:HOOK_EXECUTION:HOOK_TYPE:int",
+        "afterError": "java.lang.IllegalStateException:HOOK_EXECUTION:HOOK_TYPE:int",
+        "recursive": 7,
+        "threadSum": 4400,
+        "threadErrors": [],
+        "counts": {
+          "add": 1,
+          "text": 0,
+          "long": 0,
+          "throw": 1,
+          "before": 0,
+          "after": 1,
+          "recursive": 4,
+          "thread": 0
+        },
+        "request": 107
+      }
+    },
+    {
+      "name": "after-error-original-once",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "add": 30,
+        "text": "hook:owned",
+        "nullText": null,
+        "exact": "9007199254740994",
+        "sameOriginalException": true,
+        "originalException": "java.lang.IllegalArgumentException",
+        "beforeError": "java.lang.IllegalStateException:HOOK_EXECUTION:HOOK_TYPE:int",
+        "afterError": "java.lang.IllegalStateException:HOOK_EXECUTION:HOOK_TYPE:int",
+        "recursive": 7,
+        "threadSum": 4400,
+        "threadErrors": [],
+        "counts": {
+          "add": 1,
+          "text": 0,
+          "long": 0,
+          "throw": 1,
+          "before": 0,
+          "after": 1,
+          "recursive": 4,
+          "thread": 0
+        },
+        "request": 107
+      }
+    },
+    {
+      "name": "recursive-invocations",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "add": 30,
+        "text": "hook:owned",
+        "nullText": null,
+        "exact": "9007199254740994",
+        "sameOriginalException": true,
+        "originalException": "java.lang.IllegalArgumentException",
+        "beforeError": "java.lang.IllegalStateException:HOOK_EXECUTION:HOOK_TYPE:int",
+        "afterError": "java.lang.IllegalStateException:HOOK_EXECUTION:HOOK_TYPE:int",
+        "recursive": 7,
+        "threadSum": 4400,
+        "threadErrors": [],
+        "counts": {
+          "add": 1,
+          "text": 0,
+          "long": 0,
+          "throw": 1,
+          "before": 0,
+          "after": 1,
+          "recursive": 4,
+          "thread": 0
+        },
+        "request": 107
+      }
+    },
+    {
+      "name": "eight-thread-real-hook-calls",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "add": 30,
+        "text": "hook:owned",
+        "nullText": null,
+        "exact": "9007199254740994",
+        "sameOriginalException": true,
+        "originalException": "java.lang.IllegalArgumentException",
+        "beforeError": "java.lang.IllegalStateException:HOOK_EXECUTION:HOOK_TYPE:int",
+        "afterError": "java.lang.IllegalStateException:HOOK_EXECUTION:HOOK_TYPE:int",
+        "recursive": 7,
+        "threadSum": 4400,
+        "threadErrors": [],
+        "counts": {
+          "add": 1,
+          "text": 0,
+          "long": 0,
+          "throw": 1,
+          "before": 0,
+          "after": 1,
+          "recursive": 4,
+          "thread": 0
+        },
+        "request": 107
+      }
+    },
+    {
+      "name": "hook-hit-error-counters",
+      "passed": true,
+      "observed": {
+        "state": "ACTIVE",
+        "revision": "59a6bb733a7a1f358530e4e8bae844d5d88bb996c02e848b88bba4bf5e574423",
+        "sourceSha256": "9a02579c49884768d3ddc87c3ac7ecb102801028fbe40b9fcef6b62a90f37baf",
+        "parameterVersion": 1,
+        "parameters": {
+          "increment": 100
+        },
+        "hits": 211,
+        "errors": 2,
+        "inFlight": 0,
+        "identity": {
+          "space": "p4-9dac402cbf73431f-hooks",
+          "installGeneration": "e031d747-cc0e-4d4c-9c22-45a0bac7a702",
+          "descriptorSha256": "5c83bbd8f45a7c83bc3b2c0b1d86e21c50e70ab9946071144adde713b5afef90",
+          "processGeneration": "ebcb1baa1723d6a9eb898bf8c3bee09059d0a6ea370254d276de6951376b261e",
+          "pid": 3960,
+          "target": {
+            "packageName": "dev.tripoder.p2",
+            "versionCode": "1",
+            "apkSha256": "7bb77b707ace3f42c94b4ae11059026475fa63f27a665dd2913cefddb62d3e39"
+          }
+        },
+        "moduleEvents": []
+      }
+    },
+    {
+      "name": "guest-result-8",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "entered": true,
+        "request": 108
+      }
+    },
+    {
+      "name": "held-call-entered",
+      "passed": true,
+      "observed": "original body entered"
+    },
+    {
+      "name": "held-call-visible",
+      "passed": true,
+      "observed": {
+        "state": "ACTIVE",
+        "revision": "59a6bb733a7a1f358530e4e8bae844d5d88bb996c02e848b88bba4bf5e574423",
+        "sourceSha256": "9a02579c49884768d3ddc87c3ac7ecb102801028fbe40b9fcef6b62a90f37baf",
+        "parameterVersion": 1,
+        "parameters": {
+          "increment": 100
+        },
+        "hits": 212,
+        "errors": 2,
+        "inFlight": 1,
+        "identity": {
+          "space": "p4-9dac402cbf73431f-hooks",
+          "installGeneration": "e031d747-cc0e-4d4c-9c22-45a0bac7a702",
+          "descriptorSha256": "5c83bbd8f45a7c83bc3b2c0b1d86e21c50e70ab9946071144adde713b5afef90",
+          "processGeneration": "ebcb1baa1723d6a9eb898bf8c3bee09059d0a6ea370254d276de6951376b261e",
+          "pid": 3960,
+          "target": {
+            "packageName": "dev.tripoder.p2",
+            "versionCode": "1",
+            "apkSha256": "7bb77b707ace3f42c94b4ae11059026475fa63f27a665dd2913cefddb62d3e39"
+          }
+        },
+        "moduleEvents": []
+      }
+    },
+    {
+      "name": "parameter-version-ack",
+      "passed": true,
+      "observed": {
+        "state": "ACTIVE",
+        "revision": "59a6bb733a7a1f358530e4e8bae844d5d88bb996c02e848b88bba4bf5e574423",
+        "sourceSha256": "9a02579c49884768d3ddc87c3ac7ecb102801028fbe40b9fcef6b62a90f37baf",
+        "parameterVersion": 2,
+        "parameters": {
+          "increment": 200
+        },
+        "hits": 212,
+        "errors": 2,
+        "inFlight": 1,
+        "identity": {
+          "space": "p4-9dac402cbf73431f-hooks",
+          "installGeneration": "e031d747-cc0e-4d4c-9c22-45a0bac7a702",
+          "descriptorSha256": "5c83bbd8f45a7c83bc3b2c0b1d86e21c50e70ab9946071144adde713b5afef90",
+          "processGeneration": "ebcb1baa1723d6a9eb898bf8c3bee09059d0a6ea370254d276de6951376b261e",
+          "pid": 3960,
+          "target": {
+            "packageName": "dev.tripoder.p2",
+            "versionCode": "1",
+            "apkSha256": "7bb77b707ace3f42c94b4ae11059026475fa63f27a665dd2913cefddb62d3e39"
+          }
+        }
+      }
+    },
+    {
+      "name": "stale-parameter-update",
+      "passed": true,
+      "observed": "java.lang.IllegalArgumentException: dev.tripoder.runtime.script.ScriptFault: HOOK_PARAMETER_VERSION_STALE"
+    },
+    {
+      "name": "parameter-range",
+      "passed": true,
+      "observed": "java.lang.IllegalArgumentException: dev.tripoder.runtime.script.ScriptFault: PARAM_RANGE"
+    },
+    {
+      "name": "guest-result-9",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "finished": true,
+        "heldResult": 107,
+        "heldError": null,
+        "request": 109
+      }
+    },
+    {
+      "name": "inflight-immutable-parameter-snapshot",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "finished": true,
+        "heldResult": 107,
+        "heldError": null,
+        "request": 109
+      }
+    },
+    {
+      "name": "guest-result-10",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "entered": true,
+        "request": 110
+      }
+    },
+    {
+      "name": "new-call-entered",
+      "passed": true,
+      "observed": "updated version"
+    },
+    {
+      "name": "guest-result-11",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "finished": true,
+        "heldResult": 207,
+        "heldError": null,
+        "request": 111
+      }
+    },
+    {
+      "name": "new-call-new-parameters",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "finished": true,
+        "heldResult": 207,
+        "heldError": null,
+        "request": 111
+      }
+    },
+    {
+      "name": "wrong-disable-revision",
+      "passed": true,
+      "observed": "java.lang.IllegalArgumentException: dev.tripoder.runtime.script.ScriptFault: HOOK_REVISION_STALE"
+    },
+    {
+      "name": "guest-result-12",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "entered": true,
+        "request": 112
+      }
+    },
+    {
+      "name": "disable-during-held-call-entered",
+      "passed": true,
+      "observed": "drain stimulus"
+    },
+    {
+      "name": "disable-inflight-does-not-block",
+      "passed": true,
+      "observed": {
+        "state": "DRAINING",
+        "revision": "59a6bb733a7a1f358530e4e8bae844d5d88bb996c02e848b88bba4bf5e574423",
+        "sourceSha256": "9a02579c49884768d3ddc87c3ac7ecb102801028fbe40b9fcef6b62a90f37baf",
+        "parameterVersion": 2,
+        "parameters": {
+          "increment": 200
+        },
+        "hits": 214,
+        "errors": 2,
+        "inFlight": 1,
+        "identity": {
+          "space": "p4-9dac402cbf73431f-hooks",
+          "installGeneration": "e031d747-cc0e-4d4c-9c22-45a0bac7a702",
+          "descriptorSha256": "5c83bbd8f45a7c83bc3b2c0b1d86e21c50e70ab9946071144adde713b5afef90",
+          "processGeneration": "ebcb1baa1723d6a9eb898bf8c3bee09059d0a6ea370254d276de6951376b261e",
+          "pid": 3960,
+          "target": {
+            "packageName": "dev.tripoder.p2",
+            "versionCode": "1",
+            "apkSha256": "7bb77b707ace3f42c94b4ae11059026475fa63f27a665dd2913cefddb62d3e39"
+          }
+        }
+      }
+    },
+    {
+      "name": "draining-parameter-update",
+      "passed": true,
+      "observed": "java.lang.IllegalArgumentException: dev.tripoder.runtime.script.ScriptFault: HOOK_PARAMETER_VERSION_STALE"
+    },
+    {
+      "name": "guest-result-13",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "finished": true,
+        "heldResult": 207,
+        "heldError": null,
+        "request": 113
+      }
+    },
+    {
+      "name": "drained-call-keeps-accepted-plan",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "finished": true,
+        "heldResult": 207,
+        "heldError": null,
+        "request": 113
+      }
+    },
+    {
+      "name": "disable-ack",
+      "passed": true,
+      "observed": {
+        "state": "DISABLED",
+        "revision": "59a6bb733a7a1f358530e4e8bae844d5d88bb996c02e848b88bba4bf5e574423",
+        "hits": 214,
+        "errors": 2,
+        "identity": {
+          "space": "p4-9dac402cbf73431f-hooks",
+          "installGeneration": "e031d747-cc0e-4d4c-9c22-45a0bac7a702",
+          "descriptorSha256": "5c83bbd8f45a7c83bc3b2c0b1d86e21c50e70ab9946071144adde713b5afef90",
+          "processGeneration": "ebcb1baa1723d6a9eb898bf8c3bee09059d0a6ea370254d276de6951376b261e",
+          "pid": 3960,
+          "target": {
+            "packageName": "dev.tripoder.p2",
+            "versionCode": "1",
+            "apkSha256": "7bb77b707ace3f42c94b4ae11059026475fa63f27a665dd2913cefddb62d3e39"
+          }
+        },
+        "moduleEvents": []
+      }
+    },
+    {
+      "name": "guest-result-14",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "add": 5,
+        "text": "original:owned",
+        "nullText": "original-null",
+        "exact": "9007199254740993",
+        "sameOriginalException": true,
+        "originalException": "java.lang.IllegalArgumentException",
+        "beforeValue": 7,
+        "afterValue": 7,
+        "recursive": 3,
+        "threadSum": 2600,
+        "threadErrors": [],
+        "counts": {
+          "add": 1,
+          "text": 2,
+          "long": 1,
+          "throw": 1,
+          "before": 1,
+          "after": 1,
+          "recursive": 4,
+          "thread": 200
+        },
+        "request": 114
+      }
+    },
+    {
+      "name": "disabled-restores-methods",
+      "passed": true,
+      "observed": {
+        "pid": 3960,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "add": 5,
+        "text": "original:owned",
+        "nullText": "original-null",
+        "exact": "9007199254740993",
+        "sameOriginalException": true,
+        "originalException": "java.lang.IllegalArgumentException",
+        "beforeValue": 7,
+        "afterValue": 7,
+        "recursive": 3,
+        "threadSum": 2600,
+        "threadErrors": [],
+        "counts": {
+          "add": 1,
+          "text": 2,
+          "long": 1,
+          "throw": 1,
+          "before": 1,
+          "after": 1,
+          "recursive": 4,
+          "thread": 200
+        },
+        "request": 114
+      }
+    },
+    {
+      "name": "consumed-token",
+      "passed": true,
+      "observed": "java.lang.IllegalArgumentException: dev.tripoder.runtime.script.ScriptFault: HOOK_PREPARATION_STALE"
+    },
+    {
+      "name": "framework-target-rejected",
+      "passed": true,
+      "observed": "java.lang.IllegalArgumentException: java.lang.IllegalStateException: java.lang.SecurityException: HOOK_CLASS_OUTSIDE_GUEST"
+    },
+    {
+      "name": "failed-observe-invalidates-evidence",
+      "passed": true,
+      "observed": "java.lang.IllegalArgumentException: dev.tripoder.runtime.script.ScriptFault: HOOK_EVIDENCE_STALE"
+    },
+    {
+      "name": "restart-new-process",
+      "passed": true,
+      "observed": "f86e233851e83b9ce4bb185ba0e66e738d216d01f5fa9ac438db4c3bd3577069"
+    },
+    {
+      "name": "old-process-command",
+      "passed": true,
+      "observed": "java.lang.IllegalStateException: STALE_SESSION"
+    },
+    {
+      "name": "old-token-new-process",
+      "passed": true,
+      "observed": "java.lang.IllegalArgumentException: dev.tripoder.runtime.script.ScriptFault: HOOK_PREPARATION_STALE"
+    },
+    {
+      "name": "guest-result-15",
+      "passed": true,
+      "observed": {
+        "pid": 5281,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "add": 5,
+        "text": "original:owned",
+        "nullText": "original-null",
+        "exact": "9007199254740993",
+        "sameOriginalException": true,
+        "originalException": "java.lang.IllegalArgumentException",
+        "beforeValue": 7,
+        "afterValue": 7,
+        "recursive": 3,
+        "threadSum": 2600,
+        "threadErrors": [],
+        "counts": {
+          "add": 1,
+          "text": 2,
+          "long": 1,
+          "throw": 1,
+          "before": 1,
+          "after": 1,
+          "recursive": 4,
+          "thread": 200
+        },
+        "request": 115
+      }
+    },
+    {
+      "name": "restart-no-implicit-hook",
+      "passed": true,
+      "observed": {
+        "pid": 5281,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "add": 5,
+        "text": "original:owned",
+        "nullText": "original-null",
+        "exact": "9007199254740993",
+        "sameOriginalException": true,
+        "originalException": "java.lang.IllegalArgumentException",
+        "beforeValue": 7,
+        "afterValue": 7,
+        "recursive": 3,
+        "threadSum": 2600,
+        "threadErrors": [],
+        "counts": {
+          "add": 1,
+          "text": 2,
+          "long": 1,
+          "throw": 1,
+          "before": 1,
+          "after": 1,
+          "recursive": 4,
+          "thread": 200
+        },
+        "request": 115
+      }
+    },
+    {
+      "name": "native-system-module-rejected",
+      "passed": true,
+      "observed": "java.lang.IllegalArgumentException: java.lang.IllegalStateException: java.lang.SecurityException: HOOK_MODULE_OUTSIDE_GUEST"
+    },
+    {
+      "name": "native-unloaded-module-rejected",
+      "passed": true,
+      "observed": "java.lang.IllegalArgumentException: java.lang.IllegalStateException: java.lang.IllegalStateException: HOOK_MODULE_NOT_UNIQUELY_LOADED"
+    },
+    {
+      "name": "guest-result-16",
+      "passed": true,
+      "observed": {
+        "pid": 5281,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "native": {
+          "loaded": true,
+          "mappedCount": 1
+        },
+        "request": 116
+      }
+    },
+    {
+      "name": "native-owned-library-loaded",
+      "passed": true,
+      "observed": "libtripoderownedhooks.so"
+    },
+    {
+      "name": "guest-result-17",
+      "passed": true,
+      "observed": {
+        "pid": 5281,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "native": {
+          "closeSucceeded": true,
+          "mappedCount": 0
+        },
+        "request": 117
+      }
+    },
+    {
+      "name": "native-baseline-unload-removes-mapping",
+      "passed": true,
+      "observed": {
+        "closeSucceeded": true,
+        "mappedCount": 0
+      }
+    },
+    {
+      "name": "guest-result-18",
+      "passed": true,
+      "observed": {
+        "pid": 5281,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "native": {
+          "loaded": true,
+          "mappedCount": 1
+        },
+        "request": 118
+      }
+    },
+    {
+      "name": "native-live-module-identity",
+      "passed": true,
+      "observed": {
+        "moduleName": "libtripoderownedhooks.so",
+        "path": "/data/data/dev.tripoder.runtimeprobe/files/runtime/artifacts/e031d747-cc0e-4d4c-9c22-45a0bac7a702/lib/libtripoderownedhooks.so",
+        "sourcePath": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/artifacts/e031d747-cc0e-4d4c-9c22-45a0bac7a702/lib/libtripoderownedhooks.so",
+        "sha256": "fd5fab021db64251c3593acbd5b9ab09153493ee83dfc413571326a7d81827c4",
+        "buildId": "35f7a9cf53abc669b72243b532e5c41fb9cdfc5a",
+        "buildIdNotes": [
+          {
+            "virtualAddress": 792,
+            "size": 20
+          }
+        ],
+        "virtualSize": 58944,
+        "state": "AVAILABLE",
+        "moduleGeneration": 2,
+        "base": "0x6c6d644000",
+        "size": 58944,
+        "activeReferences": 0
+      }
+    },
+    {
+      "name": "native-unknown-signature-rejected",
+      "passed": true,
+      "observed": "java.lang.IllegalArgumentException: dev.tripoder.runtime.script.ScriptFault: HOOK_NATIVE_SELECTOR_FIELDS"
+    },
+    {
+      "name": "native-build-id-mismatch",
+      "passed": true,
+      "observed": "java.lang.IllegalArgumentException: java.lang.IllegalStateException: java.lang.IllegalArgumentException: HOOK_MODULE_BUILD_ID_STALE"
+    },
+    {
+      "name": "guest-result-19",
+      "passed": true,
+      "observed": {
+        "pid": 5281,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "native": {
+          "javaValue": 5,
+          "javaCalls": 1,
+          "sum": 5,
+          "exact": "18446744073709551614",
+          "fraction": 2.75,
+          "sumCalls": 1,
+          "exactCalls": 1,
+          "fractionCalls": 1
+        },
+        "request": 119
+      }
+    },
+    {
+      "name": "native-prepare-no-effects",
+      "passed": true,
+      "observed": {
+        "javaValue": 5,
+        "javaCalls": 1,
+        "sum": 5,
+        "exact": "18446744073709551614",
+        "fraction": 2.75,
+        "sumCalls": 1,
+        "exactCalls": 1,
+        "fractionCalls": 1
+      }
+    },
+    {
+      "name": "mixed-java-native-activation-ack",
+      "passed": true,
+      "observed": {
+        "state": "ACTIVE",
+        "revision": "0176e2137cf0a6ccad3d5107a79f105d659d6d31b2528b10f38c7ff1a36d2906",
+        "sourceSha256": "89d6253224fe278fc92c5b73619bdf674b6c588e9189ea4a5347602e032e39c2",
+        "parameterVersion": 1,
+        "parameters": {},
+        "hits": 0,
+        "errors": 0,
+        "inFlight": 0,
+        "identity": {
+          "space": "p4-9dac402cbf73431f-hooks",
+          "installGeneration": "e031d747-cc0e-4d4c-9c22-45a0bac7a702",
+          "descriptorSha256": "5c83bbd8f45a7c83bc3b2c0b1d86e21c50e70ab9946071144adde713b5afef90",
+          "processGeneration": "f86e233851e83b9ce4bb185ba0e66e738d216d01f5fa9ac438db4c3bd3577069",
+          "pid": 5281,
+          "target": {
+            "packageName": "dev.tripoder.p2",
+            "versionCode": "1",
+            "apkSha256": "7bb77b707ace3f42c94b4ae11059026475fa63f27a665dd2913cefddb62d3e39"
+          }
+        }
+      }
+    },
+    {
+      "name": "guest-result-20",
+      "passed": true,
+      "observed": {
+        "pid": 5281,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "native": {
+          "javaValue": 70,
+          "javaCalls": 0,
+          "sum": 30,
+          "exact": "18446744073709551613",
+          "fraction": 5.5,
+          "sumCalls": 1,
+          "exactCalls": 0,
+          "fractionCalls": 1
+        },
+        "request": 120
+      }
+    },
+    {
+      "name": "mixed-java-hook-real-call",
+      "passed": true,
+      "observed": {
+        "javaValue": 70,
+        "javaCalls": 0,
+        "sum": 30,
+        "exact": "18446744073709551613",
+        "fraction": 5.5,
+        "sumCalls": 1,
+        "exactCalls": 0,
+        "fractionCalls": 1
+      }
+    },
+    {
+      "name": "native-before-original-after",
+      "passed": true,
+      "observed": {
+        "javaValue": 70,
+        "javaCalls": 0,
+        "sum": 30,
+        "exact": "18446744073709551613",
+        "fraction": 5.5,
+        "sumCalls": 1,
+        "exactCalls": 0,
+        "fractionCalls": 1
+      }
+    },
+    {
+      "name": "native-uint64-exact",
+      "passed": true,
+      "observed": {
+        "javaValue": 70,
+        "javaCalls": 0,
+        "sum": 30,
+        "exact": "18446744073709551613",
+        "fraction": 5.5,
+        "sumCalls": 1,
+        "exactCalls": 0,
+        "fractionCalls": 1
+      }
+    },
+    {
+      "name": "native-double-abi",
+      "passed": true,
+      "observed": {
+        "javaValue": 70,
+        "javaCalls": 0,
+        "sum": 30,
+        "exact": "18446744073709551613",
+        "fraction": 5.5,
+        "sumCalls": 1,
+        "exactCalls": 0,
+        "fractionCalls": 1
+      }
+    },
+    {
+      "name": "native-real-hit-count",
+      "passed": true,
+      "observed": {
+        "state": "ACTIVE",
+        "revision": "0176e2137cf0a6ccad3d5107a79f105d659d6d31b2528b10f38c7ff1a36d2906",
+        "sourceSha256": "89d6253224fe278fc92c5b73619bdf674b6c588e9189ea4a5347602e032e39c2",
+        "parameterVersion": 1,
+        "parameters": {},
+        "hits": 4,
+        "errors": 0,
+        "inFlight": 0,
+        "identity": {
+          "space": "p4-9dac402cbf73431f-hooks",
+          "installGeneration": "e031d747-cc0e-4d4c-9c22-45a0bac7a702",
+          "descriptorSha256": "5c83bbd8f45a7c83bc3b2c0b1d86e21c50e70ab9946071144adde713b5afef90",
+          "processGeneration": "f86e233851e83b9ce4bb185ba0e66e738d216d01f5fa9ac438db4c3bd3577069",
+          "pid": 5281,
+          "target": {
+            "packageName": "dev.tripoder.p2",
+            "versionCode": "1",
+            "apkSha256": "7bb77b707ace3f42c94b4ae11059026475fa63f27a665dd2913cefddb62d3e39"
+          }
+        },
+        "moduleEvents": [
+          {
+            "event": "added",
+            "path": "/data/data/dev.tripoder.runtimeprobe/files/runtime/artifacts/e031d747-cc0e-4d4c-9c22-45a0bac7a702/lib/libp0fixture.so",
+            "base": "0x6c6d6af000",
+            "sequence": "1",
+            "generation": 1,
+            "moduleName": "libp0fixture.so"
+          },
+          {
+            "event": "added",
+            "path": "/data/data/dev.tripoder.runtimeprobe/files/runtime/artifacts/e031d747-cc0e-4d4c-9c22-45a0bac7a702/lib/libtripoderownedhooks.so",
+            "base": "0x6c6d651000",
+            "sequence": "2",
+            "generation": 1,
+            "moduleName": "libtripoderownedhooks.so"
+          },
+          {
+            "event": "removed",
+            "path": "/data/data/dev.tripoder.runtimeprobe/files/runtime/artifacts/e031d747-cc0e-4d4c-9c22-45a0bac7a702/lib/libtripoderownedhooks.so",
+            "base": "0x6c6d651000",
+            "sequence": "3",
+            "generation": 1,
+            "moduleName": "libtripoderownedhooks.so"
+          },
+          {
+            "event": "added",
+            "path": "/data/data/dev.tripoder.runtimeprobe/files/runtime/artifacts/e031d747-cc0e-4d4c-9c22-45a0bac7a702/lib/libtripoderownedhooks.so",
+            "base": "0x6c6d644000",
+            "sequence": "4",
+            "generation": 2,
+            "moduleName": "libtripoderownedhooks.so"
+          }
+        ]
+      }
+    },
+    {
+      "name": "native-disable-ack",
+      "passed": true,
+      "observed": "all four methods restored"
+    },
+    {
+      "name": "guest-result-21",
+      "passed": true,
+      "observed": {
+        "pid": 5281,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "native": {
+          "javaValue": 5,
+          "javaCalls": 1,
+          "sum": 5,
+          "exact": "18446744073709551614",
+          "fraction": 2.75,
+          "sumCalls": 1,
+          "exactCalls": 1,
+          "fractionCalls": 1
+        },
+        "request": 121
+      }
+    },
+    {
+      "name": "native-disabled-originals",
+      "passed": true,
+      "observed": {
+        "javaValue": 5,
+        "javaCalls": 1,
+        "sum": 5,
+        "exact": "18446744073709551614",
+        "fraction": 2.75,
+        "sumCalls": 1,
+        "exactCalls": 1,
+        "fractionCalls": 1
+      }
+    },
+    {
+      "name": "guest-result-22",
+      "passed": true,
+      "observed": {
+        "pid": 5281,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "native": {
+          "closeSucceeded": true,
+          "mappedCount": 0
+        },
+        "request": 122
+      }
+    },
+    {
+      "name": "native-unload-invalidates-preparation",
+      "passed": true,
+      "observed": {
+        "guest": {
+          "closeSucceeded": true,
+          "mappedCount": 0
+        },
+        "hook": {
+          "state": "IDLE",
+          "identity": {
+            "space": "p4-9dac402cbf73431f-hooks",
+            "installGeneration": "e031d747-cc0e-4d4c-9c22-45a0bac7a702",
+            "descriptorSha256": "5c83bbd8f45a7c83bc3b2c0b1d86e21c50e70ab9946071144adde713b5afef90",
+            "processGeneration": "f86e233851e83b9ce4bb185ba0e66e738d216d01f5fa9ac438db4c3bd3577069",
+            "pid": 5281,
+            "target": {
+              "packageName": "dev.tripoder.p2",
+              "versionCode": "1",
+              "apkSha256": "7bb77b707ace3f42c94b4ae11059026475fa63f27a665dd2913cefddb62d3e39"
+            }
+          },
+          "moduleEvents": [
+            {
+              "event": "added",
+              "path": "/data/data/dev.tripoder.runtimeprobe/files/runtime/artifacts/e031d747-cc0e-4d4c-9c22-45a0bac7a702/lib/libp0fixture.so",
+              "base": "0x6c6d6af000",
+              "sequence": "1",
+              "generation": 1,
+              "moduleName": "libp0fixture.so"
+            },
+            {
+              "event": "added",
+              "path": "/data/data/dev.tripoder.runtimeprobe/files/runtime/artifacts/e031d747-cc0e-4d4c-9c22-45a0bac7a702/lib/libtripoderownedhooks.so",
+              "base": "0x6c6d651000",
+              "sequence": "2",
+              "generation": 1,
+              "moduleName": "libtripoderownedhooks.so"
+            },
+            {
+              "event": "removed",
+              "path": "/data/data/dev.tripoder.runtimeprobe/files/runtime/artifacts/e031d747-cc0e-4d4c-9c22-45a0bac7a702/lib/libtripoderownedhooks.so",
+              "base": "0x6c6d651000",
+              "sequence": "3",
+              "generation": 1,
+              "moduleName": "libtripoderownedhooks.so"
+            },
+            {
+              "event": "added",
+              "path": "/data/data/dev.tripoder.runtimeprobe/files/runtime/artifacts/e031d747-cc0e-4d4c-9c22-45a0bac7a702/lib/libtripoderownedhooks.so",
+              "base": "0x6c6d644000",
+              "sequence": "4",
+              "generation": 2,
+              "moduleName": "libtripoderownedhooks.so"
+            },
+            {
+              "event": "removed",
+              "path": "/data/data/dev.tripoder.runtimeprobe/files/runtime/artifacts/e031d747-cc0e-4d4c-9c22-45a0bac7a702/lib/libtripoderownedhooks.so",
+              "base": "0x6c6d644000",
+              "sequence": "5",
+              "generation": 2,
+              "moduleName": "libtripoderownedhooks.so"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "guest-result-23",
+      "passed": true,
+      "observed": {
+        "pid": 5281,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "native": {
+          "loaded": true,
+          "mappedCount": 1
+        },
+        "request": 123
+      }
+    },
+    {
+      "name": "native-reload-new-generation",
+      "passed": true,
+      "observed": {
+        "moduleName": "libtripoderownedhooks.so",
+        "path": "/data/data/dev.tripoder.runtimeprobe/files/runtime/artifacts/e031d747-cc0e-4d4c-9c22-45a0bac7a702/lib/libtripoderownedhooks.so",
+        "sourcePath": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/artifacts/e031d747-cc0e-4d4c-9c22-45a0bac7a702/lib/libtripoderownedhooks.so",
+        "sha256": "fd5fab021db64251c3593acbd5b9ab09153493ee83dfc413571326a7d81827c4",
+        "buildId": "35f7a9cf53abc669b72243b532e5c41fb9cdfc5a",
+        "buildIdNotes": [
+          {
+            "virtualAddress": 792,
+            "size": 20
+          }
+        ],
+        "virtualSize": 58944,
+        "state": "AVAILABLE",
+        "moduleGeneration": 3,
+        "base": "0x6c66870000",
+        "size": 58944,
+        "activeReferences": 0
+      }
+    },
+    {
+      "name": "native-old-prepare-token-after-reload",
+      "passed": true,
+      "observed": "java.lang.IllegalArgumentException: dev.tripoder.runtime.script.ScriptFault: HOOK_PREPARATION_STALE"
+    },
+    {
+      "name": "native-fatal-no-business-result-native-failure",
+      "passed": true,
+      "observed": {
+        "invalidResult": 0,
+        "request": 124
+      }
+    },
+    {
+      "name": "native-fatal-process-death-native-failure",
+      "passed": true,
+      "observed": {
+        "processGeneration": "f86e233851e83b9ce4bb185ba0e66e738d216d01f5fa9ac438db4c3bd3577069",
+        "pid": 5281,
+        "state": "DEAD"
+      }
+    },
+    {
+      "name": "native-fatal-exact-system-exit-native-failure",
+      "passed": true,
+      "observed": {
+        "pid": 5281,
+        "uid": 10398,
+        "process": "dev.tripoder.runtimeprobe:slot0",
+        "timestamp": 1792122294006,
+        "reason": 2,
+        "status": 9
+      }
+    },
+    {
+      "name": "guest-result-24",
+      "passed": true,
+      "observed": {
+        "pid": 686,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "native": {
+          "originalCount": 0
+        },
+        "request": 125
+      }
+    },
+    {
+      "name": "native-script-error-no-original-no-invented-return",
+      "passed": true,
+      "observed": "durable C original-call counter remains zero after process death"
+    },
+    {
+      "name": "native-restart-no-automatic-hook",
+      "passed": true,
+      "observed": "fresh process"
+    },
+    {
+      "name": "guest-result-25",
+      "passed": true,
+      "observed": {
+        "pid": 686,
+        "uid": 10398,
+        "package": "dev.tripoder.p2",
+        "native": {
+          "loaded": true,
+          "mappedCount": 1
+        },
+        "request": 126
+      }
+    },
+    {
+      "name": "native-active-module-has-real-core-references",
+      "passed": true,
+      "observed": {
+        "moduleName": "libtripoderownedhooks.so",
+        "path": "/data/data/dev.tripoder.runtimeprobe/files/runtime/artifacts/e031d747-cc0e-4d4c-9c22-45a0bac7a702/lib/libtripoderownedhooks.so",
+        "sourcePath": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/artifacts/e031d747-cc0e-4d4c-9c22-45a0bac7a702/lib/libtripoderownedhooks.so",
+        "sha256": "fd5fab021db64251c3593acbd5b9ab09153493ee83dfc413571326a7d81827c4",
+        "buildId": "35f7a9cf53abc669b72243b532e5c41fb9cdfc5a",
+        "buildIdNotes": [
+          {
+            "virtualAddress": 792,
+            "size": 20
+          }
+        ],
+        "virtualSize": 58944,
+        "state": "AVAILABLE",
+        "moduleGeneration": 1,
+        "base": "0x6c65e95000",
+        "size": 58944,
+        "activeReferences": 3
+      }
+    },
+    {
+      "name": "native-fatal-no-business-result-native-unload",
+      "passed": true,
+      "observed": {
+        "invalidResult": 0,
+        "request": 127
+      }
+    },
+    {
+      "name": "native-fatal-process-death-native-unload",
+      "passed": true,
+      "observed": {
+        "processGeneration": "246d4cbbe99a2eb953187616f0740df5bdd68b374b105b52953edcb61d8a34f8",
+        "pid": 686,
+        "state": "DEAD"
+      }
+    },
+    {
+      "name": "native-fatal-exact-system-exit-native-unload",
+      "passed": true,
+      "observed": {
+        "pid": 686,
+        "uid": 10398,
+        "process": "dev.tripoder.runtimeprobe:slot0",
+        "timestamp": 1792122309524,
+        "reason": 1,
+        "status": 198
+      }
+    },
+    {
+      "name": "native-active-unload-process-invalidated",
+      "passed": true,
+      "observed": "explicitly started fresh process after observed death"
+    }
+  ],
+  "runs": [
+    {
+      "pid": 3960,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "initializations": 0,
+      "request": 101
+    },
+    {
+      "pid": 3960,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "initializations": 0,
+      "request": 102
+    },
+    {
+      "pid": 3960,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "initializations": 0,
+      "request": 103
+    },
+    {
+      "pid": 3960,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "add": 5,
+      "text": "original:owned",
+      "nullText": "original-null",
+      "exact": "9007199254740993",
+      "sameOriginalException": true,
+      "originalException": "java.lang.IllegalArgumentException",
+      "beforeValue": 7,
+      "afterValue": 7,
+      "recursive": 3,
+      "threadSum": 2600,
+      "threadErrors": [],
+      "counts": {
+        "add": 1,
+        "text": 2,
+        "long": 1,
+        "throw": 1,
+        "before": 1,
+        "after": 1,
+        "recursive": 4,
+        "thread": 200
+      },
+      "request": 104
+    },
+    {
+      "pid": 3960,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "churn": {
+        "threads": 4,
+        "running": true,
+        "iterations": 225
+      },
+      "request": 105
+    },
+    {
+      "pid": 3960,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "churn": {
+        "allAliveBeforeStop": true,
+        "allStopped": true,
+        "iterations": 551081,
+        "checksum": 29162754
+      },
+      "request": 106
+    },
+    {
+      "pid": 3960,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "add": 30,
+      "text": "hook:owned",
+      "nullText": null,
+      "exact": "9007199254740994",
+      "sameOriginalException": true,
+      "originalException": "java.lang.IllegalArgumentException",
+      "beforeError": "java.lang.IllegalStateException:HOOK_EXECUTION:HOOK_TYPE:int",
+      "afterError": "java.lang.IllegalStateException:HOOK_EXECUTION:HOOK_TYPE:int",
+      "recursive": 7,
+      "threadSum": 4400,
+      "threadErrors": [],
+      "counts": {
+        "add": 1,
+        "text": 0,
+        "long": 0,
+        "throw": 1,
+        "before": 0,
+        "after": 1,
+        "recursive": 4,
+        "thread": 0
+      },
+      "request": 107
+    },
+    {
+      "pid": 3960,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "entered": true,
+      "request": 108
+    },
+    {
+      "pid": 3960,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "finished": true,
+      "heldResult": 107,
+      "heldError": null,
+      "request": 109
+    },
+    {
+      "pid": 3960,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "entered": true,
+      "request": 110
+    },
+    {
+      "pid": 3960,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "finished": true,
+      "heldResult": 207,
+      "heldError": null,
+      "request": 111
+    },
+    {
+      "pid": 3960,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "entered": true,
+      "request": 112
+    },
+    {
+      "pid": 3960,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "finished": true,
+      "heldResult": 207,
+      "heldError": null,
+      "request": 113
+    },
+    {
+      "pid": 3960,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "add": 5,
+      "text": "original:owned",
+      "nullText": "original-null",
+      "exact": "9007199254740993",
+      "sameOriginalException": true,
+      "originalException": "java.lang.IllegalArgumentException",
+      "beforeValue": 7,
+      "afterValue": 7,
+      "recursive": 3,
+      "threadSum": 2600,
+      "threadErrors": [],
+      "counts": {
+        "add": 1,
+        "text": 2,
+        "long": 1,
+        "throw": 1,
+        "before": 1,
+        "after": 1,
+        "recursive": 4,
+        "thread": 200
+      },
+      "request": 114
+    },
+    {
+      "pid": 5281,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "add": 5,
+      "text": "original:owned",
+      "nullText": "original-null",
+      "exact": "9007199254740993",
+      "sameOriginalException": true,
+      "originalException": "java.lang.IllegalArgumentException",
+      "beforeValue": 7,
+      "afterValue": 7,
+      "recursive": 3,
+      "threadSum": 2600,
+      "threadErrors": [],
+      "counts": {
+        "add": 1,
+        "text": 2,
+        "long": 1,
+        "throw": 1,
+        "before": 1,
+        "after": 1,
+        "recursive": 4,
+        "thread": 200
+      },
+      "request": 115
+    },
+    {
+      "pid": 5281,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "native": {
+        "loaded": true,
+        "mappedCount": 1
+      },
+      "request": 116
+    },
+    {
+      "pid": 5281,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "native": {
+        "closeSucceeded": true,
+        "mappedCount": 0
+      },
+      "request": 117
+    },
+    {
+      "pid": 5281,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "native": {
+        "loaded": true,
+        "mappedCount": 1
+      },
+      "request": 118
+    },
+    {
+      "pid": 5281,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "native": {
+        "javaValue": 5,
+        "javaCalls": 1,
+        "sum": 5,
+        "exact": "18446744073709551614",
+        "fraction": 2.75,
+        "sumCalls": 1,
+        "exactCalls": 1,
+        "fractionCalls": 1
+      },
+      "request": 119
+    },
+    {
+      "pid": 5281,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "native": {
+        "javaValue": 70,
+        "javaCalls": 0,
+        "sum": 30,
+        "exact": "18446744073709551613",
+        "fraction": 5.5,
+        "sumCalls": 1,
+        "exactCalls": 0,
+        "fractionCalls": 1
+      },
+      "request": 120
+    },
+    {
+      "pid": 5281,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "native": {
+        "javaValue": 5,
+        "javaCalls": 1,
+        "sum": 5,
+        "exact": "18446744073709551614",
+        "fraction": 2.75,
+        "sumCalls": 1,
+        "exactCalls": 1,
+        "fractionCalls": 1
+      },
+      "request": 121
+    },
+    {
+      "pid": 5281,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "native": {
+        "closeSucceeded": true,
+        "mappedCount": 0
+      },
+      "request": 122
+    },
+    {
+      "pid": 5281,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "native": {
+        "loaded": true,
+        "mappedCount": 1
+      },
+      "request": 123
+    },
+    {
+      "pid": 686,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "native": {
+        "originalCount": 0
+      },
+      "request": 125
+    },
+    {
+      "pid": 686,
+      "uid": 10398,
+      "package": "dev.tripoder.p2",
+      "native": {
+        "loaded": true,
+        "mappedCount": 1
+      },
+      "request": 126
+    }
+  ],
+  "finishedAt": 1792122324899,
+  "fullP4Accepted": false,
+  "genericApkExecutionVerified": false,
+  "strongIsolationVerified": false
+}

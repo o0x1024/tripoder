@@ -1,0 +1,65 @@
+--- a/glib/gatomic.h
++++ b/glib/gatomic.h
+@@ -192,25 +192,25 @@
+   (G_GNUC_EXTENSION ({                                                       \
+     G_STATIC_ASSERT (sizeof *(atomic) == sizeof (gint));                     \
+     (void) (0 ? *(atomic) ^ (val) : 1);                                      \
+-    (gint) __sync_fetch_and_add ((atomic), (val));                           \
++    (gint) __atomic_fetch_add ((gsize *) (atomic), (val), __ATOMIC_SEQ_CST);                           \
+   }))
+ #define g_atomic_int_and(atomic, val) \
+   (G_GNUC_EXTENSION ({                                                       \
+     G_STATIC_ASSERT (sizeof *(atomic) == sizeof (gint));                     \
+     (void) (0 ? *(atomic) ^ (val) : 1);                                      \
+-    (guint) __sync_fetch_and_and ((atomic), (val));                          \
++    (guint) __atomic_fetch_and ((gsize *) (atomic), (val), __ATOMIC_SEQ_CST);                          \
+   }))
+ #define g_atomic_int_or(atomic, val) \
+   (G_GNUC_EXTENSION ({                                                       \
+     G_STATIC_ASSERT (sizeof *(atomic) == sizeof (gint));                     \
+     (void) (0 ? *(atomic) ^ (val) : 1);                                      \
+-    (guint) __sync_fetch_and_or ((atomic), (val));                           \
++    (guint) __atomic_fetch_or ((gsize *) (atomic), (val), __ATOMIC_SEQ_CST);                           \
+   }))
+ #define g_atomic_int_xor(atomic, val) \
+   (G_GNUC_EXTENSION ({                                                       \
+     G_STATIC_ASSERT (sizeof *(atomic) == sizeof (gint));                     \
+     (void) (0 ? *(atomic) ^ (val) : 1);                                      \
+-    (guint) __sync_fetch_and_xor ((atomic), (val));                          \
++    (guint) __atomic_fetch_xor ((gsize *) (atomic), (val), __ATOMIC_SEQ_CST);                          \
+   }))
+ 
+ #define g_atomic_pointer_compare_and_exchange(atomic, oldval, newval) \
+@@ -224,28 +224,28 @@
+     G_STATIC_ASSERT (sizeof *(atomic) == sizeof (gpointer));                 \
+     (void) (0 ? (gpointer) *(atomic) : NULL);                                \
+     (void) (0 ? (val) ^ (val) : 1);                                          \
+-    (gssize) __sync_fetch_and_add ((atomic), (val));                         \
++    (gssize) __atomic_fetch_add ((gsize *) (atomic), (val), __ATOMIC_SEQ_CST);                         \
+   }))
+ #define g_atomic_pointer_and(atomic, val) \
+   (G_GNUC_EXTENSION ({                                                       \
+     G_STATIC_ASSERT (sizeof *(atomic) == sizeof (gpointer));                 \
+     (void) (0 ? (gpointer) *(atomic) : NULL);                                \
+     (void) (0 ? (val) ^ (val) : 1);                                          \
+-    (gsize) __sync_fetch_and_and ((atomic), (val));                          \
++    (gsize) __atomic_fetch_and ((gsize *) (atomic), (val), __ATOMIC_SEQ_CST);                          \
+   }))
+ #define g_atomic_pointer_or(atomic, val) \
+   (G_GNUC_EXTENSION ({                                                       \
+     G_STATIC_ASSERT (sizeof *(atomic) == sizeof (gpointer));                 \
+     (void) (0 ? (gpointer) *(atomic) : NULL);                                \
+     (void) (0 ? (val) ^ (val) : 1);                                          \
+-    (gsize) __sync_fetch_and_or ((atomic), (val));                           \
++    (gsize) __atomic_fetch_or ((gsize *) (atomic), (val), __ATOMIC_SEQ_CST);                           \
+   }))
+ #define g_atomic_pointer_xor(atomic, val) \
+   (G_GNUC_EXTENSION ({                                                       \
+     G_STATIC_ASSERT (sizeof *(atomic) == sizeof (gpointer));                 \
+     (void) (0 ? (gpointer) *(atomic) : NULL);                                \
+     (void) (0 ? (val) ^ (val) : 1);                                          \
+-    (gsize) __sync_fetch_and_xor ((atomic), (val));                          \
++    (gsize) __atomic_fetch_xor ((gsize *) (atomic), (val), __ATOMIC_SEQ_CST);                          \
+   }))
+ 
+ #else /* defined(G_ATOMIC_LOCK_FREE) && defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4) */

@@ -1,0 +1,252 @@
+{
+  "runId": "p4-9dac402cbf73431f",
+  "observedAtUtc": "2026-10-16T03:44:18.969696+00:00",
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "productApkReplaced": false,
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/b.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/runtime-probe.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.b"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~ZYWn2begSUu94AJNVsDq5Q==/dev.tripoder.p0.b-jr1nRScGP-S91FxphfDLUg==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~ZYWn2begSUu94AJNVsDq5Q==/dev.tripoder.p0.b-jr1nRScGP-S91FxphfDLUg==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "8b0cce0d739fb67d8f73d08a3b2988ade7298c57800701400e3dd78ed2c98c38  /data/app/~~ZYWn2begSUu94AJNVsDq5Q==/dev.tripoder.p0.b-jr1nRScGP-S91FxphfDLUg==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "getconf",
+        "PAGESIZE"
+      ],
+      "exitCode": 0,
+      "stdout": "4096\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.a"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.runtimeprobe uid:10398\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "date \"+%m-%d %H:%M:%S.%3N\""
+      ],
+      "exitCode": 0,
+      "stdout": "10-16 11:44:20.972\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-a",
+        "android.intent.action.MAIN",
+        "-c",
+        "android.intent.category.LAUNCHER",
+        "-f",
+        "0x10008000",
+        "-n",
+        "dev.tripoder.runtimeprobe/.P4ProbeActivity",
+        "--es",
+        "runId",
+        "p4-9dac402cbf73431f"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10008000 cmp=dev.tripoder.runtimeprobe/.P4ProbeActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.runtimeprobe/.P4ProbeActivity\nTotalTime: 86\nWaitTime: 87\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-16 11:44:20.972"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-16 11:44:20.972",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-16 11:44:20.972",
+        "TripoderHook:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-16 11:44:53.979  5281  6320 E TripoderHook: MIXED_HOOK_BACKEND_UNCERTAIN\n10-16 11:44:53.979  5281  6320 E TripoderHook: dev.tripoder.runtime.script.ScriptFault: HOOK_TYPE:int32\n10-16 11:44:53.979  5281  6320 E TripoderHook: \tat dev.tripoder.runtime.script.ScriptValues.abi(ScriptValues.java:142)\n10-16 11:44:53.979  5281  6320 E TripoderHook: \tat dev.tripoder.runtime.script.ScriptValues.checked(ScriptValues.java:147)\n10-16 11:44:53.979  5281  6320 E TripoderHook: \tat dev.tripoder.runtime.script.HookRule.execute(HookRule.java:33)\n10-16 11:44:53.979  5281  6320 E TripoderHook: \tat dev.tripoder.runtime.script.HookInvocationSession.invoke(HookInvocationSession.java:93)\n10-16 11:44:53.979  5281  6320 E TripoderHook: \tat dev.tripoder.runtime.script.HookInvocationSession.$r8$lambda$nZmNrfP4aooFEn-8ZN5eCliQA8A(HookInvocationSession.java:0)\n10-16 11:44:53.979  5281  6320 E TripoderHook: \tat dev.tripoder.runtime.script.HookInvocationSession$1.call(D8$$SyntheticClass:0)\n10-16 11:44:53.979  5281  6320 E TripoderHook: \tat dev.tripoder.runtime.RuntimeNativeHookBackend$1.lambda$publish$1(RuntimeNativeHookBackend.java:37)\n10-16 11:44:53.979  5281  6320 E TripoderHook: \tat dev.tripoder.runtime.RuntimeNativeHookBackend$1$2.invoke(D8$$SyntheticClass:0)\n10-16 11:44:53.979  5281  6320 E TripoderHook: \tat dev.tripoder.selfhook.NativeHook$Context.dispatchNative(NativeHook.java:30)\n10-16 11:44:53.979  5281  6320 E TripoderHook: \tat dev.tripoder.p2.NativeHooks.error(Native Method)\n10-16 11:44:53.979  5281  6320 E TripoderHook: \tat dev.tripoder.p2.NativeHooks.observe(NativeHooks.java:18)\n10-16 11:44:53.979  5281  6320 E TripoderHook: \tat dev.tripoder.p2.Hooks$Main.lambda$onCreate$0(Hooks.java:39)\n10-16 11:44:53.979  5281  6320 E TripoderHook: \tat dev.tripoder.p2.Hooks$Main.$r8$lambda$xY0xL0KTkF8dIBE0IGwhMhYkrYc(Hooks.java:0)\n10-16 11:44:53.979  5281  6320 E TripoderHook: \tat dev.tripoder.p2.Hooks$Main$2.run(D8$$SyntheticClass:0)\n10-16 11:44:53.979  5281  6320 E TripoderHook: \tat java.lang.Thread.run(Thread.java:1572)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-16 11:44:20.972",
+        "TripoderReceiver:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "decoyApkSha256": "8b0cce0d739fb67d8f73d08a3b2988ade7298c57800701400e3dd78ed2c98c38",
+  "decoyMarkerBefore": false,
+  "pageSize": 4096,
+  "aInstalledInHost": false,
+  "ownedUid": 10398,
+  "deviceLogStart": "10-16 11:44:20.972",
+  "decoyMarkerAfter": false,
+  "hostMatchesBuild": true,
+  "fixturesMatchBuild": true,
+  "p1FixturesMatchBuild": true,
+  "p2FixturesMatchBuild": true,
+  "allDeviceAssertionsPassed": true,
+  "nativeMemoryCrashObserved": false,
+  "nativeFatalSignalObserved": false,
+  "javaFatalObserved": false,
+  "expectedFixtureUncaught": [],
+  "unexpectedJavaFatalObserved": false,
+  "expectedHookTerminationsConfirmed": true,
+  "passed": true,
+  "finishedAtUtc": "2026-10-16T03:45:27.423905+00:00"
+}

@@ -1,0 +1,1649 @@
+
+android/self-hook-probe/build/device-linker64:	file format elf64-littleaarch64
+
+Disassembly of section .text:
+
+000000000005f200 <__dl__ZN9ElfReader4ReadEPKcill>:
+   5f200: d503233f     	paciasp
+   5f204: d102c3ff     	sub	sp, sp, #0xb0
+   5f208: a9057bfd     	stp	x29, x30, [sp, #0x50]
+   5f20c: a9066ffc     	stp	x28, x27, [sp, #0x60]
+   5f210: a90767fa     	stp	x26, x25, [sp, #0x70]
+   5f214: a9085ff8     	stp	x24, x23, [sp, #0x80]
+   5f218: a90957f6     	stp	x22, x21, [sp, #0x90]
+   5f21c: a90a4ff4     	stp	x20, x19, [sp, #0xa0]
+   5f220: 910143fd     	add	x29, sp, #0x50
+   5f224: 39400008     	ldrb	w8, [x0]
+   5f228: 37000f48     	tbnz	w8, #0x0, 0x5f410 <__dl__ZN9ElfReader4ReadEPKcill+0x210>
+   5f22c: aa0003f3     	mov	x19, x0
+   5f230: 91002000     	add	x0, x0, #0x8
+   5f234: aa0403f4     	mov	x20, x4
+   5f238: aa0303f5     	mov	x21, x3
+   5f23c: 2a0203f6     	mov	w22, w2
+   5f240: 94004c6c     	bl	0x723f0 <__dl__ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE17__assign_externalEPKc>
+   5f244: f0000b7b     	adrp	x27, 0x1ce000 <__dl_gmtptr>
+   5f248: b9002276     	str	w22, [x19, #0x20]
+   5f24c: a902d275     	stp	x21, x20, [x19, #0x28]
+   5f250: f9401663     	ldr	x3, [x19, #0x28]
+   5f254: b9402260     	ldr	w0, [x19, #0x20]
+   5f258: 9100e261     	add	x1, x19, #0x38
+   5f25c: 52800802     	mov	w2, #0x40               // =64
+   5f260: 97ffeef8     	bl	0x5ae40 <__dl_pread64>
+   5f264: b100041f     	cmn	x0, #0x1
+   5f268: 54000d80     	b.eq	0x5f418 <__dl__ZN9ElfReader4ReadEPKcill+0x218>
+   5f26c: aa0003e4     	mov	x4, x0
+   5f270: b7f80dc0     	tbnz	x0, #0x3f, 0x5f428 <__dl__ZN9ElfReader4ReadEPKcill+0x228>
+   5f274: f101009f     	cmp	x4, #0x40
+   5f278: 54001e41     	b.ne	0x5f640 <__dl__ZN9ElfReader4ReadEPKcill+0x440>
+   5f27c: b8438268     	ldur	w8, [x19, #0x38]
+   5f280: 5288afe9     	mov	w9, #0x457f             // =17791
+   5f284: 72a8c989     	movk	w9, #0x464c, lsl #16
+   5f288: 6b09011f     	cmp	w8, w9
+   5f28c: 54001821     	b.ne	0x5f590 <__dl__ZN9ElfReader4ReadEPKcill+0x390>
+   5f290: 3940f264     	ldrb	w4, [x19, #0x3c]
+   5f294: 7100089f     	cmp	w4, #0x2
+   5f298: 54001101     	b.ne	0x5f4b8 <__dl__ZN9ElfReader4ReadEPKcill+0x2b8>
+   5f29c: 3940f664     	ldrb	w4, [x19, #0x3d]
+   5f2a0: 7100049f     	cmp	w4, #0x1
+   5f2a4: 540011e1     	b.ne	0x5f4e0 <__dl__ZN9ElfReader4ReadEPKcill+0x2e0>
+   5f2a8: 79409264     	ldrh	w4, [x19, #0x48]
+   5f2ac: 71000c9f     	cmp	w4, #0x3
+   5f2b0: 54001e01     	b.ne	0x5f670 <__dl__ZN9ElfReader4ReadEPKcill+0x470>
+   5f2b4: b9404e64     	ldr	w4, [x19, #0x4c]
+   5f2b8: 7100049f     	cmp	w4, #0x1
+   5f2bc: 54001ea1     	b.ne	0x5f690 <__dl__ZN9ElfReader4ReadEPKcill+0x490>
+   5f2c0: 79409665     	ldrh	w5, [x19, #0x4a]
+   5f2c4: 7102dcbf     	cmp	w5, #0xb7
+   5f2c8: 54001f41     	b.ne	0x5f6b0 <__dl__ZN9ElfReader4ReadEPKcill+0x4b0>
+   5f2cc: 7940e663     	ldrh	w3, [x19, #0x72]
+   5f2d0: 7101007f     	cmp	w3, #0x40
+   5f2d4: 540020a1     	b.ne	0x5f6e8 <__dl__ZN9ElfReader4ReadEPKcill+0x4e8>
+   5f2d8: 7940ee68     	ldrh	w8, [x19, #0x76]
+   5f2dc: 340022e8     	cbz	w8, 0x5f738 <__dl__ZN9ElfReader4ReadEPKcill+0x538>
+   5f2e0: 7940e268     	ldrh	w8, [x19, #0x70]
+   5f2e4: 51124d09     	sub	w9, w8, #0x493
+   5f2e8: f9003e68     	str	x8, [x19, #0x78]
+   5f2ec: 31124d3f     	cmn	w9, #0x493
+   5f2f0: 54001269     	b.ls	0x5f53c <__dl__ZN9ElfReader4ReadEPKcill+0x33c>
+   5f2f4: d37ae509     	lsl	x9, x8, #6
+   5f2f8: f9402e64     	ldr	x4, [x19, #0x58]
+   5f2fc: cb080d34     	sub	x20, x9, x8, lsl #3
+   5f300: b40017e4     	cbz	x4, 0x5f5fc <__dl__ZN9ElfReader4ReadEPKcill+0x3fc>
+   5f304: f9401668     	ldr	x8, [x19, #0x28]
+   5f308: b7f81648     	tbnz	x8, #0x3f, 0x5f5d0 <__dl__ZN9ElfReader4ReadEPKcill+0x3d0>
+   5f30c: d240f909     	eor	x9, x8, #0x7fffffffffffffff
+   5f310: eb04013f     	cmp	x9, x4
+   5f314: 54001743     	b.lo	0x5f5fc <__dl__ZN9ElfReader4ReadEPKcill+0x3fc>
+   5f318: 8b040116     	add	x22, x8, x4
+   5f31c: b7f82356     	tbnz	x22, #0x3f, 0x5f784 <__dl__ZN9ElfReader4ReadEPKcill+0x584>
+   5f320: d240fac8     	eor	x8, x22, #0x7fffffffffffffff
+   5f324: eb14011f     	cmp	x8, x20
+   5f328: 540016a3     	b.lo	0x5f5fc <__dl__ZN9ElfReader4ReadEPKcill+0x3fc>
+   5f32c: f240089f     	tst	x4, #0x7
+   5f330: 54001661     	b.ne	0x5f5fc <__dl__ZN9ElfReader4ReadEPKcill+0x3fc>
+   5f334: f9401a68     	ldr	x8, [x19, #0x30]
+   5f338: eb0802df     	cmp	x22, x8
+   5f33c: 5400160a     	b.ge	0x5f5fc <__dl__ZN9ElfReader4ReadEPKcill+0x3fc>
+   5f340: 8b1402d5     	add	x21, x22, x20
+   5f344: eb0802bf     	cmp	x21, x8
+   5f348: 540015ac     	b.gt	0x5f5fc <__dl__ZN9ElfReader4ReadEPKcill+0x3fc>
+   5f34c: f0000b7c     	adrp	x28, 0x1ce000 <__dl_gmtptr>
+   5f350: 9114839c     	add	x28, x28, #0x520
+   5f354: b9402264     	ldr	w4, [x19, #0x20]
+   5f358: 08dfff88     	ldarb	w8, [x28]
+   5f35c: f0000b7a     	adrp	x26, 0x1ce000 <__dl_gmtptr>
+   5f360: 36002288     	tbz	w8, #0x0, 0x5f7b0 <__dl__ZN9ElfReader4ReadEPKcill+0x5b0>
+   5f364: f9428f57     	ldr	x23, [x26, #0x518]
+   5f368: 08dfff88     	ldarb	w8, [x28]
+   5f36c: 360023e8     	tbz	w8, #0x0, 0x5f7e8 <__dl__ZN9ElfReader4ReadEPKcill+0x5e8>
+   5f370: b7f82595     	tbnz	x21, #0x3f, 0x5f820 <__dl__ZN9ElfReader4ReadEPKcill+0x620>
+   5f374: f9428f48     	ldr	x8, [x26, #0x518]
+   5f378: 92f00009     	mov	x9, #0x7fffffffffffffff // =9223372036854775807
+   5f37c: 8b090108     	add	x8, x8, x9
+   5f380: d240faa9     	eor	x9, x21, #0x7fffffffffffffff
+   5f384: 8a160108     	and	x8, x8, x22
+   5f388: eb08013f     	cmp	x9, x8
+   5f38c: 54000c23     	b.lo	0x5f510 <__dl__ZN9ElfReader4ReadEPKcill+0x310>
+   5f390: cb1703e9     	neg	x9, x23
+   5f394: 8a0902c5     	and	x5, x22, x9
+   5f398: cb0502a9     	sub	x9, x21, x5
+   5f39c: 8b080135     	add	x21, x9, x8
+   5f3a0: eb1402bf     	cmp	x21, x20
+   5f3a4: 54002543     	b.lo	0x5f84c <__dl__ZN9ElfReader4ReadEPKcill+0x64c>
+   5f3a8: aa1f03e0     	mov	x0, xzr
+   5f3ac: aa1503e1     	mov	x1, x21
+   5f3b0: 52800022     	mov	w2, #0x1                // =1
+   5f3b4: 52800043     	mov	w3, #0x2                // =2
+   5f3b8: 97fff262     	bl	0x5bd40 <__dl_mmap64>
+   5f3bc: b100041f     	cmn	x0, #0x1
+   5f3c0: 540004c0     	b.eq	0x5f458 <__dl__ZN9ElfReader4ReadEPKcill+0x258>
+   5f3c4: a9085660     	stp	x0, x21, [x19, #0x80]
+   5f3c8: 08dfff88     	ldarb	w8, [x28]
+   5f3cc: 36000568     	tbz	w8, #0x0, 0x5f478 <__dl__ZN9ElfReader4ReadEPKcill+0x278>
+   5f3d0: f9428f48     	ldr	x8, [x26, #0x518]
+   5f3d4: 92f00009     	mov	x9, #0x7fffffffffffffff // =9223372036854775807
+   5f3d8: 8b090108     	add	x8, x8, x9
+   5f3dc: 8a160108     	and	x8, x8, x22
+   5f3e0: 8b080008     	add	x8, x0, x8
+   5f3e4: a9095268     	stp	x8, x20, [x19, #0x90]
+   5f3e8: f9005268     	str	x8, [x19, #0xa0]
+   5f3ec: 08dfff88     	ldarb	w8, [x28]
+   5f3f0: 36002448     	tbz	w8, #0x0, 0x5f878 <__dl__ZN9ElfReader4ReadEPKcill+0x678>
+   5f3f4: f9428f49     	ldr	x9, [x26, #0x518]
+   5f3f8: f9403e68     	ldr	x8, [x19, #0x78]
+   5f3fc: a915a669     	stp	x9, x9, [x19, #0x158]
+   5f400: b4003028     	cbz	x8, 0x5fa04 <__dl__ZN9ElfReader4ReadEPKcill+0x804>
+   5f404: aa1f03f6     	mov	x22, xzr
+   5f408: aa1f03f4     	mov	x20, xzr
+   5f40c: 14000169     	b	0x5f9b0 <__dl__ZN9ElfReader4ReadEPKcill+0x7b0>
+   5f410: 52800028     	mov	w8, #0x1                // =1
+   5f414: 140004ea     	b	0x607bc <__dl__ZN9ElfReader4ReadEPKcill+0x15bc>
+   5f418: 940051db     	bl	0x73b84 <__dl___errno>
+   5f41c: b9400008     	ldr	w8, [x0]
+   5f420: 7100111f     	cmp	w8, #0x4
+   5f424: 54fff160     	b.eq	0x5f250 <__dl__ZN9ElfReader4ReadEPKcill+0x50>
+   5f428: 39402268     	ldrb	w8, [x19, #0x8]
+   5f42c: f9400e69     	ldr	x9, [x19, #0x18]
+   5f430: 9100266a     	add	x10, x19, #0x9
+   5f434: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5f438: 91194400     	add	x0, x0, #0x651
+   5f43c: b0fffd42     	adrp	x2, 0x8000 <__dl_$d+0x278>
+   5f440: 912e0042     	add	x2, x2, #0xb80
+   5f444: 7200011f     	tst	w8, #0x1
+   5f448: 9a890143     	csel	x3, x10, x9, eq
+   5f44c: 52806001     	mov	w1, #0x300              // =768
+   5f450: 940013f7     	bl	0x6442c <__dl_async_safe_format_buffer>
+   5f454: 140004d6     	b	0x607ac <__dl__ZN9ElfReader4ReadEPKcill+0x15ac>
+   5f458: 39402268     	ldrb	w8, [x19, #0x8]
+   5f45c: f9400e69     	ldr	x9, [x19, #0x18]
+   5f460: 9100266a     	add	x10, x19, #0x9
+   5f464: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5f468: 91194400     	add	x0, x0, #0x651
+   5f46c: f0fffd22     	adrp	x2, 0x6000 <__dl_.str.3.llvm.10601115370221303137+0x69>
+   5f470: 912f4c42     	add	x2, x2, #0xbd3
+   5f474: 17fffff4     	b	0x5f444 <__dl__ZN9ElfReader4ReadEPKcill+0x244>
+   5f478: f0000b68     	adrp	x8, 0x1ce000 <__dl_gmtptr>
+   5f47c: 91148108     	add	x8, x8, #0x520
+   5f480: aa0003f5     	mov	x21, x0
+   5f484: aa0803e0     	mov	x0, x8
+   5f488: 940133f1     	bl	0xac44c <__dl___cxa_guard_acquire>
+   5f48c: 2a0003e8     	mov	w8, w0
+   5f490: aa1503e0     	mov	x0, x21
+   5f494: 34fff9e8     	cbz	w8, 0x5f3d0 <__dl__ZN9ElfReader4ReadEPKcill+0x1d0>
+   5f498: 528000c0     	mov	w0, #0x6                // =6
+   5f49c: 9400b80d     	bl	0x8d4d0 <__dl_getauxval>
+   5f4a0: f9028f40     	str	x0, [x26, #0x518]
+   5f4a4: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5f4a8: 91148000     	add	x0, x0, #0x520
+   5f4ac: 9401342e     	bl	0xac564 <__dl___cxa_guard_release>
+   5f4b0: aa1503e0     	mov	x0, x21
+   5f4b4: 17ffffc7     	b	0x5f3d0 <__dl__ZN9ElfReader4ReadEPKcill+0x1d0>
+   5f4b8: 7100049f     	cmp	w4, #0x1
+   5f4bc: 540005a1     	b.ne	0x5f570 <__dl__ZN9ElfReader4ReadEPKcill+0x370>
+   5f4c0: 39402268     	ldrb	w8, [x19, #0x8]
+   5f4c4: f9400e69     	ldr	x9, [x19, #0x18]
+   5f4c8: 9100266a     	add	x10, x19, #0x9
+   5f4cc: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5f4d0: 91194400     	add	x0, x0, #0x651
+   5f4d4: b0fffd42     	adrp	x2, 0x8000 <__dl_$d+0x278>
+   5f4d8: 91050842     	add	x2, x2, #0x142
+   5f4dc: 17ffffda     	b	0x5f444 <__dl__ZN9ElfReader4ReadEPKcill+0x244>
+   5f4e0: 39402268     	ldrb	w8, [x19, #0x8]
+   5f4e4: f9400e69     	ldr	x9, [x19, #0x18]
+   5f4e8: 9100266a     	add	x10, x19, #0x9
+   5f4ec: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5f4f0: 91194400     	add	x0, x0, #0x651
+   5f4f4: d0fffd62     	adrp	x2, 0xd000 <__dl_.str.llvm.16264369210413743019+0x85>
+   5f4f8: 91292042     	add	x2, x2, #0xa48
+   5f4fc: 7200011f     	tst	w8, #0x1
+   5f500: 9a890143     	csel	x3, x10, x9, eq
+   5f504: 52806001     	mov	w1, #0x300              // =768
+   5f508: 940013c9     	bl	0x6442c <__dl_async_safe_format_buffer>
+   5f50c: 140004a8     	b	0x607ac <__dl__ZN9ElfReader4ReadEPKcill+0x15ac>
+   5f510: d503201f     	nop
+   5f514: 70d562e0     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   5f518: d503201f     	nop
+   5f51c: 70d13921     	adr	x1, 0x1c43 <__dl_.str.1.llvm.16703203803929973174>
+   5f520: d503201f     	nop
+   5f524: 50d29ca3     	adr	x3, 0x48ba <__dl___FUNCTION__._ZN18MappedFileFragment3MapEilmm.llvm.16703203803929973174>
+   5f528: d503201f     	nop
+   5f52c: 70d2df44     	adr	x4, 0x5117 <__dl_.str.4.llvm.16703203803929973174>
+   5f530: 52800722     	mov	w2, #0x39               // =57
+   5f534: 94001392     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   5f538: 9400140b     	bl	0x64564 <__dl_abort>
+   5f53c: 39402269     	ldrb	w9, [x19, #0x8]
+   5f540: f9400e6a     	ldr	x10, [x19, #0x18]
+   5f544: 9100266b     	add	x11, x19, #0x9
+   5f548: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5f54c: 91194400     	add	x0, x0, #0x651
+   5f550: f0fffd22     	adrp	x2, 0x6000 <__dl_.str.3.llvm.10601115370221303137+0x69>
+   5f554: 912ed442     	add	x2, x2, #0xbb5
+   5f558: 7200013f     	tst	w9, #0x1
+   5f55c: 52806001     	mov	w1, #0x300              // =768
+   5f560: 9a8a0163     	csel	x3, x11, x10, eq
+   5f564: aa0803e4     	mov	x4, x8
+   5f568: 940013b1     	bl	0x6442c <__dl_async_safe_format_buffer>
+   5f56c: 14000490     	b	0x607ac <__dl__ZN9ElfReader4ReadEPKcill+0x15ac>
+   5f570: 39402268     	ldrb	w8, [x19, #0x8]
+   5f574: f9400e69     	ldr	x9, [x19, #0x18]
+   5f578: 9100266a     	add	x10, x19, #0x9
+   5f57c: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5f580: 91194400     	add	x0, x0, #0x651
+   5f584: f0fffd22     	adrp	x2, 0x6000 <__dl_.str.3.llvm.10601115370221303137+0x69>
+   5f588: 91158442     	add	x2, x2, #0x561
+   5f58c: 17ffffdc     	b	0x5f4fc <__dl__ZN9ElfReader4ReadEPKcill+0x2fc>
+   5f590: 39402269     	ldrb	w9, [x19, #0x8]
+   5f594: f9400e6a     	ldr	x10, [x19, #0x18]
+   5f598: 53187d07     	lsr	w7, w8, #24
+   5f59c: 9100266b     	add	x11, x19, #0x9
+   5f5a0: 53083d05     	ubfx	w5, w8, #8, #8
+   5f5a4: 53105d06     	ubfx	w6, w8, #16, #8
+   5f5a8: 7200013f     	tst	w9, #0x1
+   5f5ac: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5f5b0: 91194400     	add	x0, x0, #0x651
+   5f5b4: 9a8a0163     	csel	x3, x11, x10, eq
+   5f5b8: 90fffd42     	adrp	x2, 0x7000 <__dl_.str.llvm.3714003009145656655+0xce>
+   5f5bc: 91202c42     	add	x2, x2, #0x80b
+   5f5c0: 12001d04     	and	w4, w8, #0xff
+   5f5c4: 52806001     	mov	w1, #0x300              // =768
+   5f5c8: 94001399     	bl	0x6442c <__dl_async_safe_format_buffer>
+   5f5cc: 14000478     	b	0x607ac <__dl__ZN9ElfReader4ReadEPKcill+0x15ac>
+   5f5d0: d503201f     	nop
+   5f5d4: 70d55ce0     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   5f5d8: d503201f     	nop
+   5f5dc: 50d13c41     	adr	x1, 0x1d66 <__dl_.str.13.llvm.4321711338576704958>
+   5f5e0: d503201f     	nop
+   5f5e4: 30d7e8e3     	adr	x3, 0xf301 <__dl___FUNCTION__._Z8safe_addPllm.llvm.4321711338576704958>
+   5f5e8: d503201f     	nop
+   5f5ec: 30d7aa64     	adr	x4, 0xeb39 <__dl_.str.14.llvm.4321711338576704958>
+   5f5f0: 528015a2     	mov	w2, #0xad               // =173
+   5f5f4: 94001362     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   5f5f8: 940013db     	bl	0x64564 <__dl_abort>
+   5f5fc: 39402268     	ldrb	w8, [x19, #0x8]
+   5f600: f9400e69     	ldr	x9, [x19, #0x18]
+   5f604: 91002676     	add	x22, x19, #0x9
+   5f608: d0fffd55     	adrp	x21, 0x9000 <__dl_$d+0x65>
+   5f60c: 910836b5     	add	x21, x21, #0x20d
+   5f610: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5f614: 91194400     	add	x0, x0, #0x651
+   5f618: 7200011f     	tst	w8, #0x1
+   5f61c: 52806001     	mov	w1, #0x300              // =768
+   5f620: 9a8902c3     	csel	x3, x22, x9, eq
+   5f624: aa1503e2     	mov	x2, x21
+   5f628: aa1403e5     	mov	x5, x20
+   5f62c: 94001380     	bl	0x6442c <__dl_async_safe_format_buffer>
+   5f630: 39402268     	ldrb	w8, [x19, #0x8]
+   5f634: f9400e69     	ldr	x9, [x19, #0x18]
+   5f638: f9402e63     	ldr	x3, [x19, #0x58]
+   5f63c: 140000b3     	b	0x5f908 <__dl__ZN9ElfReader4ReadEPKcill+0x708>
+   5f640: 39402268     	ldrb	w8, [x19, #0x8]
+   5f644: f9400e69     	ldr	x9, [x19, #0x18]
+   5f648: 9100266a     	add	x10, x19, #0x9
+   5f64c: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5f650: 91194400     	add	x0, x0, #0x651
+   5f654: f0fffd62     	adrp	x2, 0xe000 <__dl_$d+0x91>
+   5f658: 91072842     	add	x2, x2, #0x1ca
+   5f65c: 7200011f     	tst	w8, #0x1
+   5f660: 52806001     	mov	w1, #0x300              // =768
+   5f664: 9a890143     	csel	x3, x10, x9, eq
+   5f668: 94001371     	bl	0x6442c <__dl_async_safe_format_buffer>
+   5f66c: 14000450     	b	0x607ac <__dl__ZN9ElfReader4ReadEPKcill+0x15ac>
+   5f670: 39402268     	ldrb	w8, [x19, #0x8]
+   5f674: f9400e69     	ldr	x9, [x19, #0x18]
+   5f678: 9100266a     	add	x10, x19, #0x9
+   5f67c: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5f680: 91194400     	add	x0, x0, #0x651
+   5f684: f0fffd42     	adrp	x2, 0xa000 <__dl_.str.6.llvm.2814901811093015662+0x17e>
+   5f688: 91319042     	add	x2, x2, #0xc64
+   5f68c: 17ffff9c     	b	0x5f4fc <__dl__ZN9ElfReader4ReadEPKcill+0x2fc>
+   5f690: 39402268     	ldrb	w8, [x19, #0x8]
+   5f694: f9400e69     	ldr	x9, [x19, #0x18]
+   5f698: 9100266a     	add	x10, x19, #0x9
+   5f69c: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5f6a0: 91194400     	add	x0, x0, #0x651
+   5f6a4: 90fffd82     	adrp	x2, 0xf000 <__dl_.str.10.llvm.7423324223920420968+0x219>
+   5f6a8: 9108b842     	add	x2, x2, #0x22e
+   5f6ac: 17ffff94     	b	0x5f4fc <__dl__ZN9ElfReader4ReadEPKcill+0x2fc>
+   5f6b0: 39402268     	ldrb	w8, [x19, #0x8]
+   5f6b4: f9400e69     	ldr	x9, [x19, #0x18]
+   5f6b8: 9100266a     	add	x10, x19, #0x9
+   5f6bc: 7200011f     	tst	w8, #0x1
+   5f6c0: 9a890143     	csel	x3, x10, x9, eq
+   5f6c4: 7100f4bf     	cmp	w5, #0x3d
+   5f6c8: 54000eec     	b.gt	0x5f8a4 <__dl__ZN9ElfReader4ReadEPKcill+0x6a4>
+   5f6cc: 71000cbf     	cmp	w5, #0x3
+   5f6d0: 54000f80     	b.eq	0x5f8c0 <__dl__ZN9ElfReader4ReadEPKcill+0x6c0>
+   5f6d4: 7100a0bf     	cmp	w5, #0x28
+   5f6d8: 54001001     	b.ne	0x5f8d8 <__dl__ZN9ElfReader4ReadEPKcill+0x6d8>
+   5f6dc: d0fffd24     	adrp	x4, 0x5000 <__dl_$d+0x92>
+   5f6e0: 91348c84     	add	x4, x4, #0xd23
+   5f6e4: 1400007f     	b	0x5f8e0 <__dl__ZN9ElfReader4ReadEPKcill+0x6e0>
+   5f6e8: 39402268     	ldrb	w8, [x19, #0x8]
+   5f6ec: f9400e69     	ldr	x9, [x19, #0x18]
+   5f6f0: 91002674     	add	x20, x19, #0x9
+   5f6f4: d0fffd01     	adrp	x1, 0x1000 <__dl_$d+0x2c>
+   5f6f8: 910ff021     	add	x1, x1, #0x3fc
+   5f6fc: 52800340     	mov	w0, #0x1a               // =26
+   5f700: 7200011f     	tst	w8, #0x1
+   5f704: 52800804     	mov	w4, #0x40               // =64
+   5f708: 9a890282     	csel	x2, x20, x9, eq
+   5f70c: 94008ae5     	bl	0x822a0 <__dl__Z14DL_ERROR_AFTERiPKcz>
+   5f710: 370084e0     	tbnz	w0, #0x0, 0x607ac <__dl__ZN9ElfReader4ReadEPKcill+0x15ac>
+   5f714: 39402268     	ldrb	w8, [x19, #0x8]
+   5f718: f9400e69     	ldr	x9, [x19, #0x18]
+   5f71c: d0fffd61     	adrp	x1, 0xd000 <__dl_.str.llvm.16264369210413743019+0x85>
+   5f720: 91065c21     	add	x1, x1, #0x197
+   5f724: aa1f03e2     	mov	x2, xzr
+   5f728: 7200011f     	tst	w8, #0x1
+   5f72c: 9a890280     	csel	x0, x20, x9, eq
+   5f730: 94009907     	bl	0x85b4c <__dl__Z13add_dlwarningPKcS0_S0_>
+   5f734: 17fffee9     	b	0x5f2d8 <__dl__ZN9ElfReader4ReadEPKcill+0xd8>
+   5f738: 39402268     	ldrb	w8, [x19, #0x8]
+   5f73c: f9400e69     	ldr	x9, [x19, #0x18]
+   5f740: 91002674     	add	x20, x19, #0x9
+   5f744: d0fffd01     	adrp	x1, 0x1000 <__dl_$d+0x2c>
+   5f748: 9110d021     	add	x1, x1, #0x434
+   5f74c: 52800340     	mov	w0, #0x1a               // =26
+   5f750: 7200011f     	tst	w8, #0x1
+   5f754: 9a890282     	csel	x2, x20, x9, eq
+   5f758: 94008ad2     	bl	0x822a0 <__dl__Z14DL_ERROR_AFTERiPKcz>
+   5f75c: 37008280     	tbnz	w0, #0x0, 0x607ac <__dl__ZN9ElfReader4ReadEPKcill+0x15ac>
+   5f760: 39402268     	ldrb	w8, [x19, #0x8]
+   5f764: f9400e69     	ldr	x9, [x19, #0x18]
+   5f768: d0fffd61     	adrp	x1, 0xd000 <__dl_.str.llvm.16264369210413743019+0x85>
+   5f76c: 91065c21     	add	x1, x1, #0x197
+   5f770: aa1f03e2     	mov	x2, xzr
+   5f774: 7200011f     	tst	w8, #0x1
+   5f778: 9a890280     	csel	x0, x20, x9, eq
+   5f77c: 940098f4     	bl	0x85b4c <__dl__Z13add_dlwarningPKcS0_S0_>
+   5f780: 17fffed8     	b	0x5f2e0 <__dl__ZN9ElfReader4ReadEPKcill+0xe0>
+   5f784: d503201f     	nop
+   5f788: 70d54f40     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   5f78c: d503201f     	nop
+   5f790: 50d12ea1     	adr	x1, 0x1d66 <__dl_.str.13.llvm.4321711338576704958>
+   5f794: d503201f     	nop
+   5f798: 30d7db43     	adr	x3, 0xf301 <__dl___FUNCTION__._Z8safe_addPllm.llvm.4321711338576704958>
+   5f79c: d503201f     	nop
+   5f7a0: 30d79cc4     	adr	x4, 0xeb39 <__dl_.str.14.llvm.4321711338576704958>
+   5f7a4: 528015a2     	mov	w2, #0xad               // =173
+   5f7a8: 940012f5     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   5f7ac: 9400136e     	bl	0x64564 <__dl_abort>
+   5f7b0: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5f7b4: 91148000     	add	x0, x0, #0x520
+   5f7b8: 2a0403f7     	mov	w23, w4
+   5f7bc: 94013324     	bl	0xac44c <__dl___cxa_guard_acquire>
+   5f7c0: 2a1703e4     	mov	w4, w23
+   5f7c4: 34ffdd00     	cbz	w0, 0x5f364 <__dl__ZN9ElfReader4ReadEPKcill+0x164>
+   5f7c8: 528000c0     	mov	w0, #0x6                // =6
+   5f7cc: 9400b741     	bl	0x8d4d0 <__dl_getauxval>
+   5f7d0: f9028f40     	str	x0, [x26, #0x518]
+   5f7d4: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5f7d8: 91148000     	add	x0, x0, #0x520
+   5f7dc: 94013362     	bl	0xac564 <__dl___cxa_guard_release>
+   5f7e0: 2a1703e4     	mov	w4, w23
+   5f7e4: 17fffee0     	b	0x5f364 <__dl__ZN9ElfReader4ReadEPKcill+0x164>
+   5f7e8: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5f7ec: 91148000     	add	x0, x0, #0x520
+   5f7f0: 2a0403f8     	mov	w24, w4
+   5f7f4: 94013316     	bl	0xac44c <__dl___cxa_guard_acquire>
+   5f7f8: 2a1803e4     	mov	w4, w24
+   5f7fc: 34ffdba0     	cbz	w0, 0x5f370 <__dl__ZN9ElfReader4ReadEPKcill+0x170>
+   5f800: 528000c0     	mov	w0, #0x6                // =6
+   5f804: 9400b733     	bl	0x8d4d0 <__dl_getauxval>
+   5f808: f9028f40     	str	x0, [x26, #0x518]
+   5f80c: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5f810: 91148000     	add	x0, x0, #0x520
+   5f814: 94013354     	bl	0xac564 <__dl___cxa_guard_release>
+   5f818: 2a1803e4     	mov	w4, w24
+   5f81c: 17fffed5     	b	0x5f370 <__dl__ZN9ElfReader4ReadEPKcill+0x170>
+   5f820: d503201f     	nop
+   5f824: 70d54a60     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   5f828: d503201f     	nop
+   5f82c: 50d129c1     	adr	x1, 0x1d66 <__dl_.str.13.llvm.4321711338576704958>
+   5f830: d503201f     	nop
+   5f834: 30d7d663     	adr	x3, 0xf301 <__dl___FUNCTION__._Z8safe_addPllm.llvm.4321711338576704958>
+   5f838: d503201f     	nop
+   5f83c: 30d797e4     	adr	x4, 0xeb39 <__dl_.str.14.llvm.4321711338576704958>
+   5f840: 528015a2     	mov	w2, #0xad               // =173
+   5f844: 940012ce     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   5f848: 94001347     	bl	0x64564 <__dl_abort>
+   5f84c: d503201f     	nop
+   5f850: 70d54900     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   5f854: d503201f     	nop
+   5f858: 70d11f41     	adr	x1, 0x1c43 <__dl_.str.1.llvm.16703203803929973174>
+   5f85c: d503201f     	nop
+   5f860: 50d282c3     	adr	x3, 0x48ba <__dl___FUNCTION__._ZN18MappedFileFragment3MapEilmm.llvm.16703203803929973174>
+   5f864: d503201f     	nop
+   5f868: 30d63d64     	adr	x4, 0xc015 <__dl_.str.5.llvm.16703203803929973174>
+   5f86c: 52800782     	mov	w2, #0x3c               // =60
+   5f870: 940012c3     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   5f874: 9400133c     	bl	0x64564 <__dl_abort>
+   5f878: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5f87c: 91148000     	add	x0, x0, #0x520
+   5f880: 940132f3     	bl	0xac44c <__dl___cxa_guard_acquire>
+   5f884: 34ffdb80     	cbz	w0, 0x5f3f4 <__dl__ZN9ElfReader4ReadEPKcill+0x1f4>
+   5f888: 528000c0     	mov	w0, #0x6                // =6
+   5f88c: 9400b711     	bl	0x8d4d0 <__dl_getauxval>
+   5f890: f9028f40     	str	x0, [x26, #0x518]
+   5f894: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5f898: 91148000     	add	x0, x0, #0x520
+   5f89c: 94013332     	bl	0xac564 <__dl___cxa_guard_release>
+   5f8a0: 17fffed5     	b	0x5f3f4 <__dl__ZN9ElfReader4ReadEPKcill+0x1f4>
+   5f8a4: 7100f8bf     	cmp	w5, #0x3e
+   5f8a8: 54000120     	b.eq	0x5f8cc <__dl__ZN9ElfReader4ReadEPKcill+0x6cc>
+   5f8ac: 7103ccbf     	cmp	w5, #0xf3
+   5f8b0: 54000141     	b.ne	0x5f8d8 <__dl__ZN9ElfReader4ReadEPKcill+0x6d8>
+   5f8b4: f0fffd24     	adrp	x4, 0x6000 <__dl_.str.3.llvm.10601115370221303137+0x69>
+   5f8b8: 91160084     	add	x4, x4, #0x580
+   5f8bc: 14000009     	b	0x5f8e0 <__dl__ZN9ElfReader4ReadEPKcill+0x6e0>
+   5f8c0: d0fffd04     	adrp	x4, 0x1000 <__dl_$d+0x2c>
+   5f8c4: 91114084     	add	x4, x4, #0x450
+   5f8c8: 14000006     	b	0x5f8e0 <__dl__ZN9ElfReader4ReadEPKcill+0x6e0>
+   5f8cc: 90fffd24     	adrp	x4, 0x3000 <__dl_$d+0x79>
+   5f8d0: 912c5084     	add	x4, x4, #0xb14
+   5f8d4: 14000003     	b	0x5f8e0 <__dl__ZN9ElfReader4ReadEPKcill+0x6e0>
+   5f8d8: b0fffd24     	adrp	x4, 0x4000 <__dl_$d+0x1bb>
+   5f8dc: 91038884     	add	x4, x4, #0xe2
+   5f8e0: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5f8e4: 91194400     	add	x0, x0, #0x651
+   5f8e8: 90fffd42     	adrp	x2, 0x7000 <__dl_.str.llvm.3714003009145656655+0xce>
+   5f8ec: 9120d042     	add	x2, x2, #0x834
+   5f8f0: d0fffd46     	adrp	x6, 0x9000 <__dl_$d+0x65>
+   5f8f4: 910ac0c6     	add	x6, x6, #0x2b0
+   5f8f8: 52806001     	mov	w1, #0x300              // =768
+   5f8fc: 528016e7     	mov	w7, #0xb7               // =183
+   5f900: 940012cb     	bl	0x6442c <__dl_async_safe_format_buffer>
+   5f904: 140003aa     	b	0x607ac <__dl__ZN9ElfReader4ReadEPKcill+0x15ac>
+   5f908: 7200011f     	tst	w8, #0x1
+   5f90c: 9a8902c2     	csel	x2, x22, x9, eq
+   5f910: 528000c0     	mov	w0, #0x6                // =6
+   5f914: aa1503e1     	mov	x1, x21
+   5f918: aa1403e4     	mov	x4, x20
+   5f91c: 940015e1     	bl	0x650a0 <__dl__Z12__linker_logiPKcz>
+   5f920: 140003a3     	b	0x607ac <__dl__ZN9ElfReader4ReadEPKcill+0x15ac>
+   5f924: 39402268     	ldrb	w8, [x19, #0x8]
+   5f928: f9400e69     	ldr	x9, [x19, #0x18]
+   5f92c: 91002678     	add	x24, x19, #0x9
+   5f930: 90fffd55     	adrp	x21, 0x7000 <__dl_.str.llvm.3714003009145656655+0xce>
+   5f934: 9109b2b5     	add	x21, x21, #0x26c
+   5f938: f0fffd41     	adrp	x1, 0xa000 <__dl_.str.6.llvm.2814901811093015662+0x17e>
+   5f93c: 910dbc21     	add	x1, x1, #0x36f
+   5f940: 7200011f     	tst	w8, #0x1
+   5f944: 528000a0     	mov	w0, #0x5                // =5
+   5f948: 9a890303     	csel	x3, x24, x9, eq
+   5f94c: aa1503e2     	mov	x2, x21
+   5f950: aa1403e5     	mov	x5, x20
+   5f954: 94004e8e     	bl	0x7338c <__dl_async_safe_format_log>
+   5f958: f0fffd61     	adrp	x1, 0xe000 <__dl_$d+0x91>
+   5f95c: 91220421     	add	x1, x1, #0x881
+   5f960: 52800040     	mov	w0, #0x2                // =2
+   5f964: 940049ed     	bl	0x72118 <__dl_async_safe_format_fd>
+   5f968: 39402268     	ldrb	w8, [x19, #0x8]
+   5f96c: f9400e69     	ldr	x9, [x19, #0x18]
+   5f970: 52800040     	mov	w0, #0x2                // =2
+   5f974: f9401ae3     	ldr	x3, [x23, #0x30]
+   5f978: aa1503e1     	mov	x1, x21
+   5f97c: aa1403e4     	mov	x4, x20
+   5f980: 7200011f     	tst	w8, #0x1
+   5f984: 9a890302     	csel	x2, x24, x9, eq
+   5f988: 940049e4     	bl	0x72118 <__dl_async_safe_format_fd>
+   5f98c: f0fffd41     	adrp	x1, 0xa000 <__dl_.str.6.llvm.2814901811093015662+0x17e>
+   5f990: 913d8821     	add	x1, x1, #0xf62
+   5f994: 52800040     	mov	w0, #0x2                // =2
+   5f998: 940049e0     	bl	0x72118 <__dl_async_safe_format_fd>
+   5f99c: f9403e68     	ldr	x8, [x19, #0x78]
+   5f9a0: 91000694     	add	x20, x20, #0x1
+   5f9a4: 9100e2d6     	add	x22, x22, #0x38
+   5f9a8: eb08029f     	cmp	x20, x8
+   5f9ac: 540002c2     	b.hs	0x5fa04 <__dl__ZN9ElfReader4ReadEPKcill+0x804>
+   5f9b0: f9405269     	ldr	x9, [x19, #0xa0]
+   5f9b4: b876692a     	ldr	w10, [x9, x22]
+   5f9b8: 7100055f     	cmp	w10, #0x1
+   5f9bc: 54ffff21     	b.ne	0x5f9a0 <__dl__ZN9ElfReader4ReadEPKcill+0x7a0>
+   5f9c0: 8b160137     	add	x23, x9, x22
+   5f9c4: f9401ae4     	ldr	x4, [x23, #0x30]
+   5f9c8: d1000489     	sub	x9, x4, #0x1
+   5f9cc: ea09009f     	tst	x4, x9
+   5f9d0: 54fffaa1     	b.ne	0x5f924 <__dl__ZN9ElfReader4ReadEPKcill+0x724>
+   5f9d4: f940ae69     	ldr	x9, [x19, #0x158]
+   5f9d8: eb04013f     	cmp	x9, x4
+   5f9dc: 9a848129     	csel	x9, x9, x4, hi
+   5f9e0: f900ae69     	str	x9, [x19, #0x158]
+   5f9e4: f9401ae9     	ldr	x9, [x23, #0x30]
+   5f9e8: f100093f     	cmp	x9, #0x2
+   5f9ec: 54fffda3     	b.lo	0x5f9a0 <__dl__ZN9ElfReader4ReadEPKcill+0x7a0>
+   5f9f0: f940b26a     	ldr	x10, [x19, #0x160]
+   5f9f4: eb0a013f     	cmp	x9, x10
+   5f9f8: 9a8a3129     	csel	x9, x9, x10, lo
+   5f9fc: f900b269     	str	x9, [x19, #0x160]
+   5fa00: 17ffffe8     	b	0x5f9a0 <__dl__ZN9ElfReader4ReadEPKcill+0x7a0>
+   5fa04: f9455f68     	ldr	x8, [x27, #0xab8]
+   5fa08: f140111f     	cmp	x8, #0x4, lsl #12       // =0x4000
+   5fa0c: 54003400     	b.eq	0x6008c <__dl__ZN9ElfReader4ReadEPKcill+0xe8c>
+   5fa10: 7940ea68     	ldrh	w8, [x19, #0x74]
+   5fa14: f9006a68     	str	x8, [x19, #0xd0]
+   5fa18: b40039c8     	cbz	x8, 0x60150 <__dl__ZN9ElfReader4ReadEPKcill+0xf50>
+   5fa1c: f9403264     	ldr	x4, [x19, #0x60]
+   5fa20: d37ae514     	lsl	x20, x8, #6
+   5fa24: b4001e84     	cbz	x4, 0x5fdf4 <__dl__ZN9ElfReader4ReadEPKcill+0xbf4>
+   5fa28: f9401661     	ldr	x1, [x19, #0x28]
+   5fa2c: b7f81ce1     	tbnz	x1, #0x3f, 0x5fdc8 <__dl__ZN9ElfReader4ReadEPKcill+0xbc8>
+   5fa30: d240f828     	eor	x8, x1, #0x7fffffffffffffff
+   5fa34: eb04011f     	cmp	x8, x4
+   5fa38: 54001de3     	b.lo	0x5fdf4 <__dl__ZN9ElfReader4ReadEPKcill+0xbf4>
+   5fa3c: 8b040028     	add	x8, x1, x4
+   5fa40: b7f834c8     	tbnz	x8, #0x3f, 0x600d8 <__dl__ZN9ElfReader4ReadEPKcill+0xed8>
+   5fa44: d240f909     	eor	x9, x8, #0x7fffffffffffffff
+   5fa48: eb14013f     	cmp	x9, x20
+   5fa4c: 54001d43     	b.lo	0x5fdf4 <__dl__ZN9ElfReader4ReadEPKcill+0xbf4>
+   5fa50: f240089f     	tst	x4, #0x7
+   5fa54: 54001d01     	b.ne	0x5fdf4 <__dl__ZN9ElfReader4ReadEPKcill+0xbf4>
+   5fa58: f9401a69     	ldr	x9, [x19, #0x30]
+   5fa5c: eb09011f     	cmp	x8, x9
+   5fa60: 54001caa     	b.ge	0x5fdf4 <__dl__ZN9ElfReader4ReadEPKcill+0xbf4>
+   5fa64: 8b140108     	add	x8, x8, x20
+   5fa68: eb09011f     	cmp	x8, x9
+   5fa6c: 54001c4c     	b.gt	0x5fdf4 <__dl__ZN9ElfReader4ReadEPKcill+0xbf4>
+   5fa70: b9402275     	ldr	w21, [x19, #0x20]
+   5fa74: d10063a0     	sub	x0, x29, #0x18
+   5fa78: aa0403e2     	mov	x2, x4
+   5fa7c: f81e83bf     	stur	xzr, [x29, #-0x18]
+   5fa80: 9400044b     	bl	0x60bac <__dl__Z8safe_addPllm>
+   5fa84: 36003760     	tbz	w0, #0x0, 0x60170 <__dl__ZN9ElfReader4ReadEPKcill+0xf70>
+   5fa88: f85e83b7     	ldur	x23, [x29, #-0x18]
+   5fa8c: 08dfff88     	ldarb	w8, [x28]
+   5fa90: 36003868     	tbz	w8, #0x0, 0x6019c <__dl__ZN9ElfReader4ReadEPKcill+0xf9c>
+   5fa94: f85e83b6     	ldur	x22, [x29, #-0x18]
+   5fa98: f9428f58     	ldr	x24, [x26, #0x518]
+   5fa9c: 910083e0     	add	x0, sp, #0x20
+   5faa0: aa1403e2     	mov	x2, x20
+   5faa4: f90013ff     	str	xzr, [sp, #0x20]
+   5faa8: aa1603e1     	mov	x1, x22
+   5faac: 94000440     	bl	0x60bac <__dl__Z8safe_addPllm>
+   5fab0: 360038c0     	tbz	w0, #0x0, 0x601c8 <__dl__ZN9ElfReader4ReadEPKcill+0xfc8>
+   5fab4: f94013f9     	ldr	x25, [sp, #0x20]
+   5fab8: 08dfff88     	ldarb	w8, [x28]
+   5fabc: 360039c8     	tbz	w8, #0x0, 0x601f4 <__dl__ZN9ElfReader4ReadEPKcill+0xff4>
+   5fac0: b7f83b19     	tbnz	x25, #0x3f, 0x60220 <__dl__ZN9ElfReader4ReadEPKcill+0x1020>
+   5fac4: f9428f48     	ldr	x8, [x26, #0x518]
+   5fac8: d240fb29     	eor	x9, x25, #0x7fffffffffffffff
+   5facc: d1000508     	sub	x8, x8, #0x1
+   5fad0: 8a160108     	and	x8, x8, x22
+   5fad4: eb08013f     	cmp	x9, x8
+   5fad8: 54003ba3     	b.lo	0x6024c <__dl__ZN9ElfReader4ReadEPKcill+0x104c>
+   5fadc: cb1803e9     	neg	x9, x24
+   5fae0: 8b190108     	add	x8, x8, x25
+   5fae4: 8a0902e5     	and	x5, x23, x9
+   5fae8: f90013e8     	str	x8, [sp, #0x20]
+   5faec: cb050116     	sub	x22, x8, x5
+   5faf0: eb1402df     	cmp	x22, x20
+   5faf4: 54003c23     	b.lo	0x60278 <__dl__ZN9ElfReader4ReadEPKcill+0x1078>
+   5faf8: aa1f03e0     	mov	x0, xzr
+   5fafc: aa1603e1     	mov	x1, x22
+   5fb00: 52800022     	mov	w2, #0x1                // =1
+   5fb04: 52800043     	mov	w3, #0x2                // =2
+   5fb08: 2a1503e4     	mov	w4, w21
+   5fb0c: 97fff08d     	bl	0x5bd40 <__dl_mmap64>
+   5fb10: b100041f     	cmn	x0, #0x1
+   5fb14: 54003c80     	b.eq	0x602a4 <__dl__ZN9ElfReader4ReadEPKcill+0x10a4>
+   5fb18: a90ada60     	stp	x0, x22, [x19, #0xa8]
+   5fb1c: f85e83b5     	ldur	x21, [x29, #-0x18]
+   5fb20: 08dfff88     	ldarb	w8, [x28]
+   5fb24: 36003d08     	tbz	w8, #0x0, 0x602c4 <__dl__ZN9ElfReader4ReadEPKcill+0x10c4>
+   5fb28: f9428f48     	ldr	x8, [x26, #0x518]
+   5fb2c: d1000508     	sub	x8, x8, #0x1
+   5fb30: 8a150109     	and	x9, x8, x21
+   5fb34: f9406a68     	ldr	x8, [x19, #0xd0]
+   5fb38: 8b09000a     	add	x10, x0, x9
+   5fb3c: a90bd26a     	stp	x10, x20, [x19, #0xb8]
+   5fb40: f900666a     	str	x10, [x19, #0xc8]
+   5fb44: b4000128     	cbz	x8, 0x5fb68 <__dl__ZN9ElfReader4ReadEPKcill+0x968>
+   5fb48: 8b000129     	add	x9, x9, x0
+   5fb4c: 9100a135     	add	x21, x9, #0x28
+   5fb50: b85dc2a9     	ldur	w9, [x21, #-0x24]
+   5fb54: 7100193f     	cmp	w9, #0x6
+   5fb58: 54000180     	b.eq	0x5fb88 <__dl__ZN9ElfReader4ReadEPKcill+0x988>
+   5fb5c: f1000508     	subs	x8, x8, #0x1
+   5fb60: 910102b5     	add	x21, x21, #0x40
+   5fb64: 54ffff61     	b.ne	0x5fb50 <__dl__ZN9ElfReader4ReadEPKcill+0x950>
+   5fb68: 39402268     	ldrb	w8, [x19, #0x8]
+   5fb6c: f9400e69     	ldr	x9, [x19, #0x18]
+   5fb70: 91002675     	add	x21, x19, #0x9
+   5fb74: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5fb78: 91194400     	add	x0, x0, #0x651
+   5fb7c: d0fffd14     	adrp	x20, 0x1000 <__dl_$d+0x2c>
+   5fb80: 91322a94     	add	x20, x20, #0xc8a
+   5fb84: 14000135     	b	0x60058 <__dl__ZN9ElfReader4ReadEPKcill+0xe58>
+   5fb88: f9403e68     	ldr	x8, [x19, #0x78]
+   5fb8c: b4003bc8     	cbz	x8, 0x60304 <__dl__ZN9ElfReader4ReadEPKcill+0x1104>
+   5fb90: f9405269     	ldr	x9, [x19, #0xa0]
+   5fb94: aa1f03f4     	mov	x20, xzr
+   5fb98: aa1f03e4     	mov	x4, xzr
+   5fb9c: b940012a     	ldr	w10, [x9]
+   5fba0: 7100095f     	cmp	w10, #0x2
+   5fba4: 54002200     	b.eq	0x5ffe4 <__dl__ZN9ElfReader4ReadEPKcill+0xde4>
+   5fba8: f1000508     	subs	x8, x8, #0x1
+   5fbac: 9100e129     	add	x9, x9, #0x38
+   5fbb0: 54ffff61     	b.ne	0x5fb9c <__dl__ZN9ElfReader4ReadEPKcill+0x99c>
+   5fbb4: f85f02a3     	ldur	x3, [x21, #-0x10]
+   5fbb8: eb03009f     	cmp	x4, x3
+   5fbbc: 54003aa1     	b.ne	0x60310 <__dl__ZN9ElfReader4ReadEPKcill+0x1110>
+   5fbc0: f85f82a3     	ldur	x3, [x21, #-0x8]
+   5fbc4: eb03029f     	cmp	x20, x3
+   5fbc8: 54003cc1     	b.ne	0x60360 <__dl__ZN9ElfReader4ReadEPKcill+0x1160>
+   5fbcc: b94002a4     	ldr	w4, [x21]
+   5fbd0: f9406a68     	ldr	x8, [x19, #0xd0]
+   5fbd4: eb04011f     	cmp	x8, x4
+   5fbd8: 54003ee9     	b.ls	0x603b4 <__dl__ZN9ElfReader4ReadEPKcill+0x11b4>
+   5fbdc: f9406668     	ldr	x8, [x19, #0xc8]
+   5fbe0: 8b041917     	add	x23, x8, x4, lsl #6
+   5fbe4: b94006e5     	ldr	w5, [x23, #0x4]
+   5fbe8: 71000cbf     	cmp	w5, #0x3
+   5fbec: 540040e1     	b.ne	0x60408 <__dl__ZN9ElfReader4ReadEPKcill+0x1208>
+   5fbf0: f85f02a2     	ldur	x2, [x21, #-0x10]
+   5fbf4: b4002242     	cbz	x2, 0x6003c <__dl__ZN9ElfReader4ReadEPKcill+0xe3c>
+   5fbf8: f9401661     	ldr	x1, [x19, #0x28]
+   5fbfc: b7f84321     	tbnz	x1, #0x3f, 0x60460 <__dl__ZN9ElfReader4ReadEPKcill+0x1260>
+   5fc00: d240f828     	eor	x8, x1, #0x7fffffffffffffff
+   5fc04: eb02011f     	cmp	x8, x2
+   5fc08: 540021a3     	b.lo	0x6003c <__dl__ZN9ElfReader4ReadEPKcill+0xe3c>
+   5fc0c: 8b020028     	add	x8, x1, x2
+   5fc10: b7f843e8     	tbnz	x8, #0x3f, 0x6048c <__dl__ZN9ElfReader4ReadEPKcill+0x128c>
+   5fc14: f85f82b4     	ldur	x20, [x21, #-0x8]
+   5fc18: d240f909     	eor	x9, x8, #0x7fffffffffffffff
+   5fc1c: eb14013f     	cmp	x9, x20
+   5fc20: 540020e3     	b.lo	0x6003c <__dl__ZN9ElfReader4ReadEPKcill+0xe3c>
+   5fc24: f240085f     	tst	x2, #0x7
+   5fc28: 540020a1     	b.ne	0x6003c <__dl__ZN9ElfReader4ReadEPKcill+0xe3c>
+   5fc2c: f9401a69     	ldr	x9, [x19, #0x30]
+   5fc30: eb09011f     	cmp	x8, x9
+   5fc34: 5400204a     	b.ge	0x6003c <__dl__ZN9ElfReader4ReadEPKcill+0xe3c>
+   5fc38: 8b140108     	add	x8, x8, x20
+   5fc3c: eb09011f     	cmp	x8, x9
+   5fc40: 54001fec     	b.gt	0x6003c <__dl__ZN9ElfReader4ReadEPKcill+0xe3c>
+   5fc44: b9402275     	ldr	w21, [x19, #0x20]
+   5fc48: d10063a0     	sub	x0, x29, #0x18
+   5fc4c: f81e83bf     	stur	xzr, [x29, #-0x18]
+   5fc50: 940003d7     	bl	0x60bac <__dl__Z8safe_addPllm>
+   5fc54: 36004320     	tbz	w0, #0x0, 0x604b8 <__dl__ZN9ElfReader4ReadEPKcill+0x12b8>
+   5fc58: f85e83b8     	ldur	x24, [x29, #-0x18]
+   5fc5c: 08dfff88     	ldarb	w8, [x28]
+   5fc60: 36004428     	tbz	w8, #0x0, 0x604e4 <__dl__ZN9ElfReader4ReadEPKcill+0x12e4>
+   5fc64: f85e83b6     	ldur	x22, [x29, #-0x18]
+   5fc68: f9428f59     	ldr	x25, [x26, #0x518]
+   5fc6c: 910083e0     	add	x0, sp, #0x20
+   5fc70: aa1403e2     	mov	x2, x20
+   5fc74: f90013ff     	str	xzr, [sp, #0x20]
+   5fc78: aa1603e1     	mov	x1, x22
+   5fc7c: 940003cc     	bl	0x60bac <__dl__Z8safe_addPllm>
+   5fc80: 36004480     	tbz	w0, #0x0, 0x60510 <__dl__ZN9ElfReader4ReadEPKcill+0x1310>
+   5fc84: f94013fa     	ldr	x26, [sp, #0x20]
+   5fc88: 08dfff88     	ldarb	w8, [x28]
+   5fc8c: 360017e8     	tbz	w8, #0x0, 0x5ff88 <__dl__ZN9ElfReader4ReadEPKcill+0xd88>
+   5fc90: b7f81c1a     	tbnz	x26, #0x3f, 0x60010 <__dl__ZN9ElfReader4ReadEPKcill+0xe10>
+   5fc94: f0000b68     	adrp	x8, 0x1ce000 <__dl_gmtptr>
+   5fc98: d240fb49     	eor	x9, x26, #0x7fffffffffffffff
+   5fc9c: f9428d08     	ldr	x8, [x8, #0x518]
+   5fca0: d1000508     	sub	x8, x8, #0x1
+   5fca4: 8a160108     	and	x8, x8, x22
+   5fca8: eb08013f     	cmp	x9, x8
+   5fcac: 54001863     	b.lo	0x5ffb8 <__dl__ZN9ElfReader4ReadEPKcill+0xdb8>
+   5fcb0: cb1903e9     	neg	x9, x25
+   5fcb4: 8b1a0108     	add	x8, x8, x26
+   5fcb8: 8a090305     	and	x5, x24, x9
+   5fcbc: f90013e8     	str	x8, [sp, #0x20]
+   5fcc0: cb050116     	sub	x22, x8, x5
+   5fcc4: eb1402df     	cmp	x22, x20
+   5fcc8: 540021e3     	b.lo	0x60104 <__dl__ZN9ElfReader4ReadEPKcill+0xf04>
+   5fccc: aa1f03e0     	mov	x0, xzr
+   5fcd0: aa1603e1     	mov	x1, x22
+   5fcd4: 52800022     	mov	w2, #0x1                // =1
+   5fcd8: 52800043     	mov	w3, #0x2                // =2
+   5fcdc: 2a1503e4     	mov	w4, w21
+   5fce0: 97fff018     	bl	0x5bd40 <__dl_mmap64>
+   5fce4: b100041f     	cmn	x0, #0x1
+   5fce8: f0000b78     	adrp	x24, 0x1ce000 <__dl_gmtptr>
+   5fcec: 54001820     	b.eq	0x5fff0 <__dl__ZN9ElfReader4ReadEPKcill+0xdf0>
+   5fcf0: a90dda60     	stp	x0, x22, [x19, #0xd8]
+   5fcf4: f85e83b5     	ldur	x21, [x29, #-0x18]
+   5fcf8: 08dfff88     	ldarb	w8, [x28]
+   5fcfc: 36001ce8     	tbz	w8, #0x0, 0x60098 <__dl__ZN9ElfReader4ReadEPKcill+0xe98>
+   5fd00: f9428f08     	ldr	x8, [x24, #0x518]
+   5fd04: d1000508     	sub	x8, x8, #0x1
+   5fd08: 8a150108     	and	x8, x8, x21
+   5fd0c: 8b080008     	add	x8, x0, x8
+   5fd10: a90ed268     	stp	x8, x20, [x19, #0xe8]
+   5fd14: f9007e68     	str	x8, [x19, #0xf8]
+   5fd18: a941d2e2     	ldp	x2, x20, [x23, #0x18]
+   5fd1c: f81e83bf     	stur	xzr, [x29, #-0x18]
+   5fd20: f90013ff     	str	xzr, [sp, #0x20]
+   5fd24: b4002062     	cbz	x2, 0x60130 <__dl__ZN9ElfReader4ReadEPKcill+0xf30>
+   5fd28: f9401661     	ldr	x1, [x19, #0x28]
+   5fd2c: d10063a0     	sub	x0, x29, #0x18
+   5fd30: 9400039f     	bl	0x60bac <__dl__Z8safe_addPllm>
+   5fd34: 36001fe0     	tbz	w0, #0x0, 0x60130 <__dl__ZN9ElfReader4ReadEPKcill+0xf30>
+   5fd38: f85e83b5     	ldur	x21, [x29, #-0x18]
+   5fd3c: 910083e0     	add	x0, sp, #0x20
+   5fd40: aa1403e2     	mov	x2, x20
+   5fd44: aa1503e1     	mov	x1, x21
+   5fd48: 94000399     	bl	0x60bac <__dl__Z8safe_addPllm>
+   5fd4c: 36001f20     	tbz	w0, #0x0, 0x60130 <__dl__ZN9ElfReader4ReadEPKcill+0xf30>
+   5fd50: f9401a68     	ldr	x8, [x19, #0x30]
+   5fd54: eb0802bf     	cmp	x21, x8
+   5fd58: 54001eca     	b.ge	0x60130 <__dl__ZN9ElfReader4ReadEPKcill+0xf30>
+   5fd5c: f94013e9     	ldr	x9, [sp, #0x20]
+   5fd60: eb08013f     	cmp	x9, x8
+   5fd64: 54001e6c     	b.gt	0x60130 <__dl__ZN9ElfReader4ReadEPKcill+0xf30>
+   5fd68: a94192e3     	ldp	x3, x4, [x23, #0x18]
+   5fd6c: 91040260     	add	x0, x19, #0x100
+   5fd70: b9402261     	ldr	w1, [x19, #0x20]
+   5fd74: f9401662     	ldr	x2, [x19, #0x28]
+   5fd78: 94008869     	bl	0x81f1c <__dl__ZN18MappedFileFragment3MapEilmm>
+   5fd7c: 36003e00     	tbz	w0, #0x0, 0x6053c <__dl__ZN9ElfReader4ReadEPKcill+0x133c>
+   5fd80: a9512668     	ldp	x8, x9, [x19, #0x110]
+   5fd84: f0000b77     	adrp	x23, 0x1ce000 <__dl_gmtptr>
+   5fd88: a9122668     	stp	x8, x9, [x19, #0x120]
+   5fd8c: f0000b68     	adrp	x8, 0x1ce000 <__dl_gmtptr>
+   5fd90: 912b4108     	add	x8, x8, #0xad0
+   5fd94: 08dffd08     	ldarb	w8, [x8]
+   5fd98: 36000508     	tbz	w8, #0x0, 0x5fe38 <__dl__ZN9ElfReader4ReadEPKcill+0xc38>
+   5fd9c: 396b22e8     	ldrb	w8, [x23, #0xac8]
+   5fda0: 7100051f     	cmp	w8, #0x1
+   5fda4: 54004fe1     	b.ne	0x607a0 <__dl__ZN9ElfReader4ReadEPKcill+0x15a0>
+   5fda8: f9403e68     	ldr	x8, [x19, #0x78]
+   5fdac: b4004fa8     	cbz	x8, 0x607a0 <__dl__ZN9ElfReader4ReadEPKcill+0x15a0>
+   5fdb0: aa1c03f9     	mov	x25, x28
+   5fdb4: aa1f03fc     	mov	x28, xzr
+   5fdb8: aa1f03f4     	mov	x20, xzr
+   5fdbc: d2f0000c     	mov	x12, #-0x8000000000000000 // =-9223372036854775808
+   5fdc0: 92f00015     	mov	x21, #0x7fffffffffffffff // =9223372036854775807
+   5fdc4: 14000205     	b	0x605d8 <__dl__ZN9ElfReader4ReadEPKcill+0x13d8>
+   5fdc8: d503201f     	nop
+   5fdcc: 70d51d20     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   5fdd0: d503201f     	nop
+   5fdd4: 50d0fc81     	adr	x1, 0x1d66 <__dl_.str.13.llvm.4321711338576704958>
+   5fdd8: d503201f     	nop
+   5fddc: 30d7a923     	adr	x3, 0xf301 <__dl___FUNCTION__._Z8safe_addPllm.llvm.4321711338576704958>
+   5fde0: d503201f     	nop
+   5fde4: 30d76aa4     	adr	x4, 0xeb39 <__dl_.str.14.llvm.4321711338576704958>
+   5fde8: 528015a2     	mov	w2, #0xad               // =173
+   5fdec: 94001164     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   5fdf0: 940011dd     	bl	0x64564 <__dl_abort>
+   5fdf4: 39402268     	ldrb	w8, [x19, #0x8]
+   5fdf8: f9400e69     	ldr	x9, [x19, #0x18]
+   5fdfc: 91002676     	add	x22, x19, #0x9
+   5fe00: f0fffd15     	adrp	x21, 0x2000 <__dl_$d+0x42>
+   5fe04: 910acab5     	add	x21, x21, #0x2b2
+   5fe08: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5fe0c: 91194400     	add	x0, x0, #0x651
+   5fe10: 7200011f     	tst	w8, #0x1
+   5fe14: 52806001     	mov	w1, #0x300              // =768
+   5fe18: 9a8902c3     	csel	x3, x22, x9, eq
+   5fe1c: aa1503e2     	mov	x2, x21
+   5fe20: aa1403e5     	mov	x5, x20
+   5fe24: 94001182     	bl	0x6442c <__dl_async_safe_format_buffer>
+   5fe28: 39402268     	ldrb	w8, [x19, #0x8]
+   5fe2c: f9400e69     	ldr	x9, [x19, #0x18]
+   5fe30: f9403263     	ldr	x3, [x19, #0x60]
+   5fe34: 17fffeb5     	b	0x5f908 <__dl__ZN9ElfReader4ReadEPKcill+0x708>
+   5fe38: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5fe3c: 912b4000     	add	x0, x0, #0xad0
+   5fe40: 94013183     	bl	0xac44c <__dl___cxa_guard_acquire>
+   5fe44: 34fffac0     	cbz	w0, 0x5fd9c <__dl__ZN9ElfReader4ReadEPKcill+0xb9c>
+   5fe48: d0fffd60     	adrp	x0, 0xd000 <__dl_.str.llvm.16264369210413743019+0x85>
+   5fe4c: 9129a800     	add	x0, x0, #0xa6a
+   5fe50: a93effbf     	stp	xzr, xzr, [x29, #-0x18]
+   5fe54: f81f83bf     	stur	xzr, [x29, #-0x8]
+   5fe58: 940539f6     	bl	0x1ae630 <__dl_FEAT_SME2_BIT+0x1ae5f7>
+   5fe5c: b100241f     	cmn	x0, #0x9
+   5fe60: 540037e2     	b.hs	0x6055c <__dl__ZN9ElfReader4ReadEPKcill+0x135c>
+   5fe64: aa0003f4     	mov	x20, x0
+   5fe68: f100581f     	cmp	x0, #0x16
+   5fe6c: 540037a9     	b.ls	0x60560 <__dl__ZN9ElfReader4ReadEPKcill+0x1360>
+   5fe70: b2400a88     	orr	x8, x20, #0x7
+   5fe74: 52800349     	mov	w9, #0x1a               // =26
+   5fe78: f1005d1f     	cmp	x8, #0x17
+   5fe7c: 9a880536     	csinc	x22, x9, x8, eq
+   5fe80: aa1603e0     	mov	x0, x22
+   5fe84: 94053884     	bl	0x1ae094 <__dl___start___lcxx_override>
+   5fe88: aa0003f5     	mov	x21, x0
+   5fe8c: b24002c8     	orr	x8, x22, #0x1
+   5fe90: a90283f4     	stp	x20, x0, [sp, #0x28]
+   5fe94: f90013e8     	str	x8, [sp, #0x20]
+   5fe98: d0fffd61     	adrp	x1, 0xd000 <__dl_.str.llvm.16264369210413743019+0x85>
+   5fe9c: 9129a821     	add	x1, x1, #0xa6a
+   5fea0: aa1503e0     	mov	x0, x21
+   5fea4: aa1403e2     	mov	x2, x20
+   5fea8: 94053a0c     	bl	0x1ae6d8 <__dl_FEAT_SME2_BIT+0x1ae69f>
+   5feac: 910083e0     	add	x0, sp, #0x20
+   5feb0: d10063a1     	sub	x1, x29, #0x18
+   5feb4: 2a1f03e2     	mov	w2, wzr
+   5feb8: 38346abf     	strb	wzr, [x21, x20]
+   5febc: 97fff764     	bl	0x5dc4c <__dl__ZN7android4base16ReadFileToStringERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEEPS7_b>
+   5fec0: 394083e8     	ldrb	w8, [sp, #0x20]
+   5fec4: 2a0003f4     	mov	w20, w0
+   5fec8: 360000a8     	tbz	w8, #0x0, 0x5fedc <__dl__ZN9ElfReader4ReadEPKcill+0xcdc>
+   5fecc: f94013e8     	ldr	x8, [sp, #0x20]
+   5fed0: f9401be0     	ldr	x0, [sp, #0x30]
+   5fed4: 927ff901     	and	x1, x8, #0xfffffffffffffffe
+   5fed8: 94003ca9     	bl	0x6f17c <__dl__ZdlPvm>
+   5fedc: 385e83b8     	ldurb	w24, [x29, #-0x18]
+   5fee0: 360034b4     	tbz	w20, #0x0, 0x60574 <__dl__ZN9ElfReader4ReadEPKcill+0x1374>
+   5fee4: f85f83a8     	ldur	x8, [x29, #-0x8]
+   5fee8: 7200031f     	tst	w24, #0x1
+   5feec: d10063a9     	sub	x9, x29, #0x18
+   5fef0: d0fffd40     	adrp	x0, 0x9000 <__dl_$d+0x65>
+   5fef4: 911c2400     	add	x0, x0, #0x709
+   5fef8: 9a891519     	csinc	x25, x8, x9, ne
+   5fefc: 940539cd     	bl	0x1ae630 <__dl_FEAT_SME2_BIT+0x1ae5f7>
+   5ff00: b40033e0     	cbz	x0, 0x6057c <__dl__ZN9ElfReader4ReadEPKcill+0x137c>
+   5ff04: d341ff08     	lsr	x8, x24, #1
+   5ff08: f85f03a9     	ldur	x9, [x29, #-0x10]
+   5ff0c: 7200031f     	tst	w24, #0x1
+   5ff10: aa0003f4     	mov	x20, x0
+   5ff14: 9a890108     	csel	x8, x8, x9, eq
+   5ff18: eb00011f     	cmp	x8, x0
+   5ff1c: 8b08033a     	add	x26, x25, x8
+   5ff20: 540033ab     	b.lt	0x60594 <__dl__ZN9ElfReader4ReadEPKcill+0x1394>
+   5ff24: d0fffd55     	adrp	x21, 0x9000 <__dl_$d+0x65>
+   5ff28: 911c26b5     	add	x21, x21, #0x709
+   5ff2c: aa1903e0     	mov	x0, x25
+   5ff30: cb140108     	sub	x8, x8, x20
+   5ff34: 52800621     	mov	w1, #0x31               // =49
+   5ff38: 91000502     	add	x2, x8, #0x1
+   5ff3c: 940539d5     	bl	0x1ae690 <__dl_FEAT_SME2_BIT+0x1ae657>
+   5ff40: b40032a0     	cbz	x0, 0x60594 <__dl__ZN9ElfReader4ReadEPKcill+0x1394>
+   5ff44: aa1503e1     	mov	x1, x21
+   5ff48: aa1403e2     	mov	x2, x20
+   5ff4c: aa0003f6     	mov	x22, x0
+   5ff50: 940539ca     	bl	0x1ae678 <__dl_FEAT_SME2_BIT+0x1ae63f>
+   5ff54: 35003180     	cbnz	w0, 0x60584 <__dl__ZN9ElfReader4ReadEPKcill+0x1384>
+   5ff58: eb1a02df     	cmp	x22, x26
+   5ff5c: aa1603fa     	mov	x26, x22
+   5ff60: 1a9f07e8     	cset	w8, ne
+   5ff64: cb190349     	sub	x9, x26, x25
+   5ff68: b100053f     	cmn	x9, #0x1
+   5ff6c: 1a8803f4     	csel	w20, wzr, w8, eq
+   5ff70: 37003178     	tbnz	w24, #0x0, 0x6059c <__dl__ZN9ElfReader4ReadEPKcill+0x139c>
+   5ff74: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5ff78: 912b4000     	add	x0, x0, #0xad0
+   5ff7c: 392b22f4     	strb	w20, [x23, #0xac8]
+   5ff80: 94013179     	bl	0xac564 <__dl___cxa_guard_release>
+   5ff84: 17ffff86     	b	0x5fd9c <__dl__ZN9ElfReader4ReadEPKcill+0xb9c>
+   5ff88: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5ff8c: 91148000     	add	x0, x0, #0x520
+   5ff90: 9401312f     	bl	0xac44c <__dl___cxa_guard_acquire>
+   5ff94: 34ffe7e0     	cbz	w0, 0x5fc90 <__dl__ZN9ElfReader4ReadEPKcill+0xa90>
+   5ff98: 528000c0     	mov	w0, #0x6                // =6
+   5ff9c: 9400b54d     	bl	0x8d4d0 <__dl_getauxval>
+   5ffa0: f0000b68     	adrp	x8, 0x1ce000 <__dl_gmtptr>
+   5ffa4: f9028d00     	str	x0, [x8, #0x518]
+   5ffa8: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   5ffac: 91148000     	add	x0, x0, #0x520
+   5ffb0: 9401316d     	bl	0xac564 <__dl___cxa_guard_release>
+   5ffb4: 17ffff37     	b	0x5fc90 <__dl__ZN9ElfReader4ReadEPKcill+0xa90>
+   5ffb8: d503201f     	nop
+   5ffbc: 70d50da0     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   5ffc0: d503201f     	nop
+   5ffc4: 70d0e3e1     	adr	x1, 0x1c43 <__dl_.str.1.llvm.16703203803929973174>
+   5ffc8: d503201f     	nop
+   5ffcc: 50d24763     	adr	x3, 0x48ba <__dl___FUNCTION__._ZN18MappedFileFragment3MapEilmm.llvm.16703203803929973174>
+   5ffd0: d503201f     	nop
+   5ffd4: 70d28a04     	adr	x4, 0x5117 <__dl_.str.4.llvm.16703203803929973174>
+   5ffd8: 52800722     	mov	w2, #0x39               // =57
+   5ffdc: 940010e8     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   5ffe0: 94001161     	bl	0x64564 <__dl_abort>
+   5ffe4: f9400524     	ldr	x4, [x9, #0x8]
+   5ffe8: f9401134     	ldr	x20, [x9, #0x20]
+   5ffec: 17fffeef     	b	0x5fba8 <__dl__ZN9ElfReader4ReadEPKcill+0x9a8>
+   5fff0: 39402268     	ldrb	w8, [x19, #0x8]
+   5fff4: f9400e69     	ldr	x9, [x19, #0x18]
+   5fff8: 9100266a     	add	x10, x19, #0x9
+   5fffc: f0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   60000: 91194400     	add	x0, x0, #0x651
+   60004: b0fffd42     	adrp	x2, 0x9000 <__dl_$d+0x65>
+   60008: 912b7442     	add	x2, x2, #0xadd
+   6000c: 17fffd0e     	b	0x5f444 <__dl__ZN9ElfReader4ReadEPKcill+0x244>
+   60010: d503201f     	nop
+   60014: 70d50ae0     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   60018: d503201f     	nop
+   6001c: 50d0ea41     	adr	x1, 0x1d66 <__dl_.str.13.llvm.4321711338576704958>
+   60020: d503201f     	nop
+   60024: 30d796e3     	adr	x3, 0xf301 <__dl___FUNCTION__._Z8safe_addPllm.llvm.4321711338576704958>
+   60028: d503201f     	nop
+   6002c: 30d75864     	adr	x4, 0xeb39 <__dl_.str.14.llvm.4321711338576704958>
+   60030: 528015a2     	mov	w2, #0xad               // =173
+   60034: 940010d2     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   60038: 9400114b     	bl	0x64564 <__dl_abort>
+   6003c: 39402268     	ldrb	w8, [x19, #0x8]
+   60040: f9400e69     	ldr	x9, [x19, #0x18]
+   60044: 91002675     	add	x21, x19, #0x9
+   60048: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   6004c: 91194400     	add	x0, x0, #0x651
+   60050: b0fffd54     	adrp	x20, 0x9000 <__dl_$d+0x65>
+   60054: 9108e294     	add	x20, x20, #0x238
+   60058: 7200011f     	tst	w8, #0x1
+   6005c: 9a8902a3     	csel	x3, x21, x9, eq
+   60060: 52806001     	mov	w1, #0x300              // =768
+   60064: aa1403e2     	mov	x2, x20
+   60068: 940010f1     	bl	0x6442c <__dl_async_safe_format_buffer>
+   6006c: 39402268     	ldrb	w8, [x19, #0x8]
+   60070: f9400e69     	ldr	x9, [x19, #0x18]
+   60074: 528000c0     	mov	w0, #0x6                // =6
+   60078: aa1403e1     	mov	x1, x20
+   6007c: 7200011f     	tst	w8, #0x1
+   60080: 9a8902a2     	csel	x2, x21, x9, eq
+   60084: 94001407     	bl	0x650a0 <__dl__Z12__linker_logiPKcz>
+   60088: 140001c9     	b	0x607ac <__dl__ZN9ElfReader4ReadEPKcill+0x15ac>
+   6008c: aa1303e0     	mov	x0, x19
+   60090: 9402be57     	bl	0x10f9ec <__dl__ZN9ElfReader19FixMinAlignFor16KiBEv>
+   60094: 17fffe5f     	b	0x5fa10 <__dl__ZN9ElfReader4ReadEPKcill+0x810>
+   60098: d0000b68     	adrp	x8, 0x1ce000 <__dl_gmtptr>
+   6009c: 91148108     	add	x8, x8, #0x520
+   600a0: aa0003f6     	mov	x22, x0
+   600a4: aa0803e0     	mov	x0, x8
+   600a8: 940130e9     	bl	0xac44c <__dl___cxa_guard_acquire>
+   600ac: 2a0003e8     	mov	w8, w0
+   600b0: aa1603e0     	mov	x0, x22
+   600b4: 34ffe268     	cbz	w8, 0x5fd00 <__dl__ZN9ElfReader4ReadEPKcill+0xb00>
+   600b8: 528000c0     	mov	w0, #0x6                // =6
+   600bc: 9400b505     	bl	0x8d4d0 <__dl_getauxval>
+   600c0: f9028f00     	str	x0, [x24, #0x518]
+   600c4: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   600c8: 91148000     	add	x0, x0, #0x520
+   600cc: 94013126     	bl	0xac564 <__dl___cxa_guard_release>
+   600d0: aa1603e0     	mov	x0, x22
+   600d4: 17ffff0b     	b	0x5fd00 <__dl__ZN9ElfReader4ReadEPKcill+0xb00>
+   600d8: d503201f     	nop
+   600dc: 70d504a0     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   600e0: d503201f     	nop
+   600e4: 50d0e401     	adr	x1, 0x1d66 <__dl_.str.13.llvm.4321711338576704958>
+   600e8: d503201f     	nop
+   600ec: 30d790a3     	adr	x3, 0xf301 <__dl___FUNCTION__._Z8safe_addPllm.llvm.4321711338576704958>
+   600f0: d503201f     	nop
+   600f4: 30d75224     	adr	x4, 0xeb39 <__dl_.str.14.llvm.4321711338576704958>
+   600f8: 528015a2     	mov	w2, #0xad               // =173
+   600fc: 940010a0     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   60100: 94001119     	bl	0x64564 <__dl_abort>
+   60104: d503201f     	nop
+   60108: 70d50340     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   6010c: d503201f     	nop
+   60110: 70d0d981     	adr	x1, 0x1c43 <__dl_.str.1.llvm.16703203803929973174>
+   60114: d503201f     	nop
+   60118: 50d23d03     	adr	x3, 0x48ba <__dl___FUNCTION__._ZN18MappedFileFragment3MapEilmm.llvm.16703203803929973174>
+   6011c: d503201f     	nop
+   60120: 30d5f7a4     	adr	x4, 0xc015 <__dl_.str.5.llvm.16703203803929973174>
+   60124: 52800782     	mov	w2, #0x3c               // =60
+   60128: 94001095     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   6012c: 9400110e     	bl	0x64564 <__dl_abort>
+   60130: 39402268     	ldrb	w8, [x19, #0x8]
+   60134: f9400e69     	ldr	x9, [x19, #0x18]
+   60138: 91002675     	add	x21, x19, #0x9
+   6013c: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   60140: 91194400     	add	x0, x0, #0x651
+   60144: d0fffd14     	adrp	x20, 0x2000 <__dl_$d+0x42>
+   60148: 9125da94     	add	x20, x20, #0x976
+   6014c: 17ffffc3     	b	0x60058 <__dl__ZN9ElfReader4ReadEPKcill+0xe58>
+   60150: 39402268     	ldrb	w8, [x19, #0x8]
+   60154: f9400e69     	ldr	x9, [x19, #0x18]
+   60158: 91002675     	add	x21, x19, #0x9
+   6015c: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   60160: 91194400     	add	x0, x0, #0x651
+   60164: 90fffd34     	adrp	x20, 0x4000 <__dl_$d+0x1bb>
+   60168: 9122fa94     	add	x20, x20, #0x8be
+   6016c: 17ffffbb     	b	0x60058 <__dl__ZN9ElfReader4ReadEPKcill+0xe58>
+   60170: d503201f     	nop
+   60174: 70d4ffe0     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   60178: d503201f     	nop
+   6017c: 70d0d621     	adr	x1, 0x1c43 <__dl_.str.1.llvm.16703203803929973174>
+   60180: d503201f     	nop
+   60184: 50d239a3     	adr	x3, 0x48ba <__dl___FUNCTION__._ZN18MappedFileFragment3MapEilmm.llvm.16703203803929973174>
+   60188: d503201f     	nop
+   6018c: 70d3fc44     	adr	x4, 0x8117 <__dl_.str.2.llvm.16703203803929973174>
+   60190: 52800662     	mov	w2, #0x33               // =51
+   60194: 9400107a     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   60198: 940010f3     	bl	0x64564 <__dl_abort>
+   6019c: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   601a0: 91148000     	add	x0, x0, #0x520
+   601a4: 940130aa     	bl	0xac44c <__dl___cxa_guard_acquire>
+   601a8: 34ffc760     	cbz	w0, 0x5fa94 <__dl__ZN9ElfReader4ReadEPKcill+0x894>
+   601ac: 528000c0     	mov	w0, #0x6                // =6
+   601b0: 9400b4c8     	bl	0x8d4d0 <__dl_getauxval>
+   601b4: f9028f40     	str	x0, [x26, #0x518]
+   601b8: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   601bc: 91148000     	add	x0, x0, #0x520
+   601c0: 940130e9     	bl	0xac564 <__dl___cxa_guard_release>
+   601c4: 17fffe34     	b	0x5fa94 <__dl__ZN9ElfReader4ReadEPKcill+0x894>
+   601c8: d503201f     	nop
+   601cc: 70d4fd20     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   601d0: d503201f     	nop
+   601d4: 70d0d361     	adr	x1, 0x1c43 <__dl_.str.1.llvm.16703203803929973174>
+   601d8: d503201f     	nop
+   601dc: 50d236e3     	adr	x3, 0x48ba <__dl___FUNCTION__._ZN18MappedFileFragment3MapEilmm.llvm.16703203803929973174>
+   601e0: d503201f     	nop
+   601e4: 50d2d5c4     	adr	x4, 0x5c9e <__dl_.str.3.llvm.16703203803929973174>
+   601e8: 52800702     	mov	w2, #0x38               // =56
+   601ec: 94001064     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   601f0: 940010dd     	bl	0x64564 <__dl_abort>
+   601f4: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   601f8: 91148000     	add	x0, x0, #0x520
+   601fc: 94013094     	bl	0xac44c <__dl___cxa_guard_acquire>
+   60200: 34ffc600     	cbz	w0, 0x5fac0 <__dl__ZN9ElfReader4ReadEPKcill+0x8c0>
+   60204: 528000c0     	mov	w0, #0x6                // =6
+   60208: 9400b4b2     	bl	0x8d4d0 <__dl_getauxval>
+   6020c: f9028f40     	str	x0, [x26, #0x518]
+   60210: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   60214: 91148000     	add	x0, x0, #0x520
+   60218: 940130d3     	bl	0xac564 <__dl___cxa_guard_release>
+   6021c: 17fffe29     	b	0x5fac0 <__dl__ZN9ElfReader4ReadEPKcill+0x8c0>
+   60220: d503201f     	nop
+   60224: 70d4fa60     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   60228: d503201f     	nop
+   6022c: 50d0d9c1     	adr	x1, 0x1d66 <__dl_.str.13.llvm.4321711338576704958>
+   60230: d503201f     	nop
+   60234: 30d78663     	adr	x3, 0xf301 <__dl___FUNCTION__._Z8safe_addPllm.llvm.4321711338576704958>
+   60238: d503201f     	nop
+   6023c: 30d747e4     	adr	x4, 0xeb39 <__dl_.str.14.llvm.4321711338576704958>
+   60240: 528015a2     	mov	w2, #0xad               // =173
+   60244: 9400104e     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   60248: 940010c7     	bl	0x64564 <__dl_abort>
+   6024c: d503201f     	nop
+   60250: 70d4f900     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   60254: d503201f     	nop
+   60258: 70d0cf41     	adr	x1, 0x1c43 <__dl_.str.1.llvm.16703203803929973174>
+   6025c: d503201f     	nop
+   60260: 50d232c3     	adr	x3, 0x48ba <__dl___FUNCTION__._ZN18MappedFileFragment3MapEilmm.llvm.16703203803929973174>
+   60264: d503201f     	nop
+   60268: 70d27564     	adr	x4, 0x5117 <__dl_.str.4.llvm.16703203803929973174>
+   6026c: 52800722     	mov	w2, #0x39               // =57
+   60270: 94001043     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   60274: 940010bc     	bl	0x64564 <__dl_abort>
+   60278: d503201f     	nop
+   6027c: 70d4f7a0     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   60280: d503201f     	nop
+   60284: 70d0cde1     	adr	x1, 0x1c43 <__dl_.str.1.llvm.16703203803929973174>
+   60288: d503201f     	nop
+   6028c: 50d23163     	adr	x3, 0x48ba <__dl___FUNCTION__._ZN18MappedFileFragment3MapEilmm.llvm.16703203803929973174>
+   60290: d503201f     	nop
+   60294: 30d5ec04     	adr	x4, 0xc015 <__dl_.str.5.llvm.16703203803929973174>
+   60298: 52800782     	mov	w2, #0x3c               // =60
+   6029c: 94001038     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   602a0: 940010b1     	bl	0x64564 <__dl_abort>
+   602a4: 39402268     	ldrb	w8, [x19, #0x8]
+   602a8: f9400e69     	ldr	x9, [x19, #0x18]
+   602ac: 9100266a     	add	x10, x19, #0x9
+   602b0: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   602b4: 91194400     	add	x0, x0, #0x651
+   602b8: 90fffd82     	adrp	x2, 0x10000 <__dl_.str.9.llvm.7423324223920420968+0x63>
+   602bc: 91045c42     	add	x2, x2, #0x117
+   602c0: 17fffc61     	b	0x5f444 <__dl__ZN9ElfReader4ReadEPKcill+0x244>
+   602c4: d0000b68     	adrp	x8, 0x1ce000 <__dl_gmtptr>
+   602c8: 91148108     	add	x8, x8, #0x520
+   602cc: aa0003f6     	mov	x22, x0
+   602d0: aa0803e0     	mov	x0, x8
+   602d4: 9401305e     	bl	0xac44c <__dl___cxa_guard_acquire>
+   602d8: 2a0003e8     	mov	w8, w0
+   602dc: aa1603e0     	mov	x0, x22
+   602e0: 34ffc248     	cbz	w8, 0x5fb28 <__dl__ZN9ElfReader4ReadEPKcill+0x928>
+   602e4: 528000c0     	mov	w0, #0x6                // =6
+   602e8: 9400b47a     	bl	0x8d4d0 <__dl_getauxval>
+   602ec: f9028f40     	str	x0, [x26, #0x518]
+   602f0: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   602f4: 91148000     	add	x0, x0, #0x520
+   602f8: 9401309b     	bl	0xac564 <__dl___cxa_guard_release>
+   602fc: aa1603e0     	mov	x0, x22
+   60300: 17fffe0a     	b	0x5fb28 <__dl__ZN9ElfReader4ReadEPKcill+0x928>
+   60304: aa1f03e4     	mov	x4, xzr
+   60308: aa1f03f4     	mov	x20, xzr
+   6030c: 17fffe2a     	b	0x5fbb4 <__dl__ZN9ElfReader4ReadEPKcill+0x9b4>
+   60310: 39402268     	ldrb	w8, [x19, #0x8]
+   60314: f9400e69     	ldr	x9, [x19, #0x18]
+   60318: 91002676     	add	x22, x19, #0x9
+   6031c: 90fffd21     	adrp	x1, 0x4000 <__dl_$d+0x1bb>
+   60320: 91236821     	add	x1, x1, #0x8da
+   60324: 52800340     	mov	w0, #0x1a               // =26
+   60328: 7200011f     	tst	w8, #0x1
+   6032c: 9a8902c2     	csel	x2, x22, x9, eq
+   60330: 940087dc     	bl	0x822a0 <__dl__Z14DL_ERROR_AFTERiPKcz>
+   60334: 370023c0     	tbnz	w0, #0x0, 0x607ac <__dl__ZN9ElfReader4ReadEPKcill+0x15ac>
+   60338: 39402268     	ldrb	w8, [x19, #0x8]
+   6033c: f9400e69     	ldr	x9, [x19, #0x18]
+   60340: 90fffd21     	adrp	x1, 0x4000 <__dl_$d+0x1bb>
+   60344: 9124d821     	add	x1, x1, #0x936
+   60348: aa1f03e2     	mov	x2, xzr
+   6034c: 7200011f     	tst	w8, #0x1
+   60350: 9a8902c0     	csel	x0, x22, x9, eq
+   60354: 940095fe     	bl	0x85b4c <__dl__Z13add_dlwarningPKcS0_S0_>
+   60358: d0000b7a     	adrp	x26, 0x1ce000 <__dl_gmtptr>
+   6035c: 17fffe19     	b	0x5fbc0 <__dl__ZN9ElfReader4ReadEPKcill+0x9c0>
+   60360: 39402268     	ldrb	w8, [x19, #0x8]
+   60364: f9400e69     	ldr	x9, [x19, #0x18]
+   60368: 91002676     	add	x22, x19, #0x9
+   6036c: 90fffd61     	adrp	x1, 0xc000 <__dl_$d+0x18c>
+   60370: 91009821     	add	x1, x1, #0x26
+   60374: 52800340     	mov	w0, #0x1a               // =26
+   60378: 7200011f     	tst	w8, #0x1
+   6037c: aa1403e4     	mov	x4, x20
+   60380: 9a8902c2     	csel	x2, x22, x9, eq
+   60384: 940087c7     	bl	0x822a0 <__dl__Z14DL_ERROR_AFTERiPKcz>
+   60388: 37002120     	tbnz	w0, #0x0, 0x607ac <__dl__ZN9ElfReader4ReadEPKcill+0x15ac>
+   6038c: 39402268     	ldrb	w8, [x19, #0x8]
+   60390: f9400e69     	ldr	x9, [x19, #0x18]
+   60394: 90fffd21     	adrp	x1, 0x4000 <__dl_$d+0x1bb>
+   60398: 9124d821     	add	x1, x1, #0x936
+   6039c: aa1f03e2     	mov	x2, xzr
+   603a0: 7200011f     	tst	w8, #0x1
+   603a4: 9a8902c0     	csel	x0, x22, x9, eq
+   603a8: 940095e9     	bl	0x85b4c <__dl__Z13add_dlwarningPKcS0_S0_>
+   603ac: d0000b7a     	adrp	x26, 0x1ce000 <__dl_gmtptr>
+   603b0: 17fffe07     	b	0x5fbcc <__dl__ZN9ElfReader4ReadEPKcill+0x9cc>
+   603b4: 39402268     	ldrb	w8, [x19, #0x8]
+   603b8: f9400e69     	ldr	x9, [x19, #0x18]
+   603bc: 91002676     	add	x22, x19, #0x9
+   603c0: b0fffd34     	adrp	x20, 0x5000 <__dl_$d+0x92>
+   603c4: 91335e94     	add	x20, x20, #0xcd7
+   603c8: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   603cc: 91194400     	add	x0, x0, #0x651
+   603d0: 7200011f     	tst	w8, #0x1
+   603d4: 52806001     	mov	w1, #0x300              // =768
+   603d8: 9a8902c3     	csel	x3, x22, x9, eq
+   603dc: aa1403e2     	mov	x2, x20
+   603e0: 94001013     	bl	0x6442c <__dl_async_safe_format_buffer>
+   603e4: 39402268     	ldrb	w8, [x19, #0x8]
+   603e8: f9400e69     	ldr	x9, [x19, #0x18]
+   603ec: 528000c0     	mov	w0, #0x6                // =6
+   603f0: b94002a3     	ldr	w3, [x21]
+   603f4: aa1403e1     	mov	x1, x20
+   603f8: 7200011f     	tst	w8, #0x1
+   603fc: 9a8902c2     	csel	x2, x22, x9, eq
+   60400: 94001328     	bl	0x650a0 <__dl__Z12__linker_logiPKcz>
+   60404: 140000ea     	b	0x607ac <__dl__ZN9ElfReader4ReadEPKcill+0x15ac>
+   60408: 39402268     	ldrb	w8, [x19, #0x8]
+   6040c: f9400e69     	ldr	x9, [x19, #0x18]
+   60410: 91002676     	add	x22, x19, #0x9
+   60414: f0fffd74     	adrp	x20, 0xf000 <__dl_.str.10.llvm.7423324223920420968+0x219>
+   60418: 91094294     	add	x20, x20, #0x250
+   6041c: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   60420: 91194400     	add	x0, x0, #0x651
+   60424: 7200011f     	tst	w8, #0x1
+   60428: 52806001     	mov	w1, #0x300              // =768
+   6042c: 9a8902c3     	csel	x3, x22, x9, eq
+   60430: aa1403e2     	mov	x2, x20
+   60434: 94000ffe     	bl	0x6442c <__dl_async_safe_format_buffer>
+   60438: 39402268     	ldrb	w8, [x19, #0x8]
+   6043c: f9400e69     	ldr	x9, [x19, #0x18]
+   60440: 528000c0     	mov	w0, #0x6                // =6
+   60444: b94002a3     	ldr	w3, [x21]
+   60448: b94006e4     	ldr	w4, [x23, #0x4]
+   6044c: aa1403e1     	mov	x1, x20
+   60450: 7200011f     	tst	w8, #0x1
+   60454: 9a8902c2     	csel	x2, x22, x9, eq
+   60458: 94001312     	bl	0x650a0 <__dl__Z12__linker_logiPKcz>
+   6045c: 140000d4     	b	0x607ac <__dl__ZN9ElfReader4ReadEPKcill+0x15ac>
+   60460: d503201f     	nop
+   60464: 70d4e860     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   60468: d503201f     	nop
+   6046c: 50d0c7c1     	adr	x1, 0x1d66 <__dl_.str.13.llvm.4321711338576704958>
+   60470: d503201f     	nop
+   60474: 30d77463     	adr	x3, 0xf301 <__dl___FUNCTION__._Z8safe_addPllm.llvm.4321711338576704958>
+   60478: d503201f     	nop
+   6047c: 30d735e4     	adr	x4, 0xeb39 <__dl_.str.14.llvm.4321711338576704958>
+   60480: 528015a2     	mov	w2, #0xad               // =173
+   60484: 94000fbe     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   60488: 94001037     	bl	0x64564 <__dl_abort>
+   6048c: d503201f     	nop
+   60490: 70d4e700     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   60494: d503201f     	nop
+   60498: 50d0c661     	adr	x1, 0x1d66 <__dl_.str.13.llvm.4321711338576704958>
+   6049c: d503201f     	nop
+   604a0: 30d77303     	adr	x3, 0xf301 <__dl___FUNCTION__._Z8safe_addPllm.llvm.4321711338576704958>
+   604a4: d503201f     	nop
+   604a8: 30d73484     	adr	x4, 0xeb39 <__dl_.str.14.llvm.4321711338576704958>
+   604ac: 528015a2     	mov	w2, #0xad               // =173
+   604b0: 94000fb3     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   604b4: 9400102c     	bl	0x64564 <__dl_abort>
+   604b8: d503201f     	nop
+   604bc: 70d4e5a0     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   604c0: d503201f     	nop
+   604c4: 70d0bbe1     	adr	x1, 0x1c43 <__dl_.str.1.llvm.16703203803929973174>
+   604c8: d503201f     	nop
+   604cc: 50d21f63     	adr	x3, 0x48ba <__dl___FUNCTION__._ZN18MappedFileFragment3MapEilmm.llvm.16703203803929973174>
+   604d0: d503201f     	nop
+   604d4: 70d3e204     	adr	x4, 0x8117 <__dl_.str.2.llvm.16703203803929973174>
+   604d8: 52800662     	mov	w2, #0x33               // =51
+   604dc: 94000fa8     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   604e0: 94001021     	bl	0x64564 <__dl_abort>
+   604e4: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   604e8: 91148000     	add	x0, x0, #0x520
+   604ec: 94012fd8     	bl	0xac44c <__dl___cxa_guard_acquire>
+   604f0: 34ffbba0     	cbz	w0, 0x5fc64 <__dl__ZN9ElfReader4ReadEPKcill+0xa64>
+   604f4: 528000c0     	mov	w0, #0x6                // =6
+   604f8: 9400b3f6     	bl	0x8d4d0 <__dl_getauxval>
+   604fc: f9028f40     	str	x0, [x26, #0x518]
+   60500: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   60504: 91148000     	add	x0, x0, #0x520
+   60508: 94013017     	bl	0xac564 <__dl___cxa_guard_release>
+   6050c: 17fffdd6     	b	0x5fc64 <__dl__ZN9ElfReader4ReadEPKcill+0xa64>
+   60510: d503201f     	nop
+   60514: 70d4e2e0     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   60518: d503201f     	nop
+   6051c: 70d0b921     	adr	x1, 0x1c43 <__dl_.str.1.llvm.16703203803929973174>
+   60520: d503201f     	nop
+   60524: 50d21ca3     	adr	x3, 0x48ba <__dl___FUNCTION__._ZN18MappedFileFragment3MapEilmm.llvm.16703203803929973174>
+   60528: d503201f     	nop
+   6052c: 50d2bb84     	adr	x4, 0x5c9e <__dl_.str.3.llvm.16703203803929973174>
+   60530: 52800702     	mov	w2, #0x38               // =56
+   60534: 94000f92     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   60538: 9400100b     	bl	0x64564 <__dl_abort>
+   6053c: 39402268     	ldrb	w8, [x19, #0x8]
+   60540: f9400e69     	ldr	x9, [x19, #0x18]
+   60544: 9100266a     	add	x10, x19, #0x9
+   60548: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   6054c: 91194400     	add	x0, x0, #0x651
+   60550: 90fffd42     	adrp	x2, 0x8000 <__dl_$d+0x278>
+   60554: 91058c42     	add	x2, x2, #0x163
+   60558: 17fffbbb     	b	0x5f444 <__dl__ZN9ElfReader4ReadEPKcill+0x244>
+   6055c: 94003f15     	bl	0x701b0 <__dl__ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE20__throw_length_errorB8nn220000Ev>
+   60560: 531f7a88     	lsl	w8, w20, #1
+   60564: 910083e9     	add	x9, sp, #0x20
+   60568: b2400135     	orr	x21, x9, #0x1
+   6056c: 390083e8     	strb	w8, [sp, #0x20]
+   60570: 17fffe4a     	b	0x5fe98 <__dl__ZN9ElfReader4ReadEPKcill+0xc98>
+   60574: 2a1f03f4     	mov	w20, wzr
+   60578: 17fffe7e     	b	0x5ff70 <__dl__ZN9ElfReader4ReadEPKcill+0xd70>
+   6057c: 52800034     	mov	w20, #0x1               // =1
+   60580: 17fffe7c     	b	0x5ff70 <__dl__ZN9ElfReader4ReadEPKcill+0xd70>
+   60584: 910006c0     	add	x0, x22, #0x1
+   60588: cb000348     	sub	x8, x26, x0
+   6058c: eb14011f     	cmp	x8, x20
+   60590: 54ffcd0a     	b.ge	0x5ff30 <__dl__ZN9ElfReader4ReadEPKcill+0xd30>
+   60594: 2a1f03e8     	mov	w8, wzr
+   60598: 17fffe73     	b	0x5ff64 <__dl__ZN9ElfReader4ReadEPKcill+0xd64>
+   6059c: f85e83a8     	ldur	x8, [x29, #-0x18]
+   605a0: f85f83a0     	ldur	x0, [x29, #-0x8]
+   605a4: 927ff901     	and	x1, x8, #0xfffffffffffffffe
+   605a8: 94003af5     	bl	0x6f17c <__dl__ZdlPvm>
+   605ac: 17fffe72     	b	0x5ff74 <__dl__ZN9ElfReader4ReadEPKcill+0xd74>
+   605b0: 90000ae8     	adrp	x8, 0x1bc000 <__dl___cxa_terminate_handler>
+   605b4: 912fa108     	add	x8, x8, #0xbe8
+   605b8: 88dffd08     	ldar	w8, [x8]
+   605bc: 7100951f     	cmp	w8, #0x25
+   605c0: 5400172a     	b.ge	0x608a4 <__dl__ZN9ElfReader4ReadEPKcill+0x16a4>
+   605c4: f9403e68     	ldr	x8, [x19, #0x78]
+   605c8: 91000694     	add	x20, x20, #0x1
+   605cc: 9100e39c     	add	x28, x28, #0x38
+   605d0: eb08029f     	cmp	x20, x8
+   605d4: 54000e62     	b.hs	0x607a0 <__dl__ZN9ElfReader4ReadEPKcill+0x15a0>
+   605d8: f940527a     	ldr	x26, [x19, #0xa0]
+   605dc: 8b1c0356     	add	x22, x26, x28
+   605e0: b94002c8     	ldr	w8, [x22]
+   605e4: 7100111f     	cmp	w8, #0x4
+   605e8: 54fffee1     	b.ne	0x605c4 <__dl__ZN9ElfReader4ReadEPKcill+0x13c4>
+   605ec: f94016d8     	ldr	x24, [x22, #0x28]
+   605f0: b4fffeb8     	cbz	x24, 0x605c4 <__dl__ZN9ElfReader4ReadEPKcill+0x13c4>
+   605f4: f9401677     	ldr	x23, [x19, #0x28]
+   605f8: 8b1c0348     	add	x8, x26, x28
+   605fc: f940051b     	ldr	x27, [x8, #0x8]
+   60600: 937ffee9     	asr	x9, x23, #63
+   60604: ab1b02e8     	adds	x8, x23, x27
+   60608: 9a893529     	cinc	x9, x9, hs
+   6060c: ab0c011f     	cmn	x8, x12
+   60610: 9340012a     	sbfx	x10, x9, #0, #1
+   60614: ca09014b     	eor	x11, x10, x9
+   60618: 9a893529     	cinc	x9, x9, hs
+   6061c: b5fffcab     	cbnz	x11, 0x605b0 <__dl__ZN9ElfReader4ReadEPKcill+0x13b0>
+   60620: 93400129     	sbfx	x9, x9, #0, #1
+   60624: b7fffc69     	tbnz	x9, #0x3f, 0x605b0 <__dl__ZN9ElfReader4ReadEPKcill+0x13b0>
+   60628: 8b1c0349     	add	x9, x26, x28
+   6062c: f9401129     	ldr	x9, [x9, #0x20]
+   60630: ab090108     	adds	x8, x8, x9
+   60634: 9a8a354a     	cinc	x10, x10, hs
+   60638: 9340014b     	sbfx	x11, x10, #0, #1
+   6063c: ca0a016b     	eor	x11, x11, x10
+   60640: b5fffb8b     	cbnz	x11, 0x605b0 <__dl__ZN9ElfReader4ReadEPKcill+0x13b0>
+   60644: 937ffd0b     	asr	x11, x8, #63
+   60648: 4a0b014a     	eor	w10, w10, w11
+   6064c: ca08010b     	eor	x11, x8, x8
+   60650: 9240014a     	and	x10, x10, #0x1
+   60654: aa0a016a     	orr	x10, x11, x10
+   60658: b5fffaca     	cbnz	x10, 0x605b0 <__dl__ZN9ElfReader4ReadEPKcill+0x13b0>
+   6065c: eb18013f     	cmp	x9, x24
+   60660: 54fffa81     	b.ne	0x605b0 <__dl__ZN9ElfReader4ReadEPKcill+0x13b0>
+   60664: f9401a69     	ldr	x9, [x19, #0x30]
+   60668: eb08013f     	cmp	x9, x8
+   6066c: 54fffa2b     	b.lt	0x605b0 <__dl__ZN9ElfReader4ReadEPKcill+0x13b0>
+   60670: b7f81757     	tbnz	x23, #0x3f, 0x60958 <__dl__ZN9ElfReader4ReadEPKcill+0x1758>
+   60674: d240fae8     	eor	x8, x23, #0x7fffffffffffffff
+   60678: eb1b011f     	cmp	x8, x27
+   6067c: 54001f23     	b.lo	0x60a60 <__dl__ZN9ElfReader4ReadEPKcill+0x1860>
+   60680: b9402264     	ldr	w4, [x19, #0x20]
+   60684: 08dfff28     	ldarb	w8, [x25]
+   60688: 36002028     	tbz	w8, #0x0, 0x60a8c <__dl__ZN9ElfReader4ReadEPKcill+0x188c>
+   6068c: 8b17037b     	add	x27, x27, x23
+   60690: b7f817bb     	tbnz	x27, #0x3f, 0x60984 <__dl__ZN9ElfReader4ReadEPKcill+0x1784>
+   60694: d240fb68     	eor	x8, x27, #0x7fffffffffffffff
+   60698: eb18011f     	cmp	x8, x24
+   6069c: 54001cc3     	b.lo	0x60a34 <__dl__ZN9ElfReader4ReadEPKcill+0x1834>
+   606a0: d0000b68     	adrp	x8, 0x1ce000 <__dl_gmtptr>
+   606a4: f9428d17     	ldr	x23, [x8, #0x518]
+   606a8: 08dfff28     	ldarb	w8, [x25]
+   606ac: 360020e8     	tbz	w8, #0x0, 0x60ac8 <__dl__ZN9ElfReader4ReadEPKcill+0x18c8>
+   606b0: 8b1b0308     	add	x8, x24, x27
+   606b4: b7f817e8     	tbnz	x8, #0x3f, 0x609b0 <__dl__ZN9ElfReader4ReadEPKcill+0x17b0>
+   606b8: d0000b69     	adrp	x9, 0x1ce000 <__dl_gmtptr>
+   606bc: d240f90a     	eor	x10, x8, #0x7fffffffffffffff
+   606c0: f9428d29     	ldr	x9, [x9, #0x518]
+   606c4: 8b150129     	add	x9, x9, x21
+   606c8: 8a1b0129     	and	x9, x9, x27
+   606cc: eb09015f     	cmp	x10, x9
+   606d0: 540019c3     	b.lo	0x60a08 <__dl__ZN9ElfReader4ReadEPKcill+0x1808>
+   606d4: cb1703ea     	neg	x10, x23
+   606d8: 8a0a0365     	and	x5, x27, x10
+   606dc: cb050108     	sub	x8, x8, x5
+   606e0: 8b090117     	add	x23, x8, x9
+   606e4: eb1802ff     	cmp	x23, x24
+   606e8: 540017a3     	b.lo	0x609dc <__dl__ZN9ElfReader4ReadEPKcill+0x17dc>
+   606ec: aa1f03e0     	mov	x0, xzr
+   606f0: aa1703e1     	mov	x1, x23
+   606f4: 52800022     	mov	w2, #0x1                // =1
+   606f8: 52800043     	mov	w3, #0x2                // =2
+   606fc: 97ffed91     	bl	0x5bd40 <__dl_mmap64>
+   60700: b100041f     	cmn	x0, #0x1
+   60704: 54000fc0     	b.eq	0x608fc <__dl__ZN9ElfReader4ReadEPKcill+0x16fc>
+   60708: 08dfff28     	ldarb	w8, [x25]
+   6070c: aa0003f8     	mov	x24, x0
+   60710: 36001fa8     	tbz	w8, #0x0, 0x60b04 <__dl__ZN9ElfReader4ReadEPKcill+0x1904>
+   60714: d0000b68     	adrp	x8, 0x1ce000 <__dl_gmtptr>
+   60718: d10063a4     	sub	x4, x29, #0x18
+   6071c: 910083e5     	add	x5, sp, #0x20
+   60720: f9428d08     	ldr	x8, [x8, #0x518]
+   60724: 528000a0     	mov	w0, #0x5                // =5
+   60728: f0fffd21     	adrp	x1, 0x7000 <__dl_.str.llvm.3714003009145656655+0xce>
+   6072c: 913b4821     	add	x1, x1, #0xed2
+   60730: aa1603e3     	mov	x3, x22
+   60734: f81e83bf     	stur	xzr, [x29, #-0x18]
+   60738: 8b150108     	add	x8, x8, x21
+   6073c: f90013ff     	str	xzr, [sp, #0x20]
+   60740: 8a1b0108     	and	x8, x8, x27
+   60744: 8b080302     	add	x2, x24, x8
+   60748: 9400b31a     	bl	0x8d3b0 <__dl__Z14__get_elf_notejPKcyPK10elf64_phdrPPK10elf64_notePS0_>
+   6074c: 37000100     	tbnz	w0, #0x0, 0x6076c <__dl__ZN9ElfReader4ReadEPKcill+0x156c>
+   60750: d2f0000c     	mov	x12, #-0x8000000000000000 // =-9223372036854775808
+   60754: b4fff398     	cbz	x24, 0x605c4 <__dl__ZN9ElfReader4ReadEPKcill+0x13c4>
+   60758: aa1803e0     	mov	x0, x24
+   6075c: aa1703e1     	mov	x1, x23
+   60760: 97ffea68     	bl	0x5b100 <__dl_munmap>
+   60764: d2f0000c     	mov	x12, #-0x8000000000000000 // =-9223372036854775808
+   60768: 17ffff97     	b	0x605c4 <__dl__ZN9ElfReader4ReadEPKcill+0x13c4>
+   6076c: f85e83a8     	ldur	x8, [x29, #-0x18]
+   60770: b9400504     	ldr	w4, [x8, #0x4]
+   60774: 7100109f     	cmp	w4, #0x4
+   60778: 54001de1     	b.ne	0x60b34 <__dl__ZN9ElfReader4ReadEPKcill+0x1934>
+   6077c: f94013e8     	ldr	x8, [sp, #0x20]
+   60780: b9400108     	ldr	w8, [x8]
+   60784: 7100051f     	cmp	w8, #0x1
+   60788: 1a9f17e8     	cset	w8, eq
+   6078c: 3905c668     	strb	w8, [x19, #0x171]
+   60790: b4000098     	cbz	x24, 0x607a0 <__dl__ZN9ElfReader4ReadEPKcill+0x15a0>
+   60794: aa1803e0     	mov	x0, x24
+   60798: aa1703e1     	mov	x1, x23
+   6079c: 97ffea59     	bl	0x5b100 <__dl_munmap>
+   607a0: 52800028     	mov	w8, #0x1                // =1
+   607a4: 39000268     	strb	w8, [x19]
+   607a8: d0000b7b     	adrp	x27, 0x1ce000 <__dl_gmtptr>
+   607ac: f9455f68     	ldr	x8, [x27, #0xab8]
+   607b0: f140111f     	cmp	x8, #0x4, lsl #12       // =0x4000
+   607b4: 54000180     	b.eq	0x607e4 <__dl__ZN9ElfReader4ReadEPKcill+0x15e4>
+   607b8: 39400268     	ldrb	w8, [x19]
+   607bc: 12000100     	and	w0, w8, #0x1
+   607c0: a94a4ff4     	ldp	x20, x19, [sp, #0xa0]
+   607c4: a94957f6     	ldp	x22, x21, [sp, #0x90]
+   607c8: a9485ff8     	ldp	x24, x23, [sp, #0x80]
+   607cc: a94767fa     	ldp	x26, x25, [sp, #0x70]
+   607d0: a9466ffc     	ldp	x28, x27, [sp, #0x60]
+   607d4: a9457bfd     	ldp	x29, x30, [sp, #0x50]
+   607d8: 9102c3ff     	add	sp, sp, #0xb0
+   607dc: d50323bf     	autiasp
+   607e0: d65f03c0     	ret
+   607e4: f940b268     	ldr	x8, [x19, #0x160]
+   607e8: d34efd08     	lsr	x8, x8, #14
+   607ec: b5fffe68     	cbnz	x8, 0x607b8 <__dl__ZN9ElfReader4ReadEPKcill+0x15b8>
+   607f0: d503201f     	nop
+   607f4: 50d24ac1     	adr	x1, 0x514e <__dl_$d>
+   607f8: 910083e0     	add	x0, sp, #0x20
+   607fc: a93effbf     	stp	xzr, xzr, [x29, #-0x18]
+   60800: f81f83bf     	stur	xzr, [x29, #-0x8]
+   60804: 9400458c     	bl	0x71e34 <__dl__ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC2B8nn220000ILi0EEEPKc>
+   60808: 90fffd01     	adrp	x1, 0x0 <__dl___gcov_flush>
+   6080c: 913eac21     	add	x1, x1, #0xfab
+   60810: 910023e0     	add	x0, sp, #0x8
+   60814: 94004588     	bl	0x71e34 <__dl__ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC2B8nn220000ILi0EEEPKc>
+   60818: d10063a8     	sub	x8, x29, #0x18
+   6081c: 910083e0     	add	x0, sp, #0x20
+   60820: 910023e1     	add	x1, sp, #0x8
+   60824: 9400b810     	bl	0x8e864 <__dl__ZN7android4base11GetPropertyERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES9_>
+   60828: 394023e8     	ldrb	w8, [sp, #0x8]
+   6082c: 37001a68     	tbnz	w8, #0x0, 0x60b78 <__dl__ZN9ElfReader4ReadEPKcill+0x1978>
+   60830: 394083e8     	ldrb	w8, [sp, #0x20]
+   60834: 37001ac8     	tbnz	w8, #0x0, 0x60b8c <__dl__ZN9ElfReader4ReadEPKcill+0x198c>
+   60838: 385e83a8     	ldurb	w8, [x29, #-0x18]
+   6083c: a97f27aa     	ldp	x10, x9, [x29, #-0x10]
+   60840: d341fd0b     	lsr	x11, x8, #1
+   60844: 7200011f     	tst	w8, #0x1
+   60848: d10063a8     	sub	x8, x29, #0x18
+   6084c: 9a881520     	csinc	x0, x9, x8, ne
+   60850: 9a8a0161     	csel	x1, x11, x10, eq
+   60854: 9402d142     	bl	0x114d5c <__dl__ZN7android4base9ParseBoolENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEE>
+   60858: d0000b68     	adrp	x8, 0x1ce000 <__dl_gmtptr>
+   6085c: 7100081f     	cmp	w0, #0x2
+   60860: b0fffd01     	adrp	x1, 0x1000 <__dl_$d+0x2c>
+   60864: 9103d821     	add	x1, x1, #0xf6
+   60868: 396b6108     	ldrb	w8, [x8, #0xad8]
+   6086c: 1a9f17e9     	cset	w9, eq
+   60870: d10063a0     	sub	x0, x29, #0x18
+   60874: 2a080128     	orr	w8, w9, w8
+   60878: 12000108     	and	w8, w8, #0x1
+   6087c: 3905ca68     	strb	w8, [x19, #0x172]
+   60880: 97fff4cb     	bl	0x5dbac <__dl__ZNSt3__1eqB8nn220000IcNS_11char_traitsIcEENS_9allocatorIcEEEEbRKNS_12basic_stringIT_T0_T1_EEPKS6_>
+   60884: 370018e0     	tbnz	w0, #0x0, 0x60ba0 <__dl__ZN9ElfReader4ReadEPKcill+0x19a0>
+   60888: 385e83a8     	ldurb	w8, [x29, #-0x18]
+   6088c: 3607f968     	tbz	w8, #0x0, 0x607b8 <__dl__ZN9ElfReader4ReadEPKcill+0x15b8>
+   60890: f85e83a8     	ldur	x8, [x29, #-0x18]
+   60894: f85f83a0     	ldur	x0, [x29, #-0x8]
+   60898: 927ff901     	and	x1, x8, #0xfffffffffffffffe
+   6089c: 94003a38     	bl	0x6f17c <__dl__ZdlPvm>
+   608a0: 17ffffc6     	b	0x607b8 <__dl__ZN9ElfReader4ReadEPKcill+0x15b8>
+   608a4: 39402268     	ldrb	w8, [x19, #0x8]
+   608a8: f9400e69     	ldr	x9, [x19, #0x18]
+   608ac: 91002676     	add	x22, x19, #0x9
+   608b0: 90fffd75     	adrp	x21, 0xc000 <__dl_$d+0x18c>
+   608b4: 912152b5     	add	x21, x21, #0x854
+   608b8: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   608bc: 91194400     	add	x0, x0, #0x651
+   608c0: 7200011f     	tst	w8, #0x1
+   608c4: 52806001     	mov	w1, #0x300              // =768
+   608c8: 9a8902c3     	csel	x3, x22, x9, eq
+   608cc: aa1503e2     	mov	x2, x21
+   608d0: aa1403e4     	mov	x4, x20
+   608d4: 94000ed6     	bl	0x6442c <__dl_async_safe_format_buffer>
+   608d8: 39402268     	ldrb	w8, [x19, #0x8]
+   608dc: f9400e69     	ldr	x9, [x19, #0x18]
+   608e0: 528000c0     	mov	w0, #0x6                // =6
+   608e4: aa1503e1     	mov	x1, x21
+   608e8: aa1403e3     	mov	x3, x20
+   608ec: 7200011f     	tst	w8, #0x1
+   608f0: 9a8902c2     	csel	x2, x22, x9, eq
+   608f4: 940011eb     	bl	0x650a0 <__dl__Z12__linker_logiPKcz>
+   608f8: 17ffffac     	b	0x607a8 <__dl__ZN9ElfReader4ReadEPKcill+0x15a8>
+   608fc: 39402268     	ldrb	w8, [x19, #0x8]
+   60900: 8b1c0349     	add	x9, x26, x28
+   60904: f9400e6a     	ldr	x10, [x19, #0x18]
+   60908: f9401134     	ldr	x20, [x9, #0x20]
+   6090c: f9400529     	ldr	x9, [x9, #0x8]
+   60910: 9100266b     	add	x11, x19, #0x9
+   60914: 7200011f     	tst	w8, #0x1
+   60918: f9401668     	ldr	x8, [x19, #0x28]
+   6091c: b9402275     	ldr	w21, [x19, #0x20]
+   60920: 9a8a0176     	csel	x22, x11, x10, eq
+   60924: 8b080120     	add	x0, x9, x8
+   60928: 9400a82f     	bl	0x8a9e4 <__dl__Z10page_startm>
+   6092c: aa0003e6     	mov	x6, x0
+   60930: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   60934: 91194400     	add	x0, x0, #0x651
+   60938: d0fffd02     	adrp	x2, 0x2000 <__dl_$d+0x42>
+   6093c: 91271c42     	add	x2, x2, #0x9c7
+   60940: 52806001     	mov	w1, #0x300              // =768
+   60944: aa1603e3     	mov	x3, x22
+   60948: aa1403e4     	mov	x4, x20
+   6094c: 2a1503e5     	mov	w5, w21
+   60950: 94000eb7     	bl	0x6442c <__dl_async_safe_format_buffer>
+   60954: 17ffff95     	b	0x607a8 <__dl__ZN9ElfReader4ReadEPKcill+0x15a8>
+   60958: d503201f     	nop
+   6095c: 70d4c0a0     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   60960: d503201f     	nop
+   60964: 50d0a001     	adr	x1, 0x1d66 <__dl_.str.13.llvm.4321711338576704958>
+   60968: d503201f     	nop
+   6096c: 30d74ca3     	adr	x3, 0xf301 <__dl___FUNCTION__._Z8safe_addPllm.llvm.4321711338576704958>
+   60970: d503201f     	nop
+   60974: 30d70e24     	adr	x4, 0xeb39 <__dl_.str.14.llvm.4321711338576704958>
+   60978: 528015a2     	mov	w2, #0xad               // =173
+   6097c: 94000e80     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   60980: 94000ef9     	bl	0x64564 <__dl_abort>
+   60984: d503201f     	nop
+   60988: 70d4bf40     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   6098c: d503201f     	nop
+   60990: 50d09ea1     	adr	x1, 0x1d66 <__dl_.str.13.llvm.4321711338576704958>
+   60994: d503201f     	nop
+   60998: 30d74b43     	adr	x3, 0xf301 <__dl___FUNCTION__._Z8safe_addPllm.llvm.4321711338576704958>
+   6099c: d503201f     	nop
+   609a0: 30d70cc4     	adr	x4, 0xeb39 <__dl_.str.14.llvm.4321711338576704958>
+   609a4: 528015a2     	mov	w2, #0xad               // =173
+   609a8: 94000e75     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   609ac: 94000eee     	bl	0x64564 <__dl_abort>
+   609b0: d503201f     	nop
+   609b4: 70d4bde0     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   609b8: d503201f     	nop
+   609bc: 50d09d41     	adr	x1, 0x1d66 <__dl_.str.13.llvm.4321711338576704958>
+   609c0: d503201f     	nop
+   609c4: 30d749e3     	adr	x3, 0xf301 <__dl___FUNCTION__._Z8safe_addPllm.llvm.4321711338576704958>
+   609c8: d503201f     	nop
+   609cc: 30d70b64     	adr	x4, 0xeb39 <__dl_.str.14.llvm.4321711338576704958>
+   609d0: 528015a2     	mov	w2, #0xad               // =173
+   609d4: 94000e6a     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   609d8: 94000ee3     	bl	0x64564 <__dl_abort>
+   609dc: d503201f     	nop
+   609e0: 70d4bc80     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   609e4: d503201f     	nop
+   609e8: 70d092c1     	adr	x1, 0x1c43 <__dl_.str.1.llvm.16703203803929973174>
+   609ec: d503201f     	nop
+   609f0: 50d1f643     	adr	x3, 0x48ba <__dl___FUNCTION__._ZN18MappedFileFragment3MapEilmm.llvm.16703203803929973174>
+   609f4: d503201f     	nop
+   609f8: 30d5b0e4     	adr	x4, 0xc015 <__dl_.str.5.llvm.16703203803929973174>
+   609fc: 52800782     	mov	w2, #0x3c               // =60
+   60a00: 94000e5f     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   60a04: 94000ed8     	bl	0x64564 <__dl_abort>
+   60a08: d503201f     	nop
+   60a0c: 70d4bb20     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   60a10: d503201f     	nop
+   60a14: 70d09161     	adr	x1, 0x1c43 <__dl_.str.1.llvm.16703203803929973174>
+   60a18: d503201f     	nop
+   60a1c: 50d1f4e3     	adr	x3, 0x48ba <__dl___FUNCTION__._ZN18MappedFileFragment3MapEilmm.llvm.16703203803929973174>
+   60a20: d503201f     	nop
+   60a24: 70d23784     	adr	x4, 0x5117 <__dl_.str.4.llvm.16703203803929973174>
+   60a28: 52800722     	mov	w2, #0x39               // =57
+   60a2c: 94000e54     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   60a30: 94000ecd     	bl	0x64564 <__dl_abort>
+   60a34: d503201f     	nop
+   60a38: 70d4b9c0     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   60a3c: d503201f     	nop
+   60a40: 70d09001     	adr	x1, 0x1c43 <__dl_.str.1.llvm.16703203803929973174>
+   60a44: d503201f     	nop
+   60a48: 50d1f383     	adr	x3, 0x48ba <__dl___FUNCTION__._ZN18MappedFileFragment3MapEilmm.llvm.16703203803929973174>
+   60a4c: d503201f     	nop
+   60a50: 50d29264     	adr	x4, 0x5c9e <__dl_.str.3.llvm.16703203803929973174>
+   60a54: 52800702     	mov	w2, #0x38               // =56
+   60a58: 94000e49     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   60a5c: 94000ec2     	bl	0x64564 <__dl_abort>
+   60a60: d503201f     	nop
+   60a64: 70d4b860     	adr	x0, 0xa173 <__dl_.str.llvm.7501849791035174606>
+   60a68: d503201f     	nop
+   60a6c: 70d08ea1     	adr	x1, 0x1c43 <__dl_.str.1.llvm.16703203803929973174>
+   60a70: d503201f     	nop
+   60a74: 50d1f223     	adr	x3, 0x48ba <__dl___FUNCTION__._ZN18MappedFileFragment3MapEilmm.llvm.16703203803929973174>
+   60a78: d503201f     	nop
+   60a7c: 70d3b4c4     	adr	x4, 0x8117 <__dl_.str.2.llvm.16703203803929973174>
+   60a80: 52800662     	mov	w2, #0x33               // =51
+   60a84: 94000e3e     	bl	0x6437c <__dl_async_safe_fatal_no_abort>
+   60a88: 94000eb7     	bl	0x64564 <__dl_abort>
+   60a8c: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   60a90: 91148000     	add	x0, x0, #0x520
+   60a94: b90007e4     	str	w4, [sp, #0x4]
+   60a98: 94012e6d     	bl	0xac44c <__dl___cxa_guard_acquire>
+   60a9c: b94007e4     	ldr	w4, [sp, #0x4]
+   60aa0: 34ffdf60     	cbz	w0, 0x6068c <__dl__ZN9ElfReader4ReadEPKcill+0x148c>
+   60aa4: 528000c0     	mov	w0, #0x6                // =6
+   60aa8: 9400b28a     	bl	0x8d4d0 <__dl_getauxval>
+   60aac: d0000b68     	adrp	x8, 0x1ce000 <__dl_gmtptr>
+   60ab0: f9028d00     	str	x0, [x8, #0x518]
+   60ab4: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   60ab8: 91148000     	add	x0, x0, #0x520
+   60abc: 94012eaa     	bl	0xac564 <__dl___cxa_guard_release>
+   60ac0: b94007e4     	ldr	w4, [sp, #0x4]
+   60ac4: 17fffef2     	b	0x6068c <__dl__ZN9ElfReader4ReadEPKcill+0x148c>
+   60ac8: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   60acc: 91148000     	add	x0, x0, #0x520
+   60ad0: b90007e4     	str	w4, [sp, #0x4]
+   60ad4: 94012e5e     	bl	0xac44c <__dl___cxa_guard_acquire>
+   60ad8: b94007e4     	ldr	w4, [sp, #0x4]
+   60adc: 34ffdea0     	cbz	w0, 0x606b0 <__dl__ZN9ElfReader4ReadEPKcill+0x14b0>
+   60ae0: 528000c0     	mov	w0, #0x6                // =6
+   60ae4: 9400b27b     	bl	0x8d4d0 <__dl_getauxval>
+   60ae8: d0000b68     	adrp	x8, 0x1ce000 <__dl_gmtptr>
+   60aec: f9028d00     	str	x0, [x8, #0x518]
+   60af0: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   60af4: 91148000     	add	x0, x0, #0x520
+   60af8: 94012e9b     	bl	0xac564 <__dl___cxa_guard_release>
+   60afc: b94007e4     	ldr	w4, [sp, #0x4]
+   60b00: 17fffeec     	b	0x606b0 <__dl__ZN9ElfReader4ReadEPKcill+0x14b0>
+   60b04: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   60b08: 91148000     	add	x0, x0, #0x520
+   60b0c: 94012e50     	bl	0xac44c <__dl___cxa_guard_acquire>
+   60b10: 34ffe020     	cbz	w0, 0x60714 <__dl__ZN9ElfReader4ReadEPKcill+0x1514>
+   60b14: 528000c0     	mov	w0, #0x6                // =6
+   60b18: 9400b26e     	bl	0x8d4d0 <__dl_getauxval>
+   60b1c: d0000b68     	adrp	x8, 0x1ce000 <__dl_gmtptr>
+   60b20: f9028d00     	str	x0, [x8, #0x518]
+   60b24: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   60b28: 91148000     	add	x0, x0, #0x520
+   60b2c: 94012e8e     	bl	0xac564 <__dl___cxa_guard_release>
+   60b30: 17fffef9     	b	0x60714 <__dl__ZN9ElfReader4ReadEPKcill+0x1514>
+   60b34: 39402268     	ldrb	w8, [x19, #0x8]
+   60b38: f9400e69     	ldr	x9, [x19, #0x18]
+   60b3c: 9100266a     	add	x10, x19, #0x9
+   60b40: d0000b60     	adrp	x0, 0x1ce000 <__dl_gmtptr>
+   60b44: 91194400     	add	x0, x0, #0x651
+   60b48: 90fffd42     	adrp	x2, 0x8000 <__dl_$d+0x278>
+   60b4c: 91061c42     	add	x2, x2, #0x187
+   60b50: 7200011f     	tst	w8, #0x1
+   60b54: 52806001     	mov	w1, #0x300              // =768
+   60b58: 9a890143     	csel	x3, x10, x9, eq
+   60b5c: 94000e34     	bl	0x6442c <__dl_async_safe_format_buffer>
+   60b60: d0000b7b     	adrp	x27, 0x1ce000 <__dl_gmtptr>
+   60b64: b4ffe258     	cbz	x24, 0x607ac <__dl__ZN9ElfReader4ReadEPKcill+0x15ac>
+   60b68: aa1803e0     	mov	x0, x24
+   60b6c: aa1703e1     	mov	x1, x23
+   60b70: 97ffe964     	bl	0x5b100 <__dl_munmap>
+   60b74: 17ffff0e     	b	0x607ac <__dl__ZN9ElfReader4ReadEPKcill+0x15ac>
+   60b78: f94007e8     	ldr	x8, [sp, #0x8]
+   60b7c: f9400fe0     	ldr	x0, [sp, #0x18]
+   60b80: 927ff901     	and	x1, x8, #0xfffffffffffffffe
+   60b84: 9400397e     	bl	0x6f17c <__dl__ZdlPvm>
+   60b88: 17ffff2a     	b	0x60830 <__dl__ZN9ElfReader4ReadEPKcill+0x1630>
+   60b8c: f94013e8     	ldr	x8, [sp, #0x20]
+   60b90: f9401be0     	ldr	x0, [sp, #0x30]
+   60b94: 927ff901     	and	x1, x8, #0xfffffffffffffffe
+   60b98: 94003979     	bl	0x6f17c <__dl__ZdlPvm>
+   60b9c: 17ffff27     	b	0x60838 <__dl__ZN9ElfReader4ReadEPKcill+0x1638>
+   60ba0: 52800028     	mov	w8, #0x1                // =1
+   60ba4: 3905d268     	strb	w8, [x19, #0x174]
+   60ba8: 17ffff38     	b	0x60888 <__dl__ZN9ElfReader4ReadEPKcill+0x1688>

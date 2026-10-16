@@ -1,0 +1,696 @@
+{
+  "hostApkSha256": "c3d17d2a1d4a6df34d9874cc1a8a7a05ddd74595dda806bbbff1362ee148423a",
+  "fixtures": {
+    "a": {
+      "packageName": "dev.tripoder.p0.a",
+      "sha256": "52ecc58baf4d76e065a6ae55a07033db3e556d51baede3c1ad260a0ad0713c7b",
+      "apkRewritten": false,
+      "signatureVerifiedBy": "apksigner",
+      "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+    },
+    "b": {
+      "packageName": "dev.tripoder.p0.b",
+      "sha256": "fb560538da8efe6b989e1be18285c819505a7b78f77390fcd4b03aaa52c5e6ce",
+      "apkRewritten": false,
+      "signatureVerifiedBy": "apksigner",
+      "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+    }
+  },
+  "sdkPlatform": "android-37.0",
+  "buildTools": "37.0.0",
+  "javaBridge": {
+    "version": "7.0.13",
+    "extension": "explicit-method-only-model-v1",
+    "upstreamSourceSha256": {
+      "lib/class-model.js": "48f6b9da88ead79b109358fb7866aa5d10be1711c8a4a7693f876397b22b5010",
+      "lib/class-factory.js": "3905ae235bfd58fa4b1118075df781c090108c399ff19e093f568104dbb0dc3b",
+      "lib/android.js": "ee119401893ab7353525fe181c99554cd13776c10a47e24ebf29c2d0de28a11c"
+    },
+    "artFix": "https://github.com/frida/frida-java-bridge/commit/302a588881b40cba300bcf3acfd35deeb3888ee5",
+    "layoutValidation": "reject-flags-outside-current-method-v1",
+    "selectiveDeoptimization": "api37-native-suspend-all-exclusive-mutator-v1",
+    "generatedSha256": {
+      "lib/class-model.js": "ab699be89090f34fda30b572ca6ee9480325d0a4acc1c8264f0a754648efc248",
+      "lib/class-factory.js": "409475d5ebf91161c1799fe6fe3c3e9c52f0dffe847f34c5305345fe54353891",
+      "lib/android.js": "739c880560523ce98f57c884016990e7b6bf45d18f9073a2f073ce110bbf9cb2"
+    },
+    "license": "LGPL-2.0 WITH WxWindows-exception-3.1",
+    "source": "https://github.com/frida/frida-java-bridge"
+  },
+  "gadget": {
+    "version": "17.23.3",
+    "url": "https://github.com/frida/frida/releases/download/17.23.3/frida-gadget-17.23.3-android-arm64.so.xz",
+    "archiveSha256": "aeb3109844d69f5745438597667841a9141e8701a174341999e1479a4c97925f",
+    "librarySha256": "fa57c07da45611b2bc1ee408a36967c542c8b3809ceccde3779047dd320d5cb4"
+  },
+  "ndk": "Pkg.Desc = Android NDK\nPkg.Revision = 30.0.16248370\nPkg.BaseRevision = 30.0.16248370\nPkg.ReleaseName = r30\n",
+  "sourceSha256": {
+    "android/runtime/agent/activities.ts": "94ff662bce24edf4058a05083cd9aef633f9b6a5d11582f2720de2ce5a53aa3f",
+    "android/runtime/agent/activity-manager.ts": "473c609c2e103a5f4e6a967029c808f2602bba2e6cc9850b226bc984f1514807",
+    "android/runtime/agent/application-context.ts": "ffacf1be1c8f0a80b69927e80eb1a23892efd40451364b5f51b67c1ede818888",
+    "android/runtime/agent/application-history.ts": "e37b545663651c342f9799708ba9fcd030dc5d7e5d51953df3c055c210bd70fa",
+    "android/runtime/agent/application-ownership.ts": "cf7e3782b382c1f75be082b9a46e8dba3f8f79400eac514733b68928fe041a37",
+    "android/runtime/agent/audio.ts": "1a3ae2aa2a29df0797a6cd0f8b9c1268d8b77f94a0cd4dd48b62d70f5523e15f",
+    "android/runtime/agent/connectivity.ts": "d9836ca27d3e919d47556d24dd711ca487e5e98efc8e10056287cacc1a32b4f2",
+    "android/runtime/agent/failures.ts": "ce1f490e8a6bf54a27652ed6ffd30616238abdb16e57a3bd7cc4a4cab02b7df8",
+    "android/runtime/agent/hook_execution.ts": "a051ff7c61fc287f5c02ff19db2511ed75e2d6e274d284adb61d65a8ef55464a",
+    "android/runtime/agent/hook_java.ts": "a835df3f450d5e22a9b99b8c907146f23a1329279c42565abd0d3f05faccc04e",
+    "android/runtime/agent/hook_modules.ts": "8488caca63dd38c5e637a5e62993984061c0fed63525e8f051bc7c5fae811ce1",
+    "android/runtime/agent/hook_native.ts": "9e6706c6ed5fb9c4245848307babd1ec359085792fd0e092a98b332c95edf2ed",
+    "android/runtime/agent/hooks.ts": "44cc827ba93f863a384c9f2ff9e15b4261121c73972fdae88ea15f0b58367841",
+    "android/runtime/agent/index.ts": "2e76ff84f486589c9be82524b9eda9188284132dc0857f9de1bc9b302a7b4c17",
+    "android/runtime/agent/providers.ts": "d0f7544c03668404aa49e546670fa62fc5a0ef3e19dd44262ae10a73b0f98eec",
+    "android/runtime/agent/receivers.ts": "d48c9713cd00820164c4dda8a3097ccc154aef92067f18d4426ad21ac2411f9b",
+    "android/runtime/agent/services.ts": "3fe5921a82ab3b0b7b1f61713cbc83e089c61d02eb07441af016934007923e20",
+    "android/runtime/agent/storage.ts": "f0f76675a1e871f6a3b5483ee158943d5096bd765b697c32b3b7a84c1ce3ea40",
+    "android/runtime/agent/telephony.ts": "83ede447faa37000ee00392087865308c149f4ef151ddec09eec5dc4e0316b01",
+    "android/runtime/agent/tsconfig.json": "3d5d86715fb0e03672ffd74b034a993600b513d1e5263eb43c80b1df8c1343f4",
+    "android/runtime/licenses/Android-SDK-Apache-2.0.txt": "48503c3c6126767c9f3f1c68e773b35afabf87a3330bc20cf871f372d62d8eb4",
+    "android/runtime/licenses/Android-SDK-NOTICE.txt": "36d0645bbc90d64dd7ff732068ed09620466926e79beec3db436265689204718",
+    "android/runtime/licenses/Frida-COPYING.txt": "5ea1544b51a28bc823b03159190d4108f9fb4f4ef912389f5137c6d295e175b2",
+    "android/runtime/licenses/Frida-NOTICE.txt": "ed0b2d8f3776584d32060d0da40ec06e77aadc305d7884c902d020c987129eb6",
+    "android/runtime/licenses/LGPL-2.0.txt": "cc535c21133c895b56b374c8a1dc1eb948d99003ed2b47372069456b62f42b24",
+    "android/runtime/licenses/base64-js-LICENSE.txt": "5b37224c080cdcc97c871ada971c224e9926370fe74f11b539aa1cf9f3b1aca1",
+    "android/runtime/licenses/buffer-LICENSE.txt": "06bafa45fdad2579ba0e43b0c9b2c6290287c99c4203c300254a462b38a307f6",
+    "android/runtime/licenses/ieee754-LICENSE.txt": "18d45466ba3253deae04667e267a91ea8de8548f18c1125264d1c9db28194cc1",
+    "android/runtime/licenses/provenance.json": "55abe227d22cd61d52924f72175e5a94abcd09fd12bb01652c5274beed463692",
+    "android/runtime/native/io_adapter.c": "c366a2a77953050080470d8330364704956a42769eff2269f1645d6b7dcc491b",
+    "android/runtime/native/path_policy.c": "13a013ff9bec04f93e64e9e8a0781280de7e5764af1c27a56e83b712743750dc",
+    "android/runtime/native/path_policy.h": "c36a463c863d8bf49b8476281b888931f178f476f048cd108569025a7ef36403",
+    "android/runtime/src/dev/tripoder/runtime/ActivityAffinityLedger.java": "f9726cb8efd8c1d42a0c06a4d45dca93214948215f5c5f80b3637c9da3dedd90",
+    "android/runtime/src/dev/tripoder/runtime/ActivityComponentLedger.java": "b72568c59987370dfc9265f8f808ff188219a4bb9cdfab4b489bd3e46a10c312",
+    "android/runtime/src/dev/tripoder/runtime/ActivityEntryLedger.java": "5c2568435e5234e73a84d74a2b319db802b56d0a6f6a73c83939dd5d0e31b3e6",
+    "android/runtime/src/dev/tripoder/runtime/ActivityLaunchLedger.java": "3646721af5c0880f529476419de70383dd56cf1d33f5f1ef1bf34c97a10cae77",
+    "android/runtime/src/dev/tripoder/runtime/ActivityLedger.java": "42c243c863b4bead0eb661ae2c6a03eca7a6ec72b598121fe6f52c1318351c8a",
+    "android/runtime/src/dev/tripoder/runtime/ActivityStartReceipts.java": "6eee3b91823bcb097be5b2201a56a0b4023816b2e79d96b13d5e7e7ba4b1c50c",
+    "android/runtime/src/dev/tripoder/runtime/ApkInstallTransaction.java": "614302eef21295478fc10dc4dc9f5b7825dab2d53984e9a588233386c6e1e0bf",
+    "android/runtime/src/dev/tripoder/runtime/ApkManifest.java": "eed056c6ee5eb1920dc35924d8ab076744101a405ba175f6897fa6000f8eab8e",
+    "android/runtime/src/dev/tripoder/runtime/ApkStore.java": "ac57add76d99bcf1e81051a4766b6eb31c1064d362633aa47f930650de6ec697",
+    "android/runtime/src/dev/tripoder/runtime/ApplicationStartLedger.java": "ec5df08e73be259fd66b62dd95a6746b1fc8ee7394def92f094035dc0f52d594",
+    "android/runtime/src/dev/tripoder/runtime/ArtifactIntegrityCache.java": "2a3741109fd6b01210f91d6e6abaf57dc467985b4ce9461d97231a66fd44012b",
+    "android/runtime/src/dev/tripoder/runtime/ArtifactSet.java": "f65812685f286181726e1044ce435207f12ab9b1366a7f668b82fc4d0e8cf3b7",
+    "android/runtime/src/dev/tripoder/runtime/ArtifactSetZip.java": "5efe0b383a4c2d08e66708dc86b9d23918196e72c4f7e8fd9fd20bfd92a8e4bb",
+    "android/runtime/src/dev/tripoder/runtime/BinXmlTypedValues.java": "6c86ed97596a5921d6246d3b323a84fee49056210b69cd105eea43e30f0b9b56",
+    "android/runtime/src/dev/tripoder/runtime/BroadcastLedger.java": "fdac6edd9806510d4954c8d932b581d0152c5faff78123a6f80228508f87a77e",
+    "android/runtime/src/dev/tripoder/runtime/ControllerLaunchLedger.java": "6710d6a5fd7511a56a414c6110fa8350fc999d62a23d29a8b609b9e7671f8991",
+    "android/runtime/src/dev/tripoder/runtime/DeniedPackageManager.java": "fb666bbee00d0e8a8155d156bfc00df0f0b81ce5d11c6be2fcc0b3a40f029617",
+    "android/runtime/src/dev/tripoder/runtime/ExecutionContract.java": "a3ec6fa575609ffe8ebe88a0b7468ebbe1d5f4fe2e65866035fe2cb955a4b8ae",
+    "android/runtime/src/dev/tripoder/runtime/GuestContext.java": "b8f41cf41b490a14ae4c065d398c788da7c8e253324208aafc75550205e8a4b9",
+    "android/runtime/src/dev/tripoder/runtime/GuestPackageInfo.java": "efbe9982d8b69d98d608f9e7cbc0e235d14fc2aaae452bf6b2b485b6c62f77a6",
+    "android/runtime/src/dev/tripoder/runtime/GuestPackageManager.java": "78382a7123e0dc5846de465d469bda00bc1aba8a09f3ab47a19f6f9c2c657346",
+    "android/runtime/src/dev/tripoder/runtime/GuestStorageContext.java": "2f0d3dabf0c8b8ffac21ce7f4e8b6fc33c2cd101b1f76194f0c9217d05a0245c",
+    "android/runtime/src/dev/tripoder/runtime/InstallHistory.java": "cba9e16f3e08b139f8042b0644f81d0c0276530fcccedcf6e09bb022ffb20177",
+    "android/runtime/src/dev/tripoder/runtime/PreferencesDisk.java": "315f4b8f8f8af3734935fd7ba38e3a732eac674a2baa73a2cb6f8cbe2e8e602c",
+    "android/runtime/src/dev/tripoder/runtime/PreferencesXml.java": "a225f75beb66c242c185207e97b3e169ddb98087f689cdd93c71076d16dcd6c7",
+    "android/runtime/src/dev/tripoder/runtime/ProcessSupervisor.java": "d45e9d2221772617ed30b584e691a2e318422d4af6dc0545eb8498d6d8b4ba6e",
+    "android/runtime/src/dev/tripoder/runtime/ProjectBindings.java": "1afe72df2abb41a0203fa6bbd877ad3448863fb6ff92bbefe4861e3c94134d4e",
+    "android/runtime/src/dev/tripoder/runtime/ProjectTargetBindings.java": "913f1fb5087c2d46d5a7abdf3a995d95a5243930485f9fe3ce917064a4824ed5",
+    "android/runtime/src/dev/tripoder/runtime/ProviderLedger.java": "afc05e746c0801917fb255cfc44ddccc9db9ec8a419c30773be09353490ac45c",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeActivityCallers.java": "aab382ef34b53baf1c3ffc95c7c802c19e9ae6a7ef1705aaf62b167274df3265",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeActivityIndex.java": "60c124bbd645c7ab0766908ff94d978f1ab39abf200ddd4edbe4bfc8d202bbd9",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeActivityIntent.java": "9f6e9f1b947ad7b221ba7467cb9b3083dd4dead7a2f7edc1cf771482eebd223e",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeActivityManager.java": "a0471600036c5a588b49eca8af42640047a21002be32adcb4ec2b09e02de6bb5",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeActivitySlots.java": "de9b47edf93f126524a658029a54ac7143224e099617f3b2ccb1a588c55419c3",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeApplication.java": "beab719f61aa3a1ffd9e130987f6a9d4fb64db6669426ecee4878a88ce9f5b43",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeAudio.java": "365bdcc34dec3b52ada88f7a4291470eec03ad2ab21a7db1a4764fd25ce99593",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeAuthorityOwner.java": "fda2c6bedb74e803083acc11436c6689d54d03eb025e8d503c9c64e4d7866482",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeAuthorityService.java": "4074b0ec3e96a7639e9fa6b7f64fb56307dfc2ba931730d2eab5b58c92cecdd2",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeBootstrapProvider.java": "29dbcde2f9a16f4663503d404dbc5e3deeb50102d96e4be8ba5d9d6227d3e7d4",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeBridge.java": "b6f35a624cd14d51290e2ac72c7fd2987ab1c0ab4fb63d26da4f832768abd20d",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeBroadcastBroker.java": "ef1818726c961fe54a2c42c02a6eeec450666c6971bbf8ae4b28a5da69c67efe",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeBroadcastIntent.java": "851bf71b96a02352e2e73406de3e6895e49af4c0603a48e28050e8f89941258d",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeBroker.java": "6f9282ec72f4d66e7c3323411b78f94763cc18df9d73c55fa7c54e72e6db4246",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeCatalog.java": "7bd684022537c2b42abdf38356a1d6799f23cd1abc0326b8f96b1c50dba45f93",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeCompletion.java": "68020d2bf677a9a89d1f5e1efaff1a209c6118e7b2daaeba20999723392eb820",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeComponents.java": "f4b1d6cae9ec8bd6eca415b91d7047fec94174440df5f3978bb716cbc0319527",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeConnectivity.java": "e15cd3765858ecc4853f1354fa74e3e3f145391cc592ced80abd0af8992a82ed",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeDexLoader.java": "e62dce91139806fc1c22a408a657a18085366b41db3449d2b1935a12a484fa91",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeElfExports.java": "b5a1462a11dda2713030624226cde7cf22e9c89f9842b60d058ee7d8da043da5",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeElfIdentity.java": "e16a686db144eaf8249fca28d18cbe46f3a44646f0623c47691ceb9aead6bc1b",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeEmptyTasks.java": "3dda067bb287809719eab7c00bffff16283a1a27cb6f678780a984cc69342a88",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeEngine.java": "5986e984e5cbf21e8b38bb26fabdbba9fb3a73a2a69473d3ee10a2fb47c4853f",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeFactory.java": "06279175b44335b87b780a5851092aeff234db6cd34ea9af8fa361099f8b9ee3",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeFiles.java": "1e91cb6471c165d9f6f91bf0b376c90042a4baee71e8ec759be36cc1b3b5c03f",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeHookBridge.java": "856cdfb3be771a98a26b8d11f4ca1f31ec1288fc8bd1cde8ca7769dab7b56b0e",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeHookClaims.java": "94cf66776683ee95937f8240744cd959251efe00cd7c91e296d5663e3c110dbb",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeHookOperations.java": "318da1bd34c2245d54bd38d1ac5ead034df5b389b5b1b8943c5f7afa40c9640f",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeInstallRequest.java": "536c1c131cdbff80e354708bd38fde5d6be7064a45fb91fbffa4c4fb93632dd0",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeJobInfo.java": "92ddf8c8f2eb0632edda22db52ad7c76acb7a68efc25c566467630cf3aeb205c",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeManifestIndex.java": "65669cfa2660e5a1cfe314cb841d713eb59526efb41791494cb910fe16e88845",
+    "android/runtime/src/dev/tripoder/runtime/RuntimePlatform.java": "06a37530351236136fae9c62dddc161920666d3233e49f7334fe0a69bb247679",
+    "android/runtime/src/dev/tripoder/runtime/RuntimePreferences.java": "1d69fd122407335f22cdc008850140759b5e815dd49938f654effc3f73d135fb",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeProcessControl.java": "45a149096e65e9e9d746e668829ea97ed8cb93da7ca958179ac418bbc3744cb0",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeProcessView.java": "c05bc7cc35c59f2fd56baef407823a270480e6ea85bd9baa4714f98bdba184fe",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeProviderAttachContext.java": "49c91b710f9c00a7669979ea09d3ab1b1331b5278c37b232e2c349ac2832edca",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeProviderAttachments.java": "dc21ac21aae1f0fa34c081a39418f00f9e93a8266fba3be1a612bc12edc73e56",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeProviderBase.java": "dfaf2c81b602ed83ef10749b8f97143bf3bdbf402837d9255fa03adc63374045",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeProviderBatch.java": "64a3c587d64e6909a7f2408f35713ac5c9d81b545b164cc6cf27ec4cd2ba4d10",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeProviderBroker.java": "7a8dbff02d7efd936d68a9cc747cd2ac15f401b821d2ca0bf6f3d9baf85166e1",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeProviderCursor.java": "6d6ad5a8a4f8f86be246c4ab3cad358b970a4ca85776ef68c9e2d9e3ea6070f3",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeProviderFacade.java": "1c2bbbb15b595d16d13ba08930ad84a366e3498c2e708b5c0a99fa2ec63bed7b",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeProviderHandles.java": "204b73161b9c23c6f988afee1350c891506fb2cca96321b43b59695445350d6b",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeProviderIdentity.java": "d967118c5b5163804469f702faf4a362a245e9a3287122acd3320433a65b467f",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeProviderIndex.java": "c1c74dce1e843873822d850d480f905086b40222749c35141ebb98660c168ead",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeProviderTransport.java": "30fc8aa51470073f07ef75e7f665479228d66c226d67d6a28287e8e780ed7dbf",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeProviderValues.java": "048ead7a9d38fcecbd72ed8ce06e5e63f9dc1ba97d01553ecf3e8feda1b64d51",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeProviders.java": "248ae64c88e37300946fa5435212381a38fee939f032d5d4b52086b8b93c403e",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeReceiverSlots.java": "e7f46f48258847dba9e09190e8f93d1f151481c42a4f0af7770775cc96b14c62",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeReceivers.java": "d061472add364d1f122c6263a20461ec314d32beb23910f383143ea08a3ed8fa",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeRejectedActivity.java": "02770d1752ae848cf672f20983030d41df06f9311c669f61095474793adeb98c",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeRejectedReceiver.java": "3486bd6ca3707263c9c42722805bd32ea1edff5fed403bb90849c3facf04c23c",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeRetiredActivities.java": "811c8fd613dc9562fd45eb28667e80ed82488029bb40bbf740a8e5d027312c43",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeServiceBroker.java": "617b18c3ec3d48cbb9e0efd23b38337cb3cd4faeebf3f5cead7c0c5b9644d38c",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeServiceIndex.java": "f3179e09024dfa8a140691791795008119e19327eed3a54d143efd79219f0a52",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeServiceIntent.java": "6324d50213c57bef9be6bc9a4961145ef7c4181ecf1f17be75df91380b435e2f",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeServiceSlots.java": "090de58f5392c86b3e63d519b09bc5aada5f94a0f6473fef9b007f8b7cfc4da6",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeServices.java": "fd4b4252cddd3a586df567d093c584d60f70b93dbb528091a9bc663d89509155",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeSettingsObservers.java": "5884dc54b85e7e15eb466af4c6f6bbcb6d5f73362afe122bd84c436c6153eb6b",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeSlot.java": "7c28fad7b726dcc7128026177cdad86a59365d1e3d459705a9ad06f268657fa4",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeStartupDiagnostics.java": "0f6adf72884fb03c40e4109c90c8597c5d9d3f195a523f691d292e828b97f88c",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeStorage.java": "d1c2ba9b4dcaa478136bcfb22f2870fbd603b403131c69b3b5922b55e4524486",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeStore.java": "d10b2f50e7c374c4a6f3438976587d3cca7e346b542209c0822acce806437f6a",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeSystemBroadcasts.java": "dc222b45f65a3b1188852ac7895afbf8e5d468336272fbf620dbbbc7d879a5a2",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeTaskReferences.java": "e583ed1afd0d5b604b1456380252e9f1966cf8752b2635786f202634080a7d44",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeTelephony.java": "cace2897763f49713306132abf8788483e8a33f167cd4af5234472dd4423c383",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeUiEffects.java": "607e4e3b52a69ff645a53a15c19d2734b4cf3fd17dcbc366712d8179167177a7",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeWire.java": "6de8a2908c20ce420214fabb5849df0ebdf3147aaf25b88f1067f9d21d404f06",
+    "android/runtime/src/dev/tripoder/runtime/ServiceLedger.java": "50eb56e3b9d9ce5894eb524dfd3704818b0708b11cdb2d511633bfadb898195f",
+    "android/runtime/src/dev/tripoder/runtime/SettingsReadProvider.java": "614fa17254d69c0431f6d5312232f8781d5c691ac27adae49fba7cf2591fa00f",
+    "android/runtime-fixtures/a/dev/tripoder/p0/a/AActivity.java": "af25fe5f5354b37bdb7b8e6545d9dc360a5c87b4983b47ebff2285cd94ac356e",
+    "android/runtime-fixtures/b/dev/tripoder/p0/b/BActivity.java": "81e9250afe181b3fa7fa86a6ded3e7320a83ac25e105d1fadd7545dbd4257a84",
+    "android/runtime-fixtures/native/hook_probe.c": "126c70741dd73e8de9c8956518fe72ce073d96f80ba4c3e50b3595ecb260a2e5",
+    "android/runtime-fixtures/native/hook_target.c": "34d286f42582883aa4e06f7f74fffe4ef17eedba31171374ff1d46392008685f",
+    "android/runtime-fixtures/native/probe.c": "275f892f0597566e76ff1160dc537d00ac05809e0a8247e6e59c25051b9d0b0e",
+    "android/runtime-fixtures/native/storage_probe.c": "0b4816bc8ad03a3f8b912d09ddb266182e06190794f1859411d63d8f2528837c",
+    "android/runtime-fixtures/p2/AndroidManifest.xml": "d90e7032adcab160821a312f309f02fda1f1fd1f72534f36866f8e037cc64fcc",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/ActivityChurn.java": "91bd71c4e046d96d44ffdee349ef187e859d8af47dc06bd574f306a717f5a3c0",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/ActivitySources.java": "7bf1975331d7ed8cf90b1fe2fdb72d3c7b36d82ceddea9a7353df3756e1802e0",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/Aliases.java": "5e8089480195785e38661fd2034e6654912e9a2b00e000d04d12610d7a7f6c75",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/App.java": "21a993ddd3c497fe3df3cf20d348ec711676a876049758b14fb6d360ed2f8524",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/ApplicationOwnership.java": "d10223c5e5f0edd97f222b6f9e2a5939d6404d4fcbcd119c6fbb86283649ac35",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/Chain.java": "042ec0ba4bafa778fd401e21575b3e03ff4ce714795a8486a13baeb1bec67bbb",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/ClosingActivity.java": "259c8173537db7a1c71573df56ef6aaef9e88b83180d22d494ce01f01128ef68",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/Factory.java": "cc3bf22906be29995d8529b00be6824dcbeb0d6d375bf7c90ea11af661fda14e",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/Hold.java": "9794494419cfaec6fb1c1c287063b82687c35c9d9e05921dfea5c255b651379d",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/HookStackChurn.java": "a595d1ce3721abb2fa14586306562350c1cc64c3e615dd4d130ec8124fa98031",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/Hooks.java": "d75abbaf43b854d2a332e695fcbf8f09b1e2046dd28a1eeb4af594b324ab9b25",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/LateReceiverActivity.java": "f95f598b2226baada8e187b2a358785ede7cb9c45fc2a66a7e1a81bce1f31120",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/NativeHooks.java": "225c5ec560d8301056ad494ddaabc769decddb1dd68ebe176bbd87519f688711",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/NativeStorage.java": "1bd0079fa57eb45e19f527d9e7b1645377dbbdaeccfb53d11ce16b144ac5fa55",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/PreferenceProcesses.java": "f786e2ca1d2557e3022a04fdf0b474235775389bd60d445580e501cafc90e6a9",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/ProviderBatches.java": "7b5ebfa665944cd90e98b468feb40c591a9f1d1eca3be765d06ffa2557f92311",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/ProviderFaults.java": "0ab4c0ea265c01bb93bd746847b9afb9352b415e91db60d7e40416d6e12fdc22",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/ProviderLazyCursor.java": "963bce18e283e7a1e8bf006849e0bf653b7d047b939b132ccaf7f7f72cc1bc07",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/ProviderWrites.java": "88d427f4b9c2994886e598b479b124169954fb827431d7d81f6fd7f5507d7e6e",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/Providers.java": "753166f14e375345e8a540b851d261af33f4b725b722e8f57cd05f64d4a01d8a",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/Receivers.java": "3ff9b7ad7f7df5982fbe5f942fa0a2b6d0231964565422df400e1c65182164ac",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/ReparentTasks.java": "b68c169662624beafc70106ffef3e4c69022283c65a7065cd1af80067c015af6",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/ResultFlows.java": "f4365d18d4f929b950dc61cf682cf349f502ecd47959dcc702552f4b4eb60258",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/Services.java": "5c106235b492b245277ee6d90503bf4dc62c6a739a1b6ef531261eb3312fe830",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/SingleInstanceTasks.java": "ee20e13743120c802cd68b0610e3fd3480b30ca358011da812672e407f129c58",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/SingleTop.java": "4bb091e2f7dd323a234d5b9117212d6eb4d45cb82c17755cca1a7f5410f07d1f",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/Storage.java": "2b52624ae4e46817ceccb70417f15dea2aabd233d5714c058b412cfebbb024af",
+    "android/runtime-fixtures/p2/dev/tripoder/p2/TaskModes.java": "0c079095fd6cea12313e7091464879a9098f9121726b587b5f6b45b9580d34dc",
+    "android/runtime-fixtures/preview/AndroidManifest.xml": "ac31e3aaa65cf1cb13278017168f7556acb6b5bb937ceb60d0280c2662e18b46",
+    "android/runtime-fixtures/preview/dev/tripoder/previewguest/CounterActivity.java": "5ea222b2d6c752ac48b092134bdc386fa89c78e061224422291b234836be40b9",
+    "android/runtime-fixtures/provider-identity/AndroidManifest.xml": "f401cd75872c4742b45f9608773f839db920a811dcf130e5a23b6a60e35f9e0c",
+    "android/runtime-fixtures/provider-identity/dev/tripoder/provideridentity/AudioChecks.java": "7c5ac359d175535f73a119d9314971e3809d33d48c480bc761ff9ca427062254",
+    "android/runtime-fixtures/provider-identity/dev/tripoder/provideridentity/DisabledMetadataService.java": "7626515fd3d923d3ea98e3d39855b6e0b2fd8469b90c73d4f65445945ce2bcb5",
+    "android/runtime-fixtures/provider-identity/dev/tripoder/provideridentity/HistoryFailureService.java": "e5df61fca9ad427853768544e0a1739ce3da2b844562fc4786bae9e94ae686f7",
+    "android/runtime-fixtures/provider-identity/dev/tripoder/provideridentity/IdentityActivity.java": "a79f8719539d1496b544d8ac3c168cfcfef506f218bea081b32c9bf4d4fcbee1",
+    "android/runtime-fixtures/provider-identity/dev/tripoder/provideridentity/IdentityProvider.java": "341cc335f83df727b940e767d58a7d9c0edc9da92f3c4242ab4984d9f6569906",
+    "android/runtime-fixtures/provider-identity/dev/tripoder/provideridentity/MetadataApplication.java": "b78b4ee00ba826e745cdd2a4817c949a7000ac78887bcb956070133d224d55a0",
+    "android/runtime-fixtures/provider-identity/dev/tripoder/provideridentity/MultiprocessActivity.java": "c541be749889e14f0f20cdf1e2dd41add065078cb95f1852b241b8fed76bf79d",
+    "android/runtime-fixtures/provider-identity/dev/tripoder/provideridentity/MultiprocessPeer.java": "206f66de70f58b5770208863d978b1a6bc5a7af7bfaa0b43b765f5f485166a58",
+    "android/runtime-fixtures/provider-identity/dev/tripoder/provideridentity/MultiprocessProvider.java": "6852263b617a264bfd15f56d248588c25ace7a214053fdca25818f8817c23b6c",
+    "android/runtime-fixtures/provider-identity/dev/tripoder/provideridentity/NetworkChecks.java": "f5391a05a3ac04edbd7b014c7971f036f284e1dacce91d9f2ece43b00f9c4520",
+    "android/runtime-fixtures/provider-identity/dev/tripoder/provideridentity/PackageInfoChecks.java": "92d73682a9834f9d4ab63cea810ce365f440eb1a341f61ebb2526e0098d796d7",
+    "android/runtime-fixtures/provider-identity/dev/tripoder/provideridentity/PackageResourcesActivity.java": "243dc202c45be9507e643a302a4cfcb3dca7f17ee9ca8d966bb69217285cd4e5",
+    "android/runtime-fixtures/provider-identity/dev/tripoder/provideridentity/PrivateProviderDelegate.java": "c07cee8f13e755cd3907b495e761802f25566cfd9229f93f7e336988cc33a239",
+    "android/runtime-fixtures/provider-identity/dev/tripoder/provideridentity/ReceiverConcurrencyChecks.java": "1f042cc9a76758a0112945ae818003e38f789fd63b54ec0d9c493c3e2dc3226d",
+    "android/runtime-fixtures/provider-identity/dev/tripoder/provideridentity/ReceiverPermissionChecks.java": "4a364840e0044659caa261a00af6648595b370f007030e03008e71c441672463",
+    "android/runtime-fixtures/provider-identity/dev/tripoder/provideridentity/SignalChecks.java": "4bef91b6d0c840566d35d08f53bd085e395b33c630b0c8794b7fda2a975547dc",
+    "android/runtime-fixtures/provider-identity/dev/tripoder/provideridentity/SystemBroadcastChecks.java": "0a1062512902b551d8fa1aa383df3e391a4d48ad2e274aa654acba22cbbbf8cc",
+    "android/runtime-fixtures/provider-identity/dev/tripoder/provideridentity/SystemServiceChecks.java": "791c870887ddb03bcb7dc7e68ef357e17d1feec2ec70752db98d80d223cc05ce",
+    "android/runtime-fixtures/provider-identity/dev/tripoder/provideridentity/TelephonyChecks.java": "ab90cf8dd9a5c9cf88c0d141e245ca6ff60cda378536a16dfad4a8ab16689ca1",
+    "android/runtime-fixtures/provider-identity/res/xml/owned_paths.xml": "616a085b6f7df059c8afc8252d47d45237aa10bb2a924296b8e6929f2bc29b29",
+    "android/runtime-fixtures/provider-peer/AndroidManifest.xml": "9960d16fae573e31341ed99ed4e1af8d95356b74f5580e8073343b914ae72ca4",
+    "android/runtime-fixtures/provider-peer/dev/tripoder/peer/PeerProvider.java": "f8133f74f63ddf3ef10fbc27747b3084b1de5b90128ec8f457f0300e92e7f977",
+    "android/runtime-fixtures/res/layout/screen.xml": "7fc77d4c0bf8f6ab6a40f3387ce431a5cd262b03fd237a967ab0e72ae703486b",
+    "android/runtime-fixtures/shared/dev/tripoder/p0/shared/CapabilityChecks.java": "0adbea690e1c55754afbdf7f42a12e2be3f76c4a234c00057f86b88f97983a80",
+    "android/runtime-fixtures/shared/dev/tripoder/p0/shared/NativeProbe.java": "2e9aca0623b74877445c53a8c5935dfea283995ffac19813180b73fbf3cf6697",
+    "android/runtime-fixtures/shared/dev/tripoder/p0/shared/Observation.java": "cde37f65bc8f5265a4f9236aa6d292c7c9bccc4a0a02076de8d6862af8412ed1",
+    "android/runtime-fixtures/shared/dev/tripoder/p0/shared/ProbeApplication.java": "2645df5a6c01d9633f215fb189ccce0521bc37bae6b29facf63d7d5026229b65",
+    "android/runtime-probe/res/drawable/preview_icon.xml": "7d663f302d9060e4c21e204fb0c734ff1b2a872e9a889ba83404cc7625d9d7fb",
+    "android/runtime-probe/res/values/styles.xml": "67b5ef547e460e1d5a1398a11025b73b2b60b35fc95de527ccbd47b4c5b1242d",
+    "android/runtime-probe/src/dev/tripoder/runtime/ArtifactDexInspectionService.java": "78d0380ec9dc934f93ac13ca21b29e136d9b4a835bdcc883df7547a9a4c817f1",
+    "android/runtime-probe/src/dev/tripoder/runtime/RuntimeJobInfoContractProbe.java": "d0d6d8e4a4c4a22840b5a8c8099217be0ea85c10fe14966b3db9df7f37443cbd",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/ArtifactProbeActivity.java": "1a2c70062bc247b914e77fa38dc86bee11de196ce74f73965bb9cd29aadce0fc",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/InstallGate.java": "c1cbd8a5baeaf364b40a8353fc0e68d54bdd27e5af3cae61445bfb5cf66a9802",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/P1Authority.java": "1bfb68d9e2737f4942d18a3104f43f97f0ccaecac2a705aeb1b330b1a31ba9a3",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/P1ProbeActivity.java": "7534b218f35362dd17b8c60a9c5da531bb16643f4917760f2c9de4783fbf94d8",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/P2ProbeActivity.java": "c1ef390faf049a528a6bcd2ce70970e2cc66aeba9349726ba8bc32ada575d231",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/P3ProbeActivity.java": "09748a1bf7c0ae29db18ebb1a037d9b2387b9e6420c18c7e2dc1ace790ec279d",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/P4NativeChecks.java": "4258da6a1ea91b00d4d7c58e9f78a8739c5d4421f1618e4a969473e167ae34f9",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/P4ProbeActivity.java": "8aeff5feb83c4454551efb3c954cf6aff16470e55af1cc3973c5612dfaba69e4",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/P4Scripts.java": "28ff9ca12af01d8d761b5dfa10266f6799c6712c4ff4ba55b3862f1e3fdf4e24",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/PreviewActivity.java": "cac967f6d23c4c9cf6f0fad821e3b5a59ebd734629fbe704f1bb890a7feef7d1",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/PreviewCatalog.java": "a002c9f6f3b8ef44932b01383edfe1f3e3d3382710c3eb8c9eeea3a950bded32",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/PreviewClient.java": "86007c648bad71e6590a25ebe3649e60d38b3250644c73fa7f0a8b5c1760a7a5",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/PreviewRecords.java": "f7e3f856ca211261cea778a5bc8f0b439a81022360661b816532eef81f1d05c2",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/PreviewUi.java": "d1d35f013ff9d6a3cbdbc5b055fc0acdc0bc2d59926af895f2b970e49b787c5b",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/ProbeActivity.java": "5ca916ec481255be578a54b46f85a5ec6ee9fb0d9f4eed495ee94d07ac4c2d52",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/ProbeReports.java": "0e571726e3a0b7394295bd50611136bc2b6adbe82670968a34441b34d2586522",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/ProbeTasks.java": "e6b330b1af3a87dedb01cfa95e3eccadaadd4327e686407129b01fc4769d714b",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/ProviderDecoy.java": "4485f90f7abb0abd60f009f36eeb931dcb5ddc01666a5e493fd7fcecb2f644ce",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/ReceiverGateApplication.java": "5966dcc21020d040f44e4d6e46ebfdeb0f8d70a9948d3f37243ed4fad3e64574",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/ReceiverInspection.java": "b7c1d37cdf6e66f43ffb2817df40d523dd0d454c77b5648951348027554e59b4",
+    "android/runtime-probe/src/dev/tripoder/runtimeprobe/TaskVisibilityActivity.java": "d02add09639910cd7df1586c9626a128cc897a6404516897f13e4432bd4e6f5f",
+    "src/ai-context.ts": "26b101065fb7673a06119ab94d29ed627dcb152d9b7aa44c72ca861f067e527c",
+    "src/draft.ts": "142a7d9db98199f74c3f61d1e1c6b3ef9a3415de4e84e0b257828d9f19ad9320",
+    "src/errors.ts": "2e76f52d9ecae5cd33cf1792465ffcc1501edfb1b487cf8d66c3be73e3512f2a",
+    "src/evidence.ts": "733efdb2239be6917d3ca348a359a7d9027c8fcf4ca2afd1967e6d427b2f36ea",
+    "src/index.ts": "749f0c6c2a0c969ee547dfe1d26ed833f8dd4384aa2c058c462a3b6199fbd0f0",
+    "src/parameters.ts": "61b4b684270b066a50dee0c5a6381dd3017a36769671227dd755ed6d0ae96eda",
+    "src/plan.ts": "40a9111c6b86ff9e700e4d526875950fd243ada60f2f3e6d44e61b02dcc58d28",
+    "src/simulator.ts": "3a059929040b74e5ae8aa9e168ab13aa1dc2428014609051d058cfdc32503f3a",
+    "android/runtime/test/dev/tripoder/runtime/ProjectBindingsSourceTest.java": "50cb83b0dd75ad00c5a93df7038bea4664a97049e5621ab650f04ff59c029151",
+    "android/scripts/build-runtime-probe.py": "6cfdc79c6fa66b9bd057d8c3396d0852d9baa2cfa3165909e0f4e308f31427f0",
+    "android/scripts/runtime_p1_fixtures.py": "fbf77d47f22122d1defe08543319794d17f092f72b80c3cfb0e64187f5d777c3",
+    "android/scripts/validate-runtime-probe.py": "9408c43ca1d3e018c77ac1d958f9ca1495f65b03c80d8b8de0d8c54cc6e5b6d3",
+    "android/runtime-probe/AndroidManifest.xml": "2030c4befd05947d3beaec218b18ffab045127e8e873452fe8dedfb7e24b1445",
+    "android/gadget.lock.json": "7e2f9189b3855a3eeabed231bd1c263bd14d82dfa193f5b6848b2e21477f48c7",
+    "package-lock.json": "dc23144ea2dea9ca959b2b21729ad61b7a4c2af61d4cdc7583b2bd73016e5070",
+    "android/scripts/runtime_bridge.py": "c0f57bc1198da746f076f950943e0630224b7945f4a862bfe84cff20a6c1d35b",
+    "android/scripts/runtime_activity_slots.py": "aafb425c1edbdb430a47e0637792bce48cc8c2bad01a842f3f642db94ea84dfb"
+  },
+  "signature": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n",
+  "virtualAppCodeUsed": false,
+  "p1Fixtures": {
+    "schema": 1,
+    "packageName": "dev.tripoder.p1.split",
+    "cases": {
+      "base-only": {
+        "files": [
+          {
+            "asset": "p1-base.apk",
+            "sha256": "f201fd8baad5bd517aaf22793d1afdc374fbabfa9b9aa5973a106825407ea436"
+          }
+        ],
+        "accepted": true,
+        "error": "",
+        "parts": 1
+      },
+      "resource-flags": {
+        "files": [
+          {
+            "asset": "p1-resource-flags.apk",
+            "sha256": "5cdaf62142be1c02fe69947b206ba36c9d193675de6f1f900b0960654e55ed26"
+          }
+        ],
+        "accepted": true,
+        "error": "",
+        "parts": 1
+      },
+      "complete-splits": {
+        "files": [
+          {
+            "asset": "p1-base.apk",
+            "sha256": "f201fd8baad5bd517aaf22793d1afdc374fbabfa9b9aa5973a106825407ea436"
+          },
+          {
+            "asset": "p1-feature.apk",
+            "sha256": "daaa7af2504df0bf5196fec61465854b9e164e3afb01705886f541c17465d70e"
+          },
+          {
+            "asset": "p1-config.apk",
+            "sha256": "5933071bc4bc6b58e4ba33c01f1504bbf5b668d4bc0823a550ba3e15f5d2fcf7"
+          }
+        ],
+        "accepted": true,
+        "error": "",
+        "parts": 3
+      },
+      "native": {
+        "files": [
+          {
+            "asset": "p1-native.apk",
+            "sha256": "25b6a7b51dd8c51883f0a71c2195357971e51a61b2d473111149306b6b5af21a"
+          }
+        ],
+        "accepted": true,
+        "error": "",
+        "parts": 1
+      },
+      "missing-feature": {
+        "files": [
+          {
+            "asset": "p1-base.apk",
+            "sha256": "f201fd8baad5bd517aaf22793d1afdc374fbabfa9b9aa5973a106825407ea436"
+          },
+          {
+            "asset": "p1-config.apk",
+            "sha256": "5933071bc4bc6b58e4ba33c01f1504bbf5b668d4bc0823a550ba3e15f5d2fcf7"
+          }
+        ],
+        "accepted": false,
+        "error": "SPLIT_DEPENDENCY_MISSING",
+        "parts": 0
+      },
+      "missing-dependency": {
+        "files": [
+          {
+            "asset": "p1-base.apk",
+            "sha256": "f201fd8baad5bd517aaf22793d1afdc374fbabfa9b9aa5973a106825407ea436"
+          },
+          {
+            "asset": "p1-dependent.apk",
+            "sha256": "7f026c5aa1f04f7ac882bc61a6b8da6f082f03a25893a575a550062f45dd95d4"
+          }
+        ],
+        "accepted": false,
+        "error": "SPLIT_DEPENDENCY_MISSING",
+        "parts": 0
+      },
+      "version-mismatch": {
+        "files": [
+          {
+            "asset": "p1-base.apk",
+            "sha256": "f201fd8baad5bd517aaf22793d1afdc374fbabfa9b9aa5973a106825407ea436"
+          },
+          {
+            "asset": "p1-version2.apk",
+            "sha256": "07bbd73fcc91f0a2eb6f208db5f1310bc0e2f92c1cbb226760e9d4e1bcd1308d"
+          }
+        ],
+        "accepted": false,
+        "error": "APK_SET_IDENTITY_MISMATCH",
+        "parts": 0
+      },
+      "signer-mismatch": {
+        "files": [
+          {
+            "asset": "p1-base.apk",
+            "sha256": "f201fd8baad5bd517aaf22793d1afdc374fbabfa9b9aa5973a106825407ea436"
+          },
+          {
+            "asset": "p1-other-signer.apk",
+            "sha256": "7750fd458f548c98f38fdcb41311ca05edeb5082da7452569b9b34d2a1df23ec"
+          }
+        ],
+        "accepted": false,
+        "error": "APK_SET_SIGNER_MISMATCH",
+        "parts": 0
+      },
+      "package-mismatch": {
+        "files": [
+          {
+            "asset": "p1-base.apk",
+            "sha256": "f201fd8baad5bd517aaf22793d1afdc374fbabfa9b9aa5973a106825407ea436"
+          },
+          {
+            "asset": "p1-other-package.apk",
+            "sha256": "085e0d6a3cd0d53ecf652adfdce070652eea6698395b642cc3209ba8b5bc9ea3"
+          }
+        ],
+        "accepted": false,
+        "error": "APK_SET_IDENTITY_MISMATCH",
+        "parts": 0
+      },
+      "dependency-cycle": {
+        "files": [
+          {
+            "asset": "p1-base.apk",
+            "sha256": "f201fd8baad5bd517aaf22793d1afdc374fbabfa9b9aa5973a106825407ea436"
+          },
+          {
+            "asset": "p1-cycle-a.apk",
+            "sha256": "480915b0a14eac060bc6c6aec871db995afc0183ad8296063985d1a24807dacc"
+          },
+          {
+            "asset": "p1-cycle-b.apk",
+            "sha256": "b199d1135ce520d3e36cafa7edce221b5d65b50e4b69d3ca9418c7069c6f67a9"
+          }
+        ],
+        "accepted": false,
+        "error": "SPLIT_DEPENDENCY_CYCLE",
+        "parts": 0
+      },
+      "required-split": {
+        "files": [
+          {
+            "asset": "p1-required.apk",
+            "sha256": "03442c9b0946a7ea2b10929cec5f7544b3b544fe3e36cc05479c1f20792e1339"
+          }
+        ],
+        "accepted": false,
+        "error": "REQUIRED_SPLIT_MISSING",
+        "parts": 0
+      },
+      "bad-native": {
+        "files": [
+          {
+            "asset": "p1-bad-native.apk",
+            "sha256": "bc4d02d79e17fce67badc1d98b6716daa78a3dafda726002d16b3f0143a25db9"
+          }
+        ],
+        "accepted": false,
+        "error": "NATIVE_ELF_NOT_ARM64_SHARED",
+        "parts": 0
+      },
+      "wrong-abi": {
+        "files": [
+          {
+            "asset": "p1-wrong-abi.apk",
+            "sha256": "c72b22fe47c745150770a0b8b0310e9c22c9b4e1d2c3d83bc98b217d7a75cc9b"
+          }
+        ],
+        "accepted": false,
+        "error": "ABI_OR_LIBRARY_UNSUPPORTED",
+        "parts": 0
+      },
+      "bad-signature": {
+        "files": [
+          {
+            "asset": "p1-tampered.apk",
+            "sha256": "663d3f64d14043032e9c9e59d7def12922d3eaac1cd517bbf727aed5f71cf6e4"
+          }
+        ],
+        "accepted": false,
+        "error": "APK_SIGNATURE_INVALID",
+        "parts": 0
+      },
+      "zip-traversal": {
+        "files": [
+          {
+            "asset": "p1-zip-traversal.apk",
+            "sha256": "05bf4c2f50ad99e3d98d1fdf2010c157ee64c05b1883da01f00a2dca3644ab1a"
+          }
+        ],
+        "accepted": false,
+        "error": "UNSAFE_ZIP_PATH",
+        "parts": 0
+      },
+      "zip-symlink": {
+        "files": [
+          {
+            "asset": "p1-zip-symlink.apk",
+            "sha256": "4690f817c3fd8e366c71eeb2836f579bc0a55d0c764705fd18e62f334d785138"
+          }
+        ],
+        "accepted": false,
+        "error": "ZIP_LINK_OR_SPECIAL_FILE",
+        "parts": 0
+      },
+      "zip-duplicate": {
+        "files": [
+          {
+            "asset": "p1-zip-duplicate.apk",
+            "sha256": "dd24de5ce6b025ffe100dac2cf785ef3200da76c70bc345e70d98e27343e42e9"
+          }
+        ],
+        "accepted": false,
+        "error": "ZIP_DUPLICATE_ENTRY",
+        "parts": 0
+      }
+    },
+    "apkMetadata": {
+      "base": {
+        "asset": "p1-base.apk",
+        "sha256": "f201fd8baad5bd517aaf22793d1afdc374fbabfa9b9aa5973a106825407ea436",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "resource-flags": {
+        "asset": "p1-resource-flags.apk",
+        "sha256": "5cdaf62142be1c02fe69947b206ba36c9d193675de6f1f900b0960654e55ed26",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "feature": {
+        "asset": "p1-feature.apk",
+        "sha256": "daaa7af2504df0bf5196fec61465854b9e164e3afb01705886f541c17465d70e",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "feature",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "config": {
+        "asset": "p1-config.apk",
+        "sha256": "5933071bc4bc6b58e4ba33c01f1504bbf5b668d4bc0823a550ba3e15f5d2fcf7",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "config.en",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "dependent": {
+        "asset": "p1-dependent.apk",
+        "sha256": "7f026c5aa1f04f7ac882bc61a6b8da6f082f03a25893a575a550062f45dd95d4",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "dependent",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "version2": {
+        "asset": "p1-version2.apk",
+        "sha256": "07bbd73fcc91f0a2eb6f208db5f1310bc0e2f92c1cbb226760e9d4e1bcd1308d",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 2,
+        "splitName": "feature",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "other-signer": {
+        "asset": "p1-other-signer.apk",
+        "sha256": "7750fd458f548c98f38fdcb41311ca05edeb5082da7452569b9b34d2a1df23ec",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "feature",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P1 Other Test Only\nV3.0 Signer: certificate SHA-256 digest: c9a925ecfe226ab6fa635ff85f75d6f84c5a190cad8a3d8765504b1aad313a8f\nV3.0 Signer: certificate SHA-1 digest: 1b26b112b35405634a6378b28ee91a9cb9f634da\nV3.0 Signer: certificate MD5 digest: 1b738a959ceb83d9aeec5db1271d75a4\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: f8b5f6cb128688a7f9ba08648ca4944c4decec05429f71790a010d7d53ee62b7\nV3.0 Signer: public key SHA-1 digest: 671ab676e44fe8decee4c68a963f28a60c922d2a\nV3.0 Signer: public key MD5 digest: cafb110dfb7514ffd0dc16774691fd2b\n"
+      },
+      "other-package": {
+        "asset": "p1-other-package.apk",
+        "sha256": "085e0d6a3cd0d53ecf652adfdce070652eea6698395b642cc3209ba8b5bc9ea3",
+        "packageName": "dev.tripoder.p1.other",
+        "versionCode": 1,
+        "splitName": "feature",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "native": {
+        "asset": "p1-native.apk",
+        "sha256": "25b6a7b51dd8c51883f0a71c2195357971e51a61b2d473111149306b6b5af21a",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "bad-native": {
+        "asset": "p1-bad-native.apk",
+        "sha256": "bc4d02d79e17fce67badc1d98b6716daa78a3dafda726002d16b3f0143a25db9",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "wrong-abi": {
+        "asset": "p1-wrong-abi.apk",
+        "sha256": "c72b22fe47c745150770a0b8b0310e9c22c9b4e1d2c3d83bc98b217d7a75cc9b",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "cycle-a": {
+        "asset": "p1-cycle-a.apk",
+        "sha256": "480915b0a14eac060bc6c6aec871db995afc0183ad8296063985d1a24807dacc",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "cycle_a",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "cycle-b": {
+        "asset": "p1-cycle-b.apk",
+        "sha256": "b199d1135ce520d3e36cafa7edce221b5d65b50e4b69d3ca9418c7069c6f67a9",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "cycle_b",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "required": {
+        "asset": "p1-required.apk",
+        "sha256": "03442c9b0946a7ea2b10929cec5f7544b3b544fe3e36cc05479c1f20792e1339",
+        "packageName": "dev.tripoder.p1.split",
+        "versionCode": 1,
+        "splitName": "",
+        "signatureVerified": true,
+        "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+      },
+      "tampered": {
+        "asset": "p1-tampered.apk",
+        "sha256": "663d3f64d14043032e9c9e59d7def12922d3eaac1cd517bbf727aed5f71cf6e4",
+        "signatureVerified": false
+      },
+      "zip-traversal": {
+        "asset": "p1-zip-traversal.apk",
+        "sha256": "05bf4c2f50ad99e3d98d1fdf2010c157ee64c05b1883da01f00a2dca3644ab1a",
+        "signatureVerified": false
+      },
+      "zip-symlink": {
+        "asset": "p1-zip-symlink.apk",
+        "sha256": "4690f817c3fd8e366c71eeb2836f579bc0a55d0c764705fd18e62f334d785138",
+        "signatureVerified": false
+      },
+      "zip-duplicate": {
+        "asset": "p1-zip-duplicate.apk",
+        "sha256": "dd24de5ce6b025ffe100dac2cf785ef3200da76c70bc345e70d98e27343e42e9",
+        "signatureVerified": false
+      }
+    },
+    "scope": "signed-metadata-installation-only-no-component-execution",
+    "upgrade": {
+      "asset": "a-upgrade.apk",
+      "sha256": "75d157f89b2fcc1570c3715157b7115ecce9f65c8eb99dbe7870a64894258dbb"
+    }
+  },
+  "p2Fixtures": {
+    "packageName": "dev.tripoder.p2",
+    "asset": "p2.apk",
+    "sha256": "3b8c3830b0567c4e4ac76cab62b7229fe961a49444e6ba46fe8fb1da7cca084f",
+    "apkRewritten": false,
+    "upgrade": {
+      "asset": "p2-upgrade.apk",
+      "sha256": "ed66d5c3ffe8f4e49fe671a0f036186c7c038dc8a75b4e2adbf0ea130c5df9c0"
+    },
+    "providerPeer": {
+      "asset": "provider-peer.apk",
+      "sha256": "349dc19712e565e6365451b827fe0659a7546e58c831e16323dc56910f22819d",
+      "packageName": "dev.tripoder.peer"
+    },
+    "providerIdentity": {
+      "asset": "provider-identity.apk",
+      "sha256": "c24b98fb980b043ec7bb040c699bc816017901274eb71d94debf53bd195cb6b2",
+      "packageName": "dev.tripoder.provideridentity"
+    }
+  },
+  "apksig": {
+    "sdkJarSha256": "2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180",
+    "packagedClassesSha256": "59cee5d2409ba359a056b835d8e4296e16f6e57ece834639777631f290c5ddb1",
+    "source": "Android SDK build-tools 37.0.0"
+  }
+}

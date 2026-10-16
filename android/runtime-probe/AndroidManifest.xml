@@ -1,0 +1,93 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tripoder.runtimeprobe" android:versionCode="1" android:versionName="p0.1">
+    <uses-sdk android:minSdkVersion="36" android:targetSdkVersion="36" />
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
+    <queries><package android:name="dev.tripoder.p0.b" /><package android:name="com.tencent.mm"/><package android:name="com.tencent.tmgp.sgame"/></queries>
+    <application android:name="dev.tripoder.runtimeprobe.ReceiverGateApplication" android:appComponentFactory="dev.tripoder.runtime.RuntimeFactory" android:debuggable="false" android:allowBackup="false" android:extractNativeLibs="true" android:label="Tripoder · 运行预览" android:icon="@drawable/preview_icon" android:theme="@style/PreviewTheme">
+        <receiver android:name="dev.tripoder.runtimeprobe.ReceiverInspection$R0" android:exported="false" android:process=":slot0" />
+        <receiver android:name="dev.tripoder.runtimeprobe.ReceiverInspection$R1" android:exported="false" android:process=":slot1" />
+        <receiver android:name="dev.tripoder.runtimeprobe.ReceiverInspection$R2" android:exported="false" android:process=":slot2" />
+        <receiver android:name="dev.tripoder.runtimeprobe.ReceiverInspection$R3" android:exported="false" android:process=":slot3" />
+        <receiver android:name="dev.tripoder.runtimeprobe.ReceiverInspection$R4" android:exported="false" android:process=":slot4" />
+        <receiver android:name="dev.tripoder.runtimeprobe.ReceiverInspection$R5" android:exported="false" android:process=":slot5" />
+        <receiver android:name="dev.tripoder.runtimeprobe.ReceiverInspection$R6" android:exported="false" android:process=":slot6" />
+        <receiver android:name="dev.tripoder.runtimeprobe.ReceiverInspection$R7" android:exported="false" android:process=":slot7" />
+        <activity android:name="dev.tripoder.runtimeprobe.PreviewActivity" android:exported="true" android:configChanges="orientation|screenSize" ><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
+        <activity android:name="dev.tripoder.runtimeprobe.ProbeActivity" android:exported="true"/>
+        <activity android:name="dev.tripoder.runtimeprobe.RuntimeStateInspectionActivity" android:exported="true"/>
+        <activity android:name="dev.tripoder.runtimeprobe.NativeRetryActivity" android:exported="true"/>
+        <activity android:name="dev.tripoder.runtimeprobe.FrameworkGcActivity" android:exported="true"/>
+        <service android:name="dev.tripoder.runtimeprobe.NativeRetryService" android:process=":nativejob" android:exported="true" android:permission="android.permission.BIND_JOB_SERVICE"/>
+        <activity android:name="dev.tripoder.runtimeprobe.P1ProbeActivity" android:exported="true" />
+        <activity android:name="dev.tripoder.runtimeprobe.ArtifactProbeActivity" android:exported="true" />
+        <service android:name="dev.tripoder.runtime.ArtifactDexInspectionService" android:exported="false" android:process=":artifactcheck" />
+        <activity android:name="dev.tripoder.runtimeprobe.P3ProbeActivity" android:exported="true" />
+        <activity android:name="dev.tripoder.runtimeprobe.P4ProbeActivity" android:exported="true" />
+        <activity android:name="dev.tripoder.runtimeprobe.P2ProbeActivity" android:exported="true" android:taskAffinity="dev.tripoder.runtimeprobe.p2" />
+        <activity android:name="dev.tripoder.runtimeprobe.TaskVisibilityActivity" android:exported="false" android:documentLaunchMode="always" android:maxRecents="1" android:taskAffinity="dev.tripoder.runtimeprobe.task_observation" />
+        <service android:name="dev.tripoder.runtimeprobe.P1Authority" android:exported="false" android:process=":authority" />
+        <provider android:name="dev.tripoder.runtime.RuntimeBootstrapProvider" android:authorities="dev.tripoder.runtimeprobe.runtime.bootstrap" android:exported="false" android:process=":authority" />
+        <service android:name="dev.tripoder.runtime.RuntimeSlot$WorkerA" android:exported="false" android:process=":slot0" />
+        <service android:name="dev.tripoder.runtime.RuntimeSlot$WorkerB" android:exported="false" android:process=":slot1" />
+        <service android:name="dev.tripoder.runtime.RuntimeSlot$WorkerC" android:exported="false" android:process=":slot2" />
+        <service android:name="dev.tripoder.runtime.RuntimeSlot$WorkerD" android:exported="false" android:process=":slot3" />
+        <service android:name="dev.tripoder.runtime.RuntimeSlot$WorkerE" android:exported="false" android:process=":slot4" />
+        <service android:name="dev.tripoder.runtime.RuntimeSlot$WorkerF" android:exported="false" android:process=":slot5" />
+        <service android:name="dev.tripoder.runtime.RuntimeSlot$WorkerG" android:exported="false" android:process=":slot6" />
+        <service android:name="dev.tripoder.runtime.RuntimeSlot$WorkerH" android:exported="false" android:process=":slot7" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S0_0" android:exported="false" android:process=":slot0" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S0_1" android:exported="false" android:process=":slot0" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S0_2" android:exported="false" android:process=":slot0" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S0_3" android:exported="false" android:process=":slot0" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S1_0" android:exported="false" android:process=":slot1" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S1_1" android:exported="false" android:process=":slot1" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S1_2" android:exported="false" android:process=":slot1" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S1_3" android:exported="false" android:process=":slot1" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S2_0" android:exported="false" android:process=":slot2" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S2_1" android:exported="false" android:process=":slot2" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S2_2" android:exported="false" android:process=":slot2" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S2_3" android:exported="false" android:process=":slot2" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S3_0" android:exported="false" android:process=":slot3" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S3_1" android:exported="false" android:process=":slot3" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S3_2" android:exported="false" android:process=":slot3" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S3_3" android:exported="false" android:process=":slot3" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S4_0" android:exported="false" android:process=":slot4" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S4_1" android:exported="false" android:process=":slot4" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S4_2" android:exported="false" android:process=":slot4" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S4_3" android:exported="false" android:process=":slot4" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S5_0" android:exported="false" android:process=":slot5" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S5_1" android:exported="false" android:process=":slot5" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S5_2" android:exported="false" android:process=":slot5" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S5_3" android:exported="false" android:process=":slot5" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S6_0" android:exported="false" android:process=":slot6" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S6_1" android:exported="false" android:process=":slot6" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S6_2" android:exported="false" android:process=":slot6" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S6_3" android:exported="false" android:process=":slot6" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S7_0" android:exported="false" android:process=":slot7" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S7_1" android:exported="false" android:process=":slot7" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S7_2" android:exported="false" android:process=":slot7" />
+        <service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S7_3" android:exported="false" android:process=":slot7" />
+        <provider android:name="dev.tripoder.runtime.RuntimeProviderTransport$P0" android:authorities="dev.tripoder.runtimeprobe.runtime.provider.0" android:exported="false" android:process=":slot0" />
+        <provider android:name="dev.tripoder.runtime.RuntimeProviderTransport$P1" android:authorities="dev.tripoder.runtimeprobe.runtime.provider.1" android:exported="false" android:process=":slot1" />
+        <provider android:name="dev.tripoder.runtime.RuntimeProviderTransport$P2" android:authorities="dev.tripoder.runtimeprobe.runtime.provider.2" android:exported="false" android:process=":slot2" />
+        <provider android:name="dev.tripoder.runtime.RuntimeProviderTransport$P3" android:authorities="dev.tripoder.runtimeprobe.runtime.provider.3" android:exported="false" android:process=":slot3" />
+        <provider android:name="dev.tripoder.runtime.RuntimeProviderTransport$P4" android:authorities="dev.tripoder.runtimeprobe.runtime.provider.4" android:exported="false" android:process=":slot4" />
+        <provider android:name="dev.tripoder.runtime.RuntimeProviderTransport$P5" android:authorities="dev.tripoder.runtimeprobe.runtime.provider.5" android:exported="false" android:process=":slot5" />
+        <provider android:name="dev.tripoder.runtime.RuntimeProviderTransport$P6" android:authorities="dev.tripoder.runtimeprobe.runtime.provider.6" android:exported="false" android:process=":slot6" />
+        <provider android:name="dev.tripoder.runtime.RuntimeProviderTransport$P7" android:authorities="dev.tripoder.runtimeprobe.runtime.provider.7" android:exported="false" android:process=":slot7" />
+        <receiver android:name="dev.tripoder.runtime.RuntimeReceiverSlots$R0" android:exported="false" android:process=":slot0" />
+        <receiver android:name="dev.tripoder.runtime.RuntimeReceiverSlots$R1" android:exported="false" android:process=":slot1" />
+        <receiver android:name="dev.tripoder.runtime.RuntimeReceiverSlots$R2" android:exported="false" android:process=":slot2" />
+        <receiver android:name="dev.tripoder.runtime.RuntimeReceiverSlots$R3" android:exported="false" android:process=":slot3" />
+        <receiver android:name="dev.tripoder.runtime.RuntimeReceiverSlots$R4" android:exported="false" android:process=":slot4" />
+        <receiver android:name="dev.tripoder.runtime.RuntimeReceiverSlots$R5" android:exported="false" android:process=":slot5" />
+        <receiver android:name="dev.tripoder.runtime.RuntimeReceiverSlots$R6" android:exported="false" android:process=":slot6" />
+        <receiver android:name="dev.tripoder.runtime.RuntimeReceiverSlots$R7" android:exported="false" android:process=":slot7" />
+        <provider android:name="dev.tripoder.runtimeprobe.ProviderDecoy" android:authorities="dev.tripoder.p2.remote" android:exported="false"/>
+        <!-- JOB_COMPONENT_POOL -->
+        <!-- ACTIVITY_COMPONENT_POOL -->
+    </application>
+</manifest>

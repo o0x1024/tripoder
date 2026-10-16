@@ -1,0 +1,262 @@
+{
+  "runId": "p0-c25f1671380742c1",
+  "observedAtUtc": "2026-10-16T06:16:59.544600+00:00",
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "productApkReplaced": false,
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.b"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~xava0Ukuv3wvAiFLPJENww==/dev.tripoder.p0.b-NY0l3c6FuZFRS2mU8H8LqA==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~xava0Ukuv3wvAiFLPJENww==/dev.tripoder.p0.b-NY0l3c6FuZFRS2mU8H8LqA==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "fb0faab6dabdd982a84d10317f8b0ad3b008cfe74f1a2f45cd450af11933ef87  /data/app/~~xava0Ukuv3wvAiFLPJENww==/dev.tripoder.p0.b-NY0l3c6FuZFRS2mU8H8LqA==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "getconf",
+        "PAGESIZE"
+      ],
+      "exitCode": 0,
+      "stdout": "4096\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.a"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.runtimeprobe uid:10398\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "date \"+%m-%d %H:%M:%S.%3N\""
+      ],
+      "exitCode": 0,
+      "stdout": "10-16 14:16:59.466\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.runtimeprobe/.ProbeActivity",
+        "--es",
+        "runId",
+        "p0-c25f1671380742c1"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.runtimeprobe/.ProbeActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.runtimeprobe/.ProbeActivity\nTotalTime: 75\nWaitTime: 77\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-16 14:16:59.466"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-16 14:16:59.466",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-16 14:16:59.466",
+        "TripoderHook:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-16 14:16:59.466",
+        "TripoderReceiver:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-16 14:16:59.466",
+        "TripoderSelfHook:I",
+        "TripoderRuntime:E",
+        "TripoderOwnership:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-16 14:17:00.807 18085 18121 I TripoderSelfHook: INSTALLING:PROCESS_EXECUTION_POLICY\n10-16 14:17:01.362 18085 18121 I TripoderSelfHook: INSTALLED:PROCESS_EXECUTION_POLICY:ns=554866874\n10-16 14:17:01.362 18085 18121 I TripoderSelfHook: INSTALLING:FRAMEWORK_ACCESS\n10-16 14:17:02.396 18085 18121 I TripoderSelfHook: INSTALLED:FRAMEWORK_ACCESS:ns=1033848124\n10-16 14:17:02.396 18085 18121 I TripoderSelfHook: INSTALLING:APPLICATION_OWNERSHIP\n10-16 14:17:02.396 18085 18121 I TripoderSelfHook: INSTALLED:APPLICATION_OWNERSHIP:ns=690000\n10-16 14:17:02.396 18085 18121 I TripoderSelfHook: INSTALLING:REFLECTION_VIEW\n10-16 14:17:02.440 18085 18121 I TripoderSelfHook: INSTALLED:REFLECTION_VIEW:ns=43153959\n10-16 14:17:02.440 18085 18121 I TripoderSelfHook: INSTALLING:ACTIVITY_CREATION\n10-16 14:17:02.488 18085 18121 I TripoderSelfHook: INSTALLED:ACTIVITY_CREATION:ns=48314375\n10-16 14:17:02.488 18085 18121 I TripoderSelfHook: INSTALLING:ACTIVITY_DELIVERY\n10-16 14:17:02.538 18085 18121 I TripoderSelfHook: INSTALLED:ACTIVITY_DELIVERY:ns=50309271\n10-16 14:17:02.538 18085 18121 I TripoderSelfHook: INSTALLING:ACTIVITY_ROUTING\n10-16 14:17:02.627 18085 18121 I TripoderSelfHook: INSTALLED:ACTIVITY_ROUTING:ns=88350104\n10-16 14:17:02.627 18085 18121 I TripoderSelfHook: INSTALLING:SERVICES\n10-16 14:17:02.720 18085 18121 I TripoderSelfHook: INSTALLED:SERVICES:ns=93055209\n10-16 14:17:02.720 18085 18121 I TripoderSelfHook: INSTALLING:PROVIDERS\n10-16 14:17:02.850 18085 18121 I TripoderSelfHook: INSTALLED:PROVIDERS:ns=130636093\n10-16 14:17:02.851 18085 18121 I TripoderSelfHook: INSTALLING:RECEIVERS\n10-16 14:17:02.877 18085 18121 I TripoderSelfHook: INSTALLED:RECEIVERS:ns=26268177\n10-16 14:17:02.877 18085 18121 I TripoderSelfHook: INSTALLING:PACKAGES\n10-16 14:17:04.523 18085 18121 I TripoderSelfHook: INSTALLED:PACKAGES:ns=1646564218\n10-16 14:17:04.523 18085 18121 I TripoderSelfHook: INSTALLING:STORAGE\n10-16 14:17:04.712 18085 18121 I TripoderSelfHook: INSTALLED:STORAGE:ns=188236666\n10-16 14:17:04.712 18085 18121 I TripoderSelfHook: INSTALLING:ACTIVITY_MANAGER\n10-16 14:17:05.300 18085 18121 I TripoderSelfHook: INSTALLED:ACTIVITY_MANAGER:ns=588467708\n10-16 14:17:05.300 18085 18121 I TripoderSelfHook: INSTALLING:CONNECTIVITY\n10-16 14:17:05.988 18085 18121 I TripoderSelfHook: INSTALLED:CONNECTIVITY:ns=687921042\n10-16 14:17:05.988 18085 18121 I TripoderSelfHook: INSTALLING:WIFI_P2P\n10-16 14:17:06.314 18085 18121 I TripoderSelfHook: INSTALLED:WIFI_P2P:ns=325993177\n10-16 14:17:06.314 18085 18121 I TripoderSelfHook: INSTALLING:NETWORK_STATS\n10-16 14:17:06.698 18085 18121 I TripoderSelfHook: INSTALLED:NETWORK_STATS:ns=383761354\n10-16 14:17:06.698 18085 18121 I TripoderSelfHook: INSTALLING:TELEPHONY\n10-16 14:17:08.120 18085 18121 I TripoderSelfHook: INSTALLED:TELEPHONY:ns=1421548802\n10-16 14:17:08.120 18085 18121 I TripoderSelfHook: INSTALLING:AUDIO\n10-16 14:17:09.052 18085 18121 I TripoderSelfHook: INSTALLED:AUDIO:ns=932429010\n10-16 14:17:09.052 18085 18121 I TripoderSelfHook: INSTALLING:BATTERY\n10-16 14:17:09.104 18085 18121 I TripoderSelfHook: INSTALLED:BATTERY:ns=52040417\n10-16 14:17:09.104 18085 18121 I TripoderSelfHook: INSTALLING:POWER\n10-16 14:17:09.421 18085 18121 I TripoderSelfHook: INSTALLED:POWER:ns=316250624\n10-16 14:17:09.421 18085 18121 I TripoderSelfHook: INSTALLING:NOTIFICATIONS\n10-16 14:17:09.794 18085 18121 I TripoderSelfHook: INSTALLED:NOTIFICATIONS:ns=373821250\n10-16 14:17:09.794 18085 18121 I TripoderSelfHook: INSTALLING:SHORTCUTS\n10-16 14:17:09.911 18085 18121 I TripoderSelfHook: INSTALLED:SHORTCUTS:ns=116878073\n10-16 14:17:09.911 18085 18121 I TripoderSelfHook: INSTALLING:UI_EFFECTS\n10-16 14:17:09.923 18085 18121 I TripoderSelfHook: INSTALLED:UI_EFFECTS:ns=11874948\n10-16 14:17:09.923 18085 18121 I TripoderSelfHook: INSTALLING:FAILURE_DIAGNOSTICS\n10-16 14:17:09.951 18085 18121 I TripoderSelfHook: INSTALLED:FAILURE_DIAGNOSTICS:ns=27531667\n10-16 14:17:09.951 18085 18121 I TripoderSelfHook: INSTALLING:HOOK_CONTROL\n10-16 14:17:10.131 18085 18121 I TripoderSelfHook: INSTALLED:HOOK_CONTROL:ns=180608906\n10-16 14:17:10.132 18085 18121 I TripoderSelfHook: READY:READY:25/25:bindings=2177:ns=9324678330\n10-16 14:17:10.137 18085 18085 I TripoderOwnership: before-attach host=35481079 guest=262134884 {\"stage\":\"AWAITING_GUEST\",\"constructs\":0,\"attaches\":0,\"physicalChecks\":2,\"retainedGlobalRefs\":10,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":8,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 14:17:10.139 18085 18085 I TripoderOwnership: after-attach host=35481079 guest=262134884 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":7,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 14:17:10.153 18085 18085 I TripoderOwnership: after-onCreate host=35481079 guest=262134884 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":9,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 14:17:10.668 18229 18246 I TripoderSelfHook: INSTALLING:PROCESS_EXECUTION_POLICY\n10-16 14:17:11.562 18229 18246 I TripoderSelfHook: INSTALLED:PROCESS_EXECUTION_POLICY:ns=894503228\n10-16 14:17:11.562 18229 18246 I TripoderSelfHook: INSTALLING:FRAMEWORK_ACCESS\n10-16 14:17:12.694 18229 18246 I TripoderSelfHook: INSTALLED:FRAMEWORK_ACCESS:ns=1130989999\n10-16 14:17:12.694 18229 18246 I TripoderSelfHook: INSTALLING:APPLICATION_OWNERSHIP\n10-16 14:17:12.694 18229 18246 I TripoderSelfHook: INSTALLED:APPLICATION_OWNERSHIP:ns=710417\n10-16 14:17:12.694 18229 18246 I TripoderSelfHook: INSTALLING:REFLECTION_VIEW\n10-16 14:17:12.738 18229 18246 I TripoderSelfHook: INSTALLED:REFLECTION_VIEW:ns=43628230\n10-16 14:17:12.738 18229 18246 I TripoderSelfHook: INSTALLING:ACTIVITY_CREATION\n10-16 14:17:12.785 18229 18246 I TripoderSelfHook: INSTALLED:ACTIVITY_CREATION:ns=46500104\n10-16 14:17:12.785 18229 18246 I TripoderSelfHook: INSTALLING:ACTIVITY_DELIVERY\n10-16 14:17:12.834 18229 18246 I TripoderSelfHook: INSTALLED:ACTIVITY_DELIVERY:ns=49886927\n10-16 14:17:12.834 18229 18246 I TripoderSelfHook: INSTALLING:ACTIVITY_ROUTING\n10-16 14:17:12.920 18229 18246 I TripoderSelfHook: INSTALLED:ACTIVITY_ROUTING:ns=85558073\n10-16 14:17:12.920 18229 18246 I TripoderSelfHook: INSTALLING:SERVICES\n10-16 14:17:13.021 18229 18246 I TripoderSelfHook: INSTALLED:SERVICES:ns=100793438\n10-16 14:17:13.021 18229 18246 I TripoderSelfHook: INSTALLING:PROVIDERS\n10-16 14:17:13.155 18229 18246 I TripoderSelfHook: INSTALLED:PROVIDERS:ns=134344896\n10-16 14:17:13.155 18229 18246 I TripoderSelfHook: INSTALLING:RECEIVERS\n10-16 14:17:13.182 18229 18246 I TripoderSelfHook: INSTALLED:RECEIVERS:ns=26395729\n10-16 14:17:13.182 18229 18246 I TripoderSelfHook: INSTALLING:PACKAGES\n10-16 14:17:14.788 18229 18246 I TripoderSelfHook: INSTALLED:PACKAGES:ns=1606730312\n10-16 14:17:14.788 18229 18246 I TripoderSelfHook: INSTALLING:STORAGE\n10-16 14:17:14.968 18229 18246 I TripoderSelfHook: INSTALLED:STORAGE:ns=179524740\n10-16 14:17:14.968 18229 18246 I TripoderSelfHook: INSTALLING:ACTIVITY_MANAGER\n10-16 14:17:15.562 18229 18246 I TripoderSelfHook: INSTALLED:ACTIVITY_MANAGER:ns=593414166\n10-16 14:17:15.562 18229 18246 I TripoderSelfHook: INSTALLING:CONNECTIVITY\n10-16 14:17:16.239 18229 18246 I TripoderSelfHook: INSTALLED:CONNECTIVITY:ns=677202968\n10-16 14:17:16.239 18229 18246 I TripoderSelfHook: INSTALLING:WIFI_P2P\n10-16 14:17:16.600 18229 18246 I TripoderSelfHook: INSTALLED:WIFI_P2P:ns=361417187\n10-16 14:17:16.600 18229 18246 I TripoderSelfHook: INSTALLING:NETWORK_STATS\n10-16 14:17:16.992 18229 18246 I TripoderSelfHook: INSTALLED:NETWORK_STATS:ns=391995677\n10-16 14:17:16.992 18229 18246 I TripoderSelfHook: INSTALLING:TELEPHONY\n10-16 14:17:18.394 18229 18246 I TripoderSelfHook: INSTALLED:TELEPHONY:ns=1402006822\n10-16 14:17:18.394 18229 18246 I TripoderSelfHook: INSTALLING:AUDIO\n10-16 14:17:19.429 18229 18246 I TripoderSelfHook: INSTALLED:AUDIO:ns=1034384115\n10-16 14:17:19.429 18229 18246 I TripoderSelfHook: INSTALLING:BATTERY\n10-16 14:17:19.481 18229 18246 I TripoderSelfHook: INSTALLED:BATTERY:ns=52489635\n10-16 14:17:19.481 18229 18246 I TripoderSelfHook: INSTALLING:POWER\n10-16 14:17:19.809 18229 18246 I TripoderSelfHook: INSTALLED:POWER:ns=328051406\n10-16 14:17:19.809 18229 18246 I TripoderSelfHook: INSTALLING:NOTIFICATIONS\n10-16 14:17:20.227 18229 18246 I TripoderSelfHook: INSTALLED:NOTIFICATIONS:ns=417396927\n10-16 14:17:20.227 18229 18246 I TripoderSelfHook: INSTALLING:SHORTCUTS\n10-16 14:17:20.356 18229 18246 I TripoderSelfHook: INSTALLED:SHORTCUTS:ns=128846458\n10-16 14:17:20.356 18229 18246 I TripoderSelfHook: INSTALLING:UI_EFFECTS\n10-16 14:17:20.369 18229 18246 I TripoderSelfHook: INSTALLED:UI_EFFECTS:ns=13595261\n10-16 14:17:20.369 18229 18246 I TripoderSelfHook: INSTALLING:FAILURE_DIAGNOSTICS\n10-16 14:17:20.396 18229 18246 I TripoderSelfHook: INSTALLED:FAILURE_DIAGNOSTICS:ns=26418646\n10-16 14:17:20.396 18229 18246 I TripoderSelfHook: INSTALLING:HOOK_CONTROL\n10-16 14:17:20.561 18229 18246 I TripoderSelfHook: INSTALLED:HOOK_CONTROL:ns=165112083\n10-16 14:17:20.561 18229 18246 I TripoderSelfHook: READY:READY:25/25:bindings=2177:ns=9893249893\n10-16 14:17:20.568 18229 18229 I TripoderOwnership: before-attach host=35481079 guest=262134884 {\"stage\":\"AWAITING_GUEST\",\"constructs\":0,\"attaches\":0,\"physicalChecks\":2,\"retainedGlobalRefs\":10,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":8,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 14:17:20.574 18229 18229 I TripoderOwnership: after-attach host=35481079 guest=262134884 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":7,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 14:17:20.600 18229 18229 I TripoderOwnership: after-onCreate host=35481079 guest=262134884 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":9,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 14:17:22.453 18477 18493 I TripoderSelfHook: INSTALLING:PROCESS_EXECUTION_POLICY\n10-16 14:17:23.183 18477 18493 I TripoderSelfHook: INSTALLED:PROCESS_EXECUTION_POLICY:ns=729975729\n10-16 14:17:23.183 18477 18493 I TripoderSelfHook: INSTALLING:FRAMEWORK_ACCESS\n10-16 14:17:24.309 18477 18493 I TripoderSelfHook: INSTALLED:FRAMEWORK_ACCESS:ns=1125604947\n10-16 14:17:24.309 18477 18493 I TripoderSelfHook: INSTALLING:APPLICATION_OWNERSHIP\n10-16 14:17:24.310 18477 18493 I TripoderSelfHook: INSTALLED:APPLICATION_OWNERSHIP:ns=594167\n10-16 14:17:24.310 18477 18493 I TripoderSelfHook: INSTALLING:REFLECTION_VIEW\n10-16 14:17:24.353 18477 18493 I TripoderSelfHook: INSTALLED:REFLECTION_VIEW:ns=43065625\n10-16 14:17:24.353 18477 18493 I TripoderSelfHook: INSTALLING:ACTIVITY_CREATION\n10-16 14:17:24.399 18477 18493 I TripoderSelfHook: INSTALLED:ACTIVITY_CREATION:ns=46355052\n10-16 14:17:24.399 18477 18493 I TripoderSelfHook: INSTALLING:ACTIVITY_DELIVERY\n10-16 14:17:24.449 18477 18493 I TripoderSelfHook: INSTALLED:ACTIVITY_DELIVERY:ns=50135313\n10-16 14:17:24.449 18477 18493 I TripoderSelfHook: INSTALLING:ACTIVITY_ROUTING\n10-16 14:17:24.531 18477 18493 I TripoderSelfHook: INSTALLED:ACTIVITY_ROUTING:ns=81812239\n10-16 14:17:24.531 18477 18493 I TripoderSelfHook: INSTALLING:SERVICES\n10-16 14:17:24.625 18477 18493 I TripoderSelfHook: INSTALLED:SERVICES:ns=93680677\n10-16 14:17:24.625 18477 18493 I TripoderSelfHook: INSTALLING:PROVIDERS\n10-16 14:17:24.755 18477 18493 I TripoderSelfHook: INSTALLED:PROVIDERS:ns=130545260\n10-16 14:17:24.755 18477 18493 I TripoderSelfHook: INSTALLING:RECEIVERS\n10-16 14:17:24.782 18477 18493 I TripoderSelfHook: INSTALLED:RECEIVERS:ns=26048854\n10-16 14:17:24.782 18477 18493 I TripoderSelfHook: INSTALLING:PACKAGES\n10-16 14:17:26.377 18477 18493 I TripoderSelfHook: INSTALLED:PACKAGES:ns=1595639114\n10-16 14:17:26.377 18477 18493 I TripoderSelfHook: INSTALLING:STORAGE\n10-16 14:17:26.556 18477 18493 I TripoderSelfHook: INSTALLED:STORAGE:ns=178594375\n10-16 14:17:26.556 18477 18493 I TripoderSelfHook: INSTALLING:ACTIVITY_MANAGER\n10-16 14:17:27.139 18477 18493 I TripoderSelfHook: INSTALLED:ACTIVITY_MANAGER:ns=582759375\n10-16 14:17:27.139 18477 18493 I TripoderSelfHook: INSTALLING:CONNECTIVITY\n10-16 14:17:27.807 18477 18493 I TripoderSelfHook: INSTALLED:CONNECTIVITY:ns=667918802\n10-16 14:17:27.807 18477 18493 I TripoderSelfHook: INSTALLING:WIFI_P2P\n10-16 14:17:28.139 18477 18493 I TripoderSelfHook: INSTALLED:WIFI_P2P:ns=332557031\n10-16 14:17:28.139 18477 18493 I TripoderSelfHook: INSTALLING:NETWORK_STATS\n10-16 14:17:28.545 18477 18493 I TripoderSelfHook: INSTALLED:NETWORK_STATS:ns=405665364\n10-16 14:17:28.545 18477 18493 I TripoderSelfHook: INSTALLING:TELEPHONY\n10-16 14:17:29.919 18477 18493 I TripoderSelfHook: INSTALLED:TELEPHONY:ns=1373905364\n10-16 14:17:29.919 18477 18493 I TripoderSelfHook: INSTALLING:AUDIO\n10-16 14:17:30.852 18477 18493 I TripoderSelfHook: INSTALLED:AUDIO:ns=933412916\n10-16 14:17:30.852 18477 18493 I TripoderSelfHook: INSTALLING:BATTERY\n10-16 14:17:30.905 18477 18493 I TripoderSelfHook: INSTALLED:BATTERY:ns=52191823\n10-16 14:17:30.905 18477 18493 I TripoderSelfHook: INSTALLING:POWER\n10-16 14:17:31.242 18477 18493 I TripoderSelfHook: INSTALLED:POWER:ns=337491614\n10-16 14:17:31.242 18477 18493 I TripoderSelfHook: INSTALLING:NOTIFICATIONS\n10-16 14:17:31.613 18477 18493 I TripoderSelfHook: INSTALLED:NOTIFICATIONS:ns=370902083\n10-16 14:17:31.613 18477 18493 I TripoderSelfHook: INSTALLING:SHORTCUTS\n10-16 14:17:31.730 18477 18493 I TripoderSelfHook: INSTALLED:SHORTCUTS:ns=116746875\n10-16 14:17:31.730 18477 18493 I TripoderSelfHook: INSTALLING:UI_EFFECTS\n10-16 14:17:31.742 18477 18493 I TripoderSelfHook: INSTALLED:UI_EFFECTS:ns=11985521\n10-16 14:17:31.742 18477 18493 I TripoderSelfHook: INSTALLING:FAILURE_DIAGNOSTICS\n10-16 14:17:31.768 18477 18493 I TripoderSelfHook: INSTALLED:FAILURE_DIAGNOSTICS:ns=25760886\n10-16 14:17:31.768 18477 18493 I TripoderSelfHook: INSTALLING:HOOK_CONTROL\n10-16 14:17:31.932 18477 18493 I TripoderSelfHook: INSTALLED:HOOK_CONTROL:ns=164681510\n10-16 14:17:31.933 18477 18493 I TripoderSelfHook: READY:READY:25/25:bindings=2177:ns=9479309788\n10-16 14:17:31.940 18477 18477 I TripoderOwnership: before-attach host=35481079 guest=262134884 {\"stage\":\"AWAITING_GUEST\",\"constructs\":0,\"attaches\":0,\"physicalChecks\":2,\"retainedGlobalRefs\":10,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":8,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 14:17:31.949 18477 18477 I TripoderOwnership: after-attach host=35481079 guest=262134884 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":7,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 14:17:31.990 18477 18477 I TripoderOwnership: after-onCreate host=35481079 guest=262134884 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":9,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 14:17:32.490 18573 18596 I TripoderSelfHook: INSTALLING:PROCESS_EXECUTION_POLICY\n10-16 14:17:33.382 18573 18596 I TripoderSelfHook: INSTALLED:PROCESS_EXECUTION_POLICY:ns=891980364\n10-16 14:17:33.382 18573 18596 I TripoderSelfHook: INSTALLING:FRAMEWORK_ACCESS\n10-16 14:17:34.532 18573 18596 I TripoderSelfHook: INSTALLED:FRAMEWORK_ACCESS:ns=1149696875\n10-16 14:17:34.532 18573 18596 I TripoderSelfHook: INSTALLING:APPLICATION_OWNERSHIP\n10-16 14:17:34.533 18573 18596 I TripoderSelfHook: INSTALLED:APPLICATION_OWNERSHIP:ns=696458\n10-16 14:17:34.533 18573 18596 I TripoderSelfHook: INSTALLING:REFLECTION_VIEW\n10-16 14:17:34.576 18573 18596 I TripoderSelfHook: INSTALLED:REFLECTION_VIEW:ns=43475000\n10-16 14:17:34.576 18573 18596 I TripoderSelfHook: INSTALLING:ACTIVITY_CREATION\n10-16 14:17:34.623 18573 18596 I TripoderSelfHook: INSTALLED:ACTIVITY_CREATION:ns=47185677\n10-16 14:17:34.623 18573 18596 I TripoderSelfHook: INSTALLING:ACTIVITY_DELIVERY\n10-16 14:17:34.672 18573 18596 I TripoderSelfHook: INSTALLED:ACTIVITY_DELIVERY:ns=49010052\n10-16 14:17:34.672 18573 18596 I TripoderSelfHook: INSTALLING:ACTIVITY_ROUTING\n10-16 14:17:34.756 18573 18596 I TripoderSelfHook: INSTALLED:ACTIVITY_ROUTING:ns=83053229\n10-16 14:17:34.756 18573 18596 I TripoderSelfHook: INSTALLING:SERVICES\n10-16 14:17:34.847 18573 18596 I TripoderSelfHook: INSTALLED:SERVICES:ns=91892135\n10-16 14:17:34.848 18573 18596 I TripoderSelfHook: INSTALLING:PROVIDERS\n10-16 14:17:34.978 18573 18596 I TripoderSelfHook: INSTALLED:PROVIDERS:ns=130016459\n10-16 14:17:34.978 18573 18596 I TripoderSelfHook: INSTALLING:RECEIVERS\n10-16 14:17:35.003 18573 18596 I TripoderSelfHook: INSTALLED:RECEIVERS:ns=24939947\n10-16 14:17:35.003 18573 18596 I TripoderSelfHook: INSTALLING:PACKAGES\n10-16 14:17:36.651 18573 18596 I TripoderSelfHook: INSTALLED:PACKAGES:ns=1648893281\n10-16 14:17:36.651 18573 18596 I TripoderSelfHook: INSTALLING:STORAGE\n10-16 14:17:36.830 18573 18596 I TripoderSelfHook: INSTALLED:STORAGE:ns=178874843\n10-16 14:17:36.830 18573 18596 I TripoderSelfHook: INSTALLING:ACTIVITY_MANAGER\n10-16 14:17:37.418 18573 18596 I TripoderSelfHook: INSTALLED:ACTIVITY_MANAGER:ns=587466354\n10-16 14:17:37.418 18573 18596 I TripoderSelfHook: INSTALLING:CONNECTIVITY\n10-16 14:17:38.100 18573 18596 I TripoderSelfHook: INSTALLED:CONNECTIVITY:ns=682315104\n10-16 14:17:38.100 18573 18596 I TripoderSelfHook: INSTALLING:WIFI_P2P\n10-16 14:17:38.440 18573 18596 I TripoderSelfHook: INSTALLED:WIFI_P2P:ns=339821301\n10-16 14:17:38.440 18573 18596 I TripoderSelfHook: INSTALLING:NETWORK_STATS\n10-16 14:17:38.829 18573 18596 I TripoderSelfHook: INSTALLED:NETWORK_STATS:ns=389070625\n10-16 14:17:38.829 18573 18596 I TripoderSelfHook: INSTALLING:TELEPHONY\n10-16 14:17:40.215 18573 18596 I TripoderSelfHook: INSTALLED:TELEPHONY:ns=1385357551\n10-16 14:17:40.215 18573 18596 I TripoderSelfHook: INSTALLING:AUDIO\n10-16 14:17:41.230 18573 18596 I TripoderSelfHook: INSTALLED:AUDIO:ns=1014934427\n10-16 14:17:41.230 18573 18596 I TripoderSelfHook: INSTALLING:BATTERY\n10-16 14:17:41.283 18573 18596 I TripoderSelfHook: INSTALLED:BATTERY:ns=52996666\n10-16 14:17:41.283 18573 18596 I TripoderSelfHook: INSTALLING:POWER\n10-16 14:17:41.610 18573 18596 I TripoderSelfHook: INSTALLED:POWER:ns=327459635\n10-16 14:17:41.610 18573 18596 I TripoderSelfHook: INSTALLING:NOTIFICATIONS\n10-16 14:17:41.994 18573 18596 I TripoderSelfHook: INSTALLED:NOTIFICATIONS:ns=384155521\n10-16 14:17:41.994 18573 18596 I TripoderSelfHook: INSTALLING:SHORTCUTS\n10-16 14:17:42.110 18573 18596 I TripoderSelfHook: INSTALLED:SHORTCUTS:ns=115680312\n10-16 14:17:42.110 18573 18596 I TripoderSelfHook: INSTALLING:UI_EFFECTS\n10-16 14:17:42.122 18573 18596 I TripoderSelfHook: INSTALLED:UI_EFFECTS:ns=11804427\n10-16 14:17:42.122 18573 18596 I TripoderSelfHook: INSTALLING:FAILURE_DIAGNOSTICS\n10-16 14:17:42.149 18573 18596 I TripoderSelfHook: INSTALLED:FAILURE_DIAGNOSTICS:ns=26876146\n10-16 14:17:42.149 18573 18596 I TripoderSelfHook: INSTALLING:HOOK_CONTROL\n10-16 14:17:42.315 18573 18596 I TripoderSelfHook: INSTALLED:HOOK_CONTROL:ns=166260364\n10-16 14:17:42.315 18573 18596 I TripoderSelfHook: READY:READY:25/25:bindings=2177:ns=9825252653\n10-16 14:17:42.324 18573 18573 I TripoderOwnership: before-attach host=35481079 guest=262134884 {\"stage\":\"AWAITING_GUEST\",\"constructs\":0,\"attaches\":0,\"physicalChecks\":2,\"retainedGlobalRefs\":10,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":8,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 14:17:42.333 18573 18573 I TripoderOwnership: after-attach host=35481079 guest=262134884 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":7,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 14:17:42.367 18573 18573 I TripoderOwnership: after-onCreate host=35481079 guest=262134884 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":9,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 14:17:44.875 18784 18805 I TripoderSelfHook: INSTALLING:PROCESS_EXECUTION_POLICY\n10-16 14:17:45.876 18784 18805 I TripoderSelfHook: INSTALLED:PROCESS_EXECUTION_POLICY:ns=1000996927\n10-16 14:17:45.876 18784 18805 I TripoderSelfHook: INSTALLING:FRAMEWORK_ACCESS\n10-16 14:17:47.012 18784 18805 I TripoderSelfHook: INSTALLED:FRAMEWORK_ACCESS:ns=1135860572\n10-16 14:17:47.012 18784 18805 I TripoderSelfHook: INSTALLING:APPLICATION_OWNERSHIP\n10-16 14:17:47.013 18784 18805 I TripoderSelfHook: INSTALLED:APPLICATION_OWNERSHIP:ns=701771\n10-16 14:17:47.013 18784 18805 I TripoderSelfHook: INSTALLING:REFLECTION_VIEW\n10-16 14:17:47.056 18784 18805 I TripoderSelfHook: INSTALLED:REFLECTION_VIEW:ns=43137344\n10-16 14:17:47.056 18784 18805 I TripoderSelfHook: INSTALLING:ACTIVITY_CREATION\n10-16 14:17:47.102 18784 18805 I TripoderSelfHook: INSTALLED:ACTIVITY_CREATION:ns=46051250\n10-16 14:17:47.102 18784 18805 I TripoderSelfHook: INSTALLING:ACTIVITY_DELIVERY\n10-16 14:17:47.151 18784 18805 I TripoderSelfHook: INSTALLED:ACTIVITY_DELIVERY:ns=48893854\n10-16 14:17:47.151 18784 18805 I TripoderSelfHook: INSTALLING:ACTIVITY_ROUTING\n10-16 14:17:47.232 18784 18805 I TripoderSelfHook: INSTALLED:ACTIVITY_ROUTING:ns=81160000\n10-16 14:17:47.232 18784 18805 I TripoderSelfHook: INSTALLING:SERVICES\n10-16 14:17:47.321 18784 18805 I TripoderSelfHook: INSTALLED:SERVICES:ns=88513281\n10-16 14:17:47.321 18784 18805 I TripoderSelfHook: INSTALLING:PROVIDERS\n10-16 14:17:47.448 18784 18805 I TripoderSelfHook: INSTALLED:PROVIDERS:ns=127035469\n10-16 14:17:47.448 18784 18805 I TripoderSelfHook: INSTALLING:RECEIVERS\n10-16 14:17:47.472 18784 18805 I TripoderSelfHook: INSTALLED:RECEIVERS:ns=24575938\n10-16 14:17:47.472 18784 18805 I TripoderSelfHook: INSTALLING:PACKAGES\n10-16 14:17:49.086 18784 18805 I TripoderSelfHook: INSTALLED:PACKAGES:ns=1613626197\n10-16 14:17:49.086 18784 18805 I TripoderSelfHook: INSTALLING:STORAGE\n10-16 14:17:49.271 18784 18805 I TripoderSelfHook: INSTALLED:STORAGE:ns=184428594\n10-16 14:17:49.271 18784 18805 I TripoderSelfHook: INSTALLING:ACTIVITY_MANAGER\n10-16 14:17:49.861 18784 18805 I TripoderSelfHook: INSTALLED:ACTIVITY_MANAGER:ns=590459271\n10-16 14:17:49.861 18784 18805 I TripoderSelfHook: INSTALLING:CONNECTIVITY\n10-16 14:17:50.530 18784 18805 I TripoderSelfHook: INSTALLED:CONNECTIVITY:ns=668815573\n10-16 14:17:50.530 18784 18805 I TripoderSelfHook: INSTALLING:WIFI_P2P\n10-16 14:17:50.866 18784 18805 I TripoderSelfHook: INSTALLED:WIFI_P2P:ns=336176406\n10-16 14:17:50.866 18784 18805 I TripoderSelfHook: INSTALLING:NETWORK_STATS\n10-16 14:17:51.251 18784 18805 I TripoderSelfHook: INSTALLED:NETWORK_STATS:ns=384358958\n10-16 14:17:51.251 18784 18805 I TripoderSelfHook: INSTALLING:TELEPHONY\n10-16 14:17:52.663 18784 18805 I TripoderSelfHook: INSTALLED:TELEPHONY:ns=1412149635\n10-16 14:17:52.663 18784 18805 I TripoderSelfHook: INSTALLING:AUDIO\n10-16 14:17:53.732 18784 18805 I TripoderSelfHook: INSTALLED:AUDIO:ns=1069142708\n10-16 14:17:53.732 18784 18805 I TripoderSelfHook: INSTALLING:BATTERY\n10-16 14:17:53.784 18784 18805 I TripoderSelfHook: INSTALLED:BATTERY:ns=51892760\n10-16 14:17:53.784 18784 18805 I TripoderSelfHook: INSTALLING:POWER\n10-16 14:17:54.104 18784 18805 I TripoderSelfHook: INSTALLED:POWER:ns=320002604\n10-16 14:17:54.104 18784 18805 I TripoderSelfHook: INSTALLING:NOTIFICATIONS\n10-16 14:17:54.477 18784 18805 I TripoderSelfHook: INSTALLED:NOTIFICATIONS:ns=372757135\n10-16 14:17:54.477 18784 18805 I TripoderSelfHook: INSTALLING:SHORTCUTS\n10-16 14:17:54.601 18784 18805 I TripoderSelfHook: INSTALLED:SHORTCUTS:ns=123809427\n10-16 14:17:54.601 18784 18805 I TripoderSelfHook: INSTALLING:UI_EFFECTS\n10-16 14:17:54.614 18784 18805 I TripoderSelfHook: INSTALLED:UI_EFFECTS:ns=12910886\n10-16 14:17:54.614 18784 18805 I TripoderSelfHook: INSTALLING:FAILURE_DIAGNOSTICS\n10-16 14:17:54.640 18784 18805 I TripoderSelfHook: INSTALLED:FAILURE_DIAGNOSTICS:ns=26379531\n10-16 14:17:54.640 18784 18805 I TripoderSelfHook: INSTALLING:HOOK_CONTROL\n10-16 14:17:54.820 18784 18805 I TripoderSelfHook: INSTALLED:HOOK_CONTROL:ns=179631875\n10-16 14:17:54.820 18784 18805 I TripoderSelfHook: READY:READY:25/25:bindings=2177:ns=9944782080\n10-16 14:17:54.828 18784 18784 I TripoderOwnership: before-attach host=35481079 guest=262134884 {\"stage\":\"AWAITING_GUEST\",\"constructs\":0,\"attaches\":0,\"physicalChecks\":2,\"retainedGlobalRefs\":10,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":8,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 14:17:54.836 18784 18784 I TripoderOwnership: after-attach host=35481079 guest=262134884 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":7,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 14:17:54.866 18784 18784 I TripoderOwnership: after-onCreate host=35481079 guest=262134884 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":9,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 14:17:55.357 18880 18898 I TripoderSelfHook: INSTALLING:PROCESS_EXECUTION_POLICY\n10-16 14:17:56.248 18880 18898 I TripoderSelfHook: INSTALLED:PROCESS_EXECUTION_POLICY:ns=890720520\n10-16 14:17:56.248 18880 18898 I TripoderSelfHook: INSTALLING:FRAMEWORK_ACCESS\n10-16 14:17:57.379 18880 18898 I TripoderSelfHook: INSTALLED:FRAMEWORK_ACCESS:ns=1131273958\n10-16 14:17:57.379 18880 18898 I TripoderSelfHook: INSTALLING:APPLICATION_OWNERSHIP\n10-16 14:17:57.380 18880 18898 I TripoderSelfHook: INSTALLED:APPLICATION_OWNERSHIP:ns=677552\n10-16 14:17:57.380 18880 18898 I TripoderSelfHook: INSTALLING:REFLECTION_VIEW\n10-16 14:17:57.423 18880 18898 I TripoderSelfHook: INSTALLED:REFLECTION_VIEW:ns=43300990\n10-16 14:17:57.423 18880 18898 I TripoderSelfHook: INSTALLING:ACTIVITY_CREATION\n10-16 14:17:57.470 18880 18898 I TripoderSelfHook: INSTALLED:ACTIVITY_CREATION:ns=46663906\n10-16 14:17:57.470 18880 18898 I TripoderSelfHook: INSTALLING:ACTIVITY_DELIVERY\n10-16 14:17:57.520 18880 18898 I TripoderSelfHook: INSTALLED:ACTIVITY_DELIVERY:ns=50044062\n10-16 14:17:57.520 18880 18898 I TripoderSelfHook: INSTALLING:ACTIVITY_ROUTING\n10-16 14:17:57.602 18880 18898 I TripoderSelfHook: INSTALLED:ACTIVITY_ROUTING:ns=81922552\n10-16 14:17:57.602 18880 18898 I TripoderSelfHook: INSTALLING:SERVICES\n10-16 14:17:57.692 18880 18898 I TripoderSelfHook: INSTALLED:SERVICES:ns=90280729\n10-16 14:17:57.692 18880 18898 I TripoderSelfHook: INSTALLING:PROVIDERS\n10-16 14:17:57.820 18880 18898 I TripoderSelfHook: INSTALLED:PROVIDERS:ns=127458593\n10-16 14:17:57.820 18880 18898 I TripoderSelfHook: INSTALLING:RECEIVERS\n10-16 14:17:57.845 18880 18898 I TripoderSelfHook: INSTALLED:RECEIVERS:ns=25245677\n10-16 14:17:57.845 18880 18898 I TripoderSelfHook: INSTALLING:PACKAGES\n10-16 14:17:59.471 18880 18898 I TripoderSelfHook: INSTALLED:PACKAGES:ns=1626378853\n10-16 14:17:59.471 18880 18898 I TripoderSelfHook: INSTALLING:STORAGE\n10-16 14:17:59.651 18880 18898 I TripoderSelfHook: INSTALLED:STORAGE:ns=179858854\n10-16 14:17:59.651 18880 18898 I TripoderSelfHook: INSTALLING:ACTIVITY_MANAGER\n10-16 14:18:00.245 18880 18898 I TripoderSelfHook: INSTALLED:ACTIVITY_MANAGER:ns=593981458\n10-16 14:18:00.245 18880 18898 I TripoderSelfHook: INSTALLING:CONNECTIVITY\n10-16 14:18:00.931 18880 18898 I TripoderSelfHook: INSTALLED:CONNECTIVITY:ns=685217969\n10-16 14:18:00.931 18880 18898 I TripoderSelfHook: INSTALLING:WIFI_P2P\n10-16 14:18:01.261 18880 18898 I TripoderSelfHook: INSTALLED:WIFI_P2P:ns=330079844\n10-16 14:18:01.261 18880 18898 I TripoderSelfHook: INSTALLING:NETWORK_STATS\n10-16 14:18:01.658 18880 18898 I TripoderSelfHook: INSTALLED:NETWORK_STATS:ns=397407604\n10-16 14:18:01.658 18880 18898 I TripoderSelfHook: INSTALLING:TELEPHONY\n10-16 14:18:03.042 18880 18898 I TripoderSelfHook: INSTALLED:TELEPHONY:ns=1383860364\n10-16 14:18:03.042 18880 18898 I TripoderSelfHook: INSTALLING:AUDIO\n10-16 14:18:04.021 18880 18898 I TripoderSelfHook: INSTALLED:AUDIO:ns=979250729\n10-16 14:18:04.021 18880 18898 I TripoderSelfHook: INSTALLING:BATTERY\n10-16 14:18:04.074 18880 18898 I TripoderSelfHook: INSTALLED:BATTERY:ns=51993854\n10-16 14:18:04.074 18880 18898 I TripoderSelfHook: INSTALLING:POWER\n10-16 14:18:04.389 18880 18898 I TripoderSelfHook: INSTALLED:POWER:ns=315649167\n10-16 14:18:04.389 18880 18898 I TripoderSelfHook: INSTALLING:NOTIFICATIONS\n10-16 14:18:04.772 18880 18898 I TripoderSelfHook: INSTALLED:NOTIFICATIONS:ns=382996666\n10-16 14:18:04.772 18880 18898 I TripoderSelfHook: INSTALLING:SHORTCUTS\n10-16 14:18:04.893 18880 18898 I TripoderSelfHook: INSTALLED:SHORTCUTS:ns=120808802\n10-16 14:18:04.893 18880 18898 I TripoderSelfHook: INSTALLING:UI_EFFECTS\n10-16 14:18:04.906 18880 18898 I TripoderSelfHook: INSTALLED:UI_EFFECTS:ns=12451146\n10-16 14:18:04.906 18880 18898 I TripoderSelfHook: INSTALLING:FAILURE_DIAGNOSTICS\n10-16 14:18:04.933 18880 18898 I TripoderSelfHook: INSTALLED:FAILURE_DIAGNOSTICS:ns=26850000\n10-16 14:18:04.933 18880 18898 I TripoderSelfHook: INSTALLING:HOOK_CONTROL\n10-16 14:18:05.096 18880 18898 I TripoderSelfHook: INSTALLED:HOOK_CONTROL:ns=163864167\n10-16 14:18:05.097 18880 18898 I TripoderSelfHook: READY:READY:25/25:bindings=2177:ns=9739571246\n10-16 14:18:05.106 18880 18880 I TripoderOwnership: before-attach host=35481079 guest=262134884 {\"stage\":\"AWAITING_GUEST\",\"constructs\":0,\"attaches\":0,\"physicalChecks\":2,\"retainedGlobalRefs\":10,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":8,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 14:18:05.115 18880 18880 I TripoderOwnership: after-attach host=35481079 guest=262134884 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":7,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-16 14:18:05.145 18880 18880 I TripoderOwnership: after-onCreate host=35481079 guest=262134884 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":9,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n",
+      "stderr": ""
+    }
+  ],
+  "decoyApkSha256": "fb0faab6dabdd982a84d10317f8b0ad3b008cfe74f1a2f45cd450af11933ef87",
+  "decoyMarkerBefore": false,
+  "pageSize": 4096,
+  "aInstalledInHost": false,
+  "ownedUid": 10398,
+  "deviceLogStart": "10-16 14:16:59.466",
+  "decoyMarkerAfter": false,
+  "hostMatchesBuild": true,
+  "fixturesMatchBuild": true,
+  "p1FixturesMatchBuild": true,
+  "p2FixturesMatchBuild": true,
+  "allDeviceAssertionsPassed": true,
+  "nativeMemoryCrashObserved": false,
+  "nativeFatalSignalObserved": false,
+  "javaFatalObserved": false,
+  "expectedFixtureUncaught": [],
+  "unexpectedJavaFatalObserved": false,
+  "selfHookInstallationSamples": [
+    {
+      "pid": 18085,
+      "bindings": 2177,
+      "durationNs": 9324678330
+    },
+    {
+      "pid": 18229,
+      "bindings": 2177,
+      "durationNs": 9893249893
+    },
+    {
+      "pid": 18477,
+      "bindings": 2177,
+      "durationNs": 9479309788
+    },
+    {
+      "pid": 18573,
+      "bindings": 2177,
+      "durationNs": 9825252653
+    },
+    {
+      "pid": 18784,
+      "bindings": 2177,
+      "durationNs": 9944782080
+    },
+    {
+      "pid": 18880,
+      "bindings": 2177,
+      "durationNs": 9739571246
+    }
+  ],
+  "passed": true,
+  "finishedAtUtc": "2026-10-16T06:18:08.542802+00:00"
+}

@@ -1,0 +1,250 @@
+{
+  "runId": "p2-dfd01c39443a47bd",
+  "observedAtUtc": "2026-10-14T16:37:28.121669+00:00",
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "productApkReplaced": false,
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/b.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/runtime-probe.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.b"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~SnEhC5K8amIlTtIBih9zWA==/dev.tripoder.p0.b-IRJTxppKKneNhOOtyN19MQ==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~SnEhC5K8amIlTtIBih9zWA==/dev.tripoder.p0.b-IRJTxppKKneNhOOtyN19MQ==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "9119dc824b314c3a1a022c9f938e659ebe4c86e201ceadabe937678b660ae7d3  /data/app/~~SnEhC5K8amIlTtIBih9zWA==/dev.tripoder.p0.b-IRJTxppKKneNhOOtyN19MQ==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "getconf",
+        "PAGESIZE"
+      ],
+      "exitCode": 0,
+      "stdout": "4096\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.a"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.runtimeprobe uid:10398\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "date \"+%m-%d %H:%M:%S.%3N\""
+      ],
+      "exitCode": 0,
+      "stdout": "10-15 00:37:29.456\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-a",
+        "android.intent.action.MAIN",
+        "-c",
+        "android.intent.category.LAUNCHER",
+        "-f",
+        "0x10008000",
+        "-n",
+        "dev.tripoder.runtimeprobe/.P2ProbeActivity",
+        "--es",
+        "runId",
+        "p2-dfd01c39443a47bd"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10008000 cmp=dev.tripoder.runtimeprobe/.P2ProbeActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.runtimeprobe/.P2ProbeActivity\nTotalTime: 81\nWaitTime: 81\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-a",
+        "android.intent.action.MAIN",
+        "-c",
+        "android.intent.category.LAUNCHER",
+        "-f",
+        "0x10200000",
+        "-n",
+        "dev.tripoder.runtimeprobe/.P2ProbeActivity",
+        "--es",
+        "runId",
+        "p2-dfd01c39443a47bd"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10200000 cmp=dev.tripoder.runtimeprobe/.P2ProbeActivity (has extras) }\nWarning: Activity not started, its current task has been brought to the front\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.runtimeprobe/dev.tripoder.runtime.generated.TaskP0$F0M0C2\nTotalTime: 600\nWaitTime: 603\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 00:37:29.456"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of crash\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: FATAL EXCEPTION: main\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: Process: dev.tripoder.runtimeprobe:slot0, PID: 12478\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: java.lang.RuntimeException: Unable to destroy activity {dev.tripoder.runtimeprobe/dev.tripoder.runtime.generated.TaskP0$F1M3C0}\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.app.ActivityThread.performDestroyActivity(ActivityThread.java:7402)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.app.ActivityThread.handleDestroyActivity(ActivityThread.java:7442)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.app.servertransaction.DestroyActivityItem.execute(DestroyActivityItem.java:53)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.app.servertransaction.ActivityTransactionItem.execute(ActivityTransactionItem.java:63)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeLifecycleItem(TransactionExecutor.java:172)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:104)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:83)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.app.ActivityThread$H.handleMessage(ActivityThread.java:3492)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.os.Handler.dispatchMessageImpl(Handler.java:146)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.os.Handler.dispatchMessage(Handler.java:129)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.os.Looper.loopOnce(Looper.java:315)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.os.Looper.loop(Looper.java:419)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.app.ActivityThread.main(ActivityThread.java:10847)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat java.lang.reflect.Method.invoke(Native Method)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: Caused by: java.lang.IllegalStateException: ACTIVITY_DESTROY_ACK_FAILED\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeEngine.activityDestroyed(RuntimeEngine.java:122)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeApplication.onActivityPostDestroyed(RuntimeApplication.java:19)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.app.Application.dispatchActivityPostDestroyed(Application.java:604)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.app.Activity.dispatchActivityPostDestroyed(Activity.java:1903)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.app.Activity.performDestroy(Activity.java:10013)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.app.Instrumentation.callActivityOnDestroy(Instrumentation.java:1594)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.app.ActivityThread.performDestroyActivity(ActivityThread.java:7389)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \t... 15 more\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: Caused by: java.lang.IllegalStateException: PROCESS_CLOSING\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.os.Parcel.createExceptionOrNull(Parcel.java:3422)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.os.Parcel.createException(Parcel.java:3398)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.os.Parcel.readException(Parcel.java:3381)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat android.os.Parcel.readException(Parcel.java:3323)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeWire.call(RuntimeWire.java:47)\n10-15 00:37:44.541 12478 12478 E AndroidRuntime: \t... 22 more\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: FATAL EXCEPTION: main\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: Process: dev.tripoder.runtimeprobe:slot0, PID: 12662\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: java.lang.RuntimeException: Unable to destroy activity {dev.tripoder.runtimeprobe/dev.tripoder.runtime.generated.TaskP0$F0M0C2}\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.app.ActivityThread.performDestroyActivity(ActivityThread.java:7402)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.app.ActivityThread.handleDestroyActivity(ActivityThread.java:7442)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.app.servertransaction.DestroyActivityItem.execute(DestroyActivityItem.java:53)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.app.servertransaction.ActivityTransactionItem.execute(ActivityTransactionItem.java:63)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeLifecycleItem(TransactionExecutor.java:172)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:104)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:83)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.app.ActivityThread$H.handleMessage(ActivityThread.java:3492)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.os.Handler.dispatchMessageImpl(Handler.java:146)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.os.Handler.dispatchMessage(Handler.java:129)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.os.Looper.loopOnce(Looper.java:315)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.os.Looper.loop(Looper.java:419)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.app.ActivityThread.main(ActivityThread.java:10847)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat java.lang.reflect.Method.invoke(Native Method)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: Caused by: java.lang.IllegalStateException: ACTIVITY_DESTROY_ACK_FAILED\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeEngine.activityDestroyed(RuntimeEngine.java:122)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeApplication.onActivityPostDestroyed(RuntimeApplication.java:19)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.app.Application.dispatchActivityPostDestroyed(Application.java:604)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.app.Activity.dispatchActivityPostDestroyed(Activity.java:1903)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.app.Activity.performDestroy(Activity.java:10013)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.app.Instrumentation.callActivityOnDestroy(Instrumentation.java:1594)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.app.ActivityThread.performDestroyActivity(ActivityThread.java:7389)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \t... 15 more\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: Caused by: java.lang.IllegalStateException: PROCESS_CLOSING\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.os.Parcel.createExceptionOrNull(Parcel.java:3422)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.os.Parcel.createException(Parcel.java:3398)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.os.Parcel.readException(Parcel.java:3381)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat android.os.Parcel.readException(Parcel.java:3323)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeWire.call(RuntimeWire.java:47)\n10-15 00:37:46.077 12662 12662 E AndroidRuntime: \t... 22 more\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 00:37:29.456",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-15 00:37:41.074 12304 12330 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:37:43.257 12478 12497 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:37:45.132 12662 12678 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:37:46.786 12961 12976 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:37:47.666 13046 13065 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:37:49.271 13144 13159 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:37:49.975 13223 13239 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:37:52.861 13451 13477 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:37:53.475 13527 13547 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:37:54.800 13652 13670 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:38:15.643 14779 14809 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:38:18.984 14986 14999 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:38:22.181 15131 15160 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:38:23.192 15223 15236 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:38:24.242 15284 15304 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:38:36.685 15429 15429 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:38:38.143 15487 15503 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:38:39.089 15570 15583 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:38:41.612 15631 15646 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:38:42.558 15669 15687 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:38:43.455 15707 15722 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:38:44.855 15758 15823 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:38:48.414 15889 15908 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:38:49.369 15974 15993 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:38:51.886 16020 16039 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:38:52.823 16060 16081 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:38:53.694 16102 16125 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:38:55.082 16158 16173 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:38:58.414 16290 16309 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:38:59.257 16395 16414 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:39:00.283 16444 16457 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:39:01.132 16490 16506 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:39:02.463 16563 16577 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:39:03.358 16633 16633 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:39:05.663 16708 16742 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:39:06.604 16848 16848 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:39:09.913 16968 16984 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n10-15 00:39:12.865  9752  9752 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-15 00:37:29.456",
+        "TripoderHook:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "decoyApkSha256": "9119dc824b314c3a1a022c9f938e659ebe4c86e201ceadabe937678b660ae7d3",
+  "decoyMarkerBefore": false,
+  "pageSize": 4096,
+  "aInstalledInHost": false,
+  "ownedUid": 10398,
+  "deviceLogStart": "10-15 00:37:29.456",
+  "coldTaskHandoff": {
+    "runId": "p2-dfd01c39443a47bd",
+    "taskId": 1473,
+    "action": "launcher-resume-owned-task",
+    "priorGeneration": "a8771ddae2dce831af52ad57fab37b376689ee4fc8963db662f7494bf4b30fb9",
+    "priorPid": 16968
+  },
+  "decoyMarkerAfter": false,
+  "hostMatchesBuild": true,
+  "fixturesMatchBuild": true,
+  "p1FixturesMatchBuild": true,
+  "p2FixturesMatchBuild": true,
+  "allDeviceAssertionsPassed": true,
+  "nativeMemoryCrashObserved": false,
+  "nativeFatalSignalObserved": false,
+  "passed": true,
+  "finishedAtUtc": "2026-10-14T16:39:15.228501+00:00"
+}

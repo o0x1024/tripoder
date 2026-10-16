@@ -1,0 +1,11 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tripoder.jobsfixture" android:versionCode="1">
+    <uses-sdk android:minSdkVersion="36" android:targetSdkVersion="36"/>
+    <application android:allowBackup="false" android:label="Owned Job fixture">
+        <activity android:name=".JobsActivity" android:exported="true"/>
+        <service android:name=".OwnedJob" android:process=":jobs" android:exported="true" android:permission="android.permission.BIND_JOB_SERVICE"/>
+        <service android:name=".OwnedJob$Peer" android:process=":jobs" android:exported="true" android:permission="android.permission.BIND_JOB_SERVICE"/>
+        <service android:name=".OwnedJob$Unprotected" android:exported="false"/>
+        <service android:name=".OwnedJob$Disabled" android:enabled="false" android:exported="true" android:permission="android.permission.BIND_JOB_SERVICE"/>
+        <service android:name=".OwnedJob$Isolated" android:isolatedProcess="true" android:exported="true" android:permission="android.permission.BIND_JOB_SERVICE"/>
+    </application>
+</manifest>

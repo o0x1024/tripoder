@@ -1,0 +1,112 @@
+{
+  "schema": 1,
+  "runId": "target-351bc87eeebe4158",
+  "startedAt": 1792144025942,
+  "hostApkSha256": "33a276c1d61575b79de6f1d432158c00000538ff7f10bd5ea4be6e0ee83afe47",
+  "deviceBuild": "Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys",
+  "hostUid": 10409,
+  "hostPid": 27232,
+  "fixtures": {
+    "a": {
+      "packageName": "dev.tripoder.p0.a",
+      "sha256": "a34d5e79c1486a2d5e9080abafece6aad69b0901c86d986cefc351d2fc4f57de",
+      "apkRewritten": false,
+      "signatureVerifiedBy": "apksigner",
+      "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+    },
+    "b": {
+      "packageName": "dev.tripoder.p0.b",
+      "sha256": "6e8eae388dee5be0eb32d8b850b352d0f4d10618400a52c93d535d438e819a82",
+      "apkRewritten": false,
+      "signatureVerifiedBy": "apksigner",
+      "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+    }
+  },
+  "passed": false,
+  "checks": [
+    {
+      "name": "com.tencent.mm:original-apk",
+      "passed": true,
+      "observed": "f2a725bc04302ad218a563533ae79356e66b64aa711b275bc919a8d432f7e15d"
+    },
+    {
+      "name": "com.tencent.mm:install-committed",
+      "passed": true,
+      "observed": {
+        "firstInstallTime": 1792144038649,
+        "lastUpdateTime": 1792144038649,
+        "apk": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/artifacts/500149bf-09dc-4053-8ae1-b5fe9988694b/base.apk",
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/target-351bc87eeebe4158-wechat/com.tencent.mm/9d457e2d-bfa1-4f2f-b7d9-ee10790f0eb9",
+        "parts": 1,
+        "generation": "500149bf-09dc-4053-8ae1-b5fe9988694b",
+        "version": 3200,
+        "descriptorSha": "13bdbee688ceab443841a55db7f966782ba344c40ddee2e777850bed3d702aa8",
+        "installMs": 12427
+      }
+    },
+    {
+      "name": "com.tencent.mm:device-manifest-resolved",
+      "passed": true,
+      "observed": {
+        "flagsSha256": "883558a90a6b42bd7f6f3cda08b1b483fa41acc5c5ed6101bac73a546163b147",
+        "enabledCount": 2288,
+        "disabledCount": 8,
+        "rawResourceReference": true,
+        "componentCount": 2296,
+        "exportedCount": 59
+      }
+    },
+    {
+      "name": "com.tencent.mm:launch",
+      "passed": false,
+      "observed": {
+        "package": "com.tencent.mm",
+        "error": "java.lang.SecurityException: NATIVE_LIBRARY_SEARCH_PATH_NOT_CANONICAL_ARTIFACT\n\tat android.os.Parcel.createExceptionOrNull(Parcel.java:3414)\n\tat android.os.Parcel.createException(Parcel.java:3398)\n\tat android.os.Parcel.readException(Parcel.java:3381)\n\tat android.os.Parcel.readException(Parcel.java:3323)\n\tat dev.tripoder.runtime.RuntimeWire.call(RuntimeWire.java:51)\n\tat dev.tripoder.runtimeprobe.ArtifactProbeActivity.target(ArtifactProbeActivity.java:53)\n\tat dev.tripoder.runtimeprobe.ArtifactProbeActivity.run(ArtifactProbeActivity.java:29)\n\tat dev.tripoder.runtimeprobe.ArtifactProbeActivity.$r8$lambda$J-PdkH1_RgQGmoACRhjz-kZl76A(ArtifactProbeActivity.java:0)\n\tat dev.tripoder.runtimeprobe.ArtifactProbeActivity$2.run(D8$$SyntheticClass:0)\n\tat java.lang.Thread.run(Thread.java:1572)\n"
+      }
+    },
+    {
+      "name": "com.tencent.tmgp.sgame:original-apk",
+      "passed": true,
+      "observed": "6841b1eae92b3d87b00e986f86086cbe436bcb52e4b6a3c6829f368714538384"
+    },
+    {
+      "name": "com.tencent.tmgp.sgame:install-committed",
+      "passed": true,
+      "observed": {
+        "firstInstallTime": 1792144062431,
+        "lastUpdateTime": 1792144062431,
+        "apk": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/artifacts/8b7c4d05-ce93-425f-9dea-ebe922829bae/base.apk",
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/target-351bc87eeebe4158-honor/com.tencent.tmgp.sgame/191491b3-157c-4b3d-b564-a933e8258ec2",
+        "parts": 1,
+        "generation": "8b7c4d05-ce93-425f-9dea-ebe922829bae",
+        "version": 1201010103,
+        "descriptorSha": "74c9a97ef6e7f2f992840370b794884ad58e6a27acac8b37e223df09614b6530",
+        "installMs": 18625
+      }
+    },
+    {
+      "name": "com.tencent.tmgp.sgame:device-manifest-resolved",
+      "passed": true,
+      "observed": {
+        "flagsSha256": "060e38e068b3e39e95e01aec11735fe406c06f44cc9461bae48b330e6bd25728",
+        "enabledCount": 177,
+        "disabledCount": 8,
+        "rawResourceReference": true,
+        "componentCount": 185,
+        "exportedCount": 54
+      }
+    },
+    {
+      "name": "com.tencent.tmgp.sgame:launch",
+      "passed": false,
+      "observed": {
+        "package": "com.tencent.tmgp.sgame",
+        "error": "java.lang.IllegalStateException: PROBE_INSPECTION_ALREADY_USED\n\tat android.os.Parcel.createExceptionOrNull(Parcel.java:3422)\n\tat android.os.Parcel.createException(Parcel.java:3398)\n\tat android.os.Parcel.readException(Parcel.java:3381)\n\tat android.os.Parcel.readException(Parcel.java:3323)\n\tat dev.tripoder.runtime.RuntimeWire.call(RuntimeWire.java:51)\n\tat dev.tripoder.runtimeprobe.ArtifactProbeActivity.target(ArtifactProbeActivity.java:53)\n\tat dev.tripoder.runtimeprobe.ArtifactProbeActivity.run(ArtifactProbeActivity.java:30)\n\tat dev.tripoder.runtimeprobe.ArtifactProbeActivity.$r8$lambda$J-PdkH1_RgQGmoACRhjz-kZl76A(ArtifactProbeActivity.java:0)\n\tat dev.tripoder.runtimeprobe.ArtifactProbeActivity$2.run(D8$$SyntheticClass:0)\n\tat java.lang.Thread.run(Thread.java:1572)\n"
+      }
+    }
+  ],
+  "finishedAt": 1792144063361,
+  "applicationInitialized": false,
+  "businessScenarioVerified": false,
+  "strongIsolationVerified": false
+}

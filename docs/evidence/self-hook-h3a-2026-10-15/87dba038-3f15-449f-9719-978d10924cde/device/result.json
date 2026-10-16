@@ -1,0 +1,157 @@
+{
+  "schema": 1,
+  "runId": "87dba038-3f15-449f-9719-978d10924cde",
+  "package": "dev.tripoder.selfhookprobe",
+  "uid": 10403,
+  "pid": 25000,
+  "timestampMs": 1792035063614,
+  "apkSha256": "b24abc0b0538291812ed9a40ce64acf69cdad9ee5286461c394cf618cd4c524a",
+  "build": {
+    "schema": 1,
+    "buildId": "172dc7a4-483d-4902-8765-2b3c051b064a",
+    "timestamp": "2026-10-15T03:30:36.707418+00:00",
+    "sourceDigest": "0433787384a34ab7fc71a95ed314fed6cc308516ad9c8deef8d522b8af65a9c7",
+    "nativeSha256": "47e0f161bfdec7b1f07db690a141aa363ced995a740b8cf652c7acf74cf257a5",
+    "fixtureSha256": "71e223f4177d345697ec30449140e6d5412b1ece25dd56afbb4ace4368d6a9fb",
+    "scope": "H1 plus H2a real ELF hook in cooperative owned-fixture domain"
+  },
+  "debuggable": false,
+  "platform": {
+    "fingerprint": "Xiaomi\/madrid\/madrid:17\/CP2A.260605.016\/OS4.0.24.0.XEOCNXM:user\/release-keys",
+    "sdk": 37,
+    "abi": "arm64-v8a",
+    "process64Bit": true,
+    "pageSize": 4096,
+    "binaries": {
+      "\/apex\/com.android.runtime\/bin\/linker64": "b6dd216b7a775b8f04c825cada286bfe7ddaeecf2c0c10e617287118965abc00",
+      "\/apex\/com.android.runtime\/lib64\/bionic\/libc.so": "b963b539545b64aa8fbcaed3228d04bcb6466bfd47055aa16e4ccdcadfdc461e",
+      "\/apex\/com.android.art\/lib64\/libart.so": "2d4a3575e5b71b537d89c176ac82ad3e32a56a3d43161009de3e728c962fab13"
+    }
+  },
+  "selinuxContext": "u:r:untrusted_app:s0:c147,c257,c512,c768",
+  "platformGatePassed": true,
+  "nativeSha256": "47e0f161bfdec7b1f07db690a141aa363ced995a740b8cf652c7acf74cf257a5",
+  "fixtureSha256": "71e223f4177d345697ec30449140e6d5412b1ece25dd56afbb4ace4368d6a9fb",
+  "native": {
+    "core": {
+      "checks": 92,
+      "failures": 0,
+      "firstFailure": ""
+    },
+    "execution": {
+      "checks": 16,
+      "failures": 0,
+      "firstFailure": "",
+      "errno": 0,
+      "rwObserved": true,
+      "rxObserved": true,
+      "executed": true
+    },
+    "hwcap": "ffffffff",
+    "hwcap2": "440043cbb73ef",
+    "btiEnforcementTested": false,
+    "javaHook": false,
+    "ownedHook": {
+      "checks": 45,
+      "failures": 0,
+      "firstFailure": "",
+      "lastStatus": 0,
+      "executed": true,
+      "liveElfEntryPatched": true,
+      "cooperativeDomainOnly": true,
+      "cycles": 50,
+      "workerCalls": 393022,
+      "hookedCalls": 131409,
+      "plainCalls": 261613,
+      "callbackFailures": 0,
+      "unloaded": true,
+      "reloaded": true,
+      "firstGeneration": 1,
+      "secondGeneration": 2,
+      "target": "6c73f6b000",
+      "trampoline": "6c73f6c000",
+      "arbitraryThreadsStopped": false,
+      "btiEnforcementTested": false,
+      "javaHook": false,
+      "pages": {
+        "model": "owned-anonymous-page-v1",
+        "stagedRW": 105,
+        "stagedRX": 104,
+        "published": 104,
+        "restored": 3,
+        "liveStagingPages": 0,
+        "peakStagingPages": 3,
+        "liveAnonymousPages": 0,
+        "prepareErrno": 0,
+        "injectedPrepareRejections": 1
+      }
+    }
+  },
+  "art": {
+    "scope": "read-only ART access and public JNI invocation; no hook",
+    "access": {
+      "mappedBase": "6d03600000",
+      "namespaceHandle": false,
+      "namespaceError": "dlopen failed: library \"\/apex\/com.android.art\/lib64\/libart.so\" wasn't loaded and RTLD_NOLOAD prevented it",
+      "symbols": [
+        {
+          "name": "_ZN3art7Runtime9instance_E",
+          "defaultAddress": "0",
+          "handleAddress": "0",
+          "defaultIsArt": false
+        },
+        {
+          "name": "_ZN3art6Thread14CurrentFromGdbEv",
+          "defaultAddress": "0",
+          "handleAddress": "0",
+          "defaultIsArt": false
+        },
+        {
+          "name": "_ZN3art16ScopedSuspendAllC1EPKcb",
+          "defaultAddress": "0",
+          "handleAddress": "0",
+          "defaultIsArt": false
+        },
+        {
+          "name": "_ZN3art16ScopedSuspendAllD1Ev",
+          "defaultAddress": "0",
+          "handleAddress": "0",
+          "defaultIsArt": false
+        },
+        {
+          "name": "_ZN3art3jni12JniIdManager14DecodeMethodIdEP10_jmethodID",
+          "defaultAddress": "0",
+          "handleAddress": "0",
+          "defaultIsArt": false
+        },
+        {
+          "name": "_ZN3art15instrumentation15Instrumentation10DeoptimizeEPNS_9ArtMethodE",
+          "defaultAddress": "0",
+          "handleAddress": "0",
+          "defaultIsArt": false
+        }
+      ]
+    },
+    "methodId": "6fbe214490",
+    "artMethodFieldReadable": true,
+    "artMethodAddress": "6fbe214490",
+    "checks": 14,
+    "failures": [],
+    "observationPassed": true,
+    "internalArtCalls": false,
+    "methodMemoryModified": false,
+    "javaHook": false,
+    "jitAotVerified": false,
+    "callerSensitiveHookVerified": false
+  },
+  "pageSnapshots": {
+    "prepared": "3b1d90e654554b31e7c0eb142ca21dc2797e3b9a09d86258efeca6ce8a13312b",
+    "active": "fdc819259c58a06ff652a1316321308a8a552af449e184d85d0f7f1c219f2b61",
+    "disabled": "fdc819259c58a06ff652a1316321308a8a552af449e184d85d0f7f1c219f2b61",
+    "restored": "ea97b725f62b68cdaf1156941a68f34c33e791c4de7bf2f37f02c3e804bd6ce3"
+  },
+  "fixtureSha256After": "71e223f4177d345697ec30449140e6d5412b1ece25dd56afbb4ace4368d6a9fb",
+  "mapsSha256": "cc9ec4b5a064b4ba641295e936f7f73d996f13fe06721d7e86ff0c9386af7199",
+  "forbiddenMappings": [],
+  "passed": true
+}

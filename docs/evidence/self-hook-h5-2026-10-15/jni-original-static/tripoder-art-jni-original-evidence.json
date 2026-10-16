@@ -1,0 +1,219 @@
+{
+  "schema": 1,
+  "binary": {
+    "path": "android/self-hook-probe/build/device-libart.so",
+    "sha256": "2d4a3575e5b71b537d89c176ac82ad3e32a56a3d43161009de3e728c962fab13",
+    "elf": "ELF64 little-endian AArch64",
+    "address_kind": "ELF RVA, never a runtime absolute address"
+  },
+  "functions": {
+    "GetRegisteredNative": {
+      "signature": "const void* ClassLinker::GetRegisteredNative(Thread*,ArtMethod*)",
+      "rva": "0x4531d4",
+      "size": "0x108",
+      "file_offset": "0x4531d4",
+      "sha256": "c95dba2c304bc968ed4dfb1c5fedd95313bc34f68292888d54520696844bfa8e",
+      "bytes_hex": "5f2403d5480440b9092080520902a0723f01286ae80300aa80010054400840f969f5ff9029413f911f0009eb61000054e0031faac0035fd6089d40f91f0100eb80ffff54fcffff173f2303d5fd7bbda9f50b00f9f44f02a9fd03009100e10691f40308aaf30301aaf50302aafc6d19948bf640f9e90315aae80314aa6b0200b5340940f96917009029011a919f0209eb8000005409a140f93f0114eb41000054f4031faae10313aa00e10691f06d1994e00314aaf44f42a9f50b40f9fd7bc3a8bf2303d5c0035fd60ca107910d018052ea030caa6e1140f9df0109ebae319f9a4a318b9a6b696ef86bffffb55f010ceb80fcff544b1140f93f010beb23fcff54541540f9e8ffff17",
+      "abi": "x0=ClassLinker this; x1=Thread; x2=target ArtMethod; x0 return",
+      "landing": "BTI C",
+      "disassembly": "/tmp/tripoder-art-get-registered-native.disasm.txt",
+      "disassembly_sha256": "00535c74ea10d11d36dffde2629df95e933cb0752b7da0dc778e1e66cf40c4b3"
+    },
+    "FindCodeForNativeMethod": {
+      "signature": "void* JavaVMExt::FindCodeForNativeMethod(ArtMethod*,std::string*,bool)",
+      "rva": "0x45b6e0",
+      "size": "0x7c0",
+      "file_offset": "0x45b6e0",
+      "sha256": "e86ca92e1b244bb9d418fe424fa727371323ddc11c82e1432b555db037f3fbeb",
+      "bytes_hex": "3f2303d5ff8304d1fd7b0ca9fc6f0da9fa670ea9f85f0fa9f65710a9f44f11a9fd030391e31f00b948d03bd5f30301aae2a300a9081540f9a8031ff8280440b9a8114036a83e0090b93e0090083d45f9760240b918014039393345f91f070071c0130054c8a2019108fddf88087d1c531f31007109150054280340391f050071811a005448d03bd5161d40f917dc40f9a8a300d1e00313aabfff3da9bf831ef86c511994a80301d1e00313aabf7f3ca9bf031df86b511994600240b9f8180035000840b9201000b4180c40f9b81a00b4680640b9c81c9037680240b9001140b9090840f96a0a40b9e8031faadb0640912b3540f92c2940f96a0d0a8b8b0180524a0540794a7dab9b2b3940f9290d40f96a696ab88a796ab835010a8ba96ae8381c0500918900f8361f1100f1e8031caa63ffff54680640b9092080520902a0723f01286a280080521915881ae81f40b9481900361480ab52dafedf883a1a0837da1a1037e8fe9f52e0031a2ae20316aae81fa072080900114803080a0101142ae80f0c941f001a6b81feff5468276a390805001168272a39dff604f9c80240b91f091f72e1190054a3021c8ba4a300d1a50301d1e00317aae10316aae20318aae603192adafeff97f70300aad80240b91f170072811b005401471a12e003182ae20316aabf0f0c941f00186b01ffff54c8d243f9c8f604f9f71a00b4a8035c38a8000036a8035cf8a0035df801f97f92304c1994a8835d38a8000036a8835df8a0835ef801f97f922a4c1994e81f40b948000036972200b4e80b40f9081540f9a9035ff81f0109eb41060054e00317aaf44f51a9f65750a9f85f4fa9fa674ea9fc6f4da9fd7b4ca9ff830491bf2303d5c0035fd681e1fff0218c1291f40300aaa0a300d1c2aa8052c3008052e4031faa05008012f74b1994a0a300d1f94b1994a1dffff021483f919e77f797a1dfff90213c03919b77f797a0a300d1f94b1994e00314aa60ffff17e84d00d0080141f9181d41f97effff17280340391f05007121ecff5448d03bd5f40300aa081d40f9c80000b4082140b988000034e00316aa0caef697f60300aae00314aa56ffff17e0611994680640b908351d12084d10121f210071a1eaff54f50300aa81e1fff0218c1291a00301d122ab8052c3008052e4031faa05008012ca4b1994a00301d1cc4b1994e1dfffb021c435917177f797b7dfff90f73e0391e10317aa6d77f797c8a2019108fddf88017d1c53ad521994e10317aa6777f797f60300aaa8a300d1e00313aa21008052ae4d1994a1a300d1e00316aab562f797a8835d38a8000036a8835df8a0835ef801f97f92c54b1994a00301d1b74b1994e00315aa2bffff17f6031faa2effff17280340391f050071e100005448d03bd5081d40f9880000b4082140b948000034ceadf697e8031faa09200091080440b90a0108ca490109aa200140b988e5e736c6adf6972affff1781e1fff0218c1291a06301d102248052c3008052e4031faa050080128d4b1994a06301d18f4b199421e0ffd021881e913477f797a1dfff90213c03913177f797a06301d18f4b19941affff17e00313aa8c4c19941bffff17a3021c8ba4a300d1a50301d1e00317aae10316aae20318aae603192a26feff97f70300aa57ffff17682b6a39e00316aa08050011682b2a392c4d199429ffff1780008052e10316aa1cfb0f94e84d00d0e10316aa080141f9083141f9008150f9ee5019941fffff17a80d1837c0008052e1031faa914b199460e50736934b1994fa0300aa140040b921e2ffd021640691a06301d142248052c3008052e4031faa05008012554b1994a06301d1574b1994c1e0ff9021043191fc76f797a06301d15a4b1994540300b917ffff17f80a1836e00316aaf14c19941fffff17e80740f928e5ffb4f40740f961e0ffd021c83391e00314aa194e1994a86301d1e00313aa21008052354d1994a16301d1e00314aa276afd97a8835a38a8000036a8835af8a0835bf801f97f924c4b1994e0e1ffd000f02c91e8830091a1a300d1b74c1994e1e0ff9021a03391e8e30091e083009131e00494e0e30091a10301d166c203940000c03d080840f961e0ffb021682991e017803de83300f9a86301d11ffc00a91f0000f9e043019123e00494e00740f9a16301d1066afd97a8835a38a8000036a8835af8a0835bf801f97f922b4b1994e8434139a8000036e82b40f9e03340f901f97f92254b1994e8e34039a8000036e81f40f9e02740f901f97f921f4b1994e8834039a8000036e81340f9e01b40f901f97f92194b1994e00740f9c1dffff021480291d54d1994dffeff17e00313aa44d51294f70300aaeafeff17e00316aa9e4c1994c0feff171f071f72a0040054c0008052e1031faa204b1994c0d80736224b1994f90300aa150040b921e2ffd021640691a06301d142308052c3008052e4031faa05008012e44a1994a06301d1e64a1994e1e1ffb0216c1b918b76f79701e0ffd021b809918876f797e8fe9f52e81fa0720103080a384b199421e0ffb0213013918176f797017f18537f4c1994a06301d1dd4a1994350300b9a6feff1778010037b803283778d42736e00316aae10316aae20318aae3031faae4031faa7e4c199480d30736a6feff17a83e0090e1031faa086d45f9180140f9e00318aaf64a1994c80240b908010036b43e0090947245f9800240f9e1031faa674c1994c80240b988ff0737e00318aae1031faaee4a199488feff17e00316aae10316aa624c199484feff17",
+      "abi": "x0=JavaVMExt this; x1=target ArtMethod; x2=null error_msg; w3=1 can_suspend; x0 return",
+      "landing": "PACIASP (compatible call landing)",
+      "disassembly": "/tmp/tripoder-art-bind-find-code.disasm.txt",
+      "disassembly_sha256": "3e1b776bdb99b395621753260144c7c104cd29209585835b50234baef93a5087"
+    },
+    "RegisterNative": {
+      "signature": "const void* ClassLinker::RegisterNative(Thread*,ArtMethod*,const void*)",
+      "rva": "0x456080",
+      "size": "0x334",
+      "file_offset": "0x456080",
+      "sha256": "06a16381df59f4ce0bde8398311d858ec06b2afdb0995c56342445381dc76eb0",
+      "bytes_hex": "3f2303d5ffc301d1fd7b03a9f85f04a9f65705a9f44f06a9fdc3009156d03bd5f70303aaf50302aac91640f9f30301aaf40300aaa9831ff8490440b9090d4036571100b4094e00f0e3230091e10315aa290141f9e20317aaff0700f9209d42f904691994a80640b9092080520902a0723f01286ae0010054e80740f9a80a00f9e00740f9c81640f9a9835ff81f0109eb21130054f44f46a9f65745a9f85f44a9fd7b43a9ffc30191bf2303d5c0035fd680e20691e10313aa3e62199489f640f997a20791490800b40a018052e80317aa2b1140f97f0115eb4b319f9a0831899a29696bf869ffffb51f0117ebe10317aa80000054091140f9bf0209ebe132889aff0201eba10f0054c83e00b0083d45f9a00240b9080140391f050071400f0054086840b9087d1c531f3d007142040054e80240f9f80317aac80100b4f80308aa081140f9bf0208eba2000054080340f9f70318aa48ffffb5060000141f0115ebe2020054080740f9a8feffb51723009100068052eb611994e80740f91f7c00a9e10300aa180800f9152002a9e00200f988f240f9080140f9e80100b580f640f90f3bfd9788fa40f90805009188fa00f903000014e80740f9a80a00f980e20691e10313aaff611994aeffff17e10317aaccffff1788f200f9f1ffff1721e2ffb021642c91a04300d1423e8052c3008052e4031faa05008012f60300f9b5611994a04300d1b761199441e2ff9021f81e915c8df797c1dfffb0213c0391598df797f60300aae8230091e00315aa21008052a0631994e1230091e00316aaa778f797e8234039a8000036e80740f9e00f40f901f97f92b7611994a04300d1a9611994f60340f977ffff1721e2ffb021642c91a04300d1623e8052c3008052e4031faa05008012f60300f992611994a04300d19461199401e2ffd021f03091398df797c1dfffb0213c0391368df797f60300aae8230091e00315aa210080527d631994e1230091e00316aa8478f797e8234039a8000036e80740f9e00f40f901f97f9294611994a04300d186611994f60340f955ffff177f77199480820791113f109482ffff17c83e00b0083145f9080140391f05007161f0ff5448d03bd5081d40f908f0ffb4082140b9c8efff3499c3f6977cffff17",
+      "abi": "x0=ClassLinker this; x1=Thread; x2=target ArtMethod; x3=resolved code; x0 final callback-selected entry",
+      "landing": "PACIASP (compatible call landing)",
+      "disassembly": "/tmp/tripoder-art-register-native.disasm.txt",
+      "disassembly_sha256": "a97bb085bfdcaf41667f89593ac9204444090d974a5d2acfc4d846631fe4952e"
+    }
+  },
+  "abi_evidence": {
+    "JavaVMExt_is_JavaVM_base": "Official java_vm_ext.h line 50: class JavaVMExt : public JavaVM. Public JNI GetJavaVM returns Runtime JavaVMExt pointer directly; no pointer adjustment in fixed functions.",
+    "GetJavaVM_false": {
+      "rva": "0x929594",
+      "size": "0x5c",
+      "bytes_hex": "5f2403d5210100b488270090080141f9480000b4084941f91f0100f1280000f9e0139f5ac0035fd63f2303d5fd7bbfa9fd030091000840f941bbffd021e83891a2baff9042441991d7a0ec9700008012fd7bc1a8bf2303d5c0035fd6",
+      "proof": "0x9295a8 loads Runtime+0x290, 0x9295b0 stores exact pointer to output JavaVM**"
+    },
+    "GetJavaVM_true": {
+      "rva": "0x956f74",
+      "size": "0x5c",
+      "bytes_hex": "5f2403d5210100b4082600f0080141f9480000b4084941f91f0100f1280000f9e0139f5ac0035fd63f2303d5fd7bbfa9fd030091000840f9e1b9ffb021e8389122b9fff0424419915feaeb9700008012fd7bc1a8bf2303d5c0035fd6",
+      "proof": "0x956f88 loads Runtime+0x290, 0x956f90 stores exact pointer to output JavaVM**"
+    },
+    "ART_own_callsite": {
+      "rva": "0x452e1c",
+      "size": "0x20",
+      "bytes_hex": "686640f9e2630091e10316aa23008052ffff01a9000940f9ff1700f92a220094",
+      "proof": "Thread+0xc8 -> JNIEnvExt; env+0x10 -> JavaVMExt; x1=explicit method; BL 0x45b6e0"
+    },
+    "JNIEnvExt_GetVm": "Official jni_env_ext.h line 104 returns vm_ directly.",
+    "missing_proposed_symbol": "No ClassLinker::FindCodeForNativeMethod(Thread*,ArtMethod*) in merged fixed dynsym and gnu_debugdata symbols. artFindNativeMethodRunnable takes only Thread* and derives current method; it must not be called as an explicit target resolver."
+  },
+  "critical_sites": {
+    "nullable_error_msg": {
+      "rva": "0x45bc34",
+      "size": "0x8",
+      "bytes_hex": "e80740f928e5ffb4",
+      "meaning": "Load original x2 from stack and CBZ skips all detail string construction."
+    },
+    "agent_lookup_after_native_libraries": {
+      "rva": "0x45bd64",
+      "size": "0xc",
+      "bytes_hex": "e00313aa44d51294f70300aa",
+      "meaning": "With can_suspend=true and no library symbol, call FindCodeForNativeMethodInAgents(target)."
+    },
+    "explicit_target_native_flag": "0x45b71c reads flags from x1 target, bit8 required; x19 keeps supplied target.",
+    "explicit_target_class_status": "0x45b744..754 reads declaring Class+0x68, acquire-loads top 4 bits; static initialization guard can reject status<=12. Activation should already have completed true class initialization.",
+    "no_current_frame_identity_requirement": "FindCodeForNativeMethod derives names, class loader allocator, shorty, native-call type from supplied ArtMethod, and Thread from TLS. It does not call Thread::GetCurrentMethod.",
+    "GetRegisteredNative_null": "Normal: data equals normal lookup stub RVA 0x2fffd0 or ClassLinker+0x138 trampoline -> null. Critical: check delayed map under +0x1b8 lock first; otherwise data equals critical lookup stub RVA 0x73f680 or ClassLinker+0x140 -> null. Null means no effective resolved registration, not unsupported method.",
+    "lookup_does_not_register_or_throw": "FindCodeForNativeMethod returns fn/null. On success call RegisterNative(target), use its returned pointer. On miss create UnsatisfiedLinkError while preserving pre-existing exceptions. Never register/resolve the backup by mistake."
+  },
+  "call_contract": [
+    "Run these calls from the current attached Thread in Runnable state with shared mutator access, e.g. a pre-bound FastNative resolver helper reached by a real JNI upcall. The target Method/Class/Loader remain strongly rooted across all suspension.",
+    "Do not hold product native mutexes, ClassLinker critical_native_code_with_clinit_check_lock_, or an exclusive mutator/SuspendAll region. A no-thread-suspension region is not permitted: can_suspend=true explicitly transitions to Native around library search and back to Runnable; RegisterNative invokes suspendable callbacks.",
+    "GetRegisteredNative internally acquires/releases the CriticalNative delayed-registration mutex and accepts target independently of current frame.",
+    "Cache JavaVM* with public JNI GetJavaVM; the fixed ABI and source inheritance establish use as JavaVMExt this. Do not reconstruct std::string; pass x2=null.",
+    "After the helper upcall returns, ART restores the adapter original JNI mode. Only then raw-call the chosen fn from the backup generic JNI frame; keep that frame method/declaring class unchanged for FindClass loader semantics.",
+    "This helper is a resolver, not a wrapper that returns into artFindNativeMethodRunnable. That latter function derives current method from the helper frame.",
+    "Use per-invocation function snapshots if original must refer to entry-time binding; reading target binding only when original() executes defines later lookup semantics. Register/Unregister may race after a snapshot as they can in ART itself."
+  ],
+  "native_library_lifetime": {
+    "strong_root_scope": "Keep declaring Class and its ClassLoader global roots (plus target Method as needed). This prevents the corresponding ART loader weak reference from clearing while original is callable.",
+    "source_chain": "SharedLibrary stores NewWeakGlobalRef(class_loader); Libraries::UnloadNativeLibraries only removes non-boot entries when that weak loader is cleared; removal calls JNI_OnUnload and deletes SharedLibrary; destructor closes native handle.",
+    "lookup_relation": "FindNativeMethod searches libraries by target declaring loader allocator, so target loader roots protect libraries discovered through this lookup.",
+    "limits": "RegisterNatives stores a function pointer without acquiring a new owning dlopen reference. Explicitly registered pointers from another loader/library and user manual dlclose remain subject to the application native binding lifetime responsibility already present in ART. Target loader roots alone must not be claimed to protect an arbitrary external pointer or its different owning loader."
+  },
+  "official_reference_sources": {
+    "runtime/jni/java_vm_ext.h": {
+      "url": "https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/jni/java_vm_ext.h",
+      "local": "/tmp/tripoder-art-source-runtime-jni-java_vm_ext.h",
+      "sha256": "8cb12ce845f78481790adc53116647547a1bc9a36b6f48ca734fc4458afbd506",
+      "ranges": [
+        [
+          50,
+          57
+        ],
+        [
+          121,
+          127
+        ]
+      ],
+      "build_revision_notice": "Official reference main; not asserted exact binary source revision."
+    },
+    "runtime/jni/jni_env_ext.h": {
+      "url": "https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/jni/jni_env_ext.h",
+      "local": "/tmp/tripoder-art-source-runtime-jni-jni_env_ext.h",
+      "sha256": "3c30debdc5e20e9456775886f4963ac8ba93f3dad3d02df0908fd327863a6565",
+      "ranges": [
+        [
+          101,
+          104
+        ]
+      ],
+      "build_revision_notice": "Official reference main; not asserted exact binary source revision."
+    },
+    "runtime/jni/jni_internal.cc": {
+      "url": "https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/jni/jni_internal.cc",
+      "local": "/tmp/tripoder-art-source-runtime-jni-jni_internal.cc",
+      "sha256": "e34497154c1aabcb1162817a2d980d4afaebe6b47b963ce8438d3e09b7d7b312",
+      "ranges": [
+        [
+          2705,
+          2715
+        ],
+        [
+          2773,
+          2781
+        ]
+      ],
+      "build_revision_notice": "Official reference main; not asserted exact binary source revision."
+    },
+    "runtime/jni/java_vm_ext.cc": {
+      "url": "https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/jni/java_vm_ext.cc",
+      "local": "/tmp/tripoder-art-source-runtime-jni-java_vm_ext.cc",
+      "sha256": "9df185cc3b9dca4a41ed7b5a6e8c1efbfd3abb8d5329cd458ee4a660e90acb3f",
+      "ranges": [
+        [
+          72,
+          99
+        ],
+        [
+          275,
+          316
+        ],
+        [
+          319,
+          346
+        ],
+        [
+          349,
+          394
+        ],
+        [
+          1186,
+          1199
+        ]
+      ],
+      "build_revision_notice": "Official reference main; not asserted exact binary source revision."
+    },
+    "runtime/class_linker.cc": {
+      "url": "https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/class_linker.cc",
+      "local": "/tmp/tripoder-art-source-runtime-class_linker.cc",
+      "sha256": "17b7b002b230136f5f40d49cfad0316b9dbcda52dc5a5f2a5ad9629680289b88",
+      "ranges": [
+        [
+          469,
+          525
+        ]
+      ],
+      "build_revision_notice": "Official reference main; not asserted exact binary source revision."
+    },
+    "runtime/entrypoints/jni/jni_entrypoints.cc": {
+      "url": "https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/entrypoints/jni/jni_entrypoints.cc",
+      "local": "/tmp/tripoder-art-source-runtime-entrypoints-jni-jni_entrypoints.cc",
+      "sha256": "fb633411b7197f0cb17df2636cf8a05bde28dd11d14dd3bbf45718b99b0d12ca",
+      "ranges": [
+        [
+          50,
+          57
+        ],
+        [
+          100,
+          132
+        ]
+      ],
+      "build_revision_notice": "Official reference main; not asserted exact binary source revision."
+    },
+    "runtime/thread-inl.h": {
+      "url": "https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/thread-inl.h",
+      "local": "/tmp/tripoder-art-source-runtime-thread-inl.h",
+      "sha256": "ef8ccca6761abec94c5ab756a97b3c7a43d65dcb3a1d1c53f4446fbbdfa05812",
+      "ranges": [
+        [
+          179,
+          202
+        ]
+      ],
+      "build_revision_notice": "Official reference main; not asserted exact binary source revision."
+    }
+  },
+  "source_excerpts": "/tmp/tripoder-art-jni-original-source-excerpts.txt"
+}

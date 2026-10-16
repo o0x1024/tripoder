@@ -1,0 +1,87 @@
+{
+  "runId": "control-549cc14afe084472",
+  "startedAt": 1792026842268,
+  "uid": 10401,
+  "pid": 16262,
+  "deviceBuild": "Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys",
+  "scope": "native-application-tap-long-press-and-deletion",
+  "existingUserPendingOperation": "03415541-485f-400c-a499-e3a08c4530aa",
+  "testOperationJournal": "ui-acceptance-control-549cc14afe084472",
+  "workbenchStartupStatus": {
+    "schema": 26,
+    "hookReady": true,
+    "lease": "87fa924c-e4fe-4e2b-bf07-3c74afdcab9b",
+    "enginePid": 16403,
+    "engineUid": 10400,
+    "strongIsolation": false,
+    "authority": "f5ff1fa0-2764-4466-b6b6-4bff7be401b6",
+    "controllerUid": 10401
+  },
+  "captures": [
+    "control-549cc14afe084472-long-press-menu.png",
+    "control-549cc14afe084472-empty-project-space.png",
+    "control-549cc14afe084472-direct-launch.png",
+    "control-549cc14afe084472-delete-confirmation.png"
+  ],
+  "error": "java.lang.IllegalStateException: UI_TARGET_NOT_FOUND:刷新:window=dev.tripoder.workbench\n\tat dev.tripoder.controltest.WorkbenchUiTestBase.waitNode(WorkbenchUiTestBase.java:36)\n\tat dev.tripoder.controltest.WorkbenchUiTestBase.click(WorkbenchUiTestBase.java:38)\n\tat dev.tripoder.controltest.AppActionsUiIntegration.home(AppActionsUiIntegration.java:68)\n\tat dev.tripoder.controltest.AppActionsUiIntegration.test(AppActionsUiIntegration.java:44)\n\tat dev.tripoder.controltest.ControlTestBase.onStart(ControlTestBase.java:43)\n\tat dev.tripoder.controltest.AppActionsUiIntegration.onStart(AppActionsUiIntegration.java:11)\n\tat android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2705)\n",
+  "passed": false,
+  "checks": [
+    {
+      "name": "real-workbench-foreground-startup-connected",
+      "passed": true,
+      "observed": ""
+    },
+    {
+      "name": "long-press-does-not-launch",
+      "passed": true,
+      "observed": "management menu without a launch operation"
+    },
+    {
+      "name": "tap-launches-without-a-project",
+      "passed": true,
+      "observed": "standalone launcher in engine task"
+    },
+    {
+      "name": "direct-launch-never-creates-or-binds-project",
+      "passed": true,
+      "observed": "project records unchanged"
+    },
+    {
+      "name": "first-launch-has-durable-success",
+      "passed": true,
+      "observed": "gateway completion queried on return"
+    },
+    {
+      "name": "repeat-tap-keeps-space-data",
+      "passed": true,
+      "observed": "count = 1"
+    },
+    {
+      "name": "explicit-space-selection-uses-independent-data",
+      "passed": true,
+      "observed": "space B count = 0"
+    },
+    {
+      "name": "selected-space-is-remembered",
+      "passed": true,
+      "observed": "second tap opens space B directly"
+    },
+    {
+      "name": "cancel-delete-preserves-install",
+      "passed": true,
+      "observed": "no delete submitted"
+    },
+    {
+      "name": "delete-removes-only-selected-install",
+      "passed": true,
+      "observed": "space A removed, space B unchanged"
+    },
+    {
+      "name": "delete-preserves-script-and-marks-binding-stale",
+      "passed": true,
+      "observed": "script retained; binding invalidated"
+    }
+  ],
+  "fullP5Accepted": false,
+  "finishedAt": 1792026876532
+}

@@ -1,0 +1,13 @@
+{
+  "scope": "Guest audio peripheral, not host native-engine fault",
+  "guestProcess": "/vendor/bin/setup_sound_card",
+  "signal": "SIGABRT",
+  "exception": "std::invalid_argument: stoi: no conversion",
+  "configuredVirtualSoundCard": false,
+  "inference": "Upstream parses the first nonempty /proc/asound/cards line using stoi without handling the no-soundcards marker; the current VM has no audio device and the guest kernel reports no soundcards.",
+  "source": "https://github.com/LineageOS/android_device_virt_virt-common/blob/lineage-23.2/services/setup_sound_card/setup_sound_card.cpp",
+  "sourceSha256": "63a77c04738f8e31f22be02e4bddd16ce91809dd24124c99b92cf35449893a0d",
+  "bootBlockedByThis": false,
+  "audioOutputVerified": false,
+  "evidence": "Framework and boot animation continued after the oneshot process exited."
+}

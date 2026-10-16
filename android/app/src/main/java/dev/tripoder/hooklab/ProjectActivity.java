@@ -12,7 +12,7 @@ import java.util.concurrent.*;
 public final class ProjectActivity extends Activity {
     private ProjectStore store;private String projectId;private JSONObject project,app;
     private LinearLayout body,tabs;private EditText prompt;private TextView status;
-    private int selected;private boolean busy,destroyed;
+    private int selected;private boolean busy,destroyed,legacyFixture;
     private GuestClient client;
     private CompatibilityClient compatibility;
     private final ExecutorService io=Executors.newSingleThreadExecutor();
@@ -20,13 +20,13 @@ public final class ProjectActivity extends Activity {
     private String operation="";
     @Override public void onCreate(Bundle saved){
         super.onCreate(saved);store=new ProjectStore(this);projectId=ProjectStore.id(this);
-        try{store.initialize();project=store.get(projectId);app=project.getJSONObject("app");}catch(Exception error){Toast.makeText(this,"项目无法打开",Toast.LENGTH_LONG).show();finish();return;}
+        try{store.initialize();project=store.get(projectId);app=project.getJSONObject("app");legacyFixture=store.legacyFixtureProject(projectId);}catch(Exception error){Toast.makeText(this,"项目无法打开："+error.getMessage(),Toast.LENGTH_LONG).show();finish();return;}
         selected=saved==null?0:saved.getInt("tab",0);
         LinearLayout page=ProductUi.screen(this,project.optString("name"),app.optString("name")+" · "+app.optString("versionName"));
-        LinearLayout overview=ProductUi.card(this);ProductUi.add(overview,ProductUi.text(this,store.runnable(projectId)?"应用已就绪":"等待兼容性适配",16,store.runnable(projectId)?ProductUi.GREEN:ProductUi.INK,true),0);
-        ProductUi.add(overview,ProductUi.text(this,store.runnable(projectId)?"此项目拥有独立运行数据。切换项目会重启客体进程。":GameRuntime.PACKAGE.equals(app.optString("packageName"))?"已接入无 Hook 启动，可显示游戏登录页。目前仍有进程退出及外部授权回调问题，尚未通过正常运行验收。":"可以保存需求和脚本，检查应用结构；当前尚不能在容器中启动。",12,ProductUi.MUTED,false),8);
-        ProductUi.add(overview,ProductUi.button(this,store.runnable(projectId)?"运行应用":"检查兼容性",true,()->{if(store.runnable(projectId))launch(null);else inspect();}),14);ProductUi.add(page,overview,16);
-        if(GameRuntime.PACKAGE.equals(app.optString("packageName")))ProductUi.add(overview,ProductUi.button(this,"尝试启动游戏 · 无 Hook",false,()->startActivity(ProjectStore.intent(this,GameLaunchActivity.class,projectId))),12);
+        LinearLayout overview=ProductUi.card(this);ProductUi.add(overview,ProductUi.text(this,legacyFixture?"旧示例实验 · legacy":ProjectStore.hostSourceApp(app)?"本机应用来源 · 尚未导入":"旧项目 · 未绑定虚拟安装",16,ProductUi.INK,true),0);
+        ProductUi.add(overview,ProductUi.text(this,legacyFixture?"仅验证自有示例。此入口使用 legacy 运行器和项目数据，未绑定新 runtime 安装与空间。首次实验会初始化内置示例；已有制品损坏时停止。":GameRuntime.PACKAGE.equals(app.optString("packageName"))?"保留旧游戏实验入口。项目仅保存本机应用来源，未绑定新 runtime 安装；历史启动报告不代表正常运行验收通过。":"可以保存需求和脚本、检查本机应用结构。来源记录不是虚拟安装；此项目尚未绑定新 runtime 的空间与安装代次。",12,ProductUi.MUTED,false),8);
+        ProductUi.add(overview,ProductUi.button(this,legacyFixture?"运行 legacy 示例实验":"检查本机应用来源",true,()->{if(legacyFixture)launch(null);else inspect();}),14);ProductUi.add(page,overview,16);
+        if(GameRuntime.PACKAGE.equals(app.optString("packageName")))ProductUi.add(overview,ProductUi.button(this,"旧游戏实验 · legacy · 无 Hook",false,()->startActivity(ProjectStore.intent(this,GameLaunchActivity.class,projectId))),12);
         tabs=ProductUi.row(this);ProductUi.add(page,tabs,18);body=ProductUi.column(this);ProductUi.add(page,body,4);render();page.setFocusableInTouchMode(true);page.requestFocus();
     }
     private void savePrompt(){if(prompt!=null)try{store.write(projectId,"ai/prompt.txt",prompt.getText().toString());}catch(Exception error){Toast.makeText(this,"需求保存失败",Toast.LENGTH_SHORT).show();}}
@@ -47,30 +47,30 @@ public final class ProjectActivity extends Activity {
     }
     private void scripts(){
         LinearLayout card=ProductUi.card(this);card.addView(ProductUi.entry(this,"code","main.ts","当前项目的 Hook 草稿",()->{
-            if(store.runnable(projectId))startActivity(ProjectStore.intent(this,ScriptActivity.class,projectId).putExtra("showCode",true));else openFile("scripts/main.ts");
+            if(legacyFixture)startActivity(ProjectStore.intent(this,ScriptActivity.class,projectId).putExtra("showCode",true));else openFile("scripts/main.ts");
         }));ProductUi.add(body,card,14);
         ProductUi.add(body,ProductUi.text(this,"编辑与保存不会自动执行。运行方案前需通过目标和类型检查。",12,ProductUi.MUTED,false),14);
-        if(store.runnable(projectId)){LinearLayout config=ProductUi.card(this);config.addView(ProductUi.entry(this,"shield","环境配置","保存到 config/environment.json",()->startActivity(ProjectStore.intent(this,GuestToolsActivity.class,projectId).putExtra("environment",true))));ProductUi.add(body,config,14);}
+        if(legacyFixture){LinearLayout config=ProductUi.card(this);config.addView(ProductUi.entry(this,"shield","环境配置","保存到 config/environment.json",()->startActivity(ProjectStore.intent(this,GuestToolsActivity.class,projectId).putExtra("environment",true))));ProductUi.add(body,config,14);}
     }
     private void tests() throws Exception {
-        LinearLayout card=ProductUi.card(this);ProductUi.add(card,ProductUi.text(this,store.runnable(projectId)?"验证当前运行方案":"兼容性检查",18,ProductUi.INK,true),0);
-        if(store.runnable(projectId)){
+        LinearLayout card=ProductUi.card(this);ProductUi.add(card,ProductUi.text(this,legacyFixture?"验证 legacy 示例方案":"本机应用预检",18,ProductUi.INK,true),0);
+        if(legacyFixture){
             JSONObject expected=new JSONObject(store.read(projectId,"tests/expectations.json","{}"));EditText java=ProductUi.field(card,"预期 Java 返回值","留空只记录实际值",expected.optString("java"),false);EditText nativeValue=ProductUi.field(card,"预期 Native 返回值","留空只记录实际值",expected.optString("native"),false);
             Button run=ProductUi.button(this,"执行验证并保存结果",true,()->verify(java.getText().toString(),nativeValue.getText().toString()));run.setEnabled(!busy);ProductUi.add(card,run,14);
-            ProductUi.add(card,ProductUi.text(this,"调用真实目标并比较预期值。未填写断言时只记录观察结果，不判定通过。",12,ProductUi.MUTED,false),12);
+            ProductUi.add(card,ProductUi.text(this,"仅调用 legacy 自有示例并比较预期值。未填写断言时不判定通过；结果不代表新 runtime 安装或第三方应用通过。",12,ProductUi.MUTED,false),12);
         }else{ProductUi.add(card,ProductUi.text(this,"检查安装包、入口类和资源加载，不执行目标初始化或启动原应用。",13,ProductUi.MUTED,false),12);Button inspect=ProductUi.button(this,"运行兼容性检查",true,this::inspect);inspect.setEnabled(!busy);ProductUi.add(card,inspect,14);String report=store.read(projectId,"compatibility/latest.json","");if(!report.isEmpty()){ProductUi.add(card,ProductUi.text(this,CompatibilityProbe.summary(new JSONObject(report)),12,ProductUi.MUTED,false),14);ProductUi.add(card,ProductUi.button(this,"查看完整报告",false,()->openFile("compatibility/latest.json")),14);}}
         ProductUi.add(body,card,14);
-        if(store.runnable(projectId)){LinearLayout actions=ProductUi.card(this);actions.addView(ProductUi.entry(this,"play","交互自动化","配置点击与输入步骤",()->launch("automation")));ProductUi.divider(actions);actions.addView(ProductUi.entry(this,"gamepad","手柄映射","配置当前项目的按键映射",()->launch("gamepad")));ProductUi.add(body,actions,14);}
+        if(legacyFixture){LinearLayout actions=ProductUi.card(this);actions.addView(ProductUi.entry(this,"play","交互自动化","配置点击与输入步骤",()->launch("automation")));ProductUi.divider(actions);actions.addView(ProductUi.entry(this,"gamepad","手柄映射","配置当前项目的按键映射",()->launch("gamepad")));ProductUi.add(body,actions,14);}
         int count=0;java.util.List<String> files=store.files(projectId);java.util.Collections.reverse(files);for(String file:files)if(file.startsWith("runs/")&&count++<5){LinearLayout entry=ProductUi.card(this);entry.addView(ProductUi.entry(this,"file",file.substring(5),"运行记录 · 点击查看",()->openFile(file)));ProductUi.add(body,entry,12);}
     }
-    private void files(){LinearLayout card=ProductUi.card(this);card.addView(ProductUi.entry(this,"file","浏览项目文件","scripts · tests · config · ai · runs",()->openFile("project.json")));if(store.runnable(projectId)){ProductUi.divider(card);card.addView(ProductUi.entry(this,"file","应用运行数据","当前项目 runtime 目录",()->startActivity(ProjectStore.intent(this,GuestToolsActivity.class,projectId))));}ProductUi.add(body,card,14);}
+    private void files(){LinearLayout card=ProductUi.card(this);card.addView(ProductUi.entry(this,"file","浏览项目文件","scripts · tests · config · ai · runs",()->openFile("project.json")));if(legacyFixture){ProductUi.divider(card);card.addView(ProductUi.entry(this,"file","legacy 示例数据","旧项目 runtime 目录，尚未迁移到空间",()->startActivity(ProjectStore.intent(this,GuestToolsActivity.class,projectId))));}ProductUi.add(body,card,14);}
     private void openFile(String path){startActivity(ProjectStore.intent(this,ProjectFilesActivity.class,projectId).putExtra("path",path));}
     private void setOperation(String message){operation=message;if(!destroyed)render();}
     private void connected(java.util.function.Consumer<JSONObject> callback){if(client!=null)client.close();client=new GuestClient(this,projectId);client.connect(()->client.send(GuestService.EDITOR,new Bundle(),result->{if(!destroyed)callback.accept(result);}));}
     private void launch(String tool){if(busy)return;busy=true;if(client!=null)client.close();client=ProjectLauncher.launch(this,projectId,tool,message->{busy=message.equals("正在准备项目…");setOperation(message);});}
     private void generate(){
         if(busy)return;String task=prompt.getText().toString().trim();if(task.isEmpty()){prompt.setError("请描述需求");return;}if(task.length()>4000){prompt.setError("需求最多 4000 字符");return;}savePrompt();
-        try{store.message(projectId,"user",task);if(!store.runnable(projectId)){store.message(projectId,"system","此应用尚未接入运行器，当前不能观察目标方法或部署 Hook。需求已保存，可先到测试页检查兼容性。");render();return;}}catch(Exception error){setOperation(error.getMessage());return;}
+        try{store.message(projectId,"user",task);if(!legacyFixture){store.message(projectId,"system","此项目尚未绑定新 runtime 安装，当前不能观察目标方法或部署 Hook。需求已保存，可先检查本机应用来源。");render();return;}}catch(Exception error){setOperation(error.getMessage());return;}
         busy=true;setOperation("正在连接当前项目…");connected(result->{if(result.has("error")){completeError(result.optString("error"));return;}
             setOperation("正在生成草稿…");io.execute(()->{try{
                 android.content.SharedPreferences prefs=getSharedPreferences("ai-config",0);String endpoint=prefs.getString("endpoint","https://api.deepseek.com/chat/completions"),model=prefs.getString("model","deepseek-flash"),key=new ApiKeyVault(this).load(endpoint);
@@ -90,7 +90,7 @@ public final class ProjectActivity extends Activity {
         if(busy)return;try{if(!nativeExpected.isEmpty())Integer.parseInt(nativeExpected);store.write(projectId,"tests/expectations.json",new JSONObject().put("java",javaExpected).put("native",nativeExpected).toString(2));}catch(Exception error){ProductUi.notice(this,"预期值无效",error.getMessage());return;}
         busy=true;setOperation("正在验证当前运行方案…");connected(editor->{if(editor.has("error")){completeError(editor.optString("error"));return;}client.send(GuestService.SAMPLE,new Bundle(),sample->{try{
             if(sample.has("error")){completeError(sample.optString("error"));return;}boolean hasAssertions=!javaExpected.isEmpty()||!nativeExpected.isEmpty();boolean pass=(javaExpected.isEmpty()||javaExpected.equals(sample.optString("java")))&&(nativeExpected.isEmpty()||Integer.parseInt(nativeExpected)==sample.optInt("native"));
-            JSONObject record=new JSONObject().put("sample",sample).put("assertionsProvided",hasAssertions).put("outcome",!hasAssertions?"observed":pass?"passed":"failed").put("expectedJava",javaExpected).put("expectedNative",nativeExpected);store.event(projectId,"verification",record);busy=false;setOperation((!hasAssertions?"已记录，未设置断言":pass?"验证通过":"验证未通过")+"\nJava → "+sample.optString("java")+"\nNative → "+sample.optInt("native"));
+            JSONObject record=new JSONObject().put("scope","legacy-owned-fixture").put("runtimeInstallVerified",false).put("sample",sample).put("assertionsProvided",hasAssertions).put("outcome",!hasAssertions?"observed":pass?"passed":"failed").put("expectedJava",javaExpected).put("expectedNative",nativeExpected);store.event(projectId,"verification",record);busy=false;setOperation((!hasAssertions?"已记录，未设置断言":pass?"legacy 示例验证通过":"legacy 示例验证未通过")+"\nJava → "+sample.optString("java")+"\nNative → "+sample.optInt("native"));
         }catch(Exception error){completeError(error.getMessage());}});});
     }
     private void inspect(){

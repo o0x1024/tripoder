@@ -1,0 +1,73 @@
+{
+  "runId": "resources-755d815a2e4c4ad6",
+  "scope": "normal-android-provider-baseline",
+  "scenario": "resources",
+  "fixtureSha256": "89a9ee1b714f7fa7018da9285bd925a0035f5296832f113561dbdb7a2687efc2",
+  "commands": [
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/provider-identity.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~SAeIggmuoxclQ-R2HQyxLQ==/dev.tripoder.provideridentity-uC55x_1dkQZLqAUqV--Plw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~SAeIggmuoxclQ-R2HQyxLQ==/dev.tripoder.provideridentity-uC55x_1dkQZLqAUqV--Plw==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "89a9ee1b714f7fa7018da9285bd925a0035f5296832f113561dbdb7a2687efc2  /data/app/~~SAeIggmuoxclQ-R2HQyxLQ==/dev.tripoder.provideridentity-uC55x_1dkQZLqAUqV--Plw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.provideridentity/.PackageResourcesActivity",
+        "--es",
+        "baseline",
+        "true",
+        "--es",
+        "runId",
+        "resources-755d815a2e4c4ad6"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.provideridentity/.PackageResourcesActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.provideridentity/.PackageResourcesActivity\nTotalTime: 84\nWaitTime: 85\nComplete\n",
+      "stderr": ""
+    }
+  ],
+  "passed": false,
+  "tripoderRuntimeVerified": false,
+  "error": "BASELINE_NOT_COMPLETED"
+}

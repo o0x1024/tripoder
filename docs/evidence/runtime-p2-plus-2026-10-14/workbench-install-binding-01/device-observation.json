@@ -1,0 +1,301 @@
+{
+  "schema": 1,
+  "startedAtUtc": "2026-10-14T09:43:52.103216+00:00",
+  "validatorSha256": "29ca92f1e934e39d992dd8ca63f1cd1692ca8a653eeb4db16f1ee5041bd3f28f",
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/product/build/tripoder-engine.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/product/build/tripoder-workbench.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/product/build/tripoder-control-test.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.workbench"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~JITE-ijPY5tRf4_JeQhwfA==/dev.tripoder.workbench-mCCFaTNa-QQ0YC44YB8Y1w==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~JITE-ijPY5tRf4_JeQhwfA==/dev.tripoder.workbench-mCCFaTNa-QQ0YC44YB8Y1w==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "38fd5237b099a3333cb528c344ac41ce364de1478777d729e945f6354ee33ae8  /data/app/~~JITE-ijPY5tRf4_JeQhwfA==/dev.tripoder.workbench-mCCFaTNa-QQ0YC44YB8Y1w==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~rPKzDREypIPhK_82iEeRLA==/dev.tripoder.engine-q19jNj-VWYnSgbYUuWPLig==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~rPKzDREypIPhK_82iEeRLA==/dev.tripoder.engine-q19jNj-VWYnSgbYUuWPLig==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "e0037c0f894d2119e486e655a73b03a4c4887af4b4768873c56e19ed66cbee66  /data/app/~~rPKzDREypIPhK_82iEeRLA==/dev.tripoder.engine-q19jNj-VWYnSgbYUuWPLig==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.controltest"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~uIYGtWx2SWxHomBx0uDsHQ==/dev.tripoder.controltest-PNT4DcmpBeZvDibf8EKk4Q==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~uIYGtWx2SWxHomBx0uDsHQ==/dev.tripoder.controltest-PNT4DcmpBeZvDibf8EKk4Q==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "796ac8c560f8dce99f787771f554127e510e6ab3ab8be3b4330b3cc86afb80b3  /data/app/~~uIYGtWx2SWxHomBx0uDsHQ==/dev.tripoder.controltest-PNT4DcmpBeZvDibf8EKk4Q==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.workbench"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.controltest"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.controltest/dev.tripoder.controltest.ClientActivity"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.controltest/.ClientActivity }\nStatus: ok\nLaunchState: UNKNOWN (0)\nActivity: dev.tripoder.controltest/.ClientActivity\nWaitTime: 78\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-a",
+        "android.intent.action.MAIN",
+        "-c",
+        "android.intent.category.LAUNCHER",
+        "-n",
+        "dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity }\nStatus: ok\nLaunchState: WARM\nActivity: dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity\nTotalTime: 61\nWaitTime: 62\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "instrument",
+        "-w",
+        "-e",
+        "runId",
+        "control-be215fa7c2c34026",
+        "dev.tripoder.controltest/dev.tripoder.controltest.ControlIntegration"
+      ],
+      "exitCode": 0,
+      "stdout": "INSTRUMENTATION_RESULT: result={\"runId\":\"control-be215fa7c2c34026\",\"startedAt\":1791971034477,\"uid\":10401,\"pid\":27284,\"deviceBuild\":\"Xiaomi\\/madrid\\/madrid:17\\/CP2A.260605.016\\/OS4.0.24.0.XEOCNXM:user\\/release-keys\",\"scope\":\"control-install-project-binding-limited\",\"workbenchStartupStatus\":{\"schema\":17,\"hookReady\":false,\"lease\":\"43f03463-7a70-4ca3-afe7-2c41909463ae\",\"enginePid\":27418,\"engineUid\":10400,\"strongIsolation\":false,\"authority\":\"9a7f7f70-2969-4069-b803-3baceeded8b1\",\"controllerUid\":10401},\"status\":{\"schema\":17,\"hookReady\":false,\"lease\":\"a0fcf67f-89a1-41f1-bdb9-f52588a5e07c\",\"enginePid\":27418,\"engineUid\":10400,\"strongIsolation\":false,\"authority\":\"9a7f7f70-2969-4069-b803-3baceeded8b1\",\"controllerUid\":10401},\"operation\":\"aafdac70-1ad6-48e5-ae63-b14c07a33fe9\",\"space\":\"control-be215fa7c2c34026\",\"project\":\"project-control-be215fa7c2c34026\",\"bindingOperation\":\"ba3562b7-31bc-4a29-ab11-824608011c2f\",\"installGeneration\":\"edbf536d-6e72-4260-81d3-b58e726a739d\",\"dataId\":\"8f1a2188-1846-41e8-882f-867fb9944253\",\"installFixture\":{\"baseSha256\":\"a263216bbc23c95522a739a94c89eaab088c59f2766e7d234cc2ab1644b04757\",\"upgradeSha256\":\"55f8ad4410b98ad3c77c1a7ae5d4aa054034d00b28ff2a3e5ef79c1bfa3677e1\",\"apkRewritten\":false},\"passed\":true,\"checks\":[{\"name\":\"real-workbench-foreground-startup-connected\",\"passed\":true,\"observed\":\"\"},{\"name\":\"plain-binder-cannot-impersonate-controller-lifetime\",\"passed\":true,\"observed\":true},{\"name\":\"same-certificate-wrong-package-rejected\",\"passed\":true,\"observed\":{\"blocked\":true,\"pid\":25249,\"uid\":10402,\"message\":\"CONTROL_PACKAGE_REJECTED\"}},{\"name\":\"forwarded-lifetime-binder-host-process-rejected\",\"passed\":true,\"observed\":true},{\"name\":\"workbench-and-engine-have-distinct-real-uids\",\"passed\":true,\"observed\":{\"schema\":17,\"hookReady\":false,\"lease\":\"a0fcf67f-89a1-41f1-bdb9-f52588a5e07c\",\"enginePid\":27418,\"engineUid\":10400,\"strongIsolation\":false,\"authority\":\"9a7f7f70-2969-4069-b803-3baceeded8b1\",\"controllerUid\":10401}},{\"name\":\"owner-conflict-rejected\",\"passed\":true,\"observed\":true},{\"name\":\"probe-command-not-in-production-api\",\"passed\":true,\"observed\":true},{\"name\":\"raw-worker-command-not-in-production-api\",\"passed\":true,\"observed\":true},{\"name\":\"unknown-control-fields-rejected\",\"passed\":true,\"observed\":true},{\"name\":\"space-created-by-real-runtime-catalog\",\"passed\":true,\"observed\":{\"space\":\"control-be215fa7c2c34026\"}},{\"name\":\"space-operation-has-durable-receipt\",\"passed\":true,\"observed\":{\"detail\":\"\",\"result\":\"control-be215fa7c2c34026\",\"state\":\"SUCCEEDED\",\"evidence\":\"\"}},{\"name\":\"duplicate-operation-does-not-create-second-space\",\"passed\":true,\"observed\":[\"control-239e0b4d438d4be6\",\"control-be215fa7c2c34026\"]},{\"name\":\"writable-install-descriptor-rejected\",\"passed\":true,\"observed\":true},{\"name\":\"invalid-fd-rejected-before-admission\",\"passed\":true,\"observed\":true},{\"name\":\"original-apk-installed-across-distinct-uids\",\"passed\":true,\"observed\":{\"sha256\":\"a263216bbc23c95522a739a94c89eaab088c59f2766e7d234cc2ab1644b04757\",\"package\":\"dev.tripoder.p0.a\",\"space\":\"control-be215fa7c2c34026\",\"generation\":\"a4670e90-5eb8-4183-9882-faca3e5a52da\",\"version\":1,\"descriptorSha\":\"05c33b29e0b28817c1c2a1d8e82b1149464da195d54b119158692db52ec97365\"}},{\"name\":\"install-operation-durable-receipt\",\"passed\":true,\"observed\":{\"detail\":\"\",\"result\":\"a4670e90-5eb8-4183-9882-faca3e5a52da\",\"state\":\"SUCCEEDED\",\"evidence\":\"\"}},{\"name\":\"duplicate-install-operation-reuses-receipt\",\"passed\":true,\"observed\":\"a4670e90-5eb8-4183-9882-faca3e5a52da\"},{\"name\":\"incorrect-apk-digest-rejected\",\"passed\":true,\"observed\":true},{\"name\":\"incorrect-digest-has-terminal-failed-receipt\",\"passed\":true,\"observed\":\"a7153fd1-c29e-4de3-b733-e8e5af4691e7\"},{\"name\":\"project-cannot-bind-invented-generation\",\"passed\":true,\"observed\":true},{\"name\":\"project-bound-to-verified-install\",\"passed\":true,\"observed\":{\"dataId\":\"8f1a2188-1846-41e8-882f-867fb9944253\",\"bindingOperation\":\"c23bbb13-65bd-4054-9a49-47470b07a0fb\",\"package\":\"dev.tripoder.p0.a\",\"project\":\"project-control-be215fa7c2c34026\",\"space\":\"control-be215fa7c2c34026\",\"generation\":\"a4670e90-5eb8-4183-9882-faca3e5a52da\"}},{\"name\":\"project-resolves-same-data-instance\",\"passed\":true,\"observed\":{\"dataId\":\"8f1a2188-1846-41e8-882f-867fb9944253\",\"bindingOperation\":\"c23bbb13-65bd-4054-9a49-47470b07a0fb\",\"package\":\"dev.tripoder.p0.a\",\"project\":\"project-control-be215fa7c2c34026\",\"space\":\"control-be215fa7c2c34026\",\"generation\":\"a4670e90-5eb8-4183-9882-faca3e5a52da\"}},{\"name\":\"upgrade-creates-new-install-generation\",\"passed\":true,\"observed\":{\"sha256\":\"55f8ad4410b98ad3c77c1a7ae5d4aa054034d00b28ff2a3e5ef79c1bfa3677e1\",\"package\":\"dev.tripoder.p0.a\",\"space\":\"control-be215fa7c2c34026\",\"generation\":\"edbf536d-6e72-4260-81d3-b58e726a739d\",\"version\":2,\"descriptorSha\":\"8bd33d61aa2ceab4df1b1b91267c3ae02adea22aa4579a75495442dbb098733a\"}},{\"name\":\"upgrade-invalidates-project-binding\",\"passed\":true,\"observed\":true},{\"name\":\"explicit-rebind-retains-app-data\",\"passed\":true,\"observed\":{\"dataId\":\"8f1a2188-1846-41e8-882f-867fb9944253\",\"bindingOperation\":\"ba3562b7-31bc-4a29-ab11-824608011c2f\",\"package\":\"dev.tripoder.p0.a\",\"project\":\"project-control-be215fa7c2c34026\",\"space\":\"control-be215fa7c2c34026\",\"generation\":\"edbf536d-6e72-4260-81d3-b58e726a739d\"}},{\"name\":\"stale-binding-revision-cannot-overwrite-current\",\"passed\":true,\"observed\":true},{\"name\":\"retired-session-cannot-control-engine\",\"passed\":true,\"observed\":true},{\"name\":\"new-connection-has-new-lease\",\"passed\":true,\"observed\":{\"protocol\":1,\"lease\":\"5143d997-a678-4fc9-bdee-d720f0ae33e9\",\"enginePid\":27418,\"engineUid\":10400}},{\"name\":\"navigation-disconnect-does-not-restart-authority\",\"passed\":true,\"observed\":{\"schema\":17,\"hookReady\":false,\"lease\":\"5143d997-a678-4fc9-bdee-d720f0ae33e9\",\"enginePid\":27418,\"engineUid\":10400,\"strongIsolation\":false,\"authority\":\"9a7f7f70-2969-4069-b803-3baceeded8b1\",\"controllerUid\":10401}},{\"name\":\"new-connection-queries-existing-operation\",\"passed\":true,\"observed\":\"aafdac70-1ad6-48e5-ae63-b14c07a33fe9\"}],\"fullP5Accepted\":false,\"finishedAt\":1791971034843}\nINSTRUMENTATION_CODE: -1\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "instrument",
+        "-w",
+        "-e",
+        "runId",
+        "control-959b7e3619384804",
+        "dev.tripoder.controltest/dev.tripoder.controltest.EngineUidIntegration"
+      ],
+      "exitCode": 0,
+      "stdout": "INSTRUMENTATION_RESULT: result={\"runId\":\"control-959b7e3619384804\",\"startedAt\":1791971035206,\"uid\":10400,\"pid\":27483,\"deviceBuild\":\"Xiaomi\\/madrid\\/madrid:17\\/CP2A.260605.016\\/OS4.0.24.0.XEOCNXM:user\\/release-keys\",\"scope\":\"control-install-project-binding-limited\",\"passed\":true,\"checks\":[{\"name\":\"engine-uid-cannot-become-controller\",\"passed\":true,\"observed\":10400}],\"fullP5Accepted\":false,\"finishedAt\":1791971035252}\nINSTRUMENTATION_CODE: -1\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-a",
+        "android.intent.action.MAIN",
+        "-c",
+        "android.intent.category.LAUNCHER",
+        "-n",
+        "dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity }\nStatus: ok\nLaunchState: WARM\nActivity: dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity\nTotalTime: 75\nWaitTime: 76\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "instrument",
+        "-w",
+        "-e",
+        "runId",
+        "control-1d3c2c0e91084634",
+        "-e",
+        "phase",
+        "recovery",
+        "-e",
+        "operation",
+        "aafdac70-1ad6-48e5-ae63-b14c07a33fe9",
+        "-e",
+        "space",
+        "control-be215fa7c2c34026",
+        "-e",
+        "project",
+        "project-control-be215fa7c2c34026",
+        "-e",
+        "installGeneration",
+        "edbf536d-6e72-4260-81d3-b58e726a739d",
+        "-e",
+        "bindingOperation",
+        "ba3562b7-31bc-4a29-ab11-824608011c2f",
+        "-e",
+        "dataId",
+        "8f1a2188-1846-41e8-882f-867fb9944253",
+        "dev.tripoder.controltest/dev.tripoder.controltest.ControlIntegration"
+      ],
+      "exitCode": 0,
+      "stdout": "INSTRUMENTATION_RESULT: result={\"runId\":\"control-1d3c2c0e91084634\",\"startedAt\":1791971035632,\"uid\":10401,\"pid\":27633,\"deviceBuild\":\"Xiaomi\\/madrid\\/madrid:17\\/CP2A.260605.016\\/OS4.0.24.0.XEOCNXM:user\\/release-keys\",\"scope\":\"control-install-project-binding-limited\",\"workbenchStartupStatus\":{\"schema\":17,\"hookReady\":false,\"lease\":\"39f3eecc-c466-406a-b85c-159b591f7bc2\",\"enginePid\":27814,\"engineUid\":10400,\"strongIsolation\":false,\"authority\":\"1a9181ea-37ea-4b62-aafd-380c51ddbf75\",\"controllerUid\":10401},\"status\":{\"schema\":17,\"hookReady\":false,\"lease\":\"44be9cce-ca49-4d0a-b0ed-a0e8a49b8389\",\"enginePid\":27814,\"engineUid\":10400,\"strongIsolation\":false,\"authority\":\"1a9181ea-37ea-4b62-aafd-380c51ddbf75\",\"controllerUid\":10401},\"passed\":true,\"checks\":[{\"name\":\"real-workbench-foreground-startup-connected\",\"passed\":true,\"observed\":\"\"},{\"name\":\"operation-survives-real-authority-process-death\",\"passed\":true,\"observed\":{\"detail\":\"\",\"result\":\"control-be215fa7c2c34026\",\"state\":\"SUCCEEDED\",\"evidence\":\"\"}},{\"name\":\"space-survives-real-authority-process-death\",\"passed\":true,\"observed\":{\"projects\":\"[{\\\"project\\\":\\\"project-control-be215fa7c2c34026\\\",\\\"space\\\":\\\"control-be215fa7c2c34026\\\",\\\"package\\\":\\\"dev.tripoder.p0.a\\\",\\\"generation\\\":\\\"edbf536d-6e72-4260-81d3-b58e726a739d\\\",\\\"state\\\":\\\"COMMITTED\\\",\\\"bindingOperation\\\":\\\"ba3562b7-31bc-4a29-ab11-824608011c2f\\\"}]\",\"spaces\":\"[\\\"control-239e0b4d438d4be6\\\",\\\"control-be215fa7c2c34026\\\"]\",\"installs\":\"[{\\\"space\\\":\\\"control-be215fa7c2c34026\\\",\\\"package\\\":\\\"dev.tripoder.p0.a\\\",\\\"generation\\\":\\\"edbf536d-6e72-4260-81d3-b58e726a739d\\\",\\\"state\\\":\\\"COMMITTED\\\",\\\"version\\\":2}]\"}},{\"name\":\"project-and-install-survive-real-authority-process-death\",\"passed\":true,\"observed\":{\"dataId\":\"8f1a2188-1846-41e8-882f-867fb9944253\",\"bindingOperation\":\"ba3562b7-31bc-4a29-ab11-824608011c2f\",\"package\":\"dev.tripoder.p0.a\",\"project\":\"project-control-be215fa7c2c34026\",\"space\":\"control-be215fa7c2c34026\",\"generation\":\"edbf536d-6e72-4260-81d3-b58e726a739d\"}}],\"fullP5Accepted\":false,\"finishedAt\":1791971036081}\nINSTRUMENTATION_CODE: -1\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.controltest"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity\nTotalTime: 94\nWaitTime: 96\nComplete\n",
+      "stderr": ""
+    }
+  ],
+  "fullP5Accepted": false,
+  "businessScenariosVerified": false,
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "checks": 35,
+  "controllerUid": 10401,
+  "engineUid": 10400,
+  "passed": true,
+  "finishedAtUtc": "2026-10-14T09:43:56.594245+00:00"
+}

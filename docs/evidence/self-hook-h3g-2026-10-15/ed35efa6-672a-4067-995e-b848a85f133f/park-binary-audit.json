@@ -1,0 +1,119 @@
+{
+  "passed": true,
+  "nativeSha256": "a66723ef2eb6a02be8e9ec893bed3a9e8eb9bf2851890eae893ad00348b84a33",
+  "functions": [
+    "cache_sync",
+    "commit_and_resume",
+    "fixed_commit_batch",
+    "one_cycle",
+    "park_handler",
+    "release_all",
+    "tp_code_page_commit",
+    "tp_code_page_validate",
+    "tp_park_begin",
+    "tp_park_blocked_mask",
+    "tp_park_context",
+    "tp_park_end",
+    "tp_park_now",
+    "workers_progress"
+  ],
+  "calls": [
+    {
+      "function": "tp_park_begin",
+      "target": "sigaction@plt",
+      "instruction": "1a59c:      \tbl\t0x27218 <sigaction@plt>"
+    },
+    {
+      "function": "tp_park_begin",
+      "target": "tp_park_now",
+      "instruction": "1a680:      \tbl\t0x1abac <tp_park_now>"
+    },
+    {
+      "function": "tp_park_begin",
+      "target": "tp_park_blocked_mask",
+      "instruction": "1ab30:      \tbl\t0x1c084 <tp_park_blocked_mask>"
+    },
+    {
+      "function": "tp_park_begin",
+      "target": "release_all",
+      "instruction": "1ab78:      \tbl\t0x1abec <release_all>"
+    },
+    {
+      "function": "tp_park_end",
+      "target": "release_all",
+      "instruction": "1ae60:      \tbl\t0x1abec <release_all>"
+    },
+    {
+      "function": "one_cycle",
+      "target": "tp_park_begin",
+      "instruction": "1bb40:      \tbl\t0x1a52c <tp_park_begin>"
+    },
+    {
+      "function": "one_cycle",
+      "target": "tp_park_begin",
+      "instruction": "1bb50:      \tbl\t0x1a52c <tp_park_begin>"
+    },
+    {
+      "function": "one_cycle",
+      "target": "tp_park_end",
+      "instruction": "1bb64:      \tbl\t0x1adf4 <tp_park_end>"
+    },
+    {
+      "function": "one_cycle",
+      "target": "tp_park_context",
+      "instruction": "1bc44:      \tbl\t0x1ae7c <tp_park_context>"
+    },
+    {
+      "function": "one_cycle",
+      "target": "tp_park_end",
+      "instruction": "1bd28:      \tbl\t0x1adf4 <tp_park_end>"
+    },
+    {
+      "function": "one_cycle",
+      "target": "workers_progress",
+      "instruction": "1bd4c:      \tbl\t0x1b9f4 <workers_progress>"
+    },
+    {
+      "function": "tp_code_page_commit",
+      "target": "cache_sync",
+      "instruction": "1c4d0:      \tbl\t0x1c518 <cache_sync>"
+    },
+    {
+      "function": "commit_and_resume",
+      "target": "tp_code_page_commit",
+      "instruction": "1d84c:      \tbl\t0x1c418 <tp_code_page_commit>"
+    },
+    {
+      "function": "commit_and_resume",
+      "target": "tp_park_end",
+      "instruction": "1d858:      \tbl\t0x1adf4 <tp_park_end>"
+    },
+    {
+      "function": "fixed_commit_batch",
+      "target": "tp_code_page_validate",
+      "instruction": "1e8a4:      \tbl\t0x1c38c <tp_code_page_validate>"
+    },
+    {
+      "function": "fixed_commit_batch",
+      "target": "tp_code_page_validate",
+      "instruction": "1e8b4:      \tbl\t0x1c38c <tp_code_page_validate>"
+    },
+    {
+      "function": "fixed_commit_batch",
+      "target": "tp_code_page_commit",
+      "instruction": "1e8c4:      \tbl\t0x1c418 <tp_code_page_commit>"
+    },
+    {
+      "function": "fixed_commit_batch",
+      "target": "tp_code_page_commit",
+      "instruction": "1e8d4:      \tbl\t0x1c418 <tp_code_page_commit>"
+    },
+    {
+      "function": "fixed_commit_batch",
+      "target": "tp_park_end",
+      "instruction": "1e8ec:      \tbl\t0x1adf4 <tp_park_end>"
+    }
+  ],
+  "disassemblySha256": "8a26c0451da6b0bbb4d6f15bba60742508d629c4d2e8360cf3cc5ba14204dfa3",
+  "scope": "Binary call allowlist only; source review still owns control flow and signal lifetime proof"
+}

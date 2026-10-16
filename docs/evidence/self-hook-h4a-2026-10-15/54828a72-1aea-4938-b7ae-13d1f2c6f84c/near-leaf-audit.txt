@@ -1,0 +1,120 @@
+
+/Users/like/code/tripoder/android/self-hook-probe/build/libtripoder-entry-leaf-template.so:	file format elf64-littleaarch64
+
+Disassembly of section .text:
+
+0000000000001320 <tp_art_entry_leaf>:
+    1320: d503249f     	bti	j
+    1324: f0ffffea     	adrp	x10, 0x0
+    1328: f941654a     	ldr	x10, [x10, #0x2c8]
+    132c: 52810009     	mov	w9, #0x800              // =2048
+    1330: c8dffd4b     	ldar	x11, [x10]
+    1334: b400016b     	cbz	x11, 0x1360 <tp_art_entry_leaf+0x40>
+    1338: f940016c     	ldr	x12, [x11]
+    133c: eb00019f     	cmp	x12, x0
+    1340: 54000101     	b.ne	0x1360 <tp_art_entry_leaf+0x40>
+    1344: f9400d6d     	ldr	x13, [x11, #0x18]
+    1348: c8dffdae     	ldar	x14, [x13]
+    134c: b400014e     	cbz	x14, 0x1374 <tp_art_leaf_resume+0x4>
+    1350: f24005df     	tst	x14, #0x3
+    1354: 54000101     	b.ne	0x1374 <tp_art_leaf_resume+0x4>
+    1358: aa0e03e1     	mov	x1, x14
+    135c: 14000004     	b	0x136c <tp_art_entry_leaf+0x4c>
+    1360: 9100214a     	add	x10, x10, #0x8
+    1364: 71000529     	subs	w9, w9, #0x1
+    1368: 54fffe41     	b.ne	0x1330 <tp_art_entry_leaf+0x10>
+    136c: a9014ff4     	stp	x20, x19, [sp, #0x10]
+
+0000000000001370 <tp_art_leaf_resume>:
+    1370: 14000000     	b	0x1370 <tp_art_leaf_resume>
+    1374: d420a680     	brk	#0x534
+    1378: 17ffffff     	b	0x1374 <tp_art_leaf_resume+0x4>
+
+/Users/like/code/tripoder/android/self-hook-probe/build/libtripoder-entry-leaf-template.so:	file format elf64-littleaarch64
+
+.debug_frame contents:
+
+
+.eh_frame contents:
+
+00000000 0000001c 00000000 CIE
+  Format:                DWARF32
+  Version:               1
+  Augmentation:          "zR"
+  Code alignment factor: 1
+  Data alignment factor: -8
+  Return address column: 30
+  Augmentation data:     1B
+
+  DW_CFA_def_cfa: WSP +32
+  DW_CFA_offset: W29 -32
+  DW_CFA_offset: W30 -24
+  DW_CFA_same_value: W19
+  DW_CFA_same_value: W20
+  DW_CFA_AARCH64_negate_ra_state:
+  DW_CFA_nop:
+  DW_CFA_nop:
+  DW_CFA_nop:
+
+  CFA=WSP+32: W19=same, W20=same, W29=[CFA-32], W30=[CFA-24], reg34=1
+
+00000020 00000010 00000024 FDE cie=00000000 pc=00001320...0000137c
+  Format:       DWARF32
+  DW_CFA_nop:
+  DW_CFA_nop:
+  DW_CFA_nop:
+
+  0x1320: CFA=WSP+32: W19=same, W20=same, W29=[CFA-32], W30=[CFA-24], reg34=1
+
+00000034 ZERO terminator
+
+
+Elf file type is DYN (Shared object file)
+Entry point 0x0
+There are 10 program headers, starting at offset 64
+
+Program Headers:
+  Type           Offset   VirtAddr           PhysAddr           FileSiz  MemSiz   Flg Align
+  PHDR           0x000040 0x0000000000000040 0x0000000000000040 0x000230 0x000230 R   0x8
+  LOAD           0x000000 0x0000000000000000 0x0000000000000000 0x000320 0x000320 R   0x1000
+  LOAD           0x000320 0x0000000000001320 0x0000000000001320 0x00005c 0x00005c R E 0x1000
+  LOAD           0x000380 0x0000000000002380 0x0000000000002380 0x000090 0x000c80 RW  0x1000
+  DYNAMIC        0x000380 0x0000000000002380 0x0000000000002380 0x000090 0x000090 RW  0x8
+  GNU_RELRO      0x000380 0x0000000000002380 0x0000000000002380 0x000090 0x000c80 R   0x1
+  GNU_EH_FRAME   0x0002d0 0x00000000000002d0 0x00000000000002d0 0x000014 0x000014 R   0x4
+  GNU_STACK      0x000000 0x0000000000000000 0x0000000000000000 0x000000 0x000000 RW  0x0
+  GNU_PROPERTY   0x000270 0x0000000000000270 0x0000000000000270 0x000020 0x000020 R   0x8
+  NOTE           0x000270 0x0000000000000270 0x0000000000000270 0x000020 0x000020 R   0x8
+
+ Section to Segment mapping:
+  Segment Sections...
+   00     
+   01     .note.gnu.property .dynsym .gnu.hash .dynstr .rela.dyn .rodata .eh_frame_hdr .eh_frame 
+   02     .text 
+   03     .dynamic .relro_padding 
+   04     .dynamic 
+   05     .dynamic .relro_padding 
+   06     .eh_frame_hdr 
+   07     
+   08     .note.gnu.property 
+   09     .note.gnu.property 
+   None   .comment .symtab .shstrtab .strtab 
+Dynamic section at offset 0x380 contains 9 entries:
+  Tag                Type              Name/Value
+  0x000000000000001e (FLAGS)           SYMBOLIC BIND_NOW 
+  0x000000006ffffffb (FLAGS_1)         NOW 
+  0x0000000070000001 (AARCH64_BTI_PLT) 0
+  0x0000000000000006 (SYMTAB)          0x290
+  0x000000000000000b (SYMENT)          24 (bytes)
+  0x0000000000000005 (STRTAB)          0x2c4
+  0x000000000000000a (STRSZ)           1 (bytes)
+  0x000000006ffffef5 (GNU_HASH)        0x2a8
+  0x0000000000000000 (NULL)            0x0
+
+Relocation section '.rela.dyn' at offset 0x2c8 contains 0 entries:
+    Offset             Info             Type               Symbol's Value  Symbol's Name + Addend
+Displaying notes found in: .note.gnu.property
+  Owner                Data size 	Description
+  GNU                  0x00000010	NT_GNU_PROPERTY_TYPE_0 (property note)
+    Properties:    aarch64 feature: BTI, PAC
+

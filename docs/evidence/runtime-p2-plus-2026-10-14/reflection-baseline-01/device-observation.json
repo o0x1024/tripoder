@@ -1,0 +1,75 @@
+{
+  "runId": "resources-305618586df14474",
+  "scope": "normal-android-provider-baseline",
+  "scenario": "resources",
+  "fixtureSha256": "ce028f0e7cc3577338cfb9faa04818b1b65688bcf59bddf4d9e04946e0f57f17",
+  "commands": [
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/provider-identity.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~wexUayuKGbnvnai58R3dgw==/dev.tripoder.provideridentity-X3tgL9vsIklhv6upEbdAzg==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~wexUayuKGbnvnai58R3dgw==/dev.tripoder.provideridentity-X3tgL9vsIklhv6upEbdAzg==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "ce028f0e7cc3577338cfb9faa04818b1b65688bcf59bddf4d9e04946e0f57f17  /data/app/~~wexUayuKGbnvnai58R3dgw==/dev.tripoder.provideridentity-X3tgL9vsIklhv6upEbdAzg==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-f",
+        "0x10008000",
+        "-n",
+        "dev.tripoder.provideridentity/.PackageResourcesActivity",
+        "--es",
+        "baseline",
+        "true",
+        "--es",
+        "runId",
+        "resources-305618586df14474"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { flg=0x10008000 cmp=dev.tripoder.provideridentity/.PackageResourcesActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.provideridentity/.PackageResourcesActivity\nTotalTime: 73\nWaitTime: 74\nComplete\n",
+      "stderr": ""
+    }
+  ],
+  "passed": false,
+  "tripoderRuntimeVerified": false,
+  "error": "BASELINE_NOT_COMPLETED"
+}

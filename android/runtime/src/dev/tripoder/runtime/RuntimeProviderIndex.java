@@ -1,0 +1,26 @@
+package dev.tripoder.runtime;
+
+import android.content.pm.*;
+import java.util.*;
+
+/** Component publication and authority resolution are different indexes over the sealed APK. */
+final class RuntimeProviderIndex {
+    private final Map<String,ProviderInfo> components=new LinkedHashMap<>(),authorities=new LinkedHashMap<>();
+    RuntimeProviderIndex(ProviderInfo[] infos,List<ApkManifest.Component> declarations){
+        if(infos==null)infos=new ProviderInfo[0];
+        for(var declared:declarations)if(declared.type.equals("provider")){
+            ProviderInfo selected=null;
+            for(ProviderInfo candidate:infos)if(candidate.name.equals(declared.name)&&Objects.equals(candidate.authority,declared.authorities)){selected=candidate;break;}
+            if(selected==null)throw new IllegalStateException("PROVIDER_METADATA_MISSING:"+declared.name);
+            ProviderInfo info=new ProviderInfo(selected);info.enabled=declared.enabled;info.exported=declared.exported;
+            ProviderInfo prior=components.putIfAbsent(info.name,info);
+            // Cross-process/enablement collisions require their own lifecycle contract and evidence.
+            if(prior!=null&&(!Objects.equals(prior.processName,info.processName)||prior.enabled!=info.enabled||prior.multiprocess!=info.multiprocess))throw new UnsupportedOperationException("PROVIDER_COMPONENT_IDENTITY_CONFLICT:"+info.name);
+            for(String alias:RuntimeProviderBroker.aliases(info.authority))if(authorities.putIfAbsent(alias,info)!=null)throw new SecurityException("PROVIDER_AUTHORITY_CONFLICT:"+alias);
+        }
+    }
+    List<ProviderInfo> publications(String process){List<ProviderInfo> out=new ArrayList<>();for(var info:components.values())if(info.enabled&&process.equals(info.processName))out.add(new ProviderInfo(info));return out;}
+    ProviderInfo component(String name){ProviderInfo info=components.get(name);if(info==null)throw new IllegalStateException("PROVIDER_METADATA_MISSING:"+name);return new ProviderInfo(info);}
+    ProviderInfo authority(String name){ProviderInfo info=authorities.get(name);return info==null?null:new ProviderInfo(info);}
+    static void requireAuthority(ProviderInfo publication,String authority){if(!RuntimeProviderBroker.aliases(publication.authority).contains(authority))throw new SecurityException("PROVIDER_AUTHORITY_NOT_PUBLISHED:"+authority);}
+}

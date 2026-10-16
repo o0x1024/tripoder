@@ -1,0 +1,94 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tripoder.p2" android:versionCode="1" android:versionName="1">
+  <uses-sdk android:minSdkVersion="36" android:targetSdkVersion="36"/>
+  <application android:name="dev.tripoder.p2.App" android:appComponentFactory="dev.tripoder.p2.Factory" android:debuggable="false" android:allowBackup="false" android:theme="@android:style/Theme.Material.Light.NoActionBar">
+    <activity android:name="dev.tripoder.p2.EntryFenceActivity$Standard" android:exported="true"/>
+    <activity android:name="dev.tripoder.p2.EntryFenceActivity$Top" android:exported="true" android:launchMode="singleTop"/>
+    <activity android:name="dev.tripoder.p2.ClosingActivity" android:exported="true"/>
+    <activity android:name="dev.tripoder.p2.LateReceiverActivity" android:exported="true"/>
+    <activity android:name="dev.tripoder.p2.Hooks$Main" android:process=":hooks" android:exported="true"/>
+    <activity android:name="dev.tripoder.p2.Storage$Main" android:process=":storage" android:exported="true"/>
+    <activity android:name="dev.tripoder.p2.Storage$Remote" android:process=":storageremote" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.Chain$Main" android:exported="true"/>
+    <activity android:name="dev.tripoder.p2.Chain$Remote" android:process=":remote" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.Chain$Middle" android:process=":remote" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.Chain$Leaf" android:process=":remote" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivitySources$Main" android:exported="false"/>
+    <activity-alias android:name="dev.tripoder.p2.SourceAlias" android:targetActivity="dev.tripoder.p2.ActivitySources$Main" android:exported="true"/>
+    <activity android:name="dev.tripoder.p2.ActivitySources$NoResult" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivitySources$Remote" android:process=":sourceremote" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.TaskModes$Coordinator" android:exported="true"/>
+    <activity android:name="dev.tripoder.p2.TaskModes$Root" android:launchMode="singleTask" android:taskAffinity="dev.tripoder.p2.taskroot" android:exported="false"/>
+    <activity-alias android:name="dev.tripoder.p2.TaskAlias" android:targetActivity="dev.tripoder.p2.TaskModes$Root" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.TaskModes$B" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.TaskModes$C" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.SingleInstanceTasks$Coordinator" android:exported="true"/>
+    <activity android:name="dev.tripoder.p2.SingleInstanceTasks$Root" android:launchMode="singleInstance" android:taskAffinity="dev.tripoder.p2.instance" android:exported="false"/>
+    <activity-alias android:name="dev.tripoder.p2.InstanceAlias" android:targetActivity="dev.tripoder.p2.SingleInstanceTasks$Root" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.SingleInstanceTasks$Child" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ReparentTasks$Coordinator" android:exported="true"/>
+    <activity android:name="dev.tripoder.p2.ReparentTasks$Destination" android:taskAffinity="dev.tripoder.p2.destination" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ReparentTasks$Source" android:taskAffinity="dev.tripoder.p2.origin" android:launchMode="singleTask" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ReparentTasks$Moving" android:taskAffinity="dev.tripoder.p2.destination" android:launchMode="singleTop" android:allowTaskReparenting="true" android:exported="false"/>
+    <activity-alias android:name="dev.tripoder.p2.ReparentAliasOne" android:targetActivity="dev.tripoder.p2.ReparentTasks$Moving" android:exported="false"/>
+    <activity-alias android:name="dev.tripoder.p2.ReparentAliasTwo" android:targetActivity="dev.tripoder.p2.ReparentTasks$Moving" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ReparentTasks$AfterMove" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.Hold" android:exported="true"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$Parent" android:exported="true"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C0" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C1" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C2" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C3" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C4" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C5" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C6" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C7" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C8" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C9" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C10" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C11" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C12" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C13" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C14" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C15" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C16" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C17" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C18" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C19" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C20" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C21" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C22" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ActivityChurn$C23" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.SingleTop$Root" android:launchMode="singleTop" android:exported="true"/>
+    <activity android:name="dev.tripoder.p2.SingleTop$Double" android:launchMode="singleTop" android:exported="true"/>
+    <activity android:name="dev.tripoder.p2.SingleTop$Sibling" android:launchMode="singleTop" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.SingleTop$CrashAfterWrite" android:launchMode="singleTop" android:exported="true"/>
+    <activity android:name="dev.tripoder.p2.Aliases$Parent" android:exported="true"/>
+    <activity android:name="dev.tripoder.p2.Aliases$Collision" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.Aliases$Target" android:process=":aliasremote" android:exported="false"/>
+    <activity-alias android:name="dev.tripoder.p2.EntryAlias" android:targetActivity="dev.tripoder.p2.Aliases$Target" android:exported="false"/>
+    <activity-alias android:name="dev.tripoder.p2.Aliases$Collision" android:targetActivity="dev.tripoder.p2.Aliases$Target" android:exported="true"/>
+    <activity-alias android:name="dev.tripoder.p2.DisabledAlias" android:targetActivity="dev.tripoder.p2.Aliases$Target" android:enabled="false" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ResultFlows$Parent" android:exported="true"/>
+    <activity android:name="dev.tripoder.p2.ResultFlows$ControllerBoundary" android:exported="true"/>
+    <activity android:name="dev.tripoder.p2.ResultFlows$Cancel" android:process=":remote" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.ResultFlows$Replace" android:process=":remote" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.Services$Main" android:process=":serviceapp" android:exported="true"/>
+    <service android:name="dev.tripoder.p2.Services$Alpha" android:process=":serviceapp" android:exported="false"/>
+    <service android:name="dev.tripoder.p2.Services$Beta" android:process=":serviceapp" android:exported="false"/>
+    <service android:name="dev.tripoder.p2.Services$Remote" android:process=":services" android:exported="false"/>
+    <service android:name="dev.tripoder.p2.Services$Null" android:process=":services" android:exported="false"/>
+    <service android:name="dev.tripoder.p2.Services$Sticky" android:process=":services" android:exported="false"/>
+    <service android:name="dev.tripoder.p2.Services$Absent" android:process=":absentservice" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.Providers$Main" android:process=":providerclient" android:exported="true"/>
+    <provider android:name="dev.tripoder.p2.Providers$Low" android:authorities="dev.tripoder.p2.low" android:process=":providerclient" android:initOrder="200" android:exported="false"/>
+    <provider android:name="dev.tripoder.p2.Providers$High" android:authorities="dev.tripoder.p2.local;dev.tripoder.p2.alias" android:process=":providerclient" android:initOrder="300" android:exported="false"/>
+    <provider android:name="dev.tripoder.p2.Providers$Loop" android:authorities="dev.tripoder.p2.loop" android:process=":providerclient" android:initOrder="100" android:exported="false"/>
+    <provider android:name="dev.tripoder.p2.Providers$Remote" android:authorities="dev.tripoder.p2.remote" android:process=":providerremote" android:exported="false"/>
+    <provider android:name="dev.tripoder.p2.ProviderWrites$Store" android:authorities="dev.tripoder.p2.write" android:process=":providerremote" android:exported="false"/>
+    <provider android:name="dev.tripoder.p2.Providers$Never" android:authorities="dev.tripoder.p2.never" android:process=":providernever" android:exported="false"/>
+    <provider android:name="dev.tripoder.p2.Providers$CycleA" android:authorities="dev.tripoder.p2.cyclea" android:process=":providercyclea" android:exported="false"/>
+    <provider android:name="dev.tripoder.p2.Providers$CycleB" android:authorities="dev.tripoder.p2.cycleb" android:process=":providercycleb" android:exported="false"/>
+    <activity android:name="dev.tripoder.p2.Receivers$Main" android:process=":receiverclient" android:exported="true"/>
+    <receiver android:name="dev.tripoder.p2.Receivers$Cold" android:process=":receivers" android:exported="false"/>
+  </application>
+</manifest>

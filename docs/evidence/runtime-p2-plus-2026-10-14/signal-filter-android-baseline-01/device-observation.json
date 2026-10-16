@@ -1,0 +1,258 @@
+{
+  "runId": "resources-17a8b93113324e48",
+  "scope": "normal-android-provider-baseline",
+  "scenario": "resources",
+  "fixtureSha256": "e9892a8875ec701b26d2e3ebcb844631dce9519e49a74f17c54726732a676329",
+  "commands": [
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/provider-identity.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~GYSn6lyQzjq871VbK0D1Mw==/dev.tripoder.provideridentity-Jb0D1IeOG4kl-zTh3RF0rw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~GYSn6lyQzjq871VbK0D1Mw==/dev.tripoder.provideridentity-Jb0D1IeOG4kl-zTh3RF0rw==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "e9892a8875ec701b26d2e3ebcb844631dce9519e49a74f17c54726732a676329  /data/app/~~GYSn6lyQzjq871VbK0D1Mw==/dev.tripoder.provideridentity-Jb0D1IeOG4kl-zTh3RF0rw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.provideridentity/.PackageResourcesActivity",
+        "--es",
+        "baseline",
+        "true",
+        "--es",
+        "runId",
+        "resources-17a8b93113324e48"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.provideridentity/.PackageResourcesActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.provideridentity/.PackageResourcesActivity\nTotalTime: 78\nWaitTime: 80\nComplete\n",
+      "stderr": ""
+    }
+  ],
+  "passed": true,
+  "tripoderRuntimeVerified": false,
+  "checks": [
+    {
+      "name": "service-declared-remote-process-preserved",
+      "passed": true
+    },
+    {
+      "name": "service-application-process-is-declared-default",
+      "passed": true
+    },
+    {
+      "name": "service-metadata-from-own-manifest",
+      "passed": true
+    },
+    {
+      "name": "service-metadata-flag-bound",
+      "passed": true
+    },
+    {
+      "name": "service-long-flags-preserve-metadata",
+      "passed": true
+    },
+    {
+      "name": "service-missing-is-name-not-found",
+      "passed": true
+    },
+    {
+      "name": "disabled-service-excluded-by-default",
+      "passed": true
+    },
+    {
+      "name": "disabled-service-explicit-match",
+      "passed": true
+    },
+    {
+      "name": "service-direct-boot-unaware-selected",
+      "passed": true
+    },
+    {
+      "name": "service-direct-boot-aware-excludes-unaware",
+      "passed": true
+    },
+    {
+      "name": "service-direct-boot-both-includes-unaware",
+      "passed": true
+    },
+    {
+      "name": "service-direct-boot-disabled-aware-selected",
+      "passed": true
+    },
+    {
+      "name": "service-direct-boot-unaware-excludes-aware",
+      "passed": true
+    },
+    {
+      "name": "service-direct-boot-does-not-enable-disabled",
+      "passed": true
+    },
+    {
+      "name": "service-metadata-combined-direct-boot-flags",
+      "passed": true
+    },
+    {
+      "name": "activity-manager-application-create-observed-self",
+      "passed": true
+    },
+    {
+      "name": "activity-manager-memory-classes-real-positive",
+      "passed": true
+    },
+    {
+      "name": "activity-manager-memory-info-complete",
+      "passed": true
+    },
+    {
+      "name": "activity-manager-observes-real-caller",
+      "passed": true
+    },
+    {
+      "name": "application-start-history-native-snapshot",
+      "passed": true
+    },
+    {
+      "name": "network-real-default-present",
+      "passed": true
+    },
+    {
+      "name": "network-real-capabilities-and-link",
+      "passed": true
+    },
+    {
+      "name": "network-state-legacy-queries",
+      "passed": true
+    },
+    {
+      "name": "network-real-default-callback",
+      "passed": true
+    },
+    {
+      "name": "telephony-real-device-capability-values",
+      "passed": true
+    },
+    {
+      "name": "telephony-real-slot-state-0",
+      "passed": true
+    },
+    {
+      "name": "telephony-real-slot-state-1",
+      "passed": true
+    },
+    {
+      "name": "telephony-real-signal-callback",
+      "passed": true
+    },
+    {
+      "name": "system-receiver-mixed-registration-not-sticky",
+      "passed": true
+    },
+    {
+      "name": "system-receiver-own-permission-private-action",
+      "passed": true
+    },
+    {
+      "name": "system-receiver-real-time-tick-async-finished",
+      "passed": true
+    },
+    {
+      "name": "system-receiver-guest-context-preserved",
+      "passed": true
+    },
+    {
+      "name": "system-receiver-protected-only-zero-flags",
+      "passed": true
+    },
+    {
+      "name": "system-receiver-media-root-filter-registration-only",
+      "passed": true
+    },
+    {
+      "name": "system-receiver-mixed-media-no-scheme-registration",
+      "passed": true
+    },
+    {
+      "name": "system-receiver-native-filter-data-semantics",
+      "passed": true
+    },
+    {
+      "name": "application-metadata-from-manifest",
+      "passed": true
+    },
+    {
+      "name": "application-metadata-omitted-without-flag",
+      "passed": true
+    },
+    {
+      "name": "application-long-flags-preserve-metadata",
+      "passed": true
+    },
+    {
+      "name": "application-xml-resource-id-present",
+      "passed": true
+    },
+    {
+      "name": "package-xml-null-info",
+      "passed": true
+    },
+    {
+      "name": "package-xml-application-info",
+      "passed": true
+    },
+    {
+      "name": "application-load-xml-metadata",
+      "passed": true
+    },
+    {
+      "name": "provider-load-xml-metadata",
+      "passed": true
+    },
+    {
+      "name": "provider-application-metadata-flag-bound",
+      "passed": true
+    },
+    {
+      "name": "package-missing-xml-is-null",
+      "passed": true
+    }
+  ]
+}

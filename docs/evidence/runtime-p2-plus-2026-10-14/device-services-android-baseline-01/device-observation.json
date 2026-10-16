@@ -1,0 +1,246 @@
+{
+  "runId": "resources-2cf510a567eb464b",
+  "scope": "normal-android-provider-baseline",
+  "scenario": "resources",
+  "fixtureSha256": "02affda85385c09337513546e673ff4f63210b9826f486066230a656b93dbceb",
+  "commands": [
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/provider-identity.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~BV6Bm9G8_E2Ap__gWGS-tA==/dev.tripoder.provideridentity-hnme6LOwhQhp3_Vp7g_aZA==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~BV6Bm9G8_E2Ap__gWGS-tA==/dev.tripoder.provideridentity-hnme6LOwhQhp3_Vp7g_aZA==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "02affda85385c09337513546e673ff4f63210b9826f486066230a656b93dbceb  /data/app/~~BV6Bm9G8_E2Ap__gWGS-tA==/dev.tripoder.provideridentity-hnme6LOwhQhp3_Vp7g_aZA==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.provideridentity/.PackageResourcesActivity",
+        "--es",
+        "baseline",
+        "true",
+        "--es",
+        "runId",
+        "resources-2cf510a567eb464b"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.provideridentity/.PackageResourcesActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.provideridentity/.PackageResourcesActivity\nTotalTime: 77\nWaitTime: 81\nComplete\n",
+      "stderr": ""
+    }
+  ],
+  "passed": true,
+  "tripoderRuntimeVerified": false,
+  "checks": [
+    {
+      "name": "service-declared-remote-process-preserved",
+      "passed": true
+    },
+    {
+      "name": "service-application-process-is-declared-default",
+      "passed": true
+    },
+    {
+      "name": "service-metadata-from-own-manifest",
+      "passed": true
+    },
+    {
+      "name": "service-metadata-flag-bound",
+      "passed": true
+    },
+    {
+      "name": "service-long-flags-preserve-metadata",
+      "passed": true
+    },
+    {
+      "name": "service-missing-is-name-not-found",
+      "passed": true
+    },
+    {
+      "name": "disabled-service-excluded-by-default",
+      "passed": true
+    },
+    {
+      "name": "disabled-service-explicit-match",
+      "passed": true
+    },
+    {
+      "name": "service-direct-boot-unaware-selected",
+      "passed": true
+    },
+    {
+      "name": "service-direct-boot-aware-excludes-unaware",
+      "passed": true
+    },
+    {
+      "name": "service-direct-boot-both-includes-unaware",
+      "passed": true
+    },
+    {
+      "name": "service-direct-boot-disabled-aware-selected",
+      "passed": true
+    },
+    {
+      "name": "service-direct-boot-unaware-excludes-aware",
+      "passed": true
+    },
+    {
+      "name": "service-direct-boot-does-not-enable-disabled",
+      "passed": true
+    },
+    {
+      "name": "service-metadata-combined-direct-boot-flags",
+      "passed": true
+    },
+    {
+      "name": "activity-manager-application-create-observed-self",
+      "passed": true
+    },
+    {
+      "name": "activity-manager-memory-classes-real-positive",
+      "passed": true
+    },
+    {
+      "name": "activity-manager-memory-info-complete",
+      "passed": true
+    },
+    {
+      "name": "activity-manager-observes-real-caller",
+      "passed": true
+    },
+    {
+      "name": "application-start-history-native-snapshot",
+      "passed": true
+    },
+    {
+      "name": "network-real-default-present",
+      "passed": true
+    },
+    {
+      "name": "network-real-capabilities-and-link",
+      "passed": true
+    },
+    {
+      "name": "network-state-legacy-queries",
+      "passed": true
+    },
+    {
+      "name": "network-real-default-callback",
+      "passed": true
+    },
+    {
+      "name": "telephony-real-device-capability-values",
+      "passed": true
+    },
+    {
+      "name": "telephony-real-slot-state-0",
+      "passed": true
+    },
+    {
+      "name": "telephony-real-slot-state-1",
+      "passed": true
+    },
+    {
+      "name": "system-receiver-mixed-registration-not-sticky",
+      "passed": true
+    },
+    {
+      "name": "system-receiver-own-permission-private-action",
+      "passed": true
+    },
+    {
+      "name": "system-receiver-real-time-tick-async-finished",
+      "passed": true
+    },
+    {
+      "name": "system-receiver-guest-context-preserved",
+      "passed": true
+    },
+    {
+      "name": "system-receiver-protected-only-zero-flags",
+      "passed": true
+    },
+    {
+      "name": "system-receiver-media-root-filter-registration-only",
+      "passed": true
+    },
+    {
+      "name": "application-metadata-from-manifest",
+      "passed": true
+    },
+    {
+      "name": "application-metadata-omitted-without-flag",
+      "passed": true
+    },
+    {
+      "name": "application-long-flags-preserve-metadata",
+      "passed": true
+    },
+    {
+      "name": "application-xml-resource-id-present",
+      "passed": true
+    },
+    {
+      "name": "package-xml-null-info",
+      "passed": true
+    },
+    {
+      "name": "package-xml-application-info",
+      "passed": true
+    },
+    {
+      "name": "application-load-xml-metadata",
+      "passed": true
+    },
+    {
+      "name": "provider-load-xml-metadata",
+      "passed": true
+    },
+    {
+      "name": "provider-application-metadata-flag-bound",
+      "passed": true
+    },
+    {
+      "name": "package-missing-xml-is-null",
+      "passed": true
+    }
+  ]
+}

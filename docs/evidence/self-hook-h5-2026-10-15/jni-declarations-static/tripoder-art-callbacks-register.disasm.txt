@@ -1,0 +1,180 @@
+
+android/self-hook-probe/build/device-libart.so:	file format elf64-littleaarch64
+
+Disassembly of section .text:
+
+00000000004563b4 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv>:
+  4563b4:      	paciasp
+  4563b8:      	sub	sp, sp, #0x80
+  4563bc:      	stp	x29, x30, [sp, #0x30]
+  4563c0:      	stp	x26, x25, [sp, #0x40]
+  4563c4:      	stp	x24, x23, [sp, #0x50]
+  4563c8:      	stp	x22, x21, [sp, #0x60]
+  4563cc:      	stp	x20, x19, [sp, #0x70]
+  4563d0:      	add	x29, sp, #0x30
+  4563d4:      	mrs	x26, TPIDR_EL0
+  4563d8:      	adrp	x9, 0xc2f000
+  4563dc:      	mov	x19, x3
+  4563e0:      	ldr	x8, [x26, #0x28]
+  4563e4:      	ldr	x9, [x9, #0xa60]
+  4563e8:      	mov	x20, x2
+  4563ec:      	mov	x21, x1
+  4563f0:      	mov	x24, x0
+  4563f4:      	stur	x8, [x29, #-0x8]
+  4563f8:      	ldrb	w8, [x9]
+  4563fc:      	str	x2, [x3]
+  456400:      	cmp	w8, #0x1
+  456404:      	b.ne	0x456560 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0x1ac>
+  456408:      	mrs	x8, TPIDR_EL0
+  45640c:      	ldr	x23, [x8, #0x38]
+  456410:      	ldr	x22, [x24]
+  456414:      	ldur	w25, [x22, #0x14]
+  456418:      	tbnz	w25, #0x1f, 0x456438 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0x84>
+  45641c:      	add	w1, w25, #0x1
+  456420:      	add	x2, x22, #0x14
+  456424:      	mov	w0, w25
+  456428:      	bl	0x75f7c0 <_ZN3art5debug17MakeMiniDebugInfoENS_14InstructionSetEPKNS_22InstructionSetFeaturesEmmRKNS0_9DebugInfoE+0x13a3c>
+  45642c:      	cmp	w0, w25
+  456430:      	b.ne	0x456414 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0x60>
+  456434:      	b	0x45644c <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0x98>
+  456438:      	mov	x0, x22
+  45643c:      	mov	x1, x23
+  456440:      	mov	w2, w25
+  456444:      	bl	0xab00a0 <_ZN3art17ReaderWriterMutex26HandleSharedLockContentionEPNS_6ThreadEi@plt>
+  456448:      	b	0x456414 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0x60>
+  45644c:      	cbz	x23, 0x45646c <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0xb8>
+  456450:      	ldrb	w8, [x22, #0x10]
+  456454:      	cmp	w8, #0x46
+  456458:      	b.eq	0x45646c <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0xb8>
+  45645c:      	cmp	w8, #0xe
+  456460:      	b.eq	0x456568 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0x1b4>
+  456464:      	add	x8, x23, w8, uxtw #3
+  456468:      	str	x22, [x8, #0x7a8]
+  45646c:      	ldp	x25, x8, [x24, #0x68]
+  456470:      	stp	xzr, xzr, [sp, #0x8]
+  456474:      	str	xzr, [sp, #0x18]
+  456478:      	subs	x24, x8, x25
+  45647c:      	b.ne	0x456584 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0x1d0>
+  456480:      	cbz	x23, 0x4564a0 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0xec>
+  456484:      	ldrb	w8, [x22, #0x10]
+  456488:      	cmp	w8, #0x46
+  45648c:      	b.eq	0x4564a0 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0xec>
+  456490:      	cmp	w8, #0xe
+  456494:      	b.eq	0x456548 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0x194>
+  456498:      	add	x8, x23, w8, uxtw #3
+  45649c:      	str	xzr, [x8, #0x7a8]
+  4564a0:      	ldur	w23, [x22, #0x14]
+  4564a4:      	subs	w24, w23, #0x1
+  4564a8:      	b.lt	0x4565b8 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0x204>
+  4564ac:      	add	x2, x22, #0x14
+  4564b0:      	mov	w0, w23
+  4564b4:      	mov	w1, w24
+  4564b8:      	bl	0x85b110 <_ZN3art7Barrier9IncrementILNS0_12LockHandlingE0EEEvPNS_6ThreadEi+0x9c>
+  4564bc:      	cmp	w0, w23
+  4564c0:      	b.ne	0x4564a0 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0xec>
+  4564c4:      	cbnz	w24, 0x4564f8 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0x144>
+  4564c8:      	add	x8, x22, #0x18
+  4564cc:      	ldar	w8, [x8]
+  4564d0:      	cmp	w8, #0x1
+  4564d4:      	b.lt	0x4564f8 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0x144>
+  4564d8:      	add	x1, x22, #0x14
+  4564dc:      	mov	w0, #0x62               // =98
+  4564e0:      	mov	w2, #0x81               // =129
+  4564e4:      	mov	w3, #0x7fffffff         // =2147483647
+  4564e8:      	mov	x4, xzr
+  4564ec:      	mov	x5, xzr
+  4564f0:      	mov	w6, wzr
+  4564f4:      	bl	0xab00b0 <syscall@plt>
+  4564f8:      	ldp	x22, x23, [sp, #0x8]
+  4564fc:      	cmp	x22, x23
+  456500:      	b.ne	0x456634 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0x280>
+  456504:      	cbz	x22, 0x456518 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0x164>
+  456508:      	ldr	x8, [sp, #0x18]
+  45650c:      	mov	x0, x22
+  456510:      	sub	x1, x8, x22
+  456514:      	bl	0xaae9b0 <_ZdlPvm@plt>
+  456518:      	ldr	x8, [x26, #0x28]
+  45651c:      	ldur	x9, [x29, #-0x8]
+  456520:      	cmp	x8, x9
+  456524:      	b.ne	0x456580 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0x1cc>
+  456528:      	ldp	x20, x19, [sp, #0x70]
+  45652c:      	ldp	x22, x21, [sp, #0x60]
+  456530:      	ldp	x24, x23, [sp, #0x50]
+  456534:      	ldp	x26, x25, [sp, #0x40]
+  456538:      	ldp	x29, x30, [sp, #0x30]
+  45653c:      	add	sp, sp, #0x80
+  456540:      	autiasp
+  456544:      	ret
+  456548:      	ldr	x8, [x23, #0x7f0]
+  45654c:      	mov	w9, #0x9                // =9
+  456550:      	cmp	x8, x22
+  456554:      	mov	w8, #0xe                // =14
+  456558:      	csel	w8, w9, w8, eq
+  45655c:      	b	0x456498 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0xe4>
+  456560:      	mov	x23, xzr
+  456564:      	b	0x456410 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0x5c>
+  456568:      	ldr	x8, [x23, #0x818]
+  45656c:      	mov	w9, #0xe                // =14
+  456570:      	cmp	x8, #0x0
+  456574:      	mov	w8, #0x9                // =9
+  456578:      	csel	w8, w9, w8, eq
+  45657c:      	b	0x456464 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0xb0>
+  456580:      	bl	0xab4170 <__stack_chk_fail@plt>
+  456584:      	asr	x1, x24, #3
+  456588:      	add	x0, sp, #0x8
+  45658c:      	bl	0x549150 <_ZN3art6mirror5Array6CopyOfENS_6HandleIS1_EEPNS_6ThreadEi+0x1170>
+  456590:      	str	x26, [sp]
+  456594:      	ldr	x26, [sp, #0x10]
+  456598:      	mov	x1, x25
+  45659c:      	mov	x2, x24
+  4565a0:      	mov	x0, x26
+  4565a4:      	bl	0xab4180 <memmove@plt>
+  4565a8:      	add	x8, x26, x24
+  4565ac:      	ldr	x26, [sp]
+  4565b0:      	str	x8, [sp, #0x10]
+  4565b4:      	b	0x456480 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0xcc>
+  4565b8:      	mov	w0, #0x6                // =6
+  4565bc:      	mov	x1, xzr
+  4565c0:      	bl	0xaaea10 <_ZN7android4base9ShouldLogENS0_11LogSeverityEPKc@plt>
+  4565c4:      	tbz	w0, #0x0, 0x4564a0 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0xec>
+  4565c8:      	bl	0xaaea20 <__errno@plt>
+  4565cc:      	mov	x24, x0
+  4565d0:      	ldr	w25, [x0]
+  4565d4:      	adrp	x1, 0x98000
+  4565d8:      	add	x1, x1, #0xc16
+  4565dc:      	sub	x0, x29, #0x10
+  4565e0:      	mov	w2, #0xe5               // =229
+  4565e4:      	mov	w3, #0x6                // =6
+  4565e8:      	mov	x4, xzr
+  4565ec:      	mov	w5, #-0x1               // =-1
+  4565f0:      	bl	0xaae950 <_ZN7android4base10LogMessageC1EPKcjNS0_11LogSeverityES3_i@plt>
+  4565f4:      	sub	x0, x29, #0x10
+  4565f8:      	bl	0xaae960 <_ZN7android4base10LogMessage6streamEv@plt>
+  4565fc:      	adrp	x1, 0x79000
+  456600:      	add	x1, x1, #0xcd9
+  456604:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  456608:      	mov	w1, w23
+  45660c:      	bl	0xaaebb0 <_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEi@plt>
+  456610:      	adrp	x1, 0x54000
+  456614:      	add	x1, x1, #0xdc0
+  456618:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  45661c:      	ldr	x1, [x22, #0x8]
+  456620:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  456624:      	sub	x0, x29, #0x10
+  456628:      	bl	0xaae980 <_ZN7android4base10LogMessageD1Ev@plt>
+  45662c:      	str	w25, [x24]
+  456630:      	b	0x4564a0 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0xec>
+  456634:      	mov	x24, x22
+  456638:      	ldr	x0, [x24], #0x8
+  45663c:      	mov	x1, x21
+  456640:      	mov	x2, x20
+  456644:      	mov	x3, x19
+  456648:      	ldr	x8, [x0]
+  45664c:      	ldr	x8, [x8, #0x10]
+  456650:      	blr	x8
+  456654:      	ldr	x8, [x19]
+  456658:      	cmp	x8, #0x0
+  45665c:      	csel	x20, x20, x8, eq
+  456660:      	cmp	x24, x23
+  456664:      	b.ne	0x456638 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0x284>
+  456668:      	b	0x456504 <_ZN3art16RuntimeCallbacks20RegisterNativeMethodEPNS_9ArtMethodEPKvPPv+0x150>

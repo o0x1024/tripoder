@@ -1,0 +1,40 @@
+
+android/self-hook-probe/build/device-libart.so:	file format elf64-littleaarch64
+
+Disassembly of section .text:
+
+00000000002fe9f0 <_ZN3art6Thread31MadviseAwayAlternateSignalStackEv>:
+  2fffd0:      	stp	x0, x1, [sp, #-0x90]!
+  2fffd4:      	stp	x2, x3, [sp, #0x10]
+  2fffd8:      	stp	x4, x5, [sp, #0x20]
+  2fffdc:      	stp	x6, x7, [sp, #0x30]
+  2fffe0:      	stp	d0, d1, [sp, #0x40]
+  2fffe4:      	stp	d2, d3, [sp, #0x50]
+  2fffe8:      	stp	d4, d5, [sp, #0x60]
+  2fffec:      	stp	d6, d7, [sp, #0x70]
+  2ffff0:      	stp	x29, x30, [sp, #0x80]
+  2ffff4:      	add	x29, sp, #0x80
+  2ffff8:      	mov	x0, x19
+  2ffffc:      	ldr	x16, [x0, #0xa8]
+  300000:      	and	x16, x16, #0xfffffffffffffffc
+  300004:      	ldr	x16, [x16]
+  300008:      	ldur	x16, [x16, #0x4]
+  30000c:      	mov	x17, #0x180000          // =1572864
+  300010:      	tst	x16, x17
+  300014:      	b.ne	0x300020 <_ZN3art6Thread31MadviseAwayAlternateSignalStackEv+0x1630>
+  300018:      	bl	0x452770 <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x390>
+  30001c:      	b	0x300024 <_ZN3art6Thread31MadviseAwayAlternateSignalStackEv+0x1634>
+  300020:      	bl	0x452cdc <_ZNK3art6Thread16GetCurrentMethodEPjbb+0x8fc>
+  300024:      	mov	x17, x0
+  300028:      	ldp	x29, x30, [sp, #0x80]
+  30002c:      	ldp	x2, x3, [sp, #0x10]
+  300030:      	ldp	x4, x5, [sp, #0x20]
+  300034:      	ldp	x6, x7, [sp, #0x30]
+  300038:      	ldp	d0, d1, [sp, #0x40]
+  30003c:      	ldp	d2, d3, [sp, #0x50]
+  300040:      	ldp	d4, d5, [sp, #0x60]
+  300044:      	ldp	d6, d7, [sp, #0x70]
+  300048:      	ldp	x0, x1, [sp], #0x90
+  30004c:      	cbz	x17, 0x300054 <_ZN3art6Thread31MadviseAwayAlternateSignalStackEv+0x1664>
+  300050:      	br	x17
+  300054:      	ret

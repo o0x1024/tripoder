@@ -1,0 +1,96 @@
+{
+  "runId": "control-9f6be8b8eb8a4d75",
+  "startedAt": 1792019438994,
+  "uid": 10401,
+  "pid": 32184,
+  "deviceBuild": "Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys",
+  "scope": "original-target-first-launch-only",
+  "target": "com.tencent.mm",
+  "apkSha256": "f2a725bc04302ad218a563533ae79356e66b64aa711b275bc919a8d432f7e15d",
+  "apkRewritten": false,
+  "loginAttempted": false,
+  "businessScenarioVerified": false,
+  "workbenchStartupStatus": {
+    "schema": 26,
+    "hookReady": true,
+    "lease": "9ffb0456-900c-4540-9026-83b0b624b9f0",
+    "enginePid": 32324,
+    "engineUid": 10400,
+    "strongIsolation": false,
+    "authority": "eafbe3da-2865-422c-94e3-a6f1cf3f0a56",
+    "controllerUid": 10401
+  },
+  "targetReceipt": {
+    "project": "7703bdbe-88a3-4ad9-9f17-71aecb68d6ff",
+    "binding": "50adface-8c77-4134-9971-768d53a1e067",
+    "generation": "a776a2fe-6b4d-42bd-9155-f25ed20b02e8",
+    "sha256": "f2a725bc04302ad218a563533ae79356e66b64aa711b275bc919a8d432f7e15d"
+  },
+  "space": "p6-20261014",
+  "launcher": {
+    "component": "com.tencent.mm.ui.LauncherUI",
+    "launcher": true,
+    "supported": true,
+    "reason": ""
+  },
+  "launchOperation": "3017c5c3-18f4-4dea-b81f-a48d4dc28f2c",
+  "workerPid": 32460,
+  "workerUid": 10400,
+  "processGeneration": "cd595cbea39468b9357ffa318134344fb6de67cb46ddfadc236e2aa9e1f8ddf9",
+  "launchReceipt": {
+    "detail": "ACTIVITY_DELIVERY_PROCESS_DIED",
+    "result": "",
+    "state": "UNKNOWN",
+    "evidence": ""
+  },
+  "error": "java.lang.IllegalStateException: ASSERTION_FAILED:target-first-activity-acknowledged\n\tat dev.tripoder.controltest.ControlTestBase.check(ControlTestBase.java:57)\n\tat dev.tripoder.controltest.TargetLaunchIntegration.test(TargetLaunchIntegration.java:64)\n\tat dev.tripoder.controltest.ControlTestBase.onStart(ControlTestBase.java:43)\n\tat dev.tripoder.controltest.TargetLaunchIntegration.onStart(TargetLaunchIntegration.java:15)\n\tat android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2705)\n",
+  "passed": false,
+  "checks": [
+    {
+      "name": "real-workbench-foreground-startup-connected",
+      "passed": true,
+      "observed": ""
+    },
+    {
+      "name": "original-apk-digest-matches",
+      "passed": true,
+      "observed": "f2a725bc04302ad218a563533ae79356e66b64aa711b275bc919a8d432f7e15d"
+    },
+    {
+      "name": "declared-launcher-policy-supported",
+      "passed": true,
+      "observed": {
+        "component": "com.tencent.mm.ui.LauncherUI",
+        "launcher": true,
+        "supported": true,
+        "reason": ""
+      }
+    },
+    {
+      "name": "target-application-initialized",
+      "passed": true,
+      "observed": {
+        "component": "com.tencent.mm.ui.LauncherUI",
+        "installGeneration": "a776a2fe-6b4d-42bd-9155-f25ed20b02e8",
+        "pid": 32460,
+        "uid": 10400,
+        "state": "RUNNING",
+        "processName": "com.tencent.mm",
+        "generation": "cd595cbea39468b9357ffa318134344fb6de67cb46ddfadc236e2aa9e1f8ddf9",
+        "operation": "3017c5c3-18f4-4dea-b81f-a48d4dc28f2c"
+      }
+    },
+    {
+      "name": "target-first-activity-acknowledged",
+      "passed": false,
+      "observed": {
+        "detail": "ACTIVITY_DELIVERY_PROCESS_DIED",
+        "result": "",
+        "state": "UNKNOWN",
+        "evidence": ""
+      }
+    }
+  ],
+  "fullP5Accepted": false,
+  "finishedAt": 1792019473844
+}

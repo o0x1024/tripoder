@@ -1,0 +1,10 @@
+file:///Users/like/code/tripoder/agent/acceptance-client.mjs:17
+async function tool(name,args={},success=true){const result=await rpc('tools/call',{name,arguments:args});if(result.error)throw Error(JSON.stringify(result.error));const receipt=JSON.parse(result.result.content[0].text);assert.equal(result.result.isError,!receipt.ok);if(success&&!receipt.ok)throw Error(JSON.stringify(receipt));return receipt;}
+                                                                                                                                                                                                                                                                                                          ^
+
+Error: {"protocol":1,"ok":false,"operationId":"4be5ed03-a193-4c55-af96-acaa0aca8807","state":"UNKNOWN","error":"TRANSPORT_EOF_OUTCOME_UNKNOWN","action":"Query operation_get using this id. Do not repeat side effects with a new id."}
+    at tool (file:///Users/like/code/tripoder/agent/acceptance-client.mjs:17:299)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async file:///Users/like/code/tripoder/agent/acceptance-client.mjs:53:43
+
+Node.js v24.12.0

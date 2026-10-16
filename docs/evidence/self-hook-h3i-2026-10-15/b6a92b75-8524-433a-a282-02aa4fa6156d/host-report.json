@@ -1,0 +1,217 @@
+{
+  "schema": 1,
+  "runId": "561e57fd-5699-4699-93db-0b2a0f285500",
+  "timestamp": "2026-10-15T06:53:48.322958+00:00",
+  "sourceHashes": {
+    "android/self-hook/native/a64_relocate.c": "dc95558989581e57a992a76444ec559d3e39837728b8395936a7a60d5b84a8ff",
+    "android/self-hook/native/a64_entry.c": "3da2d6686268feeb3112037a453cb381495cf4845856ebaca8303b073489febf",
+    "android/self-hook/include/tripoder_a64.h": "6e72e0db561dd631d5e30f2389a61d25ba6a20ee64dd68548897032bd5fcc333",
+    "android/self-hook/native/a64_internal.h": "cc5d860f01e0ce978151812fe73d91ddcd3823909e803e2937d0ee48bc39821b",
+    "android/self-hook/tests/core_checks.c": "ceb7ae62f704b0fb1a2c72e091c0c0e2a5e03da0942159e4d15406e806137370",
+    "android/self-hook/tests/core_checks.h": "167177ba33affb0e66e1f63668540586e4d80970c872f3935a7079fecf5ff06c",
+    "android/self-hook/tests/host_main.c": "51a2e8d81ba19102db91b7384baadeafdb07ba6dea21bc7fc4033c3610c3f26d",
+    "android/self-hook/tests/check_host.py": "230a5d1eb7b65075050a120804a16c4722ec8e8f354f54a6d8e1d4b9ce4e8cd2"
+  },
+  "core": {
+    "checks": 92,
+    "failures": 0,
+    "firstFailure": "",
+    "liveCodePatched": false
+  },
+  "oracleChecks": 38,
+  "oracle": [
+    {
+      "source": "b .+128",
+      "expected": "b .-3968",
+      "word": "17fffc20"
+    },
+    {
+      "source": "b .-64",
+      "expected": "b .-4160",
+      "word": "17fffbf0"
+    },
+    {
+      "source": "b.eq .+128",
+      "expected": "b.eq .-3968",
+      "word": "54ff8400"
+    },
+    {
+      "source": "b.eq .-64",
+      "expected": "b.eq .-4160",
+      "word": "54ff7e00"
+    },
+    {
+      "source": "b.ne .+128",
+      "expected": "b.ne .-3968",
+      "word": "54ff8401"
+    },
+    {
+      "source": "b.ne .-64",
+      "expected": "b.ne .-4160",
+      "word": "54ff7e01"
+    },
+    {
+      "source": "b.lt .+128",
+      "expected": "b.lt .-3968",
+      "word": "54ff840b"
+    },
+    {
+      "source": "b.lt .-64",
+      "expected": "b.lt .-4160",
+      "word": "54ff7e0b"
+    },
+    {
+      "source": "cbz x7, .+128",
+      "expected": "cbz x7, .-3968",
+      "word": "b4ff8407"
+    },
+    {
+      "source": "cbz x7, .-64",
+      "expected": "cbz x7, .-4160",
+      "word": "b4ff7e07"
+    },
+    {
+      "source": "cbnz w9, .+128",
+      "expected": "cbnz w9, .-3968",
+      "word": "35ff8409"
+    },
+    {
+      "source": "cbnz w9, .-64",
+      "expected": "cbnz w9, .-4160",
+      "word": "35ff7e09"
+    },
+    {
+      "source": "tbz x11, #45, .+128",
+      "expected": "tbz x11, #45, .-3968",
+      "word": "b66f840b"
+    },
+    {
+      "source": "tbz x11, #45, .-64",
+      "expected": "tbz x11, #45, .-4160",
+      "word": "b66f7e0b"
+    },
+    {
+      "source": "tbnz w12, #15, .+128",
+      "expected": "tbnz w12, #15, .-3968",
+      "word": "377f840c"
+    },
+    {
+      "source": "tbnz w12, #15, .-64",
+      "expected": "tbnz w12, #15, .-4160",
+      "word": "377f7e0c"
+    },
+    {
+      "source": "adr x3, .+128",
+      "expected": "adr x3, .-3968",
+      "word": "10ff8403"
+    },
+    {
+      "source": "adr x3, .-64",
+      "expected": "adr x3, .-4160",
+      "word": "10ff7e03"
+    },
+    {
+      "source": "ldr w1, .+128",
+      "expected": "ldr w1, .-3968",
+      "word": "18ff8401"
+    },
+    {
+      "source": "ldr w1, .-64",
+      "expected": "ldr w1, .-4160",
+      "word": "18ff7e01"
+    },
+    {
+      "source": "ldr x2, .+128",
+      "expected": "ldr x2, .-3968",
+      "word": "58ff8402"
+    },
+    {
+      "source": "ldr x2, .-64",
+      "expected": "ldr x2, .-4160",
+      "word": "58ff7e02"
+    },
+    {
+      "source": "ldrsw x4, .+128",
+      "expected": "ldrsw x4, .-3968",
+      "word": "98ff8404"
+    },
+    {
+      "source": "ldrsw x4, .-64",
+      "expected": "ldrsw x4, .-4160",
+      "word": "98ff7e04"
+    },
+    {
+      "source": "adrp x4, 0x2000",
+      "expected": "adrp x4, 0x1000",
+      "word": "b0000004"
+    },
+    {
+      "source": "adrp x5, -0x1000",
+      "expected": "adrp x5, -0x2000",
+      "word": "d0ffffe5"
+    },
+    {
+      "source": "bti c",
+      "expected": "bti c",
+      "word": "d503245f"
+    },
+    {
+      "source": "bti jc",
+      "expected": "bti jc",
+      "word": "d50324df"
+    },
+    {
+      "source": "nop",
+      "expected": "nop",
+      "word": "d503201f"
+    },
+    {
+      "source": "add x0, x0, #1",
+      "expected": "add x0, x0, #1",
+      "word": "91000400"
+    },
+    {
+      "source": "sub sp, sp, #32",
+      "expected": "sub sp, sp, #32",
+      "word": "d10083ff"
+    },
+    {
+      "source": "adds w1, w2, #4095",
+      "expected": "adds w1, w2, #4095",
+      "word": "313ffc41"
+    },
+    {
+      "source": "sub x3, x4, #3, lsl #12",
+      "expected": "sub x3, x4, #3, lsl #12",
+      "word": "d1400c83"
+    },
+    {
+      "branchOffset": 0,
+      "word": "14000000"
+    },
+    {
+      "branchOffset": 4,
+      "word": "14000001"
+    },
+    {
+      "branchOffset": -4,
+      "word": "17ffffff"
+    },
+    {
+      "branchOffset": 134217724,
+      "word": "15ffffff"
+    },
+    {
+      "branchOffset": -134217728,
+      "word": "16000000"
+    }
+  ],
+  "sanitizers": [
+    "address",
+    "undefined"
+  ],
+  "hostCompiler": "Apple clang version 21.0.0 (clang-2100.3.27.1)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin\n",
+  "assembler": "Android (16134705, +pgo, -bolt, +lto, -mlgo, based on r574158c) clang version 21.0.0 (https://android.googlesource.com/toolchain/llvm-project 9f872551d3c681d06fd303b36f16ed5c274735eb)\nTarget: aarch64-unknown-linux-android36\nThread model: posix\nInstalledDir: /Users/like/code/tripoder/android/vm-probe/build/native/tools/android-ndk-r30/toolchains/llvm/prebuilt/darwin-x86_64/bin\n",
+  "oracleSha256": "80d24644cb4237c0fc592af3684acc30f4f44e56bf9864be82c27e4e3e97209a",
+  "liveCodePatched": false
+}

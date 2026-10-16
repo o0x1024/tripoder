@@ -1,0 +1,1951 @@
+{
+  "schema": 1,
+  "scope": "Read-only static inventory of android/runtime/agent/*.ts; not a device declaration inventory and not an installation receipt.",
+  "fixedInventoryWarning": "all_overloads/all_instance selections must become measured complete fixed inventories; empty callbacks do not count as installed.",
+  "productionEntry": "android/runtime/agent/index.ts",
+  "excludedDemoEntry": "android/agent/index.ts",
+  "modules": {
+    "activities.ts": {
+      "source": "android/runtime/agent/activities.ts",
+      "sha256": "b013d26fa7284ff07090855f1bf2165bb0729066d979b154a9afd60d8cff0764",
+      "literalJavaUseBootClasses": [
+        "android.app.Activity",
+        "android.app.ComponentCaller",
+        "android.util.Log",
+        "java.lang.UnsupportedOperationException"
+      ],
+      "fixedHooks": [
+        {
+          "owner": "android.app.Activity",
+          "method": "performNewIntent",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "android.content.Intent",
+            "android.app.ComponentCaller"
+          ],
+          "line": 6
+        },
+        {
+          "owner": "android.app.Activity",
+          "method": "performNewIntent",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "android.content.Intent"
+          ],
+          "line": 20
+        },
+        {
+          "owner": "android.app.Activity",
+          "method": "getCaller",
+          "selection": "exact_overload",
+          "parameterTypes": []
+        },
+        {
+          "owner": "android.app.Activity",
+          "method": "getInitialCaller",
+          "selection": "exact_overload",
+          "parameterTypes": []
+        },
+        {
+          "owner": "android.app.Activity",
+          "method": "getCurrentCaller",
+          "selection": "exact_overload",
+          "parameterTypes": []
+        },
+        {
+          "owner": "android.app.Activity",
+          "method": "getReferrer",
+          "selection": "exact_overload",
+          "parameterTypes": []
+        },
+        {
+          "owner": "android.app.Activity",
+          "method": "getCallingActivity",
+          "selection": "exact_overload",
+          "parameterTypes": []
+        },
+        {
+          "owner": "android.app.Activity",
+          "method": "getCallingPackage",
+          "selection": "exact_overload",
+          "parameterTypes": []
+        },
+        {
+          "owner": "android.app.ComponentCaller",
+          "method": "getPackage",
+          "selection": "exact_overload",
+          "parameterTypes": [],
+          "line": 48
+        },
+        {
+          "owner": "android.app.ComponentCaller",
+          "method": "checkContentUriPermission",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "android.net.Uri",
+            "int"
+          ],
+          "line": 50
+        }
+      ],
+      "inventoryHooks": [],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [],
+      "notes": [],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 6,
+          "text": "const perform = Activity.performNewIntent.overload(\"android.content.Intent\", \"android.app.ComponentCaller\");"
+        },
+        {
+          "line": 20,
+          "text": "const legacy = Activity.performNewIntent.overload(\"android.content.Intent\");"
+        },
+        {
+          "line": 26,
+          "text": "const method = Activity[name].overload();"
+        },
+        {
+          "line": 32,
+          "text": "const referrer = Activity.getReferrer.overload();"
+        },
+        {
+          "line": 34,
+          "text": "const calling = Activity.getCallingActivity.overload();"
+        },
+        {
+          "line": 39,
+          "text": "const callingPackage = Activity.getCallingPackage.overload();"
+        },
+        {
+          "line": 48,
+          "text": "const pkg = Caller.getPackage.overload();"
+        },
+        {
+          "line": 50,
+          "text": "const permission = Caller.checkContentUriPermission.overload(\"android.net.Uri\", \"int\");"
+        }
+      ]
+    },
+    "activity-creation.ts": {
+      "source": "android/runtime/agent/activity-creation.ts",
+      "sha256": "cb56c7a5ee5c4a0d685a39a7647c7a57b5ac85e60a05851ea8079cf5431a0fd1",
+      "literalJavaUseBootClasses": [
+        "android.app.Activity",
+        "android.app.ActivityThread",
+        "android.app.Instrumentation",
+        "android.content.pm.ActivityInfo",
+        "java.lang.IllegalStateException",
+        "java.lang.SecurityException"
+      ],
+      "fixedHooks": [
+        {
+          "owner": "android.app.Instrumentation",
+          "method": "<init>",
+          "selection": "exact_overload",
+          "parameterTypes": [],
+          "line": 39
+        },
+        {
+          "owner": "android.app.Instrumentation",
+          "method": "newActivity",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "java.lang.ClassLoader",
+            "java.lang.String",
+            "android.content.Intent"
+          ],
+          "line": 38,
+          "note": "Mandatory base-super boundary."
+        },
+        {
+          "owner": "android.app.ActivityThread",
+          "method": "performLaunchActivity",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "android.app.ActivityThread$ActivityClientRecord",
+            "android.content.Intent"
+          ],
+          "line": 48
+        },
+        {
+          "owner": "android.app.Activity",
+          "method": "attach",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "android.content.Context",
+            "android.app.ActivityThread",
+            "android.app.Instrumentation",
+            "android.os.IBinder",
+            "int",
+            "android.app.Application",
+            "android.content.Intent",
+            "android.content.pm.ActivityInfo",
+            "java.lang.CharSequence",
+            "android.app.Activity",
+            "java.lang.String",
+            "android.app.Activity$NonConfigurationInstances",
+            "android.content.res.Configuration",
+            "java.lang.String",
+            "com.android.internal.app.IVoiceInteractor",
+            "android.view.Window",
+            "android.view.ViewRootImpl$ActivityConfigCallback",
+            "android.os.IBinder",
+            "android.os.IBinder",
+            "android.os.IBinder"
+          ],
+          "line": 60
+        },
+        {
+          "owner": "android.content.pm.ActivityInfo",
+          "method": "getThemeResource",
+          "selection": "exact_overload",
+          "parameterTypes": [],
+          "line": 71
+        }
+      ],
+      "inventoryHooks": [],
+      "dynamicHooks": [
+        {
+          "owner": "actual declaring class of new Instrumentation instance.newActivity",
+          "method": "newActivity",
+          "parameterTypes": [
+            "java.lang.ClassLoader",
+            "java.lang.String",
+            "android.content.Intent"
+          ],
+          "enrollment": "Instrumentation constructor exit, plus current instrumentation at launch",
+          "note": "Selecting only at launch entry misses replacement instrumentation created during launch."
+        }
+      ],
+      "frameworkCallsNotHooks": [],
+      "notes": [],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 22,
+          "text": "const type=factory.use(String(declaration.getName())),method=type.newActivity.overload(...signature);"
+        },
+        {
+          "line": 39,
+          "text": "const initialize=Instrumentation.$init.overload();"
+        },
+        {
+          "line": 48,
+          "text": "const launch=Thread.performLaunchActivity.overload(\"android.app.ActivityThread$ActivityClientRecord\",\"android.content.Intent\");"
+        },
+        {
+          "line": 60,
+          "text": "const attach=Activity.attach.overload(\"android.content.Context\",\"android.app.ActivityThread\",\"android.app.Instrumentation\",\"android.os.IBinder\",\"int\",\"android.app.Application\",\"android.content.Intent\",\"android.content.pm.ActivityInfo\",\"java.lang.CharSequence\",\"android.app.Activity\",\"java.lang.String\",\"android.app.Activity$NonConfigurationInstances\",\"android.content.res.Configuration\",\"java.lang.String\",\"com.android.internal.app.IVoiceInteractor\",\"android.view.Window\",\"android.view.ViewRootImpl$ActivityConfigCallback\",\"android.os.IBinder\",\"android.os.IBinder\",\"android.os.IBinder\");"
+        },
+        {
+          "line": 71,
+          "text": "const theme=Java.use(\"android.content.pm.ActivityInfo\").getThemeResource.overload();"
+        }
+      ]
+    },
+    "activity-manager.ts": {
+      "source": "android/runtime/agent/activity-manager.ts",
+      "sha256": "473c609c2e103a5f4e6a967029c808f2602bba2e6cc9850b226bc984f1514807",
+      "literalJavaUseBootClasses": [
+        "android.app.ActivityManager",
+        "android.os.Handler",
+        "android.os.Looper",
+        "java.lang.UnsupportedOperationException"
+      ],
+      "fixedHooks": [],
+      "inventoryHooks": [
+        {
+          "owner": "android.app.ActivityManager",
+          "selection": "all_declared_instance_methods",
+          "requiresPinnedRuntimeDeclarationInventory": true,
+          "note": "Preserve unowned original; route known owned capabilities and explicitly deny all other owned methods. Required-case strings are not the complete inventory."
+        }
+      ],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [
+        {
+          "owner": "android.app.ActivityManager",
+          "method": "<init>",
+          "parameterTypes": [
+            "android.content.Context",
+            "android.os.Handler"
+          ]
+        }
+      ],
+      "notes": [],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 9,
+          "text": "const create = Manager.$new.overload(\"android.content.Context\", \"android.os.Handler\");"
+        },
+        {
+          "line": 27,
+          "text": "const method = Manager[name].overload(...signature);"
+        }
+      ],
+      "requiredCaseSignatures": [
+        "getHistoricalProcessStartReasons(int)",
+        "getLargeMemoryClass()",
+        "getMemoryClass()",
+        "getMemoryInfo(android.app.ActivityManager$MemoryInfo)",
+        "getRunningAppProcesses()",
+        "isLowRamDevice()"
+      ],
+      "currentSelfHookFixedInventory": "FixedManagerInventory / RuntimeSelfHookManagers"
+    },
+    "application-context.ts": {
+      "source": "android/runtime/agent/application-context.ts",
+      "sha256": "6e4a4b99c2280b76a3a6c405633a01d1a62577cff091fac23809b75af7a6b1f7",
+      "literalJavaUseBootClasses": [
+        "android.app.ActivityThread",
+        "android.app.Application",
+        "android.app.ContextImpl",
+        "android.app.LoadedApk",
+        "android.content.pm.ApplicationInfo",
+        "java.lang.SecurityException"
+      ],
+      "fixedHooks": [],
+      "inventoryHooks": [],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [
+        {
+          "owner": "android.app.LoadedApk",
+          "method": "<init>",
+          "parameterTypes": [
+            "android.app.ActivityThread",
+            "android.content.pm.ApplicationInfo",
+            "android.content.res.CompatibilityInfo",
+            "java.lang.ClassLoader",
+            "boolean",
+            "boolean",
+            "boolean"
+          ]
+        },
+        {
+          "owner": "android.app.ContextImpl",
+          "method": "createAppContext",
+          "parameterTypes": [
+            "android.app.ActivityThread",
+            "android.app.LoadedApk",
+            "java.lang.String"
+          ]
+        }
+      ],
+      "notes": [
+        "Calls reflection-view installer; bridge methods are engine-owned direct seams. Existing ApplicationAdapter native implementation already replaces this work."
+      ],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 19,
+          "text": "const construct = LoadedApk.$new.overload(\"android.app.ActivityThread\", \"android.content.pm.ApplicationInfo\","
+        },
+        {
+          "line": 21,
+          "text": "const context = ContextImpl.createAppContext.overload(\"android.app.ActivityThread\", \"android.app.LoadedApk\", \"java.lang.String\");"
+        }
+      ]
+    },
+    "application-history.ts": {
+      "source": "android/runtime/agent/application-history.ts",
+      "sha256": "e37b545663651c342f9799708ba9fcd030dc5d7e5d51953df3c055c210bd70fa",
+      "literalJavaUseBootClasses": [
+        "android.app.ApplicationStartInfo",
+        "android.os.Bundle",
+        "java.util.ArrayList"
+      ],
+      "fixedHooks": [],
+      "inventoryHooks": [],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [
+        {
+          "owner": "android.app.ApplicationStartInfo",
+          "method": "<init>",
+          "parameterTypes": [
+            "long"
+          ]
+        },
+        {
+          "owner": "android.app.ApplicationStartInfo",
+          "method": "setStartupState",
+          "parameterTypes": [
+            "int"
+          ]
+        },
+        {
+          "owner": "android.app.ApplicationStartInfo",
+          "method": "setPid",
+          "parameterTypes": [
+            "int"
+          ]
+        },
+        {
+          "owner": "android.app.ApplicationStartInfo",
+          "method": "setRealUid",
+          "parameterTypes": [
+            "int"
+          ]
+        },
+        {
+          "owner": "android.app.ApplicationStartInfo",
+          "method": "setPackageUid",
+          "parameterTypes": [
+            "int"
+          ]
+        },
+        {
+          "owner": "android.app.ApplicationStartInfo",
+          "method": "setDefiningUid",
+          "parameterTypes": [
+            "int"
+          ]
+        },
+        {
+          "owner": "android.app.ApplicationStartInfo",
+          "method": "setReason",
+          "parameterTypes": [
+            "int"
+          ]
+        },
+        {
+          "owner": "android.app.ApplicationStartInfo",
+          "method": "setStartType",
+          "parameterTypes": [
+            "int"
+          ]
+        },
+        {
+          "owner": "android.app.ApplicationStartInfo",
+          "method": "setStartComponent",
+          "parameterTypes": [
+            "int"
+          ]
+        },
+        {
+          "owner": "android.app.ApplicationStartInfo",
+          "method": "setLaunchMode",
+          "parameterTypes": [
+            "int"
+          ]
+        },
+        {
+          "owner": "android.app.ApplicationStartInfo",
+          "method": "setPackageName",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "owner": "android.app.ApplicationStartInfo",
+          "method": "setProcessName",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "owner": "android.app.ApplicationStartInfo",
+          "method": "setForceStopped",
+          "parameterTypes": [
+            "boolean"
+          ]
+        },
+        {
+          "owner": "android.app.ApplicationStartInfo",
+          "method": "addStartupTimestamp",
+          "parameterTypes": [
+            "int",
+            "long"
+          ]
+        }
+      ],
+      "notes": [],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 6,
+          "text": "const construct = Info.$new.overload(\"long\");"
+        },
+        {
+          "line": 10,
+          "text": "for (const setter of setters) Info[setter].overload(\"int\");"
+        },
+        {
+          "line": 11,
+          "text": "Info.setPackageName.overload(\"java.lang.String\"); Info.setProcessName.overload(\"java.lang.String\");"
+        },
+        {
+          "line": 12,
+          "text": "Info.setForceStopped.overload(\"boolean\"); Info.addStartupTimestamp.overload(\"int\", \"long\");"
+        }
+      ]
+    },
+    "application-ownership.ts": {
+      "source": "android/runtime/agent/application-ownership.ts",
+      "sha256": "cf7e3782b382c1f75be082b9a46e8dba3f8f79400eac514733b68928fe041a37",
+      "literalJavaUseBootClasses": [
+        "android.app.ActivityThread",
+        "android.app.Application",
+        "android.app.LoadedApk",
+        "android.util.Log",
+        "java.lang.System"
+      ],
+      "fixedHooks": [],
+      "inventoryHooks": [],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [],
+      "notes": [
+        "Physical/logical observation and bridge callback only; no boot Java method Hook in this module."
+      ],
+      "explicitOverloadSourceLines": []
+    },
+    "audio.ts": {
+      "source": "android/runtime/agent/audio.ts",
+      "sha256": "1a3ae2aa2a29df0797a6cd0f8b9c1268d8b77f94a0cd4dd48b62d70f5523e15f",
+      "literalJavaUseBootClasses": [
+        "android.media.AudioManager",
+        "java.lang.UnsupportedOperationException"
+      ],
+      "fixedHooks": [],
+      "inventoryHooks": [
+        {
+          "owner": "android.media.AudioManager",
+          "selection": "all_declared_instance_methods",
+          "requiresPinnedRuntimeDeclarationInventory": true,
+          "note": "Preserve unowned original; route known owned capabilities and explicitly deny all other owned methods. Required-case strings are not the complete inventory."
+        }
+      ],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [
+        {
+          "owner": "android.media.AudioManager",
+          "method": "<init>",
+          "parameterTypes": [
+            "android.content.Context"
+          ]
+        }
+      ],
+      "notes": [],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 5,
+          "text": "const create = Manager.$new.overload(\"android.content.Context\");"
+        },
+        {
+          "line": 21,
+          "text": "const method = Manager[name].overload(...signature);"
+        }
+      ],
+      "requiredCaseSignatures": [
+        "getDevices(int)",
+        "getMode()",
+        "getProperty(java.lang.String)",
+        "getRingerMode()",
+        "getStreamMaxVolume(int)",
+        "getStreamMinVolume(int)",
+        "getStreamVolume(int)",
+        "isBluetoothA2dpOn()",
+        "isBluetoothScoAvailableOffCall()",
+        "isBluetoothScoOn()",
+        "isMicrophoneMute()",
+        "isMusicActive()",
+        "isSpeakerphoneOn()",
+        "isStreamMute(int)",
+        "isVolumeFixed()",
+        "isWiredHeadsetOn()",
+        "registerAudioDeviceCallback(android.media.AudioDeviceCallback,android.os.Handler)",
+        "unregisterAudioDeviceCallback(android.media.AudioDeviceCallback)"
+      ],
+      "currentSelfHookFixedInventory": "FixedManagerInventory / RuntimeSelfHookManagers"
+    },
+    "battery.ts": {
+      "source": "android/runtime/agent/battery.ts",
+      "sha256": "a31c57019f24227b6090c7dbe24a3ab9d84cabc85ff8d8087f0a12b32e4558e8",
+      "literalJavaUseBootClasses": [
+        "android.os.BatteryManager",
+        "java.lang.UnsupportedOperationException"
+      ],
+      "fixedHooks": [],
+      "inventoryHooks": [
+        {
+          "owner": "android.os.BatteryManager",
+          "selection": "all_declared_instance_methods",
+          "requiresPinnedRuntimeDeclarationInventory": true,
+          "note": "Preserve unowned original; route known owned capabilities and explicitly deny all other owned methods. Required-case strings are not the complete inventory."
+        }
+      ],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [
+        {
+          "owner": "android.os.BatteryManager",
+          "method": "<init>",
+          "parameterTypes": [
+            "android.content.Context",
+            "com.android.internal.app.IBatteryStats",
+            "android.os.IBatteryPropertiesRegistrar"
+          ]
+        }
+      ],
+      "notes": [],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 5,
+          "text": "const create = Manager.$new.overload(\"android.content.Context\", \"com.android.internal.app.IBatteryStats\", \"android.os.IBatteryPropertiesRegistrar\");"
+        },
+        {
+          "line": 16,
+          "text": "const method = Manager[name].overload(...signature);"
+        }
+      ],
+      "requiredCaseSignatures": [
+        "computeChargeTimeRemaining()",
+        "getIntProperty(int)",
+        "getLongProperty(int)",
+        "isCharging()"
+      ],
+      "currentSelfHookFixedInventory": "FixedManagerInventory / RuntimeSelfHookManagers"
+    },
+    "connectivity.ts": {
+      "source": "android/runtime/agent/connectivity.ts",
+      "sha256": "d9836ca27d3e919d47556d24dd711ca487e5e98efc8e10056287cacc1a32b4f2",
+      "literalJavaUseBootClasses": [
+        "android.net.ConnectivityManager",
+        "android.net.ConnectivityManager$NetworkCallback",
+        "java.lang.UnsupportedOperationException"
+      ],
+      "fixedHooks": [],
+      "inventoryHooks": [
+        {
+          "owner": "android.net.ConnectivityManager",
+          "selection": "all_declared_instance_methods",
+          "requiresPinnedRuntimeDeclarationInventory": true,
+          "note": "Preserve unowned original; route known owned capabilities and explicitly deny all other owned methods. Required-case strings are not the complete inventory."
+        }
+      ],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [
+        {
+          "owner": "android.net.ConnectivityManager",
+          "method": "<init>",
+          "parameterTypes": [
+            "android.content.Context",
+            "android.net.IConnectivityManager"
+          ]
+        }
+      ],
+      "notes": [],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 5,
+          "text": "const create = Manager.$new.overload(\"android.content.Context\", \"android.net.IConnectivityManager\");"
+        },
+        {
+          "line": 32,
+          "text": "const method = Manager[name].overload(...signature);"
+        }
+      ],
+      "requiredCaseSignatures": [
+        "getActiveNetwork()",
+        "getActiveNetworkInfo()",
+        "getAllNetworkInfo()",
+        "getAllNetworks()",
+        "getDefaultProxy()",
+        "getLinkProperties(android.net.Network)",
+        "getNetworkCapabilities(android.net.Network)",
+        "getNetworkInfo(android.net.Network)",
+        "getNetworkInfo(int)",
+        "getRestrictBackgroundStatus()",
+        "isActiveNetworkMetered()",
+        "registerDefaultNetworkCallback(android.net.ConnectivityManager$NetworkCallback)",
+        "registerDefaultNetworkCallback(android.net.ConnectivityManager$NetworkCallback,android.os.Handler)",
+        "registerNetworkCallback(android.net.NetworkRequest,android.net.ConnectivityManager$NetworkCallback)",
+        "registerNetworkCallback(android.net.NetworkRequest,android.net.ConnectivityManager$NetworkCallback,android.os.Handler)",
+        "unregisterNetworkCallback(android.net.ConnectivityManager$NetworkCallback)"
+      ],
+      "currentSelfHookFixedInventory": "FixedManagerInventory / RuntimeSelfHookManagers"
+    },
+    "failures.ts": {
+      "source": "android/runtime/agent/failures.ts",
+      "sha256": "a6ada2331932ac56876aa618b9d9d925d8b24c85ecc8df7076eaced7ecc56893",
+      "literalJavaUseBootClasses": [
+        "java.lang.Runtime",
+        "java.lang.Thread",
+        "java.lang.ThreadGroup",
+        "java.lang.Throwable"
+      ],
+      "fixedHooks": [
+        {
+          "owner": "java.lang.Thread",
+          "method": "dispatchUncaughtException",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "java.lang.Throwable"
+          ],
+          "line": 6
+        },
+        {
+          "owner": "java.lang.ThreadGroup",
+          "method": "uncaughtException",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "java.lang.Thread",
+            "java.lang.Throwable"
+          ],
+          "line": 13
+        },
+        {
+          "owner": "java.lang.Runtime",
+          "method": "exit",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "int"
+          ],
+          "line": 20
+        },
+        {
+          "owner": "java.lang.Runtime",
+          "method": "halt",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "int"
+          ],
+          "line": 20
+        }
+      ],
+      "inventoryHooks": [],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [],
+      "notes": [],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 6,
+          "text": "const dispatch = Thread.dispatchUncaughtException.overload(\"java.lang.Throwable\");"
+        },
+        {
+          "line": 13,
+          "text": "const uncaught = Group.uncaughtException.overload(\"java.lang.Thread\", \"java.lang.Throwable\");"
+        },
+        {
+          "line": 20,
+          "text": "const method = Runtime[name].overload(\"int\");"
+        }
+      ]
+    },
+    "hook_execution.ts": {
+      "source": "android/runtime/agent/hook_execution.ts",
+      "sha256": "a051ff7c61fc287f5c02ff19db2511ed75e2d6e274d284adb61d65a8ef55464a",
+      "literalJavaUseBootClasses": [],
+      "fixedHooks": [],
+      "inventoryHooks": [],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [],
+      "notes": [
+        "Dynamic SDK/evidence/module plumbing; no fixed boot target inventory provided by this module."
+      ],
+      "explicitOverloadSourceLines": []
+    },
+    "hook_java.ts": {
+      "source": "android/runtime/agent/hook_java.ts",
+      "sha256": "a835df3f450d5e22a9b99b8c907146f23a1329279c42565abd0d3f05faccc04e",
+      "literalJavaUseBootClasses": [],
+      "fixedHooks": [],
+      "inventoryHooks": [],
+      "dynamicHooks": [
+        {
+          "owner": "evidence-selected guest loader Class",
+          "method": "symbol.methodName",
+          "parameterTypes": "symbol.argumentTypes",
+          "selection": "exact observed method identity"
+        }
+      ],
+      "frameworkCallsNotHooks": [],
+      "notes": [
+        "Dynamic SDK/evidence/module plumbing; no fixed boot target inventory provided by this module."
+      ],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 9,
+          "text": "const method = owner[symbol.methodName].overload(...symbol.argumentTypes);"
+        }
+      ]
+    },
+    "hook_modules.ts": {
+      "source": "android/runtime/agent/hook_modules.ts",
+      "sha256": "8488caca63dd38c5e637a5e62993984061c0fed63525e8f051bc7c5fae811ce1",
+      "literalJavaUseBootClasses": [],
+      "fixedHooks": [],
+      "inventoryHooks": [],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [],
+      "notes": [
+        "Dynamic SDK/evidence/module plumbing; no fixed boot target inventory provided by this module."
+      ],
+      "explicitOverloadSourceLines": []
+    },
+    "hook_native.ts": {
+      "source": "android/runtime/agent/hook_native.ts",
+      "sha256": "9e6706c6ed5fb9c4245848307babd1ec359085792fd0e092a98b332c95edf2ed",
+      "literalJavaUseBootClasses": [],
+      "fixedHooks": [],
+      "inventoryHooks": [],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [],
+      "notes": [
+        "Dynamic SDK/evidence/module plumbing; no fixed boot target inventory provided by this module."
+      ],
+      "explicitOverloadSourceLines": []
+    },
+    "hooks.ts": {
+      "source": "android/runtime/agent/hooks.ts",
+      "sha256": "44cc827ba93f863a384c9f2ff9e15b4261121c73972fdae88ea15f0b58367841",
+      "literalJavaUseBootClasses": [
+        "android.os.SystemClock",
+        "java.lang.IllegalStateException"
+      ],
+      "fixedHooks": [],
+      "inventoryHooks": [],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [],
+      "notes": [
+        "Dynamic SDK/evidence/module plumbing; no fixed boot target inventory provided by this module."
+      ],
+      "explicitOverloadSourceLines": []
+    },
+    "index.ts": {
+      "source": "android/runtime/agent/index.ts",
+      "sha256": "531cd88a12ba317c83a957466f73b9bfeb51c6b896a92caabd880f00de0ad437",
+      "literalJavaUseBootClasses": [
+        "android.app.Activity",
+        "android.app.Application",
+        "android.app.Instrumentation",
+        "android.app.QueuedWork",
+        "android.content.ContextWrapper",
+        "android.util.Log",
+        "android.view.ContextThemeWrapper",
+        "android.view.ViewRootImpl",
+        "java.lang.IllegalStateException",
+        "java.lang.SecurityException",
+        "java.lang.UnsupportedOperationException"
+      ],
+      "fixedHooks": [
+        {
+          "owner": "android.view.ViewRootImpl",
+          "method": "playSoundEffect",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "int"
+          ],
+          "line": 32
+        },
+        {
+          "owner": "android.app.Application",
+          "method": "getProcessName",
+          "selection": "implicit_single_overload",
+          "parameterTypes": null,
+          "line": 46
+        },
+        {
+          "owner": "android.app.Instrumentation",
+          "method": "checkStartActivityResult",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "int",
+            "java.lang.Object"
+          ]
+        },
+        {
+          "owner": "android.app.Instrumentation",
+          "method": "execStartActivity",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "android.content.Context",
+            "android.os.IBinder",
+            "android.os.IBinder",
+            "android.app.Activity",
+            "android.content.Intent",
+            "int",
+            "android.os.Bundle"
+          ]
+        },
+        {
+          "owner": "android.app.Activity",
+          "method": "finish",
+          "selection": "exact_overload",
+          "parameterTypes": []
+        },
+        {
+          "owner": "android.app.Activity",
+          "method": "dispatchActivityResult",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "java.lang.String",
+            "int",
+            "int",
+            "android.content.Intent",
+            "android.app.ComponentCaller",
+            "java.lang.String"
+          ]
+        }
+      ],
+      "inventoryHooks": [
+        {
+          "owner": "android.app.Instrumentation",
+          "selection": "all_overloads_of_names_with_prefix",
+          "requiresPinnedRuntimeDeclarationInventory": true,
+          "methodNames": [
+            "execStartActivit*"
+          ],
+          "note": "Deny entire family before installing the one explicit supported execStartActivity overload."
+        }
+      ],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [
+        {
+          "owner": "android.app.QueuedWork",
+          "method": "addFinisher",
+          "parameterTypes": [
+            "java.lang.Runnable"
+          ]
+        },
+        {
+          "owner": "android.app.Application",
+          "method": "attach",
+          "parameterTypes": [
+            "android.content.Context"
+          ]
+        }
+      ],
+      "notes": [
+        "This is the production runtime assembly. android/agent/index.ts is a separate old hooklab/demo adapter.",
+        "Bridge.attach mutates ContextThemeWrapper.mResources/mTheme/mThemeResource and Activity.mApplication/mComponent/mActivityInfo; fixed field access is still needed."
+      ],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 32,
+          "text": "ViewRoot.playSoundEffect.overload(\"int\").implementation = function (this: any, effect: number) {"
+        },
+        {
+          "line": 37,
+          "text": "const addFinisher = QueuedWork.addFinisher.overload(\"java.lang.Runnable\");"
+        },
+        {
+          "line": 42,
+          "text": "const applicationAttach = Java.use(\"android.app.Application\").attach.overload(\"android.content.Context\");"
+        },
+        {
+          "line": 69,
+          "text": "const startResult = Instrumentation.checkStartActivityResult.overload(\"int\", \"java.lang.Object\");"
+        },
+        {
+          "line": 79,
+          "text": "const start = Instrumentation.execStartActivity.overload(\"android.content.Context\", \"android.os.IBinder\", \"android.os.IBinder\", \"android.app.Activity\", \"android.content.Intent\", \"int\", \"android.os.Bundle\");"
+        },
+        {
+          "line": 86,
+          "text": "const finish = Activity.finish.overload();"
+        },
+        {
+          "line": 94,
+          "text": "const delivery = Activity.dispatchActivityResult.overload(\"java.lang.String\", \"int\", \"int\", \"android.content.Intent\", \"android.app.ComponentCaller\", \"java.lang.String\");"
+        }
+      ]
+    },
+    "network-stats.ts": {
+      "source": "android/runtime/agent/network-stats.ts",
+      "sha256": "6ecf4fc6aee4dd8eaffec61d4f9ae207d9e6542ff43f15723f8a694d654f281b",
+      "literalJavaUseBootClasses": [
+        "android.app.usage.NetworkStatsManager",
+        "android.net.TrafficStats",
+        "java.lang.SecurityException"
+      ],
+      "fixedHooks": [],
+      "inventoryHooks": [
+        {
+          "owner": "android.app.usage.NetworkStatsManager",
+          "selection": "all_declared_instance_methods",
+          "requiresPinnedRuntimeDeclarationInventory": true,
+          "note": "Preserve unowned original; route known owned capabilities and explicitly deny all other owned methods. Required-case strings are not the complete inventory."
+        },
+        {
+          "owner": "android.net.TrafficStats",
+          "selection": "all_declared_public_static_methods",
+          "requiresPinnedRuntimeDeclarationInventory": true,
+          "note": "Some targets may be native. RuntimeManagedInstaller currently rejects native preflight even though core ManagedHook has Native support; fixed admission and installer dispatch must agree."
+        }
+      ],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [
+        {
+          "owner": "android.app.usage.NetworkStatsManager",
+          "method": "<init>",
+          "parameterTypes": [
+            "android.content.Context",
+            "android.net.INetworkStatsService"
+          ]
+        }
+      ],
+      "notes": [],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 5,
+          "text": "const construct = Manager.$new.overload(\"android.content.Context\", \"android.net.INetworkStatsService\");"
+        },
+        {
+          "line": 11,
+          "text": "if(installed.has(key))continue;const method=Manager[name].overload(...signature);"
+        },
+        {
+          "line": 25,
+          "text": "if(seen.has(key))continue;const method=Traffic[name].overload(...signature);"
+        }
+      ],
+      "requiredCaseSignatures": [
+        "getIfaceStats(java.lang.String,int)",
+        "getMobileRxBytes()",
+        "getMobileRxPackets()",
+        "getMobileTxBytes()",
+        "getMobileTxPackets()",
+        "getRxBytes(java.lang.String)",
+        "getRxPackets(java.lang.String)",
+        "getTotalRxBytes()",
+        "getTotalRxPackets()",
+        "getTotalStats(int)",
+        "getTotalTxBytes()",
+        "getTotalTxPackets()",
+        "getTxBytes(java.lang.String)",
+        "getTxPackets(java.lang.String)",
+        "getUidRxBytes(int)",
+        "getUidRxPackets(int)",
+        "getUidStats(int,int)",
+        "getUidTxBytes(int)",
+        "getUidTxPackets(int)",
+        "querySummary(int,java.lang.String,long,long)"
+      ],
+      "currentSelfHookFixedInventory": "missing"
+    },
+    "notifications.ts": {
+      "source": "android/runtime/agent/notifications.ts",
+      "sha256": "9bac3dcc772abf76ca28b43c459d903834bf5553cf522bc5ed0c31bfdba4def9",
+      "literalJavaUseBootClasses": [
+        "android.app.NotificationChannel",
+        "android.app.NotificationChannelGroup",
+        "android.app.NotificationManager",
+        "java.lang.UnsupportedOperationException",
+        "java.time.InstantSource",
+        "java.util.ArrayList"
+      ],
+      "fixedHooks": [],
+      "inventoryHooks": [
+        {
+          "owner": "android.app.NotificationManager",
+          "selection": "all_declared_instance_methods",
+          "requiresPinnedRuntimeDeclarationInventory": true,
+          "note": "Preserve unowned original; route known owned capabilities and explicitly deny all other owned methods. Required-case strings are not the complete inventory."
+        }
+      ],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [
+        {
+          "owner": "android.app.NotificationManager",
+          "method": "<init>",
+          "parameterTypes": [
+            "android.content.Context",
+            "java.time.InstantSource"
+          ]
+        },
+        {
+          "owner": "android.app.NotificationChannel",
+          "method": "setId",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ],
+      "notes": [
+        "NotificationChannelGroup.mId and mChannels field writes are direct access requirements, not hooks."
+      ],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 5,
+          "text": "const construct = Manager.$new.overload(\"android.content.Context\", \"java.time.InstantSource\");"
+        },
+        {
+          "line": 8,
+          "text": "const setId = Channel.setId.overload(\"java.lang.String\");"
+        },
+        {
+          "line": 33,
+          "text": "if(installed.has(key))continue;const method=Manager[name].overload(...signature);"
+        }
+      ],
+      "requiredCaseSignatures": [
+        "areNotificationsEnabled()",
+        "areNotificationsPaused()",
+        "cancel(int)",
+        "cancel(java.lang.String,int)",
+        "cancelAll()",
+        "createNotificationChannel(android.app.NotificationChannel)",
+        "createNotificationChannelGroup(android.app.NotificationChannelGroup)",
+        "createNotificationChannelGroups(java.util.List)",
+        "createNotificationChannels(java.util.List)",
+        "deleteNotificationChannel(java.lang.String)",
+        "deleteNotificationChannelGroup(java.lang.String)",
+        "getCurrentInterruptionFilter()",
+        "getImportance()",
+        "getNotificationChannel(java.lang.String)",
+        "getNotificationChannel(java.lang.String,java.lang.String)",
+        "getNotificationChannelGroup(java.lang.String)",
+        "getNotificationChannelGroups()",
+        "getNotificationChannels()",
+        "shouldHideSilentStatusBarIcons()"
+      ],
+      "currentSelfHookFixedInventory": "missing"
+    },
+    "packages.ts": {
+      "source": "android/runtime/agent/packages.ts",
+      "sha256": "b2376abc8aa2e35e26961951011df673c4b0eaee04bdc528d201776fc2d5b8f7",
+      "literalJavaUseBootClasses": [
+        "android.app.ActivityThread",
+        "android.app.ApplicationPackageManager",
+        "android.app.ContextImpl",
+        "android.content.ContextWrapper",
+        "android.content.pm.IPackageManager",
+        "android.content.pm.PackageItemInfo",
+        "android.content.pm.PackageManager",
+        "android.content.pm.PackageManager$NameNotFoundException",
+        "android.os.IInterface",
+        "android.os.Process",
+        "android.os.ServiceManager",
+        "java.lang.IllegalArgumentException",
+        "java.lang.IllegalStateException",
+        "java.lang.Object",
+        "java.lang.String",
+        "java.lang.UnsupportedOperationException",
+        "java.util.Map"
+      ],
+      "fixedHooks": [
+        {
+          "owner": "android.app.ContextImpl",
+          "method": "getPackageManager",
+          "selection": "exact_overload",
+          "parameterTypes": [],
+          "line": 35
+        }
+      ],
+      "inventoryHooks": [
+        {
+          "owner": "android.os.ServiceManager",
+          "selection": "all_declared_static_methods_whose_first_parameter_is_java.lang.String",
+          "requiresPinnedRuntimeDeclarationInventory": true,
+          "note": "All static declarations with first parameter String are intercepted. Only five named one-argument getters return the logical Binder; other selected overloads, including rawGetService, deny package access.",
+          "requiredOneArgumentNames": [
+            "getService",
+            "getServiceOrThrow",
+            "checkService",
+            "waitForService",
+            "waitForDeclaredService",
+            "rawGetService"
+          ]
+        },
+        {
+          "owner": "android.app.ApplicationPackageManager and each superclass excluding java.lang.Object",
+          "selection": "all_declared_non_static_non_abstract_methods_across_hierarchy",
+          "requiresPinnedRuntimeDeclarationInventory": true,
+          "note": "Source does not filter to public only. Unsupported logical operations are denied."
+        }
+      ],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [
+        {
+          "owner": "android.app.ApplicationPackageManager",
+          "method": "<init>",
+          "parameterTypes": [
+            "android.app.ContextImpl",
+            "android.content.pm.IPackageManager"
+          ]
+        }
+      ],
+      "notes": [
+        "Direct fields: ApplicationPackageManager.mPM, ActivityThread.sPackageManager, ServiceManager.sCache, ContextImpl.mPackageManager. Capture physical endpoint before activation."
+      ],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 13,
+          "text": "const construct = Manager.$new.overload(\"android.app.ContextImpl\", \"android.content.pm.IPackageManager\");"
+        },
+        {
+          "line": 35,
+          "text": "const getManager=Context.getPackageManager.overload();"
+        },
+        {
+          "line": 43,
+          "text": "const original=ServiceManager[name].overload(...signature);"
+        },
+        {
+          "line": 89,
+          "text": "const method=owner[name].overload(...signature);"
+        }
+      ]
+    },
+    "power.ts": {
+      "source": "android/runtime/agent/power.ts",
+      "sha256": "a0902cb6cacb8e14f8a05ca2188fc059ffa8a92656a9588cbefdf2a8c7b41590",
+      "literalJavaUseBootClasses": [
+        "android.os.Handler",
+        "android.os.Looper",
+        "android.os.PowerManager",
+        "java.lang.UnsupportedOperationException"
+      ],
+      "fixedHooks": [],
+      "inventoryHooks": [
+        {
+          "owner": "android.os.PowerManager",
+          "selection": "all_declared_instance_methods",
+          "requiresPinnedRuntimeDeclarationInventory": true,
+          "note": "Preserve unowned original; route known owned capabilities and explicitly deny all other owned methods. Required-case strings are not the complete inventory."
+        }
+      ],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [
+        {
+          "owner": "android.os.PowerManager",
+          "method": "<init>",
+          "parameterTypes": [
+            "android.content.Context",
+            "android.os.IPowerManager",
+            "android.os.IThermalService",
+            "android.os.Handler"
+          ]
+        }
+      ],
+      "notes": [],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 5,
+          "text": "const create=Manager.$new.overload(\"android.content.Context\",\"android.os.IPowerManager\",\"android.os.IThermalService\",\"android.os.Handler\");"
+        },
+        {
+          "line": 21,
+          "text": "if(installed.has(key))continue;const method=Manager[name].overload(...signature);"
+        }
+      ],
+      "requiredCaseSignatures": [
+        "addThermalHeadroomListener(android.os.PowerManager$OnThermalHeadroomChangedListener)",
+        "addThermalHeadroomListener(java.util.concurrent.Executor,android.os.PowerManager$OnThermalHeadroomChangedListener)",
+        "addThermalStatusListener(android.os.PowerManager$OnThermalStatusChangedListener)",
+        "addThermalStatusListener(java.util.concurrent.Executor,android.os.PowerManager$OnThermalStatusChangedListener)",
+        "getBatteryDischargePrediction()",
+        "getCurrentThermalStatus()",
+        "getLocationPowerSaveMode()",
+        "getThermalHeadroom(int)",
+        "getThermalHeadroomThresholds()",
+        "isAllowedInLowPowerStandby(int)",
+        "isAllowedInLowPowerStandby(java.lang.String)",
+        "isBatteryDischargePredictionPersonalized()",
+        "isDeviceIdleMode()",
+        "isDeviceLightIdleMode()",
+        "isExemptFromLowPowerStandby()",
+        "isIgnoringBatteryOptimizations(java.lang.String)",
+        "isInteractive()",
+        "isLowPowerStandbyEnabled()",
+        "isPowerSaveMode()",
+        "isRebootingUserspaceSupported()",
+        "isScreenOn()",
+        "isSustainedPerformanceModeSupported()",
+        "isWakeLockLevelSupported(int)",
+        "removeThermalHeadroomListener(android.os.PowerManager$OnThermalHeadroomChangedListener)",
+        "removeThermalStatusListener(android.os.PowerManager$OnThermalStatusChangedListener)"
+      ],
+      "currentSelfHookFixedInventory": "FixedManagerInventory / RuntimeSelfHookManagers"
+    },
+    "providers.ts": {
+      "source": "android/runtime/agent/providers.ts",
+      "sha256": "d0f7544c03668404aa49e546670fa62fc5a0ef3e19dd44262ae10a73b0f98eec",
+      "literalJavaUseBootClasses": [
+        "android.content.ContentProvider",
+        "android.content.ContentProviderOperation",
+        "android.content.ContentProviderOperation$BackReference",
+        "android.content.ContentResolver",
+        "android.os.Process",
+        "android.util.Log",
+        "java.lang.IllegalArgumentException",
+        "java.lang.IllegalStateException",
+        "java.lang.SecurityException",
+        "java.lang.String",
+        "java.lang.UnsupportedOperationException"
+      ],
+      "fixedHooks": [
+        {
+          "owner": "actual class returned by RuntimeBridge.resolver() / ContentResolver.wrap(router)",
+          "method": "acquireProvider",
+          "selection": "exact_overload_dynamic_boot_owner",
+          "parameterTypes": [
+            "android.content.Context",
+            "java.lang.String"
+          ],
+          "line": 48
+        },
+        {
+          "owner": "actual class returned by RuntimeBridge.resolver() / ContentResolver.wrap(router)",
+          "method": "acquireUnstableProvider",
+          "selection": "exact_overload_dynamic_boot_owner",
+          "parameterTypes": [
+            "android.content.Context",
+            "java.lang.String"
+          ],
+          "line": 48
+        },
+        {
+          "owner": "actual class returned by RuntimeBridge.resolver() / ContentResolver.wrap(router)",
+          "method": "acquireExistingProvider",
+          "selection": "exact_overload_dynamic_boot_owner",
+          "parameterTypes": [
+            "android.content.Context",
+            "java.lang.String"
+          ],
+          "line": 48
+        },
+        {
+          "owner": "actual class returned by RuntimeBridge.resolver() / ContentResolver.wrap(router)",
+          "method": "releaseProvider",
+          "selection": "exact_overload_dynamic_boot_owner",
+          "parameterTypes": [
+            "android.content.IContentProvider"
+          ],
+          "line": 62
+        },
+        {
+          "owner": "actual class returned by RuntimeBridge.resolver() / ContentResolver.wrap(router)",
+          "method": "releaseUnstableProvider",
+          "selection": "exact_overload_dynamic_boot_owner",
+          "parameterTypes": [
+            "android.content.IContentProvider"
+          ],
+          "line": 62
+        },
+        {
+          "owner": "android.content.ContentResolver",
+          "method": "unregisterContentObserver",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "android.database.ContentObserver"
+          ],
+          "line": 79
+        },
+        {
+          "owner": "android.content.ContentProvider",
+          "method": "attachInfo",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "android.content.Context",
+            "android.content.pm.ProviderInfo",
+            "boolean"
+          ],
+          "line": 97
+        },
+        {
+          "owner": "android.content.ContentProvider",
+          "method": "getCallingPackage",
+          "selection": "exact_overload",
+          "parameterTypes": [],
+          "line": 104
+        },
+        {
+          "owner": "android.content.ContentProvider",
+          "method": "getCallingPackageUnchecked",
+          "selection": "exact_overload",
+          "parameterTypes": [],
+          "line": 104
+        },
+        {
+          "owner": "android.content.ContentProvider",
+          "method": "getCallingAttributionTag",
+          "selection": "exact_overload",
+          "parameterTypes": [],
+          "line": 104
+        },
+        {
+          "owner": "android.content.ContentProvider",
+          "method": "getCallingAttributionSource",
+          "selection": "exact_overload",
+          "parameterTypes": [],
+          "line": 104
+        },
+        {
+          "owner": "android.content.ContentProvider",
+          "method": "clearCallingIdentity",
+          "selection": "exact_overload",
+          "parameterTypes": [],
+          "line": 111
+        },
+        {
+          "owner": "android.content.ContentProvider",
+          "method": "restoreCallingIdentity",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "android.content.ContentProvider$CallingIdentity"
+          ],
+          "line": 117
+        }
+      ],
+      "inventoryHooks": [
+        {
+          "owner": "android.content.ContentResolver",
+          "selection": "all_overloads_of_named_methods",
+          "requiresPinnedRuntimeDeclarationInventory": true,
+          "methodNames": [
+            "registerContentObserver"
+          ],
+          "note": "Owned callback admits only argument counts 3 or 4; exact declarations must be obtained from the fixed registry."
+        },
+        {
+          "owner": "android.content.ContentResolver",
+          "selection": "all_overloads_of_named_methods",
+          "requiresPinnedRuntimeDeclarationInventory": true,
+          "methodNames": [
+            "takePersistableUriPermission",
+            "releasePersistableUriPermission",
+            "getPersistedUriPermissions",
+            "getOutgoingPersistedUriPermissions",
+            "notifyChange"
+          ],
+          "note": "Deny for owned resolver; forward original for unowned resolver."
+        }
+      ],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [
+        {
+          "owner": "android.content.ContentProvider",
+          "method": "getIContentProvider",
+          "parameterTypes": [],
+          "note": "Existing ComponentFrameworkAccess.providerHandle; settings handle registration occurs during install."
+        }
+      ],
+      "notes": [
+        "Wrapped resolver owner is observed in old TS, not named as a fixed class literal. Do not guess ContentResolver$1 or another private class name. Pin its actual identity and declarations before installing.",
+        "Existing F2 selection fields: ContentProviderOperation.mSelectionArgs, BackReference.fromIndex/fromKey; these accessors do not install resolver/provider hooks."
+      ],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 48,
+          "text": "const acquire = Restricted[method].overload(\"android.content.Context\", \"java.lang.String\");"
+        },
+        {
+          "line": 62,
+          "text": "const release = Restricted[method].overload(\"android.content.IContentProvider\");"
+        },
+        {
+          "line": 79,
+          "text": "const unregister = Resolver.unregisterContentObserver.overload(\"android.database.ContentObserver\");"
+        },
+        {
+          "line": 97,
+          "text": "const attach = Provider.attachInfo.overload(\"android.content.Context\", \"android.content.pm.ProviderInfo\", \"boolean\");"
+        },
+        {
+          "line": 104,
+          "text": "const original = Provider[name].overload();"
+        },
+        {
+          "line": 111,
+          "text": "const clear = Provider.clearCallingIdentity.overload();"
+        },
+        {
+          "line": 117,
+          "text": "const restore = Provider.restoreCallingIdentity.overload(\"android.content.ContentProvider$CallingIdentity\");"
+        }
+      ]
+    },
+    "receivers.ts": {
+      "source": "android/runtime/agent/receivers.ts",
+      "sha256": "82a5c84f5b4819d2e50b84b3cb948834d47e09f04abcf70887ac05625b19357a",
+      "literalJavaUseBootClasses": [
+        "android.app.ActivityThread",
+        "android.content.BroadcastReceiver",
+        "android.content.BroadcastReceiver$PendingResult",
+        "android.content.Context",
+        "android.content.Intent",
+        "java.lang.IllegalStateException",
+        "java.lang.UnsupportedOperationException"
+      ],
+      "fixedHooks": [
+        {
+          "owner": "android.content.BroadcastReceiver",
+          "method": "goAsync",
+          "selection": "exact_overload",
+          "parameterTypes": [],
+          "line": 31
+        },
+        {
+          "owner": "android.content.BroadcastReceiver$PendingResult",
+          "method": "finish",
+          "selection": "exact_overload",
+          "parameterTypes": [],
+          "line": 37
+        },
+        {
+          "owner": "android.content.BroadcastReceiver",
+          "method": "peekService",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "android.content.Context",
+            "android.content.Intent"
+          ],
+          "line": 39
+        }
+      ],
+      "inventoryHooks": [],
+      "dynamicHooks": [
+        {
+          "owner": "actual concrete declaring class for owned receiver.onReceive",
+          "method": "onReceive",
+          "parameterTypes": [
+            "android.content.Context",
+            "android.content.Intent"
+          ],
+          "selection": "guest receiver getMethod(...).getDeclaringClass()",
+          "note": "RuntimeSelfHookComponents.installReceiver exists; bridge must enroll each created receiver before delivery."
+        }
+      ],
+      "frameworkCallsNotHooks": [
+        {
+          "owner": "android.app.ActivityThread",
+          "method": "getPackageManager",
+          "parameterTypes": []
+        },
+        {
+          "owner": "android.content.pm.IPackageManager",
+          "method": "isProtectedBroadcast",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "owner": "android.content.BroadcastReceiver",
+          "method": "getPendingResult",
+          "parameterTypes": []
+        }
+      ],
+      "notes": [],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 18,
+          "text": "const method = (factory as any).use(declaring, { members: \"methods\" }).onReceive.overload(\"android.content.Context\", \"android.content.Intent\");"
+        },
+        {
+          "line": 31,
+          "text": "const async = Receiver.goAsync.overload();"
+        },
+        {
+          "line": 37,
+          "text": "const finish = Java.use(\"android.content.BroadcastReceiver$PendingResult\").finish.overload();"
+        },
+        {
+          "line": 39,
+          "text": "const peek = Receiver.peekService.overload(\"android.content.Context\", \"android.content.Intent\");"
+        }
+      ]
+    },
+    "reflection-view.ts": {
+      "source": "android/runtime/agent/reflection-view.ts",
+      "sha256": "439e206b730257bd47a58a33e3b01c5465b651e29acc8f737682e1b2e868b085",
+      "literalJavaUseBootClasses": [
+        "android.app.Application",
+        "java.lang.SecurityException",
+        "java.lang.reflect.Field"
+      ],
+      "fixedHooks": [
+        {
+          "owner": "java.lang.reflect.Field",
+          "method": "get",
+          "selection": "native_implementation_entry_interception",
+          "parameterTypes": [
+            "java.lang.Object"
+          ],
+          "note": "Current self-hook counterpart is art_reflection_view.c using fixed JNI bindings; preserve original caller-sensitive ART frame."
+        },
+        {
+          "owner": "java.lang.reflect.Field",
+          "method": "set",
+          "selection": "native_implementation_entry_interception",
+          "parameterTypes": [
+            "java.lang.Object",
+            "java.lang.Object"
+          ],
+          "note": "Current self-hook counterpart is art_reflection_view.c using fixed JNI bindings; preserve original caller-sensitive ART frame."
+        }
+      ],
+      "inventoryHooks": [],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [],
+      "notes": [],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 8,
+          "text": "const get = resolve(Field.get.overload(\"java.lang.Object\").handle);"
+        },
+        {
+          "line": 9,
+          "text": "const set = resolve(Field.set.overload(\"java.lang.Object\", \"java.lang.Object\").handle);"
+        }
+      ]
+    },
+    "services.ts": {
+      "source": "android/runtime/agent/services.ts",
+      "sha256": "3fe5921a82ab3b0b7b1f61713cbc83e089c61d02eb07441af016934007923e20",
+      "literalJavaUseBootClasses": [
+        "android.app.Service",
+        "java.lang.Integer",
+        "java.lang.UnsupportedOperationException"
+      ],
+      "fixedHooks": [
+        {
+          "owner": "android.app.Service",
+          "method": "attach",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "android.content.Context",
+            "android.app.ActivityThread",
+            "java.lang.String",
+            "android.os.IBinder",
+            "android.app.Application",
+            "java.lang.Object"
+          ],
+          "line": 6
+        },
+        {
+          "owner": "android.app.Service",
+          "method": "stopSelfResult",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "int"
+          ],
+          "line": 36
+        },
+        {
+          "owner": "android.app.Service",
+          "method": "stopSelf",
+          "selection": "exact_overload",
+          "parameterTypes": [
+            "int"
+          ],
+          "line": 41
+        }
+      ],
+      "inventoryHooks": [
+        {
+          "owner": "android.app.Service",
+          "selection": "all_overloads_of_named_methods",
+          "requiresPinnedRuntimeDeclarationInventory": true,
+          "methodNames": [
+            "startForeground",
+            "stopForeground",
+            "getForegroundServiceType"
+          ],
+          "note": "Owned services deny these operations; install every measured overload, not a supported-only subset."
+        }
+      ],
+      "dynamicHooks": [
+        {
+          "owner": "actual declaring class of each concrete guest service lifecycle",
+          "selection": "getMethod(name, parameterTypes).getDeclaringClass()",
+          "methods": [
+            {
+              "method": "onCreate",
+              "parameterTypes": []
+            },
+            {
+              "method": "onDestroy",
+              "parameterTypes": []
+            },
+            {
+              "method": "onBind",
+              "parameterTypes": [
+                "android.content.Intent"
+              ]
+            },
+            {
+              "method": "onUnbind",
+              "parameterTypes": [
+                "android.content.Intent"
+              ]
+            },
+            {
+              "method": "onRebind",
+              "parameterTypes": [
+                "android.content.Intent"
+              ]
+            },
+            {
+              "method": "onStartCommand",
+              "parameterTypes": [
+                "android.content.Intent",
+                "int",
+                "int"
+              ]
+            }
+          ],
+          "note": "May resolve to boot android.app.Service for inherited implementations; those exact methods also need F6 admission. RuntimeSelfHookComponents.installService already builds this map."
+        }
+      ],
+      "frameworkCallsNotHooks": [],
+      "notes": [
+        "RuntimeSelfHookPlatformCallbacks also provides stopSelf() with no arguments, but legacy services.ts only intercepts stopSelf(int); do not label no-arg as an explicit legacy selector.",
+        "Existing F2 ServiceTokenAccess uses Service.mActivityManager, Service.mToken and IActivityManager.stopServiceToken; these are calls/field reads, not the missing framework interception batch."
+      ],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 6,
+          "text": "const attach = Service.attach.overload(\"android.content.Context\", \"android.app.ActivityThread\", \"java.lang.String\", \"android.os.IBinder\", \"android.app.Application\", \"java.lang.Object\");"
+        },
+        {
+          "line": 21,
+          "text": "const method = clazz[name].overload(...signature);"
+        },
+        {
+          "line": 36,
+          "text": "const stopResult = Service.stopSelfResult.overload(\"int\");"
+        },
+        {
+          "line": 41,
+          "text": "const stopId = Service.stopSelf.overload(\"int\");"
+        }
+      ]
+    },
+    "shortcuts.ts": {
+      "source": "android/runtime/agent/shortcuts.ts",
+      "sha256": "33434f2883ec9eb10c2a0467d6fafd616eb15fd0668f3fd4be85069345f402c5",
+      "literalJavaUseBootClasses": [
+        "android.content.pm.ShortcutManager",
+        "java.lang.UnsupportedOperationException"
+      ],
+      "fixedHooks": [],
+      "inventoryHooks": [
+        {
+          "owner": "android.content.pm.ShortcutManager",
+          "selection": "all_declared_instance_methods",
+          "requiresPinnedRuntimeDeclarationInventory": true,
+          "note": "Preserve unowned original; route known owned capabilities and explicitly deny all other owned methods. Required-case strings are not the complete inventory."
+        }
+      ],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [
+        {
+          "owner": "android.content.pm.ShortcutManager",
+          "method": "<init>",
+          "parameterTypes": [
+            "android.content.Context",
+            "android.content.pm.IShortcutService"
+          ]
+        }
+      ],
+      "notes": [],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 6,
+          "text": "const constructor=Manager.$new.overload(\"android.content.Context\",\"android.content.pm.IShortcutService\");"
+        },
+        {
+          "line": 12,
+          "text": "if(installed.has(key))continue;const method=Manager[name].overload(...types);"
+        }
+      ],
+      "requiredCaseSignatures": [
+        "getDynamicShortcuts()",
+        "isRequestPinShortcutSupported()",
+        "removeAllDynamicShortcuts()",
+        "requestPinShortcut(android.content.pm.ShortcutInfo,android.content.IntentSender)"
+      ],
+      "currentSelfHookFixedInventory": "missing"
+    },
+    "storage.ts": {
+      "source": "android/runtime/agent/storage.ts",
+      "sha256": "f0f76675a1e871f6a3b5483ee158943d5096bd765b697c32b3b7a84c1ce3ea40",
+      "literalJavaUseBootClasses": [],
+      "fixedHooks": [],
+      "inventoryHooks": [],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [],
+      "notes": [],
+      "explicitOverloadSourceLines": [],
+      "nativeHooks": [
+        {
+          "symbol": "__openat",
+          "replacement": "tp_openat",
+          "rva": "0xe0a40"
+        },
+        {
+          "symbol": "fstatat",
+          "replacement": "tp_fstatat",
+          "rva": "0xe0b40"
+        },
+        {
+          "symbol": "unlinkat",
+          "replacement": "tp_unlinkat",
+          "rva": "0xe0d00"
+        },
+        {
+          "symbol": "mkdirat",
+          "replacement": "tp_mkdirat",
+          "rva": "0xe0bc0"
+        },
+        {
+          "symbol": "renameat2",
+          "replacement": "tp_renameat2",
+          "rva": "0xe0c80"
+        },
+        {
+          "symbol": "__faccessat",
+          "replacement": "tp_faccessat",
+          "rva": "0xe0a80"
+        },
+        {
+          "symbol": "readlinkat",
+          "replacement": "tp_readlinkat",
+          "rva": "0xe0c40"
+        },
+        {
+          "symbol": "chdir",
+          "replacement": "tp_chdir",
+          "rva": "0xe1040"
+        },
+        {
+          "symbol": "symlinkat",
+          "replacement": "tp_symlinkat",
+          "rva": "0xe0cc0"
+        },
+        {
+          "symbol": "linkat",
+          "replacement": "tp_linkat",
+          "rva": "0xe0b80"
+        }
+      ]
+    },
+    "telephony.ts": {
+      "source": "android/runtime/agent/telephony.ts",
+      "sha256": "83ede447faa37000ee00392087865308c149f4ef151ddec09eec5dc4e0316b01",
+      "literalJavaUseBootClasses": [
+        "android.telephony.TelephonyManager",
+        "java.lang.UnsupportedOperationException"
+      ],
+      "fixedHooks": [],
+      "inventoryHooks": [
+        {
+          "owner": "android.telephony.TelephonyManager",
+          "selection": "all_declared_instance_methods",
+          "requiresPinnedRuntimeDeclarationInventory": true,
+          "note": "Preserve unowned original; route known owned capabilities and explicitly deny all other owned methods. Required-case strings are not the complete inventory."
+        }
+      ],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [
+        {
+          "owner": "android.telephony.TelephonyManager",
+          "method": "<init>",
+          "parameterTypes": [
+            "android.content.Context"
+          ]
+        }
+      ],
+      "notes": [],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 5,
+          "text": "const create = Manager.$new.overload(\"android.content.Context\");"
+        },
+        {
+          "line": 19,
+          "text": "const method = Manager[name].overload(...signature);"
+        }
+      ],
+      "requiredCaseSignatures": [
+        "getActiveModemCount()",
+        "getPhoneCount()",
+        "getPhoneType()",
+        "getSimState()",
+        "getSimState(int)",
+        "getSupportedModemCount()",
+        "isDataCapable()",
+        "isSmsCapable()",
+        "isVoiceCapable()",
+        "registerTelephonyCallback(int,java.util.concurrent.Executor,android.telephony.TelephonyCallback)",
+        "registerTelephonyCallback(java.util.concurrent.Executor,android.telephony.TelephonyCallback)",
+        "unregisterTelephonyCallback(android.telephony.TelephonyCallback)"
+      ],
+      "currentSelfHookFixedInventory": "FixedManagerInventory / RuntimeSelfHookManagers"
+    },
+    "wifi-p2p.ts": {
+      "source": "android/runtime/agent/wifi-p2p.ts",
+      "sha256": "84f4a3a0c1ff4703bc6f12ea8a5c0408eacdf248c038ca0e184b0d22564180bb",
+      "literalJavaUseBootClasses": [
+        "android.content.Context",
+        "android.net.wifi.p2p.WifiP2pManager",
+        "android.net.wifi.p2p.WifiP2pManager$Channel",
+        "java.lang.IllegalStateException",
+        "java.lang.UnsupportedOperationException"
+      ],
+      "fixedHooks": [
+        {
+          "owner": "android.net.wifi.p2p.WifiP2pManager$Channel",
+          "method": "close",
+          "selection": "exact_overload",
+          "parameterTypes": []
+        }
+      ],
+      "inventoryHooks": [
+        {
+          "owner": "android.net.wifi.p2p.WifiP2pManager",
+          "selection": "all_declared_instance_methods",
+          "requiresPinnedRuntimeDeclarationInventory": true,
+          "note": "Preserve unowned original; route known owned capabilities and explicitly deny all other owned methods. Required-case strings are not the complete inventory."
+        }
+      ],
+      "dynamicHooks": [],
+      "frameworkCallsNotHooks": [
+        {
+          "owner": "android.net.wifi.p2p.WifiP2pManager",
+          "method": "<init>",
+          "parameterTypes": [
+            "android.net.wifi.p2p.IWifiP2pManager"
+          ]
+        }
+      ],
+      "notes": [],
+      "explicitOverloadSourceLines": [
+        {
+          "line": 5,
+          "text": "const construct=Manager.$new.overload(\"android.net.wifi.p2p.IWifiP2pManager\");"
+        },
+        {
+          "line": 17,
+          "text": "if(installed.has(key))continue;const method=Manager[name].overload(...signature);"
+        },
+        {
+          "line": 26,
+          "text": "const Channel=Java.use(\"android.net.wifi.p2p.WifiP2pManager$Channel\"),close=Channel.close.overload();"
+        }
+      ],
+      "requiredCaseSignatures": [
+        "initialize(android.content.Context,android.os.Looper,android.net.wifi.p2p.WifiP2pManager$ChannelListener)",
+        "isChannelConstrainedDiscoverySupported()",
+        "isGroupClientRemovalSupported()",
+        "isGroupOwnerIPv6LinkLocalAddressProvided()",
+        "isPccModeSupported()",
+        "isSetVendorElementsSupported()",
+        "isWiFiDirectR2Supported()"
+      ],
+      "currentSelfHookFixedInventory": "missing"
+    }
+  },
+  "F6_next_batch": {
+    "prepare": "FrameworkAccess + ComponentFrameworkAccess + ServiceTokenAccess; RuntimeSelfHookComponents.prepare(engine, RuntimeSelfHookFixedFramework.INSTANCE, sharedInstaller).",
+    "services": "Install boot attach/stopSelf(int)/stopSelfResult(int), all three foreground name families, and pin inherited base lifecycle declarations; dynamic owned lifecycle enrollment already exists.",
+    "providers": "Install ContentProvider attach/identity and ContentResolver observer/denial families; construct settings resolver, pin actual wrapped resolver owner, install 3 acquisition+2 release selectors, then registerSettingsHandle.",
+    "receivers": "Install BroadcastReceiver.goAsync/peekService and PendingResult.finish, retain dynamic concrete onReceive enrollment.",
+    "admission_gap": "FrameworkAccess.requireManagedHookTarget currently permits F0 members, six manager inventories and Application.getProcessName only. F6 must extend the SAME fixed registry and admission path; callback existence is not admission.",
+    "reuse_files": [
+      "android/runtime/src/dev/tripoder/runtime/RuntimeSelfHookComponents.java",
+      "android/runtime/src/dev/tripoder/runtime/RuntimeSelfHookPlatformCallbacks.java",
+      "android/runtime/src/dev/tripoder/runtime/RuntimeSelfHookBoundaries.java",
+      "android/runtime/src/dev/tripoder/runtime/RuntimeSelfHookInstallers.java",
+      "android/runtime/src/dev/tripoder/runtime/RuntimeManagedInstaller.java"
+    ]
+  }
+}

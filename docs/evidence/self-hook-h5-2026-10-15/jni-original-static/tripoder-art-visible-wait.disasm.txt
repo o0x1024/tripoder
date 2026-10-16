@@ -1,0 +1,88 @@
+
+android/self-hook-probe/build/device-libart.so:	file format elf64-littleaarch64
+
+Disassembly of section .text:
+
+000000000046f84c:
+  46f84c:      	paciasp
+  46f850:      	sub	sp, sp, #0xa0
+  46f854:      	stp	x29, x30, [sp, #0x50]
+  46f858:      	stp	x26, x25, [sp, #0x60]
+  46f85c:      	stp	x24, x23, [sp, #0x70]
+  46f860:      	stp	x22, x21, [sp, #0x80]
+  46f864:      	stp	x20, x19, [sp, #0x90]
+  46f868:      	add	x29, sp, #0x50
+  46f86c:      	movi	v0.2d, #0000000000000000
+  46f870:      	mrs	x23, TPIDR_EL0
+  46f874:      	mov	w22, w2
+  46f878:      	ldr	x8, [x23, #0x28]
+  46f87c:      	mov	x19, x1
+  46f880:      	mov	x20, x0
+  46f884:      	stur	x8, [x29, #-0x8]
+  46f888:      	stp	q0, q0, [sp, #0x20]
+  46f88c:      	str	q0, [sp, #0x10]
+  46f890:      	tbnz	w2, #0x0, 0x46f980
+  46f894:      	add	x0, x20, #0x178
+  46f898:      	mov	x1, x19
+  46f89c:      	bl	0xaaea30
+  46f8a0:      	ldr	x21, [x20, #0x1a0]
+  46f8a4:      	cbz	x21, 0x46f8c0
+  46f8a8:      	ldr	x8, [x21, #0x18]
+  46f8ac:      	cbz	x8, 0x46f8fc
+  46f8b0:      	ldr	x8, [x20, #0x1a8]
+  46f8b4:      	mov	x9, x21
+  46f8b8:      	str	x8, [x9, #0x8]!
+  46f8bc:      	stp	xzr, x9, [x20, #0x1a0]
+  46f8c0:      	tbz	w22, #0x0, 0x46f904
+  46f8c4:      	ldr	x24, [x20, #0x1a8]
+  46f8c8:      	cbz	x24, 0x46f904
+  46f8cc:      	mov	w22, wzr
+  46f8d0:      	add	x25, sp, #0x10
+  46f8d4:      	ldr	x26, [x24, #0x1a0]
+  46f8d8:      	mov	w0, #0x10               // =16
+  46f8dc:      	bl	0xaae9a0
+  46f8e0:      	str	x26, [x0]
+  46f8e4:      	add	w22, w22, #0x1
+  46f8e8:      	str	x0, [x24, #0x1a0]
+  46f8ec:      	ldr	x24, [x24]
+  46f8f0:      	str	x25, [x0, #0x8]
+  46f8f4:      	cbnz	x24, 0x46f8d4
+  46f8f8:      	b	0x46f908
+  46f8fc:      	mov	x21, xzr
+  46f900:      	b	0x46f8c0
+  46f904:      	mov	w22, wzr
+  46f908:      	add	x0, x20, #0x178
+  46f90c:      	mov	x1, x19
+  46f910:      	bl	0xaaea40
+  46f914:      	cbz	x21, 0x46f924
+  46f918:      	mov	x0, x21
+  46f91c:      	mov	x1, x19
+  46f920:      	bl	0x220288
+  46f924:      	cbz	w22, 0x46f938
+  46f928:      	add	x0, sp, #0x10
+  46f92c:      	mov	x1, x19
+  46f930:      	mov	w2, w22
+  46f934:      	bl	0xaaff80
+  46f938:      	ldrb	w8, [sp, #0x38]
+  46f93c:      	cmp	w8, #0x1
+  46f940:      	b.ne	0x46f94c
+  46f944:      	add	x0, sp, #0x10
+  46f948:      	bl	0xaaffb0
+  46f94c:      	ldr	x8, [x23, #0x28]
+  46f950:      	ldur	x9, [x29, #-0x8]
+  46f954:      	cmp	x8, x9
+  46f958:      	b.ne	0x46f97c
+  46f95c:      	ldp	x20, x19, [sp, #0x90]
+  46f960:      	ldp	x22, x21, [sp, #0x80]
+  46f964:      	ldp	x24, x23, [sp, #0x70]
+  46f968:      	ldp	x26, x25, [sp, #0x60]
+  46f96c:      	ldp	x29, x30, [sp, #0x50]
+  46f970:      	add	sp, sp, #0xa0
+  46f974:      	autiasp
+  46f978:      	ret
+  46f97c:      	bl	0xab4170
+  46f980:      	add	x0, sp, #0x10
+  46f984:      	add	x1, sp, #0xc
+  46f988:      	str	wzr, [sp, #0xc]
+  46f98c:      	bl	0x46f994
+  46f990:      	b	0x46f894

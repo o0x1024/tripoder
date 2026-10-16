@@ -1,0 +1,127 @@
+{
+  "runId": "service-passive-dcc4917798184d91",
+  "scope": "normal-android-provider-baseline",
+  "scenario": "service-passive",
+  "fixtureSha256": "e1638814e762646b77acfafaf3bc351144605cf0bfb77978000194667a875a0d",
+  "commands": [
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/service-passive.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~uWhnWIXXikdKcDbUux3v8g==/dev.tripoder.provideridentity-JVm_3XlOtRb4S5tEJliZRg==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~uWhnWIXXikdKcDbUux3v8g==/dev.tripoder.provideridentity-JVm_3XlOtRb4S5tEJliZRg==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "e1638814e762646b77acfafaf3bc351144605cf0bfb77978000194667a875a0d  /data/app/~~uWhnWIXXikdKcDbUux3v8g==/dev.tripoder.provideridentity-JVm_3XlOtRb4S5tEJliZRg==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.provideridentity"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-f",
+        "0x10008000",
+        "-n",
+        "dev.tripoder.provideridentity/dev.tripoder.servicestartup.PassiveActivity",
+        "--es",
+        "baseline",
+        "true",
+        "--es",
+        "runId",
+        "service-passive-dcc4917798184d91",
+        "--es",
+        "mode",
+        "direct"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { flg=0x10008000 cmp=dev.tripoder.provideridentity/dev.tripoder.servicestartup.PassiveActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.provideridentity/dev.tripoder.servicestartup.PassiveActivity\nTotalTime: 88\nWaitTime: 90\nComplete\n",
+      "stderr": ""
+    }
+  ],
+  "passed": true,
+  "tripoderRuntimeVerified": false,
+  "checks": [
+    {
+      "name": "non-creating-binding-accepted",
+      "passed": true
+    },
+    {
+      "name": "second-passive-binding-accepted",
+      "passed": true
+    },
+    {
+      "name": "native-non-creating-bind-has-no-target-process",
+      "passed": true
+    },
+    {
+      "name": "no-service-created-before-explicit-start",
+      "passed": true
+    },
+    {
+      "name": "non-creating-binding-held-before-start",
+      "passed": true
+    },
+    {
+      "name": "later-start-returns-logical-component",
+      "passed": true
+    },
+    {
+      "name": "pending-binding-connects-only-after-later-start",
+      "passed": true
+    },
+    {
+      "name": "pending-binding-receives-real-remote-binder",
+      "passed": true
+    },
+    {
+      "name": "passive-promoted-service-keeps-logical-owner",
+      "passed": true
+    },
+    {
+      "name": "passive-promoted-service-starts-exactly-once",
+      "passed": true
+    },
+    {
+      "name": "promoted-service-real-stop-accepted",
+      "passed": true
+    },
+    {
+      "name": "promoted-service-real-onDestroy-observed",
+      "passed": true
+    }
+  ]
+}

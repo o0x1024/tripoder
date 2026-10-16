@@ -1,0 +1,15 @@
+--------- beginning of crash
+10-15 06:51:25.207 15529 15554 E AndroidRuntime: FATAL EXCEPTION: Instr: dev.tripoder.controltest.AgentUiIntegration
+10-15 06:51:25.207 15529 15554 E AndroidRuntime: Process: dev.tripoder.workbench, PID: 15529
+10-15 06:51:25.207 15529 15554 E AndroidRuntime: java.lang.RuntimeException: Error while disconnecting UiAutomation@1d0a85d[id=-1, displayId=0, flags=0]
+10-15 06:51:25.207 15529 15554 E AndroidRuntime: 	at android.app.UiAutomation.disconnect(UiAutomation.java:460)
+10-15 06:51:25.207 15529 15554 E AndroidRuntime: 	at android.app.Instrumentation.finish(Instrumentation.java:313)
+10-15 06:51:25.207 15529 15554 E AndroidRuntime: 	at dev.tripoder.controltest.ControlTestBase.onStart(ControlTestBase.java:47)
+10-15 06:51:25.207 15529 15554 E AndroidRuntime: 	at dev.tripoder.controltest.AgentUiIntegration.onStart(AgentUiIntegration.java:16)
+10-15 06:51:25.207 15529 15554 E AndroidRuntime: 	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2705)
+10-15 06:51:25.207 15529 15554 E AndroidRuntime: Caused by: android.os.DeadObjectException
+10-15 06:51:25.207 15529 15554 E AndroidRuntime: 	at android.os.BinderProxy.transactNative(Native Method)
+10-15 06:51:25.207 15529 15554 E AndroidRuntime: 	at android.os.BinderProxy.transact(BinderProxy.java:769)
+10-15 06:51:25.207 15529 15554 E AndroidRuntime: 	at android.app.IUiAutomationConnection$Stub$Proxy.disconnect(IUiAutomationConnection.java:563)
+10-15 06:51:25.207 15529 15554 E AndroidRuntime: 	at android.app.UiAutomation.disconnect(UiAutomation.java:458)
+10-15 06:51:25.207 15529 15554 E AndroidRuntime: 	... 4 more

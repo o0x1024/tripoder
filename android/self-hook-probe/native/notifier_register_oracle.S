@@ -1,0 +1,293 @@
+/* Own non-ABI clobberer is callable ONLY through the full-context relay. */
+.text
+.p2align 2
+.global tp_notifier_clobber
+.hidden tp_notifier_clobber
+.type tp_notifier_clobber,%function
+tp_notifier_clobber:
+    bti c
+    mov x0,#2560
+    mov x1,#2561
+    mov x2,#2562
+    mov x3,#2563
+    mov x4,#2564
+    mov x5,#2565
+    mov x6,#2566
+    mov x7,#2567
+    mov x8,#2568
+    mov x9,#2569
+    mov x10,#2570
+    mov x11,#2571
+    mov x12,#2572
+    mov x13,#2573
+    mov x14,#2574
+    mov x15,#2575
+    mov x16,#2576
+    mov x17,#2577
+    mov x18,#2578
+    mov x19,#2579
+    mov x20,#2580
+    mov x21,#2581
+    mov x22,#2582
+    mov x23,#2583
+    mov x24,#2584
+    mov x25,#2585
+    mov x26,#2586
+    mov x27,#2587
+    mov x28,#2588
+    mov x29,#2589
+    movi v0.16b,#255
+    movi v1.16b,#255
+    movi v2.16b,#255
+    movi v3.16b,#255
+    movi v4.16b,#255
+    movi v5.16b,#255
+    movi v6.16b,#255
+    movi v7.16b,#255
+    movi v8.16b,#255
+    movi v9.16b,#255
+    movi v10.16b,#255
+    movi v11.16b,#255
+    movi v12.16b,#255
+    movi v13.16b,#255
+    movi v14.16b,#255
+    movi v15.16b,#255
+    movi v16.16b,#255
+    movi v17.16b,#255
+    movi v18.16b,#255
+    movi v19.16b,#255
+    movi v20.16b,#255
+    movi v21.16b,#255
+    movi v22.16b,#255
+    movi v23.16b,#255
+    movi v24.16b,#255
+    movi v25.16b,#255
+    movi v26.16b,#255
+    movi v27.16b,#255
+    movi v28.16b,#255
+    movi v29.16b,#255
+    movi v30.16b,#255
+    movi v31.16b,#255
+    mov x9,#0x60000000
+    msr nzcv,x9
+    mov x9,#31
+    msr fpsr,x9
+    msr fpcr,xzr
+    ret
+.size tp_notifier_clobber,.-tp_notifier_clobber
+.global tp_notifier_noop
+.hidden tp_notifier_noop
+.type tp_notifier_noop,%function
+tp_notifier_noop:
+    bti c
+    ret
+.size tp_notifier_noop,.-tp_notifier_noop
+.global tp_notifier_register_oracle
+.hidden tp_notifier_register_oracle
+.type tp_notifier_register_oracle,%function
+tp_notifier_register_oracle:
+    .cfi_startproc
+    bti c
+    sub sp,sp,#992
+    .cfi_def_cfa_offset 992
+    str x19,[sp,#800]
+    str x20,[sp,#808]
+    .cfi_offset x19,-192
+    .cfi_offset x20,-184
+    str x21,[sp,#816]
+    str x22,[sp,#824]
+    .cfi_offset x21,-176
+    .cfi_offset x22,-168
+    str x23,[sp,#832]
+    str x24,[sp,#840]
+    .cfi_offset x23,-160
+    .cfi_offset x24,-152
+    str x25,[sp,#848]
+    str x26,[sp,#856]
+    .cfi_offset x25,-144
+    .cfi_offset x26,-136
+    str x27,[sp,#864]
+    str x28,[sp,#872]
+    .cfi_offset x27,-128
+    .cfi_offset x28,-120
+    str x29,[sp,#880]
+    str x30,[sp,#888]
+    .cfi_offset x29,-112
+    .cfi_offset x30,-104
+    str d8,[sp,#896]
+    str d9,[sp,#904]
+    str d10,[sp,#912]
+    str d11,[sp,#920]
+    str d12,[sp,#928]
+    str d13,[sp,#936]
+    str d14,[sp,#944]
+    str d15,[sp,#952]
+    str x1,[sp,#960]
+    str x0,[sp,#968]
+    mrs x9,fpsr
+    str x9,[sp,#976]
+    mrs x9,fpcr
+    str x9,[sp,#984]
+    mov x0,#256
+    mov x1,#257
+    mov x2,#258
+    mov x3,#259
+    mov x4,#260
+    mov x5,#261
+    mov x6,#262
+    mov x7,#263
+    mov x8,#264
+    mov x9,#265
+    mov x10,#266
+    mov x11,#267
+    mov x12,#268
+    mov x13,#269
+    mov x14,#270
+    mov x15,#271
+    mov x17,#273
+    mov x19,#275
+    mov x20,#276
+    mov x21,#277
+    mov x22,#278
+    mov x23,#279
+    mov x24,#280
+    mov x25,#281
+    mov x26,#282
+    mov x27,#283
+    mov x28,#284
+    mov x29,#285
+    movi v0.16b,#1
+    movi v1.16b,#2
+    movi v2.16b,#3
+    movi v3.16b,#4
+    movi v4.16b,#5
+    movi v5.16b,#6
+    movi v6.16b,#7
+    movi v7.16b,#8
+    movi v8.16b,#9
+    movi v9.16b,#10
+    movi v10.16b,#11
+    movi v11.16b,#12
+    movi v12.16b,#13
+    movi v13.16b,#14
+    movi v14.16b,#15
+    movi v15.16b,#16
+    movi v16.16b,#17
+    movi v17.16b,#18
+    movi v18.16b,#19
+    movi v19.16b,#20
+    movi v20.16b,#21
+    movi v21.16b,#22
+    movi v22.16b,#23
+    movi v23.16b,#24
+    movi v24.16b,#25
+    movi v25.16b,#26
+    movi v26.16b,#27
+    movi v27.16b,#28
+    movi v28.16b,#29
+    movi v29.16b,#30
+    movi v30.16b,#31
+    movi v31.16b,#32
+    mov x16,#0x90000000
+    msr nzcv,x16
+    mov x16,#0x8000000
+    msr fpsr,x16
+    mov x16,#0x1000000
+    msr fpcr,x16
+    ldr x16,[sp,#968]
+    blr x16
+    stp x0,x1,[sp,#0]
+    stp x2,x3,[sp,#16]
+    stp x4,x5,[sp,#32]
+    stp x6,x7,[sp,#48]
+    stp x8,x9,[sp,#64]
+    stp x10,x11,[sp,#80]
+    stp x12,x13,[sp,#96]
+    stp x14,x15,[sp,#112]
+    stp x16,x17,[sp,#128]
+    stp x18,x19,[sp,#144]
+    stp x20,x21,[sp,#160]
+    stp x22,x23,[sp,#176]
+    stp x24,x25,[sp,#192]
+    stp x26,x27,[sp,#208]
+    stp x28,x29,[sp,#224]
+    str x30,[sp,#240]
+    mrs x9,nzcv
+    str x9,[sp,#248]
+    stp q0,q1,[sp,#256]
+    stp q2,q3,[sp,#288]
+    stp q4,q5,[sp,#320]
+    stp q6,q7,[sp,#352]
+    stp q8,q9,[sp,#384]
+    stp q10,q11,[sp,#416]
+    stp q12,q13,[sp,#448]
+    stp q14,q15,[sp,#480]
+    stp q16,q17,[sp,#512]
+    stp q18,q19,[sp,#544]
+    stp q20,q21,[sp,#576]
+    stp q22,q23,[sp,#608]
+    stp q24,q25,[sp,#640]
+    stp q26,q27,[sp,#672]
+    stp q28,q29,[sp,#704]
+    stp q30,q31,[sp,#736]
+    mrs x9,fpsr
+    str x9,[sp,#768]
+    mrs x9,fpcr
+    str x9,[sp,#776]
+    str xzr,[sp,#784]
+    str xzr,[sp,#792]
+    ldr x9,[sp,#960]
+    mov x10,sp
+    mov x11,#100
+1:
+    ldr x12,[x10],#8
+    str x12,[x9],#8
+    subs x11,x11,#1
+    b.ne 1b
+    ldr x9,[sp,#976]
+    msr fpsr,x9
+    ldr x9,[sp,#984]
+    msr fpcr,x9
+    ldr d8,[sp,#896]
+    ldr d9,[sp,#904]
+    ldr d10,[sp,#912]
+    ldr d11,[sp,#920]
+    ldr d12,[sp,#928]
+    ldr d13,[sp,#936]
+    ldr d14,[sp,#944]
+    ldr d15,[sp,#952]
+    ldr x19,[sp,#800]
+    .cfi_restore x19
+    ldr x20,[sp,#808]
+    .cfi_restore x20
+    ldr x21,[sp,#816]
+    .cfi_restore x21
+    ldr x22,[sp,#824]
+    .cfi_restore x22
+    ldr x23,[sp,#832]
+    .cfi_restore x23
+    ldr x24,[sp,#840]
+    .cfi_restore x24
+    ldr x25,[sp,#848]
+    .cfi_restore x25
+    ldr x26,[sp,#856]
+    .cfi_restore x26
+    ldr x27,[sp,#864]
+    .cfi_restore x27
+    ldr x28,[sp,#872]
+    .cfi_restore x28
+    ldr x29,[sp,#880]
+    .cfi_restore x29
+    ldr x30,[sp,#888]
+    .cfi_restore x30
+    add sp,sp,#992
+    .cfi_def_cfa_offset 0
+    ret
+    .cfi_endproc
+.size tp_notifier_register_oracle,.-tp_notifier_register_oracle
+.section .note.gnu.property,"a",%note
+.p2align 3
+.long 4,16,5
+.asciz "GNU"
+.long 0xc0000000,4,1,0
+.section .note.GNU-stack,"",%progbits

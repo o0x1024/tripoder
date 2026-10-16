@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="2590" viewBox="0 0 1800 2590" role="img" aria-labelledby="title desc">
+<title id="title">Tripoder 技术架构分层图</title>
+<desc id="desc">从上到下为工作台与外部 Agent、应用运行空间、Runtime Java 适配与控制权威、Android Framework、Native 路径与 Hook 实现、Android Native 和 Linux Kernel。工作台与引擎采用不同 UID，客体与引擎共享 UID；图中组件表示已有实现范围，不代表通用兼容性。</desc>
+<defs><filter id="shadow" x="-5%" y="-10%" width="112%" height="130%"><feDropShadow dx="1" dy="4" stdDeviation="2.5" flood-color="#000000" flood-opacity="0.25"/></filter></defs>
+<style>text{font-family:Arial,"Hiragino Sans GB","PingFang SC","Heiti SC",sans-serif} .title{font-weight:500}</style>
+<rect width="1800" height="2590" fill="#ffffff"/>
+<text x="60" y="43" font-size="37" fill="#3f4c63" text-anchor="start" dominant-baseline="middle">Tripoder 技术架构分层图</text>
+<text x="1740" y="43" font-size="23" fill="#606975" text-anchor="end" dominant-baseline="middle">当前源码结构 · 2026-10-15</text>
+<rect x="60" y="90" width="1680" height="170" fill="#1596b6" stroke="#526396" stroke-width="1.8"/>
+<text x="900" y="126" font-size="34" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Tripoder Workbench · 工作台与外部控制</text>
+<rect x="100" y="157" width="300.8" height="64" fill="#177d98" stroke="#177d98" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="250.4" y="189" font-size="27" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">应用 / 项目 / 空间</text>
+<rect x="424.8" y="157" width="300.8" height="64" fill="#177d98" stroke="#177d98" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="575.2" y="189" font-size="27" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">脚本编辑 / 运行记录</text>
+<rect x="749.6" y="157" width="300.8" height="64" fill="#177d98" stroke="#177d98" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="900" y="189" font-size="27" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">配对 / 源码审批</text>
+<rect x="1074.4" y="157" width="300.8" height="64" fill="#177d98" stroke="#177d98" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="1224.8000000000002" y="189" font-size="27" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Binder Control API</text>
+<rect x="1399.2" y="157" width="300.8" height="64" fill="#177d98" stroke="#177d98" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="1549.6000000000001" y="189" font-size="27" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">外部 Agent / MCP</text>
+<text x="900" y="242" font-size="21" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">工作台与引擎分离 UID；外部 MCP 经 ADB 转发签名帧进入工作台</text>
+<rect x="60" y="280" width="1680" height="140" fill="#08b4cb" stroke="#526396" stroke-width="1.8"/>
+<text x="900" y="315" font-size="35" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Tripoder Space · 应用运行空间</text>
+<rect x="100" y="341" width="373" height="55" fill="#1595aa" stroke="#1595aa" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="286.5" y="368.5" font-size="28" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">自研验证应用</text>
+<rect x="509" y="341" width="373" height="55" fill="#1595aa" stroke="#1595aa" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="695.5" y="368.5" font-size="28" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">微信 · 适配中</text>
+<rect x="918" y="341" width="373" height="55" fill="#1595aa" stroke="#1595aa" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="1104.5" y="368.5" font-size="28" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">王者荣耀 · 适配中</text>
+<rect x="1327" y="341" width="373" height="55" fill="#1595aa" stroke="#1595aa" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="1513.5" y="368.5" font-size="28" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">其他 APK · 待验证</text>
+<path d="M 20 460 H 1780" stroke="#cdcdcd" stroke-width="6" stroke-dasharray="18 10"/>
+<text x="1760" y="440" font-size="22" fill="#999999" text-anchor="end" dominant-baseline="middle">APP</text>
+<text x="1760" y="485" font-size="22" fill="#999999" text-anchor="end" dominant-baseline="middle">Framework</text>
+<rect x="60" y="510" width="1680" height="755" fill="#8cc34b" stroke="#526396" stroke-width="1.8"/>
+<text x="900" y="550" font-size="36" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Tripoder Runtime · 应用虚拟化框架</text>
+<rect x="100" y="595" width="250" height="83" fill="#669e32" stroke="#526396" stroke-width="1.8"/>
+<text x="225" y="618.68" font-size="27" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">TypeScript SDK</text>
+<text x="225" y="654.32" font-size="27" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Plan / Params</text>
+<rect x="100" y="703" width="250" height="83" fill="#669e32" stroke="#526396" stroke-width="1.8"/>
+<text x="225" y="727.34" font-size="26" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Evidence / AST</text>
+<text x="225" y="761.66" font-size="26" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">证据与草稿检查</text>
+<rect x="100" y="811" width="250" height="83" fill="#669e32" stroke="#526396" stroke-width="1.8"/>
+<text x="225" y="835.34" font-size="26" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Java Hook</text>
+<text x="225" y="869.66" font-size="26" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">观察 / 激活 / 停用</text>
+<rect x="380" y="585" width="1320" height="310" fill="#669e32" stroke="#526396" stroke-width="1.8"/>
+<text x="1040" y="622" font-size="31" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Guest Runtime / APP Hook · 客体进程内适配</text>
+<rect x="405" y="658" width="301" height="56" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="555.5" y="686" font-size="25" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Application / Loader</text>
+<rect x="728" y="658" width="301" height="56" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="878.5" y="686" font-size="25" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Activity / Task</text>
+<rect x="1051" y="658" width="301" height="56" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="1201.5" y="686" font-size="25" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Service / Binder</text>
+<rect x="1374" y="658" width="301" height="56" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="1524.5" y="686" font-size="25" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Provider</text>
+<rect x="405" y="735" width="301" height="56" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="555.5" y="763" font-size="25" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Receiver / Broadcast</text>
+<rect x="728" y="735" width="301" height="56" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="878.5" y="763" font-size="25" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Package / Resources</text>
+<rect x="1051" y="735" width="301" height="56" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="1201.5" y="763" font-size="25" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Storage / Preferences</text>
+<rect x="1374" y="735" width="301" height="56" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="1524.5" y="763" font-size="25" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Connectivity / Wi-Fi</text>
+<rect x="405" y="812" width="301" height="56" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="555.5" y="840" font-size="25" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Telephony / Audio</text>
+<rect x="728" y="812" width="301" height="56" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="878.5" y="840" font-size="25" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Battery / Power</text>
+<rect x="1051" y="812" width="301" height="56" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="1201.5" y="840" font-size="25" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Notifications（受限）</text>
+<rect x="1374" y="812" width="301" height="56" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="1524.5" y="840" font-size="25" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">系统能力门禁</text>
+<rect x="100" y="925" width="1600" height="305" fill="#669e32" stroke="#526396" stroke-width="1.8"/>
+<text x="900" y="963" font-size="33" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Runtime Broker · :authority 控制与状态权威</text>
+<rect x="130" y="999" width="240" height="53" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="250" y="1025.5" font-size="23" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Space / Catalog</text>
+<rect x="390" y="999" width="240" height="53" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="510" y="1025.5" font-size="23" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">APK 安装 / 验签</text>
+<rect x="650" y="999" width="240" height="53" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="770" y="1025.5" font-size="23" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Project Binding</text>
+<rect x="910" y="999" width="240" height="53" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="1030" y="1025.5" font-size="23" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Process Session</text>
+<rect x="1170" y="999" width="240" height="53" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="1290" y="1025.5" font-size="23" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Activity Ledger</text>
+<rect x="1430" y="999" width="240" height="53" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="1550" y="1025.5" font-size="23" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Service Ledger</text>
+<rect x="130" y="1074" width="240" height="53" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="250" y="1100.5" font-size="23" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Provider Broker</text>
+<rect x="390" y="1074" width="240" height="53" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="510" y="1100.5" font-size="23" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Broadcast Broker</text>
+<rect x="650" y="1074" width="240" height="53" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="770" y="1100.5" font-size="23" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Operation / Recovery</text>
+<rect x="910" y="1074" width="240" height="53" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="1030" y="1100.5" font-size="23" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Control Lease</text>
+<rect x="1170" y="1074" width="240" height="53" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="1290" y="1100.5" font-size="23" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Agent Session</text>
+<rect x="1430" y="1074" width="240" height="53" fill="#51852d" stroke="#51852d" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="1550" y="1100.5" font-size="23" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Hook Control</text>
+<rect x="130" y="1153" width="1540" height="50" fill="#51852d" stroke="#526396" stroke-width="1.8"/>
+<text x="900" y="1178" font-size="25" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">RuntimeStore / SQLite：代次、操作、组件账本     |     ApkStore：不可变 APK 制品</text>
+<rect x="60" y="1300" width="1680" height="120" fill="#bfbfbf" stroke="#526396" stroke-width="1.8"/>
+<text x="900" y="1340" font-size="37" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Android Framework</text>
+<text x="900" y="1385" font-size="27" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Activity / Service / Provider / Receiver · PackageManager · Resources · 系统服务</text>
+<path d="M 20 1460 H 1780" stroke="#cdcdcd" stroke-width="6" stroke-dasharray="18 10"/>
+<text x="1760" y="1485" font-size="22" fill="#999999" text-anchor="end" dominant-baseline="middle">Native</text>
+<rect x="60" y="1510" width="1680" height="650" fill="#a29dd7" stroke="#526396" stroke-width="1.8"/>
+<text x="900" y="1555" font-size="36" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Tripoder Native · 原生适配与用户 Hook</text>
+<rect x="105" y="1590" width="500" height="460" fill="#a77bd4" stroke="#526396" stroke-width="1.8"/>
+<text x="355" y="1627" font-size="29" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Path Policy · 路径策略</text>
+<rect x="147" y="1664" width="416" height="60" fill="#8862b1" stroke="#8862b1" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="355" y="1694" font-size="28" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">空间数据路径映射</text>
+<rect x="147" y="1749" width="416" height="60" fill="#8862b1" stroke="#8862b1" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="355" y="1779" font-size="28" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">APK 制品只读</text>
+<rect x="147" y="1834" width="416" height="60" fill="#8862b1" stroke="#8862b1" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="355" y="1864" font-size="28" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">目录 FD 锚定</text>
+<rect x="147" y="1919" width="416" height="60" fill="#8862b1" stroke="#8862b1" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="355" y="1949" font-size="28" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">越界 / 符号链接拒绝</text>
+<text x="355" y="2027" font-size="22" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">path_policy.c</text>
+<rect x="650" y="1590" width="500" height="460" fill="#a77bd4" stroke="#526396" stroke-width="1.8"/>
+<text x="900" y="1627" font-size="29" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Native I/O · libc 入口</text>
+<rect x="692" y="1664" width="416" height="60" fill="#8862b1" stroke="#8862b1" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="900" y="1694" font-size="28" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">openat / stat</text>
+<rect x="692" y="1749" width="416" height="60" fill="#8862b1" stroke="#8862b1" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="900" y="1779" font-size="28" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">readlink / access</text>
+<rect x="692" y="1834" width="416" height="60" fill="#8862b1" stroke="#8862b1" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="900" y="1864" font-size="28" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">mkdir / rename / unlink</text>
+<rect x="692" y="1919" width="416" height="60" fill="#8862b1" stroke="#8862b1" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="900" y="1949" font-size="28" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">真实 FD / errno 语义</text>
+<text x="900" y="2027" font-size="22" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">io_adapter.c</text>
+<rect x="1195" y="1590" width="500" height="460" fill="#a77bd4" stroke="#526396" stroke-width="1.8"/>
+<text x="1445" y="1627" font-size="29" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Native Hook · 用户脚本</text>
+<rect x="1237" y="1664" width="416" height="60" fill="#8862b1" stroke="#8862b1" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="1445" y="1694" font-size="28" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">ELF / Build ID 校验</text>
+<rect x="1237" y="1749" width="416" height="60" fill="#8862b1" stroke="#8862b1" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="1445" y="1779" font-size="28" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">动态模块代次跟踪</text>
+<rect x="1237" y="1834" width="416" height="60" fill="#8862b1" stroke="#8862b1" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="1445" y="1864" font-size="28" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">导出符号 / ABI 绑定</text>
+<rect x="1237" y="1919" width="416" height="60" fill="#8862b1" stroke="#8862b1" stroke-width="1.8" filter="url(#shadow)"/>
+<text x="1445" y="1949" font-size="28" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">替换 / 停用 / 错误终止</text>
+<text x="1445" y="2027" font-size="22" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">hook_native.ts / hook_modules.ts</text>
+<rect x="105" y="2075" width="1590" height="58" fill="#a77bd4" stroke="#526396" stroke-width="1.8"/>
+<text x="900" y="2104" font-size="31" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Frida Gadget / Gum · QuickJS · frida-java-bridge · libtripoderio</text>
+<rect x="60" y="2190" width="1680" height="110" fill="#bfbfbf" stroke="#526396" stroke-width="1.8"/>
+<text x="900" y="2228" font-size="37" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Android Native</text>
+<text x="900" y="2271" font-size="28" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">ART / JNI · Bionic libc · Linker · Binder · 图形与输入原生库</text>
+<path d="M 20 2338 H 1780" stroke="#cdcdcd" stroke-width="6" stroke-dasharray="18 10"/>
+<text x="1760" y="2363" font-size="22" fill="#999999" text-anchor="end" dominant-baseline="middle">Kernel</text>
+<rect x="60" y="2385" width="1680" height="100" fill="#bfbfbf" stroke="#526396" stroke-width="1.8"/>
+<text x="900" y="2435" font-size="38" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">Android / Linux Kernel</text>
+<text x="60" y="2523" font-size="23" fill="#606975" text-anchor="start" dominant-baseline="middle">边界：工作台 ≠ 引擎 UID；客体与引擎共享 UID，不提供恶意 Native 代码强隔离。</text>
+<text x="60" y="2560" font-size="23" fill="#606975" text-anchor="start" dominant-baseline="middle">模块代表当前实现范围，非完整兼容性；旧运行器与 QEMU 不进入产品执行链。</text>
+</svg>

@@ -1,0 +1,257 @@
+{
+  "schema": 1,
+  "startedAtUtc": "2026-10-15T01:11:34.065727+00:00",
+  "validatorSha256": "01c13b6d65af6a37c1f42911a26051bbae727bb260d51de465ed959cf4250ef8",
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/product/build/tripoder-engine.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/product/build/tripoder-workbench.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/product/build/tripoder-control-test.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.workbench"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~4yw2tNUW7-XBpi9qrw_yKA==/dev.tripoder.workbench-GxSesgBxuVcb1LIEhBpmAw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~4yw2tNUW7-XBpi9qrw_yKA==/dev.tripoder.workbench-GxSesgBxuVcb1LIEhBpmAw==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "ffa4f1b4fa9568c62684e1884cb2791ae1c2e2f3c8ef63f5b68c83055e8223a3  /data/app/~~4yw2tNUW7-XBpi9qrw_yKA==/dev.tripoder.workbench-GxSesgBxuVcb1LIEhBpmAw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~xF7FncpbfdLa_3gRlnsntA==/dev.tripoder.engine-_LexjIqlPuG2Hez5ux6NyA==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~xF7FncpbfdLa_3gRlnsntA==/dev.tripoder.engine-_LexjIqlPuG2Hez5ux6NyA==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "9413b33e7676b7154a635e1a907e04f86310bb5313069a64e2621dcdaf2eb184  /data/app/~~xF7FncpbfdLa_3gRlnsntA==/dev.tripoder.engine-_LexjIqlPuG2Hez5ux6NyA==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.controltest"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~upNAwqOAJh19yUBlDAD2YA==/dev.tripoder.controltest-5Foec9o957TdVE-Az9CW_w==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~upNAwqOAJh19yUBlDAD2YA==/dev.tripoder.controltest-5Foec9o957TdVE-Az9CW_w==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "11e8b38e579630fe02440d9389015c1c1dad5947ca41d6eff5c8616daa9cd341  /data/app/~~upNAwqOAJh19yUBlDAD2YA==/dev.tripoder.controltest-5Foec9o957TdVE-Az9CW_w==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.workbench"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.controltest"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.engine uid:10400\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "date \"+%m-%d %H:%M:%S.%3N\""
+      ],
+      "exitCode": 0,
+      "stdout": "10-15 09:11:37.024\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.controltest/dev.tripoder.controltest.ClientActivity"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.controltest/.ClientActivity }\nStatus: ok\nLaunchState: UNKNOWN (0)\nActivity: dev.tripoder.controltest/.ClientActivity\nWaitTime: 80\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-a",
+        "android.intent.action.MAIN",
+        "-c",
+        "android.intent.category.LAUNCHER",
+        "-n",
+        "dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity }\nStatus: ok\nLaunchState: WARM\nActivity: dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity\nTotalTime: 85\nWaitTime: 86\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "instrument",
+        "-w",
+        "-e",
+        "runId",
+        "control-c4fc1a684eca486d",
+        "dev.tripoder.controltest/dev.tripoder.controltest.AppActionsUiIntegration"
+      ],
+      "exitCode": 0,
+      "stdout": "INSTRUMENTATION_RESULT: shortMsg=Process crashed.\nINSTRUMENTATION_CODE: 0\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10400",
+        "-T",
+        "10-15 09:11:37.024"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10400",
+        "-T",
+        "10-15 09:11:37.024",
+        "TripoderRuntime:V",
+        "TripoderHook:I",
+        "TripoderOwnership:I",
+        "TripoderStartup:I",
+        "TripoderProvider:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-15 09:11:46.009 12758 12796 W TripoderRuntime: Control diagnostic: main RUNNABLE\n10-15 09:11:46.009 12758 12796 W TripoderRuntime:   android.os.MessageQueue.nativePollOnce(Native Method)\n10-15 09:11:46.009 12758 12796 W TripoderRuntime:   android.os.MessageQueue.nextLegacy(MessageQueue.java:924)\n10-15 09:11:46.009 12758 12796 W TripoderRuntime:   android.os.MessageQueue.next(MessageQueue.java:826)\n10-15 09:11:46.009 12758 12796 W TripoderRuntime:   android.os.Looper.loopOnce(Looper.java:248)\n10-15 09:11:46.009 12758 12796 W TripoderRuntime:   android.os.Looper.loop(Looper.java:419)\n10-15 09:11:46.009 12758 12796 W TripoderRuntime:   android.app.ActivityThread.main(ActivityThread.java:10847)\n10-15 09:11:46.009 12758 12796 W TripoderRuntime:   java.lang.reflect.Method.invoke(Native Method)\n10-15 09:11:46.009 12758 12796 W TripoderRuntime:   com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\n10-15 09:11:46.009 12758 12796 W TripoderRuntime:   com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\n",
+      "stderr": ""
+    }
+  ],
+  "fullP5Accepted": false,
+  "businessScenariosVerified": false,
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "deviceLogStart": "10-15 09:11:37.024",
+  "ownedUid": 10400,
+  "passed": false,
+  "error": "cat: /sdcard/Android/data/dev.tripoder.workbench/files/result-control-c4fc1a684eca486d.json: No such file or directory\n",
+  "nativeFatalSignalObserved": false,
+  "javaFatalExceptionObserved": false,
+  "finishedAtUtc": "2026-10-15T01:12:02.540670+00:00"
+}

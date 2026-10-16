@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tripoder.provideridentity" android:versionCode="1">
+  <uses-sdk android:minSdkVersion="36" android:targetSdkVersion="36"/>
+  <application android:name="dev.tripoder.servicestartup.StartupApplication" android:label="Tripoder Service Startup" android:allowBackup="false" android:theme="@android:style/Theme.Material.Light.NoActionBar">
+    <activity android:name="dev.tripoder.servicestartup.StartupActivity" android:exported="true"/>
+    <service android:name="dev.tripoder.servicestartup.StartupService" android:process=":startup" android:exported="false"/>
+    <service android:name="dev.tripoder.servicestartup.StartupService$Absent" android:process=":startup" android:exported="false"/>
+  </application>
+</manifest>

@@ -1,0 +1,45 @@
+
+android/self-hook-probe/build/device-libart.so:	file format elf64-littleaarch64
+
+Disassembly of section .text:
+
+00000000003e8724:
+  3e8724:      	paciasp
+  3e8728:      	stp	x29, x30, [sp, #-0x20]!
+  3e872c:      	str	x19, [sp, #0x10]
+  3e8730:      	mov	x29, sp
+  3e8734:      	ldr	x8, [x1, #0x18]
+  3e8738:      	adrp	x9, 0x2bc000
+  3e873c:      	add	x9, x9, #0x5d0
+  3e8740:      	mov	x19, x1
+  3e8744:      	cmp	x8, x9
+  3e8748:      	b.eq	0x3e8774
+  3e874c:      	adrp	x9, 0x2bc000
+  3e8750:      	add	x9, x9, #0x880
+  3e8754:      	cmp	x8, x9
+  3e8758:      	b.eq	0x3e8774
+  3e875c:      	adrp	x9, 0xe19000
+  3e8760:      	ldr	x9, [x9, #0x200]
+  3e8764:      	ldr	x9, [x9, #0x270]
+  3e8768:      	ldr	x10, [x9, #0x148]
+  3e876c:      	cmp	x10, x8
+  3e8770:      	b.ne	0x3e87b0
+  3e8774:      	mov	x1, x19
+  3e8778:      	bl	0x515048
+  3e877c:      	tbz	w0, #0x0, 0x3e879c
+  3e8780:      	adrp	x8, 0x2bc000
+  3e8784:      	add	x8, x8, #0x880
+  3e8788:      	mov	x0, x8
+  3e878c:      	ldr	x19, [sp, #0x10]
+  3e8790:      	ldp	x29, x30, [sp], #0x20
+  3e8794:      	autiasp
+  3e8798:      	ret
+  3e879c:      	mov	x0, x19
+  3e87a0:      	ldr	x19, [sp, #0x10]
+  3e87a4:      	ldp	x29, x30, [sp], #0x20
+  3e87a8:      	autiasp
+  3e87ac:      	b	0x8decd4
+  3e87b0:      	ldr	x9, [x9, #0x160]
+  3e87b4:      	cmp	x9, x8
+  3e87b8:      	b.eq	0x3e8774
+  3e87bc:      	b	0x3e8788

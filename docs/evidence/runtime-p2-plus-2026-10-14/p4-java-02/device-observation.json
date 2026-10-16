@@ -1,0 +1,229 @@
+{
+  "runId": "p4-9de31c45a806430f",
+  "observedAtUtc": "2026-10-14T13:35:45.291854+00:00",
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "productApkReplaced": false,
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/b.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/runtime-probe.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.b"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~u6OT6QBu1-gt27At6ZV1pA==/dev.tripoder.p0.b-3GXd2dcr0pAqq89que6aeQ==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~u6OT6QBu1-gt27At6ZV1pA==/dev.tripoder.p0.b-3GXd2dcr0pAqq89que6aeQ==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "5f1c0e26edf489d457a09713fbe081f9c0c2c640bb8b3cb54f8cb14000da11e7  /data/app/~~u6OT6QBu1-gt27At6ZV1pA==/dev.tripoder.p0.b-3GXd2dcr0pAqq89que6aeQ==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "getconf",
+        "PAGESIZE"
+      ],
+      "exitCode": 0,
+      "stdout": "4096\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.a"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.runtimeprobe uid:10398\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "date \"+%m-%d %H:%M:%S.000\""
+      ],
+      "exitCode": 0,
+      "stdout": "10-14 21:35:46.000\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.runtimeprobe/.P4ProbeActivity",
+        "--es",
+        "runId",
+        "p4-9de31c45a806430f"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.runtimeprobe/.P4ProbeActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.runtimeprobe/.P4ProbeActivity\nTotalTime: 84\nWaitTime: 85\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-14 21:35:46.000"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of crash\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: FATAL EXCEPTION: main\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: Process: dev.tripoder.runtimeprobe, PID: 30936\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: java.lang.RuntimeException: Unable to start activity ComponentInfo{dev.tripoder.runtimeprobe/dev.tripoder.runtimeprobe.P4ProbeActivity}\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.ActivityThread.performLaunchActivity(ActivityThread.java:5196)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:5447)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:136)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:106)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:83)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.ActivityThread$H.handleMessage(ActivityThread.java:3492)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.os.Handler.dispatchMessageImpl(Handler.java:146)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.os.Handler.dispatchMessage(Handler.java:129)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.os.Looper.loopOnce(Looper.java:315)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.os.Looper.loop(Looper.java:419)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.ActivityThread.main(ActivityThread.java:10847)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat java.lang.reflect.Method.invoke(Native Method)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: Caused by: java.lang.IllegalArgumentException: RUN_ID_REQUIRED\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat dev.tripoder.runtimeprobe.P4ProbeActivity.onCreate(P4ProbeActivity.java:19)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.Activity.performCreate(Activity.java:9625)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.Activity.performCreate(Activity.java:9571)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1559)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.ActivityThread.performLaunchActivity(ActivityThread.java:5180)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \t... 14 more\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-14 21:35:46.000",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-14 21:35:47.486  8228  8245 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-14 21:35:46.000"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of crash\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: FATAL EXCEPTION: main\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: Process: dev.tripoder.runtimeprobe, PID: 30936\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: java.lang.RuntimeException: Unable to start activity ComponentInfo{dev.tripoder.runtimeprobe/dev.tripoder.runtimeprobe.P4ProbeActivity}\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.ActivityThread.performLaunchActivity(ActivityThread.java:5196)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:5447)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:136)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:106)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:83)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.ActivityThread$H.handleMessage(ActivityThread.java:3492)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.os.Handler.dispatchMessageImpl(Handler.java:146)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.os.Handler.dispatchMessage(Handler.java:129)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.os.Looper.loopOnce(Looper.java:315)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.os.Looper.loop(Looper.java:419)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.ActivityThread.main(ActivityThread.java:10847)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat java.lang.reflect.Method.invoke(Native Method)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: Caused by: java.lang.IllegalArgumentException: RUN_ID_REQUIRED\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat dev.tripoder.runtimeprobe.P4ProbeActivity.onCreate(P4ProbeActivity.java:19)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.Activity.performCreate(Activity.java:9625)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.Activity.performCreate(Activity.java:9571)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1559)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \tat android.app.ActivityThread.performLaunchActivity(ActivityThread.java:5180)\n10-14 21:35:46.358 30936 30936 E AndroidRuntime: \t... 14 more\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10398",
+        "-T",
+        "10-14 21:35:46.000",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-14 21:35:47.486  8228  8245 I TripoderART: {\"apiLevel\":37,\"arch\":\"arm64\",\"size\":32,\"offset\":{\"jniCode\":16,\"quickCode\":24,\"accessFlags\":4},\"probeFlags\":1345323289,\"legacyAccessFlagsOffset\":36,\"upstreamFix\":\"302a588881b40cba300bcf3acfd35deeb3888ee5\"}\n",
+      "stderr": ""
+    }
+  ],
+  "decoyApkSha256": "5f1c0e26edf489d457a09713fbe081f9c0c2c640bb8b3cb54f8cb14000da11e7",
+  "decoyMarkerBefore": false,
+  "pageSize": 4096,
+  "aInstalledInHost": false,
+  "ownedUid": 10398,
+  "deviceLogStart": "10-14 21:35:46.000",
+  "decoyMarkerAfter": false,
+  "hostMatchesBuild": true,
+  "fixturesMatchBuild": true,
+  "p1FixturesMatchBuild": true,
+  "p2FixturesMatchBuild": true,
+  "allDeviceAssertionsPassed": true,
+  "nativeMemoryCrashObserved": false,
+  "passed": false,
+  "error": "Device assertions failed; inspect device-result.json",
+  "finishedAtUtc": "2026-10-14T13:35:49.838338+00:00"
+}

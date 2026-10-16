@@ -1,0 +1,766 @@
+
+android/self-hook-probe/build/device-libart.so:	file format elf64-littleaarch64
+
+Disassembly of section .text:
+
+00000000002c8100 <_ZN3art6Thread21RunCheckpointFunctionEv>:
+  2c8284:      	paciasp
+  2c8288:      	sub	sp, sp, #0x160
+  2c828c:      	stp	x29, x30, [sp, #0x100]
+  2c8290:      	stp	x28, x27, [sp, #0x110]
+  2c8294:      	stp	x26, x25, [sp, #0x120]
+  2c8298:      	stp	x24, x23, [sp, #0x130]
+  2c829c:      	stp	x22, x21, [sp, #0x140]
+  2c82a0:      	stp	x20, x19, [sp, #0x150]
+  2c82a4:      	add	x29, sp, #0x100
+  2c82a8:      	mrs	x8, TPIDR_EL0
+  2c82ac:      	mov	x20, x1
+  2c82b0:      	mov	x21, x0
+  2c82b4:      	str	x8, [sp, #0x18]
+  2c82b8:      	ldr	x8, [x8, #0x28]
+  2c82bc:      	stur	x8, [x29, #-0x18]
+  2c82c0:      	adrp	x8, 0xe19000 <_ZN3art20NonDebuggableClasses22non_debuggable_classesE+0xf8>
+  2c82c4:      	ldr	x8, [x8, #0x200]
+  2c82c8:      	ldr	x19, [x1]
+  2c82cc:      	str	x8, [sp, #0x20]
+  2c82d0:      	ldr	w8, [x19, #0x4]
+  2c82d4:      	tbnz	w8, #0x12, 0x2c8b48 <_ZN3art6Thread21RunCheckpointFunctionEv+0xa48>
+  2c82d8:      	ldr	w8, [x19]
+  2c82dc:      	ldr	w0, [x8, #0x10]
+  2c82e0:      	ldr	x8, [x0, #0x10]
+  2c82e4:      	ldr	w9, [x19, #0x8]
+  2c82e8:      	add	x14, sp, #0x50
+  2c82ec:      	ldr	x10, [x8, #0x68]
+  2c82f0:      	ldr	x11, [x8, #0x50]
+  2c82f4:      	add	x9, x10, x9, lsl #3
+  2c82f8:      	mov	w10, #0xc               // =12
+  2c82fc:      	ldrh	w9, [x9, #0x2]
+  2c8300:      	umull	x9, w9, w10
+  2c8304:      	ldr	x10, [x8, #0x70]
+  2c8308:      	ldr	x8, [x8, #0x18]
+  2c830c:      	ldr	w9, [x10, x9]
+  2c8310:      	ldr	w9, [x11, x9, lsl #2]
+  2c8314:      	add	x12, x8, x9
+  2c8318:      	mov	x8, x12
+  2c831c:      	ldrb	w9, [x8], #0x1
+  2c8320:      	and	w13, w9, #0x7f
+  2c8324:      	tbnz	w9, #0x7, 0x2c8b20 <_ZN3art6Thread21RunCheckpointFunctionEv+0xa20>
+  2c8328:      	movi	v1.2d, #0000000000000000
+  2c832c:      	fmov	d0, xzr
+  2c8330:      	ldr	w16, [x19, #0x4]
+  2c8334:      	ldr	w15, [x19, #0x4]
+  2c8338:      	str	xzr, [sp, #0xe0]
+  2c833c:      	mov	w0, #0x100              // =256
+  2c8340:      	add	x17, x20, #0x10
+  2c8344:      	movk	w0, #0x8, lsl #16
+  2c8348:      	mov	w11, w13
+  2c834c:      	mov	v0.d[1], v0.d[0]
+  2c8350:      	add	w25, w0, #0x80, lsl #12 // =0x80000
+  2c8354:      	stp	q1, q1, [x14, #0x70]
+  2c8358:      	and	w26, w16, w25
+  2c835c:      	adrp	x16, 0xc17000 <_ZTVNSt3__120__shared_ptr_emplaceIPFvvENS_9allocatorIS2_EEEE+0x290>
+  2c8360:      	add	x16, x16, #0xbc8
+  2c8364:      	str	q1, [x14, #0x60]
+  2c8368:      	cmp	w26, w25
+  2c836c:      	stp	q1, q1, [sp, #0x50]
+  2c8370:      	stp	q1, q1, [sp, #0x70]
+  2c8374:      	stp	q1, q1, [sp, #0x90]
+  2c8378:      	ldr	w9, [x19, #0x4]
+  2c837c:      	str	q0, [x14, #0x60]
+  2c8380:      	movi	v0.2s, #0x8
+  2c8384:      	adrp	x14, 0xc17000 <_ZTVNSt3__120__shared_ptr_emplaceIPFvvENS_9allocatorIS2_EEEE+0x290>
+  2c8388:      	add	x14, x14, #0xbc8
+  2c838c:      	str	x16, [sp, #0xc0]
+  2c8390:      	ubfx	w10, w9, #3, #1
+  2c8394:      	stp	x14, xzr, [sp, #0xa0]
+  2c8398:      	mov	w14, #0x6               // =6
+  2c839c:      	mov	w16, #0x8               // =8
+  2c83a0:      	stp	x8, x11, [sp, #0x60]
+  2c83a4:      	strb	w10, [sp, #0x58]
+  2c83a8:      	add	x10, x20, #0x50
+  2c83ac:      	csel	w14, w16, w14, eq
+  2c83b0:      	stp	x10, x17, [sp, #0x70]
+  2c83b4:      	mov	w17, #0x9               // =9
+  2c83b8:      	add	x10, x20, #0xe8
+  2c83bc:      	str	w17, [sp, #0x98]
+  2c83c0:      	adrp	x17, 0xc17000 <_ZTVNSt3__120__shared_ptr_emplaceIPFvvENS_9allocatorIS2_EEEE+0x290>
+  2c83c4:      	add	x17, x17, #0xb50
+  2c83c8:      	str	x17, [sp, #0x50]
+  2c83cc:      	add	x17, sp, #0x50
+  2c83d0:      	add	x16, x17, #0x50
+  2c83d4:      	cset	w17, eq
+  2c83d8:      	bics	wzr, w0, w15
+  2c83dc:      	csinc	w27, w17, wzr, ne
+  2c83e0:      	stp	x10, xzr, [sp, #0x80]
+  2c83e4:      	str	xzr, [sp, #0x90]
+  2c83e8:      	strb	wzr, [sp, #0x9c]
+  2c83ec:      	str	d0, [sp, #0xc8]
+  2c83f0:      	str	wzr, [sp, #0xd0]
+  2c83f4:      	stp	x16, xzr, [sp, #0xd8]
+  2c83f8:      	cbz	w13, 0x2c8b3c <_ZN3art6Thread21RunCheckpointFunctionEv+0xa3c>
+  2c83fc:      	cmp	w11, #0x1
+  2c8400:      	b.eq	0x2c8728 <_ZN3art6Thread21RunCheckpointFunctionEv+0x628>
+  2c8404:      	mov	w13, wzr
+  2c8408:      	add	x15, x8, x11
+  2c840c:      	add	x12, x12, #0x2
+  2c8410:      	mov	w16, #0x8               // =8
+  2c8414:      	ldrb	w17, [x12]
+  2c8418:      	cmp	w17, #0x48
+  2c841c:      	b.le	0x2c8770 <_ZN3art6Thread21RunCheckpointFunctionEv+0x670>
+  2c8420:      	cmp	w17, #0x52
+  2c8424:      	b.gt	0x2c87f8 <_ZN3art6Thread21RunCheckpointFunctionEv+0x6f8>
+  2c8428:      	cmp	w17, #0x49
+  2c842c:      	b.eq	0x2c8434 <_ZN3art6Thread21RunCheckpointFunctionEv+0x334>
+  2c8430:      	cmp	w17, #0x4a
+  2c8434:      	cmp	w14, #0x0
+  2c8438:      	cinc	w13, w13, eq
+  2c843c:      	subs	w14, w14, #0x1
+  2c8440:      	csel	w14, wzr, w14, lo
+  2c8444:      	add	x12, x12, #0x1
+  2c8448:      	cmp	x12, x15
+  2c844c:      	b.ne	0x2c8414 <_ZN3art6Thread21RunCheckpointFunctionEv+0x314>
+  2c8450:      	lsl	w8, w13, #3
+  2c8454:      	ldr	x22, [x20]
+  2c8458:      	sub	x8, x20, x8
+  2c845c:      	mov	w11, #0x6a89            // =27273
+  2c8460:      	add	x12, x2, #0x40
+  2c8464:      	cmp	w26, w25
+  2c8468:      	movk	w11, #0xebad, lsl #16
+  2c846c:      	stp	x2, x12, [sp, #0xa8]
+  2c8470:      	sub	x8, x8, #0x8
+  2c8474:      	orr	x12, x22, #0x1
+  2c8478:      	and	x13, x8, #0xfffffffffffffff0
+  2c847c:      	csel	x8, x12, x11, eq
+  2c8480:      	str	x10, [sp, #0xe0]
+  2c8484:      	stp	x8, x13, [x2, #0x80]
+  2c8488:      	adrp	x28, 0xc2f000
+  2c848c:      	and	w8, w9, #0x8
+  2c8490:      	ldr	x28, [x28, #0xa78]
+  2c8494:      	str	x13, [sp, #0xb8]
+  2c8498:      	b.eq	0x2c88b0 <_ZN3art6Thread21RunCheckpointFunctionEv+0x7b0>
+  2c849c:      	ldr	x9, [x21, #0xc8]
+  2c84a0:      	str	x9, [x2], #0x8
+  2c84a4:      	mov	w9, #0x7                // =7
+  2c84a8:      	str	x2, [sp, #0xa8]
+  2c84ac:      	str	w9, [sp, #0xc8]
+  2c84b0:      	cbz	w8, 0x2c8730 <_ZN3art6Thread21RunCheckpointFunctionEv+0x630>
+  2c84b4:      	ldrb	w8, [x28]
+  2c84b8:      	cmp	w8, #0x1
+  2c84bc:      	b.eq	0x2c8c00 <_ZN3art6Thread21RunCheckpointFunctionEv+0xb00>
+  2c84c0:      	mov	w8, #0x7                // =7
+  2c84c4:      	sub	w8, w8, #0x1
+  2c84c8:      	str	w8, [sp, #0xc8]
+  2c84cc:      	mov	w8, #0x8                // =8
+  2c84d0:      	ldr	x9, [sp, #0xd8]
+  2c84d4:      	ldr	x10, [x9, x8]
+  2c84d8:      	str	x22, [x10], #0x8
+  2c84dc:      	str	x10, [x9, x8]
+  2c84e0:      	ldrb	w8, [sp, #0x58]
+  2c84e4:      	str	xzr, [sp, #0x88]
+  2c84e8:      	str	wzr, [sp, #0x94]
+  2c84ec:      	tbz	w8, #0x0, 0x2c8c24 <_ZN3art6Thread21RunCheckpointFunctionEv+0xb24>
+  2c84f0:      	ldr	x8, [sp, #0x68]
+  2c84f4:      	cbz	x8, 0x2c8b3c <_ZN3art6Thread21RunCheckpointFunctionEv+0xa3c>
+  2c84f8:      	subs	x24, x8, #0x1
+  2c84fc:      	b.eq	0x2c85ac <_ZN3art6Thread21RunCheckpointFunctionEv+0x4ac>
+  2c8500:      	ldr	x8, [sp, #0x60]
+  2c8504:      	mov	w22, #0x6               // =6
+  2c8508:      	add	x23, x8, #0x1
+  2c850c:      	ldrb	w8, [x23]
+  2c8510:      	cmp	w8, #0x48
+  2c8514:      	b.le	0x2c87a0 <_ZN3art6Thread21RunCheckpointFunctionEv+0x6a0>
+  2c8518:      	cmp	w8, #0x52
+  2c851c:      	b.gt	0x2c8898 <_ZN3art6Thread21RunCheckpointFunctionEv+0x798>
+  2c8520:      	cmp	w8, #0x49
+  2c8524:      	b.eq	0x2c8538 <_ZN3art6Thread21RunCheckpointFunctionEv+0x438>
+  2c8528:      	cmp	w8, #0x4a
+  2c852c:      	b.eq	0x2c8584 <_ZN3art6Thread21RunCheckpointFunctionEv+0x484>
+  2c8530:      	mov	w8, wzr
+  2c8534:      	b	0x2c853c <_ZN3art6Thread21RunCheckpointFunctionEv+0x43c>
+  2c8538:      	mov	w8, #0x5                // =5
+  2c853c:      	str	w8, [sp, #0x98]
+  2c8540:      	ldr	x8, [sp, #0x50]
+  2c8544:      	add	x0, sp, #0x50
+  2c8548:      	strb	wzr, [sp, #0x9c]
+  2c854c:      	ldr	x8, [x8, #0x10]
+  2c8550:      	blr	x8
+  2c8554:      	ldr	w9, [sp, #0x94]
+  2c8558:      	ldr	w8, [sp, #0x88]
+  2c855c:      	add	w9, w9, #0x1
+  2c8560:      	cmp	w8, #0x6
+  2c8564:      	str	w9, [sp, #0x94]
+  2c8568:      	b.hi	0x2c8574 <_ZN3art6Thread21RunCheckpointFunctionEv+0x474>
+  2c856c:      	add	w8, w8, #0x1
+  2c8570:      	str	w8, [sp, #0x88]
+  2c8574:      	subs	x24, x24, #0x1
+  2c8578:      	add	x23, x23, #0x1
+  2c857c:      	b.ne	0x2c850c <_ZN3art6Thread21RunCheckpointFunctionEv+0x40c>
+  2c8580:      	b	0x2c85ac <_ZN3art6Thread21RunCheckpointFunctionEv+0x4ac>
+  2c8584:      	ldr	x8, [sp, #0x50]
+  2c8588:      	str	w22, [sp, #0x98]
+  2c858c:      	add	x0, sp, #0x50
+  2c8590:      	strb	wzr, [sp, #0x9c]
+  2c8594:      	ldr	x8, [x8, #0x10]
+  2c8598:      	blr	x8
+  2c859c:      	ldr	w9, [sp, #0x94]
+  2c85a0:      	ldr	w8, [sp, #0x88]
+  2c85a4:      	add	w9, w9, #0x2
+  2c85a8:      	b	0x2c8560 <_ZN3art6Thread21RunCheckpointFunctionEv+0x460>
+  2c85ac:      	orr	x8, x20, #0x1
+  2c85b0:      	add	x24, x21, #0x1, lsl #12 // =0x1000
+  2c85b4:      	adrp	x23, 0xe19000 <_ZN3art20NonDebuggableClasses22non_debuggable_classesE+0xf8>
+  2c85b8:      	str	x8, [x21, #0xa8]
+  2c85bc:      	ldr	x8, [sp, #0x20]
+  2c85c0:      	ldr	x0, [x8, #0x298]
+  2c85c4:      	cbz	x0, 0x2c860c <_ZN3art6Thread21RunCheckpointFunctionEv+0x50c>
+  2c85c8:      	ldr	x8, [x23, #0x200]
+  2c85cc:      	ldr	x9, [x8, #0x298]
+  2c85d0:      	cbz	x9, 0x2c85f0 <_ZN3art6Thread21RunCheckpointFunctionEv+0x4f0>
+  2c85d4:      	ldr	x9, [x9, #0x10]
+  2c85d8:      	ldrb	w9, [x9]
+  2c85dc:      	cmp	w9, #0x1
+  2c85e0:      	b.ne	0x2c85f0 <_ZN3art6Thread21RunCheckpointFunctionEv+0x4f0>
+  2c85e4:      	ldr	x9, [x0, #0x10]
+  2c85e8:      	ldrh	w9, [x9, #0x18]
+  2c85ec:      	cbz	w9, 0x2c8b90 <_ZN3art6Thread21RunCheckpointFunctionEv+0xa90>
+  2c85f0:      	ldrh	w9, [x19, #0xe]
+  2c85f4:      	ldr	w10, [x19, #0x4]
+  2c85f8:      	cbz	w9, 0x2c897c <_ZN3art6Thread21RunCheckpointFunctionEv+0x87c>
+  2c85fc:      	lsr	w8, w10, #30
+  2c8600:      	cbnz	w8, 0x2c860c <_ZN3art6Thread21RunCheckpointFunctionEv+0x50c>
+  2c8604:      	sub	w8, w9, #0x1
+  2c8608:      	strh	w8, [x19, #0xe]
+  2c860c:      	ldr	w8, [x19, #0x4]
+  2c8610:      	and	w8, w8, #0x1fff8
+  2c8614:      	and	w8, w8, #0xffff000f
+  2c8618:      	cmp	w8, #0x8
+  2c861c:      	b.ne	0x2c8640 <_ZN3art6Thread21RunCheckpointFunctionEv+0x540>
+  2c8620:      	ldrb	w22, [x28]
+  2c8624:      	ldr	w0, [x19]
+  2c8628:      	cmp	w22, #0x1
+  2c862c:      	b.eq	0x2c8c2c <_ZN3art6Thread21RunCheckpointFunctionEv+0xb2c>
+  2c8630:      	ldr	w8, [x0, #0x68]
+  2c8634:      	lsr	w8, w8, #28
+  2c8638:      	cmp	w8, #0xe
+  2c863c:      	b.ls	0x2c89e0 <_ZN3art6Thread21RunCheckpointFunctionEv+0x8e0>
+  2c8640:      	ldr	x8, [x23, #0x200]
+  2c8644:      	ldr	x0, [x8, #0x340]
+  2c8648:      	ldrb	w8, [x0, #0x9]
+  2c864c:      	cbnz	w8, 0x2c8b5c <_ZN3art6Thread21RunCheckpointFunctionEv+0xa5c>
+  2c8650:      	tbz	w27, #0x0, 0x2c8660 <_ZN3art6Thread21RunCheckpointFunctionEv+0x560>
+  2c8654:      	cmp	w26, w25
+  2c8658:      	b.ne	0x2c86c8 <_ZN3art6Thread21RunCheckpointFunctionEv+0x5c8>
+  2c865c:      	b	0x2c86d8 <_ZN3art6Thread21RunCheckpointFunctionEv+0x5d8>
+  2c8660:      	ldr	w8, [x19, #0x4]
+  2c8664:      	and	w8, w8, #0x3ffe0
+  2c8668:      	tst	w8, #0xfffe003f
+  2c866c:      	b.ne	0x2c8a6c <_ZN3art6Thread21RunCheckpointFunctionEv+0x96c>
+  2c8670:      	ldr	w8, [x21]
+  2c8674:      	tbnz	w8, #0x7, 0x2c8c5c <_ZN3art6Thread21RunCheckpointFunctionEv+0xb5c>
+  2c8678:      	mov	w23, #0xfff9            // =65529
+  2c867c:      	mov	w25, #0x5c000000        // =1543503872
+  2c8680:      	movk	w23, #0xff, lsl #16
+  2c8684:      	ldar	w22, [x21]
+  2c8688:      	tbnz	w22, #0x1, 0x2c8b08 <_ZN3art6Thread21RunCheckpointFunctionEv+0xa08>
+  2c868c:      	tbnz	w22, #0x2, 0x2c8c88 <_ZN3art6Thread21RunCheckpointFunctionEv+0xb88>
+  2c8690:      	and	w8, w22, w23
+  2c8694:      	mov	w0, w22
+  2c8698:      	mov	x2, x21
+  2c869c:      	orr	w1, w8, w25
+  2c86a0:      	bl	0x75f800 <_ZN3art5debug17MakeMiniDebugInfoENS_14InstructionSetEPKNS_22InstructionSetFeaturesEmmRKNS0_9DebugInfoE+0x13a7c>
+  2c86a4:      	cmp	w0, w22
+  2c86a8:      	b.ne	0x2c8684 <_ZN3art6Thread21RunCheckpointFunctionEv+0x584>
+  2c86ac:      	ldrb	w8, [x24, #0xa89]
+  2c86b0:      	add	w8, w8, #0x1
+  2c86b4:      	strb	w8, [x24, #0xa89]
+  2c86b8:      	str	xzr, [x21, #0x9e8]
+  2c86bc:      	ldr	w8, [x21]
+  2c86c0:      	tst	w8, #0xe
+  2c86c4:      	b.ne	0x2c8af4 <_ZN3art6Thread21RunCheckpointFunctionEv+0x9f4>
+  2c86c8:      	ldr	x8, [x21, #0xc8]
+  2c86cc:      	ldp	w10, w9, [x8, #0x18]
+  2c86d0:      	str	w9, [x8, #0x18]
+  2c86d4:      	stur	w10, [x20, #-0x4]
+  2c86d8:      	adrp	x8, 0xc2f000
+  2c86dc:      	ldr	x8, [x8, #0xa98]
+  2c86e0:      	ldr	x0, [x19, #0x10]
+  2c86e4:      	ldrb	w8, [x8, #0x10]
+  2c86e8:      	cmp	w8, #0x1
+  2c86ec:      	b.eq	0x2c8b74 <_ZN3art6Thread21RunCheckpointFunctionEv+0xa74>
+  2c86f0:      	ldr	x8, [sp, #0x18]
+  2c86f4:      	ldr	x8, [x8, #0x28]
+  2c86f8:      	ldur	x9, [x29, #-0x18]
+  2c86fc:      	cmp	x8, x9
+  2c8700:      	b.ne	0x2c8b04 <_ZN3art6Thread21RunCheckpointFunctionEv+0xa04>
+  2c8704:      	ldp	x20, x19, [sp, #0x150]
+  2c8708:      	ldp	x22, x21, [sp, #0x140]
+  2c870c:      	ldp	x24, x23, [sp, #0x130]
+  2c8710:      	ldp	x26, x25, [sp, #0x120]
+  2c8714:      	ldp	x28, x27, [sp, #0x110]
+  2c8718:      	ldp	x29, x30, [sp, #0x100]
+  2c871c:      	add	sp, sp, #0x160
+  2c8720:      	autiasp
+  2c8724:      	ret
+  2c8728:      	mov	x8, xzr
+  2c872c:      	b	0x2c8454 <_ZN3art6Thread21RunCheckpointFunctionEv+0x354>
+  2c8730:      	str	xzr, [sp, #0x88]
+  2c8734:      	adrp	x8, 0xc17000 <_ZTVNSt3__120__shared_ptr_emplaceIPFvvENS_9allocatorIS2_EEEE+0x290>
+  2c8738:      	add	x8, x8, #0xb50
+  2c873c:      	str	wzr, [sp, #0x94]
+  2c8740:      	str	wzr, [sp, #0x98]
+  2c8744:      	add	x0, sp, #0x50
+  2c8748:      	strb	wzr, [sp, #0x9c]
+  2c874c:      	ldr	x8, [x8, #0x10]
+  2c8750:      	blr	x8
+  2c8754:      	ldr	w8, [sp, #0x94]
+  2c8758:      	ldr	w9, [sp, #0x88]
+  2c875c:      	add	w8, w8, #0x1
+  2c8760:      	add	w9, w9, #0x1
+  2c8764:      	str	w8, [sp, #0x94]
+  2c8768:      	str	w9, [sp, #0x88]
+  2c876c:      	b	0x2c84f0 <_ZN3art6Thread21RunCheckpointFunctionEv+0x3f0>
+  2c8770:      	sub	w0, w17, #0x42
+  2c8774:      	cmp	w0, #0x2
+  2c8778:      	b.lo	0x2c8434 <_ZN3art6Thread21RunCheckpointFunctionEv+0x334>
+  2c877c:      	cmp	w17, #0x44
+  2c8780:      	b.eq	0x2c89cc <_ZN3art6Thread21RunCheckpointFunctionEv+0x8cc>
+  2c8784:      	cmp	w17, #0x46
+  2c8788:      	b.ne	0x2c8434 <_ZN3art6Thread21RunCheckpointFunctionEv+0x334>
+  2c878c:      	cmp	w16, #0x0
+  2c8790:      	cinc	w13, w13, eq
+  2c8794:      	subs	w16, w16, #0x1
+  2c8798:      	csel	w16, wzr, w16, lo
+  2c879c:      	b	0x2c8444 <_ZN3art6Thread21RunCheckpointFunctionEv+0x344>
+  2c87a0:      	cmp	w8, #0x43
+  2c87a4:      	b.le	0x2c8964 <_ZN3art6Thread21RunCheckpointFunctionEv+0x864>
+  2c87a8:      	cmp	w8, #0x44
+  2c87ac:      	b.eq	0x2c899c <_ZN3art6Thread21RunCheckpointFunctionEv+0x89c>
+  2c87b0:      	cmp	w8, #0x46
+  2c87b4:      	b.ne	0x2c8530 <_ZN3art6Thread21RunCheckpointFunctionEv+0x430>
+  2c87b8:      	mov	w8, #0x7                // =7
+  2c87bc:      	strb	wzr, [sp, #0x9c]
+  2c87c0:      	add	x0, sp, #0x50
+  2c87c4:      	str	w8, [sp, #0x98]
+  2c87c8:      	ldr	x8, [sp, #0x50]
+  2c87cc:      	ldr	x8, [x8, #0x10]
+  2c87d0:      	blr	x8
+  2c87d4:      	ldr	w8, [sp, #0x8c]
+  2c87d8:      	ldr	w9, [sp, #0x94]
+  2c87dc:      	add	w8, w8, #0x1
+  2c87e0:      	add	w9, w9, #0x1
+  2c87e4:      	cmp	w8, #0x8
+  2c87e8:      	str	w9, [sp, #0x94]
+  2c87ec:      	b.hi	0x2c8574 <_ZN3art6Thread21RunCheckpointFunctionEv+0x474>
+  2c87f0:      	str	w8, [sp, #0x8c]
+  2c87f4:      	b	0x2c8574 <_ZN3art6Thread21RunCheckpointFunctionEv+0x474>
+  2c87f8:      	cmp	w17, #0x53
+  2c87fc:      	b.eq	0x2c8434 <_ZN3art6Thread21RunCheckpointFunctionEv+0x334>
+  2c8800:      	cmp	w17, #0x5a
+  2c8804:      	b.eq	0x2c8434 <_ZN3art6Thread21RunCheckpointFunctionEv+0x334>
+  2c8808:      	cmp	w17, #0x56
+  2c880c:      	b.ne	0x2c8434 <_ZN3art6Thread21RunCheckpointFunctionEv+0x334>
+  2c8810:      	mov	w0, #0x6                // =6
+  2c8814:      	mov	x1, xzr
+  2c8818:      	mov	x19, x11
+  2c881c:      	mov	x20, x8
+  2c8820:      	bl	0xaaea10 <_ZN7android4base9ShouldLogENS0_11LogSeverityEPKc@plt>
+  2c8824:      	tbz	w0, #0x0, 0x2c8890 <_ZN3art6Thread21RunCheckpointFunctionEv+0x790>
+  2c8828:      	bl	0xaaea20 <__errno@plt>
+  2c882c:      	ldr	w8, [x0]
+  2c8830:      	adrp	x1, 0x8c000
+  2c8834:      	add	x1, x1, #0x585
+  2c8838:      	add	x0, sp, #0x30
+  2c883c:      	mov	w2, #0x6dc              // =1756
+  2c8840:      	mov	w3, #0x6                // =6
+  2c8844:      	mov	x4, xzr
+  2c8848:      	mov	w5, #-0x1               // =-1
+  2c884c:      	str	w8, [sp, #0x28]
+  2c8850:      	bl	0xaae950 <_ZN7android4base10LogMessageC1EPKcjNS0_11LogSeverityES3_i@plt>
+  2c8854:      	add	x0, sp, #0x30
+  2c8858:      	bl	0xaae960 <_ZN7android4base10LogMessage6streamEv@plt>
+  2c885c:      	adrp	x1, 0x68000
+  2c8860:      	add	x1, x1, #0xcb6
+  2c8864:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  2c8868:      	mov	w1, #0x9                // =9
+  2c886c:      	bl	0xab0810 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_9Primitive4TypeE@plt>
+  2c8870:      	adrp	x1, 0x54000
+  2c8874:      	add	x1, x1, #0xd89
+  2c8878:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  2c887c:      	mov	x1, x20
+  2c8880:      	mov	x2, x19
+  2c8884:      	bl	0x213078 <_ZN3art10ThreadList10SuspendAllEPKcb+0x7224>
+  2c8888:      	add	x0, sp, #0x30
+  2c888c:      	bl	0xaae980 <_ZN7android4base10LogMessageD1Ev@plt>
+  2c8890:      	add	x0, sp, #0x28
+  2c8894:      	bl	0x607180 <_ZN3art7OatFile4OpenEiRKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES9_bbNS_8ArrayRefIS8_EENSA_IN9unix_file6FdFileEEEPNS_6MemMapEPS7_+0x4174>
+  2c8898:      	cmp	w8, #0x53
+  2c889c:      	b.eq	0x2c895c <_ZN3art6Thread21RunCheckpointFunctionEv+0x85c>
+  2c88a0:      	cmp	w8, #0x5a
+  2c88a4:      	b.ne	0x2c88c8 <_ZN3art6Thread21RunCheckpointFunctionEv+0x7c8>
+  2c88a8:      	mov	w8, #0x1                // =1
+  2c88ac:      	b	0x2c853c <_ZN3art6Thread21RunCheckpointFunctionEv+0x43c>
+  2c88b0:      	str	xzr, [sp, #0x88]
+  2c88b4:      	str	wzr, [sp, #0x94]
+  2c88b8:      	tbnz	w8, #0x3, 0x2c84f0 <_ZN3art6Thread21RunCheckpointFunctionEv+0x3f0>
+  2c88bc:      	adrp	x8, 0xc17000 <_ZTVNSt3__120__shared_ptr_emplaceIPFvvENS_9allocatorIS2_EEEE+0x290>
+  2c88c0:      	add	x8, x8, #0xb50
+  2c88c4:      	b	0x2c8740 <_ZN3art6Thread21RunCheckpointFunctionEv+0x640>
+  2c88c8:      	cmp	w8, #0x56
+  2c88cc:      	b.ne	0x2c8530 <_ZN3art6Thread21RunCheckpointFunctionEv+0x430>
+  2c88d0:      	mov	w8, #0x9                // =9
+  2c88d4:      	mov	w0, #0x6                // =6
+  2c88d8:      	mov	x1, xzr
+  2c88dc:      	str	w8, [sp, #0x98]
+  2c88e0:      	bl	0xaaea10 <_ZN7android4base9ShouldLogENS0_11LogSeverityEPKc@plt>
+  2c88e4:      	tbz	w0, #0x0, 0x2c8574 <_ZN3art6Thread21RunCheckpointFunctionEv+0x474>
+  2c88e8:      	bl	0xaaea20 <__errno@plt>
+  2c88ec:      	stp	w26, w25, [sp, #0xc]
+  2c88f0:      	mov	x25, x0
+  2c88f4:      	ldr	w26, [x0]
+  2c88f8:      	adrp	x1, 0x8c000
+  2c88fc:      	add	x1, x1, #0x585
+  2c8900:      	add	x0, sp, #0x30
+  2c8904:      	mov	w2, #0x169              // =361
+  2c8908:      	mov	w3, #0x6                // =6
+  2c890c:      	mov	x4, xzr
+  2c8910:      	mov	w5, #-0x1               // =-1
+  2c8914:      	bl	0xaae950 <_ZN7android4base10LogMessageC1EPKcjNS0_11LogSeverityES3_i@plt>
+  2c8918:      	add	x0, sp, #0x30
+  2c891c:      	bl	0xaae960 <_ZN7android4base10LogMessage6streamEv@plt>
+  2c8920:      	adrp	x1, 0x68000
+  2c8924:      	add	x1, x1, #0xcb6
+  2c8928:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  2c892c:      	ldr	w1, [sp, #0x98]
+  2c8930:      	bl	0xab0810 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_9Primitive4TypeE@plt>
+  2c8934:      	adrp	x1, 0x54000
+  2c8938:      	add	x1, x1, #0xd89
+  2c893c:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  2c8940:      	ldp	x1, x2, [sp, #0x60]
+  2c8944:      	bl	0x213078 <_ZN3art10ThreadList10SuspendAllEPKcb+0x7224>
+  2c8948:      	add	x0, sp, #0x30
+  2c894c:      	bl	0xaae980 <_ZN7android4base10LogMessageD1Ev@plt>
+  2c8950:      	str	w26, [x25]
+  2c8954:      	ldp	w26, w25, [sp, #0xc]
+  2c8958:      	b	0x2c8574 <_ZN3art6Thread21RunCheckpointFunctionEv+0x474>
+  2c895c:      	mov	w8, #0x4                // =4
+  2c8960:      	b	0x2c853c <_ZN3art6Thread21RunCheckpointFunctionEv+0x43c>
+  2c8964:      	cmp	w8, #0x42
+  2c8968:      	b.eq	0x2c89d8 <_ZN3art6Thread21RunCheckpointFunctionEv+0x8d8>
+  2c896c:      	cmp	w8, #0x43
+  2c8970:      	b.ne	0x2c8530 <_ZN3art6Thread21RunCheckpointFunctionEv+0x430>
+  2c8974:      	mov	w8, #0x3                // =3
+  2c8978:      	b	0x2c853c <_ZN3art6Thread21RunCheckpointFunctionEv+0x43c>
+  2c897c:      	lsr	w9, w10, #30
+  2c8980:      	cbz	w9, 0x2c8ac8 <_ZN3art6Thread21RunCheckpointFunctionEv+0x9c8>
+  2c8984:      	ldr	w8, [x19, #0x4]
+  2c8988:      	tbz	w8, #0x1f, 0x2c8aa0 <_ZN3art6Thread21RunCheckpointFunctionEv+0x9a0>
+  2c898c:      	mov	x1, x19
+  2c8990:      	mov	x2, x21
+  2c8994:      	bl	0xab1e30 <_ZN3art3jit3Jit23MaybeEnqueueCompilationEPNS_9ArtMethodEPNS_6ThreadE@plt>
+  2c8998:      	b	0x2c860c <_ZN3art6Thread21RunCheckpointFunctionEv+0x50c>
+  2c899c:      	mov	w8, #0x8                // =8
+  2c89a0:      	strb	wzr, [sp, #0x9c]
+  2c89a4:      	add	x0, sp, #0x50
+  2c89a8:      	str	w8, [sp, #0x98]
+  2c89ac:      	ldr	x8, [sp, #0x50]
+  2c89b0:      	ldr	x8, [x8, #0x10]
+  2c89b4:      	blr	x8
+  2c89b8:      	ldr	w8, [sp, #0x8c]
+  2c89bc:      	ldr	w9, [sp, #0x94]
+  2c89c0:      	add	w8, w8, #0x1
+  2c89c4:      	add	w9, w9, #0x2
+  2c89c8:      	b	0x2c87e4 <_ZN3art6Thread21RunCheckpointFunctionEv+0x6e4>
+  2c89cc:      	cbz	w16, 0x2c8cb0 <_ZN3art6Thread21RunCheckpointFunctionEv+0xbb0>
+  2c89d0:      	sub	w16, w16, #0x1
+  2c89d4:      	b	0x2c8444 <_ZN3art6Thread21RunCheckpointFunctionEv+0x344>
+  2c89d8:      	mov	w8, #0x2                // =2
+  2c89dc:      	b	0x2c853c <_ZN3art6Thread21RunCheckpointFunctionEv+0x43c>
+  2c89e0:      	adrp	x9, 0xa4000
+  2c89e4:      	ldr	x8, [x21, #0x118]
+  2c89e8:      	add	x23, sp, #0x30
+  2c89ec:      	ldr	d0, [x9, #0x318]
+  2c89f0:      	str	wzr, [sp, #0x40]
+  2c89f4:      	stur	x21, [sp, #0x44]
+  2c89f8:      	str	x8, [sp, #0x30]
+  2c89fc:      	str	d0, [sp, #0x38]
+  2c8a00:      	str	x23, [x21, #0x118]
+  2c8a04:      	ldr	w0, [x19]
+  2c8a08:      	cbz	w22, 0x2c8a20 <_ZN3art6Thread21RunCheckpointFunctionEv+0x920>
+  2c8a0c:      	adrp	x8, 0xc2f000
+  2c8a10:      	ldr	x8, [x8, #0xa60]
+  2c8a14:      	ldrb	w8, [x8]
+  2c8a18:      	cmp	w8, #0x1
+  2c8a1c:      	b.eq	0x2c8d7c <_ZN3art6Thread21RunCheckpointFunctionEv+0xc7c>
+  2c8a20:      	mov	w8, wzr
+  2c8a24:      	add	x2, x23, w8, uxtw #2
+  2c8a28:      	add	w9, w8, #0x1
+  2c8a2c:      	ldr	x8, [sp, #0x20]
+  2c8a30:      	str	w9, [sp, #0x3c]
+  2c8a34:      	mov	x1, x21
+  2c8a38:      	mov	w3, #0x1                // =1
+  2c8a3c:      	str	w0, [x2, #0x10]!
+  2c8a40:      	mov	w4, #0x1                // =1
+  2c8a44:      	ldr	x0, [x8, #0x270]
+  2c8a48:      	bl	0xaaf550 <_ZN3art11ClassLinker17EnsureInitializedEPNS_6ThreadENS_6HandleINS_6mirror5ClassEEEbb@plt>
+  2c8a4c:      	ldur	x8, [sp, #0x44]
+  2c8a50:      	adrp	x23, 0xe19000 <_ZN3art20NonDebuggableClasses22non_debuggable_classesE+0xf8>
+  2c8a54:      	ldr	x9, [x8, #0x118]
+  2c8a58:      	ldr	x9, [x9]
+  2c8a5c:      	str	x9, [x8, #0x118]
+  2c8a60:      	tbnz	w0, #0x0, 0x2c8640 <_ZN3art6Thread21RunCheckpointFunctionEv+0x540>
+  2c8a64:      	mov	x0, xzr
+  2c8a68:      	b	0x2c86f0 <_ZN3art6Thread21RunCheckpointFunctionEv+0x5f0>
+  2c8a6c:      	ldr	w9, [x19, #0x4]
+  2c8a70:      	mov	x8, x19
+  2c8a74:      	tbnz	w9, #0x3, 0x2c8a84 <_ZN3art6Thread21RunCheckpointFunctionEv+0x984>
+  2c8a78:      	ldr	x8, [x21, #0xa8]
+  2c8a7c:      	and	x8, x8, #0xfffffffffffffffc
+  2c8a80:      	add	x8, x8, #0xe8
+  2c8a84:      	ldr	w1, [x8]
+  2c8a88:      	mov	x0, x21
+  2c8a8c:      	mov	w2, wzr
+  2c8a90:      	bl	0xab1e00 <_ZN3art7Monitor12MonitorEnterEPNS_6ThreadENS_6ObjPtrINS_6mirror6ObjectEEEb@plt>
+  2c8a94:      	ldr	x8, [x21, #0x98]
+  2c8a98:      	cbz	x8, 0x2c8670 <_ZN3art6Thread21RunCheckpointFunctionEv+0x570>
+  2c8a9c:      	b	0x2c8a64 <_ZN3art6Thread21RunCheckpointFunctionEv+0x964>
+  2c8aa0:      	ldr	w8, [x21, #0x4c]
+  2c8aa4:      	sub	w9, w8, #0x1
+  2c8aa8:      	and	w8, w8, #0xffff
+  2c8aac:      	and	w9, w9, #0xffff
+  2c8ab0:      	cmp	w8, #0x1
+  2c8ab4:      	str	w9, [x21, #0x4c]
+  2c8ab8:      	b.ne	0x2c860c <_ZN3art6Thread21RunCheckpointFunctionEv+0x50c>
+  2c8abc:      	mov	w8, #0x1fff             // =8191
+  2c8ac0:      	str	w8, [x21, #0x4c]
+  2c8ac4:      	b	0x2c898c <_ZN3art6Thread21RunCheckpointFunctionEv+0x88c>
+  2c8ac8:      	ldr	x8, [x8, #0x2a8]
+  2c8acc:      	ldr	w8, [x8, #0x1c]
+  2c8ad0:      	ldr	w9, [x19, #0x4]
+  2c8ad4:      	tbnz	w9, #0xa, 0x2c8d9c <_ZN3art6Thread21RunCheckpointFunctionEv+0xc9c>
+  2c8ad8:      	ldr	w9, [x19, #0x4]
+  2c8adc:      	lsr	w9, w9, #30
+  2c8ae0:      	cbnz	w9, 0x2c898c <_ZN3art6Thread21RunCheckpointFunctionEv+0x88c>
+  2c8ae4:      	tst	w8, #0xffff
+  2c8ae8:      	b.eq	0x2c898c <_ZN3art6Thread21RunCheckpointFunctionEv+0x88c>
+  2c8aec:      	strh	w8, [x19, #0xe]
+  2c8af0:      	b	0x2c898c <_ZN3art6Thread21RunCheckpointFunctionEv+0x88c>
+  2c8af4:      	tbz	w8, #0x3, 0x2c8dbc <_ZN3art6Thread21RunCheckpointFunctionEv+0xcbc>
+  2c8af8:      	mov	x0, x21
+  2c8afc:      	bl	0xaaeff0 <_ZN3art6Thread25PassActiveSuspendBarriersEv@plt>
+  2c8b00:      	b	0x2c86bc <_ZN3art6Thread21RunCheckpointFunctionEv+0x5bc>
+  2c8b04:      	bl	0xab4170 <__stack_chk_fail@plt>
+  2c8b08:      	ldrb	w8, [x24, #0xa8a]
+  2c8b0c:      	mov	x0, x21
+  2c8b10:      	add	w8, w8, #0x1
+  2c8b14:      	strb	w8, [x24, #0xa8a]
+  2c8b18:      	bl	0xaaf040 <_ZN3art6Thread21RunCheckpointFunctionEv@plt>
+  2c8b1c:      	b	0x2c8684 <_ZN3art6Thread21RunCheckpointFunctionEv+0x584>
+  2c8b20:      	ldrsb	w11, [x12, #0x1]
+  2c8b24:      	add	x10, x12, #0x2
+  2c8b28:      	bfi	w13, w11, #7, #7
+  2c8b2c:      	tbnz	w11, #0x1f, 0x2c8e1c <_ZN3art6Thread21RunCheckpointFunctionEv+0xd1c>
+  2c8b30:      	mov	x12, x8
+  2c8b34:      	mov	x8, x10
+  2c8b38:      	b	0x2c8328 <_ZN3art6Thread21RunCheckpointFunctionEv+0x228>
+  2c8b3c:      	adrp	x0, 0x71000
+  2c8b40:      	add	x0, x0, #0x64
+  2c8b44:      	bl	0x754854 <_ZN3art5debug17MakeMiniDebugInfoENS_14InstructionSetEPKNS_22InstructionSetFeaturesEmmRKNS0_9DebugInfoE+0x8ad0>
+  2c8b48:      	mov	x0, x19
+  2c8b4c:      	mov	x22, x2
+  2c8b50:      	bl	0xaaed80 <_ZN3art9ArtMethod19GetObsoleteDexCacheILNS_17ReadBarrierOptionE1EEENS_6ObjPtrINS_6mirror8DexCacheEEEv@plt>
+  2c8b54:      	mov	x2, x22
+  2c8b58:      	b	0x2c82e0 <_ZN3art6Thread21RunCheckpointFunctionEv+0x1e0>
+  2c8b5c:      	mov	x1, x21
+  2c8b60:      	mov	x2, x19
+  2c8b64:      	bl	0x2c2070 <_ZN3art9ArtMethod6InvokeEPNS_6ThreadEPjjPNS_6JValueEPKc+0x1ea74>
+  2c8b68:      	ldr	x8, [x21, #0x98]
+  2c8b6c:      	cbz	x8, 0x2c8650 <_ZN3art6Thread21RunCheckpointFunctionEv+0x550>
+  2c8b70:      	b	0x2c8a64 <_ZN3art6Thread21RunCheckpointFunctionEv+0x964>
+  2c8b74:      	mov	x20, x0
+  2c8b78:      	mov	w0, #0x2                // =2
+  2c8b7c:      	mov	x1, xzr
+  2c8b80:      	bl	0xaaea10 <_ZN7android4base9ShouldLogENS0_11LogSeverityEPKc@plt>
+  2c8b84:      	tbnz	w0, #0x0, 0x2c8cb8 <_ZN3art6Thread21RunCheckpointFunctionEv+0xbb8>
+  2c8b88:      	mov	x0, x20
+  2c8b8c:      	b	0x2c86f0 <_ZN3art6Thread21RunCheckpointFunctionEv+0x5f0>
+  2c8b90:      	ldr	w9, [x19]
+  2c8b94:      	str	x0, [sp, #0x10]
+  2c8b98:      	ldr	w10, [x9, #0x38]
+  2c8b9c:      	mov	x9, x19
+  2c8ba0:      	tbnz	w10, #0x12, 0x2c8d74 <_ZN3art6Thread21RunCheckpointFunctionEv+0xc74>
+  2c8ba4:      	ldr	w9, [x9, #0x4]
+  2c8ba8:      	tbz	w9, #0x1f, 0x2c8e50 <_ZN3art6Thread21RunCheckpointFunctionEv+0xd50>
+  2c8bac:      	ldr	x0, [sp, #0x10]
+  2c8bb0:      	ldrb	w22, [x24, #0xac8]
+  2c8bb4:      	mov	w8, #0x1                // =1
+  2c8bb8:      	mov	x1, x19
+  2c8bbc:      	mov	x2, x21
+  2c8bc0:      	mov	w3, #0x1                // =1
+  2c8bc4:      	mov	w4, wzr
+  2c8bc8:      	mov	w5, wzr
+  2c8bcc:      	strb	w8, [x24, #0xac8]
+  2c8bd0:      	bl	0x46a8d0 <_ZN3art3jit3Jit15TryPatternMatchEPNS_9ArtMethodENS_15CompilationKindE+0x1dc>
+  2c8bd4:      	mov	w8, w0
+  2c8bd8:      	ldr	x0, [sp, #0x10]
+  2c8bdc:      	strb	w22, [x24, #0xac8]
+  2c8be0:      	tbnz	w8, #0x0, 0x2c860c <_ZN3art6Thread21RunCheckpointFunctionEv+0x50c>
+  2c8be4:      	mov	x1, x19
+  2c8be8:      	mov	x2, x21
+  2c8bec:      	mov	w3, #0x2                // =2
+  2c8bf0:      	mov	w4, wzr
+  2c8bf4:      	mov	w5, wzr
+  2c8bf8:      	bl	0xab1fc0 <_ZN3art3jit3Jit13CompileMethodEPNS_9ArtMethodEPNS_6ThreadENS_15CompilationKindEbb@plt>
+  2c8bfc:      	b	0x2c860c <_ZN3art6Thread21RunCheckpointFunctionEv+0x50c>
+  2c8c00:      	mov	x0, x22
+  2c8c04:      	bl	0xa2c56c <_Z23memcmp16_generic_staticPKtS0_m+0x33b3c>
+  2c8c08:      	ldr	w8, [sp, #0xc8]
+  2c8c0c:      	cbnz	w8, 0x2c84c4 <_ZN3art6Thread21RunCheckpointFunctionEv+0x3c4>
+  2c8c10:      	ldr	w8, [sp, #0xd0]
+  2c8c14:      	add	w8, w8, #0x1
+  2c8c18:      	str	w8, [sp, #0xd0]
+  2c8c1c:      	mov	w8, #0x18               // =24
+  2c8c20:      	b	0x2c84d0 <_ZN3art6Thread21RunCheckpointFunctionEv+0x3d0>
+  2c8c24:      	ldr	x8, [sp, #0x50]
+  2c8c28:      	b	0x2c8740 <_ZN3art6Thread21RunCheckpointFunctionEv+0x640>
+  2c8c2c:      	adrp	x8, 0xc2f000
+  2c8c30:      	ldr	x8, [x8, #0xa60]
+  2c8c34:      	ldrb	w8, [x8]
+  2c8c38:      	cmp	w8, #0x1
+  2c8c3c:      	b.ne	0x2c8630 <_ZN3art6Thread21RunCheckpointFunctionEv+0x530>
+  2c8c40:      	mrs	x8, TPIDR_EL0
+  2c8c44:      	ldr	x8, [x8, #0x38]
+  2c8c48:      	cbz	x8, 0x2c8630 <_ZN3art6Thread21RunCheckpointFunctionEv+0x530>
+  2c8c4c:      	ldr	w8, [x8, #0x20]
+  2c8c50:      	cbz	w8, 0x2c8630 <_ZN3art6Thread21RunCheckpointFunctionEv+0x530>
+  2c8c54:      	bl	0x207210 <_ZN3art10ThreadList9ResumeAllEv+0x28a4>
+  2c8c58:      	b	0x2c8630 <_ZN3art6Thread21RunCheckpointFunctionEv+0x530>
+  2c8c5c:      	mov	x0, x21
+  2c8c60:      	bl	0x2c8ec4 <_ZN3art7Barrier4PassEPNS_6ThreadE+0x60>
+  2c8c64:      	add	x0, sp, #0x30
+  2c8c68:      	strb	wzr, [sp, #0x30]
+  2c8c6c:      	bl	0xab39f0 <PaletteShouldReportJniInvocations@plt>
+  2c8c70:      	ldrb	w8, [sp, #0x30]
+  2c8c74:      	cmp	w8, #0x1
+  2c8c78:      	b.ne	0x2c86c8 <_ZN3art6Thread21RunCheckpointFunctionEv+0x5c8>
+  2c8c7c:      	ldr	x0, [x21, #0xc8]
+  2c8c80:      	bl	0xab3d30 <PaletteNotifyBeginJniInvocation@plt>
+  2c8c84:      	b	0x2c86c8 <_ZN3art6Thread21RunCheckpointFunctionEv+0x5c8>
+  2c8c88:      	mov	w0, #0x4                // =4
+  2c8c8c:      	mov	x1, x21
+  2c8c90:      	bl	0x85a810 <_ZN3art9ArtMethod18IsImagePointerSizeENS_11PointerSizeE+0x37c>
+  2c8c94:      	adrp	x8, 0xe19000 <_ZN3art20NonDebuggableClasses22non_debuggable_classesE+0xf8>
+  2c8c98:      	mov	x1, x21
+  2c8c9c:      	ldr	x8, [x8, #0x200]
+  2c8ca0:      	ldr	x8, [x8, #0x260]
+  2c8ca4:      	ldr	x0, [x8, #0x2100]
+  2c8ca8:      	bl	0xaaff70 <_ZN3art7Barrier4PassEPNS_6ThreadE@plt>
+  2c8cac:      	b	0x2c8684 <_ZN3art6Thread21RunCheckpointFunctionEv+0x584>
+  2c8cb0:      	add	w13, w13, #0x1
+  2c8cb4:      	b	0x2c8444 <_ZN3art6Thread21RunCheckpointFunctionEv+0x344>
+  2c8cb8:      	bl	0xaaea20 <__errno@plt>
+  2c8cbc:      	mov	x21, x0
+  2c8cc0:      	ldr	w23, [x0]
+  2c8cc4:      	adrp	x1, 0x8c000
+  2c8cc8:      	add	x1, x1, #0x585
+  2c8ccc:      	add	x0, sp, #0x28
+  2c8cd0:      	mov	w2, #0x860              // =2144
+  2c8cd4:      	mov	w3, #0x2                // =2
+  2c8cd8:      	mov	x4, xzr
+  2c8cdc:      	mov	w5, #-0x1               // =-1
+  2c8ce0:      	bl	0xaae950 <_ZN7android4base10LogMessageC1EPKcjNS0_11LogSeverityES3_i@plt>
+  2c8ce4:      	add	x0, sp, #0x28
+  2c8ce8:      	bl	0xaae960 <_ZN7android4base10LogMessage6streamEv@plt>
+  2c8cec:      	adrp	x1, 0x59000
+  2c8cf0:      	add	x1, x1, #0xa93
+  2c8cf4:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  2c8cf8:      	mov	x22, x0
+  2c8cfc:      	add	x8, sp, #0x30
+  2c8d00:      	mov	x0, x19
+  2c8d04:      	mov	w1, #0x1                // =1
+  2c8d08:      	bl	0xaaf130 <_ZN3art9ArtMethod12PrettyMethodEb@plt>
+  2c8d0c:      	add	x1, sp, #0x30
+  2c8d10:      	mov	x0, x22
+  2c8d14:      	bl	0x234558 <_ZN3art9ArtMethod12PrettyMethodEb+0x45c>
+  2c8d18:      	adrp	x1, 0x7c000
+  2c8d1c:      	add	x1, x1, #0xe84
+  2c8d20:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  2c8d24:      	ldr	x8, [x0]
+  2c8d28:      	mov	w10, #-0x4b             // =-75
+  2c8d2c:      	mov	x1, x20
+  2c8d30:      	ldur	x8, [x8, #-0x18]
+  2c8d34:      	add	x8, x0, x8
+  2c8d38:      	ldr	w9, [x8, #0x8]
+  2c8d3c:      	and	w9, w9, w10
+  2c8d40:      	orr	w9, w9, #0x8
+  2c8d44:      	str	w9, [x8, #0x8]
+  2c8d48:      	bl	0xaae970 <_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEm@plt>
+  2c8d4c:      	ldrb	w8, [sp, #0x30]
+  2c8d50:      	tbz	w8, #0x0, 0x2c8d64 <_ZN3art6Thread21RunCheckpointFunctionEv+0xc64>
+  2c8d54:      	ldr	x8, [sp, #0x30]
+  2c8d58:      	ldr	x0, [sp, #0x40]
+  2c8d5c:      	and	x1, x8, #0xfffffffffffffffe
+  2c8d60:      	bl	0xaae9b0 <_ZdlPvm@plt>
+  2c8d64:      	add	x0, sp, #0x28
+  2c8d68:      	bl	0xaae980 <_ZN7android4base10LogMessageD1Ev@plt>
+  2c8d6c:      	str	w23, [x21]
+  2c8d70:      	b	0x2c8b88 <_ZN3art6Thread21RunCheckpointFunctionEv+0xa88>
+  2c8d74:      	ldr	x9, [x19, #0x10]
+  2c8d78:      	b	0x2c8ba4 <_ZN3art6Thread21RunCheckpointFunctionEv+0xaa4>
+  2c8d7c:      	mrs	x8, TPIDR_EL0
+  2c8d80:      	ldr	x8, [x8, #0x38]
+  2c8d84:      	cbz	x8, 0x2c8a24 <_ZN3art6Thread21RunCheckpointFunctionEv+0x924>
+  2c8d88:      	ldr	w8, [x8, #0x20]
+  2c8d8c:      	cbz	w8, 0x2c8a24 <_ZN3art6Thread21RunCheckpointFunctionEv+0x924>
+  2c8d90:      	bl	0x207210 <_ZN3art10ThreadList9ResumeAllEv+0x28a4>
+  2c8d94:      	ldr	w8, [sp, #0x3c]
+  2c8d98:      	b	0x2c8a24 <_ZN3art6Thread21RunCheckpointFunctionEv+0x924>
+  2c8d9c:      	mov	w10, #0x400             // =1024
+  2c8da0:      	movk	w10, #0x8140, lsl #16
+  2c8da4:      	and	w9, w9, w10
+  2c8da8:      	mov	w10, #0x400             // =1024
+  2c8dac:      	movk	w10, #0x140, lsl #16
+  2c8db0:      	cmp	w9, w10
+  2c8db4:      	b.ne	0x2c898c <_ZN3art6Thread21RunCheckpointFunctionEv+0x88c>
+  2c8db8:      	b	0x2c8ad8 <_ZN3art6Thread21RunCheckpointFunctionEv+0x9d8>
+  2c8dbc:      	mov	w0, #0x6                // =6
+  2c8dc0:      	mov	x1, xzr
+  2c8dc4:      	bl	0xaaea10 <_ZN7android4base9ShouldLogENS0_11LogSeverityEPKc@plt>
+  2c8dc8:      	tbz	w0, #0x0, 0x2c86bc <_ZN3art6Thread21RunCheckpointFunctionEv+0x5bc>
+  2c8dcc:      	bl	0xaaea20 <__errno@plt>
+  2c8dd0:      	mov	x22, x0
+  2c8dd4:      	ldr	w23, [x0]
+  2c8dd8:      	adrp	x1, 0xa1000
+  2c8ddc:      	add	x1, x1, #0x199
+  2c8de0:      	add	x0, sp, #0x30
+  2c8de4:      	mov	w2, #0x122              // =290
+  2c8de8:      	mov	w3, #0x6                // =6
+  2c8dec:      	mov	x4, xzr
+  2c8df0:      	mov	w5, #-0x1               // =-1
+  2c8df4:      	bl	0xaae950 <_ZN7android4base10LogMessageC1EPKcjNS0_11LogSeverityES3_i@plt>
+  2c8df8:      	add	x0, sp, #0x30
+  2c8dfc:      	bl	0xaae960 <_ZN7android4base10LogMessage6streamEv@plt>
+  2c8e00:      	adrp	x1, 0x73000
+  2c8e04:      	add	x1, x1, #0xc41
+  2c8e08:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  2c8e0c:      	add	x0, sp, #0x30
+  2c8e10:      	bl	0xaae980 <_ZN7android4base10LogMessageD1Ev@plt>
+  2c8e14:      	str	w23, [x22]
+  2c8e18:      	b	0x2c86bc <_ZN3art6Thread21RunCheckpointFunctionEv+0x5bc>
+  2c8e1c:      	ldrsb	w11, [x12, #0x2]
+  2c8e20:      	add	x8, x12, #0x3
+  2c8e24:      	bfi	w13, w11, #14, #7
+  2c8e28:      	tbz	w11, #0x1f, 0x2c8e48 <_ZN3art6Thread21RunCheckpointFunctionEv+0xd48>
+  2c8e2c:      	ldrsb	w11, [x12, #0x3]
+  2c8e30:      	add	x10, x12, #0x4
+  2c8e34:      	bfi	w13, w11, #21, #7
+  2c8e38:      	tbz	w11, #0x1f, 0x2c8b30 <_ZN3art6Thread21RunCheckpointFunctionEv+0xa30>
+  2c8e3c:      	ldrb	w8, [x12, #0x4]
+  2c8e40:      	orr	w13, w13, w8, lsl #28
+  2c8e44:      	add	x8, x12, #0x5
+  2c8e48:      	mov	x12, x10
+  2c8e4c:      	b	0x2c8328 <_ZN3art6Thread21RunCheckpointFunctionEv+0x228>
+  2c8e50:      	mov	w8, #0x2800000          // =41943040
+  2c8e54:      	bics	wzr, w8, w9
+  2c8e58:      	b.eq	0x2c8bac <_ZN3art6Thread21RunCheckpointFunctionEv+0xaac>
+  2c8e5c:      	tbnz	w9, #0x19, 0x2c860c <_ZN3art6Thread21RunCheckpointFunctionEv+0x50c>
+  2c8e60:      	b	0x2c8bac <_ZN3art6Thread21RunCheckpointFunctionEv+0xaac>

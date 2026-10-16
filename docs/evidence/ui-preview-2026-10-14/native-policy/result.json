@@ -1,0 +1,236 @@
+{
+  "runId": "93872f89211d4364ad7e871f00669628",
+  "serial": "d861a4fa",
+  "hookInstalled": false,
+  "guestExecutionVerified": false,
+  "strongIsolationVerified": false,
+  "compile": [
+    "/Users/like/code/tripoder/android/vm-probe/build/native/tools/android-ndk-r30/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android36-clang",
+    "-O2",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-fPIE",
+    "-pie",
+    "-Iandroid/runtime/native",
+    "android/runtime/native/path_policy.c",
+    "android/runtime/native/io_adapter.c",
+    "android/runtime/test/native/path_policy_probe.c",
+    "-o",
+    "/Users/like/code/tripoder/docs/evidence/ui-preview-2026-10-14/native-policy/path-policy-probe"
+  ],
+  "binarySha256": "e3f1633d72e8e2ff33bc840f5ef9ac72bf3d1bb8f6b4422fe193b983c7666090",
+  "sourceSha256": {
+    "android/runtime/native/path_policy.c": "13a013ff9bec04f93e64e9e8a0781280de7e5764af1c27a56e83b712743750dc",
+    "android/runtime/native/io_adapter.c": "c366a2a77953050080470d8330364704956a42769eff2269f1645d6b7dcc491b",
+    "android/runtime/test/native/path_policy_probe.c": "2cbb5b5d089731b42bed4403528f7e9e4ccc48874f4b9487ffd0eed3c8041af2",
+    "android/runtime/native/path_policy.h": "c36a463c863d8bf49b8476281b888931f178f476f048cd108569025a7ef36403",
+    "android/scripts/validate-native-policy.py": "5169b86bf979b814a7f1ceacb2e0aea599eefabbcdb10dcc9e7bc693f174645e"
+  },
+  "commands": [
+    {
+      "command": [
+        "shell",
+        "getprop",
+        "ro.build.fingerprint"
+      ],
+      "exitCode": 0,
+      "stdout": "Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "id",
+        "-u"
+      ],
+      "exitCode": 0,
+      "stdout": "2000\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "push",
+        "/Users/like/code/tripoder/android/runtime-probe/build/native/path-policy-probe-validated",
+        "/data/local/tmp/tripoder-policy-93872f89211d4364ad7e871f00669628"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "/Users/like/code/tripoder/android/runtime-probe/build/native/path-policy-probe-validated: 1 file pushed, 0 skipped. 181.2 MB/s (25424 bytes in 0.000s)\n"
+    },
+    {
+      "command": [
+        "shell",
+        "chmod",
+        "700",
+        "/data/local/tmp/tripoder-policy-93872f89211d4364ad7e871f00669628"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "/data/local/tmp/tripoder-policy-93872f89211d4364ad7e871f00669628",
+        "/data/local/tmp/tripoder-path-93872f89211d4364ad7e871f00669628"
+      ],
+      "exitCode": 0,
+      "stdout": "{\"name\":\"explicit-gpu-device-capability\",\"passed\":true,\"errno\":13}\n{\"name\":\"gpu-capability-does-not-grant-dev-subtree\",\"passed\":true,\"errno\":13}\n{\"name\":\"gpu-capability-does-not-grant-sibling\",\"passed\":true,\"errno\":13}\n{\"name\":\"logical-open-real-fd\",\"passed\":true,\"errno\":2}\n{\"name\":\"kernel-write\",\"passed\":true,\"errno\":2}\n{\"name\":\"aliases-share-actual-bytes\",\"passed\":true,\"errno\":2}\n{\"name\":\"real-directory-fd\",\"passed\":true,\"errno\":2}\n{\"name\":\"relative-dirfd-read\",\"passed\":true,\"errno\":2}\n{\"name\":\"missing-parent-not-normalized-away\",\"passed\":true,\"errno\":2}\n{\"name\":\"dirfd-parent-above-anchor-explicitly-rejected\",\"passed\":true,\"errno\":13}\n{\"name\":\"logical-root-escape-rejected\",\"passed\":true,\"errno\":13}\n{\"name\":\"artifact-write-rejected\",\"passed\":true,\"errno\":30}\n{\"name\":\"unknown-private-path-denied\",\"passed\":true,\"errno\":13}\n{\"name\":\"leaf-symlink-no-follow\",\"passed\":true,\"errno\":40}\n{\"name\":\"trailing-slash-cannot-follow-link\",\"passed\":true,\"errno\":40}\n{\"name\":\"symlink-parent-not-normalized-away\",\"passed\":true,\"errno\":20}\n{\"name\":\"new-symlink-explicitly-unsupported\",\"passed\":true,\"errno\":95}\n{\"name\":\"logical-stat-real-inode\",\"passed\":true,\"errno\":95}\n{\"name\":\"dup-retains-kernel-description\",\"passed\":true,\"errno\":95}\n{\"name\":\"rename-real-dirfd\",\"passed\":true,\"errno\":2}\n{\"name\":\"open-fd-survives-rename\",\"passed\":true,\"errno\":2}\n{\"name\":\"unlink-real-dirfd\",\"passed\":true,\"errno\":2}\n{\"name\":\"unlinked-open-fd-still-valid\",\"passed\":true,\"errno\":2}\n{\"name\":\"mmap-real-file-description\",\"passed\":true,\"errno\":2}\n{\"name\":\"mapping-survives-fd-close\",\"passed\":true,\"errno\":2}\n{\"name\":\"shared-mapping-msync\",\"passed\":true,\"errno\":2}\n{\"name\":\"munmap\",\"passed\":true,\"errno\":2}\n{\"name\":\"cwd-is-guest-data\",\"passed\":true,\"errno\":2}\n{\"summary\":true,\"passed\":true,\"checks\":28,\"failures\":0,\"hookInstalled\":false,\"strongIsolationVerified\":false}\n",
+      "stderr": ""
+    }
+  ],
+  "fingerprint": "Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys",
+  "executionUid": "2000",
+  "observations": [
+    {
+      "name": "explicit-gpu-device-capability",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "gpu-capability-does-not-grant-dev-subtree",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "gpu-capability-does-not-grant-sibling",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "logical-open-real-fd",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "kernel-write",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "aliases-share-actual-bytes",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "real-directory-fd",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "relative-dirfd-read",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "missing-parent-not-normalized-away",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "dirfd-parent-above-anchor-explicitly-rejected",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "logical-root-escape-rejected",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "artifact-write-rejected",
+      "passed": true,
+      "errno": 30
+    },
+    {
+      "name": "unknown-private-path-denied",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "leaf-symlink-no-follow",
+      "passed": true,
+      "errno": 40
+    },
+    {
+      "name": "trailing-slash-cannot-follow-link",
+      "passed": true,
+      "errno": 40
+    },
+    {
+      "name": "symlink-parent-not-normalized-away",
+      "passed": true,
+      "errno": 20
+    },
+    {
+      "name": "new-symlink-explicitly-unsupported",
+      "passed": true,
+      "errno": 95
+    },
+    {
+      "name": "logical-stat-real-inode",
+      "passed": true,
+      "errno": 95
+    },
+    {
+      "name": "dup-retains-kernel-description",
+      "passed": true,
+      "errno": 95
+    },
+    {
+      "name": "rename-real-dirfd",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "open-fd-survives-rename",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "unlink-real-dirfd",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "unlinked-open-fd-still-valid",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "mmap-real-file-description",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "mapping-survives-fd-close",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "shared-mapping-msync",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "munmap",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "cwd-is-guest-data",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "summary": true,
+      "passed": true,
+      "checks": 28,
+      "failures": 0,
+      "hookInstalled": false,
+      "strongIsolationVerified": false
+    }
+  ],
+  "passed": true
+}

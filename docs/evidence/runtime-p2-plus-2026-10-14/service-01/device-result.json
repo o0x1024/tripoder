@@ -1,0 +1,2007 @@
+{
+  "schema": 1,
+  "phase": "P2-process-activity",
+  "runId": "p2-7a2508dbc9ad4257",
+  "startedAt": 1791943017064,
+  "hostApkSha256": "17650914b3a7735a9d5e2f5636240eb06b503024a7c838674082377aba993133",
+  "deviceBuild": "Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys",
+  "api": 37,
+  "abi": "arm64-v8a",
+  "hostUid": 10398,
+  "hostPid": 13797,
+  "fixtures": {
+    "a": {
+      "packageName": "dev.tripoder.p0.a",
+      "sha256": "d3a7bc42500e7aa8e6ce007731f92954b4e14e7aa5527c4920ab0c114758a8ed",
+      "apkRewritten": false,
+      "signatureVerifiedBy": "apksigner",
+      "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+    },
+    "b": {
+      "packageName": "dev.tripoder.p0.b",
+      "sha256": "7e1a6a3c8319ffd16245745a2378eb4d6dc7ec020e66ed45ae78c1282fd6b73f",
+      "apkRewritten": false,
+      "signatureVerifiedBy": "apksigner",
+      "signatureReport": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Tripoder P0 Test Only\nV3.0 Signer: certificate SHA-256 digest: 2e03e4996dc5458b05a3324c6a30e4b8386e6a5b82eddb5e5879585b8da8bfcd\nV3.0 Signer: certificate SHA-1 digest: 0992016c474163658407ccf951ae8389a2b562e4\nV3.0 Signer: certificate MD5 digest: 8590cd1acdd3fbbfa40384457037a39c\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 51f432d411cb318e1dce92fbec1c1bf6fa87b02baf8727159f9bfdde219d10a1\nV3.0 Signer: public key SHA-1 digest: 09efbe7717b0c3606c947a8dd4299faf1279c61f\nV3.0 Signer: public key MD5 digest: 188d7f5846761ae2de392c5876cbcf0b\n"
+    }
+  },
+  "p2Fixtures": {
+    "packageName": "dev.tripoder.p2",
+    "asset": "p2.apk",
+    "sha256": "5c714aeb12a47a6e03669d837aeec8386afeb94e63d2662a234e5ebe1a990871",
+    "apkRewritten": false
+  },
+  "priorOwnedProbeTasksRemoved": [
+    871
+  ],
+  "error": "java.lang.IllegalStateException: ASSERTION_FAILED:service-fixture-completed\n\tat dev.tripoder.runtimeprobe.P2ProbeActivity.check(P2ProbeActivity.java:116)\n\tat dev.tripoder.runtimeprobe.P2ProbeActivity.testServices(P2ProbeActivity.java:69)\n\tat dev.tripoder.runtimeprobe.P2ProbeActivity.run(P2ProbeActivity.java:47)\n\tat dev.tripoder.runtimeprobe.P2ProbeActivity.$r8$lambda$b2rjBikiqoR8NlPj_4I_nNulIoM(P2ProbeActivity.java:0)\n\tat dev.tripoder.runtimeprobe.P2ProbeActivity$9.run(D8$$SyntheticClass:0)\n\tat java.lang.Thread.run(Thread.java:1572)\n",
+  "passed": false,
+  "checks": [
+    {
+      "name": "authority-separate-process",
+      "passed": true,
+      "observed": {
+        "pid": 16516,
+        "authority": "a724f11d-a963-4263-9e45-4e13d4289619"
+      }
+    },
+    {
+      "name": "install-generations-distinct",
+      "passed": true,
+      "observed": [
+        "d3f684c5-0ba4-4f06-b0ea-c96d4994d858",
+        "5dab43ab-b9ad-42d2-abe1-86dd6d61199a"
+      ]
+    },
+    {
+      "name": "undeclared-process-rejected",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "concurrent-ensure-one-session-0",
+      "passed": true,
+      "observed": {
+        "installGeneration": "d3f684c5-0ba4-4f06-b0ea-c96d4994d858",
+        "pid": 16568,
+        "uid": 10398,
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2",
+        "generation": "8803e2b1c2cc2caa08f4376d711698a877804b36b35aea173b903f7fb46e989e"
+      }
+    },
+    {
+      "name": "concurrent-ensure-one-session-1",
+      "passed": true,
+      "observed": {
+        "installGeneration": "d3f684c5-0ba4-4f06-b0ea-c96d4994d858",
+        "pid": 16568,
+        "uid": 10398,
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2",
+        "generation": "8803e2b1c2cc2caa08f4376d711698a877804b36b35aea173b903f7fb46e989e"
+      }
+    },
+    {
+      "name": "concurrent-ensure-one-session-2",
+      "passed": true,
+      "observed": {
+        "installGeneration": "d3f684c5-0ba4-4f06-b0ea-c96d4994d858",
+        "pid": 16568,
+        "uid": 10398,
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2",
+        "generation": "8803e2b1c2cc2caa08f4376d711698a877804b36b35aea173b903f7fb46e989e"
+      }
+    },
+    {
+      "name": "concurrent-ensure-one-session-3",
+      "passed": true,
+      "observed": {
+        "installGeneration": "d3f684c5-0ba4-4f06-b0ea-c96d4994d858",
+        "pid": 16568,
+        "uid": 10398,
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2",
+        "generation": "8803e2b1c2cc2caa08f4376d711698a877804b36b35aea173b903f7fb46e989e"
+      }
+    },
+    {
+      "name": "worker-real-process-dev.tripoder.p2",
+      "passed": true,
+      "observed": {
+        "installGeneration": "d3f684c5-0ba4-4f06-b0ea-c96d4994d858",
+        "pid": 16568,
+        "uid": 10398,
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2",
+        "generation": "8803e2b1c2cc2caa08f4376d711698a877804b36b35aea173b903f7fb46e989e"
+      }
+    },
+    {
+      "name": "ensure-preserves-live-identity",
+      "passed": true,
+      "observed": {
+        "installGeneration": "d3f684c5-0ba4-4f06-b0ea-c96d4994d858",
+        "pid": 16568,
+        "uid": 10398,
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2",
+        "generation": "8803e2b1c2cc2caa08f4376d711698a877804b36b35aea173b903f7fb46e989e"
+      }
+    },
+    {
+      "name": "live-install-pinned",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "nested-roundtrip-challenge",
+      "passed": true,
+      "observed": {
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Main",
+        "package": "dev.tripoder.p2",
+        "process": "dev.tripoder.p2",
+        "pid": 16568,
+        "uid": 10398,
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "starts": 1,
+        "loader": true,
+        "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b",
+        "child": {
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Remote",
+          "package": "dev.tripoder.p2",
+          "process": "dev.tripoder.p2:remote",
+          "pid": 16627,
+          "uid": 10398,
+          "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "starts": 1,
+          "loader": true,
+          "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b",
+          "child": {
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Middle",
+            "package": "dev.tripoder.p2",
+            "process": "dev.tripoder.p2:remote",
+            "pid": 16627,
+            "uid": 10398,
+            "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+            "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+            "starts": 1,
+            "loader": true,
+            "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b",
+            "child": {
+              "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Leaf",
+              "package": "dev.tripoder.p2",
+              "process": "dev.tripoder.p2:remote",
+              "pid": 16627,
+              "uid": 10398,
+              "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+              "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+              "starts": 1,
+              "loader": true,
+              "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "real-activity-Main",
+      "passed": true,
+      "observed": {
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Main",
+        "package": "dev.tripoder.p2",
+        "process": "dev.tripoder.p2",
+        "pid": 16568,
+        "uid": 10398,
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "starts": 1,
+        "loader": true,
+        "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b",
+        "child": {
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Remote",
+          "package": "dev.tripoder.p2",
+          "process": "dev.tripoder.p2:remote",
+          "pid": 16627,
+          "uid": 10398,
+          "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "starts": 1,
+          "loader": true,
+          "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b",
+          "child": {
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Middle",
+            "package": "dev.tripoder.p2",
+            "process": "dev.tripoder.p2:remote",
+            "pid": 16627,
+            "uid": 10398,
+            "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+            "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+            "starts": 1,
+            "loader": true,
+            "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b",
+            "child": {
+              "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Leaf",
+              "package": "dev.tripoder.p2",
+              "process": "dev.tripoder.p2:remote",
+              "pid": 16627,
+              "uid": 10398,
+              "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+              "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+              "starts": 1,
+              "loader": true,
+              "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "manifest-process-Main",
+      "passed": true,
+      "observed": "dev.tripoder.p2"
+    },
+    {
+      "name": "real-activity-Remote",
+      "passed": true,
+      "observed": {
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Remote",
+        "package": "dev.tripoder.p2",
+        "process": "dev.tripoder.p2:remote",
+        "pid": 16627,
+        "uid": 10398,
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "starts": 1,
+        "loader": true,
+        "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b",
+        "child": {
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Middle",
+          "package": "dev.tripoder.p2",
+          "process": "dev.tripoder.p2:remote",
+          "pid": 16627,
+          "uid": 10398,
+          "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "starts": 1,
+          "loader": true,
+          "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b",
+          "child": {
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Leaf",
+            "package": "dev.tripoder.p2",
+            "process": "dev.tripoder.p2:remote",
+            "pid": 16627,
+            "uid": 10398,
+            "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+            "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+            "starts": 1,
+            "loader": true,
+            "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b"
+          }
+        }
+      }
+    },
+    {
+      "name": "manifest-process-Remote",
+      "passed": true,
+      "observed": "dev.tripoder.p2:remote"
+    },
+    {
+      "name": "real-activity-Middle",
+      "passed": true,
+      "observed": {
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Middle",
+        "package": "dev.tripoder.p2",
+        "process": "dev.tripoder.p2:remote",
+        "pid": 16627,
+        "uid": 10398,
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "starts": 1,
+        "loader": true,
+        "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b",
+        "child": {
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Leaf",
+          "package": "dev.tripoder.p2",
+          "process": "dev.tripoder.p2:remote",
+          "pid": 16627,
+          "uid": 10398,
+          "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "starts": 1,
+          "loader": true,
+          "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b"
+        }
+      }
+    },
+    {
+      "name": "manifest-process-Middle",
+      "passed": true,
+      "observed": "dev.tripoder.p2:remote"
+    },
+    {
+      "name": "real-activity-Leaf",
+      "passed": true,
+      "observed": {
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Leaf",
+        "package": "dev.tripoder.p2",
+        "process": "dev.tripoder.p2:remote",
+        "pid": 16627,
+        "uid": 10398,
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "starts": 1,
+        "loader": true,
+        "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b"
+      }
+    },
+    {
+      "name": "manifest-process-Leaf",
+      "passed": true,
+      "observed": "dev.tripoder.p2:remote"
+    },
+    {
+      "name": "main-and-remote-are-different-pids",
+      "passed": true,
+      "observed": [
+        16568,
+        16627
+      ]
+    },
+    {
+      "name": "worker-real-process-dev.tripoder.p2:remote",
+      "passed": true,
+      "observed": {
+        "installGeneration": "d3f684c5-0ba4-4f06-b0ea-c96d4994d858",
+        "pid": 16627,
+        "uid": 10398,
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2:remote",
+        "generation": "a2121f0c84ccc85f17f6a95e11ab335c40d74ef5af9a314305ba87d2f8e5128a"
+      }
+    },
+    {
+      "name": "manifest-process-matches-real-pid",
+      "passed": true,
+      "observed": [
+        {
+          "installGeneration": "d3f684c5-0ba4-4f06-b0ea-c96d4994d858",
+          "pid": 16568,
+          "uid": 10398,
+          "state": "RUNNING",
+          "processName": "dev.tripoder.p2",
+          "generation": "8803e2b1c2cc2caa08f4376d711698a877804b36b35aea173b903f7fb46e989e"
+        },
+        {
+          "installGeneration": "d3f684c5-0ba4-4f06-b0ea-c96d4994d858",
+          "pid": 16627,
+          "uid": 10398,
+          "state": "RUNNING",
+          "processName": "dev.tripoder.p2:remote",
+          "generation": "a2121f0c84ccc85f17f6a95e11ab335c40d74ef5af9a314305ba87d2f8e5128a"
+        }
+      ]
+    },
+    {
+      "name": "same-package-processes-share-data",
+      "passed": true,
+      "observed": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files"
+    },
+    {
+      "name": "nested-roundtrip-challenge",
+      "passed": true,
+      "observed": {
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Main",
+        "package": "dev.tripoder.p2",
+        "process": "dev.tripoder.p2",
+        "pid": 16822,
+        "uid": 10398,
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+        "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+        "starts": 1,
+        "loader": true,
+        "challenge": "430358e1-cecb-425e-96b8-48b0a971825f",
+        "child": {
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Remote",
+          "package": "dev.tripoder.p2",
+          "process": "dev.tripoder.p2:remote",
+          "pid": 16905,
+          "uid": 10398,
+          "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+          "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+          "starts": 1,
+          "loader": true,
+          "challenge": "430358e1-cecb-425e-96b8-48b0a971825f",
+          "child": {
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Middle",
+            "package": "dev.tripoder.p2",
+            "process": "dev.tripoder.p2:remote",
+            "pid": 16905,
+            "uid": 10398,
+            "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+            "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+            "starts": 1,
+            "loader": true,
+            "challenge": "430358e1-cecb-425e-96b8-48b0a971825f",
+            "child": {
+              "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Leaf",
+              "package": "dev.tripoder.p2",
+              "process": "dev.tripoder.p2:remote",
+              "pid": 16905,
+              "uid": 10398,
+              "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+              "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+              "starts": 1,
+              "loader": true,
+              "challenge": "430358e1-cecb-425e-96b8-48b0a971825f"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "real-activity-Main",
+      "passed": true,
+      "observed": {
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Main",
+        "package": "dev.tripoder.p2",
+        "process": "dev.tripoder.p2",
+        "pid": 16822,
+        "uid": 10398,
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+        "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+        "starts": 1,
+        "loader": true,
+        "challenge": "430358e1-cecb-425e-96b8-48b0a971825f",
+        "child": {
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Remote",
+          "package": "dev.tripoder.p2",
+          "process": "dev.tripoder.p2:remote",
+          "pid": 16905,
+          "uid": 10398,
+          "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+          "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+          "starts": 1,
+          "loader": true,
+          "challenge": "430358e1-cecb-425e-96b8-48b0a971825f",
+          "child": {
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Middle",
+            "package": "dev.tripoder.p2",
+            "process": "dev.tripoder.p2:remote",
+            "pid": 16905,
+            "uid": 10398,
+            "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+            "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+            "starts": 1,
+            "loader": true,
+            "challenge": "430358e1-cecb-425e-96b8-48b0a971825f",
+            "child": {
+              "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Leaf",
+              "package": "dev.tripoder.p2",
+              "process": "dev.tripoder.p2:remote",
+              "pid": 16905,
+              "uid": 10398,
+              "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+              "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+              "starts": 1,
+              "loader": true,
+              "challenge": "430358e1-cecb-425e-96b8-48b0a971825f"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "manifest-process-Main",
+      "passed": true,
+      "observed": "dev.tripoder.p2"
+    },
+    {
+      "name": "real-activity-Remote",
+      "passed": true,
+      "observed": {
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Remote",
+        "package": "dev.tripoder.p2",
+        "process": "dev.tripoder.p2:remote",
+        "pid": 16905,
+        "uid": 10398,
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+        "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+        "starts": 1,
+        "loader": true,
+        "challenge": "430358e1-cecb-425e-96b8-48b0a971825f",
+        "child": {
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Middle",
+          "package": "dev.tripoder.p2",
+          "process": "dev.tripoder.p2:remote",
+          "pid": 16905,
+          "uid": 10398,
+          "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+          "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+          "starts": 1,
+          "loader": true,
+          "challenge": "430358e1-cecb-425e-96b8-48b0a971825f",
+          "child": {
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Leaf",
+            "package": "dev.tripoder.p2",
+            "process": "dev.tripoder.p2:remote",
+            "pid": 16905,
+            "uid": 10398,
+            "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+            "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+            "starts": 1,
+            "loader": true,
+            "challenge": "430358e1-cecb-425e-96b8-48b0a971825f"
+          }
+        }
+      }
+    },
+    {
+      "name": "manifest-process-Remote",
+      "passed": true,
+      "observed": "dev.tripoder.p2:remote"
+    },
+    {
+      "name": "real-activity-Middle",
+      "passed": true,
+      "observed": {
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Middle",
+        "package": "dev.tripoder.p2",
+        "process": "dev.tripoder.p2:remote",
+        "pid": 16905,
+        "uid": 10398,
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+        "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+        "starts": 1,
+        "loader": true,
+        "challenge": "430358e1-cecb-425e-96b8-48b0a971825f",
+        "child": {
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Leaf",
+          "package": "dev.tripoder.p2",
+          "process": "dev.tripoder.p2:remote",
+          "pid": 16905,
+          "uid": 10398,
+          "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+          "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+          "starts": 1,
+          "loader": true,
+          "challenge": "430358e1-cecb-425e-96b8-48b0a971825f"
+        }
+      }
+    },
+    {
+      "name": "manifest-process-Middle",
+      "passed": true,
+      "observed": "dev.tripoder.p2:remote"
+    },
+    {
+      "name": "real-activity-Leaf",
+      "passed": true,
+      "observed": {
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Leaf",
+        "package": "dev.tripoder.p2",
+        "process": "dev.tripoder.p2:remote",
+        "pid": 16905,
+        "uid": 10398,
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+        "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+        "starts": 1,
+        "loader": true,
+        "challenge": "430358e1-cecb-425e-96b8-48b0a971825f"
+      }
+    },
+    {
+      "name": "manifest-process-Leaf",
+      "passed": true,
+      "observed": "dev.tripoder.p2:remote"
+    },
+    {
+      "name": "main-and-remote-are-different-pids",
+      "passed": true,
+      "observed": [
+        16822,
+        16905
+      ]
+    },
+    {
+      "name": "worker-real-process-dev.tripoder.p2",
+      "passed": true,
+      "observed": {
+        "installGeneration": "5dab43ab-b9ad-42d2-abe1-86dd6d61199a",
+        "pid": 16822,
+        "uid": 10398,
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2",
+        "generation": "5a5c0b93c090902a2ee32e0123c8f613105ef8563540de52b3e86c8c347eba95"
+      }
+    },
+    {
+      "name": "worker-real-process-dev.tripoder.p2:remote",
+      "passed": true,
+      "observed": {
+        "installGeneration": "5dab43ab-b9ad-42d2-abe1-86dd6d61199a",
+        "pid": 16905,
+        "uid": 10398,
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2:remote",
+        "generation": "e29c1c4a28fc6158d7fdb6dec0de99a10c92b1b87288755e651ba7cbe525c07d"
+      }
+    },
+    {
+      "name": "spaces-have-distinct-data-and-pids",
+      "passed": true,
+      "observed": [
+        {
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Main",
+          "package": "dev.tripoder.p2",
+          "process": "dev.tripoder.p2",
+          "pid": 16568,
+          "uid": 10398,
+          "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "starts": 1,
+          "loader": true,
+          "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b",
+          "child": {
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Remote",
+            "package": "dev.tripoder.p2",
+            "process": "dev.tripoder.p2:remote",
+            "pid": 16627,
+            "uid": 10398,
+            "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+            "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+            "starts": 1,
+            "loader": true,
+            "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b",
+            "child": {
+              "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Middle",
+              "package": "dev.tripoder.p2",
+              "process": "dev.tripoder.p2:remote",
+              "pid": 16627,
+              "uid": 10398,
+              "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+              "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+              "starts": 1,
+              "loader": true,
+              "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b",
+              "child": {
+                "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Leaf",
+                "package": "dev.tripoder.p2",
+                "process": "dev.tripoder.p2:remote",
+                "pid": 16627,
+                "uid": 10398,
+                "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+                "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+                "starts": 1,
+                "loader": true,
+                "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b"
+              }
+            }
+          }
+        },
+        {
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Main",
+          "package": "dev.tripoder.p2",
+          "process": "dev.tripoder.p2",
+          "pid": 16822,
+          "uid": 10398,
+          "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+          "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+          "starts": 1,
+          "loader": true,
+          "challenge": "430358e1-cecb-425e-96b8-48b0a971825f",
+          "child": {
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Remote",
+            "package": "dev.tripoder.p2",
+            "process": "dev.tripoder.p2:remote",
+            "pid": 16905,
+            "uid": 10398,
+            "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+            "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+            "starts": 1,
+            "loader": true,
+            "challenge": "430358e1-cecb-425e-96b8-48b0a971825f",
+            "child": {
+              "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Middle",
+              "package": "dev.tripoder.p2",
+              "process": "dev.tripoder.p2:remote",
+              "pid": 16905,
+              "uid": 10398,
+              "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+              "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+              "starts": 1,
+              "loader": true,
+              "challenge": "430358e1-cecb-425e-96b8-48b0a971825f",
+              "child": {
+                "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Leaf",
+                "package": "dev.tripoder.p2",
+                "process": "dev.tripoder.p2:remote",
+                "pid": 16905,
+                "uid": 10398,
+                "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+                "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+                "starts": 1,
+                "loader": true,
+                "challenge": "430358e1-cecb-425e-96b8-48b0a971825f"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "worker-real-process-dev.tripoder.p2",
+      "passed": true,
+      "observed": {
+        "installGeneration": "d3f684c5-0ba4-4f06-b0ea-c96d4994d858",
+        "pid": 17061,
+        "uid": 10398,
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2",
+        "generation": "b1c3465f48cc41b82687b192da37a96e81082406cb7d5c74bd9f21a63d26b2b8"
+      }
+    },
+    {
+      "name": "restart-new-process-generation",
+      "passed": true,
+      "observed": {
+        "installGeneration": "d3f684c5-0ba4-4f06-b0ea-c96d4994d858",
+        "pid": 17061,
+        "uid": 10398,
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2",
+        "generation": "b1c3465f48cc41b82687b192da37a96e81082406cb7d5c74bd9f21a63d26b2b8"
+      }
+    },
+    {
+      "name": "nested-roundtrip-challenge",
+      "passed": true,
+      "observed": {
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Main",
+        "package": "dev.tripoder.p2",
+        "process": "dev.tripoder.p2",
+        "pid": 17061,
+        "uid": 10398,
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "starts": 2,
+        "loader": true,
+        "challenge": "74478f42-b201-47d1-87c1-479af04eead7",
+        "child": {
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Remote",
+          "package": "dev.tripoder.p2",
+          "process": "dev.tripoder.p2:remote",
+          "pid": 17132,
+          "uid": 10398,
+          "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "starts": 2,
+          "loader": true,
+          "challenge": "74478f42-b201-47d1-87c1-479af04eead7",
+          "child": {
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Middle",
+            "package": "dev.tripoder.p2",
+            "process": "dev.tripoder.p2:remote",
+            "pid": 17132,
+            "uid": 10398,
+            "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+            "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+            "starts": 2,
+            "loader": true,
+            "challenge": "74478f42-b201-47d1-87c1-479af04eead7",
+            "child": {
+              "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Leaf",
+              "package": "dev.tripoder.p2",
+              "process": "dev.tripoder.p2:remote",
+              "pid": 17132,
+              "uid": 10398,
+              "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+              "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+              "starts": 2,
+              "loader": true,
+              "challenge": "74478f42-b201-47d1-87c1-479af04eead7"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "real-activity-Main",
+      "passed": true,
+      "observed": {
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Main",
+        "package": "dev.tripoder.p2",
+        "process": "dev.tripoder.p2",
+        "pid": 17061,
+        "uid": 10398,
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "starts": 2,
+        "loader": true,
+        "challenge": "74478f42-b201-47d1-87c1-479af04eead7",
+        "child": {
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Remote",
+          "package": "dev.tripoder.p2",
+          "process": "dev.tripoder.p2:remote",
+          "pid": 17132,
+          "uid": 10398,
+          "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "starts": 2,
+          "loader": true,
+          "challenge": "74478f42-b201-47d1-87c1-479af04eead7",
+          "child": {
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Middle",
+            "package": "dev.tripoder.p2",
+            "process": "dev.tripoder.p2:remote",
+            "pid": 17132,
+            "uid": 10398,
+            "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+            "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+            "starts": 2,
+            "loader": true,
+            "challenge": "74478f42-b201-47d1-87c1-479af04eead7",
+            "child": {
+              "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Leaf",
+              "package": "dev.tripoder.p2",
+              "process": "dev.tripoder.p2:remote",
+              "pid": 17132,
+              "uid": 10398,
+              "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+              "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+              "starts": 2,
+              "loader": true,
+              "challenge": "74478f42-b201-47d1-87c1-479af04eead7"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "manifest-process-Main",
+      "passed": true,
+      "observed": "dev.tripoder.p2"
+    },
+    {
+      "name": "real-activity-Remote",
+      "passed": true,
+      "observed": {
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Remote",
+        "package": "dev.tripoder.p2",
+        "process": "dev.tripoder.p2:remote",
+        "pid": 17132,
+        "uid": 10398,
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "starts": 2,
+        "loader": true,
+        "challenge": "74478f42-b201-47d1-87c1-479af04eead7",
+        "child": {
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Middle",
+          "package": "dev.tripoder.p2",
+          "process": "dev.tripoder.p2:remote",
+          "pid": 17132,
+          "uid": 10398,
+          "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "starts": 2,
+          "loader": true,
+          "challenge": "74478f42-b201-47d1-87c1-479af04eead7",
+          "child": {
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Leaf",
+            "package": "dev.tripoder.p2",
+            "process": "dev.tripoder.p2:remote",
+            "pid": 17132,
+            "uid": 10398,
+            "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+            "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+            "starts": 2,
+            "loader": true,
+            "challenge": "74478f42-b201-47d1-87c1-479af04eead7"
+          }
+        }
+      }
+    },
+    {
+      "name": "manifest-process-Remote",
+      "passed": true,
+      "observed": "dev.tripoder.p2:remote"
+    },
+    {
+      "name": "real-activity-Middle",
+      "passed": true,
+      "observed": {
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Middle",
+        "package": "dev.tripoder.p2",
+        "process": "dev.tripoder.p2:remote",
+        "pid": 17132,
+        "uid": 10398,
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "starts": 2,
+        "loader": true,
+        "challenge": "74478f42-b201-47d1-87c1-479af04eead7",
+        "child": {
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Leaf",
+          "package": "dev.tripoder.p2",
+          "process": "dev.tripoder.p2:remote",
+          "pid": 17132,
+          "uid": 10398,
+          "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "starts": 2,
+          "loader": true,
+          "challenge": "74478f42-b201-47d1-87c1-479af04eead7"
+        }
+      }
+    },
+    {
+      "name": "manifest-process-Middle",
+      "passed": true,
+      "observed": "dev.tripoder.p2:remote"
+    },
+    {
+      "name": "real-activity-Leaf",
+      "passed": true,
+      "observed": {
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Leaf",
+        "package": "dev.tripoder.p2",
+        "process": "dev.tripoder.p2:remote",
+        "pid": 17132,
+        "uid": 10398,
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "starts": 2,
+        "loader": true,
+        "challenge": "74478f42-b201-47d1-87c1-479af04eead7"
+      }
+    },
+    {
+      "name": "manifest-process-Leaf",
+      "passed": true,
+      "observed": "dev.tripoder.p2:remote"
+    },
+    {
+      "name": "main-and-remote-are-different-pids",
+      "passed": true,
+      "observed": [
+        17061,
+        17132
+      ]
+    },
+    {
+      "name": "worker-real-process-dev.tripoder.p2:remote",
+      "passed": true,
+      "observed": {
+        "installGeneration": "d3f684c5-0ba4-4f06-b0ea-c96d4994d858",
+        "pid": 17132,
+        "uid": 10398,
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2:remote",
+        "generation": "67ad61119ae42c5b85a2ea684b90285de65e3e441222d6ded7b4d61621d32e61"
+      }
+    },
+    {
+      "name": "restart-retains-data",
+      "passed": true,
+      "observed": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files"
+    },
+    {
+      "name": "worker-real-process-dev.tripoder.p2",
+      "passed": true,
+      "observed": {
+        "installGeneration": "aeb78792-e668-4394-bb3d-615ffa802cbf",
+        "pid": 17256,
+        "uid": 10398,
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2",
+        "generation": "0e74c644bf3ae89d9a51312310cabfac08718659ee122869e50f262b1fd4a454"
+      }
+    },
+    {
+      "name": "worker-real-process-dev.tripoder.p2:remote",
+      "passed": true,
+      "observed": {
+        "installGeneration": "aeb78792-e668-4394-bb3d-615ffa802cbf",
+        "pid": 17287,
+        "uid": 10398,
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2:remote",
+        "generation": "aa6acb90aeba8318ad7586933d98ef7bbc1aacc2f0379d83d93cf358b1eff633"
+      }
+    },
+    {
+      "name": "worker-real-process-dev.tripoder.p2",
+      "passed": true,
+      "observed": {
+        "installGeneration": "c7775db3-8feb-4c95-8a0a-b3b77bac058b",
+        "pid": 17330,
+        "uid": 10398,
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2",
+        "generation": "8a101a8f7605d4df077fa942c75479ce493bb1b25d153593370d9a0b05137156"
+      }
+    },
+    {
+      "name": "worker-real-process-dev.tripoder.p2:remote",
+      "passed": true,
+      "observed": {
+        "installGeneration": "c7775db3-8feb-4c95-8a0a-b3b77bac058b",
+        "pid": 17361,
+        "uid": 10398,
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2:remote",
+        "generation": "2bc247419e7987b5870f7331c0328b9e6775c622767c89256e546eee61bf9869"
+      }
+    },
+    {
+      "name": "pool-capacity-fails-closed",
+      "passed": true,
+      "observed": 8
+    },
+    {
+      "name": "durable-session-identity-1",
+      "passed": true,
+      "observed": {
+        "generation": "5a5c0b93c090902a2ee32e0123c8f613105ef8563540de52b3e86c8c347eba95",
+        "space": "p2-7a2508dbc9ad4257-second",
+        "package": "dev.tripoder.p2",
+        "installGeneration": "5dab43ab-b9ad-42d2-abe1-86dd6d61199a",
+        "pid": "16822",
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2",
+        "activityStub": "dev.tripoder.runtime.RuntimeSlot$C",
+        "authorityGeneration": "dfb3fa11-db23-4143-a2f4-1350b5080377"
+      }
+    },
+    {
+      "name": "durable-session-identity-2",
+      "passed": true,
+      "observed": {
+        "generation": "e29c1c4a28fc6158d7fdb6dec0de99a10c92b1b87288755e651ba7cbe525c07d",
+        "space": "p2-7a2508dbc9ad4257-second",
+        "package": "dev.tripoder.p2",
+        "installGeneration": "5dab43ab-b9ad-42d2-abe1-86dd6d61199a",
+        "pid": "16905",
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2:remote",
+        "activityStub": "dev.tripoder.runtime.RuntimeSlot$D",
+        "authorityGeneration": "dfb3fa11-db23-4143-a2f4-1350b5080377"
+      }
+    },
+    {
+      "name": "durable-session-identity-3",
+      "passed": true,
+      "observed": {
+        "generation": "b1c3465f48cc41b82687b192da37a96e81082406cb7d5c74bd9f21a63d26b2b8",
+        "space": "p2-7a2508dbc9ad4257-first",
+        "package": "dev.tripoder.p2",
+        "installGeneration": "d3f684c5-0ba4-4f06-b0ea-c96d4994d858",
+        "pid": "17061",
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2",
+        "activityStub": "dev.tripoder.runtime.RuntimeSlot$A",
+        "authorityGeneration": "dfb3fa11-db23-4143-a2f4-1350b5080377"
+      }
+    },
+    {
+      "name": "durable-session-identity-4",
+      "passed": true,
+      "observed": {
+        "generation": "67ad61119ae42c5b85a2ea684b90285de65e3e441222d6ded7b4d61621d32e61",
+        "space": "p2-7a2508dbc9ad4257-first",
+        "package": "dev.tripoder.p2",
+        "installGeneration": "d3f684c5-0ba4-4f06-b0ea-c96d4994d858",
+        "pid": "17132",
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2:remote",
+        "activityStub": "dev.tripoder.runtime.RuntimeSlot$B",
+        "authorityGeneration": "dfb3fa11-db23-4143-a2f4-1350b5080377"
+      }
+    },
+    {
+      "name": "durable-session-identity-5",
+      "passed": true,
+      "observed": {
+        "generation": "0e74c644bf3ae89d9a51312310cabfac08718659ee122869e50f262b1fd4a454",
+        "space": "p2-7a2508dbc9ad4257-capacity-0",
+        "package": "dev.tripoder.p2",
+        "installGeneration": "aeb78792-e668-4394-bb3d-615ffa802cbf",
+        "pid": "17256",
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2",
+        "activityStub": "dev.tripoder.runtime.RuntimeSlot$E",
+        "authorityGeneration": "dfb3fa11-db23-4143-a2f4-1350b5080377"
+      }
+    },
+    {
+      "name": "durable-session-identity-6",
+      "passed": true,
+      "observed": {
+        "generation": "aa6acb90aeba8318ad7586933d98ef7bbc1aacc2f0379d83d93cf358b1eff633",
+        "space": "p2-7a2508dbc9ad4257-capacity-0",
+        "package": "dev.tripoder.p2",
+        "installGeneration": "aeb78792-e668-4394-bb3d-615ffa802cbf",
+        "pid": "17287",
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2:remote",
+        "activityStub": "dev.tripoder.runtime.RuntimeSlot$F",
+        "authorityGeneration": "dfb3fa11-db23-4143-a2f4-1350b5080377"
+      }
+    },
+    {
+      "name": "durable-session-identity-7",
+      "passed": true,
+      "observed": {
+        "generation": "8a101a8f7605d4df077fa942c75479ce493bb1b25d153593370d9a0b05137156",
+        "space": "p2-7a2508dbc9ad4257-capacity-1",
+        "package": "dev.tripoder.p2",
+        "installGeneration": "c7775db3-8feb-4c95-8a0a-b3b77bac058b",
+        "pid": "17330",
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2",
+        "activityStub": "dev.tripoder.runtime.RuntimeSlot$G",
+        "authorityGeneration": "dfb3fa11-db23-4143-a2f4-1350b5080377"
+      }
+    },
+    {
+      "name": "durable-session-identity-8",
+      "passed": true,
+      "observed": {
+        "generation": "2bc247419e7987b5870f7331c0328b9e6775c622767c89256e546eee61bf9869",
+        "space": "p2-7a2508dbc9ad4257-capacity-1",
+        "package": "dev.tripoder.p2",
+        "installGeneration": "c7775db3-8feb-4c95-8a0a-b3b77bac058b",
+        "pid": "17361",
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2:remote",
+        "activityStub": "dev.tripoder.runtime.RuntimeSlot$H",
+        "authorityGeneration": "dfb3fa11-db23-4143-a2f4-1350b5080377"
+      }
+    },
+    {
+      "name": "eight-distinct-supervised-pids",
+      "passed": true,
+      "observed": [
+        17361,
+        17330,
+        17061,
+        16822,
+        17287,
+        17256,
+        16905,
+        17132
+      ]
+    },
+    {
+      "name": "default-cancellation-delivered",
+      "passed": true,
+      "observed": {
+        "challenge": "24e7c0af-3150-42bf-81de-43f60c630f7d",
+        "recreated": false,
+        "code": 0,
+        "value": null
+      }
+    },
+    {
+      "name": "pending-result-survives-source-recreation",
+      "passed": true,
+      "observed": {
+        "challenge": "6b5e7160-9d89-4db3-a1b0-d20228b67969",
+        "recreated": true,
+        "code": -1,
+        "value": "fresh"
+      }
+    },
+    {
+      "name": "worker-real-process-dev.tripoder.p2:remote",
+      "passed": true,
+      "observed": {
+        "installGeneration": "40fda1cd-9b07-4c13-beca-8553a44c190f",
+        "pid": 17515,
+        "uid": 10398,
+        "state": "RUNNING",
+        "processName": "dev.tripoder.p2:remote",
+        "generation": "bb29ad4f48c352590ae5dd52ab9704c1731d70f198805813c5d4e13fe00271cc"
+      }
+    },
+    {
+      "name": "application-onCreate-bind-without-startup-cycle",
+      "passed": true,
+      "observed": {
+        "pid": 17840,
+        "uid": 10398,
+        "process": "dev.tripoder.p2:serviceapp",
+        "instance": "e1ef7554-0ce8-4dcd-a420-57ffd6099a20",
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Alpha",
+        "package": "dev.tripoder.p2",
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-services/dev.tripoder.p2/a5f42729-e6cc-4765-ba4b-54b7cec88f58/files",
+        "application": "dev.tripoder.p2",
+        "loader": true,
+        "binds": 1,
+        "unbinds": 0,
+        "rebinds": 0,
+        "starts": []
+      }
+    },
+    {
+      "name": "two-real-services-one-process",
+      "passed": true,
+      "observed": {
+        "pid": 17840,
+        "uid": 10398,
+        "process": "dev.tripoder.p2:serviceapp",
+        "instance": "01ba072b-bb22-4670-aac4-0b99b0177235",
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Beta",
+        "package": "dev.tripoder.p2",
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-services/dev.tripoder.p2/a5f42729-e6cc-4765-ba4b-54b7cec88f58/files",
+        "application": "dev.tripoder.p2",
+        "loader": true,
+        "binds": 1,
+        "unbinds": 0,
+        "rebinds": 0,
+        "starts": []
+      }
+    },
+    {
+      "name": "service-guest-context-application-loader",
+      "passed": true,
+      "observed": {
+        "pid": 17840,
+        "uid": 10398,
+        "process": "dev.tripoder.p2:serviceapp",
+        "instance": "e1ef7554-0ce8-4dcd-a420-57ffd6099a20",
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Alpha",
+        "package": "dev.tripoder.p2",
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-services/dev.tripoder.p2/a5f42729-e6cc-4765-ba4b-54b7cec88f58/files",
+        "application": "dev.tripoder.p2",
+        "loader": true,
+        "binds": 1,
+        "unbinds": 0,
+        "rebinds": 0,
+        "starts": []
+      }
+    },
+    {
+      "name": "real-cross-process-service-binder",
+      "passed": true,
+      "observed": {
+        "pid": 17970,
+        "uid": 10398,
+        "process": "dev.tripoder.p2:services",
+        "instance": "f278451d-5028-416b-8a0c-91391fbfc6d8",
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote",
+        "package": "dev.tripoder.p2",
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-services/dev.tripoder.p2/a5f42729-e6cc-4765-ba4b-54b7cec88f58/files",
+        "application": "dev.tripoder.p2",
+        "loader": true,
+        "binds": 1,
+        "unbinds": 0,
+        "rebinds": 0,
+        "starts": [
+          {
+            "id": 1,
+            "nullIntent": false,
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+          },
+          {
+            "id": 2,
+            "nullIntent": false,
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+          }
+        ]
+      }
+    },
+    {
+      "name": "multiple-system-startIds",
+      "passed": true,
+      "observed": [
+        {
+          "id": 1,
+          "nullIntent": false,
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+        },
+        {
+          "id": 2,
+          "nullIntent": false,
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+        }
+      ]
+    },
+    {
+      "name": "android-onUnbind-and-onRebind",
+      "passed": true,
+      "observed": {
+        "pid": 17970,
+        "uid": 10398,
+        "process": "dev.tripoder.p2:services",
+        "instance": "f278451d-5028-416b-8a0c-91391fbfc6d8",
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote",
+        "package": "dev.tripoder.p2",
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-services/dev.tripoder.p2/a5f42729-e6cc-4765-ba4b-54b7cec88f58/files",
+        "application": "dev.tripoder.p2",
+        "loader": true,
+        "binds": 1,
+        "unbinds": 1,
+        "rebinds": 1,
+        "starts": [
+          {
+            "id": 1,
+            "nullIntent": false,
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+          },
+          {
+            "id": 2,
+            "nullIntent": false,
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+          }
+        ]
+      }
+    },
+    {
+      "name": "stopSelfResult-old-startId-rejected",
+      "passed": true,
+      "observed": [
+        {
+          "id": 1,
+          "nullIntent": false,
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+        },
+        {
+          "id": 2,
+          "nullIntent": false,
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+        }
+      ]
+    },
+    {
+      "name": "stopSelfResult-last-startId-accepted",
+      "passed": true,
+      "observed": [
+        {
+          "id": 1,
+          "nullIntent": false,
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+        },
+        {
+          "id": 2,
+          "nullIntent": false,
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+        }
+      ]
+    },
+    {
+      "name": "bound-service-survives-stopSelfResult",
+      "passed": true,
+      "observed": {
+        "pid": 17970,
+        "uid": 10398,
+        "process": "dev.tripoder.p2:services",
+        "instance": "f278451d-5028-416b-8a0c-91391fbfc6d8",
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote",
+        "package": "dev.tripoder.p2",
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-services/dev.tripoder.p2/a5f42729-e6cc-4765-ba4b-54b7cec88f58/files",
+        "application": "dev.tripoder.p2",
+        "loader": true,
+        "binds": 1,
+        "unbinds": 1,
+        "rebinds": 1,
+        "starts": [
+          {
+            "id": 1,
+            "nullIntent": false,
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+          },
+          {
+            "id": 2,
+            "nullIntent": false,
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+          }
+        ]
+      }
+    },
+    {
+      "name": "started-and-bound-destroy-after-final-unbind",
+      "passed": true,
+      "observed": "f278451d-5028-416b-8a0c-91391fbfc6d8"
+    },
+    {
+      "name": "android-onNullBinding",
+      "passed": true,
+      "observed": "ComponentInfo{dev.tripoder.p2/dev.tripoder.p2.Services$Null}"
+    },
+    {
+      "name": "service-fixture-completed",
+      "passed": false,
+      "observed": {
+        "passed": false,
+        "error": "java.lang.IllegalStateException: SERVICE_CONNECTION_TIMEOUT\n\tat dev.tripoder.p2.Services$Link.next(Services.java:45)\n\tat dev.tripoder.p2.Services$Main.run(Services.java:66)\n\tat dev.tripoder.p2.Services$Main$9.run(D8$$SyntheticClass:0)\n\tat java.lang.Thread.run(Thread.java:1572)\n",
+        "checks": [
+          {
+            "name": "application-onCreate-bind-without-startup-cycle",
+            "passed": true,
+            "observed": {
+              "pid": 17840,
+              "uid": 10398,
+              "process": "dev.tripoder.p2:serviceapp",
+              "instance": "e1ef7554-0ce8-4dcd-a420-57ffd6099a20",
+              "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Alpha",
+              "package": "dev.tripoder.p2",
+              "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-services/dev.tripoder.p2/a5f42729-e6cc-4765-ba4b-54b7cec88f58/files",
+              "application": "dev.tripoder.p2",
+              "loader": true,
+              "binds": 1,
+              "unbinds": 0,
+              "rebinds": 0,
+              "starts": []
+            }
+          },
+          {
+            "name": "two-real-services-one-process",
+            "passed": true,
+            "observed": {
+              "pid": 17840,
+              "uid": 10398,
+              "process": "dev.tripoder.p2:serviceapp",
+              "instance": "01ba072b-bb22-4670-aac4-0b99b0177235",
+              "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Beta",
+              "package": "dev.tripoder.p2",
+              "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-services/dev.tripoder.p2/a5f42729-e6cc-4765-ba4b-54b7cec88f58/files",
+              "application": "dev.tripoder.p2",
+              "loader": true,
+              "binds": 1,
+              "unbinds": 0,
+              "rebinds": 0,
+              "starts": []
+            }
+          },
+          {
+            "name": "service-guest-context-application-loader",
+            "passed": true,
+            "observed": {
+              "pid": 17840,
+              "uid": 10398,
+              "process": "dev.tripoder.p2:serviceapp",
+              "instance": "e1ef7554-0ce8-4dcd-a420-57ffd6099a20",
+              "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Alpha",
+              "package": "dev.tripoder.p2",
+              "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-services/dev.tripoder.p2/a5f42729-e6cc-4765-ba4b-54b7cec88f58/files",
+              "application": "dev.tripoder.p2",
+              "loader": true,
+              "binds": 1,
+              "unbinds": 0,
+              "rebinds": 0,
+              "starts": []
+            }
+          },
+          {
+            "name": "real-cross-process-service-binder",
+            "passed": true,
+            "observed": {
+              "pid": 17970,
+              "uid": 10398,
+              "process": "dev.tripoder.p2:services",
+              "instance": "f278451d-5028-416b-8a0c-91391fbfc6d8",
+              "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote",
+              "package": "dev.tripoder.p2",
+              "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-services/dev.tripoder.p2/a5f42729-e6cc-4765-ba4b-54b7cec88f58/files",
+              "application": "dev.tripoder.p2",
+              "loader": true,
+              "binds": 1,
+              "unbinds": 0,
+              "rebinds": 0,
+              "starts": [
+                {
+                  "id": 1,
+                  "nullIntent": false,
+                  "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+                },
+                {
+                  "id": 2,
+                  "nullIntent": false,
+                  "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+                }
+              ]
+            }
+          },
+          {
+            "name": "multiple-system-startIds",
+            "passed": true,
+            "observed": [
+              {
+                "id": 1,
+                "nullIntent": false,
+                "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+              },
+              {
+                "id": 2,
+                "nullIntent": false,
+                "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+              }
+            ]
+          },
+          {
+            "name": "android-onUnbind-and-onRebind",
+            "passed": true,
+            "observed": {
+              "pid": 17970,
+              "uid": 10398,
+              "process": "dev.tripoder.p2:services",
+              "instance": "f278451d-5028-416b-8a0c-91391fbfc6d8",
+              "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote",
+              "package": "dev.tripoder.p2",
+              "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-services/dev.tripoder.p2/a5f42729-e6cc-4765-ba4b-54b7cec88f58/files",
+              "application": "dev.tripoder.p2",
+              "loader": true,
+              "binds": 1,
+              "unbinds": 1,
+              "rebinds": 1,
+              "starts": [
+                {
+                  "id": 1,
+                  "nullIntent": false,
+                  "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+                },
+                {
+                  "id": 2,
+                  "nullIntent": false,
+                  "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+                }
+              ]
+            }
+          },
+          {
+            "name": "stopSelfResult-old-startId-rejected",
+            "passed": true,
+            "observed": [
+              {
+                "id": 1,
+                "nullIntent": false,
+                "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+              },
+              {
+                "id": 2,
+                "nullIntent": false,
+                "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+              }
+            ]
+          },
+          {
+            "name": "stopSelfResult-last-startId-accepted",
+            "passed": true,
+            "observed": [
+              {
+                "id": 1,
+                "nullIntent": false,
+                "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+              },
+              {
+                "id": 2,
+                "nullIntent": false,
+                "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+              }
+            ]
+          },
+          {
+            "name": "bound-service-survives-stopSelfResult",
+            "passed": true,
+            "observed": {
+              "pid": 17970,
+              "uid": 10398,
+              "process": "dev.tripoder.p2:services",
+              "instance": "f278451d-5028-416b-8a0c-91391fbfc6d8",
+              "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote",
+              "package": "dev.tripoder.p2",
+              "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-services/dev.tripoder.p2/a5f42729-e6cc-4765-ba4b-54b7cec88f58/files",
+              "application": "dev.tripoder.p2",
+              "loader": true,
+              "binds": 1,
+              "unbinds": 1,
+              "rebinds": 1,
+              "starts": [
+                {
+                  "id": 1,
+                  "nullIntent": false,
+                  "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+                },
+                {
+                  "id": 2,
+                  "nullIntent": false,
+                  "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+                }
+              ]
+            }
+          },
+          {
+            "name": "started-and-bound-destroy-after-final-unbind",
+            "passed": true,
+            "observed": "f278451d-5028-416b-8a0c-91391fbfc6d8"
+          },
+          {
+            "name": "android-onNullBinding",
+            "passed": true,
+            "observed": "ComponentInfo{dev.tripoder.p2/dev.tripoder.p2.Services$Null}"
+          }
+        ],
+        "pid": 17840
+      }
+    }
+  ],
+  "runs": [
+    {
+      "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Main",
+      "package": "dev.tripoder.p2",
+      "process": "dev.tripoder.p2",
+      "pid": 16568,
+      "uid": 10398,
+      "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+      "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+      "starts": 1,
+      "loader": true,
+      "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b",
+      "child": {
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Remote",
+        "package": "dev.tripoder.p2",
+        "process": "dev.tripoder.p2:remote",
+        "pid": 16627,
+        "uid": 10398,
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "starts": 1,
+        "loader": true,
+        "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b",
+        "child": {
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Middle",
+          "package": "dev.tripoder.p2",
+          "process": "dev.tripoder.p2:remote",
+          "pid": 16627,
+          "uid": 10398,
+          "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "starts": 1,
+          "loader": true,
+          "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b",
+          "child": {
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Leaf",
+            "package": "dev.tripoder.p2",
+            "process": "dev.tripoder.p2:remote",
+            "pid": 16627,
+            "uid": 10398,
+            "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+            "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+            "starts": 1,
+            "loader": true,
+            "challenge": "3129bfd1-01fd-4a6a-b91e-7424a4657f3b"
+          }
+        }
+      }
+    },
+    {
+      "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Main",
+      "package": "dev.tripoder.p2",
+      "process": "dev.tripoder.p2",
+      "pid": 16822,
+      "uid": 10398,
+      "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+      "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+      "starts": 1,
+      "loader": true,
+      "challenge": "430358e1-cecb-425e-96b8-48b0a971825f",
+      "child": {
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Remote",
+        "package": "dev.tripoder.p2",
+        "process": "dev.tripoder.p2:remote",
+        "pid": 16905,
+        "uid": 10398,
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+        "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+        "starts": 1,
+        "loader": true,
+        "challenge": "430358e1-cecb-425e-96b8-48b0a971825f",
+        "child": {
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Middle",
+          "package": "dev.tripoder.p2",
+          "process": "dev.tripoder.p2:remote",
+          "pid": 16905,
+          "uid": 10398,
+          "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+          "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+          "starts": 1,
+          "loader": true,
+          "challenge": "430358e1-cecb-425e-96b8-48b0a971825f",
+          "child": {
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Leaf",
+            "package": "dev.tripoder.p2",
+            "process": "dev.tripoder.p2:remote",
+            "pid": 16905,
+            "uid": 10398,
+            "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+            "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-second/dev.tripoder.p2/f8c08e04-d58e-4a4b-8d45-b7692b64b092/files",
+            "starts": 1,
+            "loader": true,
+            "challenge": "430358e1-cecb-425e-96b8-48b0a971825f"
+          }
+        }
+      }
+    },
+    {
+      "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Main",
+      "package": "dev.tripoder.p2",
+      "process": "dev.tripoder.p2",
+      "pid": 17061,
+      "uid": 10398,
+      "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+      "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+      "starts": 2,
+      "loader": true,
+      "challenge": "74478f42-b201-47d1-87c1-479af04eead7",
+      "child": {
+        "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Remote",
+        "package": "dev.tripoder.p2",
+        "process": "dev.tripoder.p2:remote",
+        "pid": 17132,
+        "uid": 10398,
+        "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+        "starts": 2,
+        "loader": true,
+        "challenge": "74478f42-b201-47d1-87c1-479af04eead7",
+        "child": {
+          "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Middle",
+          "package": "dev.tripoder.p2",
+          "process": "dev.tripoder.p2:remote",
+          "pid": 17132,
+          "uid": 10398,
+          "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+          "starts": 2,
+          "loader": true,
+          "challenge": "74478f42-b201-47d1-87c1-479af04eead7",
+          "child": {
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Chain$Leaf",
+            "package": "dev.tripoder.p2",
+            "process": "dev.tripoder.p2:remote",
+            "pid": 17132,
+            "uid": 10398,
+            "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+            "applicationData": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-first/dev.tripoder.p2/7f511523-26ed-4425-97d5-e498e1b59279/files",
+            "starts": 2,
+            "loader": true,
+            "challenge": "74478f42-b201-47d1-87c1-479af04eead7"
+          }
+        }
+      }
+    },
+    {
+      "challenge": "24e7c0af-3150-42bf-81de-43f60c630f7d",
+      "recreated": false,
+      "code": 0,
+      "value": null
+    },
+    {
+      "challenge": "6b5e7160-9d89-4db3-a1b0-d20228b67969",
+      "recreated": true,
+      "code": -1,
+      "value": "fresh"
+    },
+    {
+      "passed": false,
+      "error": "java.lang.IllegalStateException: SERVICE_CONNECTION_TIMEOUT\n\tat dev.tripoder.p2.Services$Link.next(Services.java:45)\n\tat dev.tripoder.p2.Services$Main.run(Services.java:66)\n\tat dev.tripoder.p2.Services$Main$9.run(D8$$SyntheticClass:0)\n\tat java.lang.Thread.run(Thread.java:1572)\n",
+      "checks": [
+        {
+          "name": "application-onCreate-bind-without-startup-cycle",
+          "passed": true,
+          "observed": {
+            "pid": 17840,
+            "uid": 10398,
+            "process": "dev.tripoder.p2:serviceapp",
+            "instance": "e1ef7554-0ce8-4dcd-a420-57ffd6099a20",
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Alpha",
+            "package": "dev.tripoder.p2",
+            "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-services/dev.tripoder.p2/a5f42729-e6cc-4765-ba4b-54b7cec88f58/files",
+            "application": "dev.tripoder.p2",
+            "loader": true,
+            "binds": 1,
+            "unbinds": 0,
+            "rebinds": 0,
+            "starts": []
+          }
+        },
+        {
+          "name": "two-real-services-one-process",
+          "passed": true,
+          "observed": {
+            "pid": 17840,
+            "uid": 10398,
+            "process": "dev.tripoder.p2:serviceapp",
+            "instance": "01ba072b-bb22-4670-aac4-0b99b0177235",
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Beta",
+            "package": "dev.tripoder.p2",
+            "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-services/dev.tripoder.p2/a5f42729-e6cc-4765-ba4b-54b7cec88f58/files",
+            "application": "dev.tripoder.p2",
+            "loader": true,
+            "binds": 1,
+            "unbinds": 0,
+            "rebinds": 0,
+            "starts": []
+          }
+        },
+        {
+          "name": "service-guest-context-application-loader",
+          "passed": true,
+          "observed": {
+            "pid": 17840,
+            "uid": 10398,
+            "process": "dev.tripoder.p2:serviceapp",
+            "instance": "e1ef7554-0ce8-4dcd-a420-57ffd6099a20",
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Alpha",
+            "package": "dev.tripoder.p2",
+            "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-services/dev.tripoder.p2/a5f42729-e6cc-4765-ba4b-54b7cec88f58/files",
+            "application": "dev.tripoder.p2",
+            "loader": true,
+            "binds": 1,
+            "unbinds": 0,
+            "rebinds": 0,
+            "starts": []
+          }
+        },
+        {
+          "name": "real-cross-process-service-binder",
+          "passed": true,
+          "observed": {
+            "pid": 17970,
+            "uid": 10398,
+            "process": "dev.tripoder.p2:services",
+            "instance": "f278451d-5028-416b-8a0c-91391fbfc6d8",
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote",
+            "package": "dev.tripoder.p2",
+            "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-services/dev.tripoder.p2/a5f42729-e6cc-4765-ba4b-54b7cec88f58/files",
+            "application": "dev.tripoder.p2",
+            "loader": true,
+            "binds": 1,
+            "unbinds": 0,
+            "rebinds": 0,
+            "starts": [
+              {
+                "id": 1,
+                "nullIntent": false,
+                "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+              },
+              {
+                "id": 2,
+                "nullIntent": false,
+                "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+              }
+            ]
+          }
+        },
+        {
+          "name": "multiple-system-startIds",
+          "passed": true,
+          "observed": [
+            {
+              "id": 1,
+              "nullIntent": false,
+              "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+            },
+            {
+              "id": 2,
+              "nullIntent": false,
+              "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+            }
+          ]
+        },
+        {
+          "name": "android-onUnbind-and-onRebind",
+          "passed": true,
+          "observed": {
+            "pid": 17970,
+            "uid": 10398,
+            "process": "dev.tripoder.p2:services",
+            "instance": "f278451d-5028-416b-8a0c-91391fbfc6d8",
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote",
+            "package": "dev.tripoder.p2",
+            "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-services/dev.tripoder.p2/a5f42729-e6cc-4765-ba4b-54b7cec88f58/files",
+            "application": "dev.tripoder.p2",
+            "loader": true,
+            "binds": 1,
+            "unbinds": 1,
+            "rebinds": 1,
+            "starts": [
+              {
+                "id": 1,
+                "nullIntent": false,
+                "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+              },
+              {
+                "id": 2,
+                "nullIntent": false,
+                "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stopSelfResult-old-startId-rejected",
+          "passed": true,
+          "observed": [
+            {
+              "id": 1,
+              "nullIntent": false,
+              "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+            },
+            {
+              "id": 2,
+              "nullIntent": false,
+              "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+            }
+          ]
+        },
+        {
+          "name": "stopSelfResult-last-startId-accepted",
+          "passed": true,
+          "observed": [
+            {
+              "id": 1,
+              "nullIntent": false,
+              "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+            },
+            {
+              "id": 2,
+              "nullIntent": false,
+              "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+            }
+          ]
+        },
+        {
+          "name": "bound-service-survives-stopSelfResult",
+          "passed": true,
+          "observed": {
+            "pid": 17970,
+            "uid": 10398,
+            "process": "dev.tripoder.p2:services",
+            "instance": "f278451d-5028-416b-8a0c-91391fbfc6d8",
+            "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote",
+            "package": "dev.tripoder.p2",
+            "data": "/data/user/0/dev.tripoder.runtimeprobe/files/runtime/data/p2-7a2508dbc9ad4257-services/dev.tripoder.p2/a5f42729-e6cc-4765-ba4b-54b7cec88f58/files",
+            "application": "dev.tripoder.p2",
+            "loader": true,
+            "binds": 1,
+            "unbinds": 1,
+            "rebinds": 1,
+            "starts": [
+              {
+                "id": 1,
+                "nullIntent": false,
+                "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+              },
+              {
+                "id": 2,
+                "nullIntent": false,
+                "component": "dev.tripoder.p2/dev.tripoder.p2.Services$Remote"
+              }
+            ]
+          }
+        },
+        {
+          "name": "started-and-bound-destroy-after-final-unbind",
+          "passed": true,
+          "observed": "f278451d-5028-416b-8a0c-91391fbfc6d8"
+        },
+        {
+          "name": "android-onNullBinding",
+          "passed": true,
+          "observed": "ComponentInfo{dev.tripoder.p2/dev.tripoder.p2.Services$Null}"
+        }
+      ],
+      "pid": 17840
+    }
+  ],
+  "finishedAt": 1791943074883,
+  "fullP2Accepted": false,
+  "genericApkExecutionVerified": false,
+  "strongIsolationVerified": false
+}

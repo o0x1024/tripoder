@@ -1,0 +1,74 @@
+{
+  "passed": true,
+  "nativeSha256": "5c4e19d113b172c5cc1a6d3d130355f1e3110d79daea22401aa9b0c90937bcba",
+  "functions": [
+    "one_cycle",
+    "park_handler",
+    "release_all",
+    "tp_park_begin",
+    "tp_park_blocked_mask",
+    "tp_park_context",
+    "tp_park_end",
+    "tp_park_now",
+    "workers_progress"
+  ],
+  "calls": [
+    {
+      "function": "tp_park_begin",
+      "target": "sigaction@plt",
+      "instruction": "11e00:      \tbl\t0x14178 <sigaction@plt>"
+    },
+    {
+      "function": "tp_park_begin",
+      "target": "tp_park_now",
+      "instruction": "11ee4:      \tbl\t0x12410 <tp_park_now>"
+    },
+    {
+      "function": "tp_park_begin",
+      "target": "tp_park_blocked_mask",
+      "instruction": "12394:      \tbl\t0x138e8 <tp_park_blocked_mask>"
+    },
+    {
+      "function": "tp_park_begin",
+      "target": "release_all",
+      "instruction": "123dc:      \tbl\t0x12450 <release_all>"
+    },
+    {
+      "function": "tp_park_end",
+      "target": "release_all",
+      "instruction": "126c4:      \tbl\t0x12450 <release_all>"
+    },
+    {
+      "function": "one_cycle",
+      "target": "tp_park_begin",
+      "instruction": "133a4:      \tbl\t0x11d90 <tp_park_begin>"
+    },
+    {
+      "function": "one_cycle",
+      "target": "tp_park_begin",
+      "instruction": "133b4:      \tbl\t0x11d90 <tp_park_begin>"
+    },
+    {
+      "function": "one_cycle",
+      "target": "tp_park_end",
+      "instruction": "133c8:      \tbl\t0x12658 <tp_park_end>"
+    },
+    {
+      "function": "one_cycle",
+      "target": "tp_park_context",
+      "instruction": "134a8:      \tbl\t0x126e0 <tp_park_context>"
+    },
+    {
+      "function": "one_cycle",
+      "target": "tp_park_end",
+      "instruction": "1358c:      \tbl\t0x12658 <tp_park_end>"
+    },
+    {
+      "function": "one_cycle",
+      "target": "workers_progress",
+      "instruction": "135b0:      \tbl\t0x13258 <workers_progress>"
+    }
+  ],
+  "disassemblySha256": "6a5d786ac6280f214758ac03e648190d0a6263c79e8605206e2159e9cfe035b8",
+  "scope": "Binary call allowlist only; source review still owns control flow and signal lifetime proof"
+}

@@ -1,0 +1,333 @@
+https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/jni/java_vm_ext.h
+50: class JavaVMExt : public JavaVM {
+51:  public:
+52:   // Creates a new JavaVMExt object.
+53:   // Returns nullptr on error, in which case error_msg is set to a message
+54:   // describing the error.
+55:   static std::unique_ptr<JavaVMExt> Create(Runtime* runtime,
+56:                                            const RuntimeArgumentMap& runtime_options,
+57:                                            std::string* error_msg);
+121: 
+122:   /**
+123:    * Returns a pointer to the code for the native method 'm', found
+124:    * using dlsym(3) on every native library that's been loaded so far.
+125:    */
+126:   void* FindCodeForNativeMethod(ArtMethod* m, std::string* error_msg, bool can_suspend)
+127:       REQUIRES_SHARED(Locks::mutator_lock_);
+
+https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/jni/jni_env_ext.h
+101:   const JNINativeInterface* GetUncheckedFunctions() const {
+102:     return unchecked_functions_;
+103:   }
+104:   JavaVMExt* GetVm() const { return vm_; }
+
+https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/jni/jni_internal.cc
+2705:       // It is possible to link a class with native methods from a library loaded by
+2706:       // a different classloader. In this case IsClassLoaderNamespaceNativelyBridged
+2707:       // fails detect if native bridge is enabled and may return false.
+2708:       // For this reason we always check method with native bridge (see b/393035780
+2709:       // for details).
+2710:       if (is_class_loader_namespace_natively_bridged ||
+2711:           android::NativeBridgeIsNativeBridgeFunctionPointer(fnPtr)) {
+2712:         fnPtr = GenerateNativeBridgeTrampoline(fnPtr, m);
+2713:       }
+2714:       const void* final_function_ptr = class_linker->RegisterNative(soa.Self(), m, fnPtr);
+2715:       UNUSED(final_function_ptr);
+2773:   static jint GetJavaVM(JNIEnv* env, JavaVM** vm) {
+2774:     CHECK_NON_NULL_ARGUMENT_RETURN(vm, JNI_ERR);
+2775:     Runtime* runtime = Runtime::Current();
+2776:     if (runtime != nullptr) {
+2777:       *vm = runtime->GetJavaVM();
+2778:     } else {
+2779:       *vm = nullptr;
+2780:     }
+2781:     return (*vm != nullptr) ? JNI_OK : JNI_ERR;
+
+https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/jni/java_vm_ext.cc
+72: class SharedLibrary {
+73:  public:
+74:   SharedLibrary(JNIEnv* env, Thread* self, const std::string& path, void* handle,
+75:                 bool needs_native_bridge, jobject class_loader, void* class_loader_allocator)
+76:       : path_(path),
+77:         handle_(handle),
+78:         needs_native_bridge_(needs_native_bridge),
+79:         class_loader_(env->NewWeakGlobalRef(class_loader)),
+80:         class_loader_allocator_(class_loader_allocator),
+81:         jni_on_load_lock_("JNI_OnLoad lock"),
+82:         jni_on_load_cond_("JNI_OnLoad condition variable", jni_on_load_lock_),
+83:         jni_on_load_thread_id_(self->GetThreadId()),
+84:         jni_on_load_result_(kPending) {
+85:     CHECK(class_loader_allocator_ != nullptr);
+86:   }
+87: 
+88:   ~SharedLibrary() {
+89:     Thread* self = Thread::Current();
+90:     if (self != nullptr) {
+91:       self->GetJniEnv()->DeleteWeakGlobalRef(class_loader_);
+92:     }
+93: 
+94:     char* error_msg = nullptr;
+95:     if (!android::CloseNativeLibrary(handle_, needs_native_bridge_, &error_msg)) {
+96:       LOG(WARNING) << "Error while unloading native library \"" << path_ << "\": " << error_msg;
+97:       android::NativeLoaderFreeErrorMessage(error_msg);
+98:     }
+99:   }
+275:   void* FindNativeMethod(Thread* self, ArtMethod* m, std::string* detail, bool can_suspend)
+276:       REQUIRES(!Locks::jni_libraries_lock_)
+277:       REQUIRES_SHARED(Locks::mutator_lock_) {
+278:     std::string jni_short_name(m->JniShortName());
+279:     std::string jni_long_name(m->JniLongName());
+280:     const ObjPtr<mirror::ClassLoader> declaring_class_loader =
+281:         m->GetDeclaringClass()->GetClassLoader();
+282:     void* const declaring_class_loader_allocator =
+283:         Runtime::Current()->GetClassLinker()->GetAllocatorForClassLoader(declaring_class_loader);
+284:     CHECK(declaring_class_loader_allocator != nullptr);
+285:     // TODO: Avoid calling GetShorty here to prevent dirtying dex pages?
+286:     const char* shorty = m->GetShorty();
+287:     void* native_code = nullptr;
+288:     android::JNICallType jni_call_type =
+289:         m->IsCriticalNative() ? android::kJNICallTypeCriticalNative : android::kJNICallTypeRegular;
+290:     if (can_suspend) {
+291:       // Go to suspended since dlsym may block for a long time if other threads are using dlopen.
+292:       ScopedThreadSuspension sts(self, ThreadState::kNative);
+293:       native_code = FindNativeMethodInternal(self,
+294:                                              declaring_class_loader_allocator,
+295:                                              shorty,
+296:                                              jni_short_name,
+297:                                              jni_long_name,
+298:                                              jni_call_type);
+299:     } else {
+300:       native_code = FindNativeMethodInternal(self,
+301:                                              declaring_class_loader_allocator,
+302:                                              shorty,
+303:                                              jni_short_name,
+304:                                              jni_long_name,
+305:                                              jni_call_type);
+306:     }
+307:     if (native_code != nullptr) {
+308:       return native_code;
+309:     }
+310:     if (detail != nullptr) {
+311:       *detail += "No implementation found for ";
+312:       *detail += m->PrettyMethod();
+313:       *detail += " (tried " + jni_short_name + " and " + jni_long_name + ")";
+314:       *detail += " - is the library loaded, e.g. System.loadLibrary?";
+315:     }
+316:     return nullptr;
+319:   void* FindNativeMethodInternal(Thread* self,
+320:                                  void* declaring_class_loader_allocator,
+321:                                  const char* shorty,
+322:                                  const std::string& jni_short_name,
+323:                                  const std::string& jni_long_name,
+324:                                  android::JNICallType jni_call_type)
+325:       REQUIRES(!Locks::jni_libraries_lock_) {
+326:     MutexLock mu(self, *Locks::jni_libraries_lock_);
+327:     for (const auto& lib : libraries_) {
+328:       SharedLibrary* const library = lib.second;
+329:       // Use the allocator address for class loader equality to avoid unnecessary weak root decode.
+330:       if (library->GetClassLoaderAllocator() != declaring_class_loader_allocator) {
+331:         // We only search libraries loaded by the appropriate ClassLoader.
+332:         continue;
+333:       }
+334:       // Try the short name then the long name...
+335:       const char* arg_shorty = library->NeedsNativeBridge() ? shorty : nullptr;
+336:       void* fn = library->FindSymbol(jni_short_name, arg_shorty, jni_call_type);
+337:       if (fn == nullptr) {
+338:         fn = library->FindSymbol(jni_long_name, arg_shorty, jni_call_type);
+339:       }
+340:       if (fn != nullptr) {
+341:         VLOG(jni) << "[Found native code for " << jni_long_name
+342:                   << " in \"" << library->GetPath() << "\"]";
+343:         return fn;
+344:       }
+345:     }
+346:     return nullptr;
+349:   // Unload native libraries with cleared class loaders.
+350:   void UnloadNativeLibraries()
+351:       REQUIRES(!Locks::jni_libraries_lock_)
+352:       REQUIRES_SHARED(Locks::mutator_lock_) {
+353:     Thread* const self = Thread::Current();
+354:     std::vector<SharedLibrary*> unload_libraries;
+355:     {
+356:       // jni_libraries_lock_ appears to be held long enough that we just retry once, rather than
+357:       // spinning.
+358:       int retries = 0;
+359:       static constexpr int MAX_RETRIES = 5;
+360:       while (!Locks::jni_libraries_lock_->ExclusiveTryLock(self)) {
+361:         if (Runtime::Current()->IsZygote()) {
+362:           // Do not risk deferring to the child processes.
+363:           Locks::jni_libraries_lock_->ExclusiveLock(self);
+364:           break;
+365:         }
+366:         if (++retries > MAX_RETRIES) {
+367:           // We do not want to block indefinitely here, for fear of timeouts. See b/374209523.
+368:           LOG(WARNING) << "Deferring native library unloading due to contention";
+369:           return;
+370:         }
+371:         ScopedTrace("sleep 1 msec for jni_libraries_lock_");
+372:         usleep(1000);
+373:       }
+374:       for (auto it = libraries_.begin(); it != libraries_.end(); ) {
+375:         SharedLibrary* const library = it->second;
+376:         // If class loader is null then it was unloaded, call JNI_OnUnload.
+377:         const jweak class_loader = library->GetClassLoader();
+378:         // If class_loader is a null jobject then it is the boot class loader. We should not unload
+379:         // the native libraries of the boot class loader.
+380:         if (class_loader != nullptr && self->IsJWeakCleared(class_loader)) {
+381:           unload_libraries.push_back(library);
+382:           it = libraries_.erase(it);
+383:         } else {
+384:           ++it;
+385:         }
+386:       }
+387:       Locks::jni_libraries_lock_->ExclusiveUnlock(self);
+388:     }
+389:     ScopedThreadSuspension sts(self, ThreadState::kNative);
+390:     // Do this without holding the jni libraries lock to prevent possible deadlocks.
+391:     UnloadLibraries(self->GetJniEnv()->GetVm(), unload_libraries);
+392:     for (auto library : unload_libraries) {
+393:       delete library;
+394:     }
+1186: void* JavaVMExt::FindCodeForNativeMethod(ArtMethod* m, std::string* error_msg, bool can_suspend) {
+1187:   CHECK(m->IsNative());
+1188:   ObjPtr<mirror::Class> c = m->GetDeclaringClass();
+1189:   // If this is a static method, it could be called before the class has been initialized.
+1190:   CHECK(c->IsInitializing() || !m->NeedsClinitCheckBeforeCall())
+1191:       << c->GetStatus() << " " << m->PrettyMethod();
+1192:   Thread* const self = Thread::Current();
+1193:   void* native_method = libraries_->FindNativeMethod(self, m, error_msg, can_suspend);
+1194:   if (native_method == nullptr && can_suspend) {
+1195:     // Lookup JNI native methods from native TI Agent libraries. See runtime/ti/agent.h for more
+1196:     // information. Agent libraries are searched for native methods after all jni libraries.
+1197:     native_method = FindCodeForNativeMethodInAgents(m);
+1198:   }
+1199:   return native_method;
+
+https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/class_linker.cc
+469: const void* ClassLinker::RegisterNative(
+470:     Thread* self, ArtMethod* method, const void* native_method) {
+471:   CHECK(method->IsNative()) << method->PrettyMethod();
+472:   CHECK(native_method != nullptr) << method->PrettyMethod();
+473:   void* new_native_method = nullptr;
+474:   Runtime* runtime = Runtime::Current();
+475:   runtime->GetRuntimeCallbacks()->RegisterNativeMethod(method,
+476:                                                        native_method,
+477:                                                        /*out*/&new_native_method);
+478:   if (method->IsCriticalNative()) {
+479:     MutexLock lock(self, critical_native_code_with_clinit_check_lock_);
+480:     // Remove old registered method if any.
+481:     auto it = critical_native_code_with_clinit_check_.find(method);
+482:     if (it != critical_native_code_with_clinit_check_.end()) {
+483:       critical_native_code_with_clinit_check_.erase(it);
+484:     }
+485:     // To ensure correct memory visibility, we need the class to be visibly
+486:     // initialized before we can set the JNI entrypoint.
+487:     if (method->GetDeclaringClass()->IsVisiblyInitialized()) {
+488:       method->SetEntryPointFromJni(new_native_method);
+489:     } else {
+490:       critical_native_code_with_clinit_check_.emplace(method, new_native_method);
+491:     }
+492:   } else {
+493:     method->SetEntryPointFromJni(new_native_method);
+494:   }
+495:   return new_native_method;
+496: }
+497: 
+498: void ClassLinker::UnregisterNative(Thread* self, ArtMethod* method) {
+499:   CHECK(method->IsNative()) << method->PrettyMethod();
+500:   // Restore stub to lookup native pointer via dlsym.
+501:   if (method->IsCriticalNative()) {
+502:     MutexLock lock(self, critical_native_code_with_clinit_check_lock_);
+503:     auto it = critical_native_code_with_clinit_check_.find(method);
+504:     if (it != critical_native_code_with_clinit_check_.end()) {
+505:       critical_native_code_with_clinit_check_.erase(it);
+506:     }
+507:     method->SetEntryPointFromJni(GetJniDlsymLookupCriticalStub());
+508:   } else {
+509:     method->SetEntryPointFromJni(GetJniDlsymLookupStub());
+510:   }
+511: }
+512: 
+513: const void* ClassLinker::GetRegisteredNative(Thread* self, ArtMethod* method) {
+514:   if (method->IsCriticalNative()) {
+515:     MutexLock lock(self, critical_native_code_with_clinit_check_lock_);
+516:     auto it = critical_native_code_with_clinit_check_.find(method);
+517:     if (it != critical_native_code_with_clinit_check_.end()) {
+518:       return it->second;
+519:     }
+520:     const void* native_code = method->GetEntryPointFromJni();
+521:     return IsJniDlsymLookupCriticalStub(native_code) ? nullptr : native_code;
+522:   } else {
+523:     const void* native_code = method->GetEntryPointFromJni();
+524:     return IsJniDlsymLookupStub(native_code) ? nullptr : native_code;
+525:   }
+
+https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/entrypoints/jni/jni_entrypoints.cc
+50: // Used by the JNI dlsym stub to find the native method to invoke if none is registered.
+51: extern "C" const void* artFindNativeMethodRunnable(Thread* self)
+52:     REQUIRES_SHARED(Locks::mutator_lock_) {
+53:   Locks::mutator_lock_->AssertSharedHeld(self);  // We come here as Runnable.
+54:   uint32_t dex_pc;
+55:   ArtMethod* method = self->GetCurrentMethod(&dex_pc);
+56:   DCHECK(method != nullptr);
+57:   ClassLinker* class_linker = Runtime::Current()->GetClassLinker();
+100: 
+101:   // Check whether we already have a registered native code.
+102:   // For @CriticalNative it may not be stored in the ArtMethod as a JNI entrypoint if the class
+103:   // was not visibly initialized yet. Do this check also for @FastNative and normal native for
+104:   // consistency; though success would mean that another thread raced to do this lookup.
+105:   const void* native_code = class_linker->GetRegisteredNative(self, method);
+106:   if (native_code != nullptr) {
+107:     return native_code;
+108:   }
+109: 
+110:   // Lookup symbol address for method, on failure we'll return null with an exception set,
+111:   // otherwise we return the address of the method we found.
+112:   JavaVMExt* vm = down_cast<JNIEnvExt*>(self->GetJniEnv())->GetVm();
+113:   std::string error_msg;
+114:   native_code = vm->FindCodeForNativeMethod(method, &error_msg, /*can_suspend=*/ true);
+115:   if (native_code == nullptr) {
+116:     LOG(ERROR) << error_msg;
+117:     self->ThrowNewException("Ljava/lang/UnsatisfiedLinkError;", error_msg.c_str());
+118:     return nullptr;
+119:   }
+120: 
+121:   // Register the code. This usually prevents future calls from coming to this function again.
+122:   // We can still come here if the ClassLinker cannot set the entrypoint in the ArtMethod,
+123:   // i.e. for @CriticalNative methods with the declaring class not visibly initialized.
+124:   return class_linker->RegisterNative(self, method, native_code);
+125: }
+126: 
+127: // Used by the JNI dlsym stub to find the native method to invoke if none is registered.
+128: extern "C" const void* artFindNativeMethod(Thread* self) {
+129:   DCHECK_EQ(self, Thread::Current());
+130:   Locks::mutator_lock_->AssertNotHeld(self);  // We come here as Native.
+131:   ScopedObjectAccess soa(self);
+132:   return artFindNativeMethodRunnable(self);
+
+https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/thread-inl.h
+179: inline bool Thread::IsThreadSuspensionAllowable() const {
+180:   if (tls32_.no_thread_suspension != 0) {
+181:     return false;
+182:   }
+183:   for (int i = kLockLevelCount - 1; i >= 0; --i) {
+184:     if (i != kMutatorLock &&
+185:         i != kUserCodeSuspensionLock &&
+186:         GetHeldMutex(static_cast<LockLevel>(i)) != nullptr) {
+187:       return false;
+188:     }
+189:   }
+190:   // Thread autoanalysis isn't able to understand that the GetHeldMutex(...) or AssertHeld means we
+191:   // have the mutex meaning we need to do this hack.
+192:   auto is_suspending_for_user_code = [this]() NO_THREAD_SAFETY_ANALYSIS {
+193:     return tls32_.user_code_suspend_count != 0;
+194:   };
+195:   if (GetHeldMutex(kUserCodeSuspensionLock) != nullptr && is_suspending_for_user_code()) {
+196:     return false;
+197:   }
+198:   return true;
+199: }
+200: 
+201: inline void Thread::AssertThreadSuspensionIsAllowable(bool check_locks) const {
+202:   if (kIsDebugBuild) {
+

@@ -20,7 +20,7 @@ export interface SimulationEvent {
 export interface InvocationResult {
   readonly value: HookValue;
   readonly revision: number;
-  readonly hookOutcome: "applied" | "failed";
+  readonly hookOutcome: "applied";
 }
 
 function synchronous(value: unknown): unknown {
@@ -112,14 +112,14 @@ export class HookSimulator<S extends Parameters> {
     requireThat(rule, "HOOK_NOT_REGISTERED", `No hook registered for ${symbolId}`);
     requireThat(rule.symbol.loaded, "WAITING_TARGET", "The target is indexed but has not loaded");
     validateArguments(rule.symbol, incoming);
-    const originalArgs = Object.freeze([...incoming]);
-    let args: readonly HookValue[] = originalArgs;
-    let outcome: InvocationResult["hookOutcome"] = "applied";
+    let args: readonly HookValue[] = Object.freeze([...incoming]);
     this.#record({ revision: state.revision, symbolId, kind: "simulated-hit" });
-    const fail = (stage: "before" | "replace" | "after", error: unknown) => {
-      outcome = "failed";
+    const fail = (stage: "before" | "replace" | "after", error: unknown): never => {
+      const failure = error instanceof Error ? error
+        : new HookError("HOOK_EXECUTION", `${symbolId} ${stage}: callback threw a non-Error value`);
       this.#record({ revision: state.revision, symbolId, kind: "hook-error", stage,
-        detail: error instanceof Error ? error.message : "Callback failed" });
+        detail: failure.message });
+      throw failure;
     };
     const callOriginal = (callArgs: readonly HookValue[]): HookValue => {
       try {
@@ -138,10 +138,9 @@ export class HookSimulator<S extends Parameters> {
         validateHookValue(rule.symbol.returnType, candidate, `${symbolId} replacement`);
         value = candidate;
       } catch (error) {
-        fail("replace", error);
-        value = callOriginal(originalArgs);
+        return fail("replace", error);
       }
-      return { value, revision: state.revision, hookOutcome: outcome };
+      return { value, revision: state.revision, hookOutcome: "applied" };
     }
     if (rule.handlers.before) {
       try {
@@ -150,8 +149,7 @@ export class HookSimulator<S extends Parameters> {
         validateArguments(rule.symbol, candidate);
         args = Object.freeze([...candidate]);
       } catch (error) {
-        fail("before", error);
-        return { value: callOriginal(originalArgs), revision: state.revision, hookOutcome: outcome };
+        return fail("before", error);
       }
     }
     let value = callOriginal(args);
@@ -161,10 +159,10 @@ export class HookSimulator<S extends Parameters> {
         validateHookValue(rule.symbol.returnType, candidate, `${symbolId} after result`);
         value = candidate;
       } catch (error) {
-        // The original has already executed. Never replay it on an after-hook failure.
-        fail("after", error);
+        // The original has already executed. Report failure without returning its result or replaying it.
+        return fail("after", error);
       }
     }
-    return { value, revision: state.revision, hookOutcome: outcome };
+    return { value, revision: state.revision, hookOutcome: "applied" };
   }
 }

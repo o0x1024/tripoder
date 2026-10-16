@@ -7,13 +7,14 @@ import { prepareDraft, draftTemplate } from "../../src/draft.js";
 import { validateArguments, validateHookValue } from "../../src/evidence.js";
 import type { EvidenceSnapshot, HookValue } from "../../src/evidence.js";
 
-// This adapter deliberately supports only our two owned test targets, synchronous replace,
+// This adapter deliberately supports only our two owned test targets, synchronous callbacks,
 // and validated parameter updates. It is not a generic sandbox or cross-process engine.
 setImmediate(() => {
   Java.perform(() => {
     const Bridge = Java.use("dev.tripoder.hooklab.AgentBridge");
     const identity = JSON.parse(String(Bridge.identity()));
     const isGuest = identity.mode === "guest";
+    const IllegalStateException = Java.use("java.lang.IllegalStateException");
     const Build = Java.use("android.os.Build");
     const originalEnvironment = Object.fromEntries(["MODEL", "MANUFACTURER", "BRAND"].map(k => [k, String(Build[k].value)]));
     if (isGuest) {
@@ -60,7 +61,26 @@ setImmediate(() => {
     let current = initial, previous = initial;
     let enabled = false, revision = 0, javaHits = 0, nativeHits = 0;
     const errors: { symbol: string; stage: string; message: string }[] = [];
-    const originalNative = new NativeFunction(address, "int", ["int"]);
+    const originalNative = new NativeFunction(address, "int", ["int"], { exceptions: "propagate" });
+    const nativeExit = new NativeFunction(Process.getModuleByName("libc.so").getExportByName("_exit"),
+      "void", ["int"], { exceptions: "propagate" });
+    const nativeLog = new NativeFunction(Process.getModuleByName("liblog.so").getExportByName("__android_log_write"),
+      "int", ["int", "pointer", "pointer"], { exceptions: "propagate" });
+    const logTag = Memory.allocUtf8String("Tripoder");
+    function errorMessage(error: unknown): string {
+      return error instanceof Error ? error.message.slice(0, 500) : "Callback threw a non-Error value";
+    }
+    function terminateNative(error: unknown): never {
+      // A JS exception cannot cross a C ABI safely. Record the failure synchronously,
+      // then end this process; never return an invented value or call the original.
+      try {
+        const message = `HOOK_EXECUTION: Native callback failed; terminating process ${Process.id}: ${errorMessage(error)}`;
+        nativeLog(6, logTag, Memory.allocUtf8String(message));
+      } finally {
+        // libc _exit never returns. The loop also prevents an accidental JS return.
+        for (;;) nativeExit(70);
+      }
+    }
     function commit(next: State) { previous = current; current = next; revision++; }
     function invoke(symbolId: string, incoming: HookValue[], original: (args: readonly HookValue[]) => HookValue): HookValue {
       const state = current;
@@ -69,29 +89,32 @@ setImmediate(() => {
       if (symbolId === "greet") javaHits++; else nativeHits++;
       const params = state.params;
       let args: readonly HookValue[] = Object.freeze([...incoming]);
-      const fail = (stage: string, error: unknown) => {
-        errors.push({ symbol: symbolId, stage, message: String(error).slice(0, 500) });
+      const fail = (stage: string, error: unknown): never => {
+        const message = `HOOK_EXECUTION: ${symbolId} ${stage}: ${errorMessage(error)}`;
+        errors.push({ symbol: symbolId, stage, message });
         if (errors.length > 20) errors.shift();
+        if (rule.symbol.kind === "java") throw IllegalStateException.$new(message);
+        throw new Error(message);
       };
       if (rule.handlers.replace) {
         try {
           const value = rule.handlers.replace({ args, params });
           validateHookValue(rule.symbol.returnType, value, symbolId); return value;
-        } catch (error) { fail("replace", error); return original(incoming); }
+        } catch (error) { return fail("replace", error); }
       }
       if (rule.handlers.before) {
         try {
           const next = rule.handlers.before({ args, params });
           if (!Array.isArray(next)) throw new Error("before must return an array");
           validateArguments(rule.symbol, next); args = Object.freeze([...next]);
-        } catch (error) { fail("before", error); return original(incoming); }
+        } catch (error) { return fail("before", error); }
       }
       let result = original(args);
       if (rule.handlers.after) {
         try {
           const next = rule.handlers.after({ args, params, result });
           validateHookValue(rule.symbol.returnType, next, symbolId); result = next;
-        } catch (error) { fail("after", error); }
+        } catch (error) { return fail("after", error); }
       }
       return result;
     }
@@ -99,7 +122,11 @@ setImmediate(() => {
       .map(v => v.toString(16).padStart(2, "0")).join("");
     const originalBytes = bytes();
     const replacement = new NativeCallback((base: number) => {
-      return Number(invoke("delay", [base], args => originalNative(Number(args[0]))));
+      try {
+        return Number(invoke("delay", [base], args => originalNative(Number(args[0]))));
+      } catch (error) {
+        return terminateNative(error);
+      }
     }, "int", ["int"]);
 
     function install() {

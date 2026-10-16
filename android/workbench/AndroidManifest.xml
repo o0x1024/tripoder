@@ -1,0 +1,17 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tripoder.workbench" android:versionCode="1" android:versionName="0.1-dev">
+    <uses-sdk android:minSdkVersion="36" android:targetSdkVersion="36"/>
+    <uses-permission android:name="dev.tripoder.engine.permission.CONTROL"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE"/>
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
+    <queries><package android:name="dev.tripoder.engine"/><intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent></queries>
+    <application android:name="dev.tripoder.hooklab.WorkbenchApplication" android:label="Tripoder 工作台" android:allowBackup="false" android:debuggable="false" android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        <service android:name="dev.tripoder.hooklab.AgentControlService" android:exported="false" android:foregroundServiceType="connectedDevice"/>
+        <activity android:name="dev.tripoder.hooklab.WorkbenchProjectActivity" android:exported="false"/>
+        <activity android:name="dev.tripoder.hooklab.WorkbenchAddActivity" android:exported="false"/>
+        <activity android:name="dev.tripoder.hooklab.WorkbenchActivity" android:exported="true">
+            <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+        </activity>
+    </application>
+</manifest>

@@ -176,35 +176,47 @@ test("rollback creates a new revision restoring both code and parameters", () =>
   assert.throws(() => r.rollback(99), { code: "REVISION_NOT_FOUND" });
 });
 
-test("failed before hook restores initial arguments and skips after", () => {
-  const r = new HookSimulator<typeof params>(evidence);
-  let afterCalls = 0;
-  r.activate(preparePlan(plan(ctx => method(ctx).before(() => [123]).after(() => { afterCalls++; return "bad"; })), evidence));
-  let calls = 0;
-  const result = r.invoke("greet", ["original-arg"], args => { calls++; return args[0]; });
-  assert.equal(result.value, "original-arg");
-  assert.equal(result.hookOutcome, "failed");
-  assert.equal(calls, 1);
-  assert.equal(afterCalls, 0);
+test("failed before hooks throw without calling the original or after handler", () => {
+  const failure = new Error("before failed");
+  for (const before of [() => [123], () => { throw failure; }]) {
+    const r = new HookSimulator<typeof params>(evidence);
+    let afterCalls = 0, calls = 0;
+    r.activate(preparePlan(plan(ctx => method(ctx).before(before).after(() => { afterCalls++; return "bad"; })), evidence));
+    assert.throws(() => r.invoke("greet", ["original-arg"], args => { calls++; return args[0]; }),
+      error => error === failure || (error instanceof Error && "code" in error && error.code === "HOOK_TYPE"));
+    assert.equal(calls, 0);
+    assert.equal(afterCalls, 0);
+    assert.equal(r.events().filter(e => e.kind === "hook-error" && e.stage === "before").length, 1);
+    assert.equal(r.inspect().rules[0]?.status, "simulation-error");
+  }
 });
 
-test("failed after hook preserves original result without replaying side effects", () => {
-  const r = new HookSimulator<typeof params>(evidence);
-  r.activate(preparePlan(plan(ctx => method(ctx).after(() => { throw new Error("after failed"); })), evidence));
-  let calls = 0;
-  const result = r.invoke("greet", ["x"], () => { calls++; return "original-result"; });
-  assert.equal(result.value, "original-result");
-  assert.equal(result.hookOutcome, "failed");
-  assert.equal(calls, 1);
-  assert.equal(r.inspect().rules[0]?.status, "simulation-error");
+test("failed after hooks throw after exactly one original invocation", () => {
+  const failure = new Error("after failed");
+  for (const after of [() => 42, () => { throw failure; }]) {
+    const r = new HookSimulator<typeof params>(evidence);
+    r.activate(preparePlan(plan(ctx => method(ctx).after(after)), evidence));
+    let calls = 0;
+    assert.throws(() => r.invoke("greet", ["x"], () => { calls++; return "original-result"; }),
+      error => error === failure || (error instanceof Error && "code" in error && error.code === "HOOK_TYPE"));
+    assert.equal(calls, 1);
+    assert.equal(r.events().filter(e => e.kind === "hook-error" && e.stage === "after").length, 1);
+    assert.equal(r.inspect().rules[0]?.status, "simulation-error");
+  }
 });
 
-test("invalid replacement falls back once, while recording failure", () => {
-  const r = new HookSimulator<typeof params>(evidence);
-  r.activate(preparePlan(plan(ctx => method(ctx).replace(() => 42)), evidence));
-  let calls = 0;
-  assert.equal(r.invoke("greet", ["x"], () => { calls++; return "original"; }).hookOutcome, "failed");
-  assert.equal(calls, 1);
+test("failed replacements throw without invoking the original", () => {
+  const failure = new Error("replace failed");
+  for (const replace of [() => 42, () => { throw failure; }, () => { throw "non-error failure"; }]) {
+    const r = new HookSimulator<typeof params>(evidence);
+    r.activate(preparePlan(plan(ctx => method(ctx).replace(replace)), evidence));
+    let calls = 0;
+    assert.throws(() => r.invoke("greet", ["x"], () => { calls++; return "original"; }),
+      error => error === failure || (error instanceof Error && "code" in error && ["HOOK_TYPE", "HOOK_EXECUTION"].includes(String(error.code))));
+    assert.equal(calls, 0);
+    assert.equal(r.events().filter(e => e.kind === "hook-error" && e.stage === "replace").length, 1);
+    assert.equal(r.inspect().rules[0]?.status, "simulation-error");
+  }
 });
 
 test("original exceptions propagate unchanged and are never retried", () => {
@@ -227,7 +239,9 @@ test("async hooks are rejected at registration and thenables are rejected during
   }), evidence), { code: "ASYNC_HOOK" });
   const r = new HookSimulator<typeof params>(evidence);
   r.activate(preparePlan(plan(ctx => method(ctx).replace(() => Promise.resolve("async") as unknown as HookValue)), evidence));
-  assert.equal(r.invoke("greet", ["x"], () => "fallback").hookOutcome, "failed");
+  let calls = 0;
+  assert.throws(() => r.invoke("greet", ["x"], () => { calls++; return "original"; }), { code: "ASYNC_HOOK" });
+  assert.equal(calls, 0);
 });
 
 test("async setup is rejected; hook registration closes after preparation", () => {
@@ -242,9 +256,9 @@ test("Native int32 boundaries are validated at runtime", () => {
   r.activate(preparePlan(plan(ctx => ctx.native.function("libhookdemo.so", "retry_delay_ms", {
     argumentTypes: [], returnType: "int32", buildId: "fixture-build-001",
   }).replace(() => 2147483648)), evidence));
-  const result = r.invoke("delay", [], () => 5);
-  assert.equal(result.value, 5);
-  assert.equal(result.hookOutcome, "failed");
+  let calls = 0;
+  assert.throws(() => r.invoke("delay", [], () => { calls++; return 5; }), { code: "HOOK_TYPE" });
+  assert.equal(calls, 0);
 });
 
 test("events and rollback history are bounded without losing current hit totals", () => {

@@ -1,0 +1,257 @@
+{
+  "schema": 1,
+  "startedAtUtc": "2026-10-15T00:41:05.695546+00:00",
+  "validatorSha256": "01c13b6d65af6a37c1f42911a26051bbae727bb260d51de465ed959cf4250ef8",
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/product/build/tripoder-engine.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/product/build/tripoder-workbench.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/product/build/tripoder-control-test.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.workbench"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~A4k7X2Re9wLbQS1vssnmrw==/dev.tripoder.workbench-pzLBVbGxIwATf40r10ankw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~A4k7X2Re9wLbQS1vssnmrw==/dev.tripoder.workbench-pzLBVbGxIwATf40r10ankw==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "f81cc2ca9e131b364091e27d3a96c3e98b095c2c9ad264a6b5a38881c941266a  /data/app/~~A4k7X2Re9wLbQS1vssnmrw==/dev.tripoder.workbench-pzLBVbGxIwATf40r10ankw==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~wfls6Uv4zGXnZq9XzmPseg==/dev.tripoder.engine-OJ3kLeiddhRayZGxcOSC4A==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~wfls6Uv4zGXnZq9XzmPseg==/dev.tripoder.engine-OJ3kLeiddhRayZGxcOSC4A==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "4c15d09d014c12f10625f3faacdfd2490d2a1a6558837d545f29bb1d19b686a1  /data/app/~~wfls6Uv4zGXnZq9XzmPseg==/dev.tripoder.engine-OJ3kLeiddhRayZGxcOSC4A==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.controltest"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~Pl2cmZeCalvEqRQq1N-EnQ==/dev.tripoder.controltest-uERYRxyvhsP9NdbGrRr11g==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~Pl2cmZeCalvEqRQq1N-EnQ==/dev.tripoder.controltest-uERYRxyvhsP9NdbGrRr11g==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "babb3b33ef40f9b09f49494fc9a89f4d097ac72640f1629b0a5ad1a4c720734e  /data/app/~~Pl2cmZeCalvEqRQq1N-EnQ==/dev.tripoder.controltest-uERYRxyvhsP9NdbGrRr11g==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.workbench"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.controltest"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.engine uid:10400\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "date \"+%m-%d %H:%M:%S.%3N\""
+      ],
+      "exitCode": 0,
+      "stdout": "10-15 08:41:08.005\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-n",
+        "dev.tripoder.controltest/dev.tripoder.controltest.ClientActivity"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { cmp=dev.tripoder.controltest/.ClientActivity }\nStatus: ok\nLaunchState: UNKNOWN (0)\nActivity: dev.tripoder.controltest/.ClientActivity\nWaitTime: 69\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-a",
+        "android.intent.action.MAIN",
+        "-c",
+        "android.intent.category.LAUNCHER",
+        "-n",
+        "dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity }\nStatus: ok\nLaunchState: WARM\nActivity: dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity\nTotalTime: 59\nWaitTime: 62\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "instrument",
+        "-w",
+        "-e",
+        "runId",
+        "control-1cd9518ef7e14721",
+        "dev.tripoder.controltest/dev.tripoder.controltest.AppActionsUiIntegration"
+      ],
+      "exitCode": 0,
+      "stdout": "INSTRUMENTATION_RESULT: result={\"runId\":\"control-1cd9518ef7e14721\",\"startedAt\":1792024868508,\"uid\":10401,\"pid\":28010,\"deviceBuild\":\"Xiaomi\\/madrid\\/madrid:17\\/CP2A.260605.016\\/OS4.0.24.0.XEOCNXM:user\\/release-keys\",\"scope\":\"native-application-tap-long-press-and-deletion\",\"workbenchStartupStatus\":{\"schema\":26,\"hookReady\":true,\"lease\":\"38a20f88-e7b6-4527-9885-594f34d6324d\",\"enginePid\":28153,\"engineUid\":10400,\"strongIsolation\":false,\"authority\":\"0389671c-f347-4196-a780-128ebc3ad344\",\"controllerUid\":10401},\"error\":\"java.lang.IllegalStateException: OPERATION_UNCONFIRMED:启动空间应用 · UNKNOWN\\n操作 03415541-485f-400c-a499-e3a08c4530aa 保留，未重新执行。\\n\\tat dev.tripoder.controltest.AppActionsUiIntegration.awaitOperations(AppActionsUiIntegration.java:68)\\n\\tat dev.tripoder.controltest.AppActionsUiIntegration.importApk(AppActionsUiIntegration.java:59)\\n\\tat dev.tripoder.controltest.AppActionsUiIntegration.test(AppActionsUiIntegration.java:19)\\n\\tat dev.tripoder.controltest.ControlTestBase.onStart(ControlTestBase.java:43)\\n\\tat dev.tripoder.controltest.AppActionsUiIntegration.onStart(AppActionsUiIntegration.java:11)\\n\\tat android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2705)\\n\",\"passed\":false,\"checks\":[{\"name\":\"real-workbench-foreground-startup-connected\",\"passed\":true,\"observed\":\"\"}],\"fullP5Accepted\":false,\"finishedAt\":1792024893940}\nINSTRUMENTATION_CODE: 0\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10400",
+        "-T",
+        "10-15 08:41:08.005"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10400",
+        "-T",
+        "10-15 08:41:08.005",
+        "TripoderRuntime:V",
+        "TripoderHook:I",
+        "TripoderOwnership:I",
+        "TripoderStartup:I",
+        "TripoderProvider:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "fullP5Accepted": false,
+  "businessScenariosVerified": false,
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "deviceLogStart": "10-15 08:41:08.005",
+  "ownedUid": 10400,
+  "passed": false,
+  "error": "DEVICE_ASSERTIONS_FAILED:app-actions-ui",
+  "nativeFatalSignalObserved": false,
+  "javaFatalExceptionObserved": false,
+  "finishedAtUtc": "2026-10-15T00:41:34.517173+00:00"
+}

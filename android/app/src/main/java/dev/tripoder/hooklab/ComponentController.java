@@ -16,8 +16,16 @@ final class ComponentController {
     private static final WeakHashMap<Activity, Handler> jobs = new WeakHashMap<>();
     private static final String RECIPE = "[{\"type\":\"tap\",\"viewId\":\"action\",\"delayMs\":100},{\"type\":\"text\",\"viewId\":\"input\",\"text\":\"Tripoder automation\",\"delayMs\":100}]";
     private static String projectId(Activity activity){GuestRuntime runtime=GuestService.peekRuntime();return runtime==null?ProjectStore.id(activity):runtime.projectId();}
-    private static String inputValue(Activity activity,String name,String fallback){
-        try{return new JSONObject(new ProjectStore(activity).read(projectId(activity),"config/input.json","{}")).optString(name,fallback);}catch(Exception error){return fallback;}
+    private static String inputValue(Activity activity,String name,String initialValue){
+        try {
+            JSONObject config = new JSONObject(new ProjectStore(activity).read(projectId(activity), "config/input.json", "{}"));
+            if (!config.has(name)) return initialValue;
+            Object value = config.get(name);
+            if (!(value instanceof String)) throw new IllegalArgumentException(name + " 必须是 JSON 文本字符串");
+            return (String) value;
+        } catch (Exception error) {
+            throw new IllegalStateException("读取 config/input.json 失败：" + error.getMessage(), error);
+        }
     }
     private static void saveInput(Activity activity,String name,String value){
         try{ProjectStore store=new ProjectStore(activity);String id=projectId(activity);JSONObject json=new JSONObject(store.read(id,"config/input.json","{}"));json.put(name,value);store.write(id,"config/input.json",json.toString(2));}catch(Exception error){throw new IllegalStateException("项目输入配置保存失败",error);}
@@ -30,10 +38,22 @@ final class ComponentController {
             if (method.getName().equals("dispatchKeyEvent") && args != null && args[0] instanceof KeyEvent) {
                 KeyEvent event = (KeyEvent) args[0];
                 if ((event.getSource() & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD) {
-                    JSONObject map = new JSONObject(inputValue(activity,"buttons", "{\"96\":\"action\"}"));
-                    String id = map.optString(Integer.toString(event.getKeyCode()), "");
-                    if (!id.isEmpty()) {
-                        if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) tap(activity, find(activity, id));
+                    try {
+                        JSONObject map = new JSONObject(inputValue(activity,"buttons", "{\"96\":\"action\"}"));
+                        String key = Integer.toString(event.getKeyCode());
+                        Object mapped = map.has(key) ? map.get(key) : "";
+                        if (!(mapped instanceof String)) throw new IllegalArgumentException("手柄映射目标必须是控件资源名");
+                        String id = (String) mapped;
+                        if (!id.isEmpty()) {
+                            if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) tap(activity, find(activity, id));
+                            return true;
+                        }
+                    } catch (Exception error) {
+                        handler.removeCallbacksAndMessages(null);
+                        android.util.Log.e("Tripoder", "Gamepad mapping failed", error);
+                        if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0)
+                            Toast.makeText(activity, "手柄映射未执行：" + error.getMessage(), Toast.LENGTH_LONG).show();
+                        // Reject this event; do not run a default mapping or forward it to the guest.
                         return true;
                     }
                 }
@@ -89,7 +109,10 @@ final class ComponentController {
             catch(Exception error){value.setError(error.getMessage());}
         }),10);
         ProductUi.pair(content,ProductUi.button(activity,"停止流程",false,()->{handler.removeCallbacksAndMessages(null);Toast.makeText(activity,"流程已停止",Toast.LENGTH_SHORT).show();dialog.dismiss();}),ProductUi.button(activity,"高级 JSON",false,()->{
-            dialog.dismiss();edit(activity,"自动化流程 JSON",inputValue(activity,"recipe",RECIPE),json->{JSONArray recipe=validateRecipe(json);validateTargets(activity,recipe);saveInput(activity,"recipe",json);runRecipe(activity,recipe,handler,()->Toast.makeText(activity,"自动化已完成",Toast.LENGTH_SHORT).show());});
+            try {
+                String saved = inputValue(activity,"recipe",RECIPE);
+                dialog.dismiss();edit(activity,"自动化流程 JSON",saved,json->{JSONArray recipe=validateRecipe(json);validateTargets(activity,recipe);saveInput(activity,"recipe",json);runRecipe(activity,recipe,handler,()->Toast.makeText(activity,"自动化已完成",Toast.LENGTH_SHORT).show());});
+            } catch (Exception error) { value.setError(error.getMessage()); }
         }));
         ProductUi.add(content,ProductUi.button(activity,"关闭",false,dialog::dismiss),10);
     }
@@ -105,7 +128,10 @@ final class ComponentController {
         Dialog dialog=sheet(activity,content);
         ProductUi.add(content,ProductUi.button(activity,"保存映射",true,()->{try{find(activity,target.getText().toString());JSONObject map=new JSONObject(inputValue(activity,"buttons","{\"96\":\"action\"}"));map.put(Integer.toString(codes[keys.getSelectedItemPosition()]),target.getText().toString());saveInput(activity,"buttons",map.toString());refresh.run();Toast.makeText(activity,"映射已保存",Toast.LENGTH_SHORT).show();}catch(Exception error){target.setError(error.getMessage());}}),16);
         ProductUi.pair(content,ProductUi.button(activity,"移除此按键",false,()->{try{JSONObject map=new JSONObject(inputValue(activity,"buttons","{}"));map.remove(Integer.toString(codes[keys.getSelectedItemPosition()]));saveInput(activity,"buttons",map.toString());refresh.run();}catch(Exception error){target.setError(error.getMessage());}}),ProductUi.button(activity,"高级 JSON",false,()->{
-            dialog.dismiss();edit(activity,"手柄键码 → 控件资源名",inputValue(activity,"buttons","{\"96\":\"action\"}"),json->{JSONObject map=new JSONObject(json);if(map.length()>32)throw new IllegalArgumentException("最多 32 个按键");java.util.Iterator<String> names=map.keys();while(names.hasNext()){String code=names.next();Integer.parseInt(code);find(activity,map.getString(code));}saveInput(activity,"buttons",json);});
+            try {
+                String saved = inputValue(activity,"buttons","{\"96\":\"action\"}");
+                dialog.dismiss();edit(activity,"手柄键码 → 控件资源名",saved,json->{JSONObject map=new JSONObject(json);if(map.length()>32)throw new IllegalArgumentException("最多 32 个按键");java.util.Iterator<String> names=map.keys();while(names.hasNext()){String code=names.next();Integer.parseInt(code);find(activity,map.getString(code));}saveInput(activity,"buttons",json);});
+            } catch (Exception error) { target.setError(error.getMessage()); }
         }));ProductUi.add(content,ProductUi.button(activity,"完成",false,dialog::dismiss),10);refresh.run();
     }
     interface EditAction { void run(String value) throws Exception; }

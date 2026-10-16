@@ -1,0 +1,1623 @@
+
+android/self-hook-probe/build/device-libart.so:	file format elf64-littleaarch64
+
+Disassembly of section .text:
+
+0000000000224464 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb>:
+  22e0c0:      	paciasp
+  22e0c4:      	sub	sp, sp, #0x160
+  22e0c8:      	stp	x29, x30, [sp, #0x100]
+  22e0cc:      	stp	x28, x27, [sp, #0x110]
+  22e0d0:      	stp	x26, x25, [sp, #0x120]
+  22e0d4:      	stp	x24, x23, [sp, #0x130]
+  22e0d8:      	stp	x22, x21, [sp, #0x140]
+  22e0dc:      	stp	x20, x19, [sp, #0x150]
+  22e0e0:      	add	x29, sp, #0x100
+  22e0e4:      	str	x0, [sp, #0x30]
+  22e0e8:      	mrs	x9, TPIDR_EL0
+  22e0ec:      	ldr	x8, [x9, #0x28]
+  22e0f0:      	stur	x8, [x29, #-0x18]
+  22e0f4:      	ldr	x8, [x1, #0xc8]
+  22e0f8:      	str	x9, [sp, #0x8]
+  22e0fc:      	stp	x1, x8, [x29, #-0x50]
+  22e100:      	cbz	x8, 0x22e108 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9ca4>
+  22e104:      	ldr	x8, [x8, #0x10]
+  22e108:      	mov	w9, #0x4200             // =16896
+  22e10c:      	stp	x8, x1, [x29, #-0x40]
+  22e110:      	sub	x8, x29, #0x50
+  22e114:      	adrp	x24, 0xe19000 <_ZN3art20NonDebuggableClasses22non_debuggable_classesE+0xf8>
+  22e118:      	str	x9, [x8, #0x20]
+  22e11c:      	str	x1, [sp, #0x40]
+  22e120:      	cbz	x1, 0x22e18c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9d28>
+  22e124:      	ldr	w8, [x1]
+  22e128:      	lsr	w8, w8, #24
+  22e12c:      	sturb	w8, [x29, #-0x2f]
+  22e130:      	cbnz	w8, 0x22e204 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9da0>
+  22e134:      	sub	x9, x29, #0x70
+  22e138:      	ldr	x8, [x1, #0x118]
+  22e13c:      	movi	v0.2s, #0x1
+  22e140:      	str	x9, [x1, #0x118]
+  22e144:      	ldr	x9, [sp, #0x30]
+  22e148:      	stur	x8, [x29, #-0x70]
+  22e14c:      	ldr	x10, [x9, #0x18]
+  22e150:      	stur	wzr, [x29, #-0x60]
+  22e154:      	stur	x1, [x29, #-0x5c]
+  22e158:      	stur	d0, [x29, #-0x68]
+  22e15c:      	str	x10, [sp, #0x28]
+  22e160:      	cbz	x10, 0x22e184 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9d20>
+  22e164:      	ldr	x8, [x1, #0xc8]
+  22e168:      	mov	w21, #0x100             // =256
+  22e16c:      	mov	x20, xzr
+  22e170:      	movk	w21, #0x10, lsl #16
+  22e174:      	add	x22, x9, #0x20
+  22e178:      	ldr	x8, [x8, #0x10]
+  22e17c:      	stp	x22, x8, [sp, #0x18]
+  22e180:      	b	0x22e7d8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa374>
+  22e184:      	mov	x9, x1
+  22e188:      	b	0x22e3a8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9f44>
+  22e18c:      	ldr	x0, [x24, #0x200]
+  22e190:      	cbz	x0, 0x22e134 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9cd0>
+  22e194:      	ldrb	w8, [x0, #0x2da]
+  22e198:      	cmp	w8, #0x1
+  22e19c:      	b.ne	0x22e134 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9cd0>
+  22e1a0:      	mov	x19, x1
+  22e1a4:      	mov	x1, xzr
+  22e1a8:      	bl	0xaafe80 <_ZN3art7Runtime14IsShuttingDownEPNS_6ThreadE@plt>
+  22e1ac:      	mov	x1, x19
+  22e1b0:      	tbnz	w0, #0x0, 0x22e134 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9cd0>
+  22e1b4:      	adrp	x1, 0x4c000
+  22e1b8:      	add	x1, x1, #0x990
+  22e1bc:      	add	x0, sp, #0x50
+  22e1c0:      	mov	w2, #0x27               // =39
+  22e1c4:      	mov	w3, #0x6                // =6
+  22e1c8:      	mov	x4, xzr
+  22e1cc:      	mov	w5, #-0x1               // =-1
+  22e1d0:      	bl	0xaae950 <_ZN7android4base10LogMessageC1EPKcjNS0_11LogSeverityES3_i@plt>
+  22e1d4:      	add	x0, sp, #0x50
+  22e1d8:      	bl	0xaae960 <_ZN7android4base10LogMessage6streamEv@plt>
+  22e1dc:      	adrp	x1, 0x9e000
+  22e1e0:      	add	x1, x1, #0x752
+  22e1e4:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22e1e8:      	adrp	x1, 0x4f000
+  22e1ec:      	add	x1, x1, #0xcf
+  22e1f0:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22e1f4:      	add	x0, sp, #0x50
+  22e1f8:      	bl	0xaae980 <_ZN7android4base10LogMessageD1Ev@plt>
+  22e1fc:      	mov	x1, x19
+  22e200:      	b	0x22e134 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9cd0>
+  22e204:      	ldr	w21, [x1]
+  22e208:      	tst	w21, #0x3f
+  22e20c:      	b.ne	0x22e234 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9dd0>
+  22e210:      	mov	x19, x1
+  22e214:      	and	w1, w21, #0xffffc0
+  22e218:      	mov	w0, w21
+  22e21c:      	mov	x2, x19
+  22e220:      	bl	0x75f7c0 <_ZN3art5debug17MakeMiniDebugInfoENS_14InstructionSetEPKNS_22InstructionSetFeaturesEmmRKNS0_9DebugInfoE+0x13a3c>
+  22e224:      	mov	x1, x19
+  22e228:      	cmp	w0, w21
+  22e22c:      	b.ne	0x22e204 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9da0>
+  22e230:      	b	0x22e2dc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9e78>
+  22e234:      	tbnz	w21, #0x3, 0x22e2e8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9e84>
+  22e238:      	mov	x20, x1
+  22e23c:      	tst	w21, #0x6
+  22e240:      	b.eq	0x22e2fc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9e98>
+  22e244:      	mov	w0, #0x6                // =6
+  22e248:      	mov	x1, xzr
+  22e24c:      	bl	0xaaea10 <_ZN7android4base9ShouldLogENS0_11LogSeverityEPKc@plt>
+  22e250:      	mov	x1, x20
+  22e254:      	tbz	w0, #0x0, 0x22e204 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9da0>
+  22e258:      	bl	0xaaea20 <__errno@plt>
+  22e25c:      	mov	x25, x0
+  22e260:      	ldr	w19, [x0]
+  22e264:      	adrp	x1, 0xa1000
+  22e268:      	add	x1, x1, #0x199
+  22e26c:      	add	x0, sp, #0x50
+  22e270:      	mov	w2, #0x182              // =386
+  22e274:      	mov	w3, #0x6                // =6
+  22e278:      	mov	x4, xzr
+  22e27c:      	mov	w5, #-0x1               // =-1
+  22e280:      	bl	0xaae950 <_ZN7android4base10LogMessageC1EPKcjNS0_11LogSeverityES3_i@plt>
+  22e284:      	add	x0, sp, #0x50
+  22e288:      	bl	0xaae960 <_ZN7android4base10LogMessage6streamEv@plt>
+  22e28c:      	adrp	x1, 0x98000
+  22e290:      	add	x1, x1, #0x6db
+  22e294:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22e298:      	adrp	x1, 0x5d000
+  22e29c:      	add	x1, x1, #0x26e
+  22e2a0:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22e2a4:      	mov	w8, #0xfff7             // =65527
+  22e2a8:      	movk	w8, #0xff, lsl #16
+  22e2ac:      	and	w1, w21, w8
+  22e2b0:      	bl	0xaaead0 <_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEj@plt>
+  22e2b4:      	adrp	x1, 0x60000
+  22e2b8:      	add	x1, x1, #0x4cc
+  22e2bc:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22e2c0:      	lsr	w1, w21, #24
+  22e2c4:      	bl	0xaaf000 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_11ThreadStateE@plt>
+  22e2c8:      	add	x0, sp, #0x50
+  22e2cc:      	bl	0xaae980 <_ZN7android4base10LogMessageD1Ev@plt>
+  22e2d0:      	mov	x1, x20
+  22e2d4:      	str	w19, [x25]
+  22e2d8:      	b	0x22e204 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9da0>
+  22e2dc:      	ldr	x8, [x1, #0x7a0]
+  22e2e0:      	str	x8, [x1, #0x9e8]
+  22e2e4:      	b	0x22e134 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9cd0>
+  22e2e8:      	mov	x0, x1
+  22e2ec:      	mov	x19, x1
+  22e2f0:      	bl	0xaaeff0 <_ZN3art6Thread25PassActiveSuspendBarriersEv@plt>
+  22e2f4:      	mov	x1, x19
+  22e2f8:      	b	0x22e204 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9da0>
+  22e2fc:      	tbz	w21, #0x0, 0x22e334 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9ed0>
+  22e300:      	adrp	x8, 0xc2f000
+  22e304:      	mov	x1, xzr
+  22e308:      	ldr	x8, [x8, #0xad8]
+  22e30c:      	ldr	x21, [x8]
+  22e310:      	mov	x0, x21
+  22e314:      	bl	0xaaea30 <_ZN3art5Mutex13ExclusiveLockEPNS_6ThreadE@plt>
+  22e318:      	ldr	w8, [x20]
+  22e31c:      	tbnz	w8, #0x0, 0x22e350 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9eec>
+  22e320:      	mov	x0, x21
+  22e324:      	mov	x1, xzr
+  22e328:      	bl	0xaaea40 <_ZN3art5Mutex15ExclusiveUnlockEPNS_6ThreadE@plt>
+  22e32c:      	mov	x1, x20
+  22e330:      	b	0x22e204 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9da0>
+  22e334:      	tbz	w21, #0x5, 0x22e370 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9f0c>
+  22e338:      	ldr	x19, [sp, #0x40]
+  22e33c:      	mov	x0, x19
+  22e340:      	mov	x1, x19
+  22e344:      	bl	0xaaf020 <_ZNK3art6Thread19WaitForFlipFunctionEPS0_@plt>
+  22e348:      	mov	x1, x19
+  22e34c:      	b	0x22e204 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9da0>
+  22e350:      	adrp	x19, 0xc2f000
+  22e354:      	ldr	x19, [x19, #0xae0]
+  22e358:      	ldr	x0, [x19]
+  22e35c:      	mov	x1, xzr
+  22e360:      	bl	0xaaffe0 <_ZN3art17ConditionVariable16WaitHoldingLocksEPNS_6ThreadE@plt>
+  22e364:      	ldr	w8, [x20]
+  22e368:      	tbnz	w8, #0x0, 0x22e358 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9ef4>
+  22e36c:      	b	0x22e320 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9ebc>
+  22e370:      	ldr	x1, [sp, #0x40]
+  22e374:      	tbz	w21, #0x4, 0x22e204 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9da0>
+  22e378:      	mov	x0, x1
+  22e37c:      	mov	x2, x21
+  22e380:      	mov	x3, xzr
+  22e384:      	mov	x4, xzr
+  22e388:      	mov	x19, x1
+  22e38c:      	bl	0xaaf030 <_ZN3art6Thread25EnsureFlipFunctionStartedEPS0_S1_NS0_13StateAndFlagsEPNS_14ThreadExitFlagEPb@plt>
+  22e390:      	mov	x1, x19
+  22e394:      	tbz	w0, #0x0, 0x22e204 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9da0>
+  22e398:      	b	0x22e134 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9cd0>
+  22e39c:      	ldur	x9, [x29, #-0x5c]
+  22e3a0:      	ldr	x8, [x9, #0x118]
+  22e3a4:      	ldr	x8, [x8]
+  22e3a8:      	ldr	x10, [sp, #0x30]
+  22e3ac:      	mov	x22, x1
+  22e3b0:      	str	xzr, [x10, #0x18]
+  22e3b4:      	str	x8, [x9, #0x118]
+  22e3b8:      	cbz	x1, 0x22e5d0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa16c>
+  22e3bc:      	ldurb	w1, [x29, #-0x2f]
+  22e3c0:      	ldurb	w8, [x29, #-0x30]
+  22e3c4:      	cmp	w1, w8
+  22e3c8:      	b.ne	0x22e4dc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa078>
+  22e3cc:      	ldr	x23, [sp, #0x30]
+  22e3d0:      	mov	x1, x22
+  22e3d4:      	ldr	x19, [x23, #0x10]
+  22e3d8:      	add	x0, x19, #0x178
+  22e3dc:      	bl	0xaaea30 <_ZN3art5Mutex13ExclusiveLockEPNS_6ThreadE@plt>
+  22e3e0:      	ldr	x8, [x23, #0x1a8]
+  22e3e4:      	str	xzr, [x23, #0x1a8]
+  22e3e8:      	cbnz	x8, 0x22e498 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa034>
+  22e3ec:      	add	x8, x19, #0x1a8
+  22e3f0:      	mov	x9, x8
+  22e3f4:      	ldr	x8, [x8]
+  22e3f8:      	sub	x10, x8, #0x8
+  22e3fc:      	cmp	x8, #0x0
+  22e400:      	csel	x10, xzr, x10, eq
+  22e404:      	cmp	x10, x23
+  22e408:      	b.ne	0x22e3f0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9f8c>
+  22e40c:      	ldr	x8, [x8]
+  22e410:      	str	x8, [x9]
+  22e414:      	ldr	x8, [x19, #0x1a0]
+  22e418:      	cbz	x8, 0x22e5e4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa180>
+  22e41c:      	mov	x1, x22
+  22e420:      	cbnz	x23, 0x22e464 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa000>
+  22e424:      	add	x0, x19, #0x178
+  22e428:      	bl	0xaaea40 <_ZN3art5Mutex15ExclusiveUnlockEPNS_6ThreadE@plt>
+  22e42c:      	ldr	x8, [sp, #0x8]
+  22e430:      	ldr	x8, [x8, #0x28]
+  22e434:      	ldur	x9, [x29, #-0x18]
+  22e438:      	cmp	x8, x9
+  22e43c:      	b.ne	0x22e5e0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa17c>
+  22e440:      	ldp	x20, x19, [sp, #0x150]
+  22e444:      	ldp	x22, x21, [sp, #0x140]
+  22e448:      	ldp	x24, x23, [sp, #0x130]
+  22e44c:      	ldp	x26, x25, [sp, #0x120]
+  22e450:      	ldp	x28, x27, [sp, #0x110]
+  22e454:      	ldp	x29, x30, [sp, #0x100]
+  22e458:      	add	sp, sp, #0x160
+  22e45c:      	autiasp
+  22e460:      	ret
+  22e464:      	ldr	x0, [x23, #0x1a8]
+  22e468:      	cbnz	x0, 0x22e480 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa01c>
+  22e46c:      	mov	x0, x23
+  22e470:      	mov	w1, #0x1b0              // =432
+  22e474:      	bl	0xaae9b0 <_ZdlPvm@plt>
+  22e478:      	mov	x1, x22
+  22e47c:      	b	0x22e424 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9fc0>
+  22e480:      	ldr	x20, [x0]
+  22e484:      	mov	w1, #0x10               // =16
+  22e488:      	bl	0xaae9b0 <_ZdlPvm@plt>
+  22e48c:      	mov	x0, x20
+  22e490:      	cbnz	x20, 0x22e480 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa01c>
+  22e494:      	b	0x22e46c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa008>
+  22e498:      	ldr	x9, [x8]
+  22e49c:      	str	xzr, [x8]
+  22e4a0:      	cbnz	x9, 0x22e5f4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa190>
+  22e4a4:      	mov	x21, x8
+  22e4a8:      	mov	x20, x21
+  22e4ac:      	ldr	x0, [x21, #0x8]
+  22e4b0:      	mov	x1, x22
+  22e4b4:      	bl	0xaaff70 <_ZN3art7Barrier4PassEPNS_6ThreadE@plt>
+  22e4b8:      	ldr	x21, [x21]
+  22e4bc:      	cbnz	x21, 0x22e4ac <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa048>
+  22e4c0:      	mov	x0, x20
+  22e4c4:      	ldr	x20, [x0]
+  22e4c8:      	mov	w1, #0x10               // =16
+  22e4cc:      	bl	0xaae9b0 <_ZdlPvm@plt>
+  22e4d0:      	mov	x0, x20
+  22e4d4:      	cbnz	x20, 0x22e4c4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa060>
+  22e4d8:      	b	0x22e3ec <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9f88>
+  22e4dc:      	cbz	w1, 0x22e784 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa320>
+  22e4e0:      	cbnz	w8, 0x22e5c4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa160>
+  22e4e4:      	mov	w8, #0xfff7             // =65527
+  22e4e8:      	lsl	w20, w1, #24
+  22e4ec:      	mov	x23, x22
+  22e4f0:      	movk	w8, #0xff, lsl #16
+  22e4f4:      	add	x19, x22, #0x1, lsl #12 // =0x1000
+  22e4f8:      	add	w22, w8, #0x2
+  22e4fc:      	ldar	w21, [x23]
+  22e500:      	tbnz	w21, #0x1, 0x22e60c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa1a8>
+  22e504:      	tbnz	w21, #0x2, 0x22e628 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa1c4>
+  22e508:      	ldr	x23, [sp, #0x40]
+  22e50c:      	and	w8, w21, w22
+  22e510:      	mov	w0, w21
+  22e514:      	orr	w1, w8, w20
+  22e518:      	mov	x2, x23
+  22e51c:      	bl	0x75f800 <_ZN3art5debug17MakeMiniDebugInfoENS_14InstructionSetEPKNS_22InstructionSetFeaturesEmmRKNS0_9DebugInfoE+0x13a7c>
+  22e520:      	cmp	w0, w21
+  22e524:      	b.ne	0x22e4fc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa098>
+  22e528:      	ldrb	w8, [x19, #0xa89]
+  22e52c:      	mov	x22, x23
+  22e530:      	add	w8, w8, #0x1
+  22e534:      	strb	w8, [x19, #0xa89]
+  22e538:      	str	xzr, [x23, #0x9e8]
+  22e53c:      	ldr	w8, [x23]
+  22e540:      	tst	w8, #0xe
+  22e544:      	b.eq	0x22e3cc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9f68>
+  22e548:      	tbnz	w8, #0x3, 0x22e5ac <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa148>
+  22e54c:      	mov	w0, #0x6                // =6
+  22e550:      	mov	x1, xzr
+  22e554:      	bl	0xaaea10 <_ZN7android4base9ShouldLogENS0_11LogSeverityEPKc@plt>
+  22e558:      	tbz	w0, #0x0, 0x22e5b4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa150>
+  22e55c:      	bl	0xaaea20 <__errno@plt>
+  22e560:      	mov	x21, x0
+  22e564:      	ldr	w19, [x0]
+  22e568:      	adrp	x1, 0xa1000
+  22e56c:      	add	x1, x1, #0x199
+  22e570:      	add	x0, sp, #0x50
+  22e574:      	mov	w2, #0x122              // =290
+  22e578:      	mov	w3, #0x6                // =6
+  22e57c:      	mov	x4, xzr
+  22e580:      	mov	w5, #-0x1               // =-1
+  22e584:      	bl	0xaae950 <_ZN7android4base10LogMessageC1EPKcjNS0_11LogSeverityES3_i@plt>
+  22e588:      	add	x0, sp, #0x50
+  22e58c:      	bl	0xaae960 <_ZN7android4base10LogMessage6streamEv@plt>
+  22e590:      	adrp	x1, 0x73000
+  22e594:      	add	x1, x1, #0xc41
+  22e598:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22e59c:      	add	x0, sp, #0x50
+  22e5a0:      	bl	0xaae980 <_ZN7android4base10LogMessageD1Ev@plt>
+  22e5a4:      	str	w19, [x21]
+  22e5a8:      	b	0x22e5b4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa150>
+  22e5ac:      	mov	x0, x22
+  22e5b0:      	bl	0xaaeff0 <_ZN3art6Thread25PassActiveSuspendBarriersEv@plt>
+  22e5b4:      	ldr	w8, [x22]
+  22e5b8:      	tst	w8, #0xe
+  22e5bc:      	b.ne	0x22e548 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa0e4>
+  22e5c0:      	b	0x22e3cc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9f68>
+  22e5c4:      	mov	x0, x22
+  22e5c8:      	bl	0x200fa8 <_ZN3art5Mutex13ExclusiveLockEPNS_6ThreadE+0xaa0>
+  22e5cc:      	b	0x22e3cc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9f68>
+  22e5d0:      	sub	x8, x29, #0x50
+  22e5d4:      	add	x0, x8, #0x18
+  22e5d8:      	bl	0xaaf070 <_ZN3art23ScopedThreadStateChange33ScopedThreadChangeDestructorCheckEv@plt>
+  22e5dc:      	b	0x22e3cc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9f68>
+  22e5e0:      	bl	0xab4170 <__stack_chk_fail@plt>
+  22e5e4:      	add	x0, x19, #0x1a0
+  22e5e8:      	mov	x1, x23
+  22e5ec:      	bl	0x85dcd8 <_ZN3art15SmartArtRuntime25NotifyBeingFocusWindowEndEv+0x270>
+  22e5f0:      	b	0x22e478 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa014>
+  22e5f4:      	mov	x21, x9
+  22e5f8:      	ldr	x9, [x9]
+  22e5fc:      	str	x8, [x21]
+  22e600:      	mov	x8, x21
+  22e604:      	cbnz	x9, 0x22e5f4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa190>
+  22e608:      	b	0x22e4a8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa044>
+  22e60c:      	ldrb	w8, [x19, #0xa8a]
+  22e610:      	add	w8, w8, #0x1
+  22e614:      	strb	w8, [x19, #0xa8a]
+  22e618:      	ldr	x23, [sp, #0x40]
+  22e61c:      	mov	x0, x23
+  22e620:      	bl	0xaaf040 <_ZN3art6Thread21RunCheckpointFunctionEv@plt>
+  22e624:      	b	0x22e4fc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa098>
+  22e628:      	ldr	x23, [sp, #0x40]
+  22e62c:      	mov	w0, #0x4                // =4
+  22e630:      	mov	x1, x23
+  22e634:      	bl	0x85a810 <_ZN3art9ArtMethod18IsImagePointerSizeENS_11PointerSizeE+0x37c>
+  22e638:      	ldr	x8, [x24, #0x200]
+  22e63c:      	mov	x1, x23
+  22e640:      	ldr	x8, [x8, #0x260]
+  22e644:      	ldr	x0, [x8, #0x2100]
+  22e648:      	bl	0xaaff70 <_ZN3art7Barrier4PassEPNS_6ThreadE@plt>
+  22e64c:      	b	0x22e4fc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa098>
+  22e650:      	tbnz	w21, #0x3, 0x22e76c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa308>
+  22e654:      	tst	w21, #0x6
+  22e658:      	b.eq	0x22e6f0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa28c>
+  22e65c:      	mov	w0, #0x6                // =6
+  22e660:      	mov	x1, xzr
+  22e664:      	bl	0xaaea10 <_ZN7android4base9ShouldLogENS0_11LogSeverityEPKc@plt>
+  22e668:      	tbz	w0, #0x0, 0x22e784 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa320>
+  22e66c:      	bl	0xaaea20 <__errno@plt>
+  22e670:      	mov	x22, x0
+  22e674:      	ldr	w19, [x0]
+  22e678:      	adrp	x1, 0xa1000
+  22e67c:      	add	x1, x1, #0x199
+  22e680:      	add	x0, sp, #0x50
+  22e684:      	mov	w2, #0x182              // =386
+  22e688:      	mov	w3, #0x6                // =6
+  22e68c:      	mov	x4, xzr
+  22e690:      	mov	w5, #-0x1               // =-1
+  22e694:      	bl	0xaae950 <_ZN7android4base10LogMessageC1EPKcjNS0_11LogSeverityES3_i@plt>
+  22e698:      	add	x0, sp, #0x50
+  22e69c:      	bl	0xaae960 <_ZN7android4base10LogMessage6streamEv@plt>
+  22e6a0:      	adrp	x1, 0x98000
+  22e6a4:      	add	x1, x1, #0x6db
+  22e6a8:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22e6ac:      	adrp	x1, 0x5d000
+  22e6b0:      	add	x1, x1, #0x26e
+  22e6b4:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22e6b8:      	mov	w8, #0xfff7             // =65527
+  22e6bc:      	movk	w8, #0xff, lsl #16
+  22e6c0:      	and	w1, w21, w8
+  22e6c4:      	bl	0xaaead0 <_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEj@plt>
+  22e6c8:      	adrp	x1, 0x60000
+  22e6cc:      	add	x1, x1, #0x4cc
+  22e6d0:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22e6d4:      	lsr	w1, w21, #24
+  22e6d8:      	bl	0xaaf000 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_11ThreadStateE@plt>
+  22e6dc:      	add	x0, sp, #0x50
+  22e6e0:      	bl	0xaae980 <_ZN7android4base10LogMessageD1Ev@plt>
+  22e6e4:      	str	w19, [x22]
+  22e6e8:      	ldr	x22, [sp, #0x40]
+  22e6ec:      	b	0x22e784 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa320>
+  22e6f0:      	tbz	w21, #0x0, 0x22e740 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa2dc>
+  22e6f4:      	adrp	x8, 0xc2f000
+  22e6f8:      	mov	x1, xzr
+  22e6fc:      	ldr	x8, [x8, #0xad8]
+  22e700:      	ldr	x21, [x8]
+  22e704:      	mov	x0, x21
+  22e708:      	bl	0xaaea30 <_ZN3art5Mutex13ExclusiveLockEPNS_6ThreadE@plt>
+  22e70c:      	ldr	w8, [x22]
+  22e710:      	tbz	w8, #0x0, 0x22e730 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa2cc>
+  22e714:      	adrp	x19, 0xc2f000
+  22e718:      	ldr	x19, [x19, #0xae0]
+  22e71c:      	ldr	x0, [x19]
+  22e720:      	mov	x1, xzr
+  22e724:      	bl	0xaaffe0 <_ZN3art17ConditionVariable16WaitHoldingLocksEPNS_6ThreadE@plt>
+  22e728:      	ldr	w8, [x22]
+  22e72c:      	tbnz	w8, #0x0, 0x22e71c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa2b8>
+  22e730:      	mov	x0, x21
+  22e734:      	mov	x1, xzr
+  22e738:      	bl	0xaaea40 <_ZN3art5Mutex15ExclusiveUnlockEPNS_6ThreadE@plt>
+  22e73c:      	b	0x22e784 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa320>
+  22e740:      	tbnz	w21, #0x5, 0x22e774 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa310>
+  22e744:      	ldr	x22, [sp, #0x40]
+  22e748:      	tbz	w21, #0x4, 0x22e784 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa320>
+  22e74c:      	mov	x0, x22
+  22e750:      	mov	x1, x22
+  22e754:      	mov	x2, x21
+  22e758:      	mov	x3, xzr
+  22e75c:      	mov	x4, xzr
+  22e760:      	bl	0xaaf030 <_ZN3art6Thread25EnsureFlipFunctionStartedEPS0_S1_NS0_13StateAndFlagsEPNS_14ThreadExitFlagEPb@plt>
+  22e764:      	tbz	w0, #0x0, 0x22e784 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa320>
+  22e768:      	b	0x22e3cc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9f68>
+  22e76c:      	bl	0xaaeff0 <_ZN3art6Thread25PassActiveSuspendBarriersEv@plt>
+  22e770:      	b	0x22e784 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa320>
+  22e774:      	ldr	x0, [sp, #0x40]
+  22e778:      	mov	x1, x0
+  22e77c:      	mov	x22, x0
+  22e780:      	bl	0xaaf020 <_ZNK3art6Thread19WaitForFlipFunctionEPS0_@plt>
+  22e784:      	ldr	w21, [x22]
+  22e788:      	mov	x0, x22
+  22e78c:      	tst	w21, #0x3f
+  22e790:      	b.ne	0x22e650 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa1ec>
+  22e794:      	mov	x2, x0
+  22e798:      	and	w1, w21, #0xffffc0
+  22e79c:      	mov	w0, w21
+  22e7a0:      	bl	0x75f7c0 <_ZN3art5debug17MakeMiniDebugInfoENS_14InstructionSetEPKNS_22InstructionSetFeaturesEmmRKNS0_9DebugInfoE+0x13a3c>
+  22e7a4:      	cmp	w0, w21
+  22e7a8:      	b.ne	0x22e784 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa320>
+  22e7ac:      	ldr	x8, [x22, #0x7a0]
+  22e7b0:      	str	x8, [x22, #0x9e8]
+  22e7b4:      	b	0x22e3cc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9f68>
+  22e7b8:      	ldr	x9, [x8, #0x60]
+  22e7bc:      	cbz	x9, 0x22e9ac <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa548>
+  22e7c0:      	ldr	x8, [sp, #0x28]
+  22e7c4:      	add	x20, x20, #0x1
+  22e7c8:      	ldr	x1, [sp, #0x40]
+  22e7cc:      	ldr	x22, [sp, #0x18]
+  22e7d0:      	cmp	x20, x8
+  22e7d4:      	b.eq	0x22e39c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x9f38>
+  22e7d8:      	ldr	x2, [x22, x20, lsl #3]
+  22e7dc:      	cbz	x2, 0x22f134 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xacd0>
+  22e7e0:      	tbz	w2, #0x1, 0x22f0b0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xac4c>
+  22e7e4:      	ldr	x8, [x1, #0xc8]
+  22e7e8:      	and	x9, x2, #0x3
+  22e7ec:      	cmp	x9, #0x2
+  22e7f0:      	ldr	x25, [x8, #0x10]
+  22e7f4:      	b.eq	0x22f6a4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb240>
+  22e7f8:      	adrp	x8, 0xc2f000
+  22e7fc:      	ldr	x8, [x8, #0xa78]
+  22e800:      	ldrb	w8, [x8]
+  22e804:      	cmp	w8, #0x1
+  22e808:      	b.eq	0x22f0bc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xac58>
+  22e80c:      	add	x8, x25, #0x340
+  22e810:      	ldarb	w8, [x8]
+  22e814:      	cmp	w8, #0x1
+  22e818:      	b.ne	0x22f43c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xafd8>
+  22e81c:      	lsr	x8, x2, #5
+  22e820:      	ldr	x9, [x25, #0x210]
+  22e824:      	add	x8, x9, w8, uxtw #3
+  22e828:      	ldr	w25, [x8, #0x4]
+  22e82c:      	adrp	x9, 0xc2f000
+  22e830:      	ldr	x8, [x24, #0x200]
+  22e834:      	ldr	x9, [x9, #0xa78]
+  22e838:      	ldr	w0, [x8, #0x58]
+  22e83c:      	ldrb	w9, [x9]
+  22e840:      	cmp	w9, #0x1
+  22e844:      	b.eq	0x22f078 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xac14>
+  22e848:      	cmp	x0, x25
+  22e84c:      	csel	x0, xzr, x25, eq
+  22e850:      	ldr	x2, [x22, x20, lsl #3]
+  22e854:      	stur	w0, [x29, #-0x60]
+  22e858:      	ldr	x0, [sp, #0x20]
+  22e85c:      	bl	0xab06c0 <_ZN3art9JavaVMExt19DeleteWeakGlobalRefEPNS_6ThreadEP8_jobject@plt>
+  22e860:      	ldur	w8, [x29, #-0x60]
+  22e864:      	cbz	w8, 0x22e7c0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa35c>
+  22e868:      	sub	x8, x29, #0x70
+  22e86c:      	ldr	x2, [sp, #0x40]
+  22e870:      	mov	w1, #0xf                // =15
+  22e874:      	add	x0, x8, #0x10
+  22e878:      	bl	0xab0590 <_ZN3art6mirror5Class9SetStatusENS_6HandleIS1_EENS_11ClassStatusEPNS_6ThreadE@plt>
+  22e87c:      	ldr	x8, [sp, #0x30]
+  22e880:      	ldur	w19, [x29, #-0x60]
+  22e884:      	ldr	x8, [x8, #0x10]
+  22e888:      	str	x8, [sp, #0x38]
+  22e88c:      	ldr	w8, [x19, #0x38]
+  22e890:      	tbnz	w8, #0x12, 0x22e90c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa4a8>
+  22e894:      	ldr	w8, [x19, #0xc]
+  22e898:      	cbnz	w8, 0x22e7c0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa35c>
+  22e89c:      	ldr	w8, [x19, #0x60]
+  22e8a0:      	tst	w8, #0xffff
+  22e8a4:      	b.ne	0x22e7c0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa35c>
+  22e8a8:      	ldr	w8, [x19, #0x10]
+  22e8ac:      	ldr	x23, [x8, #0x10]
+  22e8b0:      	ldr	w8, [x19, #0x48]
+  22e8b4:      	ldr	x9, [x23, #0x48]
+  22e8b8:      	ldr	x26, [x23, #0x78]
+  22e8bc:      	ubfiz	x8, x8, #5, #16
+  22e8c0:      	ldr	w10, [x9, #0x60]
+  22e8c4:      	add	x25, x26, x8
+  22e8c8:      	ldr	w9, [x25, #0x18]
+  22e8cc:      	lsl	x27, x10, #5
+  22e8d0:      	cmp	x27, x8
+  22e8d4:      	cbz	w9, 0x22efc0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xab5c>
+  22e8d8:      	b.ls	0x22f248 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xade4>
+  22e8dc:      	ldr	x8, [x23, #0x18]
+  22e8e0:      	add	x8, x8, x9
+  22e8e4:      	mov	x9, x8
+  22e8e8:      	ldrsb	w10, [x9], #0x1
+  22e8ec:      	tbnz	w10, #0x1f, 0x22efd4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xab70>
+  22e8f0:      	mov	x8, x9
+  22e8f4:      	ldrsb	w10, [x8], #0x1
+  22e8f8:      	tbnz	w10, #0x1f, 0x22f014 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xabb0>
+  22e8fc:      	ldrb	w10, [x8]
+  22e900:      	and	w9, w10, #0x7f
+  22e904:      	tbnz	w10, #0x7, 0x22efe4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xab80>
+  22e908:      	cbz	w9, 0x22e7c0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa35c>
+  22e90c:      	ldr	w8, [x19, #0x38]
+  22e910:      	tbnz	w8, #0x12, 0x22e7c0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa35c>
+  22e914:      	ldr	x27, [sp, #0x38]
+  22e918:      	ldr	w22, [x27, #0x170]
+  22e91c:      	ldr	x9, [x19, #0x30]
+  22e920:      	cbz	x9, 0x22f6f4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb290>
+  22e924:      	ldr	w8, [x9]
+  22e928:      	cbz	w8, 0x22f6f0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb28c>
+  22e92c:      	add	x8, x22, #0xf
+  22e930:      	neg	x10, x22
+  22e934:      	add	x11, x22, #0x3
+  22e938:      	and	x8, x8, x10
+  22e93c:      	and	x10, x11, x10
+  22e940:      	add	x8, x8, x22, lsl #1
+  22e944:      	add	x9, x10, x9
+  22e948:      	ldr	x11, [x19, #0x30]
+  22e94c:      	cbz	x11, 0x22f700 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb29c>
+  22e950:      	ldr	w10, [x11]
+  22e954:      	cbz	w10, 0x22f6fc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb298>
+  22e958:      	add	x12, x22, #0xf
+  22e95c:      	neg	x13, x22
+  22e960:      	add	x14, x22, #0x3
+  22e964:      	and	x12, x12, x13
+  22e968:      	and	x13, x14, x13
+  22e96c:      	add	x12, x12, x22, lsl #1
+  22e970:      	add	x11, x11, x13
+  22e974:      	madd	x10, x12, x10, x11
+  22e978:      	cmp	x9, x10
+  22e97c:      	b.eq	0x22e994 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa530>
+  22e980:      	ldr	w11, [x9, #0x4]
+  22e984:      	bics	wzr, w21, w11
+  22e988:      	b.eq	0x22f194 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xad30>
+  22e98c:      	add	x9, x9, x8
+  22e990:      	b	0x22e978 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa514>
+  22e994:      	ldr	x8, [x24, #0x200]
+  22e998:      	ldr	x9, [x8, #0x298]
+  22e99c:      	cbz	x9, 0x22e7b8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa354>
+  22e9a0:      	ldr	x9, [x9, #0x10]
+  22e9a4:      	ldrb	w9, [x9]
+  22e9a8:      	tbz	w9, #0x0, 0x22e7b8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa354>
+  22e9ac:      	ldr	x25, [x8, #0x340]
+  22e9b0:      	ldr	w8, [x8, #0x3f0]
+  22e9b4:      	ldr	x10, [x19, #0x30]
+  22e9b8:      	cbz	x10, 0x22f5a4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb140>
+  22e9bc:      	ldr	w9, [x10]
+  22e9c0:      	cbz	w9, 0x22f5a4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb140>
+  22e9c4:      	add	x11, x22, #0xf
+  22e9c8:      	neg	x12, x22
+  22e9cc:      	add	x13, x22, #0x3
+  22e9d0:      	and	x11, x11, x12
+  22e9d4:      	add	x22, x11, x22, lsl #1
+  22e9d8:      	and	x11, x13, x12
+  22e9dc:      	add	x26, x10, x11
+  22e9e0:      	mul	x9, x22, x9
+  22e9e4:      	cbz	x9, 0x22e7c0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa35c>
+  22e9e8:      	sub	w8, w8, #0x3
+  22e9ec:      	add	x19, x9, x26
+  22e9f0:      	str	w8, [sp, #0x14]
+  22e9f4:      	mov	w9, #0xa                // =10
+  22e9f8:      	ldr	w8, [x26, #0x4]
+  22e9fc:      	movk	w9, #0x1, lsl #16
+  22ea00:      	sub	w9, w9, #0x2
+  22ea04:      	and	w8, w8, w9
+  22ea08:      	cmp	w8, #0x8
+  22ea0c:      	b.eq	0x22ea20 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa5bc>
+  22ea10:      	add	x26, x26, x22
+  22ea14:      	cmp	x26, x19
+  22ea18:      	b.ne	0x22e9f4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa590>
+  22ea1c:      	b	0x22e7c0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa35c>
+  22ea20:      	ldr	x27, [x26, #0x18]
+  22ea24:      	nop
+  22ea28:      	adr	x8, 0x2bc5d0 <_ZN3art9ArtMethod6InvokeEPNS_6ThreadEPjjPNS_6JValueEPKc+0x18fd4>
+  22ea2c:      	cmp	x27, x8
+  22ea30:      	b.eq	0x22ea58 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa5f4>
+  22ea34:      	nop
+  22ea38:      	adr	x8, 0x2bc880 <_ZN3art9ArtMethod6InvokeEPNS_6ThreadEPjjPNS_6JValueEPKc+0x19284>
+  22ea3c:      	cmp	x27, x8
+  22ea40:      	b.eq	0x22ea58 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa5f4>
+  22ea44:      	ldr	x8, [x24, #0x200]
+  22ea48:      	ldr	x8, [x8, #0x270]
+  22ea4c:      	ldr	x9, [x8, #0x148]
+  22ea50:      	cmp	x9, x27
+  22ea54:      	b.ne	0x22ee04 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa9a0>
+  22ea58:      	ldr	w8, [x26, #0x4]
+  22ea5c:      	tbnz	w8, #0x8, 0x22ea7c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa618>
+  22ea60:      	ldrb	w8, [x25, #0x8]
+  22ea64:      	tbnz	w8, #0x0, 0x22f9a0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb53c>
+  22ea68:      	ldr	w8, [x25, #0x4]
+  22ea6c:      	cmp	w8, #0x2
+  22ea70:      	b.eq	0x22f9a0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb53c>
+  22ea74:      	ldr	x23, [x25, #0x170]
+  22ea78:      	cbnz	x23, 0x22f3dc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaf78>
+  22ea7c:      	ldr	w8, [x26, #0x4]
+  22ea80:      	tbnz	w8, #0xa, 0x22f314 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaeb0>
+  22ea84:      	ldr	w8, [x26]
+  22ea88:      	ldr	w8, [x8, #0x38]
+  22ea8c:      	tbnz	w8, #0x12, 0x22f684 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb220>
+  22ea90:      	ldr	x8, [x24, #0x200]
+  22ea94:      	sub	x9, x29, #0x50
+  22ea98:      	strb	wzr, [sp, #0x4c]
+  22ea9c:      	stp	xzr, xzr, [x9, #0x28]
+  22eaa0:      	ldr	x8, [x8, #0x270]
+  22eaa4:      	ldr	w23, [x8, #0x170]
+  22eaa8:      	ldr	w8, [x26, #0x4]
+  22eaac:      	tbnz	w8, #0x12, 0x22f690 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb22c>
+  22eab0:      	adrp	x8, 0xc2f000
+  22eab4:      	ldr	x8, [x8, #0xa78]
+  22eab8:      	ldr	w27, [x26]
+  22eabc:      	ldrb	w8, [x8]
+  22eac0:      	cmp	w8, #0x1
+  22eac4:      	b.eq	0x22f56c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb108>
+  22eac8:      	ldr	w8, [x26, #0x4]
+  22eacc:      	tbz	w8, #0x3, 0x22f47c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb018>
+  22ead0:      	ldrh	w28, [x26, #0xc]
+  22ead4:      	movi	v0.2d, #0000000000000000
+  22ead8:      	stp	q0, q0, [sp, #0x50]
+  22eadc:      	ldr	w8, [x27, #0x10]
+  22eae0:      	ldr	x8, [x8, #0x10]
+  22eae4:      	ldr	w1, [x27, #0x48]
+  22eae8:      	ldr	x9, [x8, #0x48]
+  22eaec:      	ldr	w27, [x9, #0x60]
+  22eaf0:      	cmp	w27, w1, uxth
+  22eaf4:      	b.ls	0x22f5b4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb150>
+  22eaf8:      	ldr	x0, [x8, #0xa8]
+  22eafc:      	cbz	x0, 0x22ef94 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xab30>
+  22eb00:      	ldr	x8, [x0]
+  22eb04:      	cbz	x8, 0x22ef94 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xab30>
+  22eb08:      	mov	w8, #0x1                // =1
+  22eb0c:      	strb	w8, [sp, #0x4c]
+  22eb10:      	add	x8, sp, #0x50
+  22eb14:      	bl	0xab0840 <_ZNK3art10OatDexFile11GetOatClassEt@plt>
+  22eb18:      	ldrb	w8, [sp, #0x4c]
+  22eb1c:      	cmp	w8, #0x1
+  22eb20:      	b.ne	0x22efc8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xab64>
+  22eb24:      	add	x0, sp, #0x50
+  22eb28:      	mov	w1, w28
+  22eb2c:      	bl	0xab2ef0 <_ZNK3art7OatFile8OatClass19GetOatMethodOffsetsEj@plt>
+  22eb30:      	cbnz	x0, 0x22edbc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa958>
+  22eb34:      	mov	x8, xzr
+  22eb38:      	mov	w9, wzr
+  22eb3c:      	sub	x10, x29, #0x50
+  22eb40:      	stur	w9, [x29, #-0x20]
+  22eb44:      	str	x8, [x10, #0x28]
+  22eb48:      	ldrb	w8, [sp, #0x4c]
+  22eb4c:      	tbz	w8, #0x0, 0x22efa4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xab40>
+  22eb50:      	ldur	w9, [x29, #-0x20]
+  22eb54:      	ldr	x8, [x24, #0x200]
+  22eb58:      	cbnz	w9, 0x22edd8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa974>
+  22eb5c:      	ldr	x9, [x8, #0x298]
+  22eb60:      	cbz	x9, 0x22eb9c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa738>
+  22eb64:      	adrp	x10, 0xc2f000
+  22eb68:      	ldr	x10, [x10, #0xa60]
+  22eb6c:      	ldrb	w10, [x10]
+  22eb70:      	cmp	w10, #0x1
+  22eb74:      	b.ne	0x22f18c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xad28>
+  22eb78:      	mrs	x10, TPIDR_EL0
+  22eb7c:      	ldr	x28, [x10, #0x38]
+  22eb80:      	ldr	x23, [x9, #0x8]
+  22eb84:      	ldr	w9, [x26, #0x4]
+  22eb88:      	mov	w10, #-0x7d800000       // =-2105540608
+  22eb8c:      	and	w9, w9, w10
+  22eb90:      	mov	w10, #0x2800000         // =41943040
+  22eb94:      	cmp	w9, w10
+  22eb98:      	b.eq	0x22f3a4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaf40>
+  22eb9c:      	ldr	w9, [x8, #0x3f0]
+  22eba0:      	sub	w9, w9, #0x1
+  22eba4:      	cmp	w9, #0x2
+  22eba8:      	b.lo	0x22ef28 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaac4>
+  22ebac:      	ldr	x9, [x8, #0x340]
+  22ebb0:      	ldr	w10, [x9, #0x4]
+  22ebb4:      	sub	w10, w10, #0x1
+  22ebb8:      	cmp	w10, #0x2
+  22ebbc:      	b.lo	0x22ef28 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaac4>
+  22ebc0:      	ldrb	w10, [x9, #0x8]
+  22ebc4:      	tbnz	w10, #0x0, 0x22ef28 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaac4>
+  22ebc8:      	ldr	x10, [x8, #0x298]
+  22ebcc:      	cbz	x10, 0x22f024 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xabc0>
+  22ebd0:      	ldr	x11, [x10, #0x10]
+  22ebd4:      	ldrb	w11, [x11]
+  22ebd8:      	tbz	w11, #0x0, 0x22f024 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xabc0>
+  22ebdc:      	ldrb	w11, [x9, #0xd]
+  22ebe0:      	tbnz	w11, #0x0, 0x22ef28 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaac4>
+  22ebe4:      	ldrb	w11, [x9, #0xe]
+  22ebe8:      	tbnz	w11, #0x0, 0x22ef28 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaac4>
+  22ebec:      	ldrb	w11, [x9, #0x10]
+  22ebf0:      	tbnz	w11, #0x0, 0x22ef28 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaac4>
+  22ebf4:      	ldrb	w9, [x9, #0x12]
+  22ebf8:      	tbnz	w9, #0x0, 0x22ef28 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaac4>
+  22ebfc:      	ldrb	w8, [x8, #0x3ee]
+  22ec00:      	tbnz	w8, #0x0, 0x22ef28 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaac4>
+  22ec04:      	cbz	x10, 0x22ec14 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa7b0>
+  22ec08:      	ldr	x8, [x10, #0x10]
+  22ec0c:      	ldrh	w8, [x8, #0x18]
+  22ec10:      	cbz	w8, 0x22ef28 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaac4>
+  22ec14:      	ldr	w8, [x26, #0x4]
+  22ec18:      	mov	w9, #0x500              // =1280
+  22ec1c:      	tst	w8, w9
+  22ec20:      	b.ne	0x22ef28 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaac4>
+  22ec24:      	mov	w9, #-0x7c000000        // =-2080374784
+  22ec28:      	and	w8, w8, w9
+  22ec2c:      	mov	w9, #0x4000000          // =67108864
+  22ec30:      	cmp	w8, w9
+  22ec34:      	b.eq	0x22ef28 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaac4>
+  22ec38:      	ldr	w8, [x26]
+  22ec3c:      	ldr	w9, [x8, #0x38]
+  22ec40:      	tbnz	w9, #0x12, 0x22ef28 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaac4>
+  22ec44:      	ldr	w9, [x26, #0x4]
+  22ec48:      	tbnz	w9, #0x12, 0x22f3d0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaf6c>
+  22ec4c:      	ldr	w0, [x8, #0x10]
+  22ec50:      	ldr	xzr, [x0, #0x10]
+  22ec54:      	ldr	w8, [x26, #0x4]
+  22ec58:      	mov	w9, #0x500              // =1280
+  22ec5c:      	tst	w8, w9
+  22ec60:      	b.ne	0x22f06c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xac08>
+  22ec64:      	ldr	w8, [x26, #0x8]
+  22ec68:      	cmn	w8, #0x1
+  22ec6c:      	b.eq	0x22f06c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xac08>
+  22ec70:      	ldr	w8, [x26]
+  22ec74:      	ldr	w9, [x8, #0x38]
+  22ec78:      	tbnz	w9, #0x12, 0x22f06c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xac08>
+  22ec7c:      	ldr	x9, [x24, #0x200]
+  22ec80:      	ldr	x11, [x9, #0x270]
+  22ec84:      	ldr	x10, [x9, #0x298]
+  22ec88:      	ldr	w23, [x11, #0x170]
+  22ec8c:      	cbz	x10, 0x22f030 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xabcc>
+  22ec90:      	ldr	x10, [x10, #0x10]
+  22ec94:      	ldrb	w10, [x10]
+  22ec98:      	tbz	w10, #0x0, 0x22f030 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xabcc>
+  22ec9c:      	add	w8, w23, #0xf
+  22eca0:      	neg	w9, w23
+  22eca4:      	cmp	w23, #0x4
+  22eca8:      	and	w8, w8, w9
+  22ecac:      	b.eq	0x22f750 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb2ec>
+  22ecb0:      	ldr	x8, [x26, w8, uxtw]
+  22ecb4:      	and	x8, x8, #0xfffffffffffffffe
+  22ecb8:      	cbz	x8, 0x22f070 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xac0c>
+  22ecbc:      	ldrh	w9, [x8]
+  22ecc0:      	ldrh	w8, [x8, #0x4]
+  22ecc4:      	lsl	x9, x9, #3
+  22ecc8:      	lsl	x8, x8, #2
+  22eccc:      	add	x9, x9, #0x18
+  22ecd0:      	add	x8, x8, x9
+  22ecd4:      	cmp	x8, #0xb60
+  22ecd8:      	b.hi	0x22ef28 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaac4>
+  22ecdc:      	adrp	x8, 0xc2f000
+  22ece0:      	ldr	x8, [x8, #0xa78]
+  22ece4:      	ldr	w27, [x26]
+  22ece8:      	ldrb	w8, [x8]
+  22ecec:      	mov	x0, x27
+  22ecf0:      	cmp	w8, #0x1
+  22ecf4:      	b.eq	0x22f708 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb2a4>
+  22ecf8:      	cmp	x0, #0x0
+  22ecfc:      	csel	x27, x27, x0, eq
+  22ed00:      	add	x8, x27, #0x68
+  22ed04:      	ldar	w8, [x8]
+  22ed08:      	lsr	w8, w8, #28
+  22ed0c:      	cmp	w8, #0xa
+  22ed10:      	b.ls	0x22ef28 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaac4>
+  22ed14:      	adrp	x27, 0x728000 <_ZN3art11interpreter24PerformNonStandardReturnEPNS_6ThreadERNS_11ShadowFrameERNS_6JValueEPKNS_15instrumentation15InstrumentationEb+0x7558>
+  22ed18:      	add	x27, x27, #0x40
+  22ed1c:      	ldr	w8, [x26, #0x4]
+  22ed20:      	tbnz	w8, #0x8, 0x22ee14 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa9b0>
+  22ed24:      	ldr	w8, [x25, #0x4]
+  22ed28:      	sub	w8, w8, #0x3
+  22ed2c:      	cmn	w8, #0x2
+  22ed30:      	b.lo	0x22ed58 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa8f4>
+  22ed34:      	nop
+  22ed38:      	adr	x8, 0x2bc880 <_ZN3art9ArtMethod6InvokeEPNS_6ThreadEPjjPNS_6JValueEPKc+0x19284>
+  22ed3c:      	cmp	x27, x8
+  22ed40:      	b.eq	0x22ed58 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa8f4>
+  22ed44:      	ldr	x8, [x24, #0x200]
+  22ed48:      	ldr	x8, [x8, #0x270]
+  22ed4c:      	ldr	x8, [x8, #0x160]
+  22ed50:      	cmp	x8, x27
+  22ed54:      	b.ne	0x22eda8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa944>
+  22ed58:      	ldr	x28, [x26, #0x18]
+  22ed5c:      	cmp	x27, x28
+  22ed60:      	b.eq	0x22ea10 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa5ac>
+  22ed64:      	add	x2, x26, #0x18
+  22ed68:      	mov	x0, x28
+  22ed6c:      	mov	x1, x27
+  22ed70:      	bl	0x7400d0 <_ZN3art11interpreter24PerformNonStandardReturnEPNS_6ThreadERNS_11ShadowFrameERNS_6JValueEPKNS_15instrumentation15InstrumentationEb+0x1f628>
+  22ed74:      	cmp	x0, x28
+  22ed78:      	b.ne	0x22ea10 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa5ac>
+  22ed7c:      	ldr	x8, [x24, #0x200]
+  22ed80:      	ldr	x8, [x8, #0x298]
+  22ed84:      	cbz	x8, 0x22ea10 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa5ac>
+  22ed88:      	ldr	x0, [x8, #0x8]
+  22ed8c:      	ldr	x8, [x0, #0x270]
+  22ed90:      	cmp	x8, x28
+  22ed94:      	b.ls	0x22f6bc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb258>
+  22ed98:      	ldr	x8, [x0, #0x108]
+  22ed9c:      	cmp	x8, x28
+  22eda0:      	b.hi	0x22ea10 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa5ac>
+  22eda4:      	b	0x22f6d0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb26c>
+  22eda8:      	mov	x0, x25
+  22edac:      	mov	x1, x26
+  22edb0:      	bl	0x515048 <_ZN3art16WellKnownClasses4InitEP7_JNIEnv+0x60bc>
+  22edb4:      	tbz	w0, #0x0, 0x22f758 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb2f4>
+  22edb8:      	b	0x22ea10 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa5ac>
+  22edbc:      	ldr	x23, [sp, #0x50]
+  22edc0:      	ldrb	w8, [x23, #0x78]
+  22edc4:      	tbz	w8, #0x0, 0x22ef48 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaae4>
+  22edc8:      	ldr	x8, [x23, #0x28]
+  22edcc:      	cbz	x8, 0x22f778 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb314>
+  22edd0:      	ldr	w9, [x0]
+  22edd4:      	b	0x22eb3c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa6d8>
+  22edd8:      	ldr	w10, [x8, #0x3f0]
+  22eddc:      	sub	w10, w10, #0x1
+  22ede0:      	cmp	w10, #0x2
+  22ede4:      	b.lo	0x22eb5c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa6f8>
+  22ede8:      	sub	x11, x29, #0x50
+  22edec:      	ldrb	w10, [x8, #0x3e6]
+  22edf0:      	ldr	x11, [x11, #0x28]
+  22edf4:      	cmp	w10, #0x1
+  22edf8:      	add	x27, x11, x9
+  22edfc:      	b.eq	0x22f388 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaf24>
+  22ee00:      	b	0x22ed1c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa8b8>
+  22ee04:      	ldr	x8, [x8, #0x160]
+  22ee08:      	cmp	x8, x27
+  22ee0c:      	b.eq	0x22ea58 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa5f4>
+  22ee10:      	b	0x22ed1c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa8b8>
+  22ee14:      	nop
+  22ee18:      	adr	x8, 0x2bc710 <_ZN3art9ArtMethod6InvokeEPNS_6ThreadEPjjPNS_6JValueEPKc+0x19114>
+  22ee1c:      	cmp	x27, x8
+  22ee20:      	b.ne	0x22efac <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xab48>
+  22ee24:      	mov	w8, #0x1                // =1
+  22ee28:      	ldr	w9, [sp, #0x14]
+  22ee2c:      	cmn	w9, #0x3
+  22ee30:      	b.hi	0x22ed24 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa8c0>
+  22ee34:      	cbz	w8, 0x22ed24 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa8c0>
+  22ee38:      	ldr	w23, [x26, #0x4]
+  22ee3c:      	ldr	w8, [x26, #0x4]
+  22ee40:      	tbnz	w8, #0x12, 0x22f7dc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb378>
+  22ee44:      	ldr	w8, [x26]
+  22ee48:      	ldr	w0, [x8, #0x10]
+  22ee4c:      	ldr	x11, [x0, #0x10]
+  22ee50:      	ldr	w12, [x26, #0x8]
+  22ee54:      	mov	w9, wzr
+  22ee58:      	mov	x10, xzr
+  22ee5c:      	mov	w8, wzr
+  22ee60:      	ldp	x13, x14, [x11, #0x68]
+  22ee64:      	add	x12, x13, x12, lsl #3
+  22ee68:      	mov	w13, #0xc               // =12
+  22ee6c:      	ldrh	w12, [x12, #0x2]
+  22ee70:      	umull	x12, w12, w13
+  22ee74:      	ldr	x13, [x11, #0x50]
+  22ee78:      	ldr	x11, [x11, #0x18]
+  22ee7c:      	ldr	w12, [x14, x12]
+  22ee80:      	ldr	w12, [x13, x12, lsl #2]
+  22ee84:      	add	x13, x11, x12
+  22ee88:      	ldrb	w15, [x13, x10]
+  22ee8c:      	and	w14, w15, #0x7f
+  22ee90:      	lsl	w14, w14, w9
+  22ee94:      	orr	w8, w14, w8
+  22ee98:      	add	x14, x10, #0x1
+  22ee9c:      	tbz	w15, #0x7, 0x22eeb0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaa4c>
+  22eea0:      	cmp	x10, #0x4
+  22eea4:      	add	w9, w9, #0x7
+  22eea8:      	mov	x10, x14
+  22eeac:      	b.lo	0x22ee88 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaa24>
+  22eeb0:      	mov	w10, #0x28              // =40
+  22eeb4:      	ldr	x28, [sp, #0x38]
+  22eeb8:      	add	x9, x11, x12
+  22eebc:      	movk	w10, #0x18, lsl #16
+  22eec0:      	add	x9, x9, x14
+  22eec4:      	add	x0, sp, #0x50
+  22eec8:      	and	w10, w23, w10
+  22eecc:      	stp	x9, x8, [sp, #0x58]
+  22eed0:      	str	w10, [sp, #0x50]
+  22eed4:      	ldr	x10, [x28, #0x200]
+  22eed8:      	blr	x10
+  22eedc:      	ldr	x8, [x28, #0x220]
+  22eee0:      	cbz	x8, 0x22ef88 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xab24>
+  22eee4:      	udiv	x9, x0, x8
+  22eee8:      	msub	x23, x9, x8, x0
+  22eeec:      	ldr	x8, [x28, #0x238]
+  22eef0:      	add	x0, x8, x23, lsl #5
+  22eef4:      	ldr	x8, [x0, #0x10]
+  22eef8:      	cbz	x8, 0x22ef88 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xab24>
+  22eefc:      	ldr	x28, [sp, #0x38]
+  22ef00:      	add	x1, sp, #0x50
+  22ef04:      	ldr	x8, [x28, #0x210]
+  22ef08:      	blr	x8
+  22ef0c:      	tbnz	w0, #0x0, 0x22ef70 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xab0c>
+  22ef10:      	ldr	x8, [x28, #0x220]
+  22ef14:      	add	x9, x23, #0x1
+  22ef18:      	cmp	x9, x8
+  22ef1c:      	ldr	x8, [x28, #0x238]
+  22ef20:      	csinc	x23, xzr, x23, hs
+  22ef24:      	b	0x22eef0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaa8c>
+  22ef28:      	ldr	w8, [x26, #0x4]
+  22ef2c:      	nop
+  22ef30:      	adr	x9, 0x2bc710 <_ZN3art9ArtMethod6InvokeEPNS_6ThreadEPjjPNS_6JValueEPKc+0x19114>
+  22ef34:      	tst	w8, #0x100
+  22ef38:      	nop
+  22ef3c:      	adr	x8, 0x2bc880 <_ZN3art9ArtMethod6InvokeEPNS_6ThreadEPjjPNS_6JValueEPKc+0x19284>
+  22ef40:      	csel	x27, x8, x9, eq
+  22ef44:      	b	0x22ed1c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa8b8>
+  22ef48:      	ldr	x8, [x24, #0x200]
+  22ef4c:      	cbz	x8, 0x22edc8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa964>
+  22ef50:      	ldr	x9, [x8, #0x298]
+  22ef54:      	cbz	x9, 0x22f7d0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb36c>
+  22ef58:      	ldr	x9, [x9, #0x10]
+  22ef5c:      	ldrb	w9, [x9]
+  22ef60:      	tbz	w9, #0x0, 0x22f7d0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb36c>
+  22ef64:      	ldr	x8, [x23, #0x28]
+  22ef68:      	cbz	x8, 0x22f13c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xacd8>
+  22ef6c:      	b	0x22eb38 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa6d4>
+  22ef70:      	ldr	x8, [x28, #0x220]
+  22ef74:      	cmp	x23, x8
+  22ef78:      	b.eq	0x22f418 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xafb4>
+  22ef7c:      	ldr	x8, [x28, #0x238]
+  22ef80:      	add	x8, x8, x23, lsl #5
+  22ef84:      	ldr	x8, [x8, #0x18]
+  22ef88:      	cmp	x8, #0x0
+  22ef8c:      	csel	x27, x27, x8, eq
+  22ef90:      	b	0x22ed24 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa8c0>
+  22ef94:      	mov	x8, xzr
+  22ef98:      	strb	wzr, [sp, #0x4c]
+  22ef9c:      	mov	w9, #-0x1               // =-1
+  22efa0:      	b	0x22eb3c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa6d8>
+  22efa4:      	ldr	x8, [x24, #0x200]
+  22efa8:      	b	0x22eb5c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa6f8>
+  22efac:      	ldr	x8, [sp, #0x38]
+  22efb0:      	ldr	x8, [x8, #0x158]
+  22efb4:      	cmp	x8, x27
+  22efb8:      	cset	w8, eq
+  22efbc:      	b	0x22ee28 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa9c4>
+  22efc0:      	b.ls	0x22f248 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xade4>
+  22efc4:      	b	0x22e7c0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa35c>
+  22efc8:      	mov	x8, xzr
+  22efcc:      	mov	w9, #-0x1               // =-1
+  22efd0:      	b	0x22eb3c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa6d8>
+  22efd4:      	ldrsb	w9, [x8, #0x1]
+  22efd8:      	tbnz	w9, #0x1f, 0x22f7e8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb384>
+  22efdc:      	add	x9, x8, #0x2
+  22efe0:      	b	0x22e8f0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa48c>
+  22efe4:      	ldrsb	w10, [x8, #0x1]
+  22efe8:      	bfi	w9, w10, #7, #7
+  22efec:      	tbz	w10, #0x1f, 0x22e908 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa4a4>
+  22eff0:      	ldrsb	w10, [x8, #0x2]
+  22eff4:      	bfi	w9, w10, #14, #7
+  22eff8:      	tbz	w10, #0x1f, 0x22e908 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa4a4>
+  22effc:      	ldrsb	w10, [x8, #0x3]
+  22f000:      	bfi	w9, w10, #21, #7
+  22f004:      	tbz	w10, #0x1f, 0x22e908 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa4a4>
+  22f008:      	ldrb	w8, [x8, #0x4]
+  22f00c:      	orr	w9, w9, w8, lsl #28
+  22f010:      	b	0x22e908 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa4a4>
+  22f014:      	ldrsb	w8, [x9, #0x1]
+  22f018:      	tbnz	w8, #0x1f, 0x22f114 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xacb0>
+  22f01c:      	add	x8, x9, #0x2
+  22f020:      	b	0x22e8fc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa498>
+  22f024:      	ldr	x11, [x8, #0x60]
+  22f028:      	cbz	x11, 0x22ebdc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa778>
+  22f02c:      	b	0x22ef28 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaac4>
+  22f030:      	ldr	x9, [x9, #0x60]
+  22f034:      	cbz	x9, 0x22ec9c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa838>
+  22f038:      	ldr	w9, [x26, #0x4]
+  22f03c:      	tbnz	w9, #0x12, 0x22f8a0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb43c>
+  22f040:      	ldr	w0, [x8, #0x10]
+  22f044:      	add	w9, w23, #0xf
+  22f048:      	neg	w10, w23
+  22f04c:      	ldr	x8, [x0, #0x10]
+  22f050:      	and	w9, w9, w10
+  22f054:      	cmp	w23, #0x4
+  22f058:      	ldr	w9, [x26, w9, uxtw]
+  22f05c:      	cbz	x9, 0x22f06c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xac08>
+  22f060:      	ldr	x8, [x8, #0x18]
+  22f064:      	add	x8, x8, x9
+  22f068:      	b	0x22ecb8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa854>
+  22f06c:      	mov	x8, xzr
+  22f070:      	mov	w9, #0x18               // =24
+  22f074:      	b	0x22ecd0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa86c>
+  22f078:      	adrp	x8, 0xc2f000
+  22f07c:      	ldr	x8, [x8, #0xa60]
+  22f080:      	ldrb	w8, [x8]
+  22f084:      	cmp	w8, #0x1
+  22f088:      	b.ne	0x22e848 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa3e4>
+  22f08c:      	mrs	x8, TPIDR_EL0
+  22f090:      	ldr	x8, [x8, #0x38]
+  22f094:      	cbz	x8, 0x22e848 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa3e4>
+  22f098:      	ldr	w8, [x8, #0x20]
+  22f09c:      	mov	x19, x1
+  22f0a0:      	cbz	w8, 0x22f0a8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xac44>
+  22f0a4:      	bl	0x207210 <_ZN3art10ThreadList9ResumeAllEv+0x28a4>
+  22f0a8:      	mov	x1, x19
+  22f0ac:      	b	0x22e848 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa3e4>
+  22f0b0:      	and	x8, x2, #0xfffffffffffffffc
+  22f0b4:      	ldr	w0, [x8]
+  22f0b8:      	b	0x22e854 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa3f0>
+  22f0bc:      	ldr	w8, [x1, #0x30]
+  22f0c0:      	cbnz	w8, 0x22f420 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xafbc>
+  22f0c4:      	lsr	x8, x2, #5
+  22f0c8:      	ldr	x9, [x25, #0x210]
+  22f0cc:      	add	x8, x9, w8, uxtw #3
+  22f0d0:      	adrp	x9, 0xc2f000
+  22f0d4:      	ldr	x9, [x9, #0xa60]
+  22f0d8:      	ldr	w25, [x8, #0x4]
+  22f0dc:      	ldrb	w9, [x9]
+  22f0e0:      	cmp	w9, #0x1
+  22f0e4:      	b.ne	0x22e82c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa3c8>
+  22f0e8:      	mrs	x8, TPIDR_EL0
+  22f0ec:      	ldr	x8, [x8, #0x38]
+  22f0f0:      	cbz	x8, 0x22e82c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa3c8>
+  22f0f4:      	ldr	w8, [x8, #0x20]
+  22f0f8:      	mov	x19, x1
+  22f0fc:      	cbz	w8, 0x22f10c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaca8>
+  22f100:      	mov	x0, x25
+  22f104:      	bl	0x207210 <_ZN3art10ThreadList9ResumeAllEv+0x28a4>
+  22f108:      	mov	x25, x0
+  22f10c:      	mov	x1, x19
+  22f110:      	b	0x22e82c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa3c8>
+  22f114:      	ldrsb	w8, [x9, #0x2]
+  22f118:      	tbz	w8, #0x1f, 0x22f240 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaddc>
+  22f11c:      	ldrsb	w8, [x9, #0x3]
+  22f120:      	add	x10, x9, #0x4
+  22f124:      	add	x9, x9, #0x5
+  22f128:      	cmp	w8, #0x0
+  22f12c:      	csel	x8, x9, x10, lt
+  22f130:      	b	0x22e8fc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa498>
+  22f134:      	mov	w0, wzr
+  22f138:      	b	0x22e854 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa3f0>
+  22f13c:      	adrp	x1, 0x4d000
+  22f140:      	add	x1, x1, #0xd54
+  22f144:      	sub	x0, x29, #0x78
+  22f148:      	mov	w2, #0x964              // =2404
+  22f14c:      	mov	w3, #0x6                // =6
+  22f150:      	mov	x4, xzr
+  22f154:      	mov	w5, #-0x1               // =-1
+  22f158:      	bl	0xaae950 <_ZN7android4base10LogMessageC1EPKcjNS0_11LogSeverityES3_i@plt>
+  22f15c:      	sub	x0, x29, #0x78
+  22f160:      	bl	0xaae960 <_ZN7android4base10LogMessage6streamEv@plt>
+  22f164:      	adrp	x1, 0x86000
+  22f168:      	add	x1, x1, #0x4a6
+  22f16c:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f170:      	adrp	x1, 0x4f000
+  22f174:      	add	x1, x1, #0xcf
+  22f178:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f17c:      	sub	x0, x29, #0x78
+  22f180:      	bl	0xaae980 <_ZN7android4base10LogMessageD1Ev@plt>
+  22f184:      	ldr	x8, [x23, #0x28]
+  22f188:      	b	0x22eb38 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa6d4>
+  22f18c:      	mov	x28, xzr
+  22f190:      	b	0x22eb80 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa71c>
+  22f194:      	ldr	x8, [x19, #0x30]
+  22f198:      	cbz	x8, 0x22f810 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb3ac>
+  22f19c:      	ldr	w9, [x8]
+  22f1a0:      	cbz	w9, 0x22f810 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb3ac>
+  22f1a4:      	add	x10, x22, #0xf
+  22f1a8:      	neg	x11, x22
+  22f1ac:      	add	x12, x22, #0x3
+  22f1b0:      	and	x10, x10, x11
+  22f1b4:      	sub	x26, x9, #0x1
+  22f1b8:      	add	x25, x10, x22, lsl #1
+  22f1bc:      	and	x10, x12, x11
+  22f1c0:      	add	x23, x8, x10
+  22f1c4:      	ldr	x1, [sp, #0x40]
+  22f1c8:      	add	x0, x27, #0x1b8
+  22f1cc:      	bl	0xaaea30 <_ZN3art5Mutex13ExclusiveLockEPNS_6ThreadE@plt>
+  22f1d0:      	ldr	x8, [x27, #0x1e8]
+  22f1d4:      	cbz	x8, 0x22f230 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xadcc>
+  22f1d8:      	madd	x25, x25, x26, x23
+  22f1dc:      	add	x26, x27, #0x1e8
+  22f1e0:      	mov	w10, #0x8               // =8
+  22f1e4:      	mov	x1, x26
+  22f1e8:      	ldr	x9, [x8, #0x20]
+  22f1ec:      	cmp	x9, x23
+  22f1f0:      	csel	x9, x10, xzr, lo
+  22f1f4:      	csel	x1, x1, x8, lo
+  22f1f8:      	ldr	x8, [x8, x9]
+  22f1fc:      	cbnz	x8, 0x22f1e8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xad84>
+  22f200:      	cmp	x26, x1
+  22f204:      	b.eq	0x22f230 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xadcc>
+  22f208:      	ldr	x8, [x1, #0x20]
+  22f20c:      	cmp	x8, x25
+  22f210:      	b.hi	0x22f230 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xadcc>
+  22f214:      	ldr	x9, [x1, #0x28]
+  22f218:      	add	x0, x27, #0x1e0
+  22f21c:      	str	x9, [x8, #0x10]
+  22f220:      	bl	0x865fc0 <_ZN3art11ClassLinker21HyperArtAddImageSpaceEPNS_2gc5space10ImageSpaceENS_6HandleINS_6mirror11ClassLoaderEEEPNS_18ClassLoaderContextERKNSt3__16vectorIPKNS_7DexFileENSB_9allocatorISF_EEEEPNSB_12basic_stringIcNSB_11char_traitsIcEENSG_IcEEEE+0x2170>
+  22f224:      	mov	x1, x0
+  22f228:      	cmp	x26, x0
+  22f22c:      	b.ne	0x22f208 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xada4>
+  22f230:      	ldr	x1, [sp, #0x40]
+  22f234:      	add	x0, x27, #0x1b8
+  22f238:      	bl	0xaaea40 <_ZN3art5Mutex15ExclusiveUnlockEPNS_6ThreadE@plt>
+  22f23c:      	b	0x22e994 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa530>
+  22f240:      	add	x8, x9, #0x3
+  22f244:      	b	0x22e8fc <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa498>
+  22f248:      	adrp	x22, 0x4f000
+  22f24c:      	add	x22, x22, #0xcf
+  22f250:      	adrp	x19, 0x6b000
+  22f254:      	add	x19, x19, #0x5bc
+  22f258:      	adrp	x24, 0x4c000
+  22f25c:      	add	x24, x24, #0x60e
+  22f260:      	adrp	x20, 0x87000
+  22f264:      	add	x20, x20, #0x96a
+  22f268:      	adrp	x21, 0x92000
+  22f26c:      	add	x21, x21, #0xaa8
+  22f270:      	adrp	x28, 0x84000
+  22f274:      	add	x28, x28, #0xa4e
+  22f278:      	add	x0, sp, #0x50
+  22f27c:      	adrp	x1, 0x6b000
+  22f280:      	add	x1, x1, #0x68d
+  22f284:      	mov	w2, #0x209              // =521
+  22f288:      	mov	w3, #0x6                // =6
+  22f28c:      	mov	x4, xzr
+  22f290:      	mov	w5, #-0x1               // =-1
+  22f294:      	bl	0xaae950 <_ZN7android4base10LogMessageC1EPKcjNS0_11LogSeverityES3_i@plt>
+  22f298:      	add	x0, sp, #0x50
+  22f29c:      	bl	0xaae960 <_ZN7android4base10LogMessage6streamEv@plt>
+  22f2a0:      	adrp	x1, 0x62000
+  22f2a4:      	add	x1, x1, #0xf27
+  22f2a8:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f2ac:      	adrp	x1, 0x5d000
+  22f2b0:      	add	x1, x1, #0x276
+  22f2b4:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f2b8:      	mov	x1, x22
+  22f2bc:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f2c0:      	mov	x1, x19
+  22f2c4:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f2c8:      	mov	x1, x22
+  22f2cc:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f2d0:      	mov	x1, x24
+  22f2d4:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f2d8:      	mov	x1, x20
+  22f2dc:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f2e0:      	mov	x1, x25
+  22f2e4:      	bl	0xaaf0c0 <_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEPKv@plt>
+  22f2e8:      	mov	x1, x21
+  22f2ec:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f2f0:      	add	x1, x26, x27
+  22f2f4:      	bl	0xaaf0c0 <_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEPKv@plt>
+  22f2f8:      	mov	x1, x28
+  22f2fc:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f300:      	add	x1, x23, #0x28
+  22f304:      	bl	0x234558 <_ZN3art9ArtMethod12PrettyMethodEb+0x45c>
+  22f308:      	add	x0, sp, #0x50
+  22f30c:      	bl	0xaae980 <_ZN7android4base10LogMessageD1Ev@plt>
+  22f310:      	b	0x22f278 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xae14>
+  22f314:      	sub	x0, x29, #0x28
+  22f318:      	adrp	x1, 0x55000
+  22f31c:      	add	x1, x1, #0xd47
+  22f320:      	mov	w2, #0x146              // =326
+  22f324:      	mov	w3, #0x6                // =6
+  22f328:      	mov	x4, xzr
+  22f32c:      	mov	w5, #-0x1               // =-1
+  22f330:      	bl	0xaae950 <_ZN7android4base10LogMessageC1EPKcjNS0_11LogSeverityES3_i@plt>
+  22f334:      	sub	x0, x29, #0x28
+  22f338:      	bl	0xaae960 <_ZN7android4base10LogMessage6streamEv@plt>
+  22f33c:      	adrp	x1, 0x8d000
+  22f340:      	add	x1, x1, #0xff9
+  22f344:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f348:      	adrp	x1, 0x4f000
+  22f34c:      	add	x1, x1, #0xcf
+  22f350:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f354:      	mov	x27, x0
+  22f358:      	add	x8, sp, #0x50
+  22f35c:      	mov	x0, x26
+  22f360:      	mov	w1, #0x1                // =1
+  22f364:      	bl	0xaaf130 <_ZN3art9ArtMethod12PrettyMethodEb@plt>
+  22f368:      	add	x1, sp, #0x50
+  22f36c:      	mov	x0, x27
+  22f370:      	bl	0x234558 <_ZN3art9ArtMethod12PrettyMethodEb+0x45c>
+  22f374:      	ldrb	w8, [sp, #0x50]
+  22f378:      	tbnz	w8, #0x0, 0x22f820 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb3bc>
+  22f37c:      	sub	x0, x29, #0x28
+  22f380:      	bl	0xaae980 <_ZN7android4base10LogMessageD1Ev@plt>
+  22f384:      	b	0x22ea84 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa620>
+  22f388:      	ldr	x9, [x8, #0x218]
+  22f38c:      	ldr	w10, [x9, #0x748]
+  22f390:      	ldr	w9, [x9, #0x74c]
+  22f394:      	sub	x10, x27, x10
+  22f398:      	cmp	x10, x9
+  22f39c:      	b.hs	0x22eb5c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa6f8>
+  22f3a0:      	b	0x22ed1c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa8b8>
+  22f3a4:      	ldr	w8, [x26]
+  22f3a8:      	ldr	w8, [x8, #0x8]
+  22f3ac:      	cbnz	w8, 0x22f834 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb3d0>
+  22f3b0:      	add	x0, x23, #0x3b8
+  22f3b4:      	mov	x1, x26
+  22f3b8:      	mov	x2, xzr
+  22f3bc:      	bl	0x227cec <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0x3888>
+  22f3c0:      	mov	x27, x0
+  22f3c4:      	cbnz	x27, 0x22ed1c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa8b8>
+  22f3c8:      	ldr	x8, [x24, #0x200]
+  22f3cc:      	b	0x22eb9c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa738>
+  22f3d0:      	mov	x0, x26
+  22f3d4:      	bl	0xaaed80 <_ZN3art9ArtMethod19GetObsoleteDexCacheILNS_17ReadBarrierOptionE1EEENS_6ObjPtrINS_6mirror8DexCacheEEEv@plt>
+  22f3d8:      	b	0x22ec50 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa7ec>
+  22f3dc:      	ldr	x8, [x25, #0x180]
+  22f3e0:      	cbz	x8, 0x22ea7c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa618>
+  22f3e4:      	add	x0, sp, #0x50
+  22f3e8:      	mov	w1, #0x8                // =8
+  22f3ec:      	str	x26, [sp, #0x50]
+  22f3f0:      	bl	0xaaebd0 <_ZNSt3__113__hash_memoryEPKvm@plt>
+  22f3f4:      	sub	x8, x23, #0x1
+  22f3f8:      	tst	x23, x8
+  22f3fc:      	b.eq	0x22f8ac <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb448>
+  22f400:      	cmp	x0, x23
+  22f404:      	mov	x9, x0
+  22f408:      	b.lo	0x22f8b0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb44c>
+  22f40c:      	udiv	x9, x0, x23
+  22f410:      	msub	x9, x9, x23, x0
+  22f414:      	b	0x22f8b0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb44c>
+  22f418:      	mov	x8, xzr
+  22f41c:      	b	0x22ef88 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xab24>
+  22f420:      	add	x8, x1, #0x30
+  22f424:      	ldar	w8, [x8]
+  22f428:      	cbz	w8, 0x22f0c4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xac60>
+  22f42c:      	cmp	w8, #0x2
+  22f430:      	b.eq	0x22f43c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xafd8>
+  22f434:      	str	wzr, [x1, #0x30]
+  22f438:      	b	0x22f0c4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xac60>
+  22f43c:      	adrp	x8, 0xc2f000
+  22f440:      	mov	x19, x1
+  22f444:      	mov	x27, x2
+  22f448:      	ldr	x8, [x8, #0xde0]
+  22f44c:      	ldr	x26, [x8]
+  22f450:      	mov	x0, x26
+  22f454:      	bl	0xaaea30 <_ZN3art5Mutex13ExclusiveLockEPNS_6ThreadE@plt>
+  22f458:      	mov	x0, x25
+  22f45c:      	mov	x1, x19
+  22f460:      	mov	x2, x27
+  22f464:      	bl	0x2c9d0c <_ZN3art7Barrier4PassEPNS_6ThreadE+0xea8>
+  22f468:      	mov	x25, x0
+  22f46c:      	mov	x0, x26
+  22f470:      	mov	x1, x19
+  22f474:      	bl	0xaaea40 <_ZN3art5Mutex15ExclusiveUnlockEPNS_6ThreadE@plt>
+  22f478:      	b	0x22f10c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaca8>
+  22f47c:      	ldr	w8, [x26, #0x4]
+  22f480:      	mov	w9, #0xa                // =10
+  22f484:      	movk	w9, #0x1, lsl #16
+  22f488:      	tst	w8, w9
+  22f48c:      	b.ne	0x22ead0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa66c>
+  22f490:      	ldr	w8, [x27, #0x38]
+  22f494:      	tbz	w8, #0x12, 0x22f8c0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb45c>
+  22f498:      	mov	w28, #0x1               // =1
+  22f49c:      	ldr	x8, [x27, #0x30]
+  22f4a0:      	cbnz	x8, 0x22f910 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb4ac>
+  22f4a4:      	mov	x10, xzr
+  22f4a8:      	mov	x9, xzr
+  22f4ac:      	mul	x10, x9, x10
+  22f4b0:      	cbz	x10, 0x22f4ec <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb088>
+  22f4b4:      	add	x10, x10, x8
+  22f4b8:      	ldr	w11, [x8, #0x4]
+  22f4bc:      	mov	w12, #0xa               // =10
+  22f4c0:      	movk	w12, #0x1, lsl #16
+  22f4c4:      	tst	w11, w12
+  22f4c8:      	b.ne	0x22f4e0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb07c>
+  22f4cc:      	ldr	w11, [x26, #0x8]
+  22f4d0:      	ldr	w12, [x8, #0x8]
+  22f4d4:      	cmp	w11, w12
+  22f4d8:      	b.eq	0x22ead4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa670>
+  22f4dc:      	add	w28, w28, #0x1
+  22f4e0:      	add	x8, x8, x9
+  22f4e4:      	cmp	x8, x10
+  22f4e8:      	b.ne	0x22f4b8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb054>
+  22f4ec:      	adrp	x1, 0x5a000
+  22f4f0:      	add	x1, x1, #0x9fd
+  22f4f4:      	sub	x0, x29, #0x78
+  22f4f8:      	mov	w2, #0x22c              // =556
+  22f4fc:      	mov	w3, #0x6                // =6
+  22f500:      	mov	x4, xzr
+  22f504:      	mov	w5, #-0x1               // =-1
+  22f508:      	bl	0xaae950 <_ZN7android4base10LogMessageC1EPKcjNS0_11LogSeverityES3_i@plt>
+  22f50c:      	sub	x0, x29, #0x78
+  22f510:      	bl	0xaae960 <_ZN7android4base10LogMessage6streamEv@plt>
+  22f514:      	adrp	x1, 0x52000
+  22f518:      	add	x1, x1, #0x2d1
+  22f51c:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f520:      	adrp	x1, 0x4f000
+  22f524:      	add	x1, x1, #0xcf
+  22f528:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f52c:      	adrp	x1, 0x9e000
+  22f530:      	add	x1, x1, #0x720
+  22f534:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f538:      	mov	x23, x0
+  22f53c:      	add	x8, sp, #0x50
+  22f540:      	mov	x0, x26
+  22f544:      	mov	w1, #0x1                // =1
+  22f548:      	bl	0xaaf130 <_ZN3art9ArtMethod12PrettyMethodEb@plt>
+  22f54c:      	add	x1, sp, #0x50
+  22f550:      	mov	x0, x23
+  22f554:      	bl	0x234558 <_ZN3art9ArtMethod12PrettyMethodEb+0x45c>
+  22f558:      	ldrb	w8, [sp, #0x50]
+  22f55c:      	tbnz	w8, #0x0, 0x22f920 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb4bc>
+  22f560:      	sub	x0, x29, #0x78
+  22f564:      	bl	0xaae980 <_ZN7android4base10LogMessageD1Ev@plt>
+  22f568:      	b	0x22ead4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa670>
+  22f56c:      	adrp	x8, 0xc2f000
+  22f570:      	ldr	x8, [x8, #0xa60]
+  22f574:      	ldrb	w8, [x8]
+  22f578:      	cmp	w8, #0x1
+  22f57c:      	b.ne	0x22eac8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa664>
+  22f580:      	mrs	x8, TPIDR_EL0
+  22f584:      	ldr	x8, [x8, #0x38]
+  22f588:      	cbz	x8, 0x22eac8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa664>
+  22f58c:      	ldr	w8, [x8, #0x20]
+  22f590:      	cbz	w8, 0x22eac8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa664>
+  22f594:      	mov	x0, x27
+  22f598:      	bl	0x207210 <_ZN3art10ThreadList9ResumeAllEv+0x28a4>
+  22f59c:      	mov	x27, x0
+  22f5a0:      	b	0x22eac8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa664>
+  22f5a4:      	mov	x26, xzr
+  22f5a8:      	mov	x9, xzr
+  22f5ac:      	mov	x22, xzr
+  22f5b0:      	b	0x22e9e0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa57c>
+  22f5b4:      	mov	w19, w1
+  22f5b8:      	adrp	x21, 0x62000
+  22f5bc:      	add	x21, x21, #0xf27
+  22f5c0:      	adrp	x22, 0x4b000
+  22f5c4:      	add	x22, x22, #0x37d
+  22f5c8:      	adrp	x23, 0x4f000
+  22f5cc:      	add	x23, x23, #0xcf
+  22f5d0:      	adrp	x24, 0x6b000
+  22f5d4:      	add	x24, x24, #0x5bc
+  22f5d8:      	adrp	x25, 0x5b000
+  22f5dc:      	add	x25, x25, #0xd25
+  22f5e0:      	adrp	x26, 0x97000
+  22f5e4:      	add	x26, x26, #0x141
+  22f5e8:      	adrp	x28, 0xa2000
+  22f5ec:      	add	x28, x28, #0x9d0
+  22f5f0:      	adrp	x20, 0x84000
+  22f5f4:      	add	x20, x20, #0xa4e
+  22f5f8:      	sub	x0, x29, #0x78
+  22f5fc:      	adrp	x1, 0x4d000
+  22f600:      	add	x1, x1, #0xd54
+  22f604:      	mov	w2, #0xb2e              // =2862
+  22f608:      	mov	w3, #0x6                // =6
+  22f60c:      	mov	x4, xzr
+  22f610:      	mov	w5, #-0x1               // =-1
+  22f614:      	bl	0xaae950 <_ZN7android4base10LogMessageC1EPKcjNS0_11LogSeverityES3_i@plt>
+  22f618:      	sub	x0, x29, #0x78
+  22f61c:      	bl	0xaae960 <_ZN7android4base10LogMessage6streamEv@plt>
+  22f620:      	mov	x1, x21
+  22f624:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f628:      	mov	x1, x22
+  22f62c:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f630:      	mov	x1, x23
+  22f634:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f638:      	mov	x1, x24
+  22f63c:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f640:      	mov	x1, x23
+  22f644:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f648:      	mov	x1, x25
+  22f64c:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f650:      	mov	x1, x26
+  22f654:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f658:      	mov	w1, w19
+  22f65c:      	bl	0xaaebc0 <_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEt@plt>
+  22f660:      	mov	x1, x28
+  22f664:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f668:      	mov	w1, w27
+  22f66c:      	bl	0xaaead0 <_ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEj@plt>
+  22f670:      	mov	x1, x20
+  22f674:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f678:      	sub	x0, x29, #0x78
+  22f67c:      	bl	0xaae980 <_ZN7android4base10LogMessageD1Ev@plt>
+  22f680:      	b	0x22f5f8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb194>
+  22f684:      	nop
+  22f688:      	adr	x27, 0x2bc370 <_ZN3art9ArtMethod6InvokeEPNS_6ThreadEPjjPNS_6JValueEPKc+0x18d74>
+  22f68c:      	b	0x22ed1c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa8b8>
+  22f690:      	sub	x0, x29, #0x28
+  22f694:      	add	x2, sp, #0x4c
+  22f698:      	mov	x1, x26
+  22f69c:      	bl	0x5cac20 <_ZN3art7OatFile12FindOatClassERKNS_7DexFileEtPb+0x1b4>
+  22f6a0:      	b	0x22eb48 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa6e4>
+  22f6a4:      	mov	x0, x25
+  22f6a8:      	mov	x19, x1
+  22f6ac:      	mov	x1, x2
+  22f6b0:      	bl	0x28f5ec <_ZN3art6mirror6String21AllocFromModifiedUtf8EPNS_6ThreadEPKc+0x13b4>
+  22f6b4:      	mov	x1, x19
+  22f6b8:      	b	0x22e850 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa3ec>
+  22f6bc:      	ldr	x9, [x0, #0x278]
+  22f6c0:      	add	x8, x8, x9
+  22f6c4:      	cmp	x8, x28
+  22f6c8:      	b.ls	0x22ed98 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa934>
+  22f6cc:      	b	0x22f6e0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb27c>
+  22f6d0:      	ldr	x9, [x0, #0x110]
+  22f6d4:      	add	x8, x8, x9
+  22f6d8:      	cmp	x8, x28
+  22f6dc:      	b.ls	0x22ea10 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa5ac>
+  22f6e0:      	mov	x1, x26
+  22f6e4:      	mov	x2, x28
+  22f6e8:      	bl	0x3f5990 <_ZN3art17ReaderWriterMutex13ExclusiveLockEPNS_6ThreadE+0x1aec>
+  22f6ec:      	b	0x22ea10 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa5ac>
+  22f6f0:      	mov	x9, xzr
+  22f6f4:      	mov	x8, xzr
+  22f6f8:      	b	0x22e948 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa4e4>
+  22f6fc:      	mov	x11, xzr
+  22f700:      	madd	x10, xzr, xzr, x11
+  22f704:      	b	0x22e978 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa514>
+  22f708:      	cbz	w27, 0x22ed00 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa89c>
+  22f70c:      	adrp	x8, 0xc2f000
+  22f710:      	ldr	x8, [x8, #0xa60]
+  22f714:      	ldrb	w8, [x8]
+  22f718:      	cmp	w8, #0x1
+  22f71c:      	b.eq	0x22f76c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb308>
+  22f720:      	mov	x8, xzr
+  22f724:      	ldr	w8, [x8, #0x20]
+  22f728:      	mov	x0, x27
+  22f72c:      	cbz	w8, 0x22ecf8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa894>
+  22f730:      	ldr	x8, [x24, #0x200]
+  22f734:      	mov	x1, x27
+  22f738:      	ldr	x8, [x8, #0x218]
+  22f73c:      	ldr	x0, [x8, #0x490]
+  22f740:      	ldr	x8, [x0]
+  22f744:      	ldr	x8, [x8, #0x38]
+  22f748:      	blr	x8
+  22f74c:      	b	0x22ecf8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa894>
+  22f750:      	ldr	w8, [x26, w8, uxtw]
+  22f754:      	b	0x22ecb4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa850>
+  22f758:      	mov	x0, x27
+  22f75c:      	mov	x1, x26
+  22f760:      	bl	0x557db8 <_ZN3art3jit12JitCodeCache19PostForkChildActionEbb+0x454>
+  22f764:      	tbz	w0, #0x0, 0x22ea10 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa5ac>
+  22f768:      	b	0x22ed58 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa8f4>
+  22f76c:      	mrs	x8, TPIDR_EL0
+  22f770:      	ldr	x8, [x8, #0x38]
+  22f774:      	b	0x22f724 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb2c0>
+  22f778:      	adrp	x1, 0x4d000
+  22f77c:      	add	x1, x1, #0xd54
+  22f780:      	mov	x27, x0
+  22f784:      	sub	x0, x29, #0x78
+  22f788:      	mov	w2, #0x964              // =2404
+  22f78c:      	mov	w3, #0x6                // =6
+  22f790:      	mov	x4, xzr
+  22f794:      	mov	w5, #-0x1               // =-1
+  22f798:      	bl	0xaae950 <_ZN7android4base10LogMessageC1EPKcjNS0_11LogSeverityES3_i@plt>
+  22f79c:      	sub	x0, x29, #0x78
+  22f7a0:      	bl	0xaae960 <_ZN7android4base10LogMessage6streamEv@plt>
+  22f7a4:      	adrp	x1, 0x86000
+  22f7a8:      	add	x1, x1, #0x4a6
+  22f7ac:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f7b0:      	adrp	x1, 0x4f000
+  22f7b4:      	add	x1, x1, #0xcf
+  22f7b8:      	bl	0x239800 <_ZN3artlsERNSt3__113basic_ostreamIcNS0_11char_traitsIcEEEENS_8LockWord9LockStateE+0x10ec>
+  22f7bc:      	sub	x0, x29, #0x78
+  22f7c0:      	bl	0xaae980 <_ZN7android4base10LogMessageD1Ev@plt>
+  22f7c4:      	ldr	x8, [x23, #0x28]
+  22f7c8:      	mov	x0, x27
+  22f7cc:      	b	0x22edd0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa96c>
+  22f7d0:      	ldr	x8, [x8, #0x60]
+  22f7d4:      	cbnz	x8, 0x22edc8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa964>
+  22f7d8:      	b	0x22ef64 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xab00>
+  22f7dc:      	mov	x0, x26
+  22f7e0:      	bl	0xaaed80 <_ZN3art9ArtMethod19GetObsoleteDexCacheILNS_17ReadBarrierOptionE1EEENS_6ObjPtrINS_6mirror8DexCacheEEEv@plt>
+  22f7e4:      	b	0x22ee4c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa9e8>
+  22f7e8:      	ldrsb	w9, [x8, #0x2]
+  22f7ec:      	tbnz	w9, #0x1f, 0x22f7f8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb394>
+  22f7f0:      	add	x9, x8, #0x3
+  22f7f4:      	b	0x22e8f0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa48c>
+  22f7f8:      	ldrsb	w9, [x8, #0x3]
+  22f7fc:      	add	x10, x8, #0x4
+  22f800:      	add	x8, x8, #0x5
+  22f804:      	cmp	w9, #0x0
+  22f808:      	csel	x9, x8, x10, lt
+  22f80c:      	b	0x22e8f0 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa48c>
+  22f810:      	mov	x23, xzr
+  22f814:      	mov	x25, xzr
+  22f818:      	mov	x26, #-0x1              // =-1
+  22f81c:      	b	0x22f1c4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xad60>
+  22f820:      	ldr	x8, [sp, #0x50]
+  22f824:      	ldr	x0, [sp, #0x60]
+  22f828:      	and	x1, x8, #0xfffffffffffffffe
+  22f82c:      	bl	0xaae9b0 <_ZdlPvm@plt>
+  22f830:      	b	0x22f37c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaf18>
+  22f834:      	adrp	x8, 0xc2f000
+  22f838:      	mov	x1, x28
+  22f83c:      	ldr	x8, [x8, #0xda8]
+  22f840:      	ldr	x0, [x8]
+  22f844:      	str	x0, [sp]
+  22f848:      	bl	0xab00e0 <_ZN3art17ReaderWriterMutex13ExclusiveLockEPNS_6ThreadE@plt>
+  22f84c:      	ldr	x8, [x23, #0x348]
+  22f850:      	cbz	x8, 0x22f88c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb428>
+  22f854:      	add	x9, x23, #0x348
+  22f858:      	mov	x11, x9
+  22f85c:      	ldr	x10, [x8, #0x20]
+  22f860:      	cmp	x10, x26
+  22f864:      	mov	w10, #0x8               // =8
+  22f868:      	csel	x10, x10, xzr, lo
+  22f86c:      	csel	x11, x11, x8, lo
+  22f870:      	ldr	x8, [x8, x10]
+  22f874:      	cbnz	x8, 0x22f85c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb3f8>
+  22f878:      	cmp	x11, x9
+  22f87c:      	b.eq	0x22f88c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb428>
+  22f880:      	ldr	x8, [x11, #0x20]
+  22f884:      	cmp	x8, x26
+  22f888:      	b.ls	0x22f934 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb4d0>
+  22f88c:      	mov	x27, xzr
+  22f890:      	ldr	x0, [sp]
+  22f894:      	mov	x1, x28
+  22f898:      	bl	0xab00f0 <_ZN3art17ReaderWriterMutex15ExclusiveUnlockEPNS_6ThreadE@plt>
+  22f89c:      	b	0x22f3c4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xaf60>
+  22f8a0:      	mov	x0, x26
+  22f8a4:      	bl	0xaaed80 <_ZN3art9ArtMethod19GetObsoleteDexCacheILNS_17ReadBarrierOptionE1EEENS_6ObjPtrINS_6mirror8DexCacheEEEv@plt>
+  22f8a8:      	b	0x22f044 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xabe0>
+  22f8ac:      	and	x9, x0, x8
+  22f8b0:      	ldr	x10, [x25, #0x168]
+  22f8b4:      	ldr	x10, [x10, x9, lsl #3]
+  22f8b8:      	cbnz	x10, 0x22f980 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb51c>
+  22f8bc:      	b	0x22ea7c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa618>
+  22f8c0:      	ldr	w8, [x27, #0xc]
+  22f8c4:      	cbnz	w8, 0x22f9ac <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb548>
+  22f8c8:      	ldr	w8, [x27, #0x60]
+  22f8cc:      	tst	w8, #0xffff
+  22f8d0:      	b.ne	0x22f9ac <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb548>
+  22f8d4:      	movi	v0.2d, #0000000000000000
+  22f8d8:      	stp	q0, q0, [sp, #0x60]
+  22f8dc:      	str	q0, [sp, #0x50]
+  22f8e0:      	ldr	w8, [x27, #0x10]
+  22f8e4:      	ldr	x28, [x8, #0x10]
+  22f8e8:      	ldr	w8, [x27, #0x48]
+  22f8ec:      	ldr	x9, [x28, #0x78]
+  22f8f0:      	and	x8, x8, #0xffff
+  22f8f4:      	add	x1, x9, x8, lsl #5
+  22f8f8:      	ldr	w8, [x1, #0x18]
+  22f8fc:      	cbz	w8, 0x22f9b4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb550>
+  22f900:      	ldr	x9, [x28, #0x18]
+  22f904:      	add	x8, x9, x8
+  22f908:      	str	x8, [sp]
+  22f90c:      	b	0x22f9b8 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb554>
+  22f910:      	ldr	w10, [x8]
+  22f914:      	cbnz	w10, 0x22f9e4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb580>
+  22f918:      	mov	x8, xzr
+  22f91c:      	b	0x22f4a4 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb040>
+  22f920:      	ldr	x8, [sp, #0x50]
+  22f924:      	ldr	x0, [sp, #0x60]
+  22f928:      	and	x1, x8, #0xfffffffffffffffe
+  22f92c:      	bl	0xaae9b0 <_ZdlPvm@plt>
+  22f930:      	b	0x22f560 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb0fc>
+  22f934:      	mov	x1, x11
+  22f938:      	ldr	x27, [x11, #0x28]
+  22f93c:      	add	x0, x23, #0x340
+  22f940:      	mov	x23, x11
+  22f944:      	bl	0x5970e8 <_ZN3art6Thread24HandleUncaughtExceptionsEv+0xa70>
+  22f948:      	mov	x0, x23
+  22f94c:      	mov	w1, #0x30               // =48
+  22f950:      	bl	0xaae9b0 <_ZdlPvm@plt>
+  22f954:      	b	0x22f890 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb42c>
+  22f958:      	tst	x23, x8
+  22f95c:      	b.eq	0x22f974 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb510>
+  22f960:      	cmp	x11, x23
+  22f964:      	b.lo	0x22f978 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb514>
+  22f968:      	udiv	x12, x11, x23
+  22f96c:      	msub	x11, x12, x23, x11
+  22f970:      	b	0x22f978 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb514>
+  22f974:      	and	x11, x11, x8
+  22f978:      	cmp	x11, x9
+  22f97c:      	b.ne	0x22ea7c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa618>
+  22f980:      	ldr	x10, [x10]
+  22f984:      	cbz	x10, 0x22ea7c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa618>
+  22f988:      	ldr	x11, [x10, #0x8]
+  22f98c:      	cmp	x11, x0
+  22f990:      	b.ne	0x22f958 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb4f4>
+  22f994:      	ldr	x11, [x10, #0x10]
+  22f998:      	cmp	x11, x26
+  22f99c:      	b.ne	0x22f980 <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb51c>
+  22f9a0:      	nop
+  22f9a4:      	adr	x27, 0x2bc880 <_ZN3art9ArtMethod6InvokeEPNS_6ThreadEPjjPNS_6JValueEPKc+0x19284>
+  22f9a8:      	b	0x22ed1c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xa8b8>
+  22f9ac:      	mov	w28, wzr
+  22f9b0:      	b	0x22f49c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb038>
+  22f9b4:      	str	xzr, [sp]
+  22f9b8:      	mov	x0, x28
+  22f9bc:      	bl	0x2384dc <_ZN3art5Mutex28ExclusiveTryLockWithSpinningEPNS_6ThreadE+0xc64>
+  22f9c0:      	mov	w8, w0
+  22f9c4:      	ldr	x2, [sp]
+  22f9c8:      	add	x0, sp, #0x50
+  22f9cc:      	and	w3, w8, #0xffff
+  22f9d0:      	mov	x1, x28
+  22f9d4:      	mov	w4, wzr
+  22f9d8:      	bl	0x3677b8 <_ZN3art6mirror5Class11GetClassDefEv+0x34>
+  22f9dc:      	ldr	w28, [sp, #0x78]
+  22f9e0:      	b	0x22f49c <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb038>
+  22f9e4:      	add	x9, x23, #0xf
+  22f9e8:      	neg	x11, x23
+  22f9ec:      	add	x12, x23, #0x3
+  22f9f0:      	and	x9, x9, x11
+  22f9f4:      	and	x11, x12, x11
+  22f9f8:      	add	x9, x9, x23, lsl #1
+  22f9fc:      	add	x8, x8, x11
+  22fa00:      	b	0x22f4ac <_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0ELb0EEEvb+0xb048>

@@ -1,0 +1,69 @@
+
+/Users/like/code/tripoder/android/self-hook-probe/build/scalar_capture.o:	file format elf64-littleaarch64
+
+Disassembly of section .text:
+
+0000000000000000 <tp_scalar_capture_entry>:
+       0: d503245f     	bti	c
+       4: 90000009     	adrp	x9, 0x0 <tp_scalar_capture_entry>
+       8: 91000129     	add	x9, x9, #0x0
+       c: a9000520     	stp	x0, x1, [x9]
+      10: a9010d22     	stp	x2, x3, [x9, #0x10]
+      14: a9021524     	stp	x4, x5, [x9, #0x20]
+      18: a9031d26     	stp	x6, x7, [x9, #0x30]
+      1c: 6d040520     	stp	d0, d1, [x9, #0x40]
+      20: 6d050d22     	stp	d2, d3, [x9, #0x50]
+      24: 6d061524     	stp	d4, d5, [x9, #0x60]
+      28: 6d071d26     	stp	d6, d7, [x9, #0x70]
+      2c: 910003ea     	mov	x10, sp
+      30: f900652a     	str	x10, [x9, #0xc8]
+      34: b940c12b     	ldr	w11, [x9, #0xc0]
+      38: b40000cb     	cbz	x11, 0x50 <tp_scalar_capture_entry+0x50>
+      3c: 9102012c     	add	x12, x9, #0x80
+      40: f840854d     	ldr	x13, [x10], #0x8
+      44: f800858d     	str	x13, [x12], #0x8
+      48: f100216b     	subs	x11, x11, #0x8
+      4c: 54ffffa1     	b.ne	0x40 <tp_scalar_capture_entry+0x40>
+      50: f940712a     	ldr	x10, [x9, #0xe0]
+      54: b940014b     	ldr	w11, [x10]
+      58: b900e92b     	str	w11, [x9, #0xe8]
+      5c: b940ed2b     	ldr	w11, [x9, #0xec]
+      60: b900014b     	str	w11, [x10]
+      64: f9406920     	ldr	x0, [x9, #0xd0]
+      68: fd406d20     	ldr	d0, [x9, #0xd8]
+      6c: d65f03c0     	ret
+
+/Users/like/code/tripoder/android/self-hook-probe/build/scalar_capture.o:	file format elf64-littleaarch64
+
+.debug_frame contents:
+
+
+.eh_frame contents:
+
+00000000 00000010 00000000 CIE
+  Format:                DWARF32
+  Version:               1
+  Augmentation:          "zR"
+  Code alignment factor: 1
+  Data alignment factor: -4
+  Return address column: 30
+  Augmentation data:     1B
+
+  DW_CFA_def_cfa: WSP +0
+
+  CFA=WSP
+
+00000014 00000010 00000018 FDE cie=00000000 pc=00000000...00000070
+  Format:       DWARF32
+  DW_CFA_nop:
+  DW_CFA_nop:
+  DW_CFA_nop:
+
+  0x0: CFA=WSP
+
+
+Displaying notes found in: .note.gnu.property
+  Owner                Data size 	Description
+  GNU                  0x00000010	NT_GNU_PROPERTY_TYPE_0 (property note)
+    Properties:    aarch64 feature: BTI
+
