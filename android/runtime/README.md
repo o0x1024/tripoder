@@ -36,7 +36,7 @@ rtk proxy python3 android/scripts/validate-runtime-probe.py \
 
 P1 使用相同构建和验证器，将 `--phase p0` 改为 `--phase p1`，并指定新的证据目录。P1 真正终止自有 authority 进程并重新打开 SQLite，故障注入仅存在于探针子类；公开控制 API 没有故障注入命令。
 
-正式工作台使用 `android/scripts/build-workbench.py` 和同一组 SDK/JDK/NDK/平台参数，生成 `android/product/build/tripoder-{engine,workbench,control-test}.apk`。它只含自研核心库，探针 JNI 和验收控制器不进入 Engine。`validate-workbench-control.py` 的 `control`、`hook-ui` 与 `validate-agent-control.py` 的 `normal`、`disconnect` 分别验证控制、真实 UI、手机审批与断连回执；它们不等于第三方应用业务或外部模型验收。
+正式工作台使用 `android/scripts/build-workbench.py` 和同一组 SDK/JDK/NDK/平台参数，生成单一产品包 `android/product/build/tripoder.apk`（工作台 + 引擎，包名 `dev.tripoder.engine`）和 `tripoder-control-test.apk`。它只含自研核心库，探针 JNI 和验收控制器不进入 Engine。`validate-workbench-control.py` 的 `control`、`hook-ui` 与 `validate-agent-control.py` 的 `normal`、`disconnect` 分别验证控制、真实 UI、手机审批与断连回执；它们不等于第三方应用业务或外部模型验收。
 
 NDK 路径仅复用已经下载的工具链，不链接 VM 研究的代码或制品。换机器时显式提供其 SDK/JDK/NDK 路径。
 

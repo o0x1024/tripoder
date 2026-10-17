@@ -32,7 +32,7 @@ public final class LibraryUiIntegration extends WorkbenchUiTestBase {
         Bundle presentation=execute(session,"appPresentation","space",space,"package","dev.tripoder.previewguest","generation",install);
         check("presentation-reads-original-apk-label",!presentation.getString("label").equals("dev.tripoder.previewguest"),presentation.getString("label"));
         check("presentation-rejects-stale-install",rejected(()->execute(session,"appPresentation","space",space,"package","dev.tripoder.previewguest","generation",id()),IllegalStateException.class,"STALE_INSTALL"),"generation checked");
-        getTargetContext().startActivity(new Intent().setClassName("dev.tripoder.workbench","dev.tripoder.hooklab.WorkbenchActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        getTargetContext().startActivity(new Intent().setClassName("dev.tripoder.engine","dev.tripoder.hooklab.WorkbenchActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         click("⋮");click("刷新");waitNode("添加应用",true);SystemClock.sleep(700);
         AccessibilityNodeInfo tile=findApp(getUiAutomation().getRootInActiveWindow(),"应用：dev.tripoder.previewguest，");if(tile==null)throw new IllegalStateException("APP_TILE_MISSING");
         check("home-separates-apps-from-projects",find(getUiAutomation().getRootInActiveWindow(),"＋ 新建项目",false)==null,"home is app grid");

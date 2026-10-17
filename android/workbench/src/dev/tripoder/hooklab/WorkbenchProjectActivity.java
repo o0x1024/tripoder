@@ -35,7 +35,6 @@ public final class WorkbenchProjectActivity extends Activity implements EngineCo
     }
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);if(editor!=null)out.putString("source",editor.getText().toString());}
     @Override protected void onResume(){super.onResume();if(binding!=null&&app!=null&&app.engine.ready()){app.operations.query();refresh();}}
-    @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(request==EngineConnection.START_ENGINE)app.engine.startupResult(result,data);}
     @Override public void changed(){if(destroyed||binding==null)return;updateActions();if(!app.engine.ready()){catalog=null;lease="";binding.setText("引擎未连接 · 尚不能确认绑定");bind.setText("连接引擎");return;}if(!lease.equals(app.engine.lease)){lease=app.engine.lease;refresh();}}
     private void updateActions(){boolean busy=app.operations.pending()||app.imports.preparing;bind.setEnabled(!busy);launch.setEnabled(!busy&&app.engine.ready()&&catalog!=null&&catalog.bindings.containsKey(id)&&"COMMITTED".equals(catalog.bindings.get(id).optString("state")));query.setVisibility(app.operations.pending()?android.view.View.VISIBLE:android.view.View.GONE);}
     private void operationChanged(){if(destroyed||status==null)return;status.setText(app.operations.message+(app.operations.pending()?"\n操作 "+app.operations.pendingId():""));updateActions();boolean pending=app.operations.pending(),completed=wasPending&&!pending;wasPending=pending;if(completed)refresh();}

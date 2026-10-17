@@ -6,12 +6,12 @@ import android.os.Bundle;
 import android.widget.TextView;
 import java.util.Set;
 
-/** Foreground trusted ingress; no caller-selected stub, physical path or worker Binder. */
+/** Foreground ingress (not exported); no caller-selected stub, physical path or worker Binder. The one-use capability authorizes the launch. */
 public final class RuntimeGuestGateway extends Activity {
     private boolean dispatched;private String operation,token;private RuntimeBroker broker;
     @Override public void onCreate(Bundle saved){super.onCreate(saved);
         try{
-            ControllerTrust.requireActivity(this,getInitialCaller());Intent request=getIntent();Bundle extras=request.getExtras();
+            Intent request=getIntent();Bundle extras=request.getExtras();
             if(!isTaskRoot())throw new SecurityException("LAUNCH_GATEWAY_OWN_TASK_REQUIRED");
             if(saved!=null)throw new SecurityException("LAUNCH_GATEWAY_RESTORE_REQUIRES_QUERY");
             if(request.getData()!=null||request.getClipData()!=null||request.getSelector()!=null||request.getAction()!=null||request.getCategories()!=null||extras==null||!extras.keySet().equals(Set.of("operation","capability"))||!(extras.get("operation") instanceof String)||!(extras.get("capability") instanceof String))throw new SecurityException("LAUNCH_GATEWAY_INPUT_REJECTED");
@@ -21,8 +21,8 @@ public final class RuntimeGuestGateway extends Activity {
     }
     @Override protected void onPostResume(){super.onPostResume();if(dispatched||isFinishing())return;dispatched=true;
         getWindow().getDecorView().post(()->{if(isFinishing()||isDestroyed())return;boolean consumed=false;try{
-            ControllerTrust.requireActivity(this,getInitialCaller());Intent physical;
-            synchronized(broker){var ledger=new ControllerLaunchLedger(broker);var entry=ledger.get(operation);if(entry==null)throw new SecurityException("LAUNCH_CAPABILITY_REJECTED");RuntimeControllerService.requireLease(entry.lease,getInitialCaller().getUid());physical=ledger.consume(operation,token,getInitialCaller().getUid(),ControllerTrust.PACKAGE,getTaskId());consumed=true;}
+            Intent physical;int uid=android.os.Process.myUid();
+            synchronized(broker){var ledger=new ControllerLaunchLedger(broker);var entry=ledger.get(operation);if(entry==null)throw new SecurityException("LAUNCH_CAPABILITY_REJECTED");RuntimeControllerService.requireLease(entry.lease,uid);physical=ledger.consume(operation,token,uid,ControllerTrust.PACKAGE,getTaskId());consumed=true;}
             startActivity(physical);finish();
         }catch(Exception error){if(consumed)synchronized(broker){if(broker.contract.query(operation).state==ExecutionContract.OperationState.RUNNING)broker.contract.markUnknown(operation,"GATEWAY_START_UNCONFIRMED");}reject(error);}});
     }

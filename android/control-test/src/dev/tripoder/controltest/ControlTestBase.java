@@ -28,7 +28,7 @@ abstract class ControlTestBase extends Instrumentation {
         };
         app.registerActivityLifecycleCallbacks(observer);
         File signal=new File(getTargetContext().getExternalFilesDir(null),"launch-workbench-"+run+".json");
-        try(var output=new FileOutputStream(signal)){output.write(new JSONObject().put("runId",run).put("component","dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity").toString().getBytes(StandardCharsets.UTF_8));output.getFD().sync();}
+        try(var output=new FileOutputStream(signal)){output.write(new JSONObject().put("runId",run).put("component","dev.tripoder.engine/dev.tripoder.hooklab.WorkbenchActivity").toString().getBytes(StandardCharsets.UTF_8));output.getFD().sync();}
         Object application=getTargetContext().getApplicationContext();var field=application.getClass().getDeclaredField("engine");field.setAccessible(true);Object engine=field.get(application);
         var ready=engine.getClass().getDeclaredMethod("ready");ready.setAccessible(true);long deadline=SystemClock.elapsedRealtime()+25000;
         try{

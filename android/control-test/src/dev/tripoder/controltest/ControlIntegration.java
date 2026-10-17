@@ -19,12 +19,8 @@ public final class ControlIntegration extends ControlTestBase {
             report.put("status",json(execute(session,"status")));execute(session,"disconnect");return;
         }
         check("plain-binder-cannot-impersonate-controller-lifetime",rejected(()->connect(entry,new Binder()),SecurityException.class,"CONTROL_OWNER_PROTOCOL_REJECTED"),true);
-        IBinder other=bind("dev.tripoder.controltest","dev.tripoder.controltest.RejectedClient");
-        Bundle wrong=execute(other,"attempt");check("same-certificate-wrong-package-rejected",wrong.getBoolean("blocked")&&"CONTROL_PACKAGE_REJECTED".equals(wrong.getString("message")),json(wrong));
-        IBinder foreignLife=execute(other,"owner").getBinder("owner");
-        check("forwarded-lifetime-binder-host-process-rejected",rejected(()->connect(entry,foreignLife),SecurityException.class,"CONTROL_OWNER_PROCESS_MISMATCH"),true);
         Bundle connection=connect(entry,life());IBinder session=connection.getBinder("session");Bundle status=execute(session,"status");report.put("status",json(status));
-        check("workbench-and-engine-have-distinct-real-uids",status.getInt("controllerUid")==android.os.Process.myUid()&&status.getInt("engineUid")!=android.os.Process.myUid()&&status.getInt("enginePid")!=android.os.Process.myPid(),json(status));
+        check("workbench-and-engine-share-uid-in-separate-processes",status.getInt("controllerUid")==android.os.Process.myUid()&&status.getInt("engineUid")==android.os.Process.myUid()&&status.getInt("enginePid")!=android.os.Process.myPid(),json(status));
         check("owner-conflict-rejected",rejected(()->connect(entry,life()),IllegalStateException.class,"CONTROL_OWNER_CONFLICT"),true);
         check("probe-command-not-in-production-api",rejected(()->execute(session,"probeCrash"),UnsupportedOperationException.class,"CONTROL_COMMAND_UNSUPPORTED"),true);
         check("raw-worker-command-not-in-production-api",rejected(()->execute(session,"allocate"),UnsupportedOperationException.class,"CONTROL_COMMAND_UNSUPPORTED"),true);

@@ -4,19 +4,19 @@
 
 ## 可信控制端与客体引擎
 
-工作台保存项目源码、授权与配对状态；引擎保存空间、安装、进程、组件租约、执行操作与运行证据。两者必须是不同 Android UID。2026-10-14 用户提出由 Sentinel 等外部 Agent 提供 AI，故暂缓内置模型/密钥接入，候选方案见 [外部 Agent 控制设计](external-agent-control-design.md)。现有 Runtime probe 是验收工具，同 UID 的测试控制协议不能直接开放给生产工作台。
+工作台保存项目源码、授权与配对状态；引擎保存空间、安装、进程、组件租约、执行操作与运行证据。**2026-10-17 起两者合并为单一 APK `dev.tripoder.engine`（同一 UID）**：用户认为两个应用切换造成体验割裂，并明确接受客体（与引擎同 UID）可读取工作台私有数据。工作台 UI 在主进程，Broker/控制服务在 `:authority`，客体在 `:slotN`。2026-10-14 用户提出由 Sentinel 等外部 Agent 提供 AI，故暂缓内置模型/密钥接入，候选方案见 [外部 Agent 控制设计](external-agent-control-design.md)。现有 Runtime probe 是验收工具，同 UID 的测试控制协议不能直接开放给生产工作台。
 
 复用 ProductUi、编辑器交互、AiClient、ApiKeyVault 与项目文件操作的已验证部分。生产构建明确列出源文件，不包含 GuestClient、GuestService、GameRuntime、旧 fixture 路由和隐式默认项目迁移。不能在连接新内核失败时重新创建旧运行器。
 
 ## 连接与所有者
 
-外部入口使用签名权限，并进一步验证 Binder 实际 UID、固定控制端包和固定签名证书；同一个签名权限不能证明调用方就是工作台。拒绝引擎自身 UID，防止客体使用引擎身份取得控制权限。
+控制服务与客体启动 Gateway 均不导出。`ControllerTrust` 只接受本包 UID 且调用进程名为主进程（UI）的连接；这不是对客体的安全边界（客体同 UID），只防止客体代码误取控制租约。
 
 连接通过控制端提供的存活 Binder 建立 owner lease，固定实际 PID/UID 和连接代次。已有 owner 存活时拒绝第二个控制端；Binder 死亡后废弃整个连接端点，迟到请求不能因 PID 重用重新获得授权。控制端重连只查询已存操作与客体状态，不重放未知副作用。
 
-不能只信任“控制端传来了一个 Binder”：它可能属于第三个进程。连接前用一次性随机 challenge，要求存活 Binder 反向回调独立验证端点，核验回调的实际 PID/UID 与发起连接者相同。工作台 Owner 仅接受已验证引擎 UID 发出的固定协议，拒绝任意跨 UID 请求；验证端点一次使用后失效。该回调不持有 Broker/数据库锁。
+不能只信任“控制端传来了一个 Binder”：它可能属于其他进程。连接前用一次性随机 challenge，要求存活 Binder 反向回调独立验证端点，核验回调的实际 PID/UID 与发起连接者相同。验证端点一次使用后失效。该回调不持有 Broker/数据库锁。
 
-首次启动统一经过显式前台入口 RuntimeControllerGateway。工作台先核验引擎证书，再通过 ActivityOptions 共享实际调用身份；入口同时受签名权限保护，并用平台 ComponentCaller 检查真实 UID、包名与固定证书，拒绝引擎 UID 和未知字段。入口在 resumed 状态启动自己的前台服务，返回后工作台才绑定；不从后台跨包直接启动服务，也不通过 shell 预热服务。该入口只启动控制服务，不接受客体组件、物理路径或授权 token，不替代后续单次客体启动 Gateway。身份规则依据 [Android ComponentCaller](https://developer.android.com/reference/android/app/ComponentCaller#getUid())，未使用 VirtualApp 代码。
+工作台页面直接 `startForegroundService` 并绑定 `:authority` 的 `RuntimeControllerService`，不再经过跳板 Activity。整个包只保留该服务的一条常驻通知，点击回到工作台。客体启动仍经过单次 capability 的 `RuntimeGuestGateway`，让客体以独立 task 根启动。
 
 页面导航不拥有客体生命周期。应用级连接对象与 Authority 生命周期独立于 Activity；引擎在有运行会话时通过 Android 允许的前台服务和可见通知维持，不用一个页面的 onDestroy 关闭数据库并杀死全部客体。用户显式停止与系统杀进程各自保留原有执行契约。
 
@@ -32,13 +32,13 @@ APK 导入沿用只读 FD + 名称/SHA 的安装 API，工作台不能指定引�
 
 UI 分开显示“原始 APK 已导入”“制品已验证”“进程已运行”“组件已呈现”“脚本已确认激活”和“业务验收通过”。失败应展示可操作原因与对应操作 ID；UNKNOWN 不是失败后的自动重试入口。长安装/加载有阶段状态，导航不丢操作；证据内容不混入 API 密钥或账号数据。
 
-验收必须来自两个不同 UID 的实际 APK：普通应用、客体 UID、错误签名、旧连接和重复控制端均不能控制引擎；页面切换和工作台进程死亡不隐式结束客体；重新打开能查询相同操作。真实项目绑定、文件保存、草稿检查、人工部署与明确授权的自动部署均进入同一 Runtime 契约。P4 未确认的 Hook 不能显示为已生效，P6 未登录的应用不能显示为已完成验收。
+验收：非主进程（含客体 `:slotN`）、旧连接和重复控制端均不能取得控制租约；工作台主进程被系统回收不结束客体；重新打开能查询相同操作。注意 `am force-stop`/`am instrument` 会结束整个包（含 `:authority` 与客体），跨 instrumentation 保留引擎状态的验收需重新设计。真实项目绑定、文件保存、草稿检查、人工部署与明确授权的自动部署均进入同一 Runtime 契约。P4 未确认的 Hook 不能显示为已生效，P6 未登录的应用不能显示为已完成验收。
 
 ## 当前构建与剩余接入
 
-`build-workbench.py` 生成 `dev.tripoder.workbench`、`dev.tripoder.engine` 两个独立 UID APK，以及单独的 `dev.tripoder.controltest` instrumentation APK。工作台仅复用 ProductUi/UiInsets，产品包不包含旧 GuestClient、GuestService、GameRuntime 或 Runtime probe 控制器。控制测试不打入两个产品包；开发构建复用显式测试证书并固定公钥摘要，不是发布签名。
+`build-workbench.py` 生成单一产品 APK `dev.tripoder.engine`（工作台 + 引擎），以及单独的 `dev.tripoder.controltest` instrumentation APK（targetPackage 为 `dev.tripoder.engine`）。工作台仅复用 ProductUi/UiInsets，产品包不包含旧 GuestClient、GuestService、GameRuntime 或 Runtime probe 控制器。
 
-20 项控制基础门槛对应 status/catalog/createSpace/query/disconnect；UI 真实展示连接与持久空间，保存未确认操作 ID，重连查询原操作，不重放。源文件在 `android/control`、`android/engine`、`android/workbench`。独立控制 UID 保护工作台私有数据，不改变同一引擎 UID 内客体不具备强隔离的边界。
+20 项控制基础门槛对应 status/catalog/createSpace/query/disconnect；UI 真实展示连接与持久空间，保存未确认操作 ID，重连查询原操作，不重放。源文件在 `android/control`、`android/engine`、`android/workbench`（同包编译）。工作台私有数据对客体不设防，这是有意选择。
 
 install/bindProject/resolveProject 已通过 35 项产品控制真机检查。install 接收只读、普通、起始偏移为零的 FD 与名称/摘要；拒绝可写 FD、物理路径及未知字段，返回逻辑安装身份。新项目绑定复用 project_refs 表，schema 17 显式区分 DIRECT 与历史 MIGRATED。DIRECT 不复制旧运行数据或工作台源码；绑定当前安装代次与数据实例，升级统一使旧绑定失效。显式重绑必须比较旧 bindingOperation，不能用相同目标代次绕过绑定版本检查。
 

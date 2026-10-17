@@ -133,7 +133,7 @@ def main():
                     signal=adb('shell','cat','/sdcard/Android/data/'+target_package+'/files/launch-workbench-'+run+'.json',check=False,timeout=5)
                     if signal.returncode==0:
                         request=json.loads(signal.stdout)
-                        if request!={'runId':run,'component':'dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity'}:raise RuntimeError('LAUNCH_REQUEST_MISMATCH')
+                        if request!={'runId':run,'component':'dev.tripoder.engine/dev.tripoder.hooklab.WorkbenchActivity'}:raise RuntimeError('LAUNCH_REQUEST_MISMATCH')
                         adb('shell','am','start','-W','-a','android.intent.action.MAIN','-c','android.intent.category.LAUNCHER','-n',request['component']);break
                     if time.monotonic()>=deadline:raise RuntimeError('LAUNCH_REQUEST_TIMEOUT')
                     time.sleep(.1)
@@ -157,51 +157,49 @@ def main():
     try:
         if adb('get-state').stdout.strip()!='device':raise RuntimeError('DEVICE_NOT_READY')
         if args.install:
-            for package in ['dev.tripoder.engine','dev.tripoder.workbench','dev.tripoder.controltest']:adb('shell','am','force-stop',package)
-            for name in ['engine','workbench','controlTest']:adb('install','--no-incremental','-r',receipt['artifacts'][name]['path'],timeout=90)
+            for package in ['dev.tripoder.engine','dev.tripoder.controltest']:adb('shell','am','force-stop',package)
+            for name in ['engine','controlTest']:adb('install','--no-incremental','-r',receipt['artifacts'][name]['path'],timeout=90)
         for artifact in receipt['artifacts'].values():
             path=adb('shell','pm','path',artifact['package']).stdout.strip().removeprefix('package:')
             if '\n' in path or not path.startswith('/data/app/') or not path.endswith('/base.apk'):raise RuntimeError('INSTALLED_APK_PATH_INVALID')
             if adb('shell','sha256sum',path).stdout.split()[0]!=artifact['sha256']:raise RuntimeError('INSTALLED_APK_DIGEST_MISMATCH:'+artifact['package'])
             if artifact['package']=='dev.tripoder.engine':engine_core_path=str(Path(path).parent/'lib/arm64/libtripoderselfhook.so')
-        adb('shell','am','force-stop','dev.tripoder.workbench');adb('shell','am','force-stop','dev.tripoder.controltest');adb('shell','am','force-stop','dev.tripoder.engine')
+        adb('shell','am','force-stop','dev.tripoder.controltest');adb('shell','am','force-stop','dev.tripoder.engine')
         uid_result=adb('shell','cmd','package','list','packages','-U','dev.tripoder.engine').stdout
         match=re.fullmatch(r'package:dev\.tripoder\.engine uid:(\d+)\s*',uid_result)
         if match is None:raise RuntimeError('ENGINE_UID_UNAVAILABLE')
         owned_uid=int(match[1]);device_start=adb('shell','date "+%m-%d %H:%M:%S.%3N"').stdout.strip()
-        for package in ['dev.tripoder.engine','dev.tripoder.workbench','dev.tripoder.controltest']:
+        for package in ['dev.tripoder.engine','dev.tripoder.controltest']:
             uid_result=adb('shell','cmd','package','list','packages','-U',package).stdout
             match=re.fullmatch(re.escape('package:'+package)+r' uid:(\d+)\s*',uid_result)
             if match is None:raise RuntimeError('OWNED_UID_UNAVAILABLE:'+package)
             owned_uids[package]=int(match[1])
         if not re.fullmatch(r'\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}',device_start):raise RuntimeError('DEVICE_CLOCK_UNAVAILABLE')
         report['deviceLogStart']=device_start;report['ownedUid']=owned_uid;report['ownedUids']=owned_uids
-        adb('shell','am','start','-W','-n','dev.tripoder.controltest/dev.tripoder.controltest.ClientActivity')
         if args.phase=='target':
             source=repo/'android/runtime-probe/build/targets'/(args.target+'.apk')
             expected={'wechat':'f2a725bc04302ad218a563533ae79356e66b64aa711b275bc919a8d432f7e15d','honor':'6841b1eae92b3d87b00e986f86086cbe436bcb52e4b6a3c6829f368714538384'}[args.target]
             if sha(source)!=expected:raise RuntimeError('ORIGINAL_TARGET_DIGEST_MISMATCH')
-            destination='/sdcard/Android/data/dev.tripoder.workbench/files/acceptance'
+            destination='/sdcard/Android/data/dev.tripoder.engine/files/acceptance'
             adb('shell','mkdir','-p',destination);adb('push',str(source),destination+'/'+args.target+'.apk',timeout=150)
             report['targetApkSha256']=expected
             explicit={'closeLaunchEntry':args.close_launch_entry} if args.close_launch_entry is not None else {}
             if args.close_activity_ticket is not None:explicit['closeActivityTicket']=','.join(args.close_activity_ticket)
-            first=instrument('target-'+args.target,'TargetLaunchIntegration','dev.tripoder.workbench',target=args.target,**explicit);results=[first];engine_uid=first['workerUid']
+            first=instrument('target-'+args.target,'TargetLaunchIntegration','dev.tripoder.engine',target=args.target,**explicit);results=[first];engine_uid=first['workerUid']
         elif args.phase=='resources':
-            first=instrument('resources','ControlResourceInspection','dev.tripoder.workbench');results=[first];engine_uid=first['workerUid']
+            first=instrument('resources','ControlResourceInspection','dev.tripoder.engine');results=[first];engine_uid=first['workerUid']
         elif args.phase=='library-ui':
-            first=instrument('library-ui','LibraryUiIntegration','dev.tripoder.workbench');results=[first];engine_uid=first['workerUid']
+            first=instrument('library-ui','LibraryUiIntegration','dev.tripoder.engine');results=[first];engine_uid=first['workerUid']
         elif args.phase=='app-actions-ui':
-            first=instrument('app-actions-ui','AppActionsUiIntegration','dev.tripoder.workbench');results=[first];engine_uid=first['workerUid']
+            first=instrument('app-actions-ui','AppActionsUiIntegration','dev.tripoder.engine');results=[first];engine_uid=first['workerUid']
         elif args.phase=='hook-ui':
-            first=instrument('hook-ui','HookUiIntegration','dev.tripoder.workbench');results=[first];engine_uid=first['workerUid']
+            first=instrument('hook-ui','HookUiIntegration','dev.tripoder.engine');results=[first];engine_uid=first['workerUid']
         else:
-            first=instrument('controller','ControlIntegration','dev.tripoder.workbench')
-            denied=instrument('engine-uid','EngineUidIntegration','dev.tripoder.engine')
+            first=instrument('controller','ControlIntegration','dev.tripoder.engine')
             adb('shell','am','force-stop','dev.tripoder.engine')
-            recovered=instrument('recovery','ControlIntegration','dev.tripoder.workbench',phase='recovery',**{key:first[key] for key in ['operation','space','project','installGeneration','bindingOperation','dataId','readyLaunchOperation']})
+            recovered=instrument('recovery','ControlIntegration','dev.tripoder.engine',phase='recovery',**{key:first[key] for key in ['operation','space','project','installGeneration','bindingOperation','dataId','readyLaunchOperation']})
             if first['status']['authority']==recovered['status']['authority']:raise RuntimeError('AUTHORITY_DEATH_NOT_OBSERVED')
-            results=[first,denied,recovered];engine_uid=first['status']['engineUid']
+            results=[first,recovered];engine_uid=first['status']['engineUid']
         if engine_uid!=owned_uid:raise RuntimeError('ENGINE_UID_RECEIPT_MISMATCH')
         if args.phase in ('control','hook-ui'):
             if args.phase=='control':statuses=[first.get('runtimeStatus')]
@@ -216,7 +214,7 @@ def main():
         report['phase']=args.phase;report['checks']=sum(len(item['checks']) for item in results);report['controllerUid']=first['uid'];report['engineUid']=engine_uid;report['passed']=True
         if 'workerPid' in first:report['workerPid']=first['workerPid']
         adb('shell','am','force-stop','dev.tripoder.controltest')
-        if args.phase!='target':adb('shell','am','start','-W','-n','dev.tripoder.workbench/dev.tripoder.hooklab.WorkbenchActivity')
+        if args.phase!='target':adb('shell','am','start','-W','-n','dev.tripoder.engine/dev.tripoder.hooklab.WorkbenchActivity')
     except Exception as error:report['passed']=False;report['error']=str(error);raise
     finally:
         if owned_uid is not None and device_start is not None:

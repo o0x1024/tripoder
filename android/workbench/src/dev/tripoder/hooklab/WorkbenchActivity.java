@@ -32,7 +32,6 @@ public final class WorkbenchActivity extends Activity implements EngineConnectio
     private int d(int value){return WorkbenchLibraryUi.dp(this,value);}
     @Override protected void onResume(){super.onResume();if(engine!=null&&engine.ready()){app.operations.query();refresh();}else if(body!=null)render();}
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putInt("tab",tab);}
-    @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(request==EngineConnection.START_ENGINE)engine.startupResult(result,data);}
     @Override public void changed(){if(destroyed)return;if(!engine.ready()){catalog=null;lease="";presentations.clear();render();return;}if(!lease.equals(engine.lease)){lease=engine.lease;app.operations.query();refresh();}render();}
     private void operationChanged(){if(destroyed)return;boolean pending=app.operations.pending();status.setText(app.operations.message);status.setVisibility(status.length()==0?View.GONE:View.VISIBLE);boolean complete=wasPending&&!pending;wasPending=pending;if(complete)refresh();}
     private void refresh(){if(refreshing||!engine.ready())return;refreshing=true;String current=engine.lease;engine.execute(ControlWire.request("catalog"),(value,error)->{refreshing=false;if(destroyed||!current.equals(engine.lease))return;if(error!=null){show(error);return;}try{catalog=new WorkbenchCatalog(value);render();}catch(Exception invalid){show(invalid);}});}

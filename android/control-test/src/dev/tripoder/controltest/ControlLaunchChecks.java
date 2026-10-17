@@ -18,7 +18,7 @@ final class ControlLaunchChecks {
         test.check("rejected-launch-has-failed-receipt","FAILED".equals(test.execute(session,"query","operation",stale).getString("state")),stale);
         String operation=UUID.randomUUID().toString();Bundle request=ControlWire.request("prepareLaunch","operation",operation,"project",project,"bindingOperation",binding,"generation",generation,"component","dev.tripoder.p0.a.AActivity");
         Bundle prepared=ControlWire.call(session,ControlWire.EXECUTE,request);String capability=prepared.getString("capability");Bundle facts=new Bundle(prepared);facts.remove("capability");
-        test.check("launch-preparation-has-real-running-worker",prepared.getInt("pid")>0&&prepared.getInt("uid")!=android.os.Process.myUid()&&"RUNNING".equals(prepared.getString("state"))&&generation.equals(prepared.getString("installGeneration")),test.json(facts));
+        test.check("launch-preparation-has-real-running-worker",prepared.getInt("pid")>0&&prepared.getInt("uid")==android.os.Process.myUid()&&prepared.getInt("pid")!=android.os.Process.myPid()&&"RUNNING".equals(prepared.getString("state"))&&generation.equals(prepared.getString("installGeneration")),test.json(facts));
         test.check("launch-capability-is-256-bit-one-time-value",capability!=null&&capability.matches("[a-f0-9]{64}"),"raw token omitted");
         test.check("duplicate-launch-does-not-return-another-capability",test.rejected(()->ControlWire.call(session,ControlWire.EXECUTE,request),IllegalStateException.class,"LAUNCH_ALREADY_ACCEPTED_QUERY_REQUIRED"),true);
         Bundle pending=test.execute(session,"query","operation",operation);

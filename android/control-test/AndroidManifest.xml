@@ -1,17 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tripoder.controltest" android:versionCode="1">
     <uses-sdk android:minSdkVersion="36" android:targetSdkVersion="36"/>
-    <uses-permission android:name="dev.tripoder.engine.permission.CONTROL"/>
-    <queries><package android:name="dev.tripoder.engine"/><package android:name="dev.tripoder.workbench"/></queries>
+    <queries><package android:name="dev.tripoder.engine"/></queries>
     <application android:label="Tripoder Control Test" android:allowBackup="false">
-        <activity android:name="dev.tripoder.controltest.ClientActivity" android:exported="true" android:excludeFromRecents="true"/>
-        <service android:name="dev.tripoder.controltest.RejectedClient" android:exported="true" android:permission="dev.tripoder.engine.permission.CONTROL"/>
     </application>
-    <instrumentation android:name="dev.tripoder.controltest.ControlIntegration" android:targetPackage="dev.tripoder.workbench" android:functionalTest="true"/>
-    <instrumentation android:name="dev.tripoder.controltest.LibraryUiIntegration" android:targetPackage="dev.tripoder.workbench" android:functionalTest="true"/>
-    <instrumentation android:name="dev.tripoder.controltest.AppActionsUiIntegration" android:targetPackage="dev.tripoder.workbench" android:functionalTest="true"/>
-    <instrumentation android:name="dev.tripoder.controltest.HookUiIntegration" android:targetPackage="dev.tripoder.workbench" android:functionalTest="true"/>
-    <instrumentation android:name="dev.tripoder.controltest.AgentUiIntegration" android:targetPackage="dev.tripoder.workbench" android:functionalTest="true"/>
-    <instrumentation android:name="dev.tripoder.controltest.ControlResourceInspection" android:targetPackage="dev.tripoder.workbench" android:functionalTest="true"/>
-    <instrumentation android:name="dev.tripoder.controltest.TargetLaunchIntegration" android:targetPackage="dev.tripoder.workbench" android:functionalTest="true"/>
-    <instrumentation android:name="dev.tripoder.controltest.EngineUidIntegration" android:targetPackage="dev.tripoder.engine" android:functionalTest="true"/>
+    <instrumentation android:name="dev.tripoder.controltest.ControlIntegration" android:targetPackage="dev.tripoder.engine" android:functionalTest="true"/>
+    <instrumentation android:name="dev.tripoder.controltest.LibraryUiIntegration" android:targetPackage="dev.tripoder.engine" android:functionalTest="true"/>
+    <instrumentation android:name="dev.tripoder.controltest.AppActionsUiIntegration" android:targetPackage="dev.tripoder.engine" android:functionalTest="true"/>
+    <instrumentation android:name="dev.tripoder.controltest.HookUiIntegration" android:targetPackage="dev.tripoder.engine" android:functionalTest="true"/>
+    <instrumentation android:name="dev.tripoder.controltest.AgentUiIntegration" android:targetPackage="dev.tripoder.engine" android:functionalTest="true"/>
+    <instrumentation android:name="dev.tripoder.controltest.ControlResourceInspection" android:targetPackage="dev.tripoder.engine" android:functionalTest="true"/>
+    <instrumentation android:name="dev.tripoder.controltest.TargetLaunchIntegration" android:targetPackage="dev.tripoder.engine" android:functionalTest="true"/>
 </manifest>

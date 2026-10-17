@@ -19,8 +19,11 @@ public final class RuntimeControllerService extends Service {
         NotificationManager manager=getSystemService(NotificationManager.class);manager.createNotificationChannel(new NotificationChannel("engine","Tripoder 运行引擎",NotificationManager.IMPORTANCE_LOW));
     }
     @Override public int onStartCommand(Intent intent,int flags,int startId){
-        Notification notification=new Notification.Builder(this,"engine").setSmallIcon(android.R.drawable.ic_media_play).setContentTitle("Tripoder 引擎已连接")
-            .setContentText("在工作台查看空间与运行状态").setOngoing(true).build();startForeground(1,notification);return START_NOT_STICKY;
+        // The only ongoing notification of the package; tapping returns to the workbench task.
+        Intent open=getPackageManager().getLaunchIntentForPackage(getPackageName());
+        PendingIntent page=open==null?null:PendingIntent.getActivity(this,0,open,PendingIntent.FLAG_IMMUTABLE);
+        Notification notification=new Notification.Builder(this,"engine").setSmallIcon(android.R.drawable.ic_media_play).setContentTitle("Tripoder 运行中")
+            .setContentText("点击返回工作台查看空间与运行状态").setContentIntent(page).setOngoing(true).build();startForeground(1,notification);return START_NOT_STICKY;
     }
     @Override public IBinder onBind(Intent intent){return leases.entry;}
     @Override public void onDestroy(){if(activeAgents!=null){activeAgents.close();activeAgents=null;}leases.close();if(activeLeases==leases)activeLeases=null;super.onDestroy();}

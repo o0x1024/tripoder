@@ -19,7 +19,7 @@ final class ControlInstallChecks {
             test.check("writable-install-descriptor-rejected",test.rejected(()->install(base,sha,space,rejected,null,ParcelFileDescriptor.MODE_READ_WRITE),SecurityException.class,"SOURCE_READ_ONLY_REGULAR_FILE_REQUIRED"),true);
             test.check("invalid-fd-rejected-before-admission",test.rejected(()->test.execute(session,"query","operation",rejected),IllegalStateException.class,"OPERATION_NOT_FOUND"),true);
             Bundle imported=install(base,sha,space,operation,null,ParcelFileDescriptor.MODE_READ_ONLY);String generation=imported.getString("generation");
-            test.check("original-apk-installed-across-distinct-uids","dev.tripoder.p0.a".equals(imported.getString("package"))&&sha.equals(imported.getString("sha256"))&&!imported.containsKey("apk")&&!imported.containsKey("data"),test.json(imported));
+            test.check("original-apk-installed-through-control-lease","dev.tripoder.p0.a".equals(imported.getString("package"))&&sha.equals(imported.getString("sha256"))&&!imported.containsKey("apk")&&!imported.containsKey("data"),test.json(imported));
             Bundle receipt=test.execute(session,"query","operation",operation);
             test.check("install-operation-durable-receipt","SUCCEEDED".equals(receipt.getString("state"))&&generation.equals(receipt.getString("result")),test.json(receipt));
             test.check("duplicate-install-operation-reuses-receipt",generation.equals(install(base,sha,space,operation,null,ParcelFileDescriptor.MODE_READ_ONLY).getString("generation")),generation);

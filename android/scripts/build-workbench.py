@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a workbench and engine with separate UIDs; excludes legacy runners and probe controllers.
+"""Build the single Tripoder APK (workbench UI + engine runtime, package dev.tripoder.engine); excludes legacy runners and probe controllers.
 
 Uses the existing explicit development key. These APKs are not release-signed artifacts.
 """
@@ -47,11 +47,7 @@ def main():
     fixture_launcher=builder.apk('launcher-guest',[launcher_source],android/'control-test/launcher-fixture/AndroidManifest.xml')
     fixture_info['launcherSha256']=sha(fixture_launcher)
     generated=build/'generated';generated.mkdir(exist_ok=True)
-    engine_config=generated/'EngineBuild.java';engine_config.write_text('package dev.tripoder.runtime; final class EngineBuild { static final String CONTROLLER_CERT_SHA256="'+builder.cert_sha256+'"; }\n')
-    workbench_config=generated/'WorkbenchBuild.java';workbench_config.write_text('package dev.tripoder.hooklab; final class WorkbenchBuild { static final String ENGINE_CERT_SHA256="'+builder.cert_sha256+'"; }\n')
     common=sorted((android/'control/src').rglob('*.java'))
-    workbench_sources=common+legacy_ui+sorted((android/'workbench/src').rglob('*.java'))+[workbench_config]
-    workbench=builder.apk('tripoder-workbench',workbench_sources,android/'workbench/AndroidManifest.xml')
     native=build/'native';native.mkdir(exist_ok=True)
     self_hook, native_receipt=build_native(repo,native,args.ndk,args.platform_libc,args.platform_art,args.platform_linker)
     assets=build/'assets'
@@ -70,8 +66,8 @@ def main():
     slot_sources,manifest=generate_activity_slots(build,manifest,"TaskP")
     slot_sources+=job_sources
     core=sorted(p for p in (android/'runtime/src').rglob('*.java') if p.name!='RuntimeAuthorityService.java')
-    sources=core+self_hook_java+common+sorted((android/'engine/src').rglob('*.java'))+[engine_config]+slot_sources
-    engine=builder.apk('tripoder-engine',sources,manifest,assets=assets,libraries=[self_hook],jars=[builder.apksig()])
+    sources=core+self_hook_java+common+legacy_ui+sorted((android/'engine/src').rglob('*.java'))+sorted((android/'workbench/src').rglob('*.java'))+slot_sources
+    engine=builder.apk('tripoder',sources,manifest,assets=assets,libraries=[self_hook],jars=[builder.apksig()])
     with zipfile.ZipFile(engine) as archive:
         if sorted(name for name in archive.namelist() if name.startswith('lib/'))!=['lib/arm64-v8a/libtripoderselfhook.so']:
             raise RuntimeError('PRODUCT_NATIVE_PACKAGING_MISMATCH')
@@ -81,7 +77,7 @@ def main():
     control_test=builder.apk('tripoder-control-test',common+sorted((android/'control-test/src').rglob('*.java')),android/'control-test/AndroidManifest.xml',assets=test_assets)
     after={str(p.relative_to(repo)):sha(p) for p in files}
     if before!=after:raise RuntimeError('SOURCES_CHANGED_DURING_BUILD')
-    receipt={'sourceSha256':before,'artifacts':{'workbench':{'path':str(workbench),'sha256':sha(workbench),'package':'dev.tripoder.workbench'},'engine':{'path':str(engine),'sha256':sha(engine),'package':'dev.tripoder.engine'}},'certificateSha256':builder.cert_sha256,'selfHookNative':native_receipt,'fridaInputs':[],'productFridaRemoved':True,'developmentSigningOnly':True,'virtualAppCodeUsed':False,'legacyRunnerIncluded':False,'probeControllerIncluded':False,'generatedManifestSha256':sha(manifest),'schema':1}
+    receipt={'sourceSha256':before,'artifacts':{'engine':{'path':str(engine),'sha256':sha(engine),'package':'dev.tripoder.engine'}},'certificateSha256':builder.cert_sha256,'selfHookNative':native_receipt,'fridaInputs':[],'productFridaRemoved':True,'developmentSigningOnly':True,'virtualAppCodeUsed':False,'legacyRunnerIncluded':False,'probeControllerIncluded':False,'generatedManifestSha256':sha(manifest),'schema':1}
     receipt['artifacts']['controlTest']={'path':str(control_test),'sha256':sha(control_test),'package':'dev.tripoder.controltest','testOnly':True}
     receipt['installFixtures']=fixture_info
     (build/'build-receipt.json').write_text(json.dumps(receipt,indent=2))

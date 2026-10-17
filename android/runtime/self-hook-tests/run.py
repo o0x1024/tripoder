@@ -48,13 +48,10 @@ def main():
             'deviceExecuted':False,'productAccepted':False}
     if args.android_jar:
         if not args.apksig_jar:raise ValueError('--apksig-jar required with --android-jar')
-        generated=build/'EngineBuild.java'
-        generated.write_text('package dev.tripoder.runtime; final class EngineBuild { static final String CONTROLLER_CERT_SHA256="'+'0'*64+'"; }\n')
         sdk_classes=build/'sdk-classes';sdk_classes.mkdir(exist_ok=True)
         sources=sorted(path for path in (repo/'android/runtime/src').rglob('*.java') if path.name!='RuntimeAuthorityService.java')
         sources+=sorted((repo/'android/control/src').rglob('*.java'))+sorted((repo/'android/engine/src').rglob('*.java'))
         sources += sorted((repo/'android/self-hook/java').rglob('*.java'))
-        sources.append(generated)
         component_config=build/'RuntimeComponentBuild.java'
         component_config.write_text('package dev.tripoder.runtime; final class RuntimeComponentBuild { static final String ACTIVITY_POOL_PREFIX="TaskP"; }\n')
         sources.append(component_config)

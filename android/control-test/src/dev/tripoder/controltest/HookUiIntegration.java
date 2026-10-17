@@ -12,7 +12,7 @@ import java.lang.reflect.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-/** Actual native workbench controls, a distinct-UID worker and an unmodified owned APK. */
+/** Actual native workbench controls, a separate worker process and an unmodified owned APK. */
 public final class HookUiIntegration extends ControlTestBase {
     private IBinder session;private String project,process,binding,install;private Object app,projects;
     @Override void test()throws Exception{
@@ -36,7 +36,7 @@ public final class HookUiIntegration extends ControlTestBase {
             public void onActivityStarted(Activity a){}public void onActivityResumed(Activity a){}public void onActivityPaused(Activity a){}public void onActivityStopped(Activity a){}public void onActivitySaveInstanceState(Activity a,Bundle b){}public void onActivityDestroyed(Activity a){}
         };application.registerActivityLifecycleCallbacks(watcher);
         try{
-            getTargetContext().startActivity(new Intent().setClassName("dev.tripoder.workbench","dev.tripoder.hooklab.WorkbenchProjectActivity").putExtra("project",project).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            getTargetContext().startActivity(new Intent().setClassName("dev.tripoder.engine","dev.tripoder.hooklab.WorkbenchProjectActivity").putExtra("project",project).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             AccessibilityNodeInfo editor=waitNode("项目脚本编辑器",true);Bundle text=new Bundle();text.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,script);
             check("native-editor-accepts-script",editor.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,text),"native accessibility edit");scrollTo("保存脚本 · 有未保存修改");click("保存脚本 · 有未保存修改");waitNode("脚本已保存",false);
             check("native-save-persists-exact-source",script.equals(invoke(projects,"script",new Class<?>[]{String.class},project)),"exact saved TypeScript");
@@ -52,7 +52,7 @@ public final class HookUiIntegration extends ControlTestBase {
             click("完成并返回 Tripoder");waitNode("脚本部署",false);scrollTo("停用脚本");click("停用脚本");awaitOperations();check("native-panel-confirms-disable",panelState().equals("DISABLED"),panelState());capture("workbench-disabled");
             scrollTop();click("启动空间应用");click("dev.tripoder.previewguest.CounterActivity");waitNode("1",false);capture("counter-original-restored");
             JSONObject restored=status();check("explicit-next-launch-keeps-original-behavior",restored.getString("state").equals("IDLE"),restored);click("完成并返回 Tripoder");
-            check("guest-and-workbench-use-distinct-uids",prepared.getInt("uid")!=android.os.Process.myUid(),new JSONObject().put("guest",prepared.getInt("uid")).put("workbench",android.os.Process.myUid()));
+            check("guest-runs-in-separate-process-of-same-uid",prepared.getInt("uid")==android.os.Process.myUid()&&prepared.getInt("pid")!=android.os.Process.myPid(),new JSONObject().put("guest",prepared.getInt("uid")).put("workbench",android.os.Process.myUid()));
             report.put("ownedApkSha256",fixtures.getString("previewSha256")).put("apkRewritten",false).put("businessScenarioVerified",false);
         }finally{application.unregisterActivityLifecycleCallbacks(watcher);}
     }
@@ -66,7 +66,7 @@ public final class HookUiIntegration extends ControlTestBase {
     private void scrollTop(){for(int i=0;i<12;i++){if(!scroll(false))break;SystemClock.sleep(50);}}
     private boolean scroll(boolean forward){var root=getUiAutomation().getRootInActiveWindow();return scrollNode(root,forward);}
     private boolean scrollNode(AccessibilityNodeInfo node,boolean forward){if(node==null)return false;if(node.isScrollable()&&node.performAction(forward?AccessibilityNodeInfo.ACTION_SCROLL_FORWARD:AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD))return true;for(int i=0;i<node.getChildCount();i++)if(scrollNode(node.getChild(i),forward))return true;return false;}
-    private void capture(String label)throws Exception{getUiAutomation().waitForIdle(300,3000);SystemClock.sleep(650);var root=getUiAutomation().getRootInActiveWindow();String pkg=root==null?"":String.valueOf(root.getPackageName());if(!pkg.equals("dev.tripoder.workbench")&&!pkg.equals("dev.tripoder.engine"))throw new IOException("UI_SCREENSHOT_NOT_OWNED:"+pkg);Bitmap bitmap=getUiAutomation().takeScreenshot();if(bitmap==null)throw new IOException("UI_SCREENSHOT_UNAVAILABLE");String name=run+"-"+label+".png";try(var out=new FileOutputStream(new File(getTargetContext().getExternalFilesDir(null),name))){if(!bitmap.compress(Bitmap.CompressFormat.PNG,100,out))throw new IOException("UI_SCREENSHOT_ENCODE_FAILED");out.getFD().sync();}bitmap.recycle();JSONArray captures=report.optJSONArray("captures");if(captures==null){captures=new JSONArray();report.put("captures",captures);}captures.put(name);}
+    private void capture(String label)throws Exception{getUiAutomation().waitForIdle(300,3000);SystemClock.sleep(650);var root=getUiAutomation().getRootInActiveWindow();String pkg=root==null?"":String.valueOf(root.getPackageName());if(!pkg.equals("dev.tripoder.engine")&&!pkg.equals("dev.tripoder.engine"))throw new IOException("UI_SCREENSHOT_NOT_OWNED:"+pkg);Bitmap bitmap=getUiAutomation().takeScreenshot();if(bitmap==null)throw new IOException("UI_SCREENSHOT_UNAVAILABLE");String name=run+"-"+label+".png";try(var out=new FileOutputStream(new File(getTargetContext().getExternalFilesDir(null),name))){if(!bitmap.compress(Bitmap.CompressFormat.PNG,100,out))throw new IOException("UI_SCREENSHOT_ENCODE_FAILED");out.getFD().sync();}bitmap.recycle();JSONArray captures=report.optJSONArray("captures");if(captures==null){captures=new JSONArray();report.put("captures",captures);}captures.put(name);}
     private static Object field(Object object,String name)throws Exception{Field field=object.getClass().getDeclaredField(name);field.setAccessible(true);return field.get(object);}
     private static Object invoke(Object object,String name,Class<?>[] types,Object...args)throws Exception{Method method=object.getClass().getDeclaredMethod(name,types);method.setAccessible(true);return method.invoke(object,args);}
     private static String id(){return UUID.randomUUID().toString();}

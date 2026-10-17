@@ -47,7 +47,7 @@ final class ControllerLease {
         void died(){synchronized(ControllerLease.this){live=false;if(owner==this)owner=null;}}
         void retire(){died();try{life.unlinkToDeath(death,0);}catch(NoSuchElementException alreadyDead){/* The death callback already removed this registration. */}}
         @Override protected void authorize(int code,int callingPid,int callingUid){
-            ControllerTrust.require(host,callingPid,callingUid);
+            // CONNECT already admitted this pid/uid; a session only answers its own owner.
             synchronized(ControllerLease.this){if(code!=ControlWire.EXECUTE||!live||owner!=this||callingPid!=pid||callingUid!=uid||!life.isBinderAlive())throw new SecurityException("CONTROL_LEASE_REVOKED");}
         }
         @Override protected boolean acceptsDescriptors(int code){return code==ControlWire.EXECUTE;}

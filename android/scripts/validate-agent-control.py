@@ -101,7 +101,7 @@ def main():
     def wait_json(name,timeout=45):
         end=time.monotonic()+timeout
         while time.monotonic()<end:
-            result=adb('shell','cat','/sdcard/Android/data/dev.tripoder.workbench/files/'+name,check=False,timeout=5)
+            result=adb('shell','cat','/sdcard/Android/data/dev.tripoder.engine/files/'+name,check=False,timeout=5)
             if result.returncode==0:
                 value=json.loads(result.stdout)
                 if value['runId']!=run:raise RuntimeError('RUN_MISMATCH')
@@ -112,22 +112,21 @@ def main():
     try:
         if adb('get-state').stdout.strip()!='device':raise RuntimeError('DEVICE_NOT_READY')
         if args.install:
-            for package in ['dev.tripoder.engine','dev.tripoder.workbench','dev.tripoder.controltest']:adb('shell','am','force-stop',package)
-            for name in ['engine','workbench','controlTest']:adb('install','--no-incremental','-r',receipt['artifacts'][name]['path'],timeout=90)
+            for package in ['dev.tripoder.engine','dev.tripoder.controltest']:adb('shell','am','force-stop',package)
+            for name in ['engine','controlTest']:adb('install','--no-incremental','-r',receipt['artifacts'][name]['path'],timeout=90)
         for artifact in receipt['artifacts'].values():
             path=adb('shell','pm','path',artifact['package']).stdout.strip().removeprefix('package:')
             if '\n' in path or not path.startswith('/data/app/') or not path.endswith('/base.apk'):raise RuntimeError('INSTALLED_APK_PATH_INVALID')
             if adb('shell','sha256sum',path).stdout.split()[0]!=artifact['sha256']:raise RuntimeError('INSTALLED_APK_DIGEST_MISMATCH')
             if artifact['package']=='dev.tripoder.engine':engine_core_path=str(Path(path).parent/'lib/arm64/libtripoderselfhook.so')
-        for package in ['dev.tripoder.workbench','dev.tripoder.controltest','dev.tripoder.engine']:adb('shell','am','force-stop',package)
-        for package in ['dev.tripoder.workbench','dev.tripoder.engine','dev.tripoder.controltest']:
+        for package in ['dev.tripoder.controltest','dev.tripoder.engine']:adb('shell','am','force-stop',package)
+        for package in ['dev.tripoder.engine','dev.tripoder.controltest']:
             uid=adb('shell','cmd','package','list','packages','-U',package).stdout;match=re.fullmatch(re.escape('package:'+package)+r' uid:(\d+)\s*',uid)
             if not match:raise RuntimeError('UID_UNAVAILABLE')
             uids[package]=int(match[1])
         start=adb('shell','date "+%m-%d %H:%M:%S.%3N"').stdout.strip()
         if not re.fullmatch(r'\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}',start):raise RuntimeError('DEVICE_CLOCK_UNAVAILABLE')
         report['deviceLogStart']=start;report['uids']=uids
-        adb('shell','am','start','-W','-n','dev.tripoder.controltest/dev.tripoder.controltest.ClientActivity')
         command=['adb','-s',args.serial,'shell','am','instrument','-w','-e','runId',run,'-e','phase',args.phase,'dev.tripoder.controltest/dev.tripoder.controltest.AgentUiIntegration']
         instrument=subprocess.Popen(command,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         launch=wait_json('launch-workbench-'+run+'.json');adb('shell','am','start','-W','-a','android.intent.action.MAIN','-c','android.intent.category.LAUNCHER','-n',launch['component'])
@@ -149,7 +148,7 @@ def main():
         result=wait_json('result-'+run+'.json');(evidence/'device-result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2))
         for name in result.get('captures',[]):
             if not re.fullmatch(re.escape(run)+r'-[a-z-]+\.png',name):raise RuntimeError('CAPTURE_NAME_INVALID')
-            adb('pull','/sdcard/Android/data/dev.tripoder.workbench/files/'+name,str(evidence/name))
+            adb('pull','/sdcard/Android/data/dev.tripoder.engine/files/'+name,str(evidence/name))
         if not result.get('passed') or not all(c['passed'] for c in result['checks']):raise RuntimeError('DEVICE_ASSERTIONS_FAILED')
         if result['workerUid']!=uids['dev.tripoder.engine']:raise RuntimeError('ENGINE_UID_RECEIPT_MISMATCH')
         if args.phase in ('normal','disconnect'):
@@ -173,14 +172,14 @@ def main():
         report['passed']=True;report['deviceChecks']=len(result['checks']);report['mcpChecks']=[] if args.phase=='sentinel' else json.loads((evidence/'mcp-transcript.json').read_text())['checks'];report['workerPid']=result['workerPid']
     except Exception as error:
         report['passed']=False;report['error']=str(error)
-        result=adb('shell','cat','/sdcard/Android/data/dev.tripoder.workbench/files/result-'+run+'.json',check=False)
+        result=adb('shell','cat','/sdcard/Android/data/dev.tripoder.engine/files/result-'+run+'.json',check=False)
         if result.returncode==0:(evidence/'device-result.json').write_text(result.stdout)
-        progress=adb('shell','cat','/sdcard/Android/data/dev.tripoder.workbench/files/progress-'+run+'.json',check=False)
+        progress=adb('shell','cat','/sdcard/Android/data/dev.tripoder.engine/files/progress-'+run+'.json',check=False)
         if progress.returncode==0:(evidence/'device-progress.json').write_text(progress.stdout)
         raise
     finally:
         if instrument is not None and instrument.poll() is None:
-            instrument.kill();stdout,stderr=instrument.communicate();(evidence/'instrumentation.txt').write_text(stdout+stderr);adb('shell','am','force-stop','dev.tripoder.workbench')
+            instrument.kill();stdout,stderr=instrument.communicate();(evidence/'instrumentation.txt').write_text(stdout+stderr);adb('shell','am','force-stop','dev.tripoder.engine')
         if start:
             for package,uid in uids.items():
                 logs=adb('logcat','-b','crash','-d','--uid='+str(uid),'-T',start,check=False);(evidence/(package+'-crash.txt')).write_text(logs.stdout)
