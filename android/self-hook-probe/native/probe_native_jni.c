@@ -51,4 +51,18 @@ JNIEXPORT jlongArray JNICALL Java_dev_tripoder_selfhookprobe_NativeJniCaller_con
     jlong values[3]={made,atomic_load(&calls),atomic_load(&errors)};jlongArray result=(*env)->NewLongArray(env,3);
     if(result)(*env)->SetLongArrayRegion(env,result,0,3,values);return result;
 }
+struct borrowed_job {JavaVM *vm;bool passed;};
+static void *borrowed_worker(void *opaque){
+    struct borrowed_job *job=opaque;JNIEnv *before=NULL,*after=NULL;
+    if((*job->vm)->AttachCurrentThread(job->vm,&before,NULL)!=JNI_OK)return NULL;
+    errno=17;int32_t value=add(3,4);int returned_errno=errno;
+    job->passed=value==107&&returned_errno==17&&(*job->vm)->GetEnv(job->vm,(void **)&after,JNI_VERSION_1_6)==JNI_OK&&after==before&&!(*before)->ExceptionCheck(before);
+    job->passed=((*job->vm)->DetachCurrentThread(job->vm)==JNI_OK)&&job->passed;return NULL;
+}
+JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhookprobe_NativeJniCaller_preAttached(JNIEnv *env,jclass type){
+    (void)type;struct borrowed_job job={0};if((*env)->GetJavaVM(env,&job.vm)!=JNI_OK)return JNI_FALSE;
+    pthread_t thread;if(pthread_create(&thread,NULL,borrowed_worker,&job))return JNI_FALSE;
+    if(pthread_join(thread,NULL)){(void)tp_park_syscall(SYS_exit_group,225,0,0,0,0,0);__builtin_trap();}
+    return job.passed;
+}
 JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhookprobe_NativeJniCaller_close(JNIEnv *env,jclass type){(void)env;(void)type;if(!module||dlclose(module))return false;module=NULL;return true;}

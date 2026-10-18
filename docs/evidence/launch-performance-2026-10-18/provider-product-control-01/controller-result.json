@@ -1,0 +1,361 @@
+{
+  "runId": "control-2ede49cf0a8347c7",
+  "startedAt": 1792284505926,
+  "uid": 10400,
+  "pid": 25984,
+  "deviceBuild": "Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys",
+  "scope": "control-install-project-binding-limited",
+  "workbenchStartupStatus": {
+    "schema": 32,
+    "hookReady": true,
+    "lease": "c3f72af5-1e54-477c-bd16-fe0455e8a636",
+    "enginePid": 26045,
+    "engineUid": 10400,
+    "strongIsolation": false,
+    "authority": "f973c252-730d-44fc-8a2b-04d25e9f6ba2",
+    "controllerUid": 10400
+  },
+  "status": {
+    "schema": 32,
+    "hookReady": true,
+    "lease": "39172845-61ad-42cc-967d-8eaf53db88a8",
+    "enginePid": 26045,
+    "engineUid": 10400,
+    "strongIsolation": false,
+    "authority": "f973c252-730d-44fc-8a2b-04d25e9f6ba2",
+    "controllerUid": 10400
+  },
+  "operation": "eadcd277-b89c-4f11-ada1-ef8919d608c6",
+  "space": "control-2ede49cf0a8347c7",
+  "project": "project-control-2ede49cf0a8347c7",
+  "bindingOperation": "0ff0f4e7-9961-42c7-a6cb-ebff497c988c",
+  "installGeneration": "27b3ae23-71a3-4785-8eaf-b6d6ca407870",
+  "dataId": "14176d04-692c-4217-be5e-cd47440955cc",
+  "installFixture": {
+    "baseSha256": "0d17a1b5f1e4848a5de6b12f02db8fd6316bd417bb65f04b049aa37c4322ab50",
+    "upgradeSha256": "044dba5f72df7cb5c8e630ccc6df280931c03990b70178238e95e6264d6d4da8",
+    "previewSha256": "aa81056a4a1afd0618fda4936f7866c715b457f17e30c48e15f8e2184e0e4c1a",
+    "apkRewritten": false,
+    "launcherSha256": "e0e284f719ff999cf5a7946f7198e72a1310e8894046e9c819dda274280ad4b1"
+  },
+  "error": "java.lang.IllegalStateException: ASSERTION_FAILED:unconsumed-launch-expires-without-component-replay\n\tat dev.tripoder.controltest.ControlTestBase.check(ControlTestBase.java:80)\n\tat dev.tripoder.controltest.ControlLaunchChecks.run(ControlLaunchChecks.java:30)\n\tat dev.tripoder.controltest.ControlIntegration.test(ControlIntegration.java:38)\n\tat dev.tripoder.controltest.ControlTestBase.onStart(ControlTestBase.java:45)\n\tat dev.tripoder.controltest.ControlIntegration.onStart(ControlIntegration.java:8)\n\tat android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2705)\n",
+  "passed": false,
+  "checks": [
+    {
+      "name": "real-workbench-foreground-startup-connected",
+      "passed": true,
+      "observed": ""
+    },
+    {
+      "name": "plain-binder-cannot-impersonate-controller-lifetime",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "workbench-and-engine-share-uid-in-separate-processes",
+      "passed": true,
+      "observed": {
+        "schema": 32,
+        "hookReady": true,
+        "lease": "39172845-61ad-42cc-967d-8eaf53db88a8",
+        "enginePid": 26045,
+        "engineUid": 10400,
+        "strongIsolation": false,
+        "authority": "f973c252-730d-44fc-8a2b-04d25e9f6ba2",
+        "controllerUid": 10400
+      }
+    },
+    {
+      "name": "owner-conflict-rejected",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "probe-command-not-in-production-api",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "raw-worker-command-not-in-production-api",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "unknown-control-fields-rejected",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "unaccepted-operation-cancel-record-is-durable",
+      "passed": true,
+      "observed": {
+        "detail": "CANCELED_BEFORE_ACCEPT",
+        "result": "",
+        "state": "FAILED"
+      }
+    },
+    {
+      "name": "late-request-cannot-execute-after-cancel",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "space-created-by-real-runtime-catalog",
+      "passed": true,
+      "observed": {
+        "space": "control-2ede49cf0a8347c7"
+      }
+    },
+    {
+      "name": "space-operation-has-durable-receipt",
+      "passed": true,
+      "observed": {
+        "detail": "",
+        "result": "control-2ede49cf0a8347c7",
+        "state": "SUCCEEDED",
+        "evidence": ""
+      }
+    },
+    {
+      "name": "cancel-does-not-rewrite-accepted-success",
+      "passed": true,
+      "observed": "eadcd277-b89c-4f11-ada1-ef8919d608c6"
+    },
+    {
+      "name": "duplicate-operation-does-not-create-second-space",
+      "passed": true,
+      "observed": [
+        "control-1f84a35916d04800",
+        "control-21cce858deec4a2d-ui",
+        "control-2ede49cf0a8347c7",
+        "control-3e9f2527ef6c4ea8",
+        "control-5acf74e6356645ae-ui",
+        "control-71f64ee78621434c",
+        "control-79e995687d704f2a",
+        "control-7b469d9cf8764244-ui",
+        "control-83a197e938cf4b1e",
+        "control-91c31615df204fee",
+        "control-94cdd073866f4f33",
+        "control-95617b9bc36243bc-ui",
+        "control-9569910ccf2c481e",
+        "control-9ff2d168dbd94396",
+        "control-a21ae132fe86416c-ui",
+        "control-a9a5a837b721462b",
+        "control-b1b53ca2f74a42e8-ui",
+        "control-bfc1bc5788f94a80-ui",
+        "control-c2d2ae96245848b9",
+        "control-cf21b8c7127341ab-ui",
+        "control-d8441d28f8ac4247",
+        "control-e7d45c277b8b49ea-ui",
+        "control-fb4a8eb7627f415f",
+        "library-06bee11acc1c4751",
+        "library-1eaf707b3f7441a0",
+        "library-321b556f33b94d26",
+        "library-62a29ad4807746f1",
+        "library-a581fb01e10948e7",
+        "library-febc51bef1c240ef",
+        "p6-20261014",
+        "tap-a-0362708ea313489b",
+        "tap-a-53f4c8f963a2412d",
+        "tap-a-5711ab3f89f24103",
+        "tap-a-62f38027f1374889",
+        "tap-a-a4893f08e83b4890",
+        "tap-a-af236245452e4bbf",
+        "tap-a-b03bf8a169d349ac",
+        "tap-a-c3c21632295a4120",
+        "tap-b-0362708ea313489b",
+        "tap-b-53f4c8f963a2412d",
+        "tap-b-5711ab3f89f24103",
+        "tap-b-62f38027f1374889",
+        "tap-b-a4893f08e83b4890",
+        "tap-b-af236245452e4bbf",
+        "tap-b-b03bf8a169d349ac",
+        "tap-b-c3c21632295a4120"
+      ]
+    },
+    {
+      "name": "writable-install-descriptor-rejected",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "invalid-fd-rejected-before-admission",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "original-apk-installed-through-control-lease",
+      "passed": true,
+      "observed": {
+        "sha256": "0d17a1b5f1e4848a5de6b12f02db8fd6316bd417bb65f04b049aa37c4322ab50",
+        "package": "dev.tripoder.p0.a",
+        "space": "control-2ede49cf0a8347c7",
+        "generation": "89a5d1ea-7b77-4628-a531-4871e00b3e37",
+        "version": 1,
+        "descriptorSha": "6cba6b0feece7f1e2c663439eb43af24596283d53188fcb6159a8d4ee9057d95"
+      }
+    },
+    {
+      "name": "install-operation-durable-receipt",
+      "passed": true,
+      "observed": {
+        "detail": "",
+        "result": "89a5d1ea-7b77-4628-a531-4871e00b3e37",
+        "state": "SUCCEEDED",
+        "evidence": ""
+      }
+    },
+    {
+      "name": "duplicate-install-operation-reuses-receipt",
+      "passed": true,
+      "observed": "89a5d1ea-7b77-4628-a531-4871e00b3e37"
+    },
+    {
+      "name": "incorrect-apk-digest-rejected",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "incorrect-digest-has-terminal-failed-receipt",
+      "passed": true,
+      "observed": "a923535c-a37f-4f53-b48f-6412f3aaf6ed"
+    },
+    {
+      "name": "project-cannot-bind-invented-generation",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "project-bound-to-verified-install",
+      "passed": true,
+      "observed": {
+        "dataId": "14176d04-692c-4217-be5e-cd47440955cc",
+        "bindingOperation": "951d23bc-d7d1-4c2b-a98d-8d9763d9beeb",
+        "package": "dev.tripoder.p0.a",
+        "project": "project-control-2ede49cf0a8347c7",
+        "space": "control-2ede49cf0a8347c7",
+        "generation": "89a5d1ea-7b77-4628-a531-4871e00b3e37"
+      }
+    },
+    {
+      "name": "project-resolves-same-data-instance",
+      "passed": true,
+      "observed": {
+        "dataId": "14176d04-692c-4217-be5e-cd47440955cc",
+        "bindingOperation": "951d23bc-d7d1-4c2b-a98d-8d9763d9beeb",
+        "package": "dev.tripoder.p0.a",
+        "project": "project-control-2ede49cf0a8347c7",
+        "space": "control-2ede49cf0a8347c7",
+        "generation": "89a5d1ea-7b77-4628-a531-4871e00b3e37"
+      }
+    },
+    {
+      "name": "upgrade-creates-new-install-generation",
+      "passed": true,
+      "observed": {
+        "sha256": "044dba5f72df7cb5c8e630ccc6df280931c03990b70178238e95e6264d6d4da8",
+        "package": "dev.tripoder.p0.a",
+        "space": "control-2ede49cf0a8347c7",
+        "generation": "27b3ae23-71a3-4785-8eaf-b6d6ca407870",
+        "version": 2,
+        "descriptorSha": "5070f48203338d37a413fe7c5ab73933d81d6d24aba86d85a5f0d3e2703c8204"
+      }
+    },
+    {
+      "name": "upgrade-invalidates-project-binding",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "explicit-rebind-retains-app-data",
+      "passed": true,
+      "observed": {
+        "dataId": "14176d04-692c-4217-be5e-cd47440955cc",
+        "bindingOperation": "0ff0f4e7-9961-42c7-a6cb-ebff497c988c",
+        "package": "dev.tripoder.p0.a",
+        "project": "project-control-2ede49cf0a8347c7",
+        "space": "control-2ede49cf0a8347c7",
+        "generation": "27b3ae23-71a3-4785-8eaf-b6d6ca407870"
+      }
+    },
+    {
+      "name": "stale-binding-revision-cannot-overwrite-current",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "launch-targets-come-from-bound-install",
+      "passed": true,
+      "observed": {
+        "targets": "[{\"component\":\"dev.tripoder.p0.a.AActivity\",\"launcher\":false,\"supported\":true,\"reason\":\"\"}]",
+        "dataId": "14176d04-692c-4217-be5e-cd47440955cc",
+        "bindingOperation": "0ff0f4e7-9961-42c7-a6cb-ebff497c988c",
+        "package": "dev.tripoder.p0.a",
+        "project": "project-control-2ede49cf0a8347c7",
+        "space": "control-2ede49cf0a8347c7",
+        "generation": "27b3ae23-71a3-4785-8eaf-b6d6ca407870"
+      }
+    },
+    {
+      "name": "launch-rejects-stale-project-binding",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "rejected-launch-has-failed-receipt",
+      "passed": true,
+      "observed": "1b063308-b47d-4106-88cc-9aca5b49ba4c"
+    },
+    {
+      "name": "launch-preparation-reserves-slot-for-install",
+      "passed": true,
+      "observed": {
+        "component": "dev.tripoder.p0.a.AActivity",
+        "installGeneration": "27b3ae23-71a3-4785-8eaf-b6d6ca407870",
+        "pid": -1,
+        "uid": -1,
+        "state": "ALLOCATED",
+        "processName": "dev.tripoder.p0.a",
+        "generation": "d247506bc321839b9372879b3d5f69fbe5c0b0e107f6741f2de7578e20cb2a25",
+        "operation": "37890fc5-7e0f-4c0f-aaa3-8dc1081e652a"
+      }
+    },
+    {
+      "name": "launch-capability-is-256-bit-one-time-value",
+      "passed": true,
+      "observed": "raw token omitted"
+    },
+    {
+      "name": "duplicate-launch-does-not-return-another-capability",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "preparation-is-not-activity-success",
+      "passed": true,
+      "observed": {
+        "detail": "",
+        "result": "",
+        "state": "RUNNING",
+        "evidence": ""
+      }
+    },
+    {
+      "name": "cancel-not-accepted-does-not-cancel-prepared-launch",
+      "passed": true,
+      "observed": "37890fc5-7e0f-4c0f-aaa3-8dc1081e652a"
+    },
+    {
+      "name": "unconsumed-launch-expires-without-component-replay",
+      "passed": false,
+      "observed": {
+        "detail": "LAUNCH_PROCESS_DIED_BEFORE_DISPATCH",
+        "result": "",
+        "state": "FAILED",
+        "evidence": ""
+      }
+    }
+  ],
+  "fullP5Accepted": false,
+  "finishedAt": 1792284512355
+}

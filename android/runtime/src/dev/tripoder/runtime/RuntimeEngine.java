@@ -31,6 +31,8 @@ public final class RuntimeEngine {
     private final IBinder broker;
     final RuntimeJobScheduler jobScheduler=new RuntimeJobScheduler(this);
     final RuntimeJobs jobs=new RuntimeJobs(this);
+    final RuntimePendingIntents pendingIntents=new RuntimePendingIntents(this);
+    final RuntimeAlarms alarms=new RuntimeAlarms(this);
     final RuntimeServices services=new RuntimeServices(this);
     final RuntimeProviders providers;
     final RuntimeProviderIndex providerIndex;
@@ -46,6 +48,7 @@ public final class RuntimeEngine {
     final RuntimeNotifications notifications=new RuntimeNotifications(this);
     final RuntimeShortcutCapability shortcuts=new RuntimeShortcutCapability(this);
     final RuntimePackages packages=new RuntimePackages(this);
+    final RuntimeWebView webView=new RuntimeWebView(this);
     final RuntimePackageContexts packageContexts=new RuntimePackageContexts(this);
     final Set<String> requestedPermissions;
     final RuntimeReceivers receivers=new RuntimeReceivers(this);
@@ -58,7 +61,27 @@ public final class RuntimeEngine {
     private final Set<Activity> returned=Collections.newSetFromMap(new java.util.IdentityHashMap<>());
     private final Map<String,Map<Integer,String>> pendingResults=new HashMap<>();
     private boolean ready;
-    boolean ownsWindow(android.view.View root){for(Activity activity:activityInstances.keySet())if(activity.getWindow()!=null&&activity.getWindow().peekDecorView()==root)return true;return false;}
+    boolean ownsWindow(android.view.View root){
+        if(root==null||!root.isAttachedToWindow()||root.getRootView()!=root)return false;
+        if(!(root.getLayoutParams() instanceof android.view.WindowManager.LayoutParams candidate))return false;
+        for(Activity activity:activityInstances.keySet()){
+            if(activity.isDestroyed()||activity.getWindow()==null)continue;
+            android.view.View decor=activity.getWindow().peekDecorView();
+            if(decor==null||!decor.isAttachedToWindow())continue;
+            if(decor==root)return true;
+            if(!(decor.getLayoutParams() instanceof android.view.WindowManager.LayoutParams owner))continue;
+            // Dialogs have a separate DecorView and IWindow, but Android assigns
+            // them the owning Activity's application token. Subwindows instead
+            // carry the parent IWindow token. Never infer ownership from Context.
+            if(candidate.type>=android.view.WindowManager.LayoutParams.FIRST_APPLICATION_WINDOW
+                    &&candidate.type<=android.view.WindowManager.LayoutParams.LAST_APPLICATION_WINDOW
+                    &&owner.token!=null&&owner.token==candidate.token)return true;
+            if(candidate.type>=android.view.WindowManager.LayoutParams.FIRST_SUB_WINDOW
+                    &&candidate.type<=android.view.WindowManager.LayoutParams.LAST_SUB_WINDOW
+                    &&decor.getWindowToken()!=null&&decor.getWindowToken()==candidate.token)return true;
+        }
+        return false;
+    }
     private final java.util.concurrent.FutureTask<Void> applicationStart;
     private final java.util.concurrent.CountDownLatch constructed=new java.util.concurrent.CountDownLatch(1);
     final long startupDeadlineElapsed;
@@ -70,29 +93,43 @@ public final class RuntimeEngine {
         if(RuntimeStartupDeadline.remaining(startupDeadlineElapsed,SystemClock.elapsedRealtime())==0)throw new IllegalStateException("PROCESS_START_TIMEOUT_UNKNOWN");
         this.host=host;generation=RuntimeWire.required(input,"generation");packageName=RuntimeWire.required(input,"package");processName=RuntimeWire.required(input,"processName");
         firstInstallTime=input.getLong("firstInstallTime");lastUpdateTime=input.getLong("lastUpdateTime");
-        File apk=new File(RuntimeWire.required(input,"apk"));if(!ApkStore.digest(apk).equals(RuntimeWire.required(input,"sha256")))throw new SecurityException("LOAD_DIGEST_MISMATCH");
-        ArtifactSet artifacts=ArtifactSet.verify(apk.getParentFile(),RuntimeWire.required(input,"descriptorSha"));
+        long bootStart=SystemClock.elapsedRealtime();
+        File apk=new File(RuntimeWire.required(input,"apk"));
+        String liteFile=input.getString("descriptorLiteFile"),liteSha=input.getString("descriptorLiteSha"),stampDigest=input.getString("artifactStamp");
+        ArtifactSet artifacts=liteFile!=null&&liteSha!=null&&stampDigest!=null?ArtifactSet.loadTrusted(apk.getParentFile(),RuntimeWire.required(input,"descriptorSha"),liteFile,liteSha,stampDigest):ArtifactSet.loadVerified(apk.getParentFile(),RuntimeWire.required(input,"descriptorSha"));
+        if(!artifacts.base.equals(apk)||!artifacts.parts.get(0).sha256.equals(RuntimeWire.required(input,"sha256")))throw new SecurityException("LOAD_DIGEST_MISMATCH");
+        boot("verify",bootStart);
         platformDefaultApplication=artifacts.baseManifest.applicationName.isEmpty()||artifacts.baseManifest.applicationName.equals(Application.class.getName());
-        if(artifacts.parts.size()!=1)throw new IllegalStateException("RUNTIME_SPLIT_EXECUTION_NOT_YET_SUPPORTED");
+        if(artifacts.parts.isEmpty())throw new IllegalStateException("RUNTIME_SPLIT_EXECUTION_NOT_YET_SUPPORTED");
         storage=new RuntimeStorage(host,input);data=storage.root;
-        PackageInfo pkg=host.getPackageManager().getPackageArchiveInfo(apk.toString(),PackageManager.GET_ACTIVITIES|PackageManager.GET_SERVICES|PackageManager.GET_RECEIVERS|PackageManager.GET_PROVIDERS|PackageManager.GET_META_DATA|PackageManager.GET_PERMISSIONS|PackageManager.GET_SIGNING_CERTIFICATES|PackageManager.GET_SIGNATURES|PackageManager.GET_URI_PERMISSION_PATTERNS|PackageManager.MATCH_DISABLED_COMPONENTS);if(pkg==null||!pkg.packageName.equals(packageName))throw new SecurityException("LOAD_PACKAGE_MISMATCH");
+        PackageInfo pkg=host.getPackageManager().getPackageArchiveInfo(apk.toString(),PackageManager.GET_CONFIGURATIONS|PackageManager.GET_ACTIVITIES|PackageManager.GET_SERVICES|PackageManager.GET_RECEIVERS|PackageManager.GET_PROVIDERS|PackageManager.GET_META_DATA|PackageManager.GET_PERMISSIONS|PackageManager.GET_SIGNING_CERTIFICATES|PackageManager.GET_SIGNATURES|PackageManager.GET_URI_PERMISSION_PATTERNS|PackageManager.MATCH_DISABLED_COMPONENTS);if(pkg==null||!pkg.packageName.equals(packageName))throw new SecurityException("LOAD_PACKAGE_MISMATCH");
+        RuntimeManifestIndex.includeSplits(artifacts,pkg);
+        boot("archiveInfo",bootStart);
         if(pkg.signingInfo==null)throw new SecurityException("PACKAGE_SIGNING_METADATA_MISSING");
         List<String> signers=new ArrayList<>();for(Signature signature:pkg.signingInfo.getApkContentsSigners())signers.add(ArtifactSet.hex(java.security.MessageDigest.getInstance("SHA-256").digest(signature.toByteArray())));Collections.sort(signers);
         if(!signers.equals(artifacts.signerDigests))throw new SecurityException("PACKAGE_SIGNING_METADATA_MISMATCH");packageArchive=pkg;
         requestedPermissions=pkg.requestedPermissions==null?Set.of():Set.copyOf(Arrays.asList(pkg.requestedPermissions));
-        info=new ApplicationInfo(pkg.applicationInfo);info.sourceDir=apk.toString();info.publicSourceDir=apk.toString();info.dataDir=data.toString();info.deviceProtectedDataDir=null;info.nativeLibraryDir=new File(apk.getParentFile(),"lib").getCanonicalPath();info.uid=android.os.Process.myUid();
+        info=new ApplicationInfo(pkg.applicationInfo);info.sourceDir=apk.toString();info.publicSourceDir=apk.toString();info.dataDir=data.toString();info.deviceProtectedDataDir=new File(data,"device-protected").toString();info.nativeLibraryDir=new File(apk.getParentFile(),"lib").getCanonicalPath();info.uid=android.os.Process.myUid();
         for(ActivityInfo activity:RuntimeActivityIndex.create(artifacts,pkg).values())if(processName.equals(activity.processName))activityInfos.put(activity.name,activity);
+        boot("activityIndex",bootStart);
         artifactLoader=RuntimeDexLoader.create(artifacts,info.nativeLibraryDir,host.getClassLoader());loader=artifactLoader;
+        boot("dexLoader",bootStart);
         resources=host.getPackageManager().getResourcesForApplication(info);
-        var declarations=RuntimeManifestIndex.resolve(artifacts,pkg);providerIndex=new RuntimeProviderIndex(pkg.providers,declarations);serviceIndex=new RuntimeServiceIndex(pkg.services,declarations);
+        boot("resources",bootStart);
+        var declarations=RuntimeManifestIndex.resolve(artifacts,pkg);manifestDeclarations=artifacts.components;filterSpecs=artifacts.filterSpecs;providerIndex=new RuntimeProviderIndex(pkg.providers,declarations);serviceIndex=new RuntimeServiceIndex(pkg.services,declarations);
         providers=new RuntimeProviders(this,pkg.providers,java.util.Objects.requireNonNull(input.getBundle("providers")),declarations);
-        packages.captureInfrastructure();
+        boot("indexes",bootStart);
+        packages.captureInfrastructure();webView.capture();
+        boot("infrastructure",bootStart);
         broker=input.getBinder("broker");if(broker==null)throw new SecurityException("BROKER_MISSING");hooks=new RuntimeHookBridge(this,input,artifacts);current=this;
         // An old controller cannot be replaced under a still-executing guest identity.
         broker.linkToDeath(()->android.os.Process.killProcess(android.os.Process.myPid()),0);
         Bundle registration=auth();registration.putString("bootstrap",RuntimeWire.required(input,"bootstrap"));RuntimeWire.call(broker,RuntimeWire.REGISTER,registration);
+        RuntimeExitHistory.stamp(host,generation,data.getName());
+        boot("register",bootStart);
         System.loadLibrary("tripoderselfhook");
         RuntimeSelfHookProduct.install(this);
+        boot("hooks",bootStart);
         if(!adapterReady)throw new IllegalStateException("SELF_HOOK_READY_PUBLICATION_MISSING");
         applicationStart=new java.util.concurrent.FutureTask<>(()->{
             recordStart("STARTING");
@@ -132,7 +169,16 @@ public final class RuntimeEngine {
     }
     Bundle brokerCall(int code,Bundle input)throws Exception{return RuntimeWire.call(broker,code,input);}
     private void recordStart(String stage)throws Exception{Bundle input=auth();input.putString("stage",stage);brokerCall(RuntimeWire.APPLICATION_START_EVENT,input);}
+    private volatile byte[] guestProcessStateSummary;
+    void setGuestProcessStateSummary(byte[] summary){if(summary!=null&&summary.length>128)throw new IllegalArgumentException("PROCESS_STATE_SUMMARY_TOO_LARGE");guestProcessStateSummary=summary==null?null:summary.clone();}
+    private static void boot(String stage,long start){android.util.Log.i("TripoderBoot",stage+" +"+(SystemClock.elapsedRealtime()-start)+"ms");}
+    /** The base manifest's components with their full declaration trees (intent filters included); the resolved index used elsewhere keeps only identity and state. */
+    volatile List<ApkManifest.Component> manifestDeclarations=List.of();
+    volatile Map<String,List<ArtifactSet.FilterSpec>> filterSpecs=Map.of();
+    boolean isBroker(Object value){return value!=null&&value==broker;}
     boolean ownsLoader(ClassLoader candidate){for(ClassLoader c=candidate;c!=null;c=c.getParent())if(c==artifactLoader)return true;return false;}
+    /** Guest code, or the exact platform WebView provider loader captured as an explicit dependency. */
+    boolean ownsReceiverLoader(ClassLoader candidate){return ownsLoader(candidate)||webView.ownsProviderLoader(candidate);}
     boolean ownsActivity(Activity activity){return activityInstances.containsKey(activity);}
     /** Failure diagnostics only: the guest Activities this engine constructed. */
     java.util.List<Activity> diagnosticActivities(){return new java.util.ArrayList<>(activityInstances.keySet());}
@@ -142,6 +188,8 @@ public final class RuntimeEngine {
     public boolean ownsResolver(ContentResolver resolver){return resolver==settingsResolver;}
     public void event(String stage){try{Bundle b=auth();b.putString("stage",stage);RuntimeWire.call(broker,RuntimeWire.EVENT,b);}catch(Exception e){throw new IllegalStateException("BROKER_EVENT_FAILED",e);}}
     RuntimeActivityCreation.Permit claimCreation(Intent intent)throws Exception {
+        // Bundle values unparcel lazily and keep the loader seen at their first access; own it before any extras read.
+        intent.setExtrasClassLoader(loader);
         String ticket=RuntimeWire.required(intent.getExtras(),"tripoder.ticket");Bundle gate=auth();gate.putString("candidate",ticket);gate.putString("stub",intent.getComponent().getClassName());gate.putString("kind","factory");
         if(RuntimeWire.call(broker,RuntimeWire.ACTIVITY_ENTRY_STATUS,gate).getBoolean("closed"))return new RuntimeActivityCreation.Permit(ActivityEntryFences.REJECTED);
         String activityName=intent.getStringExtra("tripoder.component");
@@ -161,7 +209,23 @@ public final class RuntimeEngine {
         activityMetadata.put(activity,new ActivityInfo(activityInfos.get(activityName)));visibleIntents.put(activity,visible);
     }
     public void activityAttached(Activity activity){try{Bundle b=activityAuth(activity);b.putInt("taskId",activity.getTaskId());RuntimeWire.call(broker,RuntimeWire.ACTIVITY_ATTACHED,b);}catch(Exception error){throw new IllegalStateException("ACTIVITY_ATTACH_ACK_FAILED",error);}}
-    public void activityCreated(Activity activity){try{Bundle b=activityAuth(activity);b.putInt("taskId",activity.getTaskId());RuntimeWire.call(broker,RuntimeWire.ACTIVITY_CREATED,b);}catch(Exception error){throw new IllegalStateException("ACTIVITY_CREATE_ACK_FAILED",error);}}
+    public void activityCreated(Activity activity){applyGuestWindowInsetsIfNeeded(activity);try{Bundle b=activityAuth(activity);b.putInt("taskId",activity.getTaskId());RuntimeWire.call(broker,RuntimeWire.ACTIVITY_CREATED,b);}catch(Exception error){throw new IllegalStateException("ACTIVITY_CREATE_ACK_FAILED",error);}}
+    private void applyGuestWindowInsetsIfNeeded(Activity activity){
+        if(info==null||info.targetSdkVersion<=0||info.targetSdkVersion>=35)return;
+        android.view.Window window=activity.getWindow();if(window==null)return;
+        android.view.View content=window.findViewById(android.R.id.content);if(content==null)return;
+        content.setOnApplyWindowInsetsListener((view,windowInsets)->{
+            android.view.Window win=activity.getWindow();
+            boolean fullscreen=win!=null&&(win.getAttributes().flags&android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN)!=0;
+            if(fullscreen)view.setPadding(0,0,0,0);
+            else{
+                android.graphics.Insets bars=windowInsets.getInsets(android.view.WindowInsets.Type.systemBars()|android.view.WindowInsets.Type.displayCutout());
+                view.setPadding(bars.left,bars.top,bars.right,bars.bottom);
+            }
+            return windowInsets;
+        });
+        content.requestApplyInsets();
+    }
     public void activityResumed(Activity activity){try{RuntimeWire.call(broker,RuntimeWire.ACTIVITY_RESUMED,activityAuth(activity));}catch(Exception error){throw new IllegalStateException("ACTIVITY_RESUME_ACK_FAILED",error);}}
     public void activityDestroying(Activity activity){destructionTasks.put(activity,activity.getTaskId());}
     public void activityDestroyed(Activity activity){try{Integer task=destructionTasks.remove(activity);if(task==null)throw new IllegalStateException("ACTIVITY_PRE_DESTROY_MISSING");Bundle b=activityAuth(activity);b.putBoolean("finishing",activity.isFinishing());b.putInt("taskId",task);RuntimeWire.call(broker,RuntimeWire.ACTIVITY_DESTROYED,b);if(activity.isFinishing())pendingResults.remove(b.getString("ticket"));callbacks.remove(activity);visibleIntents.remove(activity);activityInstances.remove(activity);activityMetadata.remove(activity);activityCallers.remove(activity);returned.remove(activity);}catch(Exception error){throw new IllegalStateException("ACTIVITY_DESTROY_ACK_FAILED",error);}}
@@ -171,6 +235,7 @@ public final class RuntimeEngine {
     public Intent visibleIntent(Activity activity){Intent intent=visibleIntents.get(activity);if(intent==null)throw new SecurityException("ACTIVITY_NOT_REGISTERED");return intent;}
     public Intent newIntent(Activity activity,Intent physical,ComponentCaller caller)throws Exception{
         if(!ownsActivity(activity)||physical==null||physical.getComponent()==null||!host.getPackageName().equals(physical.getComponent().getPackageName()))throw new SecurityException("ACTIVITY_NEW_INTENT_TARGET_MISMATCH");
+        physical.setExtrasClassLoader(loader);
         Bundle admission=auth();admission.putString("candidate",RuntimeWire.required(physical.getExtras(),"tripoder.ticket"));admission.putString("stub",physical.getComponent().getClassName());
         if(brokerCall(RuntimeWire.ACTIVITY_ENTRY_STATUS,admission).getBoolean("closed")){android.util.Log.i("TripoderRuntime","ACTIVITY_CLOSED_NEW_INTENT_REJECTED:"+admission.getString("candidate"));return null;}
         Intent visible=RuntimeActivityIntent.visible(physical,packageName,loader);if(!ActivityComponentLedger.canonical(RuntimeActivityIndex.require(activityInfos,visible.getComponent().getClassName())).equals(ActivityComponentLedger.canonical(activityInfo(activity))))throw new SecurityException("ACTIVITY_NEW_INTENT_COMPONENT_MISMATCH");
@@ -189,8 +254,25 @@ public final class RuntimeEngine {
         try{response=RuntimeWire.call(broker,RuntimeWire.ROUTE,request);}catch(IllegalStateException e){if(String.valueOf(e.getMessage()).contains("PACKAGE_NOT_IN_SPACE"))throw new ActivityNotFoundException("PACKAGE_NOT_IN_SPACE:"+intent.getComponent().getPackageName());throw e;}
         if(requestCode>=0)pending.put(requestCode,RuntimeWire.required(response,"operation"));
         Intent routed=new Intent(intent).setComponent(new ComponentName(host,RuntimeWire.required(response,"stub")));
-        routed.putExtra("tripoder.extras",intent.getExtras()!=null);
+        Bundle origExtras=intent.getExtras();routed.putExtra("tripoder.extras",origExtras!=null&&!origExtras.isEmpty());
         routed.putExtra("tripoder.flags",intent.getFlags()).putExtra("tripoder.component",intent.getComponent().getClassName()).putExtra("tripoder.generation",RuntimeWire.required(response,"generation")).putExtra("tripoder.operation",RuntimeWire.required(response,"operation")).putExtra("tripoder.ticket",RuntimeWire.required(response,"ticket")).putExtra("tripoder.delivery",RuntimeWire.required(response,"delivery"));if(requestCode>=0)routed.putExtra("tripoder.callback",RuntimeWire.required(response,"callback"));return routed;
+    }
+    /** A start requested through a non-Activity Context: a new task begun by the process itself, never a result request. */
+    public Intent routeFromContext(Intent intent)throws Exception{
+        if(intent.getComponent()==null)throw new IllegalArgumentException("ACTIVITY_COMPONENT_REQUIRED");
+        intent=RuntimeActivityIntent.snapshot(intent);
+        if((intent.getFlags()&Intent.FLAG_ACTIVITY_NEW_TASK)==0)throw new android.util.AndroidRuntimeException("Calling startActivity() from outside of an Activity context requires the FLAG_ACTIVITY_NEW_TASK flag. Is this really what you want?");
+        Bundle request=auth();request.putBoolean("fromContext",true);request.putString("package",intent.getComponent().getPackageName());request.putString("component",intent.getComponent().getClassName());request.putString("operation",UUID.randomUUID().toString());request.putString("requestDigest",RuntimeActivityIntent.digest(intent));request.putBoolean("wantsResult",false);request.putInt("flags",intent.getFlags());
+        Bundle response;
+        try{response=RuntimeWire.call(broker,RuntimeWire.ROUTE,request);}catch(IllegalStateException e){if(String.valueOf(e.getMessage()).contains("PACKAGE_NOT_IN_SPACE"))throw new ActivityNotFoundException("PACKAGE_NOT_IN_SPACE:"+intent.getComponent().getPackageName());throw e;}
+        Intent routed=new Intent(intent).setComponent(new ComponentName(host,RuntimeWire.required(response,"stub")));
+        Bundle origExtras=intent.getExtras();routed.putExtra("tripoder.extras",origExtras!=null&&!origExtras.isEmpty());
+        routed.putExtra("tripoder.flags",intent.getFlags()).putExtra("tripoder.component",intent.getComponent().getClassName()).putExtra("tripoder.generation",RuntimeWire.required(response,"generation")).putExtra("tripoder.operation",RuntimeWire.required(response,"operation")).putExtra("tripoder.ticket",RuntimeWire.required(response,"ticket")).putExtra("tripoder.delivery",RuntimeWire.required(response,"delivery"));return routed;
+    }
+    /** The host's own components are never a guest start target: the guest shares the host UID, so this is a policy boundary, not a kernel one. */
+    public boolean targetsHost(Intent intent){
+        if(intent==null)return false;ComponentName component=intent.getComponent();String pkg=component!=null?component.getPackageName():intent.getPackage();
+        return pkg!=null&&host.getPackageName().equals(pkg);
     }
     public void activityStartResult(Object value,int result)throws Exception{
         if(!(value instanceof Intent))throw new SecurityException("ACTIVITY_START_RESULT_INTENT_MISSING");
@@ -205,12 +287,31 @@ public final class RuntimeEngine {
         returned.add(activity);callbacks.remove(activity);
     }
     public Bundle check(Bundle input)throws Exception {Bundle b=auth();b.putString("callback",RuntimeWire.required(input,"callback"));b.putString("operation",RuntimeWire.required(input,"operation"));if(input.containsKey("overrideGeneration"))b.putString("generation",input.getString("overrideGeneration"));return RuntimeWire.call(broker,RuntimeWire.RESULT,b);}
+    private final Map<String,Set<Integer>> systemResults=new HashMap<>();
+    /** Results the platform itself will deliver (not routed through the authority): remembered per Activity ticket and request code. */
+    /** A fired activity/service PendingIntent: the guest application itself starts the component, from its own Context, so the start takes the ordinary guest route. */
+    void dispatchPending(String kind,byte[] payload)throws Exception{
+        if(!"activity".equals(kind)&&!"service".equals(kind))throw new IllegalArgumentException("PENDING_DISPATCH_KIND");
+        Intent intent=RuntimeBroadcastIntent.decode(payload);Application app=application;if(app==null)throw new IllegalStateException("PENDING_DISPATCH_APPLICATION_NOT_READY");
+        java.util.concurrent.CountDownLatch done=new java.util.concurrent.CountDownLatch(1);Throwable[] failure=new Throwable[1];
+        new Handler(Looper.getMainLooper()).post(()->{
+            try{if(kind.equals("activity"))app.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));else app.startService(intent);}
+            catch(Throwable error){failure[0]=error;}finally{done.countDown();}
+        });
+        if(!done.await(15,java.util.concurrent.TimeUnit.SECONDS))throw new IllegalStateException("PENDING_DISPATCH_TIMEOUT");
+        if(failure[0]!=null)throw new IllegalStateException("PENDING_DISPATCH_FAILED:"+failure[0],failure[0]);
+    }
+    void noteSystemResult(Activity caller,int requestCode)throws Exception{
+        String ticket=activityAuth(caller).getString("ticket");synchronized(systemResults){systemResults.computeIfAbsent(ticket,k->new HashSet<>()).add(requestCode);}
+    }
     public String receiving(Activity caller,int requestCode,int resultCode,ComponentCaller physical)throws Exception {
-        Bundle b=activityAuth(caller);Map<Integer,String> pending=pendingResults.get(b.getString("ticket"));String op=pending==null?null:pending.remove(requestCode);if(op==null)throw new SecurityException("UNREQUESTED_RESULT");
+        Bundle b=activityAuth(caller);
+        synchronized(systemResults){Set<Integer> mine=systemResults.get(b.getString("ticket"));if(mine!=null&&mine.remove(requestCode))return "";}Map<Integer,String> pending=pendingResults.get(b.getString("ticket"));String op=pending==null?null:pending.remove(requestCode);if(op==null)throw new SecurityException("UNREQUESTED_RESULT");
         b.putString("operation",op);b.putInt("resultCode",resultCode);Bundle accepted=RuntimeWire.call(broker,RuntimeWire.ACTIVITY_RESULT_ENTER,b);
         activityCallers.enterResult(caller,RuntimeWire.required(accepted,"callerPackage"),physical);return op;
     }
     public void received(Activity caller,String operation,int resultCode,boolean success)throws Exception {
+        if(operation.isEmpty())return;// a platform result has no authority operation to acknowledge
         try{Bundle b=activityAuth(caller);b.putString("operation",operation);b.putInt("resultCode",resultCode);b.putBoolean("success",success);RuntimeWire.call(broker,RuntimeWire.RECEIVED,b);}
         finally{activityCallers.leave(caller);}
     }

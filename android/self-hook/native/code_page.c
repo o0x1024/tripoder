@@ -9,8 +9,17 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <sys/sysmacros.h>
 #include <unistd.h>
+
+static FILE *raw_proc_open(const char *name) {
+    int fd = (int)syscall(SYS_openat, AT_FDCWD, name, O_RDONLY | O_CLOEXEC, 0);
+    if (fd < 0) return NULL;
+    FILE *stream = fdopen(fd, "r");
+    if (!stream) { int saved = errno; syscall(SYS_close, fd); errno = saved; }
+    return stream;
+}
 
 static struct tp_owned_page_report report;
 #ifdef TP_SELF_HOOK_TESTING
@@ -31,7 +40,7 @@ static void page_fatal(const char *stage, void *address) {
 int tp_code_page_identity(void *page, const char *permissions, struct tp_page_identity *identity) {
     uintptr_t address = (uintptr_t)page;
     if (address == 0 || (address & 4095) != 0 || address > UINTPTR_MAX - 4096) return 0;
-    FILE *stream = fopen("/proc/self/smaps", "r");
+    FILE *stream = raw_proc_open("/proc/self/smaps");
     if (stream == NULL) return 0;
     char line[2048], mode[5];
     unsigned long start, end, offset, inode;

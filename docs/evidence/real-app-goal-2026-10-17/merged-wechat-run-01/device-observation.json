@@ -1,0 +1,258 @@
+{
+  "schema": 1,
+  "startedAtUtc": "2026-10-17T08:40:55.766748+00:00",
+  "validatorSha256": "ef7eb9339b94029bc91ae26b537e9d9f41a8fa1ec31c3f40266ec02352b80dde",
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~U9si6ECktjWgd-d5HmIstQ==/dev.tripoder.engine-_KY_S05bdyvbn4Tsmb6n8g==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~U9si6ECktjWgd-d5HmIstQ==/dev.tripoder.engine-_KY_S05bdyvbn4Tsmb6n8g==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "502d9befdc349109a606603e3cc357cf88b2bcdad68d4bdf3b66f593c7912ee4  /data/app/~~U9si6ECktjWgd-d5HmIstQ==/dev.tripoder.engine-_KY_S05bdyvbn4Tsmb6n8g==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.controltest"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~8IES-NWzUcULsRK98uwXnQ==/dev.tripoder.controltest-msWNAsrrc9qReTLL4kHb3g==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~8IES-NWzUcULsRK98uwXnQ==/dev.tripoder.controltest-msWNAsrrc9qReTLL4kHb3g==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "2f0667e0543ad8ecca715880f897f82a2da2baf8a9763fd9039ca20885ab559e  /data/app/~~8IES-NWzUcULsRK98uwXnQ==/dev.tripoder.controltest-msWNAsrrc9qReTLL4kHb3g==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.controltest"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.engine uid:10400\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "date \"+%m-%d %H:%M:%S.%3N\""
+      ],
+      "exitCode": 0,
+      "stdout": "10-17 16:40:55.943\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.engine uid:10400\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.controltest"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.controltest uid:10402\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "mkdir",
+        "-p",
+        "/sdcard/Android/data/dev.tripoder.engine/files/acceptance"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "push",
+        "/Users/like/code/tripoder/android/runtime-probe/build/targets/wechat.apk",
+        "/sdcard/Android/data/dev.tripoder.engine/files/acceptance/wechat.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "/Users/like/code/tripoder/android/runtime-probe/build/targets/wechat.apk: 1 file pushed, 0 skipped. 203.1 MB/s (285284760 bytes in 1.340s)\n"
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-a",
+        "android.intent.action.MAIN",
+        "-c",
+        "android.intent.category.LAUNCHER",
+        "-n",
+        "dev.tripoder.engine/dev.tripoder.hooklab.WorkbenchActivity"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=dev.tripoder.engine/dev.tripoder.hooklab.WorkbenchActivity }\nStatus: ok\nLaunchState: WARM\nActivity: dev.tripoder.engine/dev.tripoder.hooklab.WorkbenchActivity\nTotalTime: 89\nWaitTime: 91\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "instrument",
+        "-w",
+        "-e",
+        "runId",
+        "control-709b055305e94530",
+        "-e",
+        "target",
+        "wechat",
+        "dev.tripoder.controltest/dev.tripoder.controltest.TargetLaunchIntegration"
+      ],
+      "exitCode": 0,
+      "stdout": "INSTRUMENTATION_RESULT: checks=2\nINSTRUMENTATION_RESULT: passed=false\nINSTRUMENTATION_RESULT: resultFile=result-control-709b055305e94530.json\nINSTRUMENTATION_RESULT: resultSha256=43a20422a9d9adc50aad76e8045915c7c039d157a520e9b9030b718faf77321b\nINSTRUMENTATION_RESULT: runId=control-709b055305e94530\nINSTRUMENTATION_CODE: 0\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10400",
+        "-T",
+        "10-17 16:40:55.943"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10400",
+        "-T",
+        "10-17 16:40:55.943",
+        "TripoderSelfHook:I",
+        "TripoderRuntime:V",
+        "TripoderHook:I",
+        "TripoderOwnership:I",
+        "TripoderStartup:I",
+        "TripoderProvider:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10402",
+        "-T",
+        "10-17 16:40:55.943"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "fullP5Accepted": false,
+  "businessScenariosVerified": false,
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "deviceLogStart": "10-17 16:40:55.943",
+  "ownedUid": 10400,
+  "ownedUids": {
+    "dev.tripoder.engine": 10400,
+    "dev.tripoder.controltest": 10402
+  },
+  "targetApkSha256": "f2a725bc04302ad218a563533ae79356e66b64aa711b275bc919a8d432f7e15d",
+  "passed": false,
+  "error": "DEVICE_ASSERTIONS_FAILED:target-wechat",
+  "nativeFatalSignalObserved": false,
+  "javaFatalExceptionObserved": false,
+  "selfHookInstallationSamples": [],
+  "ownedCrashStatus": {
+    "dev.tripoder.controltest": {
+      "nativeFatalSignalObserved": false,
+      "javaFatalExceptionObserved": false
+    }
+  },
+  "finishedAtUtc": "2026-10-17T08:40:59.968466+00:00"
+}

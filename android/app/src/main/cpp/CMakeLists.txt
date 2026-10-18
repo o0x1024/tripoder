@@ -1,7 +1,0 @@
-cmake_minimum_required(VERSION 3.22.1)
-project(tripoder_hooklab CXX)
-add_library(hooktarget SHARED target.cpp)
-target_compile_options(hooktarget PRIVATE -O0 -fno-inline)
-target_link_options(hooktarget PRIVATE -Wl,--build-id=sha1)
-add_library(hookbridge SHARED bridge.cpp)
-target_link_libraries(hookbridge hooktarget dl)

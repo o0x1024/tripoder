@@ -30,6 +30,8 @@ public final class RuntimeStateInspectionActivity extends Activity {
                     {"tickets","SELECT ticket,space,package,generation,processStub,stub,state,instance,taskId,resourceProof,componentLease,destroyedConfirmed FROM activity_tickets WHERE state NOT IN ('FINISHED','REVOKED','RETIRED') OR componentLease IN (SELECT lease FROM activity_components)"},
                     {"services","SELECT id,space,package,processStub,generation,stub,state,instance FROM service_leases WHERE state!='RELEASED'"},
                     {"broadcasts","SELECT ticket,target,state,resourceRetired FROM broadcast_deliveries WHERE state!='COMPLETED' AND resourceRetired=0"},
+                    {"pendingIntents","SELECT version,identityKey,space,package,installGeneration,processName,processStub,receiver,requestCode,state,fenced,currentVersion,oneShotConsumed FROM pending_intents WHERE fenced=0"},
+                    {"pendingMutations","SELECT m.*,o.state AS operationState,o.detail,o.result,o.created,o.updated,v.space,v.package,v.processStub,v.fenced,v.currentVersion FROM pending_mutations m LEFT JOIN operations o ON o.id=m.operation LEFT JOIN pending_intents v ON v.version=m.version WHERE m.closed=0 OR m.kind='TRANSPORT_RETIREMENT' OR m.installGeneration IN (SELECT generation FROM installs WHERE package='com.tencent.mm')"},
                     {"providers","SELECT source,lease,state FROM provider_acquisitions WHERE state='OPEN'"}
                 };
                 for(String[] query:queries){JSONArray rows=new JSONArray();try(var c=db.rawQuery(query[1]+" LIMIT 2001",null)){

@@ -23,12 +23,14 @@ final class PowerChecks {
             check(checks,"power-duplicate-thermal-listener-rejected",duplicate);
             manager.removeThermalStatusListener(listener);registered=false;
             if(!baseline){
-                boolean missing=false,wake=false,mutation=false,other=false;
+                boolean missing=false,mutation=false,other=false;
                 try{manager.removeThermalStatusListener(listener);}catch(IllegalArgumentException expected){missing=expected.getMessage().contains("THERMAL_LISTENER_NOT_REGISTERED");}
-                try{manager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,"owned-not-granted");}catch(UnsupportedOperationException expected){wake=expected.getMessage().contains("POWER_CAPABILITY_UNSUPPORTED");}
+                // This constructor is an explicit supported route; do not acquire a device wake lock.
+                PowerManager.WakeLock wake=manager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,"owned-not-acquired");
+                check(checks,"power-explicit-wakelock-construction-does-not-acquire",wake!=null&&!wake.isHeld());
                 try{manager.reboot(null);}catch(UnsupportedOperationException expected){mutation=expected.getMessage().contains("POWER_CAPABILITY_UNSUPPORTED");}
                 try{manager.isIgnoringBatteryOptimizations("dev.tripoder.not-this-guest");}catch(SecurityException expected){other=expected.getMessage().contains("POWER_PACKAGE_NOT_GRANTED");}
-                check(checks,"power-unregistered-listener-and-power-control-denied",missing&&wake&&mutation&&other);
+                check(checks,"power-unregistered-listener-and-power-control-denied",missing&&mutation&&other);
                 BlockingQueue<Runnable> queue=new LinkedBlockingQueue<>();AtomicInteger delivered=new AtomicInteger();PowerManager.OnThermalStatusChangedListener queued=value->delivered.incrementAndGet();
                 manager.addThermalStatusListener(queue::add,queued);
                 try{Runnable event=queue.poll(3,TimeUnit.SECONDS);check(checks,"power-queued-callback-is-real-platform-event",event!=null);manager.removeThermalStatusListener(queued);event.run();for(Runnable more:queue)more.run();check(checks,"power-remove-prevents-queued-callback-admission",delivered.get()==0);}

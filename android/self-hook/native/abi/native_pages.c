@@ -4,6 +4,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include "../park_syscall.h"
+#ifdef TP_SELF_HOOK_TESTING
+static int commit_witness_fd=-1;static unsigned commit_witness_length;static char commit_witness[256];
+bool tp_native_test_commit_witness(int fd,const char *text,unsigned length){
+    if(fd<0||!text||!length||length>sizeof(commit_witness)||commit_witness_fd>=0)return false;
+    memcpy(commit_witness,text,length);commit_witness_length=length;commit_witness_fd=fd;return true;
+}
+#endif
 static struct tp_native_page pages[TP_NATIVE_ENTRY_LIMIT];
 struct tp_native_page *tp_native_claim_page(unsigned module,uint32_t generation,uintptr_t entry,const char *path){
     uintptr_t address=entry&~(uintptr_t)4095;struct tp_native_page *free_page=NULL;
@@ -24,7 +32,9 @@ __attribute__((noinline)) static enum tp_native_status tp_native_commit_parked(s
     enum tp_native_status result=TP_NATIVE_OK;
     if(!enable)for(unsigned t=0;t<park->observed;t++){
         struct tp_park_context context;
-        if(tp_park_context(park->epoch,t,&context)!=TP_PARK_OK){result=TP_NATIVE_PARK;break;}
+        /* A thread can vanish during inventory closure. With no entry changed,
+         * incomplete context is a bounded refusal, never a partial retirement. */
+        if(tp_park_context(park->epoch,t,&context)!=TP_PARK_OK){result=TP_NATIVE_BUSY;break;}
         bool pending=tp_scalar_inbound_pending_pc(context.pc);
         for(unsigned i=0;!pending&&i<count;i++){
             uintptr_t relay=tp_native_bindings[handles[i]].bridge.relay;
@@ -38,7 +48,16 @@ __attribute__((noinline)) static enum tp_native_status tp_native_commit_parked(s
     }
     for(unsigned i=0;result==TP_NATIVE_OK&&i<pages_count;i++)if(!tp_code_page_validate(&changes[i].update)){result=TP_NATIVE_PREIMAGE;break;}
     if(result==TP_NATIVE_OK){
-        for(unsigned i=0;i<pages_count;i++)if(!tp_code_page_commit(&changes[i].update))tp_native_stop(213);
+        for(unsigned i=0;i<pages_count;i++){
+            if(!tp_code_page_commit(&changes[i].update))tp_native_stop(213);
+#ifdef TP_SELF_HOOK_TESTING
+            if(commit_witness_fd>=0){
+                if(tp_park_syscall(SYS_write,commit_witness_fd,(long)commit_witness,commit_witness_length,0,0,0)!=(long)commit_witness_length)tp_native_stop(231);
+                if(tp_park_syscall(SYS_fsync,commit_witness_fd,0,0,0,0,0))tp_native_stop(232);
+                tp_native_stop(230);
+            }
+#endif
+        }
         for(unsigned i=0;i<count;i++)atomic_store_explicit(&tp_native_bindings[handles[i]].phase,
             enable?TP_NATIVE_ACTIVE:TP_NATIVE_RETIRED,memory_order_release);
     }

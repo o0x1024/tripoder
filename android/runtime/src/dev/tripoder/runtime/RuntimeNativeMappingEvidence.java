@@ -67,6 +67,8 @@ final class RuntimeNativeMappingEvidence {
         return out;
     }
     private static byte[] bounded(File file,int limit)throws Exception {
+        if(file.getPath().startsWith("/proc/self/")&&RuntimeEngine.current!=null&&RuntimeEngine.adapterReady)
+            return RuntimeSelfHookStorage.readPhysicalProc(file.getPath(),limit);
         try(InputStream input=new FileInputStream(file)){byte[] result=input.readNBytes(limit+1);if(result.length>limit)throw new IOException("RUNTIME_EVIDENCE_READ_BUDGET");return result;}
     }
     private static String hex(byte[] value){return HexFormat.of().formatHex(value);}

@@ -16,7 +16,7 @@ import java.util.*;
 public final class HookUiIntegration extends ControlTestBase {
     private IBinder session;private String project,process,binding,install;private Object app,projects;
     @Override void test()throws Exception{
-        report.put("scope","native-workbench-hook-ui-owned-counter");startThroughWorkbench(false);app=getTargetContext().getApplicationContext();session=(IBinder)field(field(app,"engine"),"session");projects=field(app,"projects");
+        report.put("scope","native-workbench-hook-ui-owned-counter");WorkbenchUiTestBase.isolateOperationJournal(this);startThroughWorkbench(false);app=getTargetContext().getApplicationContext();session=(IBinder)field(field(app,"engine"),"session");projects=field(app,"projects");
         String space=run+"-ui";execute(session,"createSpace","operation",id(),"space",space);
         JSONObject fixtures;try(var in=getContext().getAssets().open("install-fixtures.json")){fixtures=new JSONObject(new String(in.readAllBytes(),StandardCharsets.UTF_8));}
         File apk=new File(getTargetContext().getCacheDir(),run+"-counter.apk");
@@ -40,19 +40,19 @@ public final class HookUiIntegration extends ControlTestBase {
             AccessibilityNodeInfo editor=waitNode("项目脚本编辑器",true);Bundle text=new Bundle();text.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,script);
             check("native-editor-accepts-script",editor.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,text),"native accessibility edit");scrollTo("保存脚本 · 有未保存修改");click("保存脚本 · 有未保存修改");waitNode("脚本已保存",false);
             check("native-save-persists-exact-source",script.equals(invoke(projects,"script",new Class<?>[]{String.class},project)),"exact saved TypeScript");
-            String launchOperation=id();Bundle prepared=execute(session,"prepareLaunch","operation",launchOperation,"project",project,"bindingOperation",binding,"generation",install,"component","dev.tripoder.previewguest.CounterActivity");process=prepared.getString("generation");report.put("workerPid",prepared.getInt("pid")).put("workerUid",prepared.getInt("uid")).put("project",project).put("space",space).put("installGeneration",install).put("processGeneration",process);
-            scrollTo("选择运行进程");click("选择运行进程");click("dev.tripoder.previewguest · PID "+prepared.getInt("pid"));awaitOperations();
+            String launchOperation=id();Bundle prepared=execute(session,"prepareLaunch","operation",launchOperation,"project",project,"bindingOperation",binding,"generation",install,"component","dev.tripoder.previewguest.CounterActivity");process=prepared.getString("generation");Bundle worker=awaitWorker(session,project,prepared);report.put("workerPid",worker.getInt("pid")).put("workerUid",worker.getInt("uid")).put("project",project).put("space",space).put("installGeneration",install).put("processGeneration",process);
+            click("运行与部署");scrollTo("选择运行进程");click("选择运行进程");click("dev.tripoder.previewguest · PID "+worker.getInt("pid"));awaitOperations();
             scrollTo("1 · 观察目标");click("1 · 观察目标");awaitOperations();check("native-panel-observes-real-method",panelState().equals("OBSERVED"),panelState());
             scrollTo("2 · 检查脚本");click("2 · 检查脚本");awaitOperations();check("native-panel-prepares-without-activation",panelState().equals("PREPARED"),panelState());
             scrollTo("3 · 确认激活");click("3 · 确认激活");click("确认激活");awaitOperations();check("native-panel-receives-active-ack",panelState().equals("ACTIVE"),panelState());capture("workbench-active");
             Activity page=visible.get();if(page==null)throw new IllegalStateException("PROJECT_PAGE_NOT_OBSERVED");
-            runOnMainSync(()->page.startActivity(new Intent().setClassName("dev.tripoder.engine","dev.tripoder.runtime.RuntimeGuestGateway").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_MULTIPLE_TASK).putExtra("operation",launchOperation).putExtra("capability",prepared.getString("capability")),ActivityOptions.makeBasic().setShareIdentityEnabled(true).toBundle()));
+            runOnMainSync(()->page.startActivity(prepared.getParcelable("intent",Intent.class)));
             waitNode("Hook 0",false);check("actual-counter-renders-hooked-value",true,"Hook 0");click("＋  计数一次");waitNode("Hook 1",false);capture("counter-hook-active");
             JSONObject active=status();check("actual-ui-calls-hit-worker-hook",active.getString("state").equals("ACTIVE")&&active.getInt("hits")==2&&active.getInt("errors")==0,active);
             click("完成并返回 Tripoder");waitNode("脚本部署",false);scrollTo("停用脚本");click("停用脚本");awaitOperations();check("native-panel-confirms-disable",panelState().equals("DISABLED"),panelState());capture("workbench-disabled");
-            scrollTop();click("启动空间应用");click("dev.tripoder.previewguest.CounterActivity");waitNode("1",false);capture("counter-original-restored");
+            scrollTop();click("启动应用");click("dev.tripoder.previewguest.CounterActivity");waitNode("1",false);capture("counter-original-restored");
             JSONObject restored=status();check("explicit-next-launch-keeps-original-behavior",restored.getString("state").equals("IDLE"),restored);click("完成并返回 Tripoder");
-            check("guest-runs-in-separate-process-of-same-uid",prepared.getInt("uid")==android.os.Process.myUid()&&prepared.getInt("pid")!=android.os.Process.myPid(),new JSONObject().put("guest",prepared.getInt("uid")).put("workbench",android.os.Process.myUid()));
+            check("guest-runs-in-separate-process-of-same-uid",worker.getInt("uid")==android.os.Process.myUid()&&worker.getInt("pid")!=android.os.Process.myPid(),new JSONObject().put("guest",worker.getInt("uid")).put("workbench",android.os.Process.myUid()));
             report.put("ownedApkSha256",fixtures.getString("previewSha256")).put("apkRewritten",false).put("businessScenarioVerified",false);
         }finally{application.unregisterActivityLifecycleCallbacks(watcher);}
     }
@@ -62,7 +62,18 @@ public final class HookUiIntegration extends ControlTestBase {
     private AccessibilityNodeInfo waitNode(String text,boolean description)throws Exception{long end=SystemClock.elapsedRealtime()+10000;do{AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow(),match=find(root,text,description);if(match!=null)return match;SystemClock.sleep(50);}while(SystemClock.elapsedRealtime()<end);throw new IllegalStateException("UI_TARGET_NOT_FOUND:"+text);}
     private static AccessibilityNodeInfo find(AccessibilityNodeInfo node,String value,boolean description){if(node==null)return null;CharSequence text=description?node.getContentDescription():node.getText();if(text!=null&&value.contentEquals(text))return node;for(int i=0;i<node.getChildCount();i++){var found=find(node.getChild(i),value,description);if(found!=null)return found;}return null;}
     private void click(String text)throws Exception{AccessibilityNodeInfo node=waitNode(text,false);for(int i=0;i<4&&node!=null;i++,node=node.getParent())if(node.isClickable()){if(!node.isEnabled()||!node.performAction(AccessibilityNodeInfo.ACTION_CLICK))throw new IllegalStateException("UI_CLICK_REJECTED:"+text);return;}throw new IllegalStateException("UI_TARGET_NOT_CLICKABLE:"+text);}
-    private void scrollTo(String text)throws Exception{for(int i=0;i<12;i++){var node=find(getUiAutomation().getRootInActiveWindow(),text,false);if(node!=null&&node.isVisibleToUser())return;scroll(true);SystemClock.sleep(180);}throw new IllegalStateException("UI_SCROLL_TARGET_NOT_FOUND:"+text);}
+    private void scrollTo(String text)throws Exception{
+        for(int i=0;i<12;i++){
+            var node=find(getUiAutomation().getRootInActiveWindow(),text,false);if(node!=null&&node.isVisibleToUser())return;
+            // Editing can scroll the focused field past a preceding control.
+            // Ask the actual target to reveal itself before directional paging.
+            if(node==null||!node.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SHOW_ON_SCREEN.getId()))scroll(true);
+            SystemClock.sleep(180);
+        }
+        report.put("failedUiTree",tree(getUiAutomation().getRootInActiveWindow(),0));capture("scroll-failure");
+        throw new IllegalStateException("UI_SCROLL_TARGET_NOT_FOUND:"+text);
+    }
+    private static String tree(AccessibilityNodeInfo node,int depth){if(node==null||depth>16)return "";StringBuilder out=new StringBuilder();out.append(node.getClassName()).append(" text=").append(node.getText()).append(" visible=").append(node.isVisibleToUser()).append('\n');for(int i=0;i<node.getChildCount();i++)out.append(tree(node.getChild(i),depth+1));return out.toString();}
     private void scrollTop(){for(int i=0;i<12;i++){if(!scroll(false))break;SystemClock.sleep(50);}}
     private boolean scroll(boolean forward){var root=getUiAutomation().getRootInActiveWindow();return scrollNode(root,forward);}
     private boolean scrollNode(AccessibilityNodeInfo node,boolean forward){if(node==null)return false;if(node.isScrollable()&&node.performAction(forward?AccessibilityNodeInfo.ACTION_SCROLL_FORWARD:AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD))return true;for(int i=0;i<node.getChildCount();i++)if(scrollNode(node.getChild(i),forward))return true;return false;}

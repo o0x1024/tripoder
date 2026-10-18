@@ -55,11 +55,12 @@ final class RuntimeSelfHookPlatformCallbacks {
         RuntimeSelfHookJobs.rejectServiceControl(service);
         RuntimeSelfHookComponents.requireActive();return RuntimeSelfHookBoundaries.stopService(SERVICES,service,startId,true,new Object[]{startId},original);
     }
-    static Object foreground(Service service,Object[] arguments,RuntimeSelfHookLifecycle.Original original)throws Throwable {
+    /** A guest service cannot hold the host's foreground slot, but the user-visible contract of startForeground is its ongoing notification: that is posted through the guest's own notification facade. */
+    static Object foreground(Service service,String name,Object[] arguments,RuntimeSelfHookLifecycle.Original original)throws Throwable {
         RuntimeSelfHookJobs.rejectServiceControl(service);
         RuntimeSelfHookComponents.requireActive();
-        return RuntimeSelfHookBoundaries.denyOwned(value->RuntimeBridge.ownsService((Service)value),service,
-            "FOREGROUND_SERVICE_POLICY_NOT_IMPLEMENTED",arguments,original);
+        if(!RuntimeBridge.ownsService(service))return original.call(arguments);
+        return RuntimeBridge.serviceForeground(service,name,arguments);
     }
     static Object providerAttach(ContentProvider provider,Object[] arguments,RuntimeSelfHookLifecycle.Original original)throws Throwable {
         RuntimeSelfHookComponents.requireActive();return RuntimeSelfHookBoundaries.providerAttach(PROVIDERS,provider,arguments,original);

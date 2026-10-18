@@ -1,0 +1,357 @@
+{
+  "runId": "providers-6270ca1a42424f73",
+  "observedAtUtc": "2026-10-18T00:47:49.804658+00:00",
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "productApkReplaced": false,
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/b.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/runtime-probe.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.b"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~mJEFAJgNzE1PuC_zo0ATiQ==/dev.tripoder.p0.b-RsLr1nHP6HdQaS9H5VyC4Q==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~mJEFAJgNzE1PuC_zo0ATiQ==/dev.tripoder.p0.b-RsLr1nHP6HdQaS9H5VyC4Q==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "f35865940a4a15bd91f958c96afa06b857973a9cbcb025a1791a49ff3527af89  /data/app/~~mJEFAJgNzE1PuC_zo0ATiQ==/dev.tripoder.p0.b-RsLr1nHP6HdQaS9H5VyC4Q==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "getconf",
+        "PAGESIZE"
+      ],
+      "exitCode": 0,
+      "stdout": "4096\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.a"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.runtimeprobe uid:10418\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "date \"+%m-%d %H:%M:%S.%3N\""
+      ],
+      "exitCode": 0,
+      "stdout": "10-18 08:47:52.245\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-a",
+        "android.intent.action.MAIN",
+        "-c",
+        "android.intent.category.LAUNCHER",
+        "-f",
+        "0x10008000",
+        "-n",
+        "dev.tripoder.runtimeprobe/.P2ProbeActivity",
+        "--es",
+        "runId",
+        "providers-6270ca1a42424f73",
+        "--ez",
+        "providersOnly",
+        "true"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10008000 cmp=dev.tripoder.runtimeprobe/.P2ProbeActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.runtimeprobe/.P2ProbeActivity\nTotalTime: 124\nWaitTime: 125\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10418",
+        "-T",
+        "10-18 08:47:52.245"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10418",
+        "-T",
+        "10-18 08:47:52.245",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10418",
+        "-T",
+        "10-18 08:47:52.245",
+        "TripoderHook:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10418",
+        "-T",
+        "10-18 08:47:52.245",
+        "TripoderReceiver:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10418",
+        "-T",
+        "10-18 08:47:52.245",
+        "TripoderSelfHook:I",
+        "TripoderRuntime:E",
+        "TripoderOwnership:I",
+        "TripoderJobs:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-18 08:47:55.373 24916 24932 I TripoderSelfHook: INSTALLING:PROCESS_EXECUTION_POLICY\n10-18 08:47:55.398 24916 24932 I TripoderSelfHook: INSTALLED:PROCESS_EXECUTION_POLICY:ns=24828229\n10-18 08:47:55.398 24916 24932 I TripoderSelfHook: INSTALLING:FRAMEWORK_ACCESS\n10-18 08:47:55.398 24916 24932 I TripoderSelfHook: INSTALLED:FRAMEWORK_ACCESS:ns=810260\n10-18 08:47:55.398 24916 24932 I TripoderSelfHook: INSTALLING:APPLICATION_OWNERSHIP\n10-18 08:47:55.399 24916 24932 I TripoderSelfHook: INSTALLED:APPLICATION_OWNERSHIP:ns=459323\n10-18 08:47:55.399 24916 24932 I TripoderSelfHook: INSTALLING:REFLECTION_VIEW\n10-18 08:47:55.426 24916 24932 I TripoderSelfHook: INSTALLED:REFLECTION_VIEW:ns=26638177\n10-18 08:47:55.426 24916 24932 I TripoderSelfHook: INSTALLING:ACTIVITY_CREATION\n10-18 08:47:55.433 24916 24932 I TripoderSelfHook: INSTALLED:ACTIVITY_CREATION:ns=7461927\n10-18 08:47:55.433 24916 24932 I TripoderSelfHook: INSTALLING:ACTIVITY_DELIVERY\n10-18 08:47:55.440 24916 24932 I TripoderSelfHook: INSTALLED:ACTIVITY_DELIVERY:ns=6969114\n10-18 08:47:55.440 24916 24932 I TripoderSelfHook: INSTALLING:ACTIVITY_ROUTING\n10-18 08:47:55.447 24916 24932 I TripoderSelfHook: INSTALLED:ACTIVITY_ROUTING:ns=6996250\n10-18 08:47:55.447 24916 24932 I TripoderSelfHook: INSTALLING:SERVICES\n10-18 08:47:55.455 24916 24932 I TripoderSelfHook: INSTALLED:SERVICES:ns=8219167\n10-18 08:47:55.455 24916 24932 I TripoderSelfHook: INSTALLING:PROVIDERS\n10-18 08:47:55.468 24916 24932 I TripoderSelfHook: INSTALLED:PROVIDERS:ns=12284427\n10-18 08:47:55.468 24916 24932 I TripoderSelfHook: INSTALLING:RECEIVERS\n10-18 08:47:55.477 24916 24932 I TripoderSelfHook: INSTALLED:RECEIVERS:ns=9627657\n10-18 08:47:55.477 24916 24932 I TripoderSelfHook: INSTALLING:PACKAGES\n10-18 08:47:55.532 24916 24932 I TripoderSelfHook: INSTALLED:PACKAGES:ns=54371927\n10-18 08:47:55.532 24916 24932 I TripoderSelfHook: INSTALLING:STORAGE\n10-18 08:47:55.762 24916 24932 I TripoderSelfHook: INSTALLED:STORAGE:ns=230405989\n10-18 08:47:55.762 24916 24932 I TripoderSelfHook: INSTALLING:ACTIVITY_MANAGER\n10-18 08:47:55.794 24916 24932 I TripoderSelfHook: INSTALLED:ACTIVITY_MANAGER:ns=31917343\n10-18 08:47:55.794 24916 24932 I TripoderSelfHook: INSTALLING:CONNECTIVITY\n10-18 08:47:55.822 24916 24932 I TripoderSelfHook: INSTALLED:CONNECTIVITY:ns=27571250\n10-18 08:47:55.822 24916 24932 I TripoderSelfHook: INSTALLING:WIFI_P2P\n10-18 08:47:55.854 24916 24932 I TripoderSelfHook: INSTALLED:WIFI_P2P:ns=32383906\n10-18 08:47:55.854 24916 24932 I TripoderSelfHook: INSTALLING:NETWORK_STATS\n10-18 08:47:55.880 24916 24932 I TripoderSelfHook: INSTALLED:NETWORK_STATS:ns=25893333\n10-18 08:47:55.880 24916 24932 I TripoderSelfHook: INSTALLING:TELEPHONY\n10-18 08:47:55.942 24916 24932 I TripoderSelfHook: INSTALLED:TELEPHONY:ns=61461511\n10-18 08:47:55.942 24916 24932 I TripoderSelfHook: INSTALLING:AUDIO\n10-18 08:47:55.983 24916 24932 I TripoderSelfHook: INSTALLED:AUDIO:ns=41441198\n10-18 08:47:55.983 24916 24932 I TripoderSelfHook: INSTALLING:BATTERY\n10-18 08:47:55.994 24916 24932 I TripoderSelfHook: INSTALLED:BATTERY:ns=10290364\n10-18 08:47:55.994 24916 24932 I TripoderSelfHook: INSTALLING:POWER\n10-18 08:47:56.013 24916 24932 I TripoderSelfHook: INSTALLED:POWER:ns=18914010\n10-18 08:47:56.013 24916 24932 I TripoderSelfHook: INSTALLING:NOTIFICATIONS\n10-18 08:47:56.031 24916 24932 I TripoderSelfHook: INSTALLED:NOTIFICATIONS:ns=18426093\n10-18 08:47:56.031 24916 24932 I TripoderSelfHook: INSTALLING:SHORTCUTS\n10-18 08:47:56.040 24916 24932 I TripoderSelfHook: INSTALLED:SHORTCUTS:ns=9150000\n10-18 08:47:56.040 24916 24932 I TripoderSelfHook: INSTALLING:JOBS\n10-18 08:47:56.056 24916 24932 I TripoderSelfHook: INSTALLED:JOBS:ns=15369636\n10-18 08:47:56.056 24916 24932 I TripoderSelfHook: INSTALLING:PENDING_INTENTS\n10-18 08:47:56.066 24916 24932 I TripoderSelfHook: INSTALLED:PENDING_INTENTS:ns=10369948\n10-18 08:47:56.066 24916 24932 I TripoderSelfHook: INSTALLING:UI_EFFECTS\n10-18 08:47:56.072 24916 24932 I TripoderSelfHook: INSTALLED:UI_EFFECTS:ns=5844010\n10-18 08:47:56.072 24916 24932 I TripoderSelfHook: INSTALLING:FAILURE_DIAGNOSTICS\n10-18 08:47:56.078 24916 24932 I TripoderSelfHook: INSTALLED:FAILURE_DIAGNOSTICS:ns=6161823\n10-18 08:47:56.078 24916 24932 I TripoderSelfHook: INSTALLING:HOOK_CONTROL\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: Worker initialization failed\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: java.lang.SecurityException: HOOK_MODULE_CANONICAL_ROOT_CHANGED\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeHookBridge.canonicalLibraryPath(RuntimeHookBridge.java:93)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeHookBridge.-$$Nest$mcanonicalLibraryPath(RuntimeHookBridge.java:0)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeHookBridge$2.path(RuntimeHookBridge.java:120)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeNativeObservation.<init>(RuntimeNativeObservation.java:25)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeHookBridge.nativeObservation(RuntimeHookBridge.java:122)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeHookBridge.selfHookPlatform(RuntimeHookBridge.java:125)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookProduct.lambda$install$21(RuntimeSelfHookProduct.java:52)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookProduct$19.install(D8$$SyntheticClass:0)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookProduct.lambda$install$23(RuntimeSelfHookProduct.java:57)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookProduct$0.install(D8$$SyntheticClass:0)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookBootstrap.install(RuntimeSelfHookBootstrap.java:67)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookProduct.install(RuntimeSelfHookProduct.java:61)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeEngine.<init>(RuntimeEngine.java:130)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeProcessControl.handle(RuntimeProcessControl.java:19)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeWire$Endpoint.onTransact(RuntimeWire.java:39)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat android.os.Binder.execTransactInternal(Binder.java:1371)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat android.os.Binder.execTransact(Binder.java:1330)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10418",
+        "-T",
+        "10-18 08:47:52.245"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10418",
+        "-T",
+        "10-18 08:47:52.245",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10418",
+        "-T",
+        "10-18 08:47:52.245",
+        "TripoderHook:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10418",
+        "-T",
+        "10-18 08:47:52.245",
+        "TripoderReceiver:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10418",
+        "-T",
+        "10-18 08:47:52.245",
+        "TripoderSelfHook:I",
+        "TripoderRuntime:E",
+        "TripoderOwnership:I",
+        "TripoderJobs:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-18 08:47:55.373 24916 24932 I TripoderSelfHook: INSTALLING:PROCESS_EXECUTION_POLICY\n10-18 08:47:55.398 24916 24932 I TripoderSelfHook: INSTALLED:PROCESS_EXECUTION_POLICY:ns=24828229\n10-18 08:47:55.398 24916 24932 I TripoderSelfHook: INSTALLING:FRAMEWORK_ACCESS\n10-18 08:47:55.398 24916 24932 I TripoderSelfHook: INSTALLED:FRAMEWORK_ACCESS:ns=810260\n10-18 08:47:55.398 24916 24932 I TripoderSelfHook: INSTALLING:APPLICATION_OWNERSHIP\n10-18 08:47:55.399 24916 24932 I TripoderSelfHook: INSTALLED:APPLICATION_OWNERSHIP:ns=459323\n10-18 08:47:55.399 24916 24932 I TripoderSelfHook: INSTALLING:REFLECTION_VIEW\n10-18 08:47:55.426 24916 24932 I TripoderSelfHook: INSTALLED:REFLECTION_VIEW:ns=26638177\n10-18 08:47:55.426 24916 24932 I TripoderSelfHook: INSTALLING:ACTIVITY_CREATION\n10-18 08:47:55.433 24916 24932 I TripoderSelfHook: INSTALLED:ACTIVITY_CREATION:ns=7461927\n10-18 08:47:55.433 24916 24932 I TripoderSelfHook: INSTALLING:ACTIVITY_DELIVERY\n10-18 08:47:55.440 24916 24932 I TripoderSelfHook: INSTALLED:ACTIVITY_DELIVERY:ns=6969114\n10-18 08:47:55.440 24916 24932 I TripoderSelfHook: INSTALLING:ACTIVITY_ROUTING\n10-18 08:47:55.447 24916 24932 I TripoderSelfHook: INSTALLED:ACTIVITY_ROUTING:ns=6996250\n10-18 08:47:55.447 24916 24932 I TripoderSelfHook: INSTALLING:SERVICES\n10-18 08:47:55.455 24916 24932 I TripoderSelfHook: INSTALLED:SERVICES:ns=8219167\n10-18 08:47:55.455 24916 24932 I TripoderSelfHook: INSTALLING:PROVIDERS\n10-18 08:47:55.468 24916 24932 I TripoderSelfHook: INSTALLED:PROVIDERS:ns=12284427\n10-18 08:47:55.468 24916 24932 I TripoderSelfHook: INSTALLING:RECEIVERS\n10-18 08:47:55.477 24916 24932 I TripoderSelfHook: INSTALLED:RECEIVERS:ns=9627657\n10-18 08:47:55.477 24916 24932 I TripoderSelfHook: INSTALLING:PACKAGES\n10-18 08:47:55.532 24916 24932 I TripoderSelfHook: INSTALLED:PACKAGES:ns=54371927\n10-18 08:47:55.532 24916 24932 I TripoderSelfHook: INSTALLING:STORAGE\n10-18 08:47:55.762 24916 24932 I TripoderSelfHook: INSTALLED:STORAGE:ns=230405989\n10-18 08:47:55.762 24916 24932 I TripoderSelfHook: INSTALLING:ACTIVITY_MANAGER\n10-18 08:47:55.794 24916 24932 I TripoderSelfHook: INSTALLED:ACTIVITY_MANAGER:ns=31917343\n10-18 08:47:55.794 24916 24932 I TripoderSelfHook: INSTALLING:CONNECTIVITY\n10-18 08:47:55.822 24916 24932 I TripoderSelfHook: INSTALLED:CONNECTIVITY:ns=27571250\n10-18 08:47:55.822 24916 24932 I TripoderSelfHook: INSTALLING:WIFI_P2P\n10-18 08:47:55.854 24916 24932 I TripoderSelfHook: INSTALLED:WIFI_P2P:ns=32383906\n10-18 08:47:55.854 24916 24932 I TripoderSelfHook: INSTALLING:NETWORK_STATS\n10-18 08:47:55.880 24916 24932 I TripoderSelfHook: INSTALLED:NETWORK_STATS:ns=25893333\n10-18 08:47:55.880 24916 24932 I TripoderSelfHook: INSTALLING:TELEPHONY\n10-18 08:47:55.942 24916 24932 I TripoderSelfHook: INSTALLED:TELEPHONY:ns=61461511\n10-18 08:47:55.942 24916 24932 I TripoderSelfHook: INSTALLING:AUDIO\n10-18 08:47:55.983 24916 24932 I TripoderSelfHook: INSTALLED:AUDIO:ns=41441198\n10-18 08:47:55.983 24916 24932 I TripoderSelfHook: INSTALLING:BATTERY\n10-18 08:47:55.994 24916 24932 I TripoderSelfHook: INSTALLED:BATTERY:ns=10290364\n10-18 08:47:55.994 24916 24932 I TripoderSelfHook: INSTALLING:POWER\n10-18 08:47:56.013 24916 24932 I TripoderSelfHook: INSTALLED:POWER:ns=18914010\n10-18 08:47:56.013 24916 24932 I TripoderSelfHook: INSTALLING:NOTIFICATIONS\n10-18 08:47:56.031 24916 24932 I TripoderSelfHook: INSTALLED:NOTIFICATIONS:ns=18426093\n10-18 08:47:56.031 24916 24932 I TripoderSelfHook: INSTALLING:SHORTCUTS\n10-18 08:47:56.040 24916 24932 I TripoderSelfHook: INSTALLED:SHORTCUTS:ns=9150000\n10-18 08:47:56.040 24916 24932 I TripoderSelfHook: INSTALLING:JOBS\n10-18 08:47:56.056 24916 24932 I TripoderSelfHook: INSTALLED:JOBS:ns=15369636\n10-18 08:47:56.056 24916 24932 I TripoderSelfHook: INSTALLING:PENDING_INTENTS\n10-18 08:47:56.066 24916 24932 I TripoderSelfHook: INSTALLED:PENDING_INTENTS:ns=10369948\n10-18 08:47:56.066 24916 24932 I TripoderSelfHook: INSTALLING:UI_EFFECTS\n10-18 08:47:56.072 24916 24932 I TripoderSelfHook: INSTALLED:UI_EFFECTS:ns=5844010\n10-18 08:47:56.072 24916 24932 I TripoderSelfHook: INSTALLING:FAILURE_DIAGNOSTICS\n10-18 08:47:56.078 24916 24932 I TripoderSelfHook: INSTALLED:FAILURE_DIAGNOSTICS:ns=6161823\n10-18 08:47:56.078 24916 24932 I TripoderSelfHook: INSTALLING:HOOK_CONTROL\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: Worker initialization failed\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: java.lang.SecurityException: HOOK_MODULE_CANONICAL_ROOT_CHANGED\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeHookBridge.canonicalLibraryPath(RuntimeHookBridge.java:93)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeHookBridge.-$$Nest$mcanonicalLibraryPath(RuntimeHookBridge.java:0)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeHookBridge$2.path(RuntimeHookBridge.java:120)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeNativeObservation.<init>(RuntimeNativeObservation.java:25)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeHookBridge.nativeObservation(RuntimeHookBridge.java:122)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeHookBridge.selfHookPlatform(RuntimeHookBridge.java:125)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookProduct.lambda$install$21(RuntimeSelfHookProduct.java:52)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookProduct$19.install(D8$$SyntheticClass:0)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookProduct.lambda$install$23(RuntimeSelfHookProduct.java:57)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookProduct$0.install(D8$$SyntheticClass:0)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookBootstrap.install(RuntimeSelfHookBootstrap.java:67)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeSelfHookProduct.install(RuntimeSelfHookProduct.java:61)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeEngine.<init>(RuntimeEngine.java:130)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeProcessControl.handle(RuntimeProcessControl.java:19)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat dev.tripoder.runtime.RuntimeWire$Endpoint.onTransact(RuntimeWire.java:39)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat android.os.Binder.execTransactInternal(Binder.java:1371)\n10-18 08:47:56.085 24916 24932 E TripoderRuntime: \tat android.os.Binder.execTransact(Binder.java:1330)\n",
+      "stderr": ""
+    }
+  ],
+  "decoyApkSha256": "f35865940a4a15bd91f958c96afa06b857973a9cbcb025a1791a49ff3527af89",
+  "decoyMarkerBefore": false,
+  "pageSize": 4096,
+  "aInstalledInHost": false,
+  "ownedUid": 10418,
+  "deviceLogStart": "10-18 08:47:52.245",
+  "decoyMarkerAfter": false,
+  "hostMatchesBuild": true,
+  "fixturesMatchBuild": true,
+  "p1FixturesMatchBuild": true,
+  "p2FixturesMatchBuild": true,
+  "allDeviceAssertionsPassed": true,
+  "nativeMemoryCrashObserved": false,
+  "nativeFatalSignalObserved": false,
+  "javaFatalObserved": false,
+  "expectedFixtureUncaught": [],
+  "unexpectedJavaFatalObserved": false,
+  "unexpectedPendingIngressFailure": false,
+  "selfHookInstallationSamples": [],
+  "passed": false,
+  "error": "Device assertions failed; inspect device-result.json",
+  "finishedAtUtc": "2026-10-18T00:47:57.877102+00:00"
+}

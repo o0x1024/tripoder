@@ -21,7 +21,7 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
     public final String authorityGeneration=java.util.UUID.randomUUID().toString();
     public RuntimeStore(Context context) {
         // P0's experimental database is retained as historical data, never implicitly promoted.
-        super(context, "tripoder-runtime-v2.db", null, 28);
+        super(context, "tripoder-runtime-v2.db", null, 33);
         synchronized(RuntimeStore.class){try {
             File directory=new File(context.getFilesDir(),"runtime");
             if(!directory.isDirectory()&&!directory.mkdirs())throw new java.io.IOException("AUTHORITY_DIRECTORY_FAILED");
@@ -39,13 +39,14 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
         db.execSQL("CREATE TABLE operations(id TEXT PRIMARY KEY, caller TEXT NOT NULL, digest TEXT NOT NULL, state TEXT NOT NULL, result TEXT, detail TEXT, created INTEGER NOT NULL, updated INTEGER NOT NULL, evidence TEXT)");
         db.execSQL("CREATE TABLE spaces(id TEXT PRIMARY KEY, created INTEGER NOT NULL)");
         db.execSQL("CREATE TABLE installs(space TEXT NOT NULL REFERENCES spaces(id), package TEXT NOT NULL, generation TEXT UNIQUE NOT NULL, apk TEXT NOT NULL, sha256 TEXT NOT NULL, descriptorSha TEXT NOT NULL, state TEXT NOT NULL, reason TEXT NOT NULL, version INTEGER NOT NULL, signer TEXT NOT NULL, dataId TEXT NOT NULL, operation TEXT NOT NULL, PRIMARY KEY(space,package))");
+        InstallProviderIndex.create(db);
         db.execSQL("CREATE TABLE sessions(generation TEXT PRIMARY KEY, space TEXT NOT NULL, package TEXT NOT NULL, installGeneration TEXT NOT NULL, pid INTEGER NOT NULL, state TEXT NOT NULL, processName TEXT, activityStub TEXT, authorityGeneration TEXT, hookOperation TEXT, closeRequested INTEGER NOT NULL DEFAULT 0)");
         db.execSQL("CREATE TABLE project_refs(id TEXT PRIMARY KEY, space TEXT NOT NULL, package TEXT NOT NULL, generation TEXT NOT NULL, sourceSha TEXT NOT NULL, snapshot TEXT NOT NULL, state TEXT NOT NULL, operation TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'MIGRATED')");
-        ActivityLedger.create(db);ActivityComponentLedger.create(db);ActivityAffinityLedger.create(db);ActivityEntryLedger.create(db);ActivityLaunchLedger.create(db);ServiceLedger.create(db);ProviderLedger.create(db);BroadcastLedger.create(db);ControllerLaunchLedger.create(db);ApplicationStartLedger.create(db);InstallHistory.create(db);JobLedger.create(db);JobAttemptLedger.create(db);
+        ActivityLedger.create(db);ActivityComponentLedger.create(db);ActivityAffinityLedger.create(db);ActivityEntryLedger.create(db);ActivityLaunchLedger.create(db);ServiceLedger.create(db);ProviderLedger.create(db);BroadcastLedger.create(db);ApplicationStartLedger.create(db);InstallHistory.create(db);JobLedger.create(db);JobAttemptLedger.create(db);PendingIntentLedger.create(db);
     }
     @Override public void onConfigure(SQLiteDatabase db) { db.execSQL("PRAGMA synchronous=FULL");db.setForeignKeyConstraintsEnabled(true); }
     @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        if(oldVersion<1||oldVersion>27||newVersion!=28)throw new IllegalStateException("SCHEMA_VERSION_UNSUPPORTED");
+        if(oldVersion<1||oldVersion>32||newVersion!=33)throw new IllegalStateException("SCHEMA_VERSION_UNSUPPORTED");
         // Explicit, transactional schema migration. Historical sessions never regain authority.
         if(oldVersion==1){db.execSQL("ALTER TABLE sessions ADD COLUMN processName TEXT");
         db.execSQL("ALTER TABLE sessions ADD COLUMN activityStub TEXT");
@@ -75,9 +76,8 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
         if(oldVersion>=9&&oldVersion<15)db.execSQL("ALTER TABLE activity_launches ADD COLUMN startResult INTEGER");
         if(oldVersion==15)ActivityLaunchLedger.correctStartClassification(db);
         if(oldVersion<17)db.execSQL("ALTER TABLE project_refs ADD COLUMN kind TEXT NOT NULL DEFAULT 'MIGRATED'");
-        if(oldVersion<18)ControllerLaunchLedger.create(db);
         if(oldVersion<19)db.execSQL("ALTER TABLE sessions ADD COLUMN hookOperation TEXT");
-        if(oldVersion<20){db.execSQL("ALTER TABLE sessions ADD COLUMN closeRequested INTEGER NOT NULL DEFAULT 0");if(oldVersion>=18)db.execSQL("ALTER TABLE controller_launches ADD COLUMN gatewayTaskId INTEGER NOT NULL DEFAULT -1");}
+        if(oldVersion<20)db.execSQL("ALTER TABLE sessions ADD COLUMN closeRequested INTEGER NOT NULL DEFAULT 0");
         if(oldVersion>=6&&oldVersion<21){db.execSQL("ALTER TABLE broadcast_deliveries ADD COLUMN resourceRetired INTEGER NOT NULL DEFAULT 0");db.execSQL("ALTER TABLE broadcast_deliveries ADD COLUMN resourceProof TEXT");}
         if(oldVersion<22)ApplicationStartLedger.create(db);
         if(oldVersion>=6&&oldVersion<23)db.execSQL("ALTER TABLE broadcast_registrations ADD COLUMN volumeRoots TEXT NOT NULL DEFAULT '[]'");
@@ -87,6 +87,18 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
         if(oldVersion>=9&&oldVersion<26)db.execSQL("ALTER TABLE activity_launches ADD COLUMN requestFlags INTEGER");
         if(oldVersion<27)JobLedger.create(db);
         if(oldVersion<28)JobAttemptLedger.create(db);
+        if(oldVersion<29){PendingIntentLedger.create(db);if(oldVersion>=6)db.execSQL("ALTER TABLE broadcast_deliveries ADD COLUMN externalOrigin INTEGER NOT NULL DEFAULT 0");}
+        // Preserve the actual route identity of tokens created by schema 29;
+        // cancellation queries must address that exact existing system token.
+        if(oldVersion==29)db.execSQL("ALTER TABLE pending_intents ADD COLUMN routeAction TEXT NOT NULL DEFAULT 'dev.tripoder.runtime.PENDING_BROADCAST'");
+        // Retire the experimental direct-to-slot transport. Its real system
+        // identity and UNKNOWN outcomes stay recorded; no old entry may execute
+        // a guest after the slot is reused. New tokens use one authority gateway.
+        if(oldVersion<31)db.execSQL("UPDATE pending_intents SET fenced=1,currentVersion=0 WHERE processStub!=''");
+        if(oldVersion<32)InstallProviderIndex.migrate(db);
+        // The controller launch ingress table (schema 18-32) is retired; activity_launches records which
+        // operation created each controller root (callerKind CONTROLLER).
+        if(oldVersion<33)db.execSQL("DROP TABLE IF EXISTS controller_launches");
     }
     private void requireAuthority(){if(closed||authorityLock==null||!authorityLock.isValid())throw new IllegalStateException("AUTHORITY_CLOSED");}
     @Override public synchronized SQLiteDatabase getReadableDatabase(){requireAuthority();return super.getReadableDatabase();}

@@ -20,12 +20,13 @@ public final class ManagerFrameworkAccess {
     private final Constructor<?> activity,connectivity,telephony,audio,battery,power,history,wifi,stats,notification,shortcut;
     private final Field service,callbackFlags,wifiService,groupId,groupChannels;
     private final Method[] wifiFeatures=new Method[6],notificationProperties=new Method[5];
-    private final Method channelId,channelGroup;
+    private final Method channelId,channelGroup,preDispatchKey;
     private final Method[] integers=new Method[9];private final Method packageName,processName,forceStopped,timestamp;
     private final int launchKey,onCreateKey;
     private ManagerFrameworkAccess()throws Exception {
         activity=FixedFrameworkMembers.constructor(7,"(Landroid/content/Context;Landroid/os/Handler;)V");
         connectivity=FixedFrameworkMembers.constructor(8,"(Landroid/content/Context;Landroid/net/IConnectivityManager;)V");
+        preDispatchKey=FixedFrameworkMembers.method(10,"preDispatchKeyEvent","(Landroid/view/KeyEvent;I)V",false);
         telephony=FixedFrameworkMembers.constructor(9,"(Landroid/content/Context;)V");audio=FixedFrameworkMembers.constructor(10,"(Landroid/content/Context;)V");
         battery=FixedFrameworkMembers.constructor(11,"(Landroid/content/Context;Lcom/android/internal/app/IBatteryStats;Landroid/os/IBatteryPropertiesRegistrar;)V");
         power=FixedFrameworkMembers.constructor(12,"(Landroid/content/Context;Landroid/os/IPowerManager;Landroid/os/IThermalService;Landroid/os/Handler;)V");
@@ -57,6 +58,8 @@ public final class ManagerFrameworkAccess {
     public static ActivityManager activity(Context host,Handler handler){return (ActivityManager)FixedFrameworkMembers.create(require().activity,Objects.requireNonNull(host),Objects.requireNonNull(handler));}
     public static ConnectivityManager connectivity(Context host,ConnectivityManager physical){ManagerFrameworkAccess v=require();Object service=Objects.requireNonNull(FixedFrameworkMembers.get(v.service,Objects.requireNonNull(physical)),"CONNECTIVITY_PHYSICAL_SERVICE_REQUIRED");return (ConnectivityManager)FixedFrameworkMembers.create(v.connectivity,Objects.requireNonNull(host),service);}
     public static TelephonyManager telephony(Context host){return (TelephonyManager)FixedFrameworkMembers.create(require().telephony,Objects.requireNonNull(host));}
+    /** Volume/media key pre-dispatch on the physical host manager; the platform owns key policy. */
+    public static void audioPreDispatchKeyEvent(AudioManager physical,android.view.KeyEvent event,int stream){FixedFrameworkMembers.call(require().preDispatchKey,Objects.requireNonNull(physical),Objects.requireNonNull(event),stream);}
     public static AudioManager audio(Context host){return (AudioManager)FixedFrameworkMembers.create(require().audio,Objects.requireNonNull(host));}
     public static BatteryManager battery(){return (BatteryManager)FixedFrameworkMembers.create(require().battery,null,null,null);}
     public static PowerManager power(Context host,Handler handler){return (PowerManager)FixedFrameworkMembers.create(require().power,Objects.requireNonNull(host),null,null,Objects.requireNonNull(handler));}

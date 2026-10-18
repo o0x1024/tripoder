@@ -24,9 +24,12 @@ def main():
     parser.add_argument("--target-package", choices=["com.tencent.mm", "com.tencent.tmgp.sgame"], help="Observe one explicitly authorized target app")
     parser.add_argument("--target-space", help="Reuse an existing target installation after exact APK verification; preserve its data and history")
     parser.add_argument("--fixture-close-plan", type=Path, help="Exact two already-dead owned fixture generations for process reuse acceptance")
-    parser.add_argument("--phase", choices=["p0", "p1", "p2", "p3", "p4", "artifact", "target", "receiver", "providers", "provider-identity", "entry", "failure", "packages", "notification", "creation", "service-startup", "service-passive", "activity-flags", "sources", "jobs", "jobs-native", "framework-gc", "process-reuse"], default="p0")
+    parser.add_argument("--phase", choices=["p0", "p1", "p2", "p3", "p4", "artifact", "target", "receiver", "providers", "provider-index", "package-replaced", "provider-identity", "entry", "failure", "packages", "notification", "creation", "service-startup", "service-passive", "activity-flags", "sources", "jobs", "pending", "jobs-native", "framework-gc", "process-reuse"], default="p0")
     parser.add_argument("--allow-notification-test-grant", action="store_true", help="Temporarily grant POST_NOTIFICATIONS only to the owned runtime-probe for notification phase")
+    parser.add_argument("--pending-cleanup-space", help="Close only this exact dead owned PendingIntent fixture after retaining its evidence")
     args = parser.parse_args()
+    if args.pending_cleanup_space and (args.phase != "pending" or re.fullmatch(r"pending-[a-f0-9]{16}-pending(?:30|31)", args.pending_cleanup_space) is None):
+        parser.error("--pending-cleanup-space requires an exact owned pending fixture and pending phase")
     if bool(args.fixture_close_plan) != (args.phase == "process-reuse"):
         parser.error("--fixture-close-plan is required only for --phase process-reuse")
     if args.target_package and args.phase != "target":
@@ -103,6 +106,7 @@ def main():
         if receivers.returncode:
             raise RuntimeError("Receiver ingress evidence unavailable: " + receivers.stderr)
         (evidence / "receiver-ingress.txt").write_text(receivers.stdout)
+        observation["unexpectedPendingIngressFailure"] = "PENDING_INGRESS_FAILED:" in receivers.stdout
         bootstrap = adb("logcat", "-b", "main", "-d", "--uid=" + str(owned_uid), "-T", device_log_start,
                         "TripoderSelfHook:I", "TripoderRuntime:E", "TripoderOwnership:I", "TripoderJobs:I", "*:S", check=False)
         if bootstrap.returncode:
@@ -111,7 +115,7 @@ def main():
         observation["selfHookInstallationSamples"] = [
             {"pid": int(pid), "bindings": int(bindings), "durationNs": int(duration)}
             for pid, bindings, duration in re.findall(
-                r"^\S+\s+\S+\s+(\d+)\s+\d+\s+I\s+TripoderSelfHook\s*:\s+READY:READY:26/26:bindings=(\d+):ns=(\d+)$",
+                r"^\S+\s+\S+\s+(\d+)\s+\d+\s+I\s+TripoderSelfHook\s*:\s+READY:READY:27/27:bindings=(\d+):ns=(\d+)$",
                 bootstrap.stdout, re.MULTILINE)]
         if result is not None and args.phase == "p4" and result.get("expectedHookTerminations"):
             def exact_exit(item):
@@ -170,20 +174,22 @@ def main():
         if args.phase == "target":
             live_log_file = (evidence / "owned-live-log.txt").open("w")
             live_log = subprocess.Popen(["adb", "-s", args.serial, "logcat", "-b", "main", "-b", "system", "-b", "crash", "--uid=" + str(owned_uid), "-T", device_log_start], stdout=live_log_file, stderr=subprocess.STDOUT)
-        activity = {"p0": "ProbeActivity", "p1": "P1ProbeActivity", "p2": "P2ProbeActivity", "p3": "P3ProbeActivity", "p4": "P4ProbeActivity", "artifact": "ArtifactProbeActivity", "target": "ArtifactProbeActivity", "receiver": "P2ProbeActivity", "providers": "P2ProbeActivity", "provider-identity": "P2ProbeActivity", "entry": "P2ProbeActivity", "failure": "P2ProbeActivity", "packages": "P2ProbeActivity", "notification": "P2ProbeActivity", "creation": "P2ProbeActivity", "service-startup": "P2ProbeActivity", "service-passive": "P2ProbeActivity", "activity-flags": "P2ProbeActivity", "sources": "P2ProbeActivity", "jobs": "P2ProbeActivity", "jobs-native": "NativeRetryActivity", "framework-gc": "FrameworkGcActivity", "process-reuse": "P2ProbeActivity"}[args.phase]
-        start_flags = ["-a", "android.intent.action.MAIN", "-c", "android.intent.category.LAUNCHER", "-f", "0x10008000"] if args.phase in ["p2", "p4", "receiver", "providers", "provider-identity", "entry", "failure", "packages", "notification", "creation", "service-startup", "service-passive", "activity-flags", "sources", "jobs"] else []
-        scenario = ["--ez", "receiverOnly", "true"] if args.phase == "receiver" else ["--ez", "providersOnly", "true"] if args.phase == "providers" else ["--ez", "providerIdentityOnly", "true"] if args.phase == "provider-identity" else ["--ez", "entryOnly", "true"] if args.phase == "entry" else ["--ez", "failureOnly", "true"] if args.phase == "failure" else ["--ez", "packageOnly", "true"] if args.phase == "packages" else ["--ez", "notificationOnly", "true"] if args.phase == "notification" else ["--ez", "creationOnly", "true"] if args.phase == "creation" else ["--ez", "serviceStartupOnly", "true"] if args.phase == "service-startup" else ["--ez", "servicePassiveOnly", "true"] if args.phase == "service-passive" else ["--ez", "activityFlagsOnly", "true"] if args.phase == "activity-flags" else ["--ez", "sourcesOnly", "true"] if args.phase == "sources" else ["--ez", "jobsOnly", "true"] if args.phase == "jobs" else ["--ez", "launchTargets", "true"] if args.phase == "target" else []
+        activity = {"p0": "ProbeActivity", "p1": "P1ProbeActivity", "p2": "P2ProbeActivity", "p3": "P3ProbeActivity", "p4": "P4ProbeActivity", "artifact": "ArtifactProbeActivity", "target": "ArtifactProbeActivity", "receiver": "P2ProbeActivity", "providers": "P2ProbeActivity", "provider-index": "P2ProbeActivity", "package-replaced": "P2ProbeActivity", "provider-identity": "P2ProbeActivity", "entry": "P2ProbeActivity", "failure": "P2ProbeActivity", "packages": "P2ProbeActivity", "notification": "P2ProbeActivity", "creation": "P2ProbeActivity", "service-startup": "P2ProbeActivity", "service-passive": "P2ProbeActivity", "activity-flags": "P2ProbeActivity", "sources": "P2ProbeActivity", "jobs": "P2ProbeActivity", "pending": "P2ProbeActivity", "jobs-native": "NativeRetryActivity", "framework-gc": "FrameworkGcActivity", "process-reuse": "P2ProbeActivity"}[args.phase]
+        start_flags = ["-a", "android.intent.action.MAIN", "-c", "android.intent.category.LAUNCHER", "-f", "0x10008000"] if args.phase in ["p2", "p4", "receiver", "providers", "provider-index", "package-replaced", "provider-identity", "entry", "failure", "packages", "notification", "creation", "service-startup", "service-passive", "activity-flags", "sources", "jobs", "pending"] else []
+        scenario = ["--ez", "receiverOnly", "true"] if args.phase == "receiver" else ["--ez", "providersOnly", "true"] if args.phase == "providers" else ["--ez", "packageReplacedOnly", "true"] if args.phase == "package-replaced" else ["--ez", "providerIndexOnly", "true"] if args.phase == "provider-index" else ["--ez", "providerIdentityOnly", "true"] if args.phase == "provider-identity" else ["--ez", "entryOnly", "true"] if args.phase == "entry" else ["--ez", "failureOnly", "true"] if args.phase == "failure" else ["--ez", "packageOnly", "true"] if args.phase == "packages" else ["--ez", "notificationOnly", "true"] if args.phase == "notification" else ["--ez", "creationOnly", "true"] if args.phase == "creation" else ["--ez", "serviceStartupOnly", "true"] if args.phase == "service-startup" else ["--ez", "servicePassiveOnly", "true"] if args.phase == "service-passive" else ["--ez", "activityFlagsOnly", "true"] if args.phase == "activity-flags" else ["--ez", "sourcesOnly", "true"] if args.phase == "sources" else ["--ez", "pendingOnly", "true"] if args.phase == "pending" else ["--ez", "jobsOnly", "true"] if args.phase == "jobs" else ["--ez", "launchTargets", "true"] if args.phase == "target" else []
         if args.phase == "process-reuse":
             start_flags = ["-a", "android.intent.action.MAIN", "-c", "android.intent.category.LAUNCHER", "-f", "0x10008000"]
             plan_data = json.dumps(json.loads(args.fixture_close_plan.read_text()), separators=(",", ":")).encode()
             scenario = ["--ez", "processReuseOnly", "true", "--es", "closurePlan", base64.urlsafe_b64encode(plan_data).decode()]
+        if args.pending_cleanup_space:
+            scenario += ["--es", "pendingCleanupSpace", args.pending_cleanup_space]
         if args.target_package:
             scenario += ["--es", "targetPackage", args.target_package]
         if args.target_space:
             scenario += ["--es", "targetSpace", args.target_space]
         adb("shell", "am", "start", "-W", *start_flags, "-n", "dev.tripoder.runtimeprobe/." + activity, "--es", "runId", run_id, *scenario)
         remote = "/sdcard/Android/data/dev.tripoder.runtimeprobe/files/result-" + run_id + ".json"
-        deadline = time.monotonic() + (300 if args.phase in ["jobs", "jobs-native"] else 1200 if args.phase == "p2" else 600 if args.phase in ["p1", "p2", "p3", "p4", "artifact", "target", "receiver", "providers", "provider-identity", "process-reuse"] else 150)
+        deadline = time.monotonic() + (300 if args.phase in ["jobs", "pending", "jobs-native"] else 1200 if args.phase == "p2" else 600 if args.phase in ["p1", "p2", "p3", "p4", "artifact", "target", "receiver", "providers", "provider-index", "package-replaced", "provider-identity", "process-reuse"] else 150)
         result = None
         resumed_task = False
         while time.monotonic() < deadline:
@@ -213,10 +219,17 @@ def main():
         observation["hostMatchesBuild"] = result.get("hostApkSha256") == receipt["hostApkSha256"]
         observation["fixturesMatchBuild"] = result.get("fixtures") == receipt["fixtures"]
         observation["p1FixturesMatchBuild"] = args.phase != "p1" or result.get("p1Fixtures") == receipt["p1Fixtures"]
-        observation["p2FixturesMatchBuild"] = args.phase not in ["p2", "p3", "p4", "receiver", "providers", "provider-identity", "entry", "failure", "packages", "notification", "creation", "service-startup", "service-passive", "activity-flags", "sources", "jobs", "process-reuse"] or result.get("p2Fixtures") == receipt["p2Fixtures"]
+        observation["p2FixturesMatchBuild"] = args.phase not in ["p2", "p3", "p4", "receiver", "providers", "provider-index", "package-replaced", "provider-identity", "entry", "failure", "packages", "notification", "creation", "service-startup", "service-passive", "activity-flags", "sources", "jobs", "pending", "process-reuse"] or result.get("p2Fixtures") == receipt["p2Fixtures"]
         observation["allDeviceAssertionsPassed"] = bool(result.get("checks")) and all(c.get("passed") is True for c in result["checks"])
         collect_owned_logs()
         observation["passed"] = result.get("passed") is True and result.get("runId") == run_id and observation["hostMatchesBuild"] and observation["fixturesMatchBuild"] and observation["p1FixturesMatchBuild"] and observation["p2FixturesMatchBuild"] and observation["allDeviceAssertionsPassed"] and after.returncode == 1 and not after.stderr
+        if args.phase == "package-replaced":
+            replacement_receipt = result["packageReplacement"]
+            log = adb("logcat", "-d", "--pid="+str(replacement_receipt["workerPid"]), "TripoderPackage:I", "*:S").stdout
+            (evidence / "package-replaced.txt").write_text(log)
+            prefix = "PACKAGES_REPLACED_RECEIVED:pid="+str(replacement_receipt["workerPid"])+":count="
+            observation["physicalReplacementAcknowledged"] = prefix+"0" in log and prefix+"1" in log
+            if not observation["physicalReplacementAcknowledged"]:raise RuntimeError("PACKAGE_REPLACEMENT_ACK_MISSING")
         if not observation["passed"]:
             raise RuntimeError("Device assertions failed; inspect device-result.json")
         if observation["nativeMemoryCrashObserved"]:
@@ -225,6 +238,8 @@ def main():
             raise RuntimeError("ANR observed or required ANR evidence missing")
         if observation["unexpectedJavaFatalObserved"]:
             raise RuntimeError("Java fatal exception observed during this run")
+        if observation.get("unexpectedPendingIngressFailure"):
+            raise RuntimeError("PendingIntent ingress failed during this run")
         if args.phase == "p4" and (observation["nativeFatalSignalObserved"] or observation.get("expectedHookTerminationsConfirmed") is not True):
             raise RuntimeError("P4 termination evidence missing or unexpected Native fatal signal")
     except Exception as error:
@@ -258,11 +273,11 @@ def main():
             except Exception as error:
                 observation["passed"] = False
                 observation["permissionRestoreError"] = str(error)
-        if args.phase in ["jobs", "jobs-native"]:
+        if args.phase in ["jobs", "pending", "jobs-native"]:
             samples = adb("shell", "cat", "/sdcard/Android/data/dev.tripoder.runtimeprobe/files/job-system-" + run_id + ".json", check=False)
             if samples.returncode == 0:
                 (evidence / "job-system-samples.json").write_text(samples.stdout)
-        shutil.copyfile(build / "build-receipt.json", evidence / "build-receipt.json")
+        (evidence / "build-receipt.json").write_text(json.dumps(receipt,indent=2)+"\n")
         observation["finishedAtUtc"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
         (evidence / "device-observation.json").write_text(json.dumps(observation, indent=2, ensure_ascii=False))
     if not observation.get("passed"):

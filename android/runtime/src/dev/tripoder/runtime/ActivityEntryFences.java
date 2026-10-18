@@ -17,17 +17,23 @@ final class ActivityEntryFences {
         }
     }
     static void requireNoOpenRoot(RuntimeStore store,String space,String pkg,String install){
-        try(Cursor c=store.getReadableDatabase().rawQuery("SELECT 1 FROM activity_tickets WHERE space=? AND package=? AND installGeneration=? AND entryFenceOperation IS NULL AND state NOT IN ('FINISHED','REVOKED','RETIRED') LIMIT 1",new String[]{space,pkg,install})){
-            if(c.moveToFirst())throw new IllegalStateException("APPLICATION_ACTIVITY_ALREADY_OPEN_OR_UNCONFIRMED");
+        try(Cursor c=store.getReadableDatabase().rawQuery("SELECT ticket,state,taskId,generation,component FROM activity_tickets WHERE space=? AND package=? AND installGeneration=? AND entryFenceOperation IS NULL AND state NOT IN ('FINISHED','REVOKED','RETIRED') LIMIT 1",new String[]{space,pkg,install})){
+            if(c.moveToFirst()){android.util.Log.e("TripoderLaunch","OPEN_ROOT ticket="+c.getString(0)+" state="+c.getString(1)+" task="+c.getInt(2)+" generation="+c.getString(3)+" component="+c.getString(4));throw new IllegalStateException("APPLICATION_ACTIVITY_ALREADY_OPEN_OR_UNCONFIRMED");}
         }
     }
-    /** Caller already holds authority and its transaction; no platform effects or retirement. */
-    static void close(RuntimeBroker broker,ControllerLaunchLedger.Entry entry,String operation){
-        var ticket=broker.activities.get(entry.ticket);
-        if(!"DISPATCHED".equals(entry.state)||entry.gatewayTaskId<0||!entry.space.equals(ticket.space)||!entry.pkg.equals(ticket.pkg)||!entry.install.equals(ticket.install)||!entry.process.equals(ticket.generation)||!entry.component.equals(ticket.component))throw new SecurityException("LAUNCH_ENTRY_IDENTITY_MISMATCH");
-        closeUnattached(broker,ticket,entry.operation,operation);
+    /** A workbench launch's root: the delivery record names the operation that created it. Caller holds authority and its transaction. */
+    static void closeController(RuntimeBroker broker,String candidate,String launchOperation,String operation){
+        var ticket=broker.activities.get(candidate);var launch=broker.activities.launches.get(broker.activities.launches.forTicket(candidate));
+        if(!launchOperation.equals(launch.operation)||!"CONTROLLER".equals(launch.callerKind)||!ticket.generation.equals(launch.generation))throw new SecurityException("LAUNCH_ENTRY_IDENTITY_MISMATCH");
+        closeUnattached(broker,ticket,launchOperation,operation);
     }
-    /** An admitted guest-to-guest route owns its own candidate, not a controller gateway. */
+    /** The root ticket a workbench launch created, or null when the launch never reached ticket creation. */
+    static String controllerTicket(RuntimeStore store,String launchOperation){
+        try(Cursor c=store.getReadableDatabase().rawQuery("SELECT candidate FROM activity_launches WHERE operation=? AND callerKind='CONTROLLER'",new String[]{launchOperation})){
+            if(!c.moveToFirst())return null;String ticket=c.getString(0);if(c.moveToNext())throw new SecurityException("LAUNCH_ENTRY_AMBIGUOUS");return ticket;
+        }
+    }
+    /** An admitted guest-to-guest route owns its own candidate. */
     static void closeRoute(RuntimeBroker broker,String candidate,String launchOperation,String operation){
         var ticket=broker.activities.get(candidate);var launch=broker.activities.launches.get(broker.activities.launches.forTicket(candidate));
         if(!launchOperation.equals(launch.operation)||!"ACTIVITY".equals(launch.callerKind)||launch.sourceTicket==null||launch.sourceInstance==null||launch.payloadDigest==null||!"UNKNOWN".equals(launch.state)||!ticket.generation.equals(launch.generation))throw new SecurityException("ACTIVITY_ROUTE_ENTRY_IDENTITY_MISMATCH");

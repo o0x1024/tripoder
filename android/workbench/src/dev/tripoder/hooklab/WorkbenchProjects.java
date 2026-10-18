@@ -31,6 +31,22 @@ final class WorkbenchProjects {
         for(File dir:dirs){if(Files.isSymbolicLink(dir.toPath())||!dir.isDirectory())throw new IOException("项目目录类型无效");if(new File(dir,"project.json").isFile())result.add(get(dir.getName()));}
         result.sort(Comparator.comparingLong(value->-value.optLong("createdAt")));return result;
     }
+    /** Removes one project's source. Symbolic links are never followed, and an absent project is already gone. */
+    synchronized void delete(String id)throws Exception{
+        checkDirectory(root);File dir=new File(root,id(id));
+        if(!Files.exists(dir.toPath(),LinkOption.NOFOLLOW_LINKS))return;
+        if(Files.isSymbolicLink(dir.toPath())||!dir.isDirectory())throw new IllegalStateException("项目目录类型无效");
+        Files.walkFileTree(dir.toPath(),new SimpleFileVisitor<Path>(){
+            @Override public FileVisitResult visitFile(Path file,java.nio.file.attribute.BasicFileAttributes attributes)throws IOException{Files.delete(file);return FileVisitResult.CONTINUE;}
+            @Override public FileVisitResult postVisitDirectory(Path directory,IOException failure)throws IOException{if(failure!=null)throw failure;Files.delete(directory);return FileVisitResult.CONTINUE;}
+        });
+    }
+    synchronized void rename(String id,String title)throws Exception{
+        if(title==null||title.trim().isEmpty()||title.length()>80)throw new IllegalArgumentException("项目名称需要 1–80 个字符");
+        JSONObject value=get(id);value.put("name",title.trim());atomic(new File(directory(id),"project.json"),value.toString(2));
+    }
+    /** Last time the project's script was saved, for "edited … ago" in lists. */
+    long modified(String id){try{return Files.getLastModifiedTime(new File(directory(id),"scripts/main.ts").toPath(),LinkOption.NOFOLLOW_LINKS).toMillis();}catch(Exception unreadable){return 0;}}
     String script(String id)throws Exception{get(id);return readFile(new File(directory(id),"scripts/main.ts"));}
     String selectors(String id)throws Exception{get(id);File file=new File(directory(id),"selectors.json");return file.exists()?readFile(file):"[]";}
     synchronized void selectors(String id,String source)throws Exception{get(id);var array=new org.json.JSONArray(source);if(array.length()<1||array.length()>32||source.length()>24000)throw new IOException("目标声明需要 1–32 项且不能超过 24,000 字符");atomic(new File(directory(id),"selectors.json"),array.toString(2));}

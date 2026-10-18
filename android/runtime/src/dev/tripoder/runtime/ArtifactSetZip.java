@@ -10,7 +10,7 @@ import java.util.zip.*;
 
 /** Bounded ZIP inspection, including Unix symlink types that java.util.zip hides. */
 final class ArtifactSetZip {
-    static final int MAX_ENTRIES=20000;
+    static final int MAX_ENTRIES=65534;
     static final long MAX_EXPANDED=3L*1024*1024*1024,MAX_ENTRY=512L*1024*1024;
     static final class Scan {
         final List<ArtifactSet.FileRecord> entries=new ArrayList<>();
@@ -19,9 +19,13 @@ final class ArtifactSetZip {
         long expanded;
         boolean containsNative;
     }
+    private static final class Result {final String path;final ArtifactSet.FileRecord record;final byte[] manifest;final boolean library;Result(String path,ArtifactSet.FileRecord record,byte[] manifest,boolean library){this.path=path;this.record=record;this.manifest=manifest;this.library=library;}}
     static Scan scan(File apk)throws Exception {
         Set<String> central=centralNames(apk);Scan out=new Scan();Set<String> seen=new HashSet<>();
+        java.util.concurrent.atomic.AtomicLong expanded=new java.util.concurrent.atomic.AtomicLong();
+        List<java.util.concurrent.CompletableFuture<Result>> work=new ArrayList<>();
         try(ZipFile zip=new ZipFile(apk)){
+            // Metadata admission stays sequential and complete before any entry is read; the byte-level work below is independent per entry.
             Enumeration<? extends ZipEntry> it=zip.entries();
             while(it.hasMoreElements()){
                 ZipEntry e=it.nextElement();String path=e.getName();safePath(path,e.isDirectory());
@@ -29,28 +33,40 @@ final class ArtifactSetZip {
                 if(e.isDirectory()){if(e.getSize()!=0)throw fail("ZIP_DIRECTORY_CONTENT");continue;}
                 if(e.getSize()<0||e.getSize()>MAX_ENTRY||e.getCompressedSize()<0)throw fail("ZIP_ENTRY_SIZE");
                 boolean manifest=path.equals("AndroidManifest.xml");if(manifest&&e.getSize()>4*1024*1024)throw fail("MANIFEST_SIZE");
-                ByteArrayOutputStream bytes=manifest?new ByteArrayOutputStream():null;
-                MessageDigest md=MessageDigest.getInstance("SHA-256");CRC32 crc=new CRC32();long size=0;
-                try(InputStream in=zip.getInputStream(e)){byte[] b=new byte[65536];int n;while((n=in.read(b))!=-1){size+=n;out.expanded+=n;if(size>MAX_ENTRY||out.expanded>MAX_EXPANDED)throw fail("ZIP_EXPANDED_LIMIT");md.update(b,0,n);crc.update(b,0,n);if(bytes!=null)bytes.write(b,0,n);}}
-                if(size!=e.getSize()||crc.getValue()!=e.getCrc())throw fail("ZIP_CONTENT_MISMATCH");
-                ArtifactSet.FileRecord record=new ArtifactSet.FileRecord(path,ArtifactSet.hex(md.digest()),size);out.entries.add(record);
-                if(bytes!=null)out.manifests.put(path,bytes.toByteArray());
-                if(path.startsWith("lib/")){
-                    if(!path.matches("lib/(arm64-v8a|armeabi-v7a|x86|x86_64)/lib[a-zA-Z0-9_+.$-]+\\.so"))throw fail("ABI_OR_LIBRARY_UNSUPPORTED");
-                    out.containsNative=true;
-                    // All entries remain signature/CRC/digest checked. Execution
-                    // selects ARM64 once; other ABIs are never extracted or loaded.
-                    if(!path.startsWith("lib/arm64-v8a/"))continue;
-                    String name=path.substring("lib/arm64-v8a/".length());out.libraries.put(name,record);
-                    // A selected ABI directory can also contain application-owned
-                    // compressed code or metadata with a .so suffix. Keep these as
-                    // authenticated opaque files; only actual ELF claims have ABI semantics.
-                    try(InputStream in=zip.getInputStream(e)){byte[] header=in.readNBytes(20);boolean elf=header.length>=4&&header[0]==127&&header[1]=='E'&&header[2]=='L'&&header[3]=='F';if(elf&&(header.length<20||header[4]!=2||header[5]!=1||header[16]!=3||header[17]!=0||(header[18]&255)!=183||header[19]!=0))throw fail("NATIVE_ELF_NOT_ARM64_SHARED");}
-                }
+                if(path.startsWith("lib/")&&!path.matches("lib/(arm64-v8a|armeabi-v7a|armeabi|x86|x86_64|mips|mips64|riscv64)/lib[a-zA-Z0-9_+.$-]+\\.so"))throw fail("ABI_OR_LIBRARY_UNSUPPORTED");
+                work.add(java.util.concurrent.CompletableFuture.supplyAsync(()->{try{return entry(zip,e,path,manifest,expanded);}catch(Exception error){throw new java.util.concurrent.CompletionException(error);}}));
             }
+            try{
+                for(var future:work){
+                    Result r;try{r=future.join();}catch(java.util.concurrent.CompletionException error){Throwable cause=error.getCause();if(cause instanceof Exception)throw (Exception)cause;throw error;}
+                    out.entries.add(r.record);if(r.manifest!=null)out.manifests.put(r.path,r.manifest);
+                    if(r.path.startsWith("lib/")){
+                        out.containsNative=true;
+                        // All entries remain signature/CRC/digest checked. Execution
+                        // selects ARM64 once; other ABIs are never extracted or loaded.
+                        if(r.library)out.libraries.put(r.path.substring("lib/arm64-v8a/".length()),r.record);
+                    }
+                }
+            }catch(Exception|Error error){for(var future:work)future.cancel(true);throw error;}
         }
+        out.expanded=expanded.get();
         if(!seen.equals(central)||!out.manifests.containsKey("AndroidManifest.xml"))throw fail("ZIP_MANIFEST_MISSING");
         out.entries.sort(Comparator.comparing(r->r.path));return out;
+    }
+    private static Result entry(ZipFile zip,ZipEntry e,String path,boolean manifest,java.util.concurrent.atomic.AtomicLong expanded)throws Exception{
+        ByteArrayOutputStream bytes=manifest?new ByteArrayOutputStream():null;
+        MessageDigest md=MessageDigest.getInstance("SHA-256");CRC32 crc=new CRC32();long size=0;
+        try(InputStream in=zip.getInputStream(e)){byte[] b=new byte[65536];int n;while((n=in.read(b))!=-1){size+=n;if(size>MAX_ENTRY||expanded.addAndGet(n)>MAX_EXPANDED)throw fail("ZIP_EXPANDED_LIMIT");md.update(b,0,n);crc.update(b,0,n);if(bytes!=null)bytes.write(b,0,n);}}
+        if(size!=e.getSize()||crc.getValue()!=e.getCrc())throw fail("ZIP_CONTENT_MISMATCH");
+        ArtifactSet.FileRecord record=new ArtifactSet.FileRecord(path,ArtifactSet.hex(md.digest()),size);
+        boolean library=path.startsWith("lib/arm64-v8a/");
+        if(library){
+            // A selected ABI directory can also contain application-owned
+            // compressed code or metadata with a .so suffix. Keep these as
+            // authenticated opaque files; only actual ELF claims have ABI semantics.
+            try(InputStream in=zip.getInputStream(e)){byte[] header=in.readNBytes(20);boolean elf=header.length>=4&&header[0]==127&&header[1]=='E'&&header[2]=='L'&&header[3]=='F';if(elf&&(header.length<20||header[4]!=2||header[5]!=1||header[16]!=3||header[17]!=0||(header[18]&255)!=183||header[19]!=0))throw fail("NATIVE_ELF_NOT_ARM64_SHARED");}
+        }
+        return new Result(path,record,bytes==null?null:bytes.toByteArray(),library);
     }
     static void extract(File apk,String zipPath,Path target,ArtifactSet.FileRecord expected)throws Exception{
         try(ZipFile zip=new ZipFile(apk);InputStream in=zip.getInputStream(zip.getEntry(zipPath));OutputStream out=Files.newOutputStream(target,StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE,LinkOption.NOFOLLOW_LINKS)){

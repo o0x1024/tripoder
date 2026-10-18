@@ -1,0 +1,213 @@
+{
+  "runId": "control-26e7bb6a7e1d4877",
+  "startedAt": 1792291851197,
+  "uid": 10400,
+  "pid": 2046,
+  "deviceBuild": "Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys",
+  "scope": "native-application-tap-long-press-and-deletion",
+  "existingUserPendingOperation": "",
+  "testOperationJournal": "ui-acceptance-control-26e7bb6a7e1d4877",
+  "workbenchStartupStatus": {
+    "schema": 33,
+    "hookReady": true,
+    "lease": "c66c6dcf-c4e1-453e-b328-46123116cc33",
+    "enginePid": 2122,
+    "engineUid": 10400,
+    "strongIsolation": false,
+    "authority": "80599da3-eb64-4216-bd85-3dd75a651086",
+    "controllerUid": 10400
+  },
+  "captures": [
+    "control-26e7bb6a7e1d4877-long-press-menu.png",
+    "control-26e7bb6a7e1d4877-project-space.png",
+    "control-26e7bb6a7e1d4877-direct-launch.png",
+    "control-26e7bb6a7e1d4877-delete-confirmation.png",
+    "control-26e7bb6a7e1d4877-project-index-after-delete.png",
+    "control-26e7bb6a7e1d4877-orphaned-application-projects.png",
+    "control-26e7bb6a7e1d4877-space-delete-confirmation.png"
+  ],
+  "project": "a0e8e796-f5a7-4c65-844e-2d142bbc5fb9",
+  "spaceA": "tap-a-26e7bb6a7e1d4877",
+  "spaceB": "tap-b-26e7bb6a7e1d4877",
+  "workerUid": 10400,
+  "guestLaunched": true,
+  "hostAppLaunched": false,
+  "passed": true,
+  "checks": [
+    {
+      "name": "real-workbench-foreground-startup-connected",
+      "passed": true,
+      "observed": ""
+    },
+    {
+      "name": "long-press-does-not-launch",
+      "passed": true,
+      "observed": "management menu without a launch operation"
+    },
+    {
+      "name": "new-installation-has-no-project-binding",
+      "passed": true,
+      "observed": "older retained projects do not bind this new installation"
+    },
+    {
+      "name": "tap-launches-without-a-project",
+      "passed": true,
+      "observed": "standalone launcher in engine task"
+    },
+    {
+      "name": "direct-launch-never-creates-or-binds-project",
+      "passed": true,
+      "observed": "project records unchanged"
+    },
+    {
+      "name": "first-launch-has-durable-success",
+      "passed": true,
+      "observed": "gateway completion queried on return"
+    },
+    {
+      "name": "repeat-tap-keeps-space-data",
+      "passed": true,
+      "observed": "count = 1"
+    },
+    {
+      "name": "explicit-space-selection-uses-independent-data",
+      "passed": true,
+      "observed": "space B count = 0"
+    },
+    {
+      "name": "selected-space-is-remembered",
+      "passed": true,
+      "observed": "second tap opens space B directly"
+    },
+    {
+      "name": "project-in-another-space-does-not-take-over-tap",
+      "passed": true,
+      "observed": "default space B stays in effect (count = 0)"
+    },
+    {
+      "name": "single-bound-project-launches-in-chosen-space",
+      "passed": true,
+      "observed": "bound project opens space A (count = 1)"
+    },
+    {
+      "name": "stale-delete-rejected",
+      "passed": true,
+      "observed": "exact generation required"
+    },
+    {
+      "name": "rejected-delete-has-terminal-receipt",
+      "passed": true,
+      "observed": "no unqueryable pending operation"
+    },
+    {
+      "name": "delete-confirms-once-with-consequence",
+      "passed": true,
+      "observed": "confirmation names both spaces and the bound project; no operation before acceptance"
+    },
+    {
+      "name": "delete-stops-background-app-and-removes-every-install",
+      "passed": true,
+      "observed": {
+        "message": "删除应用「启动验收计数器」 · 已完成",
+        "resources": {
+          "available": 1,
+          "unresolvedTruncated": false,
+          "retained": 7,
+          "slots": "[{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":true,\"index\":0,\"spare\":false,\"allocated\":false,\"activityResources\":false,\"service\":false},{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":true,\"index\":1,\"spare\":false,\"allocated\":false,\"activityResources\":false,\"service\":false},{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":true,\"index\":2,\"spare\":false,\"allocated\":false,\"activityResources\":false,\"service\":false},{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":true,\"index\":3,\"spare\":false,\"allocated\":false,\"activityResources\":false,\"service\":false},{\"activity\":true,\"broadcast\":false,\"provider\":false,\"job\":false,\"index\":4,\"spare\":false,\"allocated\":false,\"activityResources\":true,\"service\":false},{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":false,\"index\":5,\"spare\":false,\"allocated\":false,\"activityResources\":false,\"service\":false},{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":true,\"index\":6,\"spare\":false,\"allocated\":false,\"activityResources\":false,\"service\":false},{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":false,\"index\":7,\"spare\":true,\"allocated\":false,\"activityResources\":false,\"service\":false}]",
+          "spare": 1,
+          "tasks": "[{\"taskId\":5001,\"numActivities\":1,\"baseActivity\":\"dev.tripoder.engine\\/dev.tripoder.hooklab.WorkbenchActivity\",\"topActivity\":\"dev.tripoder.engine\\/dev.tripoder.hooklab.WorkbenchActivity\",\"origActivity\":\"\",\"baseComponent\":\"dev.tripoder.engine\\/dev.tripoder.hooklab.WorkbenchActivity\"}]",
+          "total": 8,
+          "allocated": 0,
+          "referencesTruncated": false,
+          "unresolvedActivities": "[{\"ticket\":\"3347eebd-a217-4e72-838b-f20f2a58da37\",\"processStub\":\"dev.tripoder.runtime.RuntimeSlot$E\",\"space\":\"control-2032700f5f0b4148\",\"package\":\"dev.tripoder.p0.a\",\"state\":\"PREPARED\",\"taskId\":-1,\"generation\":\"7df29e792c9a508806803339395c675cebf2ec2a1fecdedeeeba0093c83b18b0\",\"sessionState\":\"DEAD\",\"componentLeasePresent\":true}]",
+          "activityReferences": "[{\"processStub\":\"dev.tripoder.runtime.RuntimeSlot$E\",\"space\":\"control-2032700f5f0b4148\",\"package\":\"dev.tripoder.p0.a\",\"component\":\"dev.tripoder.p0.a.AActivity\",\"generation\":\"7df29e792c9a508806803339395c675cebf2ec2a1fecdedeeeba0093c83b18b0\",\"ticket\":\"3347eebd-a217-4e72-838b-f20f2a58da37\",\"state\":\"PREPARED\",\"taskId\":-1,\"destroyedConfirmed\":false},{\"processStub\":\"dev.tripoder.runtime.RuntimeSlot$E\",\"space\":\"control-2032700f5f0b4148\",\"package\":\"dev.tripoder.p0.a\",\"component\":\"dev.tripoder.p0.a.AActivity\",\"generation\":\"7df29e792c9a508806803339395c675cebf2ec2a1fecdedeeeba0093c83b18b0\",\"ticket\":\"88ff949c-17fd-4118-8dad-1826bdb29cd6\",\"state\":\"REVOKED\",\"taskId\":-1,\"destroyedConfirmed\":false,\"resourceProof\":\"CONTROLLER_ENTRY_NOT_DISPATCHED;operation=7627b78b-68e4-434e-8b53-68fd53dfa28e\"}]"
+        }
+      }
+    },
+    {
+      "name": "delete-removes-project-source",
+      "passed": true,
+      "observed": "project directory removed"
+    },
+    {
+      "name": "delete-removes-project-binding",
+      "passed": true,
+      "observed": "binding row removed, not left stale"
+    },
+    {
+      "name": "grid-has-no-tile-for-deleted-app",
+      "passed": true,
+      "observed": "no installation remains"
+    },
+    {
+      "name": "deleted-app-project-is-not-in-project-index",
+      "passed": true,
+      "observed": "project removed with its application"
+    },
+    {
+      "name": "no-launcher-does-not-start-arbitrary-activity",
+      "passed": true,
+      "observed": "no fallback to arbitrary or host Activity"
+    },
+    {
+      "name": "rejected-launch-has-terminal-receipt",
+      "passed": true,
+      "observed": "launch rejected before worker startup"
+    },
+    {
+      "name": "project-cannot-move-to-another-application",
+      "passed": true,
+      "observed": "binding unchanged"
+    },
+    {
+      "name": "removed-application-leaves-stale-binding",
+      "passed": true,
+      "observed": {
+        "project": "1526133a-bb85-4a16-9b8a-09b6e1c2301a",
+        "space": "tap-a-26e7bb6a7e1d4877",
+        "package": "dev.tripoder.launcherfixture",
+        "generation": "ae65b9b8-5bf7-476b-892f-24763b76af2a",
+        "state": "STALE",
+        "bindingOperation": "b35cd537-ab98-4b5a-a893-d15637fb7b94"
+      }
+    },
+    {
+      "name": "orphaned-projects-deleted-without-installation",
+      "passed": true,
+      "observed": "source and binding removed although no installation remained"
+    },
+    {
+      "name": "orphan-notice-gone",
+      "passed": true,
+      "observed": "no remaining binding"
+    },
+    {
+      "name": "space-delete-confirms-consequence",
+      "passed": true,
+      "observed": "one confirmation, nothing sent before it"
+    },
+    {
+      "name": "space-delete-removes-space-installs-and-projects",
+      "passed": true,
+      "observed": {
+        "message": "删除空间「tap-a-26e7bb6a7e1d4877」 · 已完成"
+      }
+    },
+    {
+      "name": "empty-space-deleted",
+      "passed": true,
+      "observed": {
+        "space": "tap-b-26e7bb6a7e1d4877",
+        "installs": 0,
+        "deletedProjects": "[]"
+      }
+    },
+    {
+      "name": "missing-space-delete-rejected",
+      "passed": true,
+      "observed": "terminal receipt"
+    }
+  ],
+  "fullP5Accepted": false,
+  "finishedAt": 1792291900806
+}

@@ -1,0 +1,112 @@
+{
+  "schema": 1,
+  "phase": "native-core-benchmark",
+  "runId": "7f350804-187a-47bf-9d80-b5a61e508841",
+  "package": "dev.tripoder.selfhookprobe",
+  "uid": 10415,
+  "pid": 15835,
+  "timestampMs": 1792167519613,
+  "apkSha256": "580fe9b27cdb116542ea3f27b795da60f7e6aeddc9b02a1c1e682f4c113b9a2e",
+  "build": {
+    "schema": 1,
+    "buildId": "a3cc4476-67ba-452e-bad8-2960039c38dd",
+    "timestamp": "2026-10-16T16:16:58.617798+00:00",
+    "sourceDigest": "b2877a27fd67b598a5e246b5dd7f3cc9f0782f045a2f12f804dccded58e70590",
+    "nativeSha256": "2a2c1e37a5ccc13ade59c9247d75645702f029361aa708e0ccefb01f839157ef",
+    "fixtureSha256": "71e223f4177d345697ec30449140e6d5412b1ece25dd56afbb4ace4368d6a9fb",
+    "ownedNativeBuildId": "35f7a9cf53abc669b72243b532e5c41fb9cdfc5a",
+    "ownedNativePacBuildId": "c5804f499f2705cefa7fd9c60800f4bc9c6e787d",
+    "scope": "H1\/H2a owned ELF, native thread parking and fixed-platform ART with static caller indexing"
+  },
+  "debuggable": false,
+  "platform": {
+    "fingerprint": "Xiaomi\/madrid\/madrid:17\/CP2A.260605.016\/OS4.0.24.0.XEOCNXM:user\/release-keys",
+    "sdk": 37,
+    "abi": "arm64-v8a",
+    "process64Bit": true,
+    "pageSize": 4096,
+    "binaries": {
+      "\/apex\/com.android.runtime\/bin\/linker64": "b6dd216b7a775b8f04c825cada286bfe7ddaeecf2c0c10e617287118965abc00",
+      "\/apex\/com.android.runtime\/lib64\/bionic\/libc.so": "b963b539545b64aa8fbcaed3228d04bcb6466bfd47055aa16e4ccdcadfdc461e",
+      "\/apex\/com.android.art\/lib64\/libart.so": "2d4a3575e5b71b537d89c176ac82ad3e32a56a3d43161009de3e728c962fab13"
+    }
+  },
+  "selinuxContext": "u:r:untrusted_app:s0:c159,c257,c512,c768",
+  "platformGatePassed": true,
+  "nativeSha256": "2a2c1e37a5ccc13ade59c9247d75645702f029361aa708e0ccefb01f839157ef",
+  "fixtureSha256": "71e223f4177d345697ec30449140e6d5412b1ece25dd56afbb4ace4368d6a9fb",
+  "ownedNativeSha256": "fd5fab021db64251c3593acbd5b9ab09153493ee83dfc413571326a7d81827c4",
+  "benchmark": {
+    "samplesPerPath": 20000,
+    "clockOverheadIncluded": true,
+    "productAuthorityConnected": false,
+    "directC": {
+      "count": 20000,
+      "callsPerSample": 64,
+      "meanNs": 7.81730859375,
+      "p50Ns": 7.328125,
+      "p95Ns": 8.140625,
+      "p99Ns": 8.140625,
+      "rawFile": "direct-c.bin",
+      "sha256": "b70edcf983f66296f025eae4ad24435f80c9f5e89e3d41a23eb28b847ba16e19"
+    },
+    "hookC": {
+      "count": 20000,
+      "callsPerSample": 64,
+      "meanNs": 139.289853125,
+      "p50Ns": 135.078125,
+      "p95Ns": 154.625,
+      "p99Ns": 155.4375,
+      "rawFile": "hook-c.bin",
+      "sha256": "09341fe498c724d92db1f23a0b0a02ccf0a6fbf151f932c8daed5513a59f1c18"
+    },
+    "prepareNs": 26793125,
+    "publishNs": 43397552,
+    "retireNs": 32813020,
+    "jniBaseline": {
+      "count": 20000,
+      "callsPerSample": 1,
+      "meanNs": 26.1871,
+      "p50Ns": 0,
+      "p95Ns": 52,
+      "p99Ns": 53,
+      "rawFile": "jni-baseline.bin",
+      "sha256": "ef1924d85ff0b38a08dd69b987b401e5cbe1f578026efe282ce9a9863eae040e"
+    },
+    "jniHook": {
+      "count": 20000,
+      "callsPerSample": 1,
+      "meanNs": 835.5239,
+      "p50Ns": 781,
+      "p95Ns": 1094,
+      "p99Ns": 1823,
+      "rawFile": "jni-hook.bin",
+      "sha256": "2220762c0f1fa8de39ba87a254bfc86c3a8077fdcc18cc7d10d356a0cf150c4d"
+    },
+    "foreignJniHook": {
+      "count": 1000,
+      "callsPerSample": 1,
+      "meanNs": 7320.096,
+      "p50Ns": 6510,
+      "p95Ns": 11667,
+      "p99Ns": 17239,
+      "rawFile": "foreign-jni-hook.bin",
+      "sha256": "8370374e447af1117fdeb5e942cdfb5ddc770355cbed7712f9cabed46a1298be"
+    },
+    "productRule": {
+      "count": 20000,
+      "callsPerSample": 1,
+      "meanNs": 3093.75945,
+      "p50Ns": 3073,
+      "p95Ns": 4010,
+      "p99Ns": 5469,
+      "rawFile": "product-rule.bin",
+      "sha256": "794d0a369ae7130e28a5f852b23f83832919974790a325a3d19db3c680254282"
+    },
+    "passed": true,
+    "semanticChecksPassed": true,
+    "performanceAccepted": false
+  },
+  "mapsSha256": "7aec1f54d0e6d4899142d11df43d5201931f6c06d69b412ee531004998c7e3d5",
+  "passed": true
+}

@@ -36,7 +36,8 @@ final class SystemServiceChecks {
             ServiceInfo fresh=pm.getServiceInfo(service,PackageManager.GET_META_DATA);
             check(checks,"service-metadata-and-application-defensive-copy","owned-service".equals(fresh.metaData.getString("owned.service"))&&"owned-installation".equals(fresh.applicationInfo.metaData.getString("owned.label")));
             check(checks,"service-unknown-long-flags-rejected",rejected(()->pm.getServiceInfo(service,PackageManager.ComponentInfoFlags.of(1L<<40)),"SERVICE_INFO_FLAGS_UNSUPPORTED"));
-            check(checks,"service-other-package-query-rejected",rejected(()->pm.getServiceInfo(new ComponentName("dev.tripoder.notinstalled",MultiprocessPeer.class.getName()),0),"OTHER_PACKAGE_QUERY_UNSUPPORTED"));
+            boolean notInstalled=false;try{pm.getServiceInfo(new ComponentName("dev.tripoder.notinstalled",MultiprocessPeer.class.getName()),0);}catch(PackageManager.NameNotFoundException expected){notInstalled=true;}
+            check(checks,"service-other-package-query-not-found",notInstalled);
         }
         ActivityManager manager=context.getSystemService(ActivityManager.class);ActivityManager.MemoryInfo memory=new ActivityManager.MemoryInfo();manager.getMemoryInfo(memory);
         check(checks,"activity-manager-application-create-observed-self",MetadataApplication.observedSelfDuringCreate);
@@ -87,7 +88,10 @@ final class SystemServiceChecks {
             check(checks,"application-start-history-defensive-timestamp-copy",preserved);
             check(checks,"activity-manager-only-own-logical-package",scoped);
             check(checks,"activity-manager-tasks-explicitly-rejected",rejected(()->manager.getRunningTasks(1),"ACTIVITY_MANAGER_CAPABILITY_UNSUPPORTED"));
-            check(checks,"activity-manager-arbitrary-pid-memory-rejected",rejected(()->manager.getProcessMemoryInfo(new int[]{android.os.Process.myPid()}),"ACTIVITY_MANAGER_CAPABILITY_UNSUPPORTED"));
+            android.os.Debug.MemoryInfo[] ownMemory=manager.getProcessMemoryInfo(new int[]{android.os.Process.myPid()});
+            check(checks,"activity-manager-owned-pid-memory-is-real",ownMemory!=null&&ownMemory.length==1&&ownMemory[0]!=null&&ownMemory[0].getTotalPss()>0);
+            boolean foreignMemory=false;try{manager.getProcessMemoryInfo(new int[]{1});}catch(SecurityException expected){foreignMemory=expected.getMessage().contains("PROCESS_MEMORY_PID_OUTSIDE_INSTALL");}
+            check(checks,"activity-manager-arbitrary-pid-memory-rejected",foreignMemory);
         }
         return new JSONObject().put("memoryClass",manager.getMemoryClass()).put("largeMemoryClass",manager.getLargeMemoryClass()).put("lowRam",manager.isLowRamDevice())
             .put("totalMem",memory.totalMem).put("advertisedMem",memory.advertisedMem).put("availMem",memory.availMem).put("freeMem",memory.freeMem).put("threshold",memory.threshold).put("lowMemory",memory.lowMemory).put("processes",processes).put("startHistory",starts);

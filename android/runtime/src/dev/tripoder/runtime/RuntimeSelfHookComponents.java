@@ -92,7 +92,8 @@ final class RuntimeSelfHookComponents {
         value.install(callbacks);
     }
     static void installReceiver(BroadcastReceiver receiver) {
-        RuntimeSelfHookComponents value=require();value.ownedType(receiver);
+        RuntimeSelfHookComponents value=require();
+        if(receiver==null||!value.engine.ownsReceiverLoader(receiver.getClass().getClassLoader()))throw new SecurityException("SELF_COMPONENT_LOADER_MISMATCH");
         Method target=publicLifecycle(receiver.getClass(),"onReceive",Context.class,Intent.class);
         value.install(Map.of(target,(instance,arguments,original)->RuntimeSelfHookLifecycle.receiver(value.receivers,target,instance,arguments,original)));
     }
@@ -149,7 +150,7 @@ final class RuntimeSelfHookComponents {
     }
     static Object goAsync(BroadcastReceiver receiver,RuntimeSelfHookLifecycle.Original original)throws Throwable {
         require();Object result=original.call();
-        if(RuntimeBridge.ownsReceiver(receiver))RuntimeBridge.receiverAsync(receiver,result);
+        if(result!=null&&RuntimeBridge.ownsReceiver(receiver))RuntimeBridge.receiverAsync(receiver,result);
         return result;
     }
     static Object finishPending(Object pending,RuntimeSelfHookLifecycle.Original original)throws Throwable {

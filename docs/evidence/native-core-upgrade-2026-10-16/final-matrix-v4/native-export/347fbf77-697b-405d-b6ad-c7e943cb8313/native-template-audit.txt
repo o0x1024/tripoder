@@ -1,0 +1,126 @@
+
+/Users/like/code/tripoder/android/self-hook-probe/build/libtripoder-native-entry-template.so:	file format elf64-littleaarch64
+
+Disassembly of section .text:
+
+0000000000001340 <tp_native_relay>:
+    1340: d50324df     	bti	jc
+
+0000000000001344 <tp_native_auth>:
+    1344: 1f 20 03 d5 10 7c ff 58         . ...|.X
+    134c: 00 02 1f d6                     ....
+
+0000000000001350 <tp_native_original>:
+    1350: d503245f     	bti	c
+
+0000000000001354 <tp_native_prefix_instruction>:
+    1354: 1f 20 03 d5                     . ..
+
+0000000000001358 <tp_native_displaced>:
+    1358: 1f 20 03 d5                     . ..
+
+000000000000135c <tp_native_back>:
+    135c: 00 00 00 14                     ....
+
+/Users/like/code/tripoder/android/self-hook-probe/build/libtripoder-native-entry-template.so:	file format elf64-littleaarch64
+
+.debug_frame contents:
+
+
+.eh_frame contents:
+
+00000000 00000014 00000000 CIE
+  Format:                DWARF32
+  Version:               1
+  Augmentation:          "zR"
+  Code alignment factor: 1
+  Data alignment factor: -8
+  Return address column: 30
+  Augmentation data:     1B
+
+  DW_CFA_def_cfa: WSP +0
+  DW_CFA_same_value: W30
+  DW_CFA_nop:
+  DW_CFA_nop:
+
+  CFA=WSP: W30=same
+
+00000018 00000010 0000001c FDE cie=00000000 pc=00001340...00001350
+  Format:       DWARF32
+  DW_CFA_nop:
+  DW_CFA_advance_loc: 8 to 0x1348
+  DW_CFA_nop:
+
+  0x1340: CFA=WSP: W30=same
+  0x1348: CFA=WSP: W30=same
+
+0000002c 0000001c 00000030 FDE cie=00000000 pc=00001350...00001360
+  Format:       DWARF32
+  DW_CFA_advance_loc: 8 to 0x1358
+  DW_CFA_nop:
+  DW_CFA_advance_loc: 4 to 0x135c
+  DW_CFA_nop:
+  DW_CFA_def_cfa_offset: +0
+  DW_CFA_same_value: W30
+  DW_CFA_nop:
+  DW_CFA_same_value: W30
+  DW_CFA_nop:
+  DW_CFA_nop:
+  DW_CFA_nop:
+
+  0x1350: CFA=WSP: W30=same
+  0x1358: CFA=WSP: W30=same
+  0x135c: CFA=WSP: W30=same
+
+0000004c ZERO terminator
+
+
+Elf file type is DYN (Shared object file)
+Entry point 0x0
+There are 10 program headers, starting at offset 64
+
+Program Headers:
+  Type           Offset   VirtAddr           PhysAddr           FileSiz  MemSiz   Flg Align
+  PHDR           0x000040 0x0000000000000040 0x0000000000000040 0x000230 0x000230 R   0x8
+  LOAD           0x000000 0x0000000000000000 0x0000000000000000 0x000340 0x000340 R   0x1000
+  LOAD           0x000340 0x0000000000001340 0x0000000000001340 0x000020 0x000020 R E 0x1000
+  LOAD           0x000360 0x0000000000002360 0x0000000000002360 0x000090 0x000ca0 RW  0x1000
+  DYNAMIC        0x000360 0x0000000000002360 0x0000000000002360 0x000090 0x000090 RW  0x8
+  GNU_RELRO      0x000360 0x0000000000002360 0x0000000000002360 0x000090 0x000ca0 R   0x1
+  GNU_EH_FRAME   0x0002d0 0x00000000000002d0 0x00000000000002d0 0x00001c 0x00001c R   0x4
+  GNU_STACK      0x000000 0x0000000000000000 0x0000000000000000 0x000000 0x000000 RW  0x0
+  GNU_PROPERTY   0x000270 0x0000000000000270 0x0000000000000270 0x000020 0x000020 R   0x8
+  NOTE           0x000270 0x0000000000000270 0x0000000000000270 0x000020 0x000020 R   0x8
+
+ Section to Segment mapping:
+  Segment Sections...
+   00     
+   01     .note.gnu.property .dynsym .gnu.hash .dynstr .rela.dyn .rodata .eh_frame_hdr .eh_frame 
+   02     .text 
+   03     .dynamic .relro_padding 
+   04     .dynamic 
+   05     .dynamic .relro_padding 
+   06     .eh_frame_hdr 
+   07     
+   08     .note.gnu.property 
+   09     .note.gnu.property 
+   None   .comment .symtab .shstrtab .strtab 
+Dynamic section at offset 0x360 contains 9 entries:
+  Tag                Type              Name/Value
+  0x000000000000001e (FLAGS)           SYMBOLIC BIND_NOW 
+  0x000000006ffffffb (FLAGS_1)         NOW 
+  0x0000000070000001 (AARCH64_BTI_PLT) 0
+  0x0000000000000006 (SYMTAB)          0x290
+  0x000000000000000b (SYMENT)          24 (bytes)
+  0x0000000000000005 (STRTAB)          0x2c4
+  0x000000000000000a (STRSZ)           1 (bytes)
+  0x000000006ffffef5 (GNU_HASH)        0x2a8
+  0x0000000000000000 (NULL)            0x0
+
+Relocation section '.rela.dyn' at offset 0x2c8 contains 0 entries:
+    Offset             Info             Type               Symbol's Value  Symbol's Name + Addend
+Displaying notes found in: .note.gnu.property
+  Owner                Data size 	Description
+  GNU                  0x00000010	NT_GNU_PROPERTY_TYPE_0 (property note)
+    Properties:    aarch64 feature: BTI, PAC
+

@@ -1,6 +1,18 @@
 # 真实广播 PendingIntent / Alarm 下一阶段边界
 
-2026-10-16，H35 真实王者首次进入 WorkManager 后的缺口。以下是实施计划，**尚未实现**，不能列为已支持能力。
+2026-10-16，H35 真实王者首次进入 WorkManager 后的缺口。下面保留原计划，并按后续实测更新实现状态。
+
+## 2026-10-17 当前实现与证据
+
+- 显式自有广播 PendingIntent、IntentSender 与 PendingIntent 形状的 Alarm 已接入单一固定 ManagedInstaller；当前 27 个启动能力、2270 个固定绑定。`getActivity/getService`、路由字段 fill-in、权限/options 扩展、Alarm listener/WorkSource 等未实现形状明确拒绝，不冒充支持。
+- creator 按 space/package/install/data 代次持久化；NO_CREATE 真实查询 Android；实际 Binder token 保持 equals/hash/Parcel 身份。物理 action/data/identifier 承载版本能力，可变 extras 不承载路由。更新保留 token，取消后原 token 的真实 send 失败，旧版本不能取消新 token。
+- 固定平台 `getIntent()` 需要特权权限，首轮探针暴露该错误后已移除使用。现在仅通过系统 `getTag()` 的版本标签和普通 UID 身份验证恢复逻辑视图。Schema 30 记录物理 action，精确取消旧系统记录；不清历史或重写 UNKNOWN。
+- 接收仍由 Android 创建真实 receiver/PendingResult；使用现有 BroadcastLedger 的 prepare/claim/returned/finished，外部来源的 completion 不伪造发送者 systemDone。冷版本在创建 guest 之前校验安装、数据、取消与一次性消费状态。
+- 冷启动根因之一是全局解释执行策略下重复生成 helper DEX。固定框架枚举与不可变 ABI 模板现在在该策略前完成；实际原函数存储、入口校验和发布仍在策略后。缓存字节不加载 guest、不预留 Hook slot。独立完整编码逐字节比较及 SDK dexdump 93 项/36 文件通过。
+- `docs/evidence/real-app-goal-2026-10-17/pending-08`，APK `9cd357472f284168ba52edf119cabf3bcd459a432ede74da6f18d370c6e9bbc9`：51 项设备断言通过，target 30/31 首次冷发送分别 7211/7216 ms，发送者与接收者均死亡后真实系统 token 再次投递，Factory 冷样本约 7.13–7.41 秒。**10 秒门槛未改变**，无 Java/Native fatal、ANR。此证据只覆盖该构建。
+- 当前实测覆盖真实 Alarm set/cancel、exact 能力查询；尚须补充 exact 派发、跨空间与升级后旧入口、取消迟到及并发结果未知场景。微信、王者真实业务以及正式产品 Hook 验收仍未完成，不能据 fixture 通过宣布最终完成。
+
+失败轮次 `pending-01..07` 全部保留。`pending-03` 的 extras 预期错误由固定设备 DEX 独立纠正：fillIn 新键会加入，但原同名键优先；后续同时验证两种行为、ordered 标志与真实 OnFinished 结果。
 
 ## 已证实的根因
 

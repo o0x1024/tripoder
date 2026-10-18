@@ -18,22 +18,41 @@ abstract class GuestStorageContext extends ContextWrapper {
     @Override public File getDir(String name,int mode){if(mode!=MODE_PRIVATE)throw new IllegalArgumentException("FILE_MODE_UNSUPPORTED");return storage.dir("app_"+RuntimeStorage.name(name));}
     @Override public boolean deleteFile(String name){return getFileStreamPath(name).delete();}
     @Override public String[] fileList(){return storage.list("files");}
-    @Override public File getExternalFilesDir(String type){if(type!=null)throw new UnsupportedOperationException("EXTERNAL_TYPE_UNSUPPORTED");return storage.dir("external");}
+    // Typed external directories stay guest-private; the type is a single path segment, never a host path.
+    // Android treats "" like null and allows nested types ("a/b"); each segment is validated and the type is flattened into one directory name, so nothing leaves the guest root.
+    @Override public File getExternalFilesDir(String type){
+        if(type==null||type.isEmpty())return storage.dir("external");
+        try{return externalType(type);}catch(IllegalArgumentException error){android.util.Log.w("TripoderStorage","getExternalFilesDir rejected type=\""+type+"\"");throw error;}
+    }
+    private File externalType(String type){
+        String[] parts=type.split("/",-1);StringBuilder flat=new StringBuilder("external-type-");
+        for(int i=0;i<parts.length;i++){if(parts[i].isEmpty()&&(i==0||i==parts.length-1))continue;if(i>0&&flat.charAt(flat.length()-1)!='-')flat.append('~');flat.append(RuntimeStorage.name(parts[i]));}
+        return storage.dir(flat.toString());
+    }
     @Override public File[] getExternalFilesDirs(String type){return new File[]{getExternalFilesDir(type)};}
     @Override public File getExternalCacheDir(){return storage.dir("external-cache");}
     @Override public File[] getExternalCacheDirs(){return new File[]{getExternalCacheDir()};}
-    @Override public File getObbDir(){throw new UnsupportedOperationException("OBB_UNSUPPORTED");}
-    @Override public File[] getObbDirs(){throw new UnsupportedOperationException("OBB_UNSUPPORTED");}
-    @Override public File[] getExternalMediaDirs(){throw new UnsupportedOperationException("EXTERNAL_MEDIA_UNSUPPORTED");}
+    // External-storage roots are guest-private: the guest never receives a path under shared storage it does not own.
+    @Override public File getObbDir(){return storage.dir("external-obb");}
+    @Override public File[] getObbDirs(){return new File[]{getObbDir()};}
+    @Override public File[] getExternalMediaDirs(){return new File[]{storage.dir("external-media")};}
     @Override public FileOutputStream openFileOutput(String name,int mode)throws FileNotFoundException{return storage.output(name,mode);}
     @Override public FileInputStream openFileInput(String name)throws FileNotFoundException{return storage.input(name);}
     @Override public SharedPreferences getSharedPreferences(String name,int mode){return storage.preferences(name,mode);}
     @Override public boolean deleteSharedPreferences(String name){return storage.deletePreferences(name);}
-    @Override public boolean moveSharedPreferencesFrom(Context source,String name){throw new UnsupportedOperationException("CROSS_CONTEXT_PREFERENCES_MOVE_UNSUPPORTED");}
+    /** The guest's own storage views move bytes; a platform or foreign context has no storage this guest may touch, which Android reports as a failed move. */
+    private static RuntimeStorage storageOf(Context context){Context c=context;while(c instanceof ContextWrapper&&!(c instanceof GuestStorageContext))c=((ContextWrapper)c).getBaseContext();return c instanceof GuestStorageContext?((GuestStorageContext)c).storage:null;}
+    @Override public boolean moveSharedPreferencesFrom(Context source,String name){
+        RuntimeStorage from=storageOf(source);if(from==null)return false;
+        try{return storage.movePreferencesFrom(from,name);}catch(IOException failed){return false;}
+    }
     @Override public File getDatabasePath(String name){return storage.database(name);}
     @Override public SQLiteDatabase openOrCreateDatabase(String name,int mode,SQLiteDatabase.CursorFactory factory){return storage.database(name,mode,factory,null);}
     @Override public SQLiteDatabase openOrCreateDatabase(String name,int mode,SQLiteDatabase.CursorFactory factory,DatabaseErrorHandler handler){return storage.database(name,mode,factory,handler);}
-    @Override public boolean moveDatabaseFrom(Context source,String name){throw new UnsupportedOperationException("CROSS_CONTEXT_DATABASE_MOVE_UNSUPPORTED");}
+    @Override public boolean moveDatabaseFrom(Context source,String name){
+        RuntimeStorage from=storageOf(source);if(from==null)return false;
+        try{return storage.moveDatabaseFrom(from,name);}catch(IOException failed){return false;}
+    }
     @Override public boolean deleteDatabase(String name){return storage.deleteDatabase(name);}
     @Override public String[] databaseList(){return storage.list("databases");}
 }

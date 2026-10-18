@@ -18,4 +18,7 @@ final class WorkbenchHooks {
     }
     private final Map<String,Session> sessions=new HashMap<>();
     Session project(String project){return sessions.computeIfAbsent(project,key->new Session());}
+    /** Existing session only; lists read state without creating one per project. */
+    Session peek(String project){return sessions.get(project);}
+    void forget(String project){sessions.remove(project);}
 }

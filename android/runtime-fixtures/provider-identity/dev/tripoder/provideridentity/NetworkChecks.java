@@ -26,8 +26,9 @@ final class NetworkChecks {
                 check(checks,"network-contexts-share-owned-facade",manager==context.getApplicationContext().getSystemService(ConnectivityManager.class));
                 boolean duplicate=false;try{manager.registerDefaultNetworkCallback(callback);}catch(IllegalStateException expected){duplicate=expected.getMessage().contains("ALREADY_REGISTERED");}
                 check(checks,"network-duplicate-registration-rejected",duplicate);
-                boolean mutation=false;try{manager.bindProcessToNetwork(null);}catch(UnsupportedOperationException expected){mutation=expected.getMessage().contains("CONNECTIVITY_CAPABILITY_UNSUPPORTED");}
-                check(checks,"network-route-mutation-rejected",mutation);
+                // Binding a process to a network is process-local, which is exactly what the guest process is; unbinding is always allowed.
+                boolean mutation=false;try{manager.bindProcessToNetwork(null);mutation=true;}catch(UnsupportedOperationException expected){mutation=false;}
+                check(checks,"network-process-binding-is-process-local",mutation);
                 boolean location=false;try{manager.registerDefaultNetworkCallback(new ConnectivityManager.NetworkCallback(ConnectivityManager.NetworkCallback.FLAG_INCLUDE_LOCATION_INFO){});}catch(UnsupportedOperationException expected){location=expected.getMessage().contains("NETWORK_LOCATION_CALLBACK_UNSUPPORTED");}
                 check(checks,"network-location-callback-rejected",location);
             }

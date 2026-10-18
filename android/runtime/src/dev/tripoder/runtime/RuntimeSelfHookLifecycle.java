@@ -30,7 +30,12 @@ final class RuntimeSelfHookLifecycle {
     static Object receiver(ReceiverRoute route,Method target,Object receiver,Object[] arguments,Original original)throws Throwable {
         if(!route.owns(receiver)||!mostDerived(target,receiver))return original.call(arguments);
         if(arguments.length!=2)throw new IllegalArgumentException("RECEIVER_ARGUMENT_SHAPE");
-        Object logical=route.before(receiver,arguments[1],route.pending(receiver));
+        Object pending=route.pending(receiver);
+        // onReceive is also an ordinary public Java method. A local call has
+        // no Android delivery token and must neither claim a ticket nor invent
+        // receiver lifecycle receipts. Real system deliveries retain every guard.
+        if(pending==null)return original.call(arguments);
+        Object logical=route.before(receiver,arguments[1],pending);
         if(logical==null)return null;
         boolean success=false;Throwable failure=null;
         try {

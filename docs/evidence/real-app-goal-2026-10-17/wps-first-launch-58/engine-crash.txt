@@ -1,0 +1,68 @@
+--------- beginning of crash
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: FATAL EXCEPTION: woa-cpool-3-thread-1
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: Process: dev.tripoder.engine:slot0, PID: 17609
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: java.lang.UnsupportedOperationException: PACKAGE_INFO_FLAGS_UNSUPPORTED:0x4000
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at dev.tripoder.runtime.GuestPackageInfo.get(GuestPackageInfo.java:13)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at dev.tripoder.runtime.GuestPackageManager.getPackageInfo(GuestPackageManager.java:27)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimePackages.invoke(RuntimePackages.java:102)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at java.lang.reflect.Proxy.invoke(Proxy.java:1009)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at $Proxy8.getPackageInfo(Unknown Source)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at java.lang.reflect.Method.invoke(Native Method)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at dev.tripoder.selfhook.FixedFrameworkMembers.call(FixedFrameworkMembers.java:69)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at dev.tripoder.selfhook.PackageFrameworkAccess.query(PackageFrameworkAccess.java:68)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeSelfHookPackages.route(RuntimeSelfHookPackages.java:50)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeSelfHookPackages.lambda$install$2(RuntimeSelfHookPackages.java:26)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeSelfHookPackages$2.invoke(D8$$SyntheticClass:0)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeManagedInstaller.lambda$install$2(RuntimeManagedInstaller.java:44)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeManagedInstaller$2.invoke(D8$$SyntheticClass:0)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at dev.tripoder.selfhook.ManagedHook.execute(ManagedHook.java:208)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at dev.tripoder.selfhook.ManagedHook.dispatch(ManagedHook.java:202)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at dev.tripoder.selfhook.generated.Entry205.invoke(dex-id-c537479d85e41002f4a22cc41b931c93782afaca:26)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at com.wps.woa.lib.utils.WAppRuntime.b(SourceFile:15)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at com.kingsoft.kim.kit.runtime.KIMApplicationRuntimeInfoProvider.collect(SourceFile:99)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at com.kingsoft.kim.kit.runtime.KIMApplicationRuntimeInfoProvider.get(SourceFile:109)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at com.kingsoft.kim.kit.net.KIMApplicationContextInitializer.initialize(SourceFile:156)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at com.kingsoft.kim.kit.KIM$init$9$1.invokeSuspend(SourceFile:33)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(SourceFile:12)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at kotlinx.coroutines.DispatchedTask.run(SourceFile:129)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1248)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:650)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	at java.lang.Thread.run(Thread.java:1572)
+10-17 18:56:47.067 17609 17839 E AndroidRuntime: 	Suppressed: kotlinx.coroutines.internal.DiagnosticCoroutineContextException: [StandaloneCoroutine{Cancelling}@950a6ea, java.util.concurrent.ThreadPoolExecutor@91e7dfb[Running, pool size = 2, active threads = 1, queued tasks = 0, completed tasks = 6]]
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: FATAL EXCEPTION: main
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: Process: dev.tripoder.engine:slot0, PID: 30694
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: java.lang.RuntimeException: Unable to instantiate activity ComponentInfo{dev.tripoder.engine/dev.tripoder.runtime.generated.TaskP0$F0M0C2}
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:5097)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:5447)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:136)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:106)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:83)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3492)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.os.Handler.dispatchMessageImpl(Handler.java:146)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.os.Handler.dispatchMessage(Handler.java:129)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.os.Looper.loopOnce(Looper.java:315)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.os.Looper.loop(Looper.java:419)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.app.ActivityThread.main(ActivityThread.java:10847)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at java.lang.reflect.Method.invoke(Native Method)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: Caused by: java.lang.IllegalStateException: GUEST_ACTIVITY_FAILED
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeFactory.instantiateActivity(RuntimeFactory.java:42)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.app.Instrumentation.newActivity(Instrumentation.java:1473)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:5083)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	... 14 more
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: Caused by: java.lang.IllegalStateException: COMPONENT_BOOTSTRAP_FAILED:COMPONENT_RESERVATION_NOT_CLAIMABLE
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3422)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.os.Parcel.createException(Parcel.java:3398)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.os.Parcel.readException(Parcel.java:3381)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.database.DatabaseUtils.readExceptionFromParcel(DatabaseUtils.java:225)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.database.DatabaseUtils.readExceptionFromParcel(DatabaseUtils.java:177)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.content.ContentProviderProxy.call(ContentProviderNative.java:784)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.content.ContentResolver.call(ContentResolver.java:2562)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at android.content.ContentResolver.call(ContentResolver.java:2541)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeFactory.bootstrap(RuntimeFactory.java:29)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeActivityCreation.begin(RuntimeActivityCreation.java:42)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeActivityCreation.cold(RuntimeActivityCreation.java:67)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeFactory.instantiateActivity(RuntimeFactory.java:41)
+10-17 18:56:47.286 30694 30694 E AndroidRuntime: 	... 16 more

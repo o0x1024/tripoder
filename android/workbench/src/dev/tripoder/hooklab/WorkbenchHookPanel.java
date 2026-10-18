@@ -32,7 +32,7 @@ final class WorkbenchHookPanel implements EngineConnection.Listener {
     }
     void sourceChanged(){render();}
     private void render(){
-        if(destroyed)return;boolean ready=app.engine.ready(),busy=app.operations.pending()||loading;
+        if(destroyed)return;boolean ready=app.engine.ready(),busy=app.operations.busyProject(project)||loading;
         String state=session.status==null?"UNCONFIRMED":session.status.optString("state","UNCONFIRMED");boolean active=state.equals("ACTIVE")||state.equals("DRAINING");
         String heading=session.target==null?"尚未选择运行进程":session.name+" · PID "+session.pid+"\n空间："+session.target.getString("space");
         String detail="";if(session.status!=null){detail="\n最近确认："+state;if(session.status.has("revision"))detail+="\n版本："+session.status.optString("revision");if(session.status.has("sourceSha256"))detail+="\n源码 SHA："+session.status.optString("sourceSha256");if(session.status.has("hits"))detail+="\n命中 "+session.status.optLong("hits")+" · 错误 "+session.status.optLong("errors")+" · 在途 "+session.status.optInt("inFlight");}
@@ -59,7 +59,7 @@ final class WorkbenchHookPanel implements EngineConnection.Listener {
         ProductUi.add(form,ProductUi.text(page,"Java 填写类名、方法名与参数类型；Native 需填写模块、Build ID 和已确认的 C ABI。不会从符号名猜测签名。",13,ProductUi.MUTED,false),8);
         EditText input=ProductUi.field(form,"目标声明 JSON","[]",app.projects.selectors(project),true);input.setMinLines(7);input.setTypeface(android.graphics.Typeface.MONOSPACE);input.setContentDescription("Hook 目标声明");
         AlertDialog dialog=new AlertDialog.Builder(page).setTitle("配置脚本目标").setView(form).setNegativeButton("返回",null).setPositiveButton("保存声明",null).create();
-        dialog.setOnShowListener(v->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(button->{try{app.projects.selectors(project,input.getText().toString());session.observed=null;session.message="声明已保存，需要重新观察。";render();dialog.dismiss();}catch(Exception error){input.setError(error.getMessage());}}));dialog.show();
+        dialog.setOnShowListener(v->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(button->{try{app.projects.selectors(project,input.getText().toString());session.observed=null;session.message="声明已保存，需要重新观察。";render();dialog.dismiss();}catch(Exception error){input.setError(UiText.error(error));}}));dialog.show();
     }catch(Exception error){show(error);}}
     private void prepare(){perform("prepare",()->{
         String current=source.get();if(!current.equals(app.projects.script(project)))throw new IllegalStateException("请先保存当前脚本，再进行检查");
@@ -83,6 +83,7 @@ final class WorkbenchHookPanel implements EngineConnection.Listener {
         boolean previouslyUncertain=session.uncertain;session.uncertain=true;
         app.operations.submit(input,label,null,(reply,error)->{
             if(!process.equals(session.process)||!lease.equals(app.engine.lease))return;
+            if(error!=null){render();return;}
             try{JSONObject result=new JSONObject(reply.getString("result")).getJSONObject("result");session.uncertain=command.equals("modules")?previouslyUncertain:false;
                 if(command.equals("observe")){session.observed=result;session.prepared=null;session.status=new JSONObject().put("state","OBSERVED");session.message="已观察 "+result.getJSONObject("evidence").getJSONArray("symbols").length()+" 个真实目标。";}
                 else if(command.equals("modules")){session.message="已读取实际模块。";if(!destroyed)ProductUi.notice(page,"客体 Native 模块",result.getJSONArray("modules").toString(2));}
@@ -95,5 +96,5 @@ final class WorkbenchHookPanel implements EngineConnection.Listener {
             }catch(Exception invalid){show(invalid);}
         });
     }catch(Exception error){show(error);}}
-    private void show(Exception error){session.message=error.getClass().getSimpleName()+": "+error.getMessage();render();}
+    private void show(Exception error){session.message=UiText.error(error);render();}
 }

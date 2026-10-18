@@ -1,0 +1,28 @@
+--------- beginning of crash
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: FATAL EXCEPTION: owned-pending-api
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: Process: dev.tripoder.runtimeprobe:slot3, PID: 21518
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: java.lang.IllegalStateException: java.lang.SecurityException: Permission Denial: getIntentForIntentSender() from pid=21518, uid=10409 requires android.permission.GET_INTENT_SENDER_INTENT
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at dev.tripoder.pendingfixture.PendingActivity.run(PendingActivity.java:50)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at dev.tripoder.pendingfixture.PendingActivity.$r8$lambda$_Fx6NWsVrh4xLR0og7FmjVrMPlw(PendingActivity.java:0)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at dev.tripoder.pendingfixture.PendingActivity$2.run(D8$$SyntheticClass:0)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at java.lang.Thread.run(Thread.java:1572)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: Caused by: java.lang.SecurityException: Permission Denial: getIntentForIntentSender() from pid=21518, uid=10409 requires android.permission.GET_INTENT_SENDER_INTENT
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3414)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at android.os.Parcel.createException(Parcel.java:3398)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at android.os.Parcel.readException(Parcel.java:3381)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at android.os.Parcel.readException(Parcel.java:3323)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at android.app.IActivityManager$Stub$Proxy.getIntentForIntentSender(IActivityManager.java:9608)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at android.app.PendingIntent.getIntent(PendingIntent.java:1425)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at java.lang.reflect.Method.invoke(Native Method)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at dev.tripoder.selfhook.FixedFrameworkMembers.call(FixedFrameworkMembers.java:69)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at dev.tripoder.selfhook.PendingIntentFrameworkAccess.physicalIntent(PendingIntentFrameworkAccess.java:60)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimePendingIntents.view(RuntimePendingIntents.java:43)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimePendingIntents.invoke(RuntimePendingIntents.java:32)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimePendingIntents.lambda$install$0(RuntimePendingIntents.java:19)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimePendingIntents$0.invoke(D8$$SyntheticClass:0)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeManagedInstaller.lambda$install$2(RuntimeManagedInstaller.java:44)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeManagedInstaller$2.invoke(D8$$SyntheticClass:0)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at dev.tripoder.selfhook.ManagedHook.execute(ManagedHook.java:199)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at dev.tripoder.selfhook.ManagedHook.dispatch(ManagedHook.java:193)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	at dev.tripoder.selfhook.generated.Entry2249.invoke(dex-id-094d05c1e501a14c5f3864c8a9ab864cab21f5b1:10)
+10-17 02:49:01.984 21518 21781 E AndroidRuntime: 	... 4 more

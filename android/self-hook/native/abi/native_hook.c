@@ -32,6 +32,10 @@ static bool callback(void *opaque,const struct tp_scalar_value *args,unsigned co
     /* The assembly epilogue releases after scalar result/errno encoding. */
     return ok;
 }
+void *tp_native_original_context(uint64_t invocation,tp_native_callback expected){
+    struct call *call=current_call;
+    return call&&invocation&&call->id==invocation&&!call->used&&call->binding->callback==expected?call->binding->context:NULL;
+}
 bool tp_native_original(uint64_t invocation,const struct tp_scalar_value *arguments,unsigned count,int incoming_errno,struct tp_scalar_result *out){
     struct call *call=current_call;
     if(!call||!invocation||call->id!=invocation||call->used)return false;
@@ -81,7 +85,11 @@ bool tp_native_prepare(unsigned module,uint32_t generation,uintptr_t rva,const c
         ||!tp_scalar_inbound_admission(binding->inbound.slot,tp_linker_admission_state(module,generation),generation,&binding->active_calls)
         )goto done;
     if(!tp_native_bridge_prepare(input,check.available,entry,binding->inbound.entry,&binding->bridge)){
-        tp_native_reject(TP_NATIVE_ADDRESS,binding->bridge.stage,binding->bridge.error);goto done;
+        enum tp_native_status status=TP_NATIVE_RESOURCE;
+        if(binding->bridge.planner_status!=TP_A64_OK)status=binding->bridge.planner_status==TP_A64_UNSUPPORTED?TP_NATIVE_PREFIX:TP_NATIVE_ADDRESS;
+        else if(!strcmp(binding->bridge.stage,"NATIVE_NEAR_RESERVATION"))status=TP_NATIVE_ADDRESS;
+        else if(!strcmp(binding->bridge.stage,"NATIVE_LEASE_BUDGET"))status=TP_NATIVE_CAPACITY;
+        tp_native_error_plan(binding->bridge.planner_status);tp_native_reject(status,binding->bridge.stage,binding->bridge.error);goto done;
     }
     atomic_store_explicit(&binding->phase,TP_NATIVE_PREPARED,memory_order_release);*out=binding->handle;ok=true;
     tp_native_error_reset();

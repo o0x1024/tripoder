@@ -20,7 +20,7 @@ public final class HookEvidence {
         for(Object item:values){Map<String,Object> symbol=object(item);String symbolId=text(symbol,"id"),kind=text(symbol,"kind");require(symbolId.matches("[a-zA-Z][a-zA-Z0-9_-]{0,63}")&&ids.add(symbolId),"HOOK_SYMBOL_ID");
             require(symbol.get("loaded") instanceof Boolean,"HOOK_SYMBOL_LOADED");List<String> arguments=strings(symbol.get("argumentTypes"));require(arguments.size()<=16,"HOOK_ARGUMENT_COUNT");
             Set<String> types;
-            if(kind.equals("java")){text(symbol,"className");text(symbol,"methodName");text(symbol,"classLoaderId");types=Set.of("boolean","byte","short","int","long","char","float","double","java.lang.String");}
+            if(kind.equals("java")){text(symbol,"className");text(symbol,"methodName");text(symbol,"classLoaderId");types=Set.of("boolean","byte","short","int","long","char","float","double","java.lang.String","[B","byte[]");}
             else {require(kind.equals("native"),"HOOK_SYMBOL_KIND");text(symbol,"moduleName");text(symbol,"symbol");text(symbol,"buildId");require(Set.of("debug-info","confirmed","unknown").contains(text(symbol,"signatureSource")),"HOOK_SIGNATURE_SOURCE");types=Set.of("int32","uint32","int64","uint64","float","double");}
             require(types.containsAll(arguments)&&(types.contains(text(symbol,"returnType"))||"void".equals(symbol.get("returnType"))),"HOOK_ABI_UNSUPPORTED");selected.add(symbol);
         }

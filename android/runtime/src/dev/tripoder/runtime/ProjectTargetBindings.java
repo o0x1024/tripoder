@@ -20,6 +20,8 @@ public final class ProjectTargetBindings {
         }
         boolean transactionStarted=false;
         try{
+            // A project's scripts and selectors are written for one application; a new space or version is a rebinding, another application is a new project.
+            synchronized(broker){Row prior=row(project);if(prior!=null&&!pkg.equals(prior.pkg))throw new IllegalStateException("PROJECT_PACKAGE_CHANGE_UNSUPPORTED");}
             var install=broker.apks.get(space,pkg);if(!generation.equals(install.generation))throw new IllegalStateException("PROJECT_INSTALL_GENERATION_CONFLICT");
             synchronized(broker){
                 broker.hookClaims.requireUnclaimedProject(project);
@@ -28,6 +30,7 @@ public final class ProjectTargetBindings {
                 Row prior=row(project);
                 if(expectedBinding==null&&prior!=null)throw new IllegalStateException("PROJECT_BINDING_ALREADY_EXISTS");
                 if(expectedBinding!=null&&(prior==null||!"DIRECT".equals(prior.kind)||!expectedBinding.equals(prior.operation)))throw new IllegalStateException("PROJECT_BINDING_CONFLICT");
+                if(prior!=null&&!pkg.equals(prior.pkg))throw new IllegalStateException("PROJECT_PACKAGE_CHANGE_UNSUPPORTED");
                 JSONObject result=new JSONObject().put("project",project).put("space",space).put("package",pkg).put("generation",generation).put("dataId",current.dataId).put("bindingOperation",operation);
                 ContentValues values=new ContentValues();values.put("id",project);values.put("space",space);values.put("package",pkg);values.put("generation",generation);values.put("sourceSha","");values.put("snapshot","");values.put("state","COMMITTED");values.put("operation",operation);values.put("kind","DIRECT");
                 var db=broker.store.getWritableDatabase();transactionStarted=true;db.beginTransaction();

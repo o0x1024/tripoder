@@ -29,6 +29,8 @@ public final class P2ProbeActivity extends Activity {
         authority=bind();Bundle status=call(request("status"));check("authority-separate-process",status.getInt("pid")!=android.os.Process.myPid(),json(status));
         report.put("activityInventoryBefore",new JSONObject(ProbeReports.receive(this,call(request("probeActivityInventory")))));if(getIntent().getBooleanExtra("inventoryOnly",false)){report.put("diagnosticOnly",true);return;}
         if(getIntent().getBooleanExtra("receiverOnly",false)){report.put("scope","receiver-cold-concurrency-retirement-only");testReceivers();testReceiverRetirement();passed=true;return;}
+        if(getIntent().getBooleanExtra("packageReplacedOnly",false)){report.put("scope","physical-package-replaced-worker-survival");testPackageReplaced();passed=true;return;}
+        if(getIntent().getBooleanExtra("providerIndexOnly",false)){report.put("scope","cold-indexed-provider-routing-only");testProviderIndex();passed=true;return;}
         if(getIntent().getBooleanExtra("providersOnly",false)){report.put("scope","provider-routing-identity-and-unknown-effects");testProviders();testProviderIdentity();passed=true;return;}
         if(getIntent().getBooleanExtra("providerIdentityOnly",false)){report.put("scope","provider-multiprocess-identity-and-system-resources");testProviderIdentity();passed=true;return;}
         if(getIntent().getBooleanExtra("entryOnly",false)){report.put("scope","unattached-entry-fence-only");testEntryFences();passed=true;return;}
@@ -38,6 +40,7 @@ public final class P2ProbeActivity extends Activity {
         if(getIntent().getBooleanExtra("sourcesOnly",false)){report.put("scope","real-activity-source-identity");testActivitySources();passed=true;return;}
         if(getIntent().getBooleanExtra("creationOnly",false)){report.put("scope","real-instrumentation-activity-construction");testInstrumentationCreation();passed=true;return;}
         if(getIntent().getBooleanExtra("jobsOnly",false)){report.put("scope","real-job-callbacks-and-worker-recovery");testJobs();passed=true;return;}
+        if(getIntent().getBooleanExtra("pendingOnly",false)){report.put("scope","real-pending-intent-and-alarm");testPendingIntents();passed=true;return;}
         if(getIntent().getBooleanExtra("serviceStartupOnly",false)){report.put("scope","real-service-request-during-application-attach");testServiceStartup();passed=true;return;}
         if(getIntent().getBooleanExtra("servicePassiveOnly",false)){report.put("scope","non-creating-service-binding-and-later-start");testServicePassive();passed=true;return;}
         if(getIntent().getBooleanExtra("activityFlagsOnly",false)){report.put("scope","standard-activity-single-top-intent-flag");testActivityFlags();passed=true;return;}
@@ -80,7 +83,7 @@ public final class P2ProbeActivity extends Activity {
         }catch(Exception error){android.util.Log.e("TripoderP2","report failed",error);}
     }}
     private Bundle entry(String action,String space,String...pairs)throws Exception{
-        Bundle input=request("probeEntryFence","action",action,"space",space);for(int i=0;i<pairs.length;i+=2)input.putString(pairs[i],pairs[i+1]);input.putInt("taskId",getTaskId());return call(input);
+        Bundle input=request("probeEntryFence","action",action,"space",space);for(int i=0;i<pairs.length;i+=2)input.putString(pairs[i],pairs[i+1]);return call(input);
     }
     private void testClosedProcessReuse()throws Exception{
         JSONObject plan=new JSONObject(new String(Base64.getUrlDecoder().decode(getIntent().getStringExtra("closurePlan")),StandardCharsets.UTF_8));JSONArray cases=plan.getJSONArray("cases");String target=plan.getString("targetSpace");
@@ -136,6 +139,37 @@ public final class P2ProbeActivity extends Activity {
         for(int i=0;i<events.length();i++){JSONObject e=events.getJSONObject(i);if(e.getInt("jobId")==42&&e.getString("event").equals("FINISH_RPC_RETURNED"))finish=true;if(e.getInt("jobId")==43&&e.getString("event").equals("STOP_RPC_RETURNED"))stopped=true;if(e.getInt("jobId")==44&&e.getString("event").equals("START_ENTERED"))recovery.add(e.getString("generation"));}
         check("finish-and-stop-have-real-callback-rpc-receipts",finish&&stopped,events);check("cold-recovery-has-distinct-durable-attempt-generations",killed&&recovery.size()==2,events);
         call(request("completeActivity","ticket",intent.getStringExtra("tripoder.ticket")));
+    }
+    private void testPendingIntents()throws Exception{
+        String pkg="dev.tripoder.pendingfixture";
+        report.put("pendingCapacityBefore",json(call(request("probeProcessCapacity"))));
+        String cleanupSpace=getIntent().getStringExtra("pendingCleanupSpace");if(cleanupSpace!=null)report.put("pendingPriorFixtureCleanup",json(call(request("probePending","space",cleanupSpace,"action","cleanup"))));
+        for(int target:new int[]{30,31}){
+            String space=space("pending"+target);try{call(request("probeInstall","space",space,"operation",UUID.randomUUID().toString(),"files",new JSONArray().put(fixture.getJSONObject("pending"+target)).toString()));
+            Bundle prepared=call(request("prepareActivity","space",space,"package",pkg,"component",pkg+".PendingActivity"));active.add(prepared.getString("generation"));Intent intent=prepared.getParcelable("intent",Intent.class);launchOwned(intent);
+            JSONObject result=null;Bundle observed=null;long deadline=SystemClock.elapsedRealtime()+150000;
+            while(SystemClock.elapsedRealtime()<deadline){observed=call(request("probePending","space",space,"action","read"));if(observed.containsKey("receiverGeneration"))active.add(observed.getString("receiverGeneration"));if(observed.containsKey("result")){result=new JSONObject(observed.getString("result"));break;}Thread.sleep(100);}
+            if(result==null)throw new IllegalStateException("PENDING_CONTRACT_TIMEOUT");runs.put(result);
+            for(int i=0;i<result.getJSONArray("checks").length();i++){JSONObject item=result.getJSONArray("checks").getJSONObject(i);check("target"+target+":"+item.getString("name"),item.getBoolean("passed"),item);}
+            check("pending-fixture-completed-target"+target,result.optBoolean("passed")&&result.getInt("targetSdk")==target,result);
+            check("pending-token-does-not-reserve-process-slot-target"+target,observed.getBoolean("tokensReserveNoProcess"),true);
+            call(request("completeActivity","ticket",intent.getStringExtra("tripoder.ticket")));int creatorPid=result.getInt("pid"),receiverPid=observed.getInt("receiverPid");
+            stop(prepared.getString("generation"));stop(observed.getString("receiverGeneration"));
+            long started=SystemClock.elapsedRealtime();Bundle fired=call(request("probePending","space",space,"action","fireAfterDeath"));JSONObject cold=null;deadline=started+30000;
+            while(SystemClock.elapsedRealtime()<deadline){observed=call(request("probePending","space",space,"action","read"));if(observed.containsKey("receiverGeneration"))active.add(observed.getString("receiverGeneration"));if(observed.containsKey("cold")){cold=new JSONObject(observed.getString("cold"));break;}Thread.sleep(50);}
+            check("pending-token-survives-creator-and-receiver-death-target"+target,cold!=null&&cold.getInt("pid")!=creatorPid&&cold.getInt("pid")!=receiverPid&&"durable".equals(cold.getString("value")),cold);
+            check("cold-pending-real-system-ordered-completion-target"+target,cold.getBoolean("ordered")&&fired.getInt("systemResultCode")==77&&"owned-result".equals(fired.getString("systemResultData")),json(fired));
+            JSONArray history=cold.getJSONArray("history"),physical=new JSONArray(observed.getString("physicalExitHistory"));Set<Integer> exitPids=new HashSet<>();boolean names=true,exact=true;
+            for(int i=0;i<history.length();i++){JSONObject exit=history.getJSONObject(i);exitPids.add(exit.getInt("pid"));names&=exit.getBoolean("summaryHidden")&&(exit.getString("process").equals(pkg)||exit.getString("process").equals(pkg+":delivery"));boolean matched=false;
+                for(int j=0;j<physical.length();j++){JSONObject raw=physical.getJSONObject(j);if(raw.getInt("pid")==exit.getInt("pid")&&raw.getLong("timestamp")==exit.getLong("timestamp"))matched=raw.getInt("uid")==exit.getInt("uid")&&raw.getInt("reason")==exit.getInt("reason")&&raw.getInt("status")==exit.getInt("status")&&raw.getInt("summaryBytes")==68;}exact&=matched;}
+            check("exit-history-is-current-install-only-target"+target,exitPids.equals(Set.of(creatorPid,receiverPid))&&history.length()==2&&names,history);
+            check("exit-history-retains-real-system-fields-target"+target,exact&&physical.length()==2,physical);
+            check("exit-history-query-boundaries-target"+target,cold.getInt("nullPackageHistoryCount")==2&&cold.getBoolean("pidFiltered")&&cold.getBoolean("otherPackageRejected")&&cold.getBoolean("negativeLimitRejected")&&cold.getBoolean("ownershipStampProtected"),cold);
+            check("cold-pending-delivery-within-10-second-budget-target"+target,SystemClock.elapsedRealtime()-started<10000,new JSONObject().put("elapsedMs",SystemClock.elapsedRealtime()-started));
+            check("first-cold-pending-delivery-within-10-second-budget-target"+target,result.getLong("coldSendToReceiverMs")<10000,result.getLong("coldSendToReceiverMs"));
+            stop(observed.getString("receiverGeneration"));
+            }finally{for(String generation:new ArrayList<>(active))stop(generation);call(request("probePending","space",space,"action","cleanup"));}
+        }
     }
     private void testServiceStartup()throws Exception{
         String space=space("service-startup"),pkg="dev.tripoder.provideridentity";
@@ -361,12 +395,45 @@ public final class P2ProbeActivity extends Activity {
         check("newIntent-original-process-confirmed-dead",originalDead,generation);
         check("newIntent-unknown-effect-protects-install",rejected(request("probeProviderInstallUnused","space",space,"package","dev.tripoder.p2"),"INSTALL_IN_USE_BY_ACTIVITY_DELIVERY"),true);
     }
-    private void testProviders()throws Exception{
+    private void testPackageReplaced()throws Exception{
+        String space=space("package-replaced");install(space);Bundle worker=ensure(space,"dev.tripoder.p2");
+        Bundle prepared=call(request("prepareActivity","space",space,"package","dev.tripoder.p2","component","dev.tripoder.p2.PackageBroadcastActivity"));
+        Intent intent=prepared.getParcelable("intent",Intent.class);launchOwned(intent);JSONObject result=resultFor(intent,30);if(result==null)throw new IllegalStateException("PACKAGE_REPLACED_RESULT_TIMEOUT");runs.put(result);
+        call(request("completeActivity","ticket",intent.getStringExtra("tripoder.ticket")));
+        check("real-activity-thread-handles-empty-and-owned-package-replacement",result.optBoolean("passed")&&result.optBoolean("emptyAndOwnedHandled"),result);
+        check("package-replacement-runs-in-existing-worker",result.getInt("workerPid")==worker.getInt("pid")&&result.getString("generation").equals(worker.getString("generation")),result);
+        Bundle same=ensure(space,"dev.tripoder.p2");check("package-replacement-keeps-session-generation",same.getString("generation").equals(worker.getString("generation"))&&same.getInt("pid")==worker.getInt("pid"),json(same));
+        report.put("packageReplacement",result);
+    }
+    private void testProviderIndex()throws Exception{
+        JSONObject index=new JSONObject(call(request("probeInstallProviderIndex")).getString("result"));
+        JSONArray indexChecks=index.getJSONArray("checks");for(int i=0;i<indexChecks.length();i++){JSONObject item=indexChecks.getJSONObject(i);check(item.getString("name"),item.getBoolean("passed"),item);}
         JSONObject prior=null;
         for(int round=0;round<2;round++){
-            String space=space("providers-"+round);install(space);call(request("probeInstall","space",space,"operation",UUID.randomUUID().toString(),"files",new JSONArray().put(fixture.getJSONObject("providerPeer")).toString()));Bundle prepared=call(request("prepareActivity","space",space,"package","dev.tripoder.p2","component","dev.tripoder.p2.Providers$Main"));active.add(prepared.getString("generation"));Intent intent=prepared.getParcelable("intent",Intent.class);launchOwned(intent);
+            String space=space("providers-index-"+round);install(space);
+            for(String name:new String[]{"providerPeer","providerIdentity"})call(request("probeInstall","space",space,"operation",UUID.randomUUID().toString(),"files",new JSONArray().put(fixture.getJSONObject(name)).toString()));
+            Bundle before=call(request("probeUnrelatedProviderInstall","space",space));
+            Bundle prepared=call(request("prepareActivity","space",space,"package","dev.tripoder.p2","component","dev.tripoder.p2.ProviderLookupActivity"));active.add(prepared.getString("generation"));
+            Intent intent=prepared.getParcelable("intent",Intent.class);launchOwned(intent);JSONObject result=resultFor(intent,60);if(result==null)throw new IllegalStateException("PROVIDER_INDEX_TIMEOUT_UNKNOWN");runs.put(result);call(request("completeActivity","ticket",intent.getStringExtra("tripoder.ticket")));
+            JSONArray assertions=result.getJSONArray("checks");for(int i=0;i<assertions.length();i++){JSONObject item=assertions.getJSONObject(i);check(item.getString("name")+"-space-"+round,item.getBoolean("passed"),item);}
+            check("indexed-routing-completes-with-unrelated-corrupt-install-"+round,result.getBoolean("passed"),result);
+            Bundle after=call(request("probeProviderIntegrityStats"));long verified=after.getLong("fullVerifications")-before.getLong("fullVerifications");
+            check("cold-lookup-verifies-only-two-selected-apks-"+round,verified==2,new JSONObject().put("fullVerifications",verified).put("lookupElapsedMs",result.getLong("lookupElapsedMs")));
+            if(prior!=null)check("indexed-authority-isolated-between-spaces",!prior.getString("data").equals(result.getString("data"))&&prior.getInt("remotePid")!=result.getInt("remotePid"),result);prior=result;
+            ensure(space,"dev.tripoder.p2:providerremote");Bundle peer=call(request("ensureProcess","space",space,"package","dev.tripoder.peer","processName","dev.tripoder.peer"));active.add(peer.getString("generation"));
+            for(String generation:new ArrayList<>(active))stop(generation);
+        }
+        check("indexed-lookup-never-enters-host-provider",ProviderDecoy.hits.get()==0,ProviderDecoy.hits.get());
+    }
+    private void testProviders()throws Exception{
+        JSONObject index=new JSONObject(call(request("probeInstallProviderIndex")).getString("result"));
+        JSONArray indexChecks=index.getJSONArray("checks");for(int i=0;i<indexChecks.length();i++){JSONObject item=indexChecks.getJSONObject(i);check(item.getString("name"),item.getBoolean("passed"),item);}
+        JSONObject prior=null;
+        for(int round=0;round<2;round++){
+            String space=space("providers-"+round);install(space);call(request("probeInstall","space",space,"operation",UUID.randomUUID().toString(),"files",new JSONArray().put(fixture.getJSONObject("providerIdentity")).toString()));call(request("probeUnrelatedProviderInstall","space",space));call(request("probeInstall","space",space,"operation",UUID.randomUUID().toString(),"files",new JSONArray().put(fixture.getJSONObject("providerPeer")).toString()));Bundle prepared=call(request("prepareActivity","space",space,"package","dev.tripoder.p2","component","dev.tripoder.p2.Providers$Main"));active.add(prepared.getString("generation"));Intent intent=prepared.getParcelable("intent",Intent.class);launchOwned(intent);
             JSONObject result=resultFor(intent,90);if(result==null)throw new IllegalStateException("PROVIDER_ACCEPTANCE_TIMEOUT_UNKNOWN");runs.put(result);call(request("completeActivity","ticket",intent.getStringExtra("tripoder.ticket")));
             JSONArray assertions=result.getJSONArray("checks");for(int i=0;i<assertions.length();i++){JSONObject item=assertions.getJSONObject(i);check(item.getString("name")+"-space-"+round,item.getBoolean("passed"),item.opt("observed"));}check("provider-fixture-completed-"+round,result.optBoolean("passed"),result);
+            check("provider-routing-ignores-unrelated-corrupt-install-"+round,result.optBoolean("passed"),true);
             ensure(space,"dev.tripoder.p2:providerremote");
             ensure(space,"dev.tripoder.p2:providercyclea");ensure(space,"dev.tripoder.p2:providercycleb");
             Bundle peer=call(request("ensureProcess","space",space,"package","dev.tripoder.peer","processName","dev.tripoder.peer"));active.add(peer.getString("generation"));

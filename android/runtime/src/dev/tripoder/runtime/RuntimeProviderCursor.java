@@ -18,7 +18,12 @@ final class RuntimeProviderCursor implements InvocationHandler {
         int pid=Binder.getCallingPid(),uid=Binder.getCallingUid();Bundle identity;
         if(pid==claim.getInt("callerPid")&&uid==claim.getInt("callerUid")){
             RuntimeEngine engine=RuntimeEngine.current;Bundle request=engine.auth();request.putString("cap",claim.getString("cap"));request.putString("operation",claim.getString("operation"));request.putInt("callerPid",pid);request.putInt("callerUid",uid);
-            long token=Binder.clearCallingIdentity();try{engine.brokerCall(RuntimeWire.PROVIDER_CURSOR_ACCESS,request);}finally{Binder.restoreCallingIdentity(token);}
+            long token=Binder.clearCallingIdentity();
+            try{engine.brokerCall(RuntimeWire.PROVIDER_CURSOR_ACCESS,request);}
+            catch(Exception refused){
+                // Closing a cursor whose provider reference is already gone (the app leaked it and the finalizer closes it later) only releases local resources; it must not raise.
+                if(!(method.getName().equals("close")&&String.valueOf(refused.getMessage()).contains("PROVIDER_REFERENCE_CLOSED")))throw refused;
+            }finally{Binder.restoreCallingIdentity(token);}
             identity=claim;
         }else if(pid==android.os.Process.myPid()&&uid==android.os.Process.myUid()&&(method.getName().equals("close")||method.getName().equals("unregisterContentObserver"))){
             // Android binder-death / construction-failure cleanup is not a new request by the source.

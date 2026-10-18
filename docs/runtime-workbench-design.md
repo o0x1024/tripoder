@@ -14,7 +14,9 @@
 
 连接通过控制端提供的存活 Binder 建立 owner lease，固定实际 PID/UID 和连接代次。已有 owner 存活时拒绝第二个控制端；Binder 死亡后废弃整个连接端点，迟到请求不能因 PID 重用重新获得授权。控制端重连只查询已存操作与客体状态，不重放未知副作用。
 
-不能只信任“控制端传来了一个 Binder”：它可能属于其他进程。连接前用一次性随机 challenge，要求存活 Binder 反向回调独立验证端点，核验回调的实际 PID/UID 与发起连接者相同。验证端点一次使用后失效。该回调不持有 Broker/数据库锁。
+2026-10-18：原先连接前有一次随机 challenge，用来证明存活 Binder 确实由发起连接的进程持有。这是跨 UID 时代的机制，已删除。同 UID 下任何证明都区分不了调用者，而 CONNECT 已按调用进程名做过准入。现在存活 Binder（`ControlWire.Owner`）只作为生命周期令牌。
+
+2026-10-18：工作台不再全局只允许一个待确认操作。每个未确认操作单独持久记录、单独查询；同一目标的请求是否冲突由引擎判断。工作台只拦截同一项目或应用仍在 Binder 上提交时的重复提交。见 [current-architecture.md](current-architecture.md#操作模型)。
 
 工作台页面直接 `startForegroundService` 并绑定 `:authority` 的 `RuntimeControllerService`，不再经过跳板 Activity。整个包只保留该服务的一条常驻通知，点击回到工作台。客体启动仍经过单次 capability 的 `RuntimeGuestGateway`，让客体以独立 task 根启动。
 

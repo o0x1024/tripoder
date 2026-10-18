@@ -11,7 +11,7 @@ import java.lang.reflect.Modifier;
 public final class FrameworkAccess {
     private FrameworkAccess() {}
     private static boolean prepared;
-    private static final Object[][] declarationCache=new Object[55][];
+    private static final Object[][] declarationCache=new Object[59][];
     private static native boolean prepareNative(Method field,Method count,Method method);
     public static native String statusNative();
     @FastNative private static native Field fieldNative(int slot);
@@ -109,6 +109,10 @@ public final class FrameworkAccess {
         if(!prepared||slot<0||slot>=42)throw new IllegalStateException("FIXED_FIELD_ORDER");
         return fieldNative(slot);
     }
+    /** ActivityThread.getApplication() reads mInitialApplication; it must show the same logical Application as currentApplication(). */
+    public static Method activityThreadApplicationMethod()throws Exception{
+        return FixedFrameworkMembers.method(1,"getApplication","()Landroid/app/Application;",false);
+    }
     public static Method processNameMethod()throws Exception{
         return FixedFrameworkMembers.method(0,"getProcessName","()Ljava/lang/String;",true);
     }
@@ -149,8 +153,11 @@ public final class FrameworkAccess {
         if(target instanceof Method&&FixedComponentHooks.permitsHook((Method)target))return;
         if(FixedRuntimeHooks.permitsHook(target))return;
         if(JobFrameworkAccess.permitsHook(target))return;
+        if(PendingIntentFrameworkAccess.permitsHook(target))return;
         if(owner==android.app.Application.class&&name.equals("getProcessName")&&descriptor.equals("()Ljava/lang/String;")
             &&Modifier.isStatic(target.getModifiers()))return;
+        if(owner.getName().equals("android.app.ActivityThread")&&name.equals("getApplication")&&descriptor.equals("()Landroid/app/Application;")
+            &&!Modifier.isStatic(target.getModifiers()))return;
         throw new IllegalArgumentException("FIXED_BOOT_MANAGED_ADAPTER_REQUIRED:"+owner.getName()+"."+target.getName());
     }
     private static String type(Class<?> value){

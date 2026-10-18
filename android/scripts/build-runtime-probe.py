@@ -170,6 +170,12 @@ def main():
     jobs = apk("jobs-fixture", sorted((android / "runtime-fixtures/jobs").rglob("*.java")), android / "runtime-fixtures/jobs/AndroidManifest.xml")
     shutil.copyfile(jobs, assets / jobs.name)
     p2["jobs"] = {"asset": jobs.name, "sha256": sha(jobs), "packageName": "dev.tripoder.jobsfixture"}
+    for target in (30,31):
+        manifest=build/("PendingManifest-"+str(target)+".xml")
+        manifest.write_text((android/"runtime-fixtures/pending/AndroidManifest.xml").read_text().replace('android:targetSdkVersion="30"','android:targetSdkVersion="'+str(target)+'"'))
+        pending=apk("pending-"+str(target),sorted((android/"runtime-fixtures/pending").rglob("*.java")),manifest)
+        shutil.copyfile(pending,assets/pending.name)
+        p2["pending"+str(target)]={"asset":pending.name,"sha256":sha(pending),"packageName":"dev.tripoder.pendingfixture"}
     (assets / "p2-fixtures.json").write_text(json.dumps(p2, indent=2))
     preview = apk("preview-guest", sorted((android / "runtime-fixtures/preview").rglob("*.java")), android / "runtime-fixtures/preview/AndroidManifest.xml")
     shutil.copyfile(preview, assets / preview.name)

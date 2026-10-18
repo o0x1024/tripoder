@@ -27,7 +27,7 @@ final class PackageInfoChecks {
             selected.providers[0].authority="tampered";selected.providers[0].applicationInfo.dataDir="/tampered";selected.applicationInfo.metaData.putString("owned.label","tampered");
             PackageInfo again=pm.getPackageInfo(pkg,flags);check(checks,"package-info-defensive-owned-archive",!again.providers[0].authority.equals("tampered")&&!again.providers[0].applicationInfo.dataDir.equals("/tampered")&&"owned-installation".equals(again.applicationInfo.metaData.getString("owned.label")));
             boolean unknown=false;try{pm.getPackageInfo(pkg,PackageManager.PackageInfoFlags.of(1L<<40));}catch(UnsupportedOperationException expected){unknown=expected.getMessage().contains("PACKAGE_INFO_FLAGS_UNSUPPORTED:0x10000000000");}check(checks,"package-info-unknown-long-flags-rejected",unknown);
-            boolean other=false;try{pm.getPackageInfo("dev.tripoder.not-in-this-world",0);}catch(UnsupportedOperationException expected){other=expected.getMessage().contains("OTHER_PACKAGE_QUERY_UNSUPPORTED");}check(checks,"package-info-other-package-not-exposed",other);
+            boolean other=false;try{pm.getPackageInfo("dev.tripoder.not-in-this-world",0);}catch(PackageManager.NameNotFoundException expected){other=true;}check(checks,"package-info-other-package-not-exposed",other);
         }
     }
     private PackageInfoChecks(){}

@@ -12,31 +12,68 @@ import java.util.zip.*;
 
 /** Loads the complete verified DEX sequence without letting ART create sidecars in sealed artifacts. */
 final class RuntimeDexLoader {
-    private static final long MAX_DEX_BYTES=256L*1024*1024;
+    private static final long MAX_DEX_BYTES=512L*1024*1024;
+    private record DexTarget(File apk,ArtifactSet.FileRecord file){}
     static ClassLoader create(ArtifactSet set,String libraries,ClassLoader parent)throws Exception{
-        if(set.parts.size()!=1)throw new IllegalStateException("RUNTIME_SPLIT_EXECUTION_NOT_YET_SUPPORTED");
+        if(set.parts.isEmpty())throw new IllegalStateException("RUNTIME_SPLIT_EXECUTION_NOT_YET_SUPPORTED");
         // The exact same physical name must reach ART, linker notifications and
         // Native observation. Resolve the platform's data-directory alias once,
         // before guest code; never admit alternate names in the module observer.
         if(!new File(set.directory,"lib").getCanonicalPath().equals(libraries))
             throw new SecurityException("NATIVE_LIBRARY_SEARCH_PATH_NOT_CANONICAL_ARTIFACT");
-        TreeMap<Integer,ArtifactSet.FileRecord> dex=new TreeMap<>();
-        for(var file:set.parts.get(0).entries){
-            if(file.path.contains("/")||!file.path.endsWith(".dex"))continue;
-            if(!file.path.matches("classes(?:[2-9]|[1-9][0-9]+)?\\.dex"))throw new IOException("DEX_NAME_UNSUPPORTED");
-            String suffix=file.path.substring(7,file.path.length()-4);int index=suffix.isEmpty()?1:Integer.parseInt(suffix);
-            if(index>32||dex.put(index,file)!=null)throw new IOException("DEX_COUNT_LIMIT");
-        }
-        if(dex.isEmpty()||dex.lastKey()!=dex.size())throw new IOException("DEX_SEQUENCE_INCOMPLETE");
-        long total=0;List<ByteBuffer> buffers=new ArrayList<>();
-        try(ZipFile apk=new ZipFile(set.base)){
+        List<DexTarget> records=new ArrayList<>();
+        List<File> apkFiles=new ArrayList<>(set.parts.size());
+        long total=0;
+        for(int p=0;p<set.parts.size();p++){
+            ArtifactSet.Part part=set.parts.get(p);apkFiles.add(part.file);
+            TreeMap<Integer,ArtifactSet.FileRecord> dex=new TreeMap<>();
+            for(var file:part.entries){
+                if(file.path.contains("/")||!file.path.endsWith(".dex"))continue;
+                if(!file.path.matches("classes(?:[2-9]|[1-9][0-9]+)?\\.dex"))throw new IOException("DEX_NAME_UNSUPPORTED");
+                String suffix=file.path.substring(7,file.path.length()-4);int index=suffix.isEmpty()?1:Integer.parseInt(suffix);
+                if(index>128||dex.put(index,file)!=null)throw new IOException("DEX_COUNT_LIMIT");
+            }
+            if(p==0?(dex.isEmpty()||dex.lastKey()!=dex.size()):(!dex.isEmpty()&&dex.lastKey()!=dex.size()))throw new IOException("DEX_SEQUENCE_INCOMPLETE");
             for(var file:dex.values()){
+                if(records.size()>=128)throw new IOException("DEX_COUNT_LIMIT");
                 total+=file.size;if(file.size<=0||total>MAX_DEX_BYTES)throw new IOException("DEX_MEMORY_LIMIT");
-                ZipEntry entry=apk.getEntry(file.path);if(entry==null||entry.getSize()!=file.size)throw new IOException("DEX_ENTRY_CHANGED");
-                buffers.add(mapVerified(apk,entry,file));
+                records.add(new DexTarget(part.file,file));
             }
         }
-        return new InMemoryDexClassLoader(buffers.toArray(new ByteBuffer[0]),libraries,parent);
+        ByteBuffer[] buffers=new ByteBuffer[records.size()];
+        // One central-directory parse per APK with DEX entries: ZipFile is safe for concurrent getInputStream,
+        // and parsing it per DEX (interpreted) dominated LOAD for large applications.
+        Map<File,ZipFile> openZips=new LinkedHashMap<>();
+        try{
+            for(var target:records)if(!openZips.containsKey(target.apk()))openZips.put(target.apk(),new ZipFile(target.apk()));
+            if(records.size()==1){
+                DexTarget target=records.get(0);
+                buffers[0]=mapEntry(openZips.get(target.apk()),target.file());
+            }else{
+                int threads=Math.min(records.size(),Math.max(2,Runtime.getRuntime().availableProcessors()));
+                var pool=java.util.concurrent.Executors.newFixedThreadPool(threads);
+                try{
+                    List<java.util.concurrent.Future<ByteBuffer>> futures=new ArrayList<>(records.size());
+                    for(var target:records){ZipFile apk=openZips.get(target.apk());futures.add(pool.submit(()->mapEntry(apk,target.file())));}
+                    for(int i=0;i<records.size();i++){
+                        try{buffers[i]=futures.get(i).get();}
+                        catch(java.util.concurrent.ExecutionException error){
+                            Throwable cause=error.getCause();
+                            if(cause instanceof Exception ex)throw ex;
+                            if(cause instanceof Error err)throw err;
+                            throw error;
+                        }
+                    }
+                }finally{pool.shutdownNow();}
+            }
+        }finally{
+            for(ZipFile zip:openZips.values())try{zip.close();}catch(IOException ignored){}
+        }
+        return new InMemoryDexClassLoader(buffers,libraries,new RuntimeResourceLoader(parent,apkFiles));
+    }
+    private static ByteBuffer mapEntry(ZipFile apk,ArtifactSet.FileRecord file)throws Exception{
+        ZipEntry entry=apk.getEntry(file.path);if(entry==null||entry.getSize()!=file.size)throw new IOException("DEX_ENTRY_CHANGED");
+        return mapVerified(apk,entry,file);
     }
     /** Linux UAPI constants from the pinned NDK linux/fcntl.h and linux/memfd.h. */
     private static final int MFD_ALLOW_SEALING=2,F_ADD_SEALS=1033,F_GET_SEALS=1034,REQUIRED_SEALS=15;

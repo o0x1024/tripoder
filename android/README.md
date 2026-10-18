@@ -1,5 +1,7 @@
 # Tripoder Android
 
+> 2026-10-18：下文描述的 `android/app` 实验应用及其 Gadget/代理构建（`npm run android:build`）已退役并移除，仅作历史记录。当前产品结构见 [../docs/current-architecture.md](../docs/current-architecture.md)。
+
 本文描述历史独立实验应用 `dev.tripoder.hooklab`，其 Gadget 后端不再进入正式产品。2026-10-16 的工作台/Engine 使用 [共享 Runtime 与单一自研核心](runtime/README.md)，当前逐构建状态见 [交接与证据](../docs/self-hook-handoff-2026-10-15.md)。下文保留旧实验的复现方法。
 
 旧实验由 APK 内嵌的 Frida Gadget 在自身普通应用进程中加载标准 TypeScript 编译后的代理。无 Root、Shizuku、ADB 激活或外部 Hook 服务；release 的 `debuggable=false`。0.5.0 仅申请 INTERNET 权限，供用户主动请求 AI；Hook 本身离线执行。

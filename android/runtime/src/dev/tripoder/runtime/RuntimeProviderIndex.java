@@ -16,7 +16,8 @@ final class RuntimeProviderIndex {
             ProviderInfo prior=components.putIfAbsent(info.name,info);
             // Cross-process/enablement collisions require their own lifecycle contract and evidence.
             if(prior!=null&&(!Objects.equals(prior.processName,info.processName)||prior.enabled!=info.enabled||prior.multiprocess!=info.multiprocess))throw new UnsupportedOperationException("PROVIDER_COMPONENT_IDENTITY_CONFLICT:"+info.name);
-            for(String alias:RuntimeProviderBroker.aliases(info.authority))if(authorities.putIfAbsent(alias,info)!=null)throw new SecurityException("PROVIDER_AUTHORITY_CONFLICT:"+alias);
+            // One package: the first declaration of an authority is the one Android resolves; later duplicates stay declared but unreachable by authority.
+            for(String alias:RuntimeProviderBroker.aliases(info.authority))authorities.putIfAbsent(alias,info);
         }
     }
     List<ProviderInfo> publications(String process){List<ProviderInfo> out=new ArrayList<>();for(var info:components.values())if(info.enabled&&process.equals(info.processName))out.add(new ProviderInfo(info));return out;}

@@ -1,6 +1,6 @@
 # Tripoder
 
-> **当前状态（2026-10-16）**：最终目标——微信、王者荣耀在 Tripoder 内正常运行，且 Java/Native Hook 正常工作——**尚未达成**。自研 Hook 核心与自有测试 APK 的验收已有真机证据；微信已进入真实 UI 但启动链仍在逐层修复，王者卡在 PendingIntent/Alarm，尚无稳定首屏。当前任务与下一步见 [task.md](task.md)，文档索引见 [docs/README.md](docs/README.md)。下方按日期倒序的段落是各阶段历史记录，其范围以各自日期为准。
+> **当前状态（2026-10-16）**：最终目标——微信、王者荣耀在 Tripoder 内正常运行，且 Java/Native Hook 正常工作——**尚未达成**。自研 Hook 核心与自有测试 APK 的验收已有真机证据；微信已进入真实 UI 但启动链仍在逐层修复，王者卡在 PendingIntent/Alarm，尚无稳定首屏。当前任务与下一步见 [task.md](task.md)，**现在的进程、包与控制结构见 [docs/current-architecture.md](docs/current-architecture.md)**，文档索引见 [docs/README.md](docs/README.md)。下方按日期倒序的段落是各阶段历史记录，其范围以各自日期为准。
 
 **自研 Hook 切换（2026-10-16）**：正式 Runtime 源码和两套构建入口已改为单一自研核心库，客体首次执行前完成 25 项安装。存储已消除近地址跳转页依赖；自有真机 P0 60、包管理/门面 159、Java/Native P4 105 项通过。完整组件与工作台授权长流程仍在当前验收，具体逐制品状态见 [自研启动链](docs/self-hook-runtime-bootstrap.md) 与 [当前交接](docs/self-hook-handoff-2026-10-15.md)。下方旧 SDK/实验运行器及早期报告保留历史范围。
 

@@ -58,9 +58,32 @@ final class ActivityComponentLedger {
                 String stub=c.getString(0);Set<String> physical=entries.stubs(c.getString(1));physical.add(stub);boolean safe=Collections.disjoint(references.components,physical);
                 try(Cursor instances=store.getReadableDatabase().rawQuery("SELECT t.taskId,t.instance,l.kind,l.receiver,l.instance,t.stub,t.resourceProof FROM activity_tickets t LEFT JOIN activity_launches l ON l.candidate=t.ticket WHERE t.componentLease=?",new String[]{c.getString(1)})){
                     while(instances.moveToNext()){
-                        if("TASK_REMOVED_CONFIRMED".equals(instances.getString(6)))continue;
+                        String proof=instances.getString(6);
+                        if("TASK_REMOVED_CONFIRMED".equals(proof)||(proof!=null&&proof.startsWith("UNINSTALL_DEAD_UNATTACHED;")))continue;
                         if(!instances.isNull(1))safe&=references.canReleaseFinished(context,instances.getInt(0),instances.getString(5));
                         else safe&=("NEW_INTENT".equals(instances.getString(2))||"TASK_TO_FRONT".equals(instances.getString(2))||"TASK_ALREADY_FRONT".equals(instances.getString(2)))&&!instances.isNull(3)&&!instances.isNull(4);
+                    }
+                }
+                if(safe)releasable.add(stub);
+            }
+        }
+        for(String stub:releasable)store.getWritableDatabase().delete("activity_components","stub=?",new String[]{stub});
+        affinities.releaseUnused();
+    }
+    /** Explicit uninstall of one application, after every process of it was stopped: a component is released when all its tickets are terminal and their generations are dead, and no Android task still references the component. A ticket that never had a Java instance cannot be a task root, so it needs no further proof; a ticket with an instance keeps the usual task-removal proof. */
+    void releaseForUninstall(String space,String pkg){
+        if(store.getWritableDatabase().inTransaction())throw new IllegalStateException("ACTIVITY_OBSERVATION_DURING_TRANSACTION");
+        RuntimeTaskReferences references=RuntimeTaskReferences.observe(context);
+        retireRemovedTasks(references);
+        List<String> releasable=new ArrayList<>();
+        try(Cursor c=store.getReadableDatabase().rawQuery("SELECT stub,lease FROM activity_components ac WHERE ac.space=? AND ac.package=? AND NOT EXISTS (SELECT 1 FROM activity_tickets t LEFT JOIN sessions s ON s.generation=t.generation WHERE t.componentLease=ac.lease AND (t.state NOT IN ('FINISHED','REVOKED','RETIRED') OR COALESCE(s.state,'UNKNOWN') NOT IN ('DEAD','FAILED')))",new String[]{space,pkg})){
+            while(c.moveToNext()){
+                String stub=c.getString(0);Set<String> physical=entries.stubs(c.getString(1));physical.add(stub);boolean safe=Collections.disjoint(references.components,physical);
+                try(Cursor instances=store.getReadableDatabase().rawQuery("SELECT t.taskId,t.instance,t.stub,t.resourceProof FROM activity_tickets t WHERE t.componentLease=?",new String[]{c.getString(1)})){
+                    while(instances.moveToNext()){
+                        String proof=instances.getString(3);
+                        if("TASK_REMOVED_CONFIRMED".equals(proof)||(proof!=null&&proof.startsWith("UNINSTALL_DEAD_UNATTACHED;"))||instances.isNull(1))continue;
+                        safe&=references.canReleaseFinished(context,instances.getInt(0),instances.getString(2));
                     }
                 }
                 if(safe)releasable.add(stub);

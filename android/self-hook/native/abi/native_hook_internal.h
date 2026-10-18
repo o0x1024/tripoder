@@ -39,4 +39,9 @@ void tp_native_stop(int reason) __attribute__((noreturn));
 void tp_native_error_reset(void);
 bool tp_native_reject(enum tp_native_status status,const char *stage,int system_error);
 void tp_native_error_location(unsigned handle,int tid,uintptr_t pc);
+void tp_native_error_plan(int status);
+/* Authenticate the current one-shot invocation and its callback implementation.
+ * The JNI adapter obtains its immutable signature/context without re-decoding
+ * a Java types array. This lookup does not consume the original token. */
+void *tp_native_original_context(uint64_t invocation,tp_native_callback expected);
 #endif

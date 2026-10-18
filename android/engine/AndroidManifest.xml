@@ -8,7 +8,32 @@
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE"/>
-    <queries><intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent></queries>
+    <!-- Guest permission bridge: a guest can only be granted what the host holds, so the host declares the permissions guests commonly request.
+         The runtime grants a guest only the ones its own manifest declares; dangerous ones are requested through the system dialog for this app. -->
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+    <uses-permission android:name="android.permission.NFC"/>
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+    <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.BROADCAST_STICKY"/>
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
+    <uses-permission android:name="android.permission.READ_CONTACTS"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <queries><intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent><intent><action android:name="android.content.pm.action.REQUEST_PERMISSIONS"/></intent></queries>
     <application android:name="dev.tripoder.hooklab.WorkbenchApplication" android:appComponentFactory="dev.tripoder.runtime.RuntimeFactory" android:label="Tripoder" android:allowBackup="false" android:debuggable="false" android:extractNativeLibs="true" android:theme="@android:style/Theme.Material.Light.NoActionBar">
         <activity android:name="dev.tripoder.hooklab.WorkbenchActivity" android:exported="true">
             <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
@@ -16,11 +41,13 @@
         <activity android:name="dev.tripoder.hooklab.WorkbenchProjectActivity" android:exported="false"/>
         <activity android:name="dev.tripoder.hooklab.WorkbenchAddActivity" android:exported="false"/>
         <service android:name="dev.tripoder.hooklab.AgentControlService" android:exported="false" android:foregroundServiceType="connectedDevice"/>
-        <activity android:name="dev.tripoder.runtime.RuntimeGuestGateway" android:process=":authority" android:exported="false" android:taskAffinity="dev.tripoder.engine.guestentry"/>
         <service android:name="dev.tripoder.runtime.RuntimeControllerService" android:process=":authority" android:exported="false" android:foregroundServiceType="specialUse">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="User-controlled execution of imported apps inside Tripoder runtime spaces"/>
         </service>
         <provider android:name="dev.tripoder.runtime.RuntimeBootstrapProvider" android:authorities="dev.tripoder.engine.runtime.bootstrap" android:exported="false" android:process=":authority"/>
+        <receiver android:name="dev.tripoder.runtime.RuntimePendingIntentIngress" android:exported="false" android:process=":authority"/>
+        <activity android:name="dev.tripoder.runtime.RuntimePendingActivityIngress" android:exported="false" android:process=":authority" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:excludeFromRecents="true" android:noHistory="true" android:taskAffinity="dev.tripoder.engine.pendingentry"/>
+        <service android:name="dev.tripoder.runtime.RuntimePendingServiceIngress" android:exported="false" android:process=":authority"/>
         <!-- PROCESS_COMPONENT_POOL -->
         <!-- JOB_COMPONENT_POOL -->
         <!-- ACTIVITY_COMPONENT_POOL -->

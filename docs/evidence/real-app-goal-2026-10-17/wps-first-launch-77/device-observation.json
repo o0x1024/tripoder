@@ -1,0 +1,264 @@
+{
+  "schema": 1,
+  "startedAtUtc": "2026-10-17T11:13:31.934400+00:00",
+  "validatorSha256": "9287421a2fa3c9eab461cf4eac4a0e5afa7cac9cfb08cd52bceb74137f3cc55d",
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~ax4U3EPOIpuOP3OOm2qFAQ==/dev.tripoder.engine-ArG2bFVllH3sWtgWFADQlQ==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~ax4U3EPOIpuOP3OOm2qFAQ==/dev.tripoder.engine-ArG2bFVllH3sWtgWFADQlQ==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "9c68dea49b3d9e5762d793e4627ac2f058e5579584a2e3e38d9a3b0ec933ebd0  /data/app/~~ax4U3EPOIpuOP3OOm2qFAQ==/dev.tripoder.engine-ArG2bFVllH3sWtgWFADQlQ==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.controltest"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~Dgl8xvKiel6tCOe8U-0wTw==/dev.tripoder.controltest-Xz0NE6nBUh-2IdXUArxRwA==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~Dgl8xvKiel6tCOe8U-0wTw==/dev.tripoder.controltest-Xz0NE6nBUh-2IdXUArxRwA==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "dea27cec6a2cb1938a31674d3e5a611e3841da55b9e1d85360a2e735f0e0006c  /data/app/~~Dgl8xvKiel6tCOe8U-0wTw==/dev.tripoder.controltest-Xz0NE6nBUh-2IdXUArxRwA==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.controltest"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.engine uid:10400\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "date \"+%m-%d %H:%M:%S.%3N\""
+      ],
+      "exitCode": 0,
+      "stdout": "10-17 19:13:31.765\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.engine uid:10400\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.controltest"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.controltest uid:10402\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "mkdir",
+        "-p",
+        "/sdcard/Android/data/dev.tripoder.engine/files/acceptance"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "push",
+        "/Users/like/code/tripoder/android/runtime-probe/build/targets/wps.apk",
+        "/sdcard/Android/data/dev.tripoder.engine/files/acceptance/wps.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "/Users/like/code/tripoder/android/runtime-probe/build/targets/wps.apk: 1 file pushed, 0 skipped. 228.8 MB/s (347004959 bytes in 1.446s)\n"
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-a",
+        "android.intent.action.MAIN",
+        "-c",
+        "android.intent.category.LAUNCHER",
+        "-n",
+        "dev.tripoder.engine/dev.tripoder.hooklab.WorkbenchActivity"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=dev.tripoder.engine/dev.tripoder.hooklab.WorkbenchActivity }\nStatus: ok\nLaunchState: WARM\nActivity: dev.tripoder.engine/dev.tripoder.hooklab.WorkbenchActivity\nTotalTime: 104\nWaitTime: 107\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "instrument",
+        "-w",
+        "-e",
+        "runId",
+        "control-958b0cec16844158",
+        "-e",
+        "target",
+        "wps",
+        "dev.tripoder.controltest/dev.tripoder.controltest.TargetLaunchIntegration"
+      ],
+      "exitCode": 0,
+      "stdout": "INSTRUMENTATION_RESULT: checks=3\nINSTRUMENTATION_RESULT: passed=false\nINSTRUMENTATION_RESULT: resultFile=result-control-958b0cec16844158.json\nINSTRUMENTATION_RESULT: resultSha256=6346f65093ed5d058d00aa81dd2f05394713a8596010d414f6400377e0fe0e86\nINSTRUMENTATION_RESULT: runId=control-958b0cec16844158\nINSTRUMENTATION_CODE: 0\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10400",
+        "-T",
+        "10-17 19:13:31.765"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10400",
+        "-T",
+        "10-17 19:13:31.765",
+        "TripoderSelfHook:I",
+        "TripoderRuntime:V",
+        "TripoderHook:I",
+        "TripoderOwnership:I",
+        "TripoderStartup:I",
+        "TripoderProvider:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-17 19:13:46.367  5016  5058 I TripoderSelfHook: INSTALLING:PROCESS_EXECUTION_POLICY\n10-17 19:13:48.231  5016  5058 I TripoderSelfHook: INSTALLED:PROCESS_EXECUTION_POLICY:ns=1863051926\n10-17 19:13:48.231  5016  5058 I TripoderSelfHook: INSTALLING:FRAMEWORK_ACCESS\n10-17 19:13:48.233  5016  5058 I TripoderSelfHook: INSTALLED:FRAMEWORK_ACCESS:ns=1745833\n10-17 19:13:48.233  5016  5058 I TripoderSelfHook: INSTALLING:APPLICATION_OWNERSHIP\n10-17 19:13:48.234  5016  5058 I TripoderSelfHook: INSTALLED:APPLICATION_OWNERSHIP:ns=1752604\n10-17 19:13:48.234  5016  5058 I TripoderSelfHook: INSTALLING:REFLECTION_VIEW\n10-17 19:13:48.327  5016  5058 I TripoderSelfHook: INSTALLED:REFLECTION_VIEW:ns=92592656\n10-17 19:13:48.327  5016  5058 I TripoderSelfHook: INSTALLING:ACTIVITY_CREATION\n10-17 19:13:48.367  5016  5058 I TripoderSelfHook: INSTALLED:ACTIVITY_CREATION:ns=40173125\n10-17 19:13:48.367  5016  5058 I TripoderSelfHook: INSTALLING:ACTIVITY_DELIVERY\n10-17 19:13:48.416  5016  5058 I TripoderSelfHook: INSTALLED:ACTIVITY_DELIVERY:ns=48291615\n10-17 19:13:48.416  5016  5058 I TripoderSelfHook: INSTALLING:ACTIVITY_ROUTING\n10-17 19:13:48.477  5016  5058 I TripoderSelfHook: INSTALLED:ACTIVITY_ROUTING:ns=61369167\n10-17 19:13:48.477  5016  5058 I TripoderSelfHook: INSTALLING:SERVICES\n10-17 19:13:48.542  5016  5058 I TripoderSelfHook: INSTALLED:SERVICES:ns=64603230\n10-17 19:13:48.542  5016  5058 I TripoderSelfHook: INSTALLING:PROVIDERS\n10-17 19:13:48.662  5016  5058 I TripoderSelfHook: INSTALLED:PROVIDERS:ns=119872239\n10-17 19:13:48.662  5016  5058 I TripoderSelfHook: INSTALLING:RECEIVERS\n10-17 19:13:48.688  5016  5058 I TripoderSelfHook: INSTALLED:RECEIVERS:ns=26474271\n10-17 19:13:48.688  5016  5058 I TripoderSelfHook: INSTALLING:PACKAGES\n10-17 19:13:50.595  5016  5058 I TripoderSelfHook: INSTALLED:PACKAGES:ns=1906477083\n10-17 19:13:50.595  5016  5058 I TripoderSelfHook: INSTALLING:STORAGE\n10-17 19:13:50.953  5016  5058 I TripoderSelfHook: INSTALLED:STORAGE:ns=357709739\n10-17 19:13:50.953  5016  5058 I TripoderSelfHook: INSTALLING:ACTIVITY_MANAGER\n10-17 19:13:51.594  5016  5058 I TripoderSelfHook: INSTALLED:ACTIVITY_MANAGER:ns=641269427\n10-17 19:13:51.594  5016  5058 I TripoderSelfHook: INSTALLING:CONNECTIVITY\n10-17 19:13:52.241  5016  5058 I TripoderSelfHook: INSTALLED:CONNECTIVITY:ns=646858646\n10-17 19:13:52.241  5016  5058 I TripoderSelfHook: INSTALLING:WIFI_P2P\n10-17 19:13:52.632  5016  5058 I TripoderSelfHook: INSTALLED:WIFI_P2P:ns=390524844\n10-17 19:13:52.632  5016  5058 I TripoderSelfHook: INSTALLING:NETWORK_STATS\n10-17 19:13:53.017  5016  5058 I TripoderSelfHook: INSTALLED:NETWORK_STATS:ns=385398021\n10-17 19:13:53.017  5016  5058 I TripoderSelfHook: INSTALLING:TELEPHONY\n10-17 19:13:54.727  5016  5058 I TripoderSelfHook: INSTALLED:TELEPHONY:ns=1709879218\n10-17 19:13:54.727  5016  5058 I TripoderSelfHook: INSTALLING:AUDIO\n10-17 19:13:55.985  5016  5058 I TripoderSelfHook: INSTALLED:AUDIO:ns=1258127395\n10-17 19:13:55.985  5016  5058 I TripoderSelfHook: INSTALLING:BATTERY\n10-17 19:13:56.028  5016  5058 I TripoderSelfHook: INSTALLED:BATTERY:ns=42601718\n10-17 19:13:56.028  5016  5058 I TripoderSelfHook: INSTALLING:POWER\n10-17 19:13:56.301  5016  5058 I TripoderSelfHook: INSTALLED:POWER:ns=273317656\n10-17 19:13:56.302  5016  5058 I TripoderSelfHook: INSTALLING:NOTIFICATIONS\n10-17 19:13:56.632  5016  5058 I TripoderSelfHook: INSTALLED:NOTIFICATIONS:ns=330844375\n10-17 19:13:56.632  5016  5058 I TripoderSelfHook: INSTALLING:SHORTCUTS\n10-17 19:13:56.740  5016  5058 I TripoderSelfHook: INSTALLED:SHORTCUTS:ns=107211771\n10-17 19:13:56.740  5016  5058 I TripoderSelfHook: INSTALLING:JOBS\n10-17 19:13:56.893  5016  5058 I TripoderSelfHook: INSTALLED:JOBS:ns=152761979\n10-17 19:13:56.893  5016  5058 I TripoderSelfHook: INSTALLING:PENDING_INTENTS\n10-17 19:13:57.101  5016  5058 I TripoderSelfHook: INSTALLED:PENDING_INTENTS:ns=207866875\n10-17 19:13:57.101  5016  5058 I TripoderSelfHook: INSTALLING:UI_EFFECTS\n10-17 19:13:57.119  5016  5058 I TripoderSelfHook: INSTALLED:UI_EFFECTS:ns=18040052\n10-17 19:13:57.119  5016  5058 I TripoderSelfHook: INSTALLING:FAILURE_DIAGNOSTICS\n10-17 19:13:57.143  5016  5058 I TripoderSelfHook: INSTALLED:FAILURE_DIAGNOSTICS:ns=24581823\n10-17 19:13:57.143  5016  5058 I TripoderSelfHook: INSTALLING:HOOK_CONTROL\n10-17 19:13:58.263  5016  5058 I TripoderSelfHook: INSTALLED:HOOK_CONTROL:ns=1119393906\n10-17 19:13:58.263  5016  5058 I TripoderSelfHook: READY:READY:27/27:bindings=2271:ns=11895652391\n10-17 19:13:58.263  5016  5058 I TripoderSelfHook: PREPARATION_METRICS:{\"mappingCalls\":6887,\"mappingNs\":5270279337,\"ownerComparisons\":2577585,\"ownerLookupNs\":26732205}\n10-17 19:13:58.263  5016  5058 I TripoderSelfHook: MANAGED_PREPARATION_METRICS:{\"entries\":2271,\"validationNs\":810251927,\"dexBuildNs\":232661458,\"dexLoadNs\":61594271,\"helperResolveNs\":83510022,\"storageNs\":1169053394,\"entryPrepareNs\":5314754664}\n10-17 19:13:58.393  5016  5016 I TripoderOwnership: before-attach host=42503018 guest=211408987 {\"stage\":\"AWAITING_GUEST\",\"constructs\":0,\"attaches\":0,\"physicalChecks\":2,\"retainedGlobalRefs\":10,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":8,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-17 19:13:59.603  5016  5016 I TripoderOwnership: after-attach host=42503018 guest=211408987 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":7,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-17 19:14:10.591  5016  5058 E TripoderStartup: STARTUP_TIMEOUT_STACKS:pid=5016;observed=58\n10-17 19:14:10.602  5016  5058 E TripoderStartup: {\"thread\":\"main\",\"id\":2,\"state\":\"RUNNABLE\",\"frames\":[\"com.android.org.conscrypt.NativeCrypto.EVP_DigestInit_ex(Native Method)\",\"com.android.org.conscrypt.OpenSSLMessageDigestJDK.ensureDigestInitializedInContext(OpenSSLMessageDigestJDK.java:74)\",\"com.android.org.conscrypt.OpenSSLMessageDigestJDK.engineUpdate(OpenSSLMessageDigestJDK.java:102)\",\"java.security.MessageDigest$Delegate.engineUpdate(MessageDigest.java:693)\",\"java.security.MessageDigest.update(MessageDigest.java:393)\",\"com.android.org.bouncycastle.crypto.digests.OpenSSLDigest.update(OpenSSLDigest.java:65)\",\"com.android.org.bouncycastle.crypto.macs.HMac.doFinal(HMac.java:210)\",\"com.android.org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator.F(PKCS5S2ParametersGenerator.java:72)\",\"com.android.org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator.generateDerivedKey(PKCS5S2ParametersGenerator.java:103)\",\"com.android.org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator.generateDerivedParameters(PKCS5S2ParametersGenerator.java:122)\",\"com.android.org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator.generateDerivedMacParameters(PKCS5S2ParametersGenerator.java:158)\",\"com.android.org.bouncycastle.jcajce.provider.symmetric.util.PBE$Util.makePBEMacParameters(PBE.java:443)\",\"com.android.org.bouncycastle.jcajce.provider.symmetric.PBEPBKDF2$BasePBKDF2.engineGenerateSecret(PBEPBKDF2.java:259)\",\"javax.crypto.SecretKeyFactory.generateSecret(SecretKeyFactory.java:524)\",\"cn.wps.yunkit.util.KeyRestorer.deriveKey(SourceFile:40)\",\"cn.wps.yunkit.util.KeyRestorer.restore(SourceFile:46)\",\"cn.wps.yunkit.YunConfig.<init>(SourceFile:109)\",\"cn.wps.yunkit.YunConfig.<clinit>(SourceFile:139)\",\"com.wps.woa.sdk.login.KIMLoginManager.c(SourceFile:64)\",\"com.kingsoft.kim.kit.KIM.init$lambda$14(SourceFile:29)\",\"com.kingsoft.kim.kit.KIM.b(SourceFile:1)\",\"U2.g.run(SourceFile:1)\",\"com.wps.woa.sdk.login.PrivacyProtocolManager.c(SourceFile:22)\",\"com.kingsoft.kim.kit.KIM.init(SourceFile:188)\",\"com.kingsoft.kim.kit.KIM.init(SourceFile:16)\",\"com.wps.koa.app.WoaApp.b(SourceFile:291)\",\"com.wps.woa.module.launcher.BaseApp.onCreate(SourceFile:35)\",\"android.app.Instrumentation.callApplicationOnCreate(Instrumentation.java:1409)\",\"dev.tripoder.runtime.RuntimeEngine.lambda$new$1(RuntimeEngine.java:148)\",\"dev.tripoder.runtime.RuntimeEngine.$r8$lambda$jpJCnP2gRB-z5cMkw46-QI1yH44(RuntimeEngine.java:0)\",\"dev.tripoder.runtime.RuntimeEngine$2.call(D8$$SyntheticClass:0)\",\"java.util.concurrent.FutureTask.run(FutureTask.java:328)\"]}\n10-17 19:14:10.603  5016  5058 E TripoderStartup: {\"thread\":\"AppCustomScenariorHandler\",\"id\":53419,\"state\":\"RUNNABLE\",\"frames\":[\"android.os.MessageQueue.nativePollOnce(Native Method)\",\"android.os.MessageQueue.nextLegacy(MessageQueue.java:924)\",\"android.os.MessageQueue.next(MessageQueue.java:826)\",\"android.os.Looper.loopOnce(Looper.java:248)\",\"android.os.Looper.loop(Looper.java:419)\",\"android.os.HandlerThread.run(HandlerThread.java:139)\"]}\n10-17 19:14:10.605  5016  5058 E TripoderStartup: {\"thread\":\"AudioPortEventHandler\",\"id\":53433,\"state\":\"RUNNABLE\",\"frames\":[\"android.os.MessageQueue.nativePollOnce(Native Method)\",\"android.os.MessageQueue.nextLegacy(MessageQueue.java:924)\",\"android.os.MessageQueue.next(MessageQueue.java:826)\",\"android.os.Looper.loopOnce(Looper.java:248)\",\"android.os.Looper.loop(Looper.java:419)\",\"android.os.HandlerThread.run(HandlerThread.java:139)\"]}\n10-17 19:14:10.607  5016  5058 E TripoderStartup: {\"thread\":\"CameraManagerGlobal\",\"id\":53442,\"state\":\"RUNNABLE\",\"frames\":[\"android.os.MessageQueue.nativePollOnce(Native Method)\",\"android.os.MessageQueue.nextLegacy(MessageQueue.java:924)\",\"android.os.MessageQueue.next(MessageQueue.java:826)\",\"android.os.Looper.loopOnce(Looper.java:248)\",\"android.os.Looper.loop(Looper.java:419)\",\"android.os.HandlerThread.run(HandlerThread.java:139)\"]}\n10-17 19:14:10.609  5016  5058 E TripoderStartup: {\"thread\":\"Cleaner-0\",\"id\":53449,\"state\":\"TIMED_WAITING\",\"frames\":[\"java.lang.Object.wait(Native Method)\",\"java.lang.Object.wait(Object.java:405)\",\"java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:207)\",\"jdk.internal.ref.CleanerImpl.run(CleanerImpl.java:174)\",\"java.lang.Thread.run(Thread.java:1572)\",\"jdk.internal.misc.InnocuousThread.run(InnocuousThread.java:186)\"]}\n10-17 19:14:10.610  5016  5058 E TripoderStartup: {\"thread\":\"Cleaner-1\",\"id\":53450,\"state\":\"TIMED_WAITING\",\"frames\":[\"java.lang.Object.wait(Native Method)\",\"java.lang.Object.wait(Object.java:405)\",\"java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:207)\",\"jdk.internal.ref.CleanerImpl.run(CleanerImpl.java:174)\",\"java.lang.Thread.run(Thread.java:1572)\",\"jdk.internal.misc.InnocuousThread.run(InnocuousThread.java:186)\"]}\n10-17 19:14:10.612  5016  5058 E TripoderStartup: {\"thread\":\"Cleaner-2\",\"id\":53465,\"state\":\"TIMED_WAITING\",\"frames\":[\"java.lang.Object.wait(Native Method)\",\"java.lang.Object.wait(Object.java:405)\",\"java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:207)\",\"jdk.internal.ref.CleanerImpl.run(CleanerImpl.java:174)\",\"java.lang.Thread.run(Thread.java:1572)\",\"jdk.internal.misc.InnocuousThread.run(InnocuousThread.java:186)\"]}\n10-17 19:14:10.613  5016  5058 E TripoderStartup: {\"thread\":\"ConnectivityThread\",\"id\":53459,\"state\":\"RUNNABLE\",\"frames\":[\"android.os.MessageQueue.nativePollOnce(Native Method)\",\"android.os.MessageQueue.nextLegacy(MessageQueue.java:924)\",\"android.os.MessageQueue.next(MessageQueue.java:826)\",\"android.os.Looper.loopOnce(Looper.java:248)\",\"android.os.Looper.loop(Looper.java:419)\",\"android.os.HandlerThread.run(HandlerThread.java:139)\"]}\n10-17 19:14:10.617  5016  5058 E TripoderStartup: {\"thread\":\"ConscryptStatsLog\",\"id\":53438,\"state\":\"WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.park(LockSupport.java:376)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionNode.block(AbstractQueuedSynchronizer.java:520)\",\"java.util.concurrent.ForkJoinPool.unmanagedBlock(ForkJoinPool.java:3797)\",\"java.util.concurrent.ForkJoinPool.managedBlock(ForkJoinPool.java:3738)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1752)\",\"java.util.concurrent.LinkedBlockingQueue.take(LinkedBlockingQueue.java:435)\",\"java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1174)\",\"java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1234)\",\"java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:650)\",\"java.lang.Thread.run(Thread.java:1572)\"]}\n10-17 19:14:10.620  5016  5058 E TripoderStartup: {\"thread\":\"DefaultDispatcher-worker-1\",\"id\":53429,\"state\":\"TIMED_WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:276)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.awaitNanos(AbstractQueuedSynchronizer.java:1803)\",\"java.util.concurrent.PriorityBlockingQueue.poll(PriorityBlockingQueue.java:553)\",\"com.kingsoft.kim.kit.summarymanager.SummaryEngine$startWorker$1.invokeSuspend(SourceFile:100)\",\"kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(SourceFile:12)\",\"kotlinx.coroutines.DispatchedTask.run(SourceFile:129)\",\"kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(SourceFile:4)\",\"kotlinx.coroutines.scheduling.TaskImpl.run(SourceFile:3)\",\"kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(SourceFile:1)\",\"kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(SourceFile:15)\",\"kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(SourceFile:29)\",\"kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(SourceFile:1)\"]}\n10-17 19:14:10.624  5016  5058 E TripoderStartup: {\"thread\":\"DefaultDispatcher-worker-2\",\"id\":53430,\"state\":\"TIMED_WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:276)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.awaitNanos(AbstractQueuedSynchronizer.java:1803)\",\"java.util.concurrent.PriorityBlockingQueue.poll(PriorityBlockingQueue.java:553)\",\"com.kingsoft.kim.kit.summarymanager.SummaryEngine$startWorker$1.invokeSuspend(SourceFile:100)\",\"kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(SourceFile:12)\",\"kotlinx.coroutines.DispatchedTask.run(SourceFile:129)\",\"kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(SourceFile:4)\",\"kotlinx.coroutines.scheduling.TaskImpl.run(SourceFile:3)\",\"kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(SourceFile:1)\",\"kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(SourceFile:15)\",\"kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(SourceFile:29)\",\"kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(SourceFile:1)\"]}\n10-17 19:14:10.626  5016  5058 E TripoderStartup: {\"thread\":\"DefaultDispatcher-worker-3\",\"id\":53461,\"state\":\"TIMED_WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:417)\",\"kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.park(SourceFile:24)\",\"kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.tryPark(SourceFile:60)\",\"kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(SourceFile:61)\",\"kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(SourceFile:1)\"]}\n10-17 19:14:10.627  5016  5058 E TripoderStartup: {\"thread\":\"DefaultDispatcher-worker-4\",\"id\":53462,\"state\":\"TIMED_WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:417)\",\"kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.park(SourceFile:24)\",\"kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.tryPark(SourceFile:60)\",\"kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(SourceFile:61)\",\"kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(SourceFile:1)\"]}\n10-17 19:14:10.629  5016  5058 E TripoderStartup: {\"thread\":\"FinalizerDaemon\",\"id\":53409,\"state\":\"WAITING\",\"frames\":[\"java.lang.Object.wait(Native Method)\",\"java.lang.Object.wait(Object.java:405)\",\"java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:207)\",\"java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:228)\",\"java.lang.Daemons$FinalizerDaemon.runInternal(Daemons.java:350)\",\"java.lang.Daemons$Daemon.run(Daemons.java:135)\",\"java.lang.Thread.run(Thread.java:1572)\"]}\n10-17 19:14:10.631  5016  5058 E TripoderStartup: {\"thread\":\"FinalizerWatchdogDaemon\",\"id\":53410,\"state\":\"TIMED_WAITING\",\"frames\":[\"java.lang.Thread.sleep(Native Method)\",\"java.lang.Thread.sleep0(Thread.java:689)\",\"java.lang.Thread.sleep(Thread.java:667)\",\"java.lang.Thread.sleep(Thread.java:580)\",\"java.lang.Daemons$FinalizerWatchdogDaemon.sleepForNanos(Daemons.java:536)\",\"java.lang.Daemons$FinalizerWatchdogDaemon.waitForProgress(Daemons.java:612)\",\"java.lang.Daemons$FinalizerWatchdogDaemon.runInternal(Daemons.java:467)\",\"java.lang.Daemons$Daemon.run(Daemons.java:135)\",\"java.lang.Thread.run(Thread.java:1572)\"]}\n10-17 19:14:10.633  5016  5058 E TripoderStartup: {\"thread\":\"ForkJoinPool.commonPool-worker-1\",\"id\":53421,\"state\":\"WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.park(LockSupport.java:376)\",\"java.util.concurrent.ForkJoinPool.awaitWork(ForkJoinPool.java:1906)\",\"java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1822)\",\"java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:187)\"]}\n10-17 19:14:10.634  5016  5058 E TripoderStartup: {\"thread\":\"ForkJoinPool.commonPool-worker-2\",\"id\":53422,\"state\":\"WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.park(LockSupport.java:376)\",\"java.util.concurrent.ForkJoinPool.awaitWork(ForkJoinPool.java:1906)\",\"java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1822)\",\"java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:187)\"]}\n10-17 19:14:10.636  5016  5058 E TripoderStartup: {\"thread\":\"ForkJoinPool.commonPool-worker-3\",\"id\":53423,\"state\":\"WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.park(LockSupport.java:376)\",\"java.util.concurrent.ForkJoinPool.awaitWork(ForkJoinPool.java:1906)\",\"java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1822)\",\"java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:187)\"]}\n10-17 19:14:10.637  5016  5058 E TripoderStartup: {\"thread\":\"ForkJoinPool.commonPool-worker-4\",\"id\":53424,\"state\":\"WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.park(LockSupport.java:376)\",\"java.util.concurrent.ForkJoinPool.awaitWork(ForkJoinPool.java:1906)\",\"java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1822)\",\"java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:187)\"]}\n10-17 19:14:10.639  5016  5058 E TripoderStartup: {\"thread\":\"ForkJoinPool.commonPool-worker-5\",\"id\":53425,\"state\":\"WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.park(LockSupport.java:376)\",\"java.util.concurrent.ForkJoinPool.awaitWork(ForkJoinPool.java:1906)\",\"java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1822)\",\"java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:187)\"]}\n10-17 19:14:10.640  5016  5058 E TripoderStartup: {\"thread\":\"ForkJoinPool.commonPool-worker-6\",\"id\":53426,\"state\":\"TIMED_WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.parkUntil(LockSupport.java:459)\",\"java.util.concurrent.ForkJoinPool.awaitWork(ForkJoinPool.java:1904)\",\"java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1822)\",\"java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:187)\"]}\n10-17 19:14:10.642  5016  5058 E TripoderStartup: {\"thread\":\"ForkJoinPool.commonPool-worker-7\",\"id\":53427,\"state\":\"WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.park(LockSupport.java:376)\",\"java.util.concurrent.ForkJoinPool.awaitWork(ForkJoinPool.java:1906)\",\"java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1822)\",\"java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:187)\"]}\n10-17 19:14:10.642  5016  5058 E TripoderStartup: {\"thread\":\"HeapTaskDaemon\",\"id\":53406,\"state\":\"WAITING\",\"frames\":[]}\n10-17 19:14:10.643  5016  5058 E TripoderStartup: {\"thread\":\"JNA Cleaner\",\"id\":53448,\"state\":\"TIMED_WAITING\",\"frames\":[\"java.lang.Object.wait(Native Method)\",\"java.lang.Object.wait(Object.java:405)\",\"java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:207)\",\"com.sun.jna.internal.Cleaner$CleanerThread.run(SourceFile:10)\"]}\n10-17 19:14:10.644  5016  5058 E TripoderStartup: {\"thread\":\"Jit thread pool worker thread 0\",\"id\":53408,\"state\":\"RUNNABLE\",\"frames\":[]}\n10-17 19:14:10.645  5016  5058 E TripoderStartup: {\"thread\":\"MiuiMonitorThread\",\"id\":53416,\"state\":\"RUNNABLE\",\"frames\":[\"android.os.MessageQueue.nativePollOnce(Native Method)\",\"android.os.MessageQueue.nextLegacy(MessageQueue.java:924)\",\"android.os.MessageQueue.next(MessageQueue.java:826)\",\"android.os.Looper.loopOnce(Looper.java:248)\",\"android.os.Looper.loop(Looper.java:419)\",\"android.os.HandlerThread.run(HandlerThread.java:139)\"]}\n10-17 19:14:10.648  5016  5058 E TripoderStartup: {\"thread\":\"OkHttp Dispatcher\",\"id\":53434,\"state\":\"TIMED_WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:417)\",\"java.util.concurrent.LinkedTransferQueue$DualNode.await(LinkedTransferQueue.java:452)\",\"java.util.concurrent.SynchronousQueue$Transferer.xferLifo(SynchronousQueue.java:194)\",\"java.util.concurrent.SynchronousQueue.xfer(SynchronousQueue.java:235)\",\"java.util.concurrent.SynchronousQueue.poll(SynchronousQueue.java:338)\",\"java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1173)\",\"java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1234)\",\"java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:650)\",\"java.lang.Thread.run(Thread.java:1572)\"]}\n10-17 19:14:10.649  5016  5058 E TripoderStartup: {\"thread\":\"OkHttp TaskRunner\",\"id\":53439,\"state\":\"TIMED_WAITING\",\"frames\":[\"java.lang.Object.wait(Native Method)\",\"okhttp3.internal.concurrent.TaskRunner.c(SourceFile:176)\",\"okhttp3.internal.concurrent.TaskRunner$runnable$1.run(SourceFile:4)\",\"java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1248)\",\"java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:650)\",\"java.lang.Thread.run(Thread.java:1572)\"]}\n10-17 19:14:10.651  5016  5058 E TripoderStartup: {\"thread\":\"Okio Watchdog\",\"id\":53440,\"state\":\"TIMED_WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:276)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1892)\",\"okio.AsyncTimeout$Companion.a(SourceFile:21)\",\"okio.AsyncTimeout$Watchdog.run(SourceFile:6)\"]}\n10-17 19:14:10.651  5016  5058 E TripoderStartup: {\"thread\":\"Profile Saver\",\"id\":53415,\"state\":\"RUNNABLE\",\"frames\":[]}\n10-17 19:14:10.652  5016  5058 E TripoderStartup: {\"thread\":\"ReferenceQueueDaemon\",\"id\":53407,\"state\":\"WAITING\",\"frames\":[\"java.lang.Object.wait(Native Method)\",\"java.lang.Object.wait(Object.java:405)\",\"java.lang.Object.wait(Object.java:543)\",\"java.lang.Daemons$ReferenceQueueDaemon.runInternal(Daemons.java:262)\",\"java.lang.Daemons$Daemon.run(Daemons.java:135)\",\"java.lang.Thread.run(Thread.java:1572)\"]}\n10-17 19:14:10.652  5016  5058 E TripoderStartup: {\"thread\":\"Signal Catcher\",\"id\":53405,\"state\":\"WAITING\",\"frames\":[]}\n10-17 19:14:10.654  5016  5058 E TripoderStartup: {\"thread\":\"SummaryEnginePreLoader-0\",\"id\":53460,\"state\":\"WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.park(LockSupport.java:376)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionNode.block(AbstractQueuedSynchronizer.java:520)\",\"java.util.concurrent.ForkJoinPool.unmanagedBlock(ForkJoinPool.java:3797)\",\"java.util.concurrent.ForkJoinPool.managedBlock(ForkJoinPool.java:3738)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1752)\",\"java.util.concurrent.LinkedBlockingQueue.take(LinkedBlockingQueue.java:435)\",\"java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1174)\",\"java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1234)\",\"java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:650)\",\"java.lang.Thread.run(Thread.java:1572)\"]}\n10-17 19:14:10.655  5016  5058 E TripoderStartup: {\"thread\":\"Timer-0\",\"id\":53417,\"state\":\"WAITING\",\"frames\":[\"java.lang.Object.wait(Native Method)\",\"java.lang.Object.wait(Object.java:405)\",\"java.lang.Object.wait(Object.java:543)\",\"java.util.TimerThread.mainLoop(Timer.java:562)\",\"java.util.TimerThread.run(Timer.java:540)\"]}\n10-17 19:14:10.656  5016  5058 E TripoderStartup: {\"thread\":\"Timer-1\",\"id\":53418,\"state\":\"WAITING\",\"frames\":[\"java.lang.Object.wait(Native Method)\",\"java.lang.Object.wait(Object.java:405)\",\"java.lang.Object.wait(Object.java:543)\",\"java.util.TimerThread.mainLoop(Timer.java:562)\",\"java.util.TimerThread.run(Timer.java:540)\"]}\n10-17 19:14:10.657  5016  5058 E TripoderStartup: {\"thread\":\"USBMonitor\",\"id\":53435,\"state\":\"RUNNABLE\",\"frames\":[\"android.os.MessageQueue.nativePollOnce(Native Method)\",\"android.os.MessageQueue.nextLegacy(MessageQueue.java:924)\",\"android.os.MessageQueue.next(MessageQueue.java:826)\",\"android.os.Looper.loopOnce(Looper.java:248)\",\"android.os.Looper.loop(Looper.java:419)\",\"android.os.HandlerThread.run(HandlerThread.java:139)\"]}\n10-17 19:14:10.659  5016  5058 E TripoderStartup: {\"thread\":\"WM.task-1\",\"id\":53445,\"state\":\"WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.park(LockSupport.java:376)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionNode.block(AbstractQueuedSynchronizer.java:520)\",\"java.util.concurrent.ForkJoinPool.unmanagedBlock(ForkJoinPool.java:3797)\",\"java.util.concurrent.ForkJoinPool.managedBlock(ForkJoinPool.java:3738)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1752)\",\"java.util.concurrent.LinkedBlockingQueue.take(LinkedBlockingQueue.java:435)\",\"java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1174)\",\"java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1234)\",\"java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:650)\",\"java.lang.Thread.run(Thread.java:1572)\"]}\n10-17 19:14:10.660  5016  5058 E TripoderStartup: {\"thread\":\"WM.task-2\",\"id\":53446,\"state\":\"WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.park(LockSupport.java:376)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionNode.block(AbstractQueuedSynchronizer.java:520)\",\"java.util.concurrent.ForkJoinPool.unmanagedBlock(ForkJoinPool.java:3797)\",\"java.util.concurrent.ForkJoinPool.managedBlock(ForkJoinPool.java:3738)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1752)\",\"java.util.concurrent.LinkedBlockingQueue.take(LinkedBlockingQueue.java:435)\",\"java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1174)\",\"java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1234)\",\"java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:650)\",\"java.lang.Thread.run(Thread.java:1572)\"]}\n10-17 19:14:10.661  5016  5058 E TripoderStartup: {\"thread\":\"WebRtcVolumeLevelLoggerThread\",\"id\":53441,\"state\":\"TIMED_WAITING\",\"frames\":[\"java.lang.Object.wait(Native Method)\",\"java.lang.Object.wait(Object.java:405)\",\"java.util.TimerThread.mainLoop(Timer.java:593)\",\"java.util.TimerThread.run(Timer.java:540)\"]}\n10-17 19:14:10.661  5016  5058 E TripoderStartup: {\"thread\":\"binder:5016_1\",\"id\":53411,\"state\":\"RUNNABLE\",\"frames\":[]}\n10-17 19:14:10.662  5016  5058 E TripoderStartup: {\"thread\":\"binder:5016_2\",\"id\":53412,\"state\":\"RUNNABLE\",\"frames\":[]}\n10-17 19:14:10.663  5016  5058 E TripoderStartup: {\"thread\":\"binder:5016_3\",\"id\":53414,\"state\":\"RUNNABLE\",\"frames\":[\"dalvik.system.VMStack.getThreadStackTrace(Native Method)\",\"java.lang.Thread.getStackTrace(Thread.java:2852)\",\"java.lang.Thread.getAllStackTraces(Thread.java:2919)\",\"dev.tripoder.runtime.RuntimeStartupDiagnostics.timeout(RuntimeStartupDiagnostics.java:43)\",\"dev.tripoder.runtime.RuntimeEngine.startApplication(RuntimeEngine.java:161)\",\"dev.tripoder.runtime.RuntimeProcessControl.handle(RuntimeProcessControl.java:21)\",\"dev.tripoder.runtime.RuntimeWire$Endpoint.onTransact(RuntimeWire.java:33)\",\"android.os.Binder.execTransactInternal(Binder.java:1371)\",\"android.os.Binder.execTransact(Binder.java:1330)\"]}\n10-17 19:14:10.663  5016  5058 E TripoderStartup: {\"thread\":\"binder:5016_4\",\"id\":53428,\"state\":\"RUNNABLE\",\"frames\":[]}\n10-17 19:14:10.664  5016  5058 E TripoderStartup: {\"thread\":\"binder:5016_5\",\"id\":53437,\"state\":\"RUNNABLE\",\"frames\":[]}\n10-17 19:14:10.665  5016  5058 E TripoderStartup: {\"thread\":\"cached-pool-1-thread-0\",\"id\":53432,\"state\":\"TIMED_WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:276)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.awaitNanos(AbstractQueuedSynchronizer.java:1803)\",\"java.util.concurrent.LinkedBlockingQueue.poll(LinkedBlockingQueue.java:460)\",\"java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1173)\",\"java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1234)\",\"java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:650)\",\"java.lang.Thread.run(Thread.java:1572)\",\"com.blankj.utilcode.util.ThreadUtils$UtilsThreadFactory$1.run(SourceFile:1)\"]}\n10-17 19:14:10.666  5016  5058 E TripoderStartup: {\"thread\":\"dex_preload_t\",\"id\":53413,\"state\":\"RUNNABLE\",\"frames\":[\"android.os.MessageQueue.nativePollOnce(Native Method)\",\"android.os.MessageQueue.nextLegacy(MessageQueue.java:924)\",\"android.os.MessageQueue.next(MessageQueue.java:826)\",\"android.os.Looper.loopOnce(Looper.java:248)\",\"android.os.Looper.loop(Looper.java:419)\",\"android.os.HandlerThread.run(HandlerThread.java:139)\"]}\n10-17 19:14:10.668  5016  5058 E TripoderStartup: {\"thread\":\"guest-preferences\",\"id\":53436,\"state\":\"WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.park(LockSupport.java:376)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionNode.block(AbstractQueuedSynchronizer.java:520)\",\"java.util.concurrent.ForkJoinPool.unmanagedBlock(ForkJoinPool.java:3797)\",\"java.util.concurrent.ForkJoinPool.managedBlock(ForkJoinPool.java:3738)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1752)\",\"java.util.concurrent.LinkedBlockingQueue.take(LinkedBlockingQueue.java:435)\",\"java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1174)\",\"java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1234)\",\"java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:650)\",\"java.lang.Thread.run(Thread.java:1572)\"]}\n10-17 19:14:10.669  5016  5058 E TripoderStartup: {\"thread\":\"kotlinx.coroutines.DefaultExecutor\",\"id\":53463,\"state\":\"TIMED_WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:276)\",\"kotlinx.coroutines.DefaultExecutor.run(SourceFile:174)\",\"java.lang.Thread.run(Thread.java:1572)\"]}\n10-17 19:14:10.671  5016  5058 E TripoderStartup: {\"thread\":\"pool-6-thread-1\",\"id\":53444,\"state\":\"WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.park(LockSupport.java:376)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionNode.block(AbstractQueuedSynchronizer.java:520)\",\"java.util.concurrent.ForkJoinPool.unmanagedBlock(ForkJoinPool.java:3797)\",\"java.util.concurrent.ForkJoinPool.managedBlock(ForkJoinPool.java:3738)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1752)\",\"java.util.concurrent.LinkedBlockingQueue.take(LinkedBlockingQueue.java:435)\",\"java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1174)\",\"java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1234)\",\"java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:650)\",\"java.lang.Thread.run(Thread.java:1572)\"]}\n10-17 19:14:10.673  5016  5058 E TripoderStartup: {\"thread\":\"woa-cpool-3-thread-1\",\"id\":53464,\"state\":\"TIMED_WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:417)\",\"java.util.concurrent.LinkedTransferQueue$DualNode.await(LinkedTransferQueue.java:452)\",\"java.util.concurrent.SynchronousQueue$Transferer.xferLifo(SynchronousQueue.java:194)\",\"java.util.concurrent.SynchronousQueue.xfer(SynchronousQueue.java:235)\",\"java.util.concurrent.SynchronousQueue.poll(SynchronousQueue.java:338)\",\"java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1173)\",\"java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1234)\",\"java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:650)\",\"java.lang.Thread.run(Thread.java:1572)\"]}\n10-17 19:14:10.675  5016  5058 E TripoderStartup: {\"thread\":\"woa-fpool-1-thread-1\",\"id\":53451,\"state\":\"WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.park(LockSupport.java:376)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionNode.block(AbstractQueuedSynchronizer.java:520)\",\"java.util.concurrent.ForkJoinPool.unmanagedBlock(ForkJoinPool.java:3797)\",\"java.util.concurrent.ForkJoinPool.managedBlock(ForkJoinPool.java:3738)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1752)\",\"java.util.concurrent.LinkedBlockingQueue.take(LinkedBlockingQueue.java:435)\",\"java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1174)\",\"java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1234)\",\"java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:650)\",\"java.lang.Thread.run(Thread.java:1572)\"]}\n10-17 19:14:10.677  5016  5058 E TripoderStartup: {\"thread\":\"woa-fpool-1-thread-2\",\"id\":53452,\"state\":\"WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.park(LockSupport.java:376)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionNode.block(AbstractQueuedSynchronizer.java:520)\",\"java.util.concurrent.ForkJoinPool.unmanagedBlock(ForkJoinPool.java:3797)\",\"java.util.concurrent.ForkJoinPool.managedBlock(ForkJoinPool.java:3738)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1752)\",\"java.util.concurrent.LinkedBlockingQueue.take(LinkedBlockingQueue.java:435)\",\"java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1174)\",\"java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1234)\",\"java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:650)\",\"java.lang.Thread.run(Thread.java:1572)\"]}\n10-17 19:14:10.679  5016  5058 E TripoderStartup: {\"thread\":\"woa-fpool-1-thread-3\",\"id\":53453,\"state\":\"WAITING\",\"frames\":[\"jdk.internal.misc.Unsafe.park(Native Method)\",\"java.util.concurrent.locks.LockSupport.park(LockSupport.java:376)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionNode.block(AbstractQueuedSynchronizer.java:520)\",\"java.util.concurrent.ForkJoinPool.unmanagedBlock(ForkJoinPool.java:3797)\",\"java.util.concurrent.ForkJoinPool.managedBlock(ForkJoinPool.java:3738)\",\"java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1752)\",\"java.util.concurrent.LinkedBlockingQueue.take(LinkedBlockingQueue.java:435)\",\"java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1174)\",\"java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1234)\",\"java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:650)\",\"java.lang.Thread.run(Thread.java:1572)\"]}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10402",
+        "-T",
+        "10-17 19:13:31.765"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "fullP5Accepted": false,
+  "businessScenariosVerified": false,
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "deviceLogStart": "10-17 19:13:31.765",
+  "ownedUid": 10400,
+  "ownedUids": {
+    "dev.tripoder.engine": 10400,
+    "dev.tripoder.controltest": 10402
+  },
+  "targetApkSha256": "71df658765efeaa59e81733046b66ca7e94430eece14b9f996afa7c1b15e3ff7",
+  "passed": false,
+  "error": "DEVICE_ASSERTIONS_FAILED:target-wps",
+  "nativeFatalSignalObserved": false,
+  "javaFatalExceptionObserved": false,
+  "selfHookInstallationSamples": [
+    {
+      "pid": 5016,
+      "bindings": 2271,
+      "durationNs": 11895652391
+    }
+  ],
+  "ownedCrashStatus": {
+    "dev.tripoder.controltest": {
+      "nativeFatalSignalObserved": false,
+      "javaFatalExceptionObserved": false
+    }
+  },
+  "finishedAtUtc": "2026-10-17T11:14:11.477126+00:00"
+}

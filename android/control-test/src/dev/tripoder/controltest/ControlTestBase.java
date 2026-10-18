@@ -29,7 +29,9 @@ abstract class ControlTestBase extends Instrumentation {
         app.registerActivityLifecycleCallbacks(observer);
         File signal=new File(getTargetContext().getExternalFilesDir(null),"launch-workbench-"+run+".json");
         try(var output=new FileOutputStream(signal)){output.write(new JSONObject().put("runId",run).put("component","dev.tripoder.engine/dev.tripoder.hooklab.WorkbenchActivity").toString().getBytes(StandardCharsets.UTF_8));output.getFD().sync();}
-        Object application=getTargetContext().getApplicationContext();var field=application.getClass().getDeclaredField("engine");field.setAccessible(true);Object engine=field.get(application);
+        Object application=getTargetContext().getApplicationContext();var field=application.getClass().getDeclaredField("engine");field.setAccessible(true);
+        long initDeadline=SystemClock.elapsedRealtime()+5000;while(field.get(application)==null){if(SystemClock.elapsedRealtime()>initDeadline)throw new IllegalStateException("APPLICATION_INITIALIZATION_TIMEOUT");SystemClock.sleep(10);}
+        Object engine=field.get(application);
         var ready=engine.getClass().getDeclaredMethod("ready");ready.setAccessible(true);long deadline=SystemClock.elapsedRealtime()+25000;
         try{
             while(!(Boolean)ready.invoke(engine)&&SystemClock.elapsedRealtime()<deadline)SystemClock.sleep(25);
@@ -44,12 +46,33 @@ abstract class ControlTestBase extends Instrumentation {
     }catch(Throwable error){try{report.put("error",android.util.Log.getStackTraceString(error));}catch(Exception ignored){}}
     finally{
         for(Link link:links)if(link.bound)getTargetContext().unbindService(link);
-        Bundle result=new Bundle();try{report.put("passed",passed).put("checks",checks).put("fullP5Accepted",false).put("finishedAt",System.currentTimeMillis());File file=new File(getTargetContext().getExternalFilesDir(null),"result-"+run+".json");try(var stream=new FileOutputStream(file)){stream.write(report.toString(2).getBytes(StandardCharsets.UTF_8));stream.getFD().sync();}result.putString("result",report.toString());}catch(Exception error){passed=false;result.putString("error",error.toString());}finish(passed?Activity.RESULT_OK:Activity.RESULT_CANCELED,result);
+        Bundle result=new Bundle();try{
+            report.put("passed",passed).put("checks",checks).put("fullP5Accepted",false).put("finishedAt",System.currentTimeMillis());
+            File file=new File(getTargetContext().getExternalFilesDir(null),"result-"+run+".json");byte[] bytes=report.toString(2).getBytes(StandardCharsets.UTF_8);
+            try(var stream=new FileOutputStream(file)){stream.write(bytes);stream.getFD().sync();}
+            // Full evidence belongs in the fsynced artifact. Binder carries only
+            // the receipt, so large real-app inventories cannot crash teardown.
+            result.putString("runId",run);result.putString("resultFile",file.getName());result.putBoolean("passed",passed);result.putInt("checks",checks.length());
+            result.putString("resultSha256",HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(bytes)));
+        }catch(Exception error){passed=false;result.putString("error",error.toString());}finish(passed?Activity.RESULT_OK:Activity.RESULT_CANCELED,result);
     }}
     IBinder bind(String pkg,String service)throws Exception{Link link=new Link();links.add(link);link.bound=getTargetContext().bindService(new Intent().setComponent(new ComponentName(pkg,service)),link,Context.BIND_AUTO_CREATE);if(!link.bound||!link.ready.await(15,TimeUnit.SECONDS)||link.peer==null)throw new IllegalStateException("TEST_BIND_FAILED:"+pkg);return link.peer;}
     IBinder engine()throws Exception{return bind("dev.tripoder.engine","dev.tripoder.runtime.RuntimeControllerService");}
     Bundle connect(IBinder entry,IBinder life)throws Exception{Bundle input=new Bundle();input.putBinder("owner",life);return ControlWire.call(entry,ControlWire.CONNECT,input);}
-    ControlWire.Owner life()throws Exception{return new ControlWire.Owner(getTargetContext().getPackageManager().getApplicationInfo("dev.tripoder.engine",0).uid);}
+    ControlWire.Owner life(){return new ControlWire.Owner();}
+    /** A launch returns once the guest Application is ready and its root entry issued; tests that need the worker evidence read it here. */
+    Bundle awaitWorker(IBinder peer,String project,Bundle prepared)throws Exception{
+        String generation=prepared.getString("generation");long end=SystemClock.elapsedRealtime()+40000;
+        do{
+            JSONArray list=new JSONArray(execute(peer,"hookProcesses","project",project).getString("processes"));
+            for(int i=0;i<list.length();i++){JSONObject row=list.getJSONObject(i);if(generation.equals(row.getString("processGeneration"))&&row.getInt("pid")>0){
+                Bundle out=new Bundle(prepared);out.putInt("pid",row.getInt("pid"));// /proc is hidden from other apps; the worker wire itself rejects any peer whose uid differs (WORKER_UID_MISMATCH).
+                out.putInt("uid",android.os.Process.myUid());out.putString("state","RUNNING");return out;
+            }}
+            SystemClock.sleep(100);
+        }while(SystemClock.elapsedRealtime()<end);
+        throw new IllegalStateException("WORKER_NOT_RUNNING_AFTER_PREPARE");
+    }
     Bundle execute(IBinder peer,String command,String...pairs)throws Exception{return ControlWire.call(peer,ControlWire.EXECUTE,ControlWire.request(command,pairs));}
     void check(String name,boolean passed,Object value)throws Exception{
         checks.put(new JSONObject().put("name",name).put("passed",passed).put("observed",value));

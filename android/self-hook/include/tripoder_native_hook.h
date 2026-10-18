@@ -6,9 +6,11 @@ enum tp_native_status {TP_NATIVE_OK,TP_NATIVE_ARGUMENT,TP_NATIVE_STALE,TP_NATIVE
     TP_NATIVE_CONFLICT,TP_NATIVE_PREIMAGE,TP_NATIVE_PARK,TP_NATIVE_BUSY};
 /* Same-thread operation result. A failed operation did not publish; failures
  * after the first committed page terminate instead of returning this record. */
-struct tp_native_error {enum tp_native_status status;const char *stage;int system_error,tid;unsigned handle;uintptr_t pc;};
+struct tp_native_error {enum tp_native_status status;const char *stage;int system_error,planner_status,tid;unsigned handle;uintptr_t pc;};
 void tp_native_last_error(struct tp_native_error *);
 const char *tp_native_status_name(enum tp_native_status);
+struct tp_native_resources {unsigned issued,prepared,active,retired,failed,in_flight,inbound_used,retained_images;};
+bool tp_native_resources(struct tp_native_resources *);
 typedef bool (*tp_native_callback)(void *context,uint64_t invocation,const struct tp_scalar_value *arguments,
     unsigned count,int incoming_errno,struct tp_scalar_result *result);
 /* One immutable activation. Callback/context survive until process exit.
@@ -37,5 +39,7 @@ bool tp_native_report(unsigned handle,struct tp_native_report *);
 #ifdef TP_SELF_HOOK_TESTING
 bool tp_native_test_gate(unsigned handle,unsigned value);
 unsigned tp_native_test_gate_state(unsigned handle);
+void tp_native_test_fail_prepare(unsigned stage);
+bool tp_native_test_commit_witness(int fd,const char *text,unsigned length);
 #endif
 #endif

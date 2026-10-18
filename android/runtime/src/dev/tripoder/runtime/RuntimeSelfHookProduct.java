@@ -46,6 +46,7 @@ final class RuntimeSelfHookProduct {
         plan.put(NOTIFICATIONS,()->value.manager(RuntimeSelfHookManagerPolicy.Family.NOTIFICATIONS));
         plan.put(SHORTCUTS,()->value.manager(RuntimeSelfHookManagerPolicy.Family.SHORTCUTS));
         plan.put(JOBS,()->{value.manager(RuntimeSelfHookManagerPolicy.Family.JOB_SCHEDULER);RuntimeSelfHookJobs.install(value.managed);});
+        plan.put(PENDING_INTENTS,()->RuntimePendingIntents.install(value.managed));
         plan.put(UI_EFFECTS,()->RuntimeSelfHookSystemEdges.ui(value.managed));
         plan.put(FAILURE_DIAGNOSTICS,()->RuntimeSelfHookSystemEdges.failures(value.managed));
         plan.put(HOOK_CONTROL,()->engine.hooks.installSelfHookControl(engine.hooks.selfHookPlatform()));
@@ -59,6 +60,8 @@ final class RuntimeSelfHookProduct {
         long start=android.os.SystemClock.elapsedRealtimeNanos();
         RuntimeSelfHookBootstrap.PROCESS.install(measured,()->{value.managed.requirePreparedConsumed();RuntimeBridge.selfHookReady();});
         android.util.Log.i("TripoderSelfHook","READY:"+RuntimeSelfHookBootstrap.PROCESS.status()+":bindings="+value.managed.installedCount()+":ns="+(android.os.SystemClock.elapsedRealtimeNanos()-start));
+        android.util.Log.i("TripoderSelfHook","PREPARATION_METRICS:"+dev.tripoder.selfhook.OriginalMethodStorage.preparationMetrics());
+        android.util.Log.i("TripoderSelfHook","MANAGED_PREPARATION_METRICS:"+ManagedHook.preparationMetrics());
     }
     private void manager(RuntimeSelfHookManagerPolicy.Family family)throws Exception{
         RuntimeSelfHookManagers.install(family,FixedManagerInventory.methods(family.ordinal()).toArray(new Method[0]),adapters);

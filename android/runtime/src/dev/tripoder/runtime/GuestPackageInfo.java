@@ -7,9 +7,10 @@ import java.util.function.IntFunction;
 
 /** A defensive projection of one verified artifact and its logical install receipt. */
 final class GuestPackageInfo {
-    static PackageInfo get(RuntimeEngine engine,String name,long flags){
-        if(!engine.packageName.equals(name))throw new UnsupportedOperationException("OTHER_PACKAGE_QUERY_UNSUPPORTED:"+name);
-        long supported=PackageManager.GET_ACTIVITIES|PackageManager.GET_RECEIVERS|PackageManager.GET_SERVICES|PackageManager.GET_PROVIDERS|PackageManager.GET_META_DATA|PackageManager.GET_SIGNATURES|PackageManager.GET_SIGNING_CERTIFICATES|PackageManager.GET_URI_PERMISSION_PATTERNS|PackageManager.MATCH_DISABLED_COMPONENTS|PackageManager.MATCH_DIRECT_BOOT_AWARE|PackageManager.MATCH_DIRECT_BOOT_UNAWARE;
+    /** Only this guest package is visible; any other name is absent, exactly as Android reports a package the caller cannot see. */
+    static PackageInfo get(RuntimeEngine engine,String name,long flags)throws PackageManager.NameNotFoundException{
+        if(!engine.packageName.equals(name))throw new PackageManager.NameNotFoundException(String.valueOf(name));
+        long supported=PackageManager.GET_CONFIGURATIONS|PackageManager.GET_ACTIVITIES|PackageManager.GET_RECEIVERS|PackageManager.GET_SERVICES|PackageManager.GET_PROVIDERS|PackageManager.GET_META_DATA|PackageManager.GET_SIGNATURES|PackageManager.GET_SIGNING_CERTIFICATES|PackageManager.GET_URI_PERMISSION_PATTERNS|PackageManager.MATCH_DISABLED_COMPONENTS|PackageManager.MATCH_DIRECT_BOOT_AWARE|PackageManager.MATCH_DIRECT_BOOT_UNAWARE;
         if((flags&~supported)!=0)throw new UnsupportedOperationException("PACKAGE_INFO_FLAGS_UNSUPPORTED:0x"+Long.toHexString(flags));
         // Wall-clock adjustment may make an update timestamp earlier than first install.
         if(engine.firstInstallTime<=0||engine.lastUpdateTime<=0)throw new UnsupportedOperationException("INSTALL_HISTORY_UNAVAILABLE");
@@ -22,6 +23,7 @@ final class GuestPackageInfo {
         result.services=(flags&PackageManager.GET_SERVICES)==0?null:components(result.services,flags,engine,ServiceInfo[]::new);
         result.providers=(flags&PackageManager.GET_PROVIDERS)==0?null:components(result.providers,flags,engine,ProviderInfo[]::new);
         if(result.providers!=null&&(flags&PackageManager.GET_URI_PERMISSION_PATTERNS)==0)for(ProviderInfo provider:result.providers)provider.uriPermissionPatterns=null;
+        if((flags&PackageManager.GET_CONFIGURATIONS)==0){result.configPreferences=null;result.reqFeatures=null;}
         result.permissions=null;result.requestedPermissions=null;result.requestedPermissionsFlags=null;
         if((flags&PackageManager.GET_SIGNATURES)==0)result.signatures=null;
         if((flags&PackageManager.GET_SIGNING_CERTIFICATES)==0)result.signingInfo=null;

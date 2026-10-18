@@ -112,3 +112,21 @@ authority 在已认证的 space 内完成声明查询后，没有匹配 Provider
 权威分配进程槽位时生成一个单调时钟截止点：分配时刻加30秒。该值随已认证bootstrap传到RuntimeEngine；监督器watchdog、构造、Application完成和Provider就绪等待都使用剩余时间，不在内部层重新创建8秒或10秒计时。固定适配先于所有客体代码，冷依赖进程的安装时间也计入原预算。真实初始化循环仍由权威等待图拒绝；超时不能证明无副作用，现有UNKNOWN/死亡回执边界不变。已经READY的Future不因启动截止点过期而失效。
 
 旧8秒Provider等待在H19实机循环场景提前超时，原失败保留在`self-hook-product-2026-10-16/providers-contract`；统一截止点的真机结果另列，不把主机计时合同通过当成完成。
+
+
+## 安装时 authority 索引（2026-10-18）
+
+`install_provider_authorities` 在安装发布事务中提交，以空间和 authority 为唯一键，外键绑定安装代次；升级和卸载同步清理旧映射。它只确定候选 APK，不能授权客体执行。解析先认证 source 并查索引，再在 broker 锁外完整校验命中 APK，回锁后重新认证及核对代次，最后检查实际 enabled/exported/process。没有匹配时返回不存在；过期代次明确失败，不重试其他安装或查询宿主。
+
+schema 32 升级使用已提交数据库摘要认证描述符来建立索引；失败整笔回滚。新安装、升级、卸载不需要后台重建，无关安装不参与 Provider 获取的完整制品校验。`warmArtifacts` 全空间预热已删除。测试与限制见启动性能方案第 8 节。
+
+
+当前验收差异：本轮独立 `provider-index` 35 项通过，Java/Native Hook 105 项通过；完整 `providers` 在 `provider-attach-does-not-expose-appops-to-guest` 失败。现有 `GuestContext` 的未建模服务透传与本文件早期 AppOps attach-only 契约不一致，仍需统一策略及验收；本轮没有改变该策略或删除失败断言。
+
+
+## AppOps 契约恢复（2026-10-18 续实施）
+
+根因是 GuestContext 在显式服务分发之后，对所有未建模服务调用物理 Context，绕过了原 attach-only 契约。现在删除该通用透传分支：只有明确列出的服务能取得平台能力，其余报 SYSTEM_SERVICE_UNSUPPORTED。RuntimeProviderAttachContext 仅在受控平台 attachInfo 中提供一次 AppOps；客体 onCreate、后续查询和私有委托对象仍进入同一个 GuestContext 拒绝边界。保留原失败断言，新增策略的实际验收见启动性能方案本轮记录。
+
+
+本轮最终 `contracts-providers-07` 已通过 478 项，先前 AppOps 差异已闭环。后续完整产品构建受并发工作台修改影响的限制另见启动性能方案第 9 节；不能把专项目标验收扩展为当前整包验收。

@@ -11,6 +11,9 @@ public final class HelperDexHostTest {
         Path output=Path.of(args[0]);Files.createDirectories(output);int checks=0;
         List<String> mixed=Arrays.asList("I","J","D","Ljava/lang/Object;","F","J","D","[I","I","J","D","F","Ljava/lang/String;","I","J","D","F","Ljava/lang/Object;");
         String[] results={"V","Z","B","S","C","I","J","F","D","Ljava/lang/Object;","[I"};
+        java.util.ArrayList<AbiSignature> prepared=new java.util.ArrayList<>();
+        for(String result:results)for(boolean instance:new boolean[]{false,true})prepared.add(new AbiSignature(result,mixed,instance));
+        HelperDex.prepareTemplates(prepared);
         for(int i=0;i<results.length;i++)for(boolean instance:new boolean[]{false,true}){
             int ordinal=i*2+(instance?1:0),slot=ordinal==19?63:ordinal==20?64:ordinal==21?HookCapacity.MAX_ENTRIES-1:ordinal;
             AbiSignature abi=new AbiSignature(results[i],mixed,instance);byte[] bytes=HelperDex.create(abi,slot);DexFile dex=new DexFile(bytes);
@@ -34,6 +37,8 @@ public final class HelperDexHostTest {
                 if(!Arrays.equals(batch[i],expected))throw new AssertionError("TEMPLATE_VS_FULL_ENCODING:"+slot);checks++;
                 DexFile parsed=new DexFile(batch[i]);if(!parsed.definitions.get(0).method.owner.equals("L"+HelperDex.className(slot).replace('.','/')+";"))throw new AssertionError("TEMPLATE_CLASS_IDENTITY");checks++;
                 Files.write(output.resolve("cached-"+slot+".dex"),batch[i]);
+                batch[i][100]^=1;
+                if(!Arrays.equals(HelperDex.createBatch(List.of(cached),slot)[0],expected))throw new AssertionError("CALLER_CANNOT_MUTATE_SHARED_TEMPLATE");checks++;
             }
         }
         System.out.println("{\"checks\":"+checks+",\"passed\":true,\"dexFiles\":36}");

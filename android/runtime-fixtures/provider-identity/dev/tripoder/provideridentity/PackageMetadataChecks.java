@@ -45,7 +45,9 @@ final class PackageMetadataChecks {
             check("caller-paths-cannot-select-xml-source", ownedXml(pm.getXml(pkg, resource, forged)));
             forged.packageName = "dev.tripoder.notinstalled";
             check("xml-rejects-mismatched-application-identity", rejected(() -> pm.getXml(pkg, resource, forged), "XML_APPLICATION_IDENTITY_MISMATCH"));
-            check("xml-other-package-never-delegates", rejected(() -> pm.getXml("dev.tripoder.notinstalled", resource, null), "OTHER_PACKAGE_QUERY_UNSUPPORTED"));
+            // The package world resolves this package as absent before resource access.
+            // PackageManager.getXml represents a missing package/resource with null.
+            check("xml-absent-package-is-null-without-host-resolution", pm.getXml("dev.tripoder.notinstalled", resource, null) == null);
             check("application-unknown-long-flags-not-truncated", rejected(() -> pm.getApplicationInfo(pkg, PackageManager.ApplicationInfoFlags.of(1L << 40)), "APPLICATION_INFO_FLAGS_UNSUPPORTED:0x10000000000"));
             ApplicationInfo contextInfo = context.getApplicationInfo();
             contextInfo.metaData.putString("owned.label", "context-tampered");

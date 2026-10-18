@@ -18,7 +18,7 @@ final class RuntimeControllerInstall {
             sources.add(new ApkStore.Source(names.get(i),hashes.get(i),()->new ParcelFileDescriptor.AutoCloseInputStream(descriptor)));
         }
         // All input validation finishes before admission. Endpoint closes every received FD, also on error.
-        ApkStore.BundleInstall install=broker.apks.installForCaller(input.getString("operation"),"trusted-workbench",input.getString("space"),sources,input.getString("expectedGeneration"),ApkStore.NO_FAULT);
+        ApkStore.BundleInstall install=broker.apks.installForCaller(input.getString("operation"),ControllerTrust.OPERATIONS,input.getString("space"),sources,input.getString("expectedGeneration"),ApkStore.NO_FAULT);
         Bundle out=new Bundle();out.putString("space",install.space);out.putString("package",install.info.packageName);out.putString("generation",install.generation);
         out.putString("sha256",install.sha256);out.putString("descriptorSha",install.artifacts.descriptorSha);out.putLong("version",install.artifacts.versionCode);return out;
     }

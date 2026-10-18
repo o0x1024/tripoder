@@ -18,7 +18,7 @@ struct entry {
     struct tp_art_method_view *target,*backup,*helper;
     jobject roots[67];unsigned root_count,caller_count;
     _Atomic unsigned transitions;
-    uintptr_t callers[64],relay;
+    uintptr_t callers[64],relay,prepared_quick;
     char shorty[34];
     uint32_t semantic_flags,dex_index,method_index;
     bool instance,attempted,native;
@@ -38,11 +38,20 @@ static bool keep(JNIEnv *env,struct entry *e,jobject value){
     if(!value||e->root_count==67)return false;
     jobject ref=(*env)->NewGlobalRef(env,value);if(!ref)return false;e->roots[e->root_count++]=ref;return true;
 }
-static bool valid(struct entry *e){
-    return tp_art_storage_read_root(&e->target->owner)==tp_art_storage_read_root(&e->backup->owner)&&e->target->dex_index==e->dex_index&&
-        (e->target->indices&0xffff)==e->method_index&&(e->native||e->target->data==e->backup->data)&&
-        (e->target->flags&(e->native?0x001bffffu:0x0003ffffu))==e->semantic_flags&&((e->target->flags&0x100)!=0)==e->native;
+struct identity_snapshot {
+    uintptr_t target_owner,backup_owner,target_data,backup_data;
+    uint32_t flags,dex_index,method_index;unsigned mismatch;
+};
+static bool valid_snapshot(struct entry *e,struct identity_snapshot *out){
+    struct identity_snapshot value={.target_owner=tp_art_storage_read_root(&e->target->owner),
+        .backup_owner=tp_art_storage_read_root(&e->backup->owner),.target_data=e->target->data,.backup_data=e->backup->data,
+        .flags=e->target->flags,.dex_index=e->target->dex_index,.method_index=e->target->indices&0xffff};
+    value.mismatch=value.target_owner!=value.backup_owner?1:value.dex_index!=e->dex_index?2:
+        value.method_index!=e->method_index?3:(!e->native&&value.target_data!=value.backup_data)?4:
+        (value.flags&(e->native?0x001bffffu:0x0003ffffu))!=e->semantic_flags?5:((value.flags&0x100)!=0)!=e->native?6:0;
+    if(out)*out=value;return value.mismatch==0;
 }
+static bool valid(struct entry *e){return valid_snapshot(e,NULL);}
 /* Called under ManagedHook.class serialization. Binding does not claim policy. */
 static bool bind_process(JNIEnv *env){
     if(atomic_load_explicit(&bound,memory_order_acquire))return true;
@@ -78,20 +87,21 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_prepareNative(
     memcpy(e->shorty,text,(size_t)length+1);(*env)->ReleaseStringUTFChars(env,shorty,text);
     for(jsize i=0;i<length;i++)if(!strchr(i?"ZBSCIJFDL":"VZBSCIJFDL",e->shorty[i]))return JNI_FALSE;
     e->stage="METHOD_IDENTITIES";
-    struct tp_art_method_view before,h,backup;
-    uintptr_t target_address,helper_address;
-    if(!tp_art_method_observe(env,target,&target_address,&before)||!tp_art_method_observe(env,helper,&helper_address,&h))return JNI_FALSE;
+    /* JNI identities and live mappings are checked before the pause. All
+     * metadata preimages, backup roots, and helper publication are then checked
+     * in ONE JIT/mutator snapshot instead of four separate SuspendAll cycles.
+     * Every Method/Class/loader remains rooted throughout this interval. */
+    uintptr_t target_address=tp_art_method_address(env,target),helper_address=tp_art_method_address(env,helper);
+    if(!target_address||!helper_address)return JNI_FALSE;
     e->target=(void *)target_address;e->helper=(void *)helper_address;
     e->backup=tp_art_backup_lookup(e->target);
-    if(!e->target||!e->helper||!e->backup||e->target==e->helper||
-        !tp_art_backup_snapshot(e->target,&backup)||(before.flags&0x82000400)||(h.flags&0x10508)!=8||!before.data||!h.data)return JNI_FALSE;
-    e->instance=(before.flags&8)==0;e->native=(before.flags&0x100)!=0;
+    if(!e->backup||e->target==e->helper)return JNI_FALSE;
     if(!keep(env,e,target)||!keep(env,e,helper)||!keep(env,e,owner))return JNI_FALSE;
     for(jsize i=0;i<count;i++){
-        jobject caller=(*env)->GetObjectArrayElement(env,callers,i);struct tp_art_method_view v;
-        uintptr_t address=0;bool observed=caller&&tp_art_method_observe(env,caller,&address,&v);
+        jobject caller=(*env)->GetObjectArrayElement(env,callers,i);
+        uintptr_t address=caller?tp_art_method_address(env,caller):0;
         if(!address||address==(uintptr_t)e->target||address==(uintptr_t)e->helper||
-            !observed||(v.flags&0x500)||!keep(env,e,caller))return JNI_FALSE;
+            !keep(env,e,caller))return JNI_FALSE;
         for(jsize j=0;j<i;j++)if(e->callers[j]==address)return JNI_FALSE;
         e->callers[i]=address;(*env)->DeleteLocalRef(env,caller);
     }
@@ -105,16 +115,119 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_prepareNative(
     if(mprotect(page,4096,PROT_READ|PROT_EXEC|PROT_BTI)!=0){munmap(page,4096);return JNI_FALSE;}
     e->relay=(uintptr_t)page;e->stage="HELPER_PREPARATION";
     char jit=0,mutators=0;art.managed.jit_suspend(&jit);art.managed.access.suspend(&mutators,"tripoder-managed-helper",false);
-    e->semantic_flags=e->target->flags&(e->native?0x001bffffu:0x0003ffffu);e->dex_index=e->target->dex_index;e->method_index=e->target->indices&0xffff;
-    e->helper->flags=(e->helper->flags&~UINT32_C(0x00900000))|UINT32_C(0x02000000);e->helper->quick=bridge;
-    bool accepted=valid(e);
+    struct tp_art_method_view before=*e->target,h=*e->helper;
+    bool accepted=tp_art_backup_rooted_locked(e->target,e->backup)&&!(before.flags&0x82000400)&&
+        (h.flags&0x10508)==8&&before.data&&h.data;
+    for(unsigned i=0;i<e->caller_count;i++)if(((struct tp_art_method_view *)e->callers[i])->flags&0x500)accepted=false;
+    if(accepted){
+        e->instance=(before.flags&8)==0;e->native=(before.flags&0x100)!=0;
+        e->semantic_flags=before.flags&(e->native?0x001bffffu:0x0003ffffu);e->dex_index=before.dex_index;e->method_index=before.indices&0xffff;
+        e->prepared_quick=before.quick;
+        accepted=valid(e);
+        if(accepted){e->helper->flags=(h.flags&~UINT32_C(0x00900000))|UINT32_C(0x02000000);e->helper->quick=bridge;}
+    }
     art.managed.access.resume(&mutators);art.managed.jit_resume(&jit);
-    if(!accepted)return JNI_FALSE;
+    if(!accepted){munmap(page,4096);e->relay=0;return JNI_FALSE;}
 
     atomic_store(&e->desired_entry,e->native?art.managed.jni_bridge:bridge);
     e->writer_policy=(struct tp_entry_owner_policy){.method=(uintptr_t)e->target,.owner=e,
         .operation_generation=(uint64_t)index+1,.desired_entry=&e->desired_entry};
     atomic_store_explicit(&e->ready,true,memory_order_release);e->stage="PREPARED";return JNI_TRUE;
+}
+JNIEXPORT jint JNICALL Java_dev_tripoder_selfhook_ManagedHook_prepareBatchNative(JNIEnv *env,jclass cls,jint first,
+    jobjectArray targets,jobjectArray helpers,jobjectArray owners,jobjectArray shorties,jobjectArray callerArrays){
+    (void)cls;if(!targets||!helpers||!owners||!shorties||!callerArrays||first<0)return 0;
+    jsize count=(*env)->GetArrayLength(env,targets);
+    if(count<1||first+count>TP_MANAGED_ENTRY_LIMIT
+        ||(*env)->GetArrayLength(env,helpers)!=count||(*env)->GetArrayLength(env,owners)!=count
+        ||(*env)->GetArrayLength(env,shorties)!=count||(*env)->GetArrayLength(env,callerArrays)!=count)return first;
+    if(!bind_process(env)){entries[first].stage="ART_BIND";return first;}
+    for(jsize k=0;k<count;k++){
+        jint index=first+k;struct entry *e=&entries[index];
+        if(e->attempted)return index;
+        e->attempted=true;e->stage="METHOD_IDENTITIES";
+        jobject target=(*env)->GetObjectArrayElement(env,targets,k);
+        jobject helper=(*env)->GetObjectArrayElement(env,helpers,k);
+        jclass owner=(*env)->GetObjectArrayElement(env,owners,k);
+        jstring shorty=(*env)->GetObjectArrayElement(env,shorties,k);
+        jobjectArray callers=(*env)->GetObjectArrayElement(env,callerArrays,k);
+        if(!target||!helper||!owner||!shorty||!callers)return index;
+        jsize c_count=(*env)->GetArrayLength(env,callers),length=(*env)->GetStringUTFLength(env,shorty);
+        if(c_count>64||length<1||length>33)return index;
+        const char *text=(*env)->GetStringUTFChars(env,shorty,NULL);if(!text)return index;
+        memcpy(e->shorty,text,(size_t)length+1);(*env)->ReleaseStringUTFChars(env,shorty,text);
+        for(jsize i=0;i<length;i++)if(!strchr(i?"ZBSCIJFDL":"VZBSCIJFDL",e->shorty[i]))return index;
+        uintptr_t target_address=tp_art_method_address(env,target),helper_address=tp_art_method_address(env,helper);
+        if(!target_address||!helper_address)return index;
+        e->target=(void *)target_address;e->helper=(void *)helper_address;
+        e->backup=tp_art_backup_lookup_slot((unsigned)index,e->target);
+        if(!e->backup||e->target==e->helper)return index;
+        if(!keep(env,e,target)||!keep(env,e,helper)||!keep(env,e,owner))return index;
+        for(jsize i=0;i<c_count;i++){
+            jobject caller=(*env)->GetObjectArrayElement(env,callers,i);
+            uintptr_t address=caller?tp_art_method_address(env,caller):0;
+            if(!address||address==(uintptr_t)e->target||address==(uintptr_t)e->helper||!keep(env,e,caller))return index;
+            for(jsize j=0;j<i;j++)if(e->callers[j]==address)return index;
+            e->callers[i]=address;(*env)->DeleteLocalRef(env,caller);
+        }
+        e->caller_count=(unsigned)c_count;e->stage="RELAY_RX";
+        (*env)->DeleteLocalRef(env,target);(*env)->DeleteLocalRef(env,helper);
+        (*env)->DeleteLocalRef(env,owner);(*env)->DeleteLocalRef(env,shorty);(*env)->DeleteLocalRef(env,callers);
+    }
+    uintptr_t bridge=art.managed.interpreter_bridge;
+    for(jsize base=0;base<count;base+=16){
+        jsize chunk=count-base>16?16:count-base;
+        size_t bytes=(size_t)chunk*4096;
+        uint32_t *slab=mmap(NULL,bytes,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANONYMOUS,-1,0);
+        if(slab==MAP_FAILED)return first+base;
+        for(size_t i=0;i<(size_t)chunk*1024;i++)slab[i]=TP_A64_NOP;
+        for(jsize j=0;j<chunk;j++){
+            struct entry *e=&entries[first+base+j];
+            uint32_t *page=slab+(size_t)j*1024;
+            page[0]=TP_A64_BTI_C;page[1]=0x580000a0;page[2]=0x580000d0;page[3]=0xd61f0200;
+            uintptr_t method=(uintptr_t)e->helper;
+            memcpy(page+6,&method,8);memcpy(page+8,&bridge,8);
+            e->relay=(uintptr_t)page;e->stage="HELPER_PREPARATION";
+        }
+        __builtin___clear_cache((char *)slab,(char *)slab+bytes);
+        if(mprotect(slab,bytes,PROT_READ|PROT_EXEC|PROT_BTI)!=0){
+            for(jsize j=0;j<chunk;j++)entries[first+base+j].relay=0;
+            munmap(slab,bytes);return first+base;
+        }
+    }
+    char jit=0,mutators=0;art.managed.jit_suspend(&jit);art.managed.access.suspend(&mutators,"tripoder-managed-helper",false);
+    jint failed=-1;
+    for(jsize k=0;k<count;k++){
+        jint index=first+k;struct entry *e=&entries[index];
+        struct tp_art_method_view before=*e->target,h=*e->helper;
+        bool accepted=tp_art_backup_rooted_slot_locked((unsigned)index,e->target,e->backup)&&!(before.flags&0x82000400)&&
+            (h.flags&0x10508)==8&&before.data&&h.data;
+        for(unsigned i=0;i<e->caller_count;i++)if(((struct tp_art_method_view *)e->callers[i])->flags&0x500)accepted=false;
+        if(accepted){
+            e->instance=(before.flags&8)==0;e->native=(before.flags&0x100)!=0;
+            e->semantic_flags=before.flags&(e->native?0x001bffffu:0x0003ffffu);e->dex_index=before.dex_index;e->method_index=before.indices&0xffff;
+            e->prepared_quick=before.quick;
+            accepted=valid(e);
+            if(accepted){e->helper->flags=(h.flags&~UINT32_C(0x00900000))|UINT32_C(0x02000000);e->helper->quick=bridge;}
+        }
+        if(!accepted){failed=index;break;}
+    }
+    art.managed.access.resume(&mutators);art.managed.jit_resume(&jit);
+    if(failed>=0){
+        for(jsize k=0;k<count;k++){
+            struct entry *e=&entries[first+k];
+            if(e->relay){munmap((void *)e->relay,4096);e->relay=0;}
+        }
+        return failed;
+    }
+    for(jsize k=0;k<count;k++){
+        jint index=first+k;struct entry *e=&entries[index];
+        atomic_store(&e->desired_entry,e->native?art.managed.jni_bridge:bridge);
+        e->writer_policy=(struct tp_entry_owner_policy){.method=(uintptr_t)e->target,.owner=e,
+            .operation_generation=(uint64_t)index+1,.desired_entry=&e->desired_entry};
+        atomic_store_explicit(&e->ready,true,memory_order_release);e->stage="PREPARED";
+    }
+    return -1;
 }
 JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative(JNIEnv *env,jclass cls,jintArray incoming,jboolean enabled){
     (void)cls;if(!incoming)return JNI_FALSE;jsize count=(*env)->GetArrayLength(env,incoming);
@@ -128,28 +241,36 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNat
     if(enabled&&!tp_art_entry_writer_activate())return JNI_FALSE;
     char jit=0,mutators=0;art.managed.jit_suspend(&jit);art.managed.access.suspend(&mutators,"tripoder-managed-batch-toggle",false);
     bool accepted=tp_art_interpreter_claim_locked(&interpreter)&&tp_art_entry_writer_installed();
+    unsigned failure=accepted?0:1;int failed_index=-1;uintptr_t observed_quick=0,expected_quick=0;uint32_t observed_flags=0;
+    struct identity_snapshot identity={0};uintptr_t prepared_quick=0;uint32_t expected_flags=0,expected_dex=0,expected_index=0;
     // Validate EVERY preimage and GC root before registering or changing any entry.
     for(jsize i=0;accepted&&i<count;i++){
-        struct entry *e=&entries[indices[i]];
-        accepted=valid(e)&&tp_art_backup_rooted_locked(e->target,e->backup)&&
-            e->target->quick==(e->transitions&&atomic_load(&e->active)?e->relay:(e->native?art.managed.jni_bridge:art.managed.interpreter_bridge))&&
-            (e->target->flags&UINT32_C(0x02000000))==0;
+        int slot=indices[i];
+        struct entry *e=&entries[slot];
+        uintptr_t expected=e->transitions&&atomic_load(&e->active)?e->relay:(e->native?art.managed.jni_bridge:art.managed.interpreter_bridge);
+        failure=!valid_snapshot(e,&identity)?2:!tp_art_backup_rooted_slot_locked((unsigned)slot,e->target,e->backup)?3:
+            e->target->quick!=expected?4:(e->target->flags&UINT32_C(0x02000000))?5:0;
+        accepted=failure==0;
         if(e->transitions==0)for(unsigned n=0;n<e->caller_count;n++)if(
-            ((struct tp_art_method_view *)e->callers[n])->quick!=art.managed.interpreter_bridge)accepted=false;
+            ((struct tp_art_method_view *)e->callers[n])->quick!=art.managed.interpreter_bridge){accepted=false;failure=6;}
+        if(!accepted){failed_index=slot;observed_quick=e->target->quick;expected_quick=expected;observed_flags=e->target->flags;
+            prepared_quick=e->prepared_quick;expected_flags=e->semantic_flags;expected_dex=e->dex_index;expected_index=e->method_index;}
     }
     for(jsize i=0;accepted&&i<count;i++){
         struct entry *e=&entries[indices[i]];
         if(e->transitions==0)accepted=tp_entry_owner_register(&tp_art_entry_owners,&e->writer_policy)==TP_ENTRY_REGISTERED;
+        if(!accepted){failure=7;failed_index=indices[i];}
     }
     for(jsize i=0;accepted&&i<count;i++){
         struct entry *e=&entries[indices[i]];if(!e->native)e->target->flags&=~UINT32_C(0x00100000);
         uintptr_t desired=enabled?e->relay:(e->native?art.managed.jni_bridge:art.managed.interpreter_bridge);
         atomic_store_explicit(&e->desired_entry,desired,memory_order_release);e->target->quick=desired;
         accepted=valid(e)&&e->target->quick==atomic_load_explicit(&e->desired_entry,memory_order_acquire);
+        if(!accepted){failure=8;failed_index=indices[i];}
         if(accepted){atomic_store_explicit(&e->active,enabled,memory_order_release);e->transitions++;e->stage=enabled?"ACTIVE":"DISABLED";}
     }
     art.managed.access.resume(&mutators);art.managed.jit_resume(&jit);
-    if(!accepted)fatal("TP_MANAGED_ENTRY_OWNERSHIP");
+    if(!accepted){char reason[512];snprintf(reason,sizeof(reason),"TP_MANAGED_ENTRY_OWNERSHIP stage=%u slot=%d quick=%lx expected=%lx prepared=%lx flags=%x identity=%u owners=%lx/%lx semantic=%x/%x dex=%u/%u index=%u/%u data=%lx/%lx",failure,failed_index,(unsigned long)observed_quick,(unsigned long)expected_quick,(unsigned long)prepared_quick,observed_flags,identity.mismatch,(unsigned long)identity.target_owner,(unsigned long)identity.backup_owner,identity.flags,expected_flags,identity.dex_index,expected_dex,identity.method_index,expected_index,(unsigned long)identity.target_data,(unsigned long)identity.backup_data);fatal(reason);}
     return JNI_TRUE;
 }
 JNIEXPORT jobject JNICALL Java_dev_tripoder_selfhook_ManagedHook_originalNative(JNIEnv *env,jclass cls,jint index,jobject receiver,jobjectArray args){

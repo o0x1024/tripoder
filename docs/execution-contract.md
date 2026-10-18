@@ -58,3 +58,13 @@ Native 回调错误不能抛跨 C ABI：受控设备代理终止当前进程并�
 
 验收增加真实 Activity 关闭屏障：Activity 创建后由自研测试 authority 分别设置瞬时和持久关闭，客体尝试新启动必须被拒绝，随后真实 finish/result/onDestroy 必须完成，同一 PID 仍活到测试显式 stop。故障注入只在验收 APK；产品控制协议不提供该操作。所有 runtime 真机验收同时检查本轮自有 UID 的 Java 致命异常，业务断言通过但进程崩溃不能算通过。
 
+
+## 启动入口 capability 的先后（2026-10-18，P1-1）
+
+`prepareLaunch` / `prepareApplicationLaunch` 在**槽位预留与 capability 签发后即返回**，不再等待客体 `application-ready`。返回值中的进程证据只证明槽位已预留，不证明 worker 已运行。
+
+- capability 有效期自该次启动的共享启动截止时间起算再加 `ControllerLaunchLedger.VALIDITY_MS`（原为自签发时起 30 s），否则慢启动会在被消费前过期。
+- `RuntimeGuestGateway` 先显示启动页，再在后台线程调用 `ProcessSupervisor.awaitReady`（沿用同一启动截止时间，不另起计时），确认 `application-ready` 后才在主线程 `consume` 并派发 stub Activity。`consume` 仍要求会话为 RUNNING，一次性语义不变。
+- 等待失败、超时，或 Gateway 在派发前被销毁：`ControllerLaunchLedger.abandon` 将操作记为 UNKNOWN（`LAUNCH_PREPARATION_UNCONFIRMED` / `LAUNCH_GATEWAY_CLOSED_BEFORE_DISPATCH`）并使 capability 失效。进程可能已在启动，因此不记为 FAILED，也不自动重放。
+- 启动超时的错误码带阶段：`PROCESS_START_TIMEOUT_UNKNOWN:phase=BIND|LOAD|APPLICATION`；总预算仍为 30 s。
+- 空闲预热（P1-2）：authority 维持至多一个**无身份**的预热 worker（`ProcessSupervisor.Spare`），占用 `CAPACITY=8` 中的一个 index，`capacity()` 以 `spare` 标出且不计入 `available`。启动选中同 index 后补发 `ABORT_CONFIGURE`（`RuntimeWire` 码 50），中止凭证语义不变。预热 worker 被系统回收只会退化为冷 fork；其他分配无空槽时先淘汰它。

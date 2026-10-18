@@ -27,6 +27,7 @@ def build_native(repo, build, ndk, libc, art, linker):
         (core/'tests/coverage/check_near_leaf.py', '--ndk', ndk),
         (core/'tests/modules/check_notifier_template.py', '--ndk', ndk),
         (core/'tests/abi/check_native_template.py', '--ndk', ndk),
+        (core/'tests/abi/check_native_upgrade.py', '--ndk', ndk),
         (core/'tests/check_libc_absolute.py', '--ndk', ndk),
     ]
     sources = sorted((core/'native').glob('*.c'))
@@ -42,6 +43,7 @@ def build_native(repo, build, ndk, libc, art, linker):
     inputs.add(core/'tests/coverage/entry_writer_audit.py')
     inputs.add(core/'tests/libc_entry_audit.py')
     inputs.add(repo/'android/scripts/runtime_apk_builder.py')
+    inputs.update([core/'tests/abi/native_address_test.c',core/'tests/abi/near_address_test.c'])
     before = {str(path.relative_to(repo)): sha(path) for path in sorted(inputs)}
     def run(*args):
         result=subprocess.run(list(map(str, args)), cwd=repo, capture_output=True, text=True)

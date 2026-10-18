@@ -11,6 +11,9 @@ import tempfile
 import zipfile
 
 
+# Compile-time and stub-only: the production classes name android.os/android.util/org.json types on paths this host test does not execute.
+ANDROID_JAR = '/opt/homebrew/share/android-commandlinetools/platforms/android-37.0/android.jar'
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--sdk', required=True, type=Path)
@@ -121,10 +124,10 @@ def main():
     classes = root / 'classes'
     classes.mkdir()
     source = repo / 'android/runtime/src/dev/tripoder/runtime'
-    run(java / 'javac', '--release', '17', '-Xlint:all', '-classpath', tools / 'lib/apksigner.jar', '-d', classes,
-        source / 'ArtifactSet.java', source / 'ArtifactSetZip.java', source / 'ApkManifest.java', source / 'BinXmlTypedValues.java',
+    run(java / 'javac', '--release', '17', '-Xlint:all', '-classpath', str(tools / 'lib/apksigner.jar') + os.pathsep + ANDROID_JAR, '-d', classes,
+        source / 'ArtifactSet.java', source / 'ArtifactSetZip.java', source / 'ApkManifest.java', source / 'BinXmlTypedValues.java', source / 'ArscValues.java', source / 'ArtifactIntegrityCache.java',
         repo / 'android/runtime/test/dev/tripoder/runtime/ArtifactSetTest.java')
-    completed = run(java / 'java', '-cp', str(classes) + os.pathsep + str(tools / 'lib/apksigner.jar'),
+    completed = run(java / 'java', '-cp', str(classes) + os.pathsep + str(tools / 'lib/apksigner.jar') + os.pathsep + ANDROID_JAR,
                     'dev.tripoder.runtime.ArtifactSetTest', fixtures, root / 'work', capture=True)
     print(completed.stdout, end='')
     print('Evidence directory: ' + str(root))

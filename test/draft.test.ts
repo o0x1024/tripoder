@@ -74,3 +74,13 @@ test("a rejected draft never mutates an already prepared plan", () => {
   assert.throws(() => prepareDraft(draftTemplate().replace('target,', 'target: { packageName:"wrong",versionCode:"1",apkSha256:"b" },'), evidence));
   assert.equal(sim.invoke("greet", ["phone"], () => "original").value, "script:PHONE");
 });
+test("ctx.debug.emitEvent records structured telemetry inside callbacks and rejects setup emission", () => {
+  assert.throws(() => prepareDraft(script('return "ok";').replace('setup(ctx) {', 'setup(ctx) { ctx.debug.emitEvent("setup.tag", 1);'), evidence), /emitEvent can only be called inside a hook callback/);
+  const plan = prepareDraft(script('ctx.debug.emitEvent("greet.called", { input: args[0] }); return "logged:" + args[0];'), evidence);
+  const sim = new HookSimulator(evidence); sim.activate(plan);
+  assert.equal(sim.invoke("greet", ["world"], () => "original").value, "logged:world");
+  const debugEvents = sim.events().filter(e => e.kind === "debug-event");
+  assert.equal(debugEvents.length, 1);
+  assert.equal(debugEvents[0]?.tag, "greet.called");
+  assert.deepEqual({ ...(debugEvents[0]?.payload as Record<string, unknown>) }, { input: "world" });
+});

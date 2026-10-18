@@ -12,7 +12,7 @@ def exit_record(text,pid,uid):
     if not status:return None
     return {'pid':pid,'uid':uid,'reason':int(status[1]),'status':int(status[2])}
 
-def collect(command,directory,remote,package):
+def collect(command,directory,remote,package,expected_status):
     deadline=time.monotonic()+120
     while command(None,'shell','pidof',package,check=False).returncode==0:
         if command(None,'shell','test','-f',remote+'/result.json',check=False).returncode==0:
@@ -30,6 +30,6 @@ def collect(command,directory,remote,package):
         if record:break
         if time.monotonic()>deadline:raise RuntimeError('DEATH_EXIT_RECORD_MISSING')
         time.sleep(0.2)
-    if record['reason']!=1 or record['status']!=198:raise RuntimeError('UNEXPECTED_DEATH:'+json.dumps(record))
+    if record['reason']!=1 or record['status']!=expected_status:raise RuntimeError('UNEXPECTED_DEATH:'+json.dumps(record))
     (directory/'exit-observation.json').write_text(json.dumps(record,indent=2)+'\n')
     print(json.dumps({'runId':before['runId'],'status':'EXPECTED_EXIT_COLLECTED','pid':record['pid'],'exitStatus':record['status']}),flush=True)

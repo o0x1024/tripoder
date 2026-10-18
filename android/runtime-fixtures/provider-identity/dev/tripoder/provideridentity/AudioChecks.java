@@ -27,7 +27,8 @@ final class AudioChecks {
         }finally{manager.unregisterAudioDeviceCallback(callback);thread.quitSafely();thread.join(2000);}
         if(!baseline){
             boolean repeated=false;try{manager.unregisterAudioDeviceCallback(callback);}catch(IllegalArgumentException expected){repeated=expected.getMessage().contains("AUDIO_CALLBACK_NOT_REGISTERED");}check(checks,"audio-callback-cancellation-is-explicit",repeated);
-            boolean denied=false;try{manager.setStreamVolume(AudioManager.STREAM_MUSIC,current,0);}catch(UnsupportedOperationException expected){denied=expected.getMessage().contains("AUDIO_CAPABILITY_UNSUPPORTED:setStreamVolume");}check(checks,"audio-system-volume-write-not-granted",denied);
+            // Volume is device audio state any app may set; writing back the current value changes nothing but proves the call is handed to the platform.
+            boolean allowed=false;try{manager.setStreamVolume(AudioManager.STREAM_MUSIC,current,0);allowed=true;}catch(UnsupportedOperationException expected){throw new IllegalStateException("AUDIO_VOLUME_PLATFORM_PATH:"+expected.getMessage(),expected);}catch(SecurityException platformDecision){allowed=true;}check(checks,"audio-volume-write-is-platform-decision",allowed);
             boolean recording=false;try{manager.getActiveRecordingConfigurations();}catch(UnsupportedOperationException expected){recording=expected.getMessage().contains("AUDIO_CAPABILITY_UNSUPPORTED");}check(checks,"audio-recording-observation-not-granted",recording);
         }
         return new JSONObject().put("deviceCount",devices.length).put("callbackDeviceCount",observed.get()).put("callbackThread",callbackThread.get()).put("outputSampleRate",rate);

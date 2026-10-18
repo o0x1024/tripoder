@@ -26,9 +26,10 @@ final class NotificationChecks {
             check(checks,"notification-recreate-preserves-system-importance",manager.getNotificationChannel(id).getImportance()==NotificationManager.IMPORTANCE_LOW);
             if(!baseline){
                 check(checks,"notification-other-space-and-host-channels-excluded",manager.getNotificationChannels().size()==1&&manager.getNotificationChannelGroups().size()==1);
-                boolean post=false,dnd=false;try{manager.notify(91,new Notification());}catch(UnsupportedOperationException expected){post=expected.getMessage().contains("NOTIFICATION_CAPABILITY_UNSUPPORTED");}
+                boolean post=false,dnd=false;// Posting is modelled now; a notification without a small icon is rejected exactly as the platform rejects it.
+                try{manager.notify(91,new Notification());}catch(IllegalArgumentException expected){post=String.valueOf(expected.getMessage()).contains("no valid small icon");}
                 try{manager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL);}catch(UnsupportedOperationException expected){dnd=expected.getMessage().contains("NOTIFICATION_CAPABILITY_UNSUPPORTED");}
-                check(checks,"notification-post-and-dnd-not-implicitly-granted",post&&dnd);
+                check(checks,"notification-post-validated-and-dnd-not-implicitly-granted",post&&dnd);
             }
             return new JSONObject().put("enabled",manager.areNotificationsEnabled()).put("importance",manager.getImportance()).put("channelImportance",manager.getNotificationChannel(id).getImportance());
         }finally{

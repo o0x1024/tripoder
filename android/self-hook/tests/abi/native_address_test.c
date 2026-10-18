@@ -22,5 +22,10 @@ int main(void){
     uint32_t bti[]={TP_A64_BTI_C,0x36000400};
     CHECK(tp_native_address_range(bti,2,entry,relay,original,12288,&low,&high)==TP_A64_OK);
     struct tp_native_prefix plan;CHECK(tp_native_prefix_plan(bti,2,entry,low+relay,low+original,&plan)==TP_A64_OK);
+    const uint32_t reserved[]={0x52c00000,0x0b008000,0x0bc00000,0xb9c00000,0x7d800000,0x1e000000,0x0e000000,0x0f000000};
+    for(unsigned i=0;i<sizeof(reserved)/sizeof(*reserved);i++){
+        uint32_t out=0x12345678;
+        CHECK(tp_a64_relocate(&reserved[i],1,entry,entry+4096,&out)==TP_A64_UNSUPPORTED&&out==0x12345678);
+    }
     puts("NATIVE_ADDRESS_PASS");printf("checks=%u\n",checks);return 0;
 }

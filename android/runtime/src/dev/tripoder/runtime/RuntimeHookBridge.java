@@ -57,6 +57,7 @@ public final class RuntimeHookBridge {
             if(!Boolean.TRUE.equals(wire.get("ok")))return response;
             @SuppressWarnings("unchecked") Map<String,Object> result=(Map<String,Object>)wire.get("result");
             result.put("runtimeNativeMappings",runtimeMappings.snapshot());
+            result.put("nativeCoreResources",dev.tripoder.selfhook.NativeHook.resources());
             return HookWire.encode(wire);
         });
     }
@@ -85,10 +86,20 @@ public final class RuntimeHookBridge {
     public static String library(String name)throws Exception{
         return current().verifiedLibrary(name).toString();
     }
+    private String canonicalLibraryPath(String name)throws Exception{
+        for(var item:artifacts.nativeFiles)if(item.path.equals("lib/"+name)){
+            java.io.File file=new java.io.File(artifacts.directory,item.path);ArtifactSet.regular(file.toPath());
+            String canonical=RuntimeSelfHookStorage.physicalArtifactPath(file.toString());
+            if(!canonical.equals(artifactCanonicalRoot+"/"+item.path))throw new SecurityException("HOOK_MODULE_CANONICAL_ROOT_CHANGED");
+            if(file.length()!=item.size)throw new SecurityException("HOOK_MODULE_ARTIFACT_CHANGED");
+            return canonical;
+        }
+        throw new SecurityException("HOOK_MODULE_OUTSIDE_GUEST");
+    }
     private JSONObject verifiedLibraryArtifact(String name)throws Exception{
         for(var item:artifacts.nativeFiles)if(item.path.equals("lib/"+name)){
             java.io.File file=new java.io.File(artifacts.directory,item.path);ArtifactSet.regular(file.toPath());
-            String canonical=file.getCanonicalPath();
+            String canonical=RuntimeSelfHookStorage.physicalArtifactPath(file.toString());
             if(!canonical.equals(artifactCanonicalRoot+"/"+item.path))throw new SecurityException("HOOK_MODULE_CANONICAL_ROOT_CHANGED");
             if(file.length()!=item.size||!ArtifactSet.digest(file).equals(item.sha256))throw new SecurityException("HOOK_MODULE_ARTIFACT_CHANGED");
             return new JSONObject().put("moduleName",name).put("path",canonical).put("sourcePath",file.toString()).put("sha256",item.sha256);
@@ -106,7 +117,7 @@ public final class RuntimeHookBridge {
     synchronized RuntimeNativeObservation nativeObservation()throws Exception {
         if(nativeObservation==null)nativeObservation=new RuntimeNativeObservation(new RuntimeNativeObservation.Inventory(){
             public List<String> names(){List<String> names=new ArrayList<>();for(var file:artifacts.nativeFiles)names.add(new java.io.File(file.path).getName());return List.copyOf(names);}
-            public String path(String name)throws Exception{return verifiedLibraryArtifact(name).getString("path");}
+            public String path(String name)throws Exception{return canonicalLibraryPath(name);}
             public Map<String,Object> inspect(String name)throws Exception{return HookWire.request(verifiedLibrary(name).toString());}
         },()->RuntimeEngine.current==engine,identitySnapshot());
         return nativeObservation;

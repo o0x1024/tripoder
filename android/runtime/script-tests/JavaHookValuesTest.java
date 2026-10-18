@@ -36,5 +36,14 @@ final class JavaHookValuesTest {
         check(java.util.Arrays.equals(JavaHookValues.encodeArguments(argumentTypes,decoded),new Object[]{Long.MAX_VALUE,'x',null}),"typed arguments restore boxes");
         try{decoded.set(0,BigInteger.ZERO);throw new AssertionError("mutable decoded args");}
         catch(UnsupportedOperationException expected){check(true,"immutable argument snapshot");}
+        JavaHookValues.requireType(byte[].class,false);
+        byte[] rawBytes=new byte[]{0x00,0x0f,(byte)0xde,(byte)0xad,(byte)0xbe,(byte)0xef};
+        Object hexDecoded=JavaHookValues.decode(byte[].class,rawBytes);
+        check("000fdeadbeef".equals(hexDecoded),"byte[] decode lowercase hex");
+        byte[] hexEncoded=(byte[])JavaHookValues.encode(byte[].class,"DEADBEEF");
+        check(java.util.Arrays.equals(hexEncoded,new byte[]{(byte)0xde,(byte)0xad,(byte)0xbe,(byte)0xef}),"byte[] encode uppercase hex");
+        check(JavaHookValues.decode(byte[].class,null)==null&&JavaHookValues.encode(byte[].class,null)==null,"byte[] null roundtrip");
+        rejects(()->JavaHookValues.encode(byte[].class,"abc"),"HOOK_TYPE");
+        rejects(()->JavaHookValues.encode(byte[].class,"zz"),"HOOK_TYPE");
     }
 }

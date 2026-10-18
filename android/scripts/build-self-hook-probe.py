@@ -66,6 +66,12 @@ def main():
     c_sources += sorted((CORE/'native/abi').glob('*.c'))+[scalar_fixture/'scalar_cases.c', scalar_fixture/'scalar_fixture.c', scalar_fixture/'scalar_probe_jni.c',scalar_fixture/'scalar_inbound_fixture.c']
     c_sources.append(PROBE/'native/probe_native_export.c')
     c_sources.append(PROBE/'native/probe_native_race.c')
+    c_sources.append(PROBE/'native/probe_native_upgrade.c')
+    c_sources.append(PROBE/'native/probe_native_ranges.c')
+    c_sources.append(PROBE/'native/probe_native_benchmark.c')
+    c_sources.append(PROBE/'native/probe_native_affinity.c')
+    c_sources.append(PROBE/'native/probe_managed_admission.c')
+    c_sources.append(PROBE/'native/probe_managed_visibility.c')
     c_sources.append(PROBE/'native/probe_native_jni.c')
     c_sources.append(PROBE/'native/probe_module_instances.c')
     c_sources.append(PROBE/'native/probe_native_leaf.c')
@@ -145,6 +151,7 @@ def main():
     inputs.append(ROOT/'android/scripts/verify-self-jni-register-abi.py')
     jni_guest=PROBE/'jni-fixtures/dev/tripoder/selfhookprobe/jniguest/JniSdkTarget.java'
     inputs += [jni_guest,ROOT/'android/scripts/verify-self-jni-sdk.py']
+    managed_guest=ROOT/'android/runtime-probe/build/assets/a-upgrade.apk';inputs.append(managed_guest)
     inputs.append(ROOT/'android/scripts/verify-self-product-java.py')
     inputs.append(CORE/'native/near_address.h')
     inputs += [CORE/'tests/libc_entry_audit.py',CORE/'tests/check_libc_absolute.py']
@@ -157,6 +164,10 @@ def main():
     inputs += [CORE/'tests/abi/check_native_prefix.py',CORE/'tests/abi/check_native_template.py',CORE/'tests/abi/native_prefix_test.c',
                ROOT/'android/runtime-fixtures/native/hook_target.c',ROOT/'android/scripts/verify-self-native-export.py']
     inputs.append(ROOT/'android/scripts/verify-self-native-race.py')
+    inputs.append(ROOT/'android/scripts/verify-self-native-upgrade.py')
+    inputs.append(ROOT/'android/scripts/verify-self-native-commit.py')
+    inputs += [CORE/'tests/abi/check_native_upgrade.py',CORE/'tests/abi/native_address_test.c',CORE/'tests/abi/near_address_test.c']
+    inputs += [ROOT/'android/scripts/verify-self-native-ranges.py',PROBE/'native/range_target.S']
     inputs.append(ROOT/'android/scripts/verify-self-native-jni.py')
     inputs.append(ROOT/'android/scripts/verify-self-product-native.py')
     inputs.append(ROOT/'android/scripts/verify-self-product-mixed.py')
@@ -203,10 +214,11 @@ def main():
                     '--output',str(build/'near-leaf-audit.json')],check=True)
     subprocess.run([sys.executable,str(CORE/'tests/abi/check_scalar.py'),'--ndk',str(args.ndk),
                     '--output',str(build/'scalar-host-report.json')],check=True)
-    subprocess.run([sys.executable,str(CORE/'tests/abi/check_inbound.py'),'--ndk',str(args.ndk),
+    subprocess.run([sys.executable,str(CORE/'tests/abi/check_inbound.py'),'--testing','--ndk',str(args.ndk),
                     '--output',str(build/'inbound-audit.json')],check=True)
     subprocess.run([sys.executable,str(CORE/'tests/abi/check_native_prefix.py'),'--ndk',str(args.ndk),
                     '--output',str(build/'native-prefix-audit.json')],check=True)
+    subprocess.run([sys.executable,str(CORE/'tests/abi/check_native_upgrade.py'),'--ndk',str(args.ndk),'--output',str(build/'native-upgrade-host.json')],check=True)
     subprocess.run([sys.executable,str(CORE/'tests/abi/check_native_template.py'),'--ndk',str(args.ndk),
                     '--output',str(build/'native-template-audit.json')],check=True)
     cpp_object = build / 'loaded_class_inventory.o'
@@ -236,6 +248,10 @@ def main():
         '-Wl,-z,max-page-size=4096,-z,common-page-size=4096,-z,noexecstack,--build-id=sha1',PROBE/'native/leaf_target.c','-o',leaf_native]
     subprocess.run(list(map(str,leaf_native_command)),check=True)
     if not 0<leaf_native.stat().st_size<4096:raise RuntimeError('NATURAL_LEAF_PARTIAL_PAGE_REQUIRED')
+    range_native=build/'libtripoderrangehooks.so'
+    range_command=[compiler,'-shared','-nostdlib','-fPIC','-Wl,-z,max-page-size=4096,-z,noexecstack,--build-id=sha1',PROBE/'native/range_target.S','-o',range_native]
+    subprocess.run(list(map(str,range_command)),check=True)
+    if '(NEEDED)' in captured(toolchain/'llvm-readelf','-d',range_native):raise RuntimeError('RANGE_FIXTURE_DEPENDENCIES')
     fixture_dynamic = captured(toolchain / 'llvm-readelf', '-d', fixture)
     if '(NEEDED)' in fixture_dynamic:
         raise RuntimeError('FIXTURE_MUST_HAVE_NO_DEPENDENCIES')
@@ -272,6 +288,7 @@ def main():
                       'sourceDigest': identity, 'nativeSha256': sha(library), 'fixtureSha256': sha(fixture),
                       'ownedNativeBuildId':re.search(r'Build ID: ([a-f0-9]+)',captured(toolchain/'llvm-readelf','-n',owned_native)).group(1),
                       'ownedNativePacBuildId':re.search(r'Build ID: ([a-f0-9]+)',captured(toolchain/'llvm-readelf','-n',owned_native_pac)).group(1),
+                      'managedGuestSha256':sha(managed_guest),
                       'scope': 'H1/H2a owned ELF, native thread parking and fixed-platform ART with static caller indexing'}
     (assets / 'build.json').write_text(json.dumps(build_identity, indent=2) + '\n')
     shutil.copyfile(PROBE / 'platform.json', assets / 'platform.json')
@@ -288,16 +305,17 @@ def main():
     subprocess.run(list(map(str,[args.java_home/'bin/javac','--release','17','-classpath',args.sdk/'platforms/android-37.0/android.jar','-d',jni_classes,jni_guest])),check=True)
     subprocess.run(list(map(str,[args.java_home/'bin/java','-cp',args.sdk/'build-tools/37.0.0/lib/d8.jar','com.android.tools.r8.D8','--min-api','36','--output',jni_dex,jni_classes/'dev/tripoder/selfhookprobe/jniguest/JniSdkTarget.class'])),check=True)
     shutil.copyfile(jni_dex/'classes.dex',assets/'jni-guest.dex')
+    shutil.copyfile(managed_guest,assets/'managed-owned-guest.apk')
     # Reject old/foreign assets rather than silently packaging them.
-    if {path.name for path in assets.iterdir()} != {'build.json', 'platform.json', 'late-caller.dex','jni-guest.dex'}:
+    if {path.name for path in assets.iterdir()} != {'build.json', 'platform.json', 'late-caller.dex','jni-guest.dex','managed-owned-guest.apk'}:
         raise RuntimeError('UNEXPECTED_ASSET')
     builder = ApkBuilder(ROOT, build, args.sdk, 'android-37.0', '37.0.0', args.java_home, args.key)
     apk = builder.apk('self-hook-probe', java_sources, PROBE / 'AndroidManifest.xml',
-                      assets=assets, libraries=[library, fixture,linker_failure,owned_native,owned_native_pac,leaf_native])
+                      assets=assets, libraries=[library, fixture,linker_failure,owned_native,owned_native_pac,leaf_native,range_native])
     with zipfile.ZipFile(apk) as archive:
         entries = sorted(archive.namelist())
-        allowed = {'AndroidManifest.xml', 'resources.arsc', 'classes.dex', 'assets/build.json', 'assets/platform.json', 'assets/late-caller.dex','assets/jni-guest.dex',
-                   'lib/arm64-v8a/libtripoderselfhook.so', 'lib/arm64-v8a/libtripoderhookfixture.so','lib/arm64-v8a/libtripoderlinkerfailure.so','lib/arm64-v8a/libtripoderownedhooks.so','lib/arm64-v8a/libtripoderownedhookspac.so','lib/arm64-v8a/libtripoderleafhooks.so'}
+        allowed = {'AndroidManifest.xml', 'resources.arsc', 'classes.dex', 'assets/build.json', 'assets/platform.json', 'assets/late-caller.dex','assets/jni-guest.dex','assets/managed-owned-guest.apk',
+                   'lib/arm64-v8a/libtripoderselfhook.so', 'lib/arm64-v8a/libtripoderhookfixture.so','lib/arm64-v8a/libtripoderlinkerfailure.so','lib/arm64-v8a/libtripoderownedhooks.so','lib/arm64-v8a/libtripoderownedhookspac.so','lib/arm64-v8a/libtripoderleafhooks.so','lib/arm64-v8a/libtripoderrangehooks.so'}
         unexpected = [name for name in entries if name not in allowed and not name.startswith('META-INF/')]
         if unexpected or not allowed.issubset(entries):
             raise RuntimeError('APK_ENTRY_ALLOWLIST:' + repr(unexpected))
@@ -313,10 +331,12 @@ def main():
             raise RuntimeError('PACKAGED_OWNED_NATIVE_PAC_IDENTITY_MISMATCH')
         if hashlib.sha256(archive.read('lib/arm64-v8a/libtripoderleafhooks.so')).hexdigest()!=sha(leaf_native):
             raise RuntimeError('PACKAGED_LEAF_NATIVE_IDENTITY_MISMATCH')
+        if hashlib.sha256(archive.read('lib/arm64-v8a/libtripoderrangehooks.so')).hexdigest()!=sha(range_native):
+            raise RuntimeError('PACKAGED_RANGE_IDENTITY_MISMATCH')
     if source_hashes != {str(path.relative_to(ROOT)): sha(path) for path in sorted(set(inputs))}:
         raise RuntimeError('SOURCES_CHANGED_DURING_BUILD')
     report = {'schema': 1, **build_identity, 'sources': source_hashes, 'apkSha256': sha(apk),
-              'linkerFailureSha256':sha(linker_failure),
+              'linkerFailureSha256':sha(linker_failure),'rangeNativeSha256':sha(range_native),'rangeCompileCommand':list(map(str,range_command)),
               'ownedNativeSha256':sha(owned_native),'ownedNativeCompileCommand':list(map(str,owned_native_command)),
               'ownedNativePacSha256':sha(owned_native_pac),'ownedNativePacCompileCommand':list(map(str,owned_native_pac_command)),
               'leafNativeSha256':sha(leaf_native),'leafNativeCompileCommand':list(map(str,leaf_native_command)),

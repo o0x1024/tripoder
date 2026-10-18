@@ -16,20 +16,31 @@ import java.util.*;
 abstract class WorkbenchUiTestBase extends ControlTestBase {
     /** Test operations get their own durable journal; existing user pending records are untouched. */
     protected void isolateOperationJournal()throws Exception{
-        Object app=getTargetContext().getApplicationContext();long deadline=SystemClock.elapsedRealtime()+5000;
+        isolateOperationJournal(this);
+    }
+    static void isolateOperationJournal(ControlTestBase test)throws Exception{
+        Object app=test.getTargetContext().getApplicationContext();long deadline=SystemClock.elapsedRealtime()+5000;
         while(field(app,"agents")==null){if(SystemClock.elapsedRealtime()>deadline)throw new IllegalStateException("APPLICATION_INITIALIZATION_TIMEOUT");SystemClock.sleep(10);}
         Object old=field(app,"operations");
-        String pending=(String)invoke(old,"pendingId",new Class<?>[0]);report.put("existingUserPendingOperation",pending).put("testOperationJournal","ui-acceptance-"+run);
-        Context isolated=new ContextWrapper(getTargetContext()){
-            @Override public SharedPreferences getSharedPreferences(String name,int mode){return super.getSharedPreferences(name.equals("operations")?"ui-acceptance-"+run:name,mode);}
+        String pending=(String)invoke(old,"pendingId",new Class<?>[0]);test.report.put("existingUserPendingOperation",pending).put("testOperationJournal","ui-acceptance-"+test.run);
+        Context isolated=new ContextWrapper(test.getTargetContext()){
+            @Override public SharedPreferences getSharedPreferences(String name,int mode){return super.getSharedPreferences(name.equals("operations")?"ui-acceptance-"+test.run:name,mode);}
         };
         Class<?> connection=Class.forName("dev.tripoder.hooklab.EngineConnection"),operations=Class.forName("dev.tripoder.hooklab.WorkbenchOperations"),imports=Class.forName("dev.tripoder.hooklab.WorkbenchImports");
         var operationConstructor=operations.getDeclaredConstructor(Context.class,connection);operationConstructor.setAccessible(true);Object journal=operationConstructor.newInstance(isolated,field(app,"engine"));
         var importConstructor=imports.getDeclaredConstructor(Context.class,operations);importConstructor.setAccessible(true);Object importer=importConstructor.newInstance(isolated,journal);
-        runOnMainSync(()->{try{Field operationField=app.getClass().getDeclaredField("operations"),importField=app.getClass().getDeclaredField("imports");operationField.setAccessible(true);importField.setAccessible(true);operationField.set(app,journal);importField.set(app,importer);}catch(Exception error){throw new IllegalStateException(error);}});
+        test.runOnMainSync(()->{try{Field operationField=app.getClass().getDeclaredField("operations"),importField=app.getClass().getDeclaredField("imports");operationField.setAccessible(true);importField.setAccessible(true);operationField.set(app,journal);importField.set(app,importer);}catch(Exception error){throw new IllegalStateException(error);}});
     }
     protected static AccessibilityNodeInfo findApp(AccessibilityNodeInfo node,String prefix){if(node==null)return null;if(node.getContentDescription()!=null&&node.getContentDescription().toString().startsWith(prefix))return node;for(int i=0;i<node.getChildCount();i++){var child=findApp(node.getChild(i),prefix);if(child!=null)return child;}return null;}
     protected static int countApp(AccessibilityNodeInfo node,String prefix){if(node==null)return 0;int count=node.getContentDescription()!=null&&node.getContentDescription().toString().startsWith(prefix)?1:0;for(int i=0;i<node.getChildCount();i++)count+=countApp(node.getChild(i),prefix);return count;}
+    /** Application tiles are announced by name; the package travels as an accessibility extra. */
+    protected static AccessibilityNodeInfo findPackage(AccessibilityNodeInfo node,String pkg){if(node==null)return null;if(pkg.equals(node.getExtras().getString(PACKAGE_EXTRA)))return node;for(int i=0;i<node.getChildCount();i++){var child=findPackage(node.getChild(i),pkg);if(child!=null)return child;}return null;}
+    protected static int countPackage(AccessibilityNodeInfo node,String pkg){if(node==null)return 0;int count=pkg.equals(node.getExtras().getString(PACKAGE_EXTRA))?1:0;for(int i=0;i<node.getChildCount();i++)count+=countPackage(node.getChild(i),pkg);return count;}
+    /** First enabled tile of any package, for pickers whose contents depend on the phone. */
+    protected static AccessibilityNodeInfo findAnyPackage(AccessibilityNodeInfo node){if(node==null)return null;if(node.getExtras().getString(PACKAGE_EXTRA)!=null&&node.isEnabled())return node;for(int i=0;i<node.getChildCount();i++){var child=findAnyPackage(node.getChild(i));if(child!=null)return child;}return null;}
+    protected static AccessibilityNodeInfo findSuffix(AccessibilityNodeInfo node,String suffix){if(node==null)return null;if(node.getText()!=null&&node.getText().toString().endsWith(suffix))return node;for(int i=0;i<node.getChildCount();i++){var child=findSuffix(node.getChild(i),suffix);if(child!=null)return child;}return null;}
+    protected static AccessibilityNodeInfo findPrefix(AccessibilityNodeInfo node,String prefix){if(node==null)return null;if(node.getText()!=null&&node.getText().toString().startsWith(prefix))return node;for(int i=0;i<node.getChildCount();i++){var child=findPrefix(node.getChild(i),prefix);if(child!=null)return child;}return null;}
+    static final String PACKAGE_EXTRA="dev.tripoder.package";
     protected void clickDescription(String description)throws Exception{var node=waitNode(description,true);if(!node.performAction(AccessibilityNodeInfo.ACTION_CLICK))throw new IllegalStateException("DESCRIPTION_CLICK_FAILED:"+description);}
     protected void clickBack()throws Exception{clickDescription("返回");SystemClock.sleep(400);}
     protected AccessibilityNodeInfo waitNode(String text,boolean description)throws Exception{long end=SystemClock.elapsedRealtime()+10000;do{AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow(),match=find(root,text,description);if(match!=null)return match;SystemClock.sleep(50);}while(SystemClock.elapsedRealtime()<end);var current=getUiAutomation().getRootInActiveWindow();throw new IllegalStateException("UI_TARGET_NOT_FOUND:"+text+":window="+(current==null?"null":current.getPackageName()));}

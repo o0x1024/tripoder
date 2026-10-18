@@ -1,0 +1,141 @@
+{
+  "runId": "control-c947a14e67fc4865",
+  "startedAt": 1792192163583,
+  "uid": 10401,
+  "pid": 29988,
+  "deviceBuild": "Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys",
+  "scope": "original-target-first-launch-only",
+  "target": "com.tencent.tmgp.sgame",
+  "apkSha256": "6841b1eae92b3d87b00e986f86086cbe436bcb52e4b6a3c6829f368714538384",
+  "apkRewritten": false,
+  "loginAttempted": false,
+  "businessScenarioVerified": false,
+  "workbenchStartupStatus": {
+    "schema": 31,
+    "hookReady": true,
+    "lease": "5dc37236-9084-4726-9d3d-399d9c97f516",
+    "enginePid": 30140,
+    "engineUid": 10400,
+    "strongIsolation": false,
+    "authority": "f45154d0-5756-40ff-a712-4d10c02a621d",
+    "controllerUid": 10401
+  },
+  "targetReceipt": {
+    "project": "be87df1a-ea8c-45c0-8834-507eaa7d87cb",
+    "binding": "3e46387c-b771-45c2-a581-2d2e223e5252",
+    "generation": "5e3947bf-973d-4126-8fea-8f4a5e3a026e",
+    "sha256": "6841b1eae92b3d87b00e986f86086cbe436bcb52e4b6a3c6829f368714538384"
+  },
+  "space": "p6-20261014",
+  "launcher": {
+    "component": "com.tencent.tmgp.sgame.SGameActivity",
+    "launcher": true,
+    "supported": true,
+    "reason": ""
+  },
+  "launchOperation": "7d78fc10-c17d-46cf-b42e-ebe47f800ce0",
+  "workerPid": 30310,
+  "workerUid": 10400,
+  "processGeneration": "b0dd7dce436f0cca226e4c3d0984daf25eab0817f405b51fa6120d5fe960df12",
+  "launchReceipt": {
+    "detail": "",
+    "result": "activity-CREATE-callback-completed",
+    "state": "SUCCEEDED",
+    "evidence": ""
+  },
+  "stabilitySamples": [
+    {
+      "time": 1792192197062,
+      "originalAlive": true,
+      "processes": [
+        {
+          "processGeneration": "b0dd7dce436f0cca226e4c3d0984daf25eab0817f405b51fa6120d5fe960df12",
+          "pid": 30310,
+          "processName": "com.tencent.tmgp.sgame"
+        }
+      ]
+    },
+    {
+      "time": 1792192198743,
+      "originalAlive": true,
+      "processes": [
+        {
+          "processGeneration": "b0dd7dce436f0cca226e4c3d0984daf25eab0817f405b51fa6120d5fe960df12",
+          "pid": 30310,
+          "processName": "com.tencent.tmgp.sgame"
+        }
+      ]
+    },
+    {
+      "time": 1792192200428,
+      "originalAlive": true,
+      "processes": [
+        {
+          "processGeneration": "b0dd7dce436f0cca226e4c3d0984daf25eab0817f405b51fa6120d5fe960df12",
+          "pid": 30310,
+          "processName": "com.tencent.tmgp.sgame"
+        }
+      ]
+    },
+    {
+      "time": 1792192201913,
+      "originalAlive": false,
+      "processes": []
+    }
+  ],
+  "error": "java.lang.IllegalStateException: ASSERTION_FAILED:target-original-worker-remains-running-for-30-seconds\n\tat dev.tripoder.controltest.ControlTestBase.check(ControlTestBase.java:65)\n\tat dev.tripoder.controltest.TargetLaunchIntegration.runTarget(TargetLaunchIntegration.java:91)\n\tat dev.tripoder.controltest.TargetLaunchIntegration.test(TargetLaunchIntegration.java:18)\n\tat dev.tripoder.controltest.ControlTestBase.onStart(ControlTestBase.java:43)\n\tat dev.tripoder.controltest.TargetLaunchIntegration.onStart(TargetLaunchIntegration.java:15)\n\tat android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2705)\n",
+  "passed": false,
+  "checks": [
+    {
+      "name": "real-workbench-foreground-startup-connected",
+      "passed": true,
+      "observed": ""
+    },
+    {
+      "name": "original-apk-digest-matches",
+      "passed": true,
+      "observed": "6841b1eae92b3d87b00e986f86086cbe436bcb52e4b6a3c6829f368714538384"
+    },
+    {
+      "name": "declared-launcher-policy-supported",
+      "passed": true,
+      "observed": {
+        "component": "com.tencent.tmgp.sgame.SGameActivity",
+        "launcher": true,
+        "supported": true,
+        "reason": ""
+      }
+    },
+    {
+      "name": "target-application-initialized",
+      "passed": true,
+      "observed": {
+        "component": "com.tencent.tmgp.sgame.SGameActivity",
+        "installGeneration": "5e3947bf-973d-4126-8fea-8f4a5e3a026e",
+        "pid": 30310,
+        "uid": 10400,
+        "state": "RUNNING",
+        "processName": "com.tencent.tmgp.sgame",
+        "generation": "b0dd7dce436f0cca226e4c3d0984daf25eab0817f405b51fa6120d5fe960df12",
+        "operation": "7d78fc10-c17d-46cf-b42e-ebe47f800ce0"
+      }
+    },
+    {
+      "name": "target-first-activity-acknowledged",
+      "passed": true,
+      "observed": {
+        "detail": "",
+        "result": "activity-CREATE-callback-completed",
+        "state": "SUCCEEDED",
+        "evidence": ""
+      }
+    },
+    {
+      "name": "target-original-worker-remains-running-for-30-seconds",
+      "passed": false,
+      "observed": []
+    }
+  ],
+  "fullP5Accepted": false,
+  "finishedAt": 1792192201916
+}

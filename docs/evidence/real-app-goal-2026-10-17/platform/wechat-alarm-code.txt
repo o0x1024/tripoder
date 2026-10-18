@@ -1,0 +1,261 @@
+      name          : 'e'
+      type          : '(Landroid/content/Context;IIJJLandroid/content/Intent;I)Landroid/app/PendingIntent;'
+      access        : 0x0009 (PUBLIC STATIC)
+      code          -
+      registers     : 26
+      ins           : 9
+      outs          : 8
+      insns size    : 337 16-bit code units
+649cf0:                                        |[649cf0] ok.b.e:(Landroid/content/Context;IIJJLandroid/content/Intent;I)Landroid/app/PendingIntent;
+649d00: 0800 1100                              |0000: move-object/from16 v0, v17
+649d04: 0201 1200                              |0002: move/from16 v1, v18
+649d08: 0802 1800                              |0004: move-object/from16 v2, v24
+649d0c: 1273                                   |0006: const/4 v3, #int 7 // #7
+649d0e: 2333 2d56                              |0007: new-array v3, v3, [Ljava/lang/Object; // type@562d
+649d12: 7701 43b1 1300                         |0009: invoke-static/range {v19}, Ljava/lang/Integer;.valueOf:(I)Ljava/lang/Integer; // method@b143
+649d18: 0c04                                   |000c: move-result-object v4
+649d1a: 1205                                   |000d: const/4 v5, #int 0 // #0
+649d1c: 4d04 0305                              |000e: aput-object v4, v3, v5
+649d20: 7701 43b1 1200                         |0010: invoke-static/range {v18}, Ljava/lang/Integer;.valueOf:(I)Ljava/lang/Integer; // method@b143
+649d26: 0c04                                   |0013: move-result-object v4
+649d28: 1216                                   |0014: const/4 v6, #int 1 // #1
+649d2a: 4d04 0306                              |0015: aput-object v4, v3, v6
+649d2e: 7702 58b1 1400                         |0017: invoke-static/range {v20, v21}, Ljava/lang/Long;.valueOf:(J)Ljava/lang/Long; // method@b158
+649d34: 0c04                                   |001a: move-result-object v4
+649d36: 1227                                   |001b: const/4 v7, #int 2 // #2
+649d38: 4d04 0307                              |001c: aput-object v4, v3, v7
+649d3c: 7702 58b1 1600                         |001e: invoke-static/range {v22, v23}, Ljava/lang/Long;.valueOf:(J)Ljava/lang/Long; // method@b158
+649d42: 0c04                                   |0021: move-result-object v4
+649d44: 1238                                   |0022: const/4 v8, #int 3 // #3
+649d46: 4d04 0308                              |0023: aput-object v4, v3, v8
+649d4a: 3802 0400                              |0025: if-eqz v2, 0029 // +0004
+649d4e: 0724                                   |0027: move-object v4, v2
+649d50: 2804                                   |0028: goto 002c // +0004
+649d52: 1b04 0211 0100                         |0029: const-string/jumbo v4, "null" // string@00011102
+649d58: 1249                                   |002c: const/4 v9, #int 4 // #4
+649d5a: 4d04 0309                              |002d: aput-object v4, v3, v9
+649d5e: 1254                                   |002f: const/4 v4, #int 5 // #5
+649d60: 7701 43b1 1900                         |0030: invoke-static/range {v25}, Ljava/lang/Integer;.valueOf:(I)Ljava/lang/Integer; // method@b143
+649d66: 0c09                                   |0033: move-result-object v9
+649d68: 4d09 0304                              |0034: aput-object v9, v3, v4
+649d6c: 1264                                   |0036: const/4 v4, #int 6 // #6
+649d6e: 7100 74ce 0000                         |0037: invoke-static {}, Lok/b;.c:()Ljava/lang/String; // method@ce74
+649d74: 0c09                                   |003a: move-result-object v9
+649d76: 4d09 0304                              |003b: aput-object v9, v3, v4
+649d7a: 1a04 e98f                              |003d: const-string v4, "MicroMsg.AlarmHelper" // string@8fe9
+649d7e: 1b09 6831 0100                         |003f: const-string/jumbo v9, "setRepeating(type:%s requestCode:%s triggerAtMillis:%s intervalMillis:%s intent:%s flags:%s stack:%s)" // string@00013168
+649d84: 7130 b125 9403                         |0042: invoke-static {v4, v9, v3}, Lcom/tencent/mars/xlog/Log;.i:(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)V // method@25b1
+649d8a: 3900 1100                              |0045: if-nez v0, 0056 // +0011
+649d8e: 7701 43b1 1200                         |0047: invoke-static/range {v18}, Ljava/lang/Integer;.valueOf:(I)Ljava/lang/Integer; // method@b143
+649d94: 0c00                                   |004a: move-result-object v0
+649d96: 2410 2d56 0000                         |004b: filled-new-array {v0}, [Ljava/lang/Object; // type@562d
+649d9c: 0c00                                   |004e: move-result-object v0
+649d9e: 1b01 6631 0100                         |004f: const-string/jumbo v1, "setRepeating(requestCode:%s): context == null" // string@00013166
+649da4: 7130 a725 1400                         |0052: invoke-static {v4, v1, v0}, Lcom/tencent/mars/xlog/Log;.e:(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)V // method@25a7
+649daa: 2835                                   |0055: goto 008a // +0035
+649dac: 1a03 9cbc                              |0056: const-string v3, "alarm" // string@bc9c
+649db0: 6e20 4604 3000                         |0058: invoke-virtual {v0, v3}, Landroid/content/Context;.getSystemService:(Ljava/lang/String;)Ljava/lang/Object; // method@0446
+649db6: 0c03                                   |005b: move-result-object v3
+649db8: 1f03 5d01                              |005c: check-cast v3, Landroid/app/AlarmManager; // type@015d
+649dbc: 3903 1100                              |005e: if-nez v3, 006f // +0011
+649dc0: 7701 43b1 1200                         |0060: invoke-static/range {v18}, Ljava/lang/Integer;.valueOf:(I)Ljava/lang/Integer; // method@b143
+649dc6: 0c00                                   |0063: move-result-object v0
+649dc8: 2410 2d56 0000                         |0064: filled-new-array {v0}, [Ljava/lang/Object; // type@562d
+649dce: 0c00                                   |0067: move-result-object v0
+649dd0: 1b01 6531 0100                         |0068: const-string/jumbo v1, "setRepeating(requestCode:%s): am == null" // string@00013165
+649dd6: 7130 a725 1400                         |006b: invoke-static {v4, v1, v0}, Lcom/tencent/mars/xlog/Log;.e:(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)V // method@25a7
+649ddc: 281c                                   |006e: goto 008a // +001c
+649dde: 1309 6400                              |006f: const/16 v9, #int 100 // #64
+649de2: 3491 0800                              |0071: if-lt v1, v9, 0079 // +0008
+649de6: 1309 7800                              |0073: const/16 v9, #int 120 // #78
+649dea: 3691 0400                              |0075: if-gt v1, v9, 0079 // +0004
+649dee: 0169                                   |0077: move v9, v6
+649df0: 2802                                   |0078: goto 007a // +0002
+649df2: 0159                                   |0079: move v9, v5
+649df4: 3909 1300                              |007a: if-nez v9, 008d // +0013
+649df8: 7701 43b1 1200                         |007c: invoke-static/range {v18}, Ljava/lang/Integer;.valueOf:(I)Ljava/lang/Integer; // method@b143
+649dfe: 0c00                                   |007f: move-result-object v0
+649e00: 2410 2d56 0000                         |0080: filled-new-array {v0}, [Ljava/lang/Object; // type@562d
+649e06: 0c00                                   |0083: move-result-object v0
+649e08: 1b01 6731 0100                         |0084: const-string/jumbo v1, "setRepeating(requestCode:%s): requestCode invalid" // string@00013167
+649e0e: 7130 a725 1400                         |0087: invoke-static {v4, v1, v0}, Lcom/tencent/mars/xlog/Log;.e:(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)V // method@25a7
+649e14: 1200                                   |008a: const/4 v0, #int 0 // #0
+649e16: 2900 c500                              |008b: goto/16 0150 // +00c5
+649e1a: 7701 9bc4 1900                         |008d: invoke-static/range {v25}, Llp/g0;.a:(I)I // method@c49b
+649e20: 0a09                                   |0090: move-result v9
+649e22: 7140 8403 1092                         |0091: invoke-static {v0, v1, v2, v9}, Landroid/app/PendingIntent;.getBroadcast:(Landroid/content/Context;ILandroid/content/Intent;I)Landroid/app/PendingIntent; // method@0384
+649e28: 0c02                                   |0094: move-result-object v2
+649e2a: 2200 6932                              |0095: new-instance v0, Lhn0/a; // type@3269
+649e2e: 7010 2da5 0000                         |0097: invoke-direct {v0}, Lhn0/a;.<init>:()V // method@a52d
+649e34: 6e20 30a5 2000                         |009a: invoke-virtual {v0, v2}, Lhn0/a;.c:(Ljava/lang/Object;)Lhn0/a; // method@a530
+649e3a: 6209 045c                              |009d: sget-object v9, Lhn0/c;.a:Ljava/lang/ThreadLocal; // field@5c04
+649e3e: 7702 58b1 1600                         |009f: invoke-static/range {v22, v23}, Ljava/lang/Long;.valueOf:(J)Ljava/lang/Long; // method@b158
+649e44: 0c09                                   |00a2: move-result-object v9
+649e46: 6e20 30a5 9000                         |00a3: invoke-virtual {v0, v9}, Lhn0/a;.c:(Ljava/lang/Object;)Lhn0/a; // method@a530
+649e4c: 7702 58b1 1400                         |00a6: invoke-static/range {v20, v21}, Ljava/lang/Long;.valueOf:(J)Ljava/lang/Long; // method@b158
+649e52: 0c09                                   |00a9: move-result-object v9
+649e54: 6e20 30a5 9000                         |00aa: invoke-virtual {v0, v9}, Lhn0/a;.c:(Ljava/lang/Object;)Lhn0/a; // method@a530
+649e5a: 7701 43b1 1300                         |00ad: invoke-static/range {v19}, Ljava/lang/Integer;.valueOf:(I)Ljava/lang/Integer; // method@b143
+649e60: 0c09                                   |00b0: move-result-object v9
+649e62: 6e20 30a5 9000                         |00b1: invoke-virtual {v0, v9}, Lhn0/a;.c:(Ljava/lang/Object;)Lhn0/a; // method@a530
+649e68: 6e10 2fa5 0000                         |00b4: invoke-virtual {v0}, Lhn0/a;.b:()[Ljava/lang/Object; // method@a52f
+649e6e: 0c0a                                   |00b7: move-result-object v10
+649e70: 1a0b d3ce                              |00b8: const-string v11, "com/tencent/mm/alarm/AlarmHelper" // string@ced3
+649e74: 1b0c 6331 0100                         |00ba: const-string/jumbo v12, "setRepeating" // string@00013163
+649e7a: 1a0d c70c                              |00bd: const-string v13, "(Landroid/content/Context;IIJJLandroid/content/Intent;IZ)Landroid/app/PendingIntent;" // string@0cc7
+649e7e: 1a0e 27be                              |00bf: const-string v14, "android/app/AlarmManager_EXEC_" // string@be27
+649e82: 1b0f 6331 0100                         |00c1: const-string/jumbo v15, "setRepeating" // string@00013163
+649e88: 1a10 7f0c                              |00c4: const-string v16, "(IJJLandroid/app/PendingIntent;)V" // string@0c7f
+649e8c: 0739                                   |00c6: move-object v9, v3
+649e8e: 7708 27a3 0900                         |00c7: invoke-static/range {v9, v10, v11, v12, v13, v14, v15, v16}, Lgn0/a;.d:(Ljava/lang/Object;[Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V // method@a327
+649e94: 6e20 2ea5 5000                         |00ca: invoke-virtual {v0, v5}, Lhn0/a;.a:(I)Ljava/lang/Object; // method@a52e
+649e9a: 0c05                                   |00cd: move-result-object v5
+649e9c: 1f05 6336                              |00ce: check-cast v5, Ljava/lang/Integer; // type@3663
+649ea0: 6e10 39b1 0500                         |00d0: invoke-virtual {v5}, Ljava/lang/Integer;.intValue:()I // method@b139
+649ea6: 0a05                                   |00d3: move-result v5
+649ea8: 6209 045c                              |00d4: sget-object v9, Lhn0/c;.a:Ljava/lang/ThreadLocal; // field@5c04
+649eac: 6e20 55b2 0900                         |00d6: invoke-virtual {v9, v0}, Ljava/lang/ThreadLocal;.set:(Ljava/lang/Object;)V // method@b255
+649eb2: 6e20 2ea5 6000                         |00d9: invoke-virtual {v0, v6}, Lhn0/a;.a:(I)Ljava/lang/Object; // method@a52e
+649eb8: 0c00                                   |00dc: move-result-object v0
+649eba: 1f00 6736                              |00dd: check-cast v0, Ljava/lang/Long; // type@3667
+649ebe: 6e10 50b1 0000                         |00df: invoke-virtual {v0}, Ljava/lang/Long;.longValue:()J // method@b150
+649ec4: 0b0a                                   |00e2: move-result-wide v10
+649ec6: 7100 31a5 0000                         |00e3: invoke-static {}, Lhn0/c;.a:()Lhn0/a; // method@a531
+649ecc: 0c00                                   |00e6: move-result-object v0
+649ece: 6e20 55b2 0900                         |00e7: invoke-virtual {v9, v0}, Ljava/lang/ThreadLocal;.set:(Ljava/lang/Object;)V // method@b255
+649ed4: 6e20 2ea5 7000                         |00ea: invoke-virtual {v0, v7}, Lhn0/a;.a:(I)Ljava/lang/Object; // method@a52e
+649eda: 0c00                                   |00ed: move-result-object v0
+649edc: 1f00 6736                              |00ee: check-cast v0, Ljava/lang/Long; // type@3667
+649ee0: 6e10 50b1 0000                         |00f0: invoke-virtual {v0}, Ljava/lang/Long;.longValue:()J // method@b150
+649ee6: 0b0c                                   |00f3: move-result-wide v12
+649ee8: 7100 31a5 0000                         |00f4: invoke-static {}, Lhn0/c;.a:()Lhn0/a; // method@a531
+649eee: 0c00                                   |00f7: move-result-object v0
+649ef0: 6e20 2ea5 8000                         |00f8: invoke-virtual {v0, v8}, Lhn0/a;.a:(I)Ljava/lang/Object; // method@a52e
+649ef6: 0c00                                   |00fb: move-result-object v0
+649ef8: 1f00 7701                              |00fc: check-cast v0, Landroid/app/PendingIntent; // type@0177
+649efc: 0813 0300                              |00fe: move-object/from16 v19, v3
+649f00: 0214 0500                              |0100: move/from16 v20, v5
+649f04: 0515 0a00                              |0102: move-wide/from16 v21, v10
+649f08: 0517 0c00                              |0104: move-wide/from16 v23, v12
+649f0c: 0819 0000                              |0106: move-object/from16 v25, v0
+649f10: 7407 0803 1300                         |0108: invoke-virtual/range {v19, v20, v21, v22, v23, v24, v25}, Landroid/app/AlarmManager;.setRepeating:(IJJLandroid/app/PendingIntent;)V // method@0308
+649f16: 1a00 d3ce                              |010b: const-string v0, "com/tencent/mm/alarm/AlarmHelper" // string@ced3
+649f1a: 1b05 6331 0100                         |010d: const-string/jumbo v5, "setRepeating" // string@00013163
+649f20: 1a07 c70c                              |0110: const-string v7, "(Landroid/content/Context;IIJJLandroid/content/Intent;IZ)Landroid/app/PendingIntent;" // string@0cc7
+649f24: 1a08 27be                              |0112: const-string v8, "android/app/AlarmManager_EXEC_" // string@be27
+649f28: 1b09 6331 0100                         |0114: const-string/jumbo v9, "setRepeating" // string@00013163
+649f2e: 1a0a 7f0c                              |0117: const-string v10, "(IJJLandroid/app/PendingIntent;)V" // string@0c7f
+649f32: 0813 0300                              |0119: move-object/from16 v19, v3
+649f36: 0814 0000                              |011b: move-object/from16 v20, v0
+649f3a: 0815 0500                              |011d: move-object/from16 v21, v5
+649f3e: 0816 0700                              |011f: move-object/from16 v22, v7
+649f42: 0817 0800                              |0121: move-object/from16 v23, v8
+649f46: 0818 0900                              |0123: move-object/from16 v24, v9
+649f4a: 0819 0a00                              |0125: move-object/from16 v25, v10
+649f4e: 7707 29a3 1300                         |0127: invoke-static/range {v19, v20, v21, v22, v23, v24, v25}, Lgn0/a;.f:(Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V // method@a329
+649f54: 2825                                   |012a: goto 014f // +0025
+649f56: 0d00                                   |012b: move-exception v0
+649f58: 6e10 81b1 0000                         |012c: invoke-virtual {v0}, Ljava/lang/Object;.getClass:()Ljava/lang/Class; // method@b181
+649f5e: 0c03                                   |012f: move-result-object v3
+649f60: 6e10 e7b0 0300                         |0130: invoke-virtual {v3}, Ljava/lang/Class;.getSimpleName:()Ljava/lang/String; // method@b0e7
+649f66: 0c03                                   |0133: move-result-object v3
+649f68: 6e10 5db2 0000                         |0134: invoke-virtual {v0}, Ljava/lang/Throwable;.getMessage:()Ljava/lang/String; // method@b25d
+649f6e: 0c00                                   |0137: move-result-object v0
+649f70: 2420 2d56 0300                         |0138: filled-new-array {v3, v0}, [Ljava/lang/Object; // type@562d
+649f76: 0c00                                   |013b: move-result-object v0
+649f78: 1b03 6431 0100                         |013c: const-string/jumbo v3, "setRepeating Exception:%s %s" // string@00013164
+649f7e: 7130 a725 3400                         |013f: invoke-static {v4, v3, v0}, Lcom/tencent/mars/xlog/Log;.e:(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)V // method@25a7
+649f84: 6200 7275                              |0142: sget-object v0, Lok/b;.a:Lok/a; // field@7572
+649f88: 3800 0b00                              |0144: if-eqz v0, 014f // +000b
+649f8c: 7100 74ce 0000                         |0146: invoke-static {}, Lok/b;.c:()Ljava/lang/String; // method@ce74
+649f92: 0c03                                   |0149: move-result-object v3
+649f94: 1f00 b90f                              |014a: check-cast v0, Lcom/tencent/mm/feature/performance/a; // type@0fb9
+649f98: 6e40 4733 1036                         |014c: invoke-virtual {v0, v1, v6, v3}, Lcom/tencent/mm/feature/performance/a;.b:(IILjava/lang/String;)V // method@3347
+649f9e: 0720                                   |014f: move-object v0, v2
+649fa0: 1100                                   |0150: return-object v0
+      catches       : 1
+        0x0095 - 0x012a
+          Ljava/lang/Exception; -> 0x012b
+      positions     :
+      locals        :
+
+  Virtual methods   -
+  source_file_idx   : 41600 (SourceFile)
+
+      name          : 'e'
+      type          : 'Lcom/tencent/mm/booter/TrafficStatsReceiver;'
+      access        : 0x0001 (PUBLIC)
+  Direct methods    -
+  Virtual methods   -
+      name          : 'g'
+      type          : '(Landroid/app/Service;)V'
+      access        : 0x0001 (PUBLIC)
+      code          -
+      registers     : 13
+      ins           : 2
+      outs          : 9
+      insns size    : 124 16-bit code units
+5839dc:                                        |[5839dc] iv1.k.g:(Landroid/app/Service;)V
+5839ec: 2200 7912                              |0000: new-instance v0, Lcom/tencent/mm/modelstat/WatchDogPushReceiver; // type@1279
+5839f0: 7010 ac3c 0000                         |0002: invoke-direct {v0}, Lcom/tencent/mm/modelstat/WatchDogPushReceiver;.<init>:()V // method@3cac
+5839f6: 5bb0 5660                              |0005: iput-object v0, v11, Liv1/k;.d:Lcom/tencent/mm/modelstat/WatchDogPushReceiver; // field@6056
+5839fa: 1300 2100                              |0007: const/16 v0, #int 33 // #21
+5839fe: 7110 9cc4 0000                         |0009: invoke-static {v0}, Llp/h;.a:(I)Z // method@c49c
+583a04: 0a01                                   |000c: move-result v1
+583a06: 1242                                   |000d: const/4 v2, #int 4 // #4
+583a08: 1a03 18cd                              |000e: const-string v3, "com.tencent.mm.WatchDogPushReceiver" // string@cd18
+583a0c: 3801 0d00                              |0010: if-eqz v1, 001d // +000d
+583a10: 54b1 5660                              |0012: iget-object v1, v11, Liv1/k;.d:Lcom/tencent/mm/modelstat/WatchDogPushReceiver; // field@6056
+583a14: 2204 a601                              |0014: new-instance v4, Landroid/content/IntentFilter; // type@01a6
+583a18: 7020 bb04 3400                         |0016: invoke-direct {v4, v3}, Landroid/content/IntentFilter;.<init>:(Ljava/lang/String;)V // method@04bb
+583a1e: 6e30 5104 1c04                         |0019: invoke-virtual {v12, v1, v4}, Landroid/content/Context;.registerReceiver:(Landroid/content/BroadcastReceiver;Landroid/content/IntentFilter;)Landroid/content/Intent; // method@0451
+583a24: 280b                                   |001c: goto 0027 // +000b
+583a26: 54b1 5660                              |001d: iget-object v1, v11, Liv1/k;.d:Lcom/tencent/mm/modelstat/WatchDogPushReceiver; // field@6056
+583a2a: 2204 a601                              |001f: new-instance v4, Landroid/content/IntentFilter; // type@01a6
+583a2e: 7020 bb04 3400                         |0021: invoke-direct {v4, v3}, Landroid/content/IntentFilter;.<init>:(Ljava/lang/String;)V // method@04bb
+583a34: 6e40 9a03 1c24                         |0024: invoke-virtual {v12, v1, v4, v2}, Landroid/app/Service;.registerReceiver:(Landroid/content/BroadcastReceiver;Landroid/content/IntentFilter;I)Landroid/content/Intent; // method@039a
+583a3a: 2201 7a0e                              |0027: new-instance v1, Lcom/tencent/mm/booter/TrafficStatsReceiver; // type@0e7a
+583a3e: 7010 0031 0100                         |0029: invoke-direct {v1}, Lcom/tencent/mm/booter/TrafficStatsReceiver;.<init>:()V // method@3100
+583a44: 5bb1 5760                              |002c: iput-object v1, v11, Liv1/k;.e:Lcom/tencent/mm/booter/TrafficStatsReceiver; // field@6057
+583a48: 7110 9cc4 0000                         |002e: invoke-static {v0}, Llp/h;.a:(I)Z // method@c49c
+583a4e: 0a00                                   |0031: move-result v0
+583a50: 1a01 17cd                              |0032: const-string v1, "com.tencent.mm.TrafficStatsReceiver" // string@cd17
+583a54: 3800 0d00                              |0034: if-eqz v0, 0041 // +000d
+583a58: 54b0 5760                              |0036: iget-object v0, v11, Liv1/k;.e:Lcom/tencent/mm/booter/TrafficStatsReceiver; // field@6057
+583a5c: 2202 a601                              |0038: new-instance v2, Landroid/content/IntentFilter; // type@01a6
+583a60: 7020 bb04 1200                         |003a: invoke-direct {v2, v1}, Landroid/content/IntentFilter;.<init>:(Ljava/lang/String;)V // method@04bb
+583a66: 6e30 5104 0c02                         |003d: invoke-virtual {v12, v0, v2}, Landroid/content/Context;.registerReceiver:(Landroid/content/BroadcastReceiver;Landroid/content/IntentFilter;)Landroid/content/Intent; // method@0451
+583a6c: 280b                                   |0040: goto 004b // +000b
+583a6e: 54b0 5760                              |0041: iget-object v0, v11, Liv1/k;.e:Lcom/tencent/mm/booter/TrafficStatsReceiver; // field@6057
+583a72: 2203 a601                              |0043: new-instance v3, Landroid/content/IntentFilter; // type@01a6
+583a76: 7020 bb04 1300                         |0045: invoke-direct {v3, v1}, Landroid/content/IntentFilter;.<init>:(Ljava/lang/String;)V // method@04bb
+583a7c: 6e40 9a03 0c23                         |0048: invoke-virtual {v12, v0, v3, v2}, Landroid/app/Service;.registerReceiver:(Landroid/content/BroadcastReceiver;Landroid/content/IntentFilter;I)Landroid/content/Intent; // method@039a
+583a82: 54b0 5760                              |004b: iget-object v0, v11, Liv1/k;.e:Lcom/tencent/mm/booter/TrafficStatsReceiver; // field@6057
+583a86: 6e10 81b1 0000                         |004d: invoke-virtual {v0}, Ljava/lang/Object;.getClass:()Ljava/lang/Class; // method@b181
+583a8c: 2209 a401                              |0050: new-instance v9, Landroid/content/Intent; // type@01a4
+583a90: 7020 7604 1900                         |0052: invoke-direct {v9, v1}, Landroid/content/Intent;.<init>:(Ljava/lang/String;)V // method@0476
+583a96: 7100 3009 0000                         |0055: invoke-static {}, Landroid/os/SystemClock;.elapsedRealtime:()J // method@0930
+583a9c: 0b05                                   |0058: move-result-wide v5
+583a9e: 1303 6f00                              |0059: const/16 v3, #int 111 // #6f
+583aa2: 1234                                   |005b: const/4 v4, #int 3 // #3
+583aa4: 1707 e093 0400                         |005c: const-wide/32 v7, #float 4.2039e-40 // #000493e0
+583aaa: 1500 0010                              |005f: const/high16 v0, #int 268435456 // #1000
+583aae: 7110 9bc4 0000                         |0061: invoke-static {v0}, Llp/g0;.a:(I)I // method@c49b
+583ab4: 0a0a                                   |0064: move-result v10
+583ab6: 07c2                                   |0065: move-object v2, v12
+583ab8: 7709 76ce 0200                         |0066: invoke-static/range {v2, v3, v4, v5, v6, v7, v8, v9, v10}, Lok/b;.e:(Landroid/content/Context;IIJJLandroid/content/Intent;I)Landroid/app/PendingIntent; // method@ce76
+583abe: 1700 e093 0400                         |0069: const-wide/32 v0, #float 4.2039e-40 // #000493e0
+583ac4: 7120 58b1 1000                         |006c: invoke-static {v0, v1}, Ljava/lang/Long;.valueOf:(J)Ljava/lang/Long; // method@b158
+583aca: 0c0c                                   |006f: move-result-object v12
+583acc: 2410 2d56 0c00                         |0070: filled-new-array {v12}, [Ljava/lang/Object; // type@562d
+583ad2: 0c0c                                   |0073: move-result-object v12
+583ad4: 1a00 af93                              |0074: const-string v0, "MicroMsg.TrafficStats" // string@93af
+583ad8: 1a01 369c                              |0076: const-string v1, "Register alarm, interval: %d ms" // string@9c36
+583adc: 7130 b125 100c                         |0078: invoke-static {v0, v1, v12}, Lcom/tencent/mars/xlog/Log;.i:(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)V // method@25b1
+583ae2: 0e00                                   |007b: return-void
+      catches       : (none)
+      positions     :
+      locals        :
+
+  source_file_idx   : 41600 (SourceFile)
+

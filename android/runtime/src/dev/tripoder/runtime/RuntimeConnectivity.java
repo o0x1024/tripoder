@@ -24,7 +24,7 @@ final class RuntimeConnectivity {
     }
     synchronized void register(NetworkRequest request,ConnectivityManager.NetworkCallback callback,Handler handler,boolean defaults){
         ConnectivityManager platform=platform();
-        if(callback==null||!engine.ownsLoader(callback.getClass().getClassLoader()))throw new SecurityException("NETWORK_CALLBACK_OWNER_INVALID");
+        if(callback==null||!engine.ownsReceiverLoader(callback.getClass().getClassLoader()))throw new SecurityException("NETWORK_CALLBACK_OWNER_INVALID");
         if(RuntimeBridge.networkCallbackFlags(callback)!=0)throw new UnsupportedOperationException("NETWORK_LOCATION_CALLBACK_UNSUPPORTED");
         if(callbacks.containsKey(callback))throw new IllegalStateException("NETWORK_CALLBACK_ALREADY_REGISTERED");
         if(callbacks.size()>=32)throw new IllegalStateException("NETWORK_CALLBACK_LIMIT");

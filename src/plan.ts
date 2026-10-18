@@ -28,6 +28,11 @@ export interface PlanContext<P> {
       argumentTypes: readonly NativeType[]; returnType: NativeType; buildId: string;
     }): HookBuilder<P>;
   };
+  readonly debug: {
+    emitEvent(tag: string, payload?: unknown): void;
+    captureJavaStack(maxDepth?: number): readonly string[];
+    callerModuleOffset(): string;
+  };
 }
 export interface HookPlan<S extends Parameters = Parameters> {
   readonly id: string;
@@ -46,6 +51,11 @@ export interface PreparedPlan<S extends Parameters> {
   readonly parameterSpecs: S;
   readonly parameters: ParameterValues<S>;
   readonly rules: readonly PreparedRule<ParameterValues<S>>[];
+  readonly emitSink?: {
+    fn?: ((tag: string, payload: unknown) => void) | undefined;
+    stack?: ((maxDepth: number) => readonly string[]) | undefined;
+    caller?: (() => string) | undefined;
+  };
 }
 
 export function definePlan<S extends Parameters>(plan: HookPlan<S>): HookPlan<S> {
@@ -62,6 +72,11 @@ export function preparePlan<S extends Parameters>(plan: HookPlan<S>, observed: E
     [key, Object.freeze({ schema: Object.freeze({ ...p.schema }) })]))) as S;
   const values = resolveParameters(specs, parameters);
   const rules = new Map<string, { symbol: HookSymbol; handlers: HookHandlers<ParameterValues<S>> }>();
+  const emitSink: {
+    fn?: ((tag: string, payload: unknown) => void) | undefined;
+    stack?: ((maxDepth: number) => readonly string[]) | undefined;
+    caller?: (() => string) | undefined;
+  } = {};
   let collecting = true;
   function builder(symbol: HookSymbol): HookBuilder<ParameterValues<S>> {
     let rule = rules.get(symbol.id);
@@ -89,10 +104,12 @@ export function preparePlan<S extends Parameters>(plan: HookPlan<S>, observed: E
     java: {
       method(className, methodName, argumentTypes, options = {}) {
         requireThat(evidence.capabilities.includes("java-hook"), "CAPABILITY_MISSING", "java-hook capability is unavailable");
+        const norm = (t: string) => t === "byte[]" ? "[B" : t;
+        const normArgs = JSON.stringify(argumentTypes.map(norm));
         const matches = evidence.symbols.filter(s => s.kind === "java" && s.className === className && s.methodName === methodName
-          && JSON.stringify(s.argumentTypes) === JSON.stringify(argumentTypes)
+          && JSON.stringify(s.argumentTypes.map(norm)) === normArgs
           && (options.classLoaderId === undefined || s.classLoaderId === options.classLoaderId)
-          && (options.returnType === undefined || s.returnType === options.returnType));
+          && (options.returnType === undefined || norm(s.returnType) === norm(options.returnType)));
         requireThat(matches.length > 0, "TARGET_NOT_FOUND", `No observed method: ${className}#${methodName}`);
         requireThat(matches.length === 1, "TARGET_AMBIGUOUS", "Select a class loader or a more precise target");
         return builder(matches[0]!);
@@ -109,6 +126,23 @@ export function preparePlan<S extends Parameters>(plan: HookPlan<S>, observed: E
         requireThat(symbol.returnType === signature.returnType && JSON.stringify(symbol.argumentTypes) === JSON.stringify(signature.argumentTypes),
           "SIGNATURE_MISMATCH", "Native ABI does not match the observed signature");
         return builder(symbol);
+      },
+    },
+    debug: {
+      emitEvent(tag, payload = null) {
+        requireThat(!collecting, "HOOK_EMIT_OUTSIDE_INVOCATION", "emitEvent can only be called inside a hook callback");
+        requireThat(typeof tag === "string" && /^[a-zA-Z0-9_.:-]{1,64}$/.test(tag), "HOOK_EVENT_TAG", "Invalid event tag");
+        emitSink.fn?.(tag, payload);
+      },
+      captureJavaStack(maxDepth = 8) {
+        requireThat(!collecting, "HOOK_EMIT_OUTSIDE_INVOCATION", "captureJavaStack can only be called inside a hook callback");
+        requireThat(typeof maxDepth === "number" && Number.isSafeInteger(maxDepth) && maxDepth >= 1 && maxDepth <= 32,
+          "HOOK_STACK_DEPTH", "maxDepth must be an integer between 1 and 32");
+        return emitSink.stack ? emitSink.stack(maxDepth) : Object.freeze([]);
+      },
+      callerModuleOffset() {
+        requireThat(!collecting, "HOOK_EMIT_OUTSIDE_INVOCATION", "callerModuleOffset can only be called inside a hook callback");
+        return emitSink.caller ? emitSink.caller() : "unknown+0x0";
       },
     },
   };
@@ -128,5 +162,5 @@ export function preparePlan<S extends Parameters>(plan: HookPlan<S>, observed: E
     return Object.freeze({ symbol: rule.symbol, handlers: Object.freeze({ ...rule.handlers }) });
   });
   return Object.freeze({ id: plan.id, evidence, evidenceKey: evidenceKey(evidence), parameterSpecs: specs,
-    parameters: values, rules: Object.freeze(compiled) });
+    parameters: values, rules: Object.freeze(compiled), emitSink });
 }

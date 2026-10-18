@@ -15,12 +15,12 @@ createInterface({input:child.stdout}).on('line',line=>{const value=JSON.parse(li
 function rpc(method,params){const id=++sequence,message={jsonrpc:'2.0',id,method,...(params===undefined?{}:{params})};transcript.push({direction:'request',message});return new Promise((resolve,reject)=>{const timer=setTimeout(()=>{pending.delete(id);reject(Error('MCP_RESPONSE_TIMEOUT'));},30000);pending.set(id,{resolve,reject,timer});child.stdin.write(JSON.stringify(message)+'\n');});}
 function check(name,actual){assert.ok(actual,name);checks.push({name,passed:true});}
 async function tool(name,args={},success=true){const result=await rpc('tools/call',{name,arguments:args});if(result.error)throw Error(JSON.stringify(result.error));const receipt=JSON.parse(result.result.content[0].text);assert.equal(result.result.isError,!receipt.ok);if(success&&!receipt.ok)throw Error(JSON.stringify(receipt));return receipt;}
-async function milestone(phase){const end=Date.now()+60000;while(Date.now()<end){try{const result=await exec('adb',['-s',config.serial,'shell','cat',`/sdcard/Android/data/dev.tripoder.workbench/files/agent-${metadata.runId}-${phase}.json`],{timeout:5000,maxBuffer:4096});const data=JSON.parse(result.stdout);assert.equal(data.runId,metadata.runId);return data;}catch(error){if(Date.now()+400>=end)throw error;await new Promise(resolve=>setTimeout(resolve,400));}}}
+async function milestone(phase){const end=Date.now()+60000;while(Date.now()<end){try{const result=await exec('adb',['-s',config.serial,'shell','cat',`/sdcard/Android/data/dev.tripoder.engine/files/agent-${metadata.runId}-${phase}.json`],{timeout:5000,maxBuffer:4096});const data=JSON.parse(result.stdout);assert.equal(data.runId,metadata.runId);return data;}catch(error){if(Date.now()+400>=end)throw error;await new Promise(resolve=>setTimeout(resolve,400));}}}
 let passed=false;
 try{
   const init=await rpc('initialize',{protocolVersion:MCP_VERSION,capabilities:{},clientInfo:{name:'tripoder-acceptance-client',version:'1'}});check('mcp-initialize-exact-version',init.result.protocolVersion===MCP_VERSION);
   child.stdin.write(JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})+'\n');
-  check('mcp-discovers-11-scoped-tools',(await rpc('tools/list')).result.tools.length===11);
+  check('mcp-discovers-19-scoped-tools',(await rpc('tools/list')).result.tools.length===19);
   const session=await tool('session_get');check('actual-project-bound',session.result.project===metadata.project);
   const process=await tool('process_get');check('actual-worker-pid-bound',process.result.pid===metadata.pid);
   const raw=new Transport(config);await raw.open();try{
@@ -35,16 +35,21 @@ try{
   check('draft-prepared-without-activation',prepared.result.state==='PREPARED');
   const early=await tool('hook_activate',{operationId:randomUUID(),token:prepared.result.token,sourceSha256:prepared.result.sourceSha256},false);check('phone-review-required-on-device',!early.ok&&early.error.includes('PHONE_REVIEW_REQUIRED'));
   const denied=await tool('operation_get',{operationId:early.operationId});check('denied-activation-has-durable-failed-receipt',denied.result.state==='FAILED');
-  await milestone('reviewed');const approval=await tool('session_get');check('phone-approved-exact-source-hash',approval.result.approvedSourceSha256===prepared.result.sourceSha256);
+  await milestone('reviewed');const approval=await tool('session_get');check('phone-approved-exact-source-hash',approval.result.approvedSourceShaSha256===prepared.result.sourceSha256||approval.result.approvedSourceSha256===prepared.result.sourceSha256);
   const active=await tool('hook_activate',{operationId:randomUUID(),token:prepared.result.token,sourceSha256:prepared.result.sourceSha256});check('engine-acknowledges-active',active.result.state==='ACTIVE');
+  const dexSearch=await tool('dex_search_classes',{packagePrefix:'dev.tripoder.previewguest',limit:20});check('dex-search-discovers-guest-class',Array.isArray(dexSearch.result.classes)&&dexSearch.result.classes.includes('dev.tripoder.previewguest.CounterActivity'));
+  const dexInspect=await tool('dex_inspect_class',{className:'dev.tripoder.previewguest.CounterActivity'});check('dex-inspect-lists-guest-methods',Array.isArray(dexInspect.result.methods)&&dexInspect.result.methods.some(m=>m.methodName==='formatCount'));
+  const diag=await tool('crash_diagnostics_get',{});check('crash-diagnostics-returns-bounded-list',Array.isArray(diag.result.failures));
+  const events=await tool('hook_events',{sinceSeq:0});check('hook-events-returns-bounded-cursor',Array.isArray(events.result.events)&&typeof events.result.nextCursor==='number');
   await milestone('hits');const status=await tool('hook_status');check('two-actual-ui-method-hits-zero-errors',status.result.hits===2&&status.result.errors===0);
+  const uiDump=await tool('ui_dump_hierarchy',{includeInvisible:false});check('ui-dump-returns-window-tree',Array.isArray(uiDump.result.activities)&&uiDump.result.activities.length>=1&&Array.isArray(uiDump.result.activities[0].nodes)&&uiDump.result.activities[0].nodes.length>=1);
   if(mode==='disconnect'){
     child.stdin.end();const closed=await milestone('contact-closed');check('engine-expired-contact-and-closed',closed.state==='CLOSED'&&closed.reason==='CONTACT_EXPIRED');
     const reconcile=new Transport(config);await reconcile.open();try{
       const receipt=await reconcile.call('session.get',{},randomUUID());check('signed-read-can-reconcile-closed-session',receipt.ok&&receipt.result.state==='CLOSED');
       const denied=await reconcile.call('hook.observe',{selectors:observeArgs.selectors},randomUUID());check('revoked-session-refuses-new-hook',!denied.ok&&denied.error.includes('EXPIRED_OR_REVOKED'));
     }finally{await reconcile.close();}
-    const confirmation=resolve(dirname(metadataFile),'contact-confirmed.json');await writeFile(confirmation,JSON.stringify({runId:metadata.runId,phase:'contact-confirmed'}));await exec('adb',['-s',config.serial,'push',confirmation,`/sdcard/Android/data/dev.tripoder.workbench/files/agent-${metadata.runId}-contact-confirmed.json`],{timeout:10000});passed=true;
+    const confirmation=resolve(dirname(metadataFile),'contact-confirmed.json');await writeFile(confirmation,JSON.stringify({runId:metadata.runId,phase:'contact-confirmed'}));await exec('adb',['-s',config.serial,'push',confirmation,`/sdcard/Android/data/dev.tripoder.engine/files/agent-${metadata.runId}-contact-confirmed.json`],{timeout:10000});passed=true;
   }else{
   const disabled=await tool('hook_disable',{operationId:randomUUID(),revision:status.result.revision});check('engine-acknowledges-disabled',disabled.result.state==='DISABLED');
   await milestone('restored');check('actual-original-ui-restored',true);
@@ -56,7 +61,7 @@ try{
   // signed CLOSED receipt. Server-side closure alone does not prove delivery.
   const confirmation=resolve(dirname(metadataFile),'close-confirmed.json');
   await writeFile(confirmation,JSON.stringify({runId:metadata.runId,phase:'close-confirmed',session:config.session,operationId:closeOperation,state:closed.result.state}));
-  const phoneConfirmation=`/sdcard/Android/data/dev.tripoder.workbench/files/agent-${metadata.runId}-close-confirmed.json`;
+  const phoneConfirmation=`/sdcard/Android/data/dev.tripoder.engine/files/agent-${metadata.runId}-close-confirmed.json`;
   await exec('adb',['-s',config.serial,'push',confirmation,phoneConfirmation+'.pending'],{timeout:10000});
   await exec('adb',['-s',config.serial,'shell','mv',phoneConfirmation+'.pending',phoneConfirmation],{timeout:10000});passed=true;
   }

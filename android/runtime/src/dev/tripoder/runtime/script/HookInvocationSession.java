@@ -8,6 +8,7 @@ public final class HookInvocationSession {
     public enum State { PREPARED, INSTALLING, ACTIVE, DRAINING, DISABLED, FAILED }
     public record Snapshot(State state,String generation,String revision,int parameterVersion,
                            Map<String,Object> parameters,int inFlight,long hits,long errors) {}
+    public record EventSnapshot(List<Map<String,Object>> events,long droppedEvents,long nextCursor) {}
     @FunctionalInterface public interface Dispatch { Object call(String symbol,List<Object> args,HookRule.Original original)throws Throwable; }
     /** Supplied only after target/evidence/coverage validation. It must not publish during prepare. */
     public interface PreparedBackend {
@@ -21,6 +22,8 @@ public final class HookInvocationSession {
         /** Native script failures must terminate; Java script failures may throw HOOK_EXECUTION. */
         boolean nativeSymbol(String symbol);
     }
+    private record ActiveContext(HookInvocationSession session,String symbol) {}
+    private static final ThreadLocal<Deque<ActiveContext>> ACTIVE_CONTEXT=ThreadLocal.withInitial(ArrayDeque::new);
     private final String generation,revision;
     private final Map<String,HookRule> rules;
     private final Map<String,ParameterSpec> specs;
@@ -28,9 +31,10 @@ public final class HookInvocationSession {
     private State state=State.PREPARED;
     private Map<String,Object> parameters;
     private int parameterVersion=1,inFlight;
-    private long hits,errors;
+    private long hits,errors,droppedEvents,eventSeq;
     private boolean controlInFlight;
     private final ThreadLocal<Integer> depth=ThreadLocal.withInitial(()->0);
+    private final ArrayDeque<Map<String,Object>> events=new ArrayDeque<>();
 
     public HookInvocationSession(String generation,String revision,List<HookRule> ruleList,
                                  Map<String,ParameterSpec> specs,Map<String,Object> input,PreparedBackend backend) {
@@ -40,6 +44,53 @@ public final class HookInvocationSession {
         for(HookRule rule:ruleList)require(selected.put(rule.symbol,rule)==null,"HOOK_CONFLICT");
         this.generation=generation;this.revision=revision;this.rules=Collections.unmodifiableMap(selected);
         this.specs=Map.copyOf(specs);this.parameters=ParameterSpec.resolve(this.specs,input);this.backend=backend;
+    }
+    static void recordEvent(String tag,Object payload) {
+        ActiveContext current=ACTIVE_CONTEXT.get().peek();
+        if(current==null)return;
+        Object jsonSafe=toJsonSafe(payload);
+        String encoded=HookWire.encode(Map.of("tag",tag,"payload",jsonSafe));
+        require(encoded.length()<=4096,"HOOK_EVENT_SIZE");
+        current.session.appendEvent(current.symbol,tag,jsonSafe);
+    }
+    static List<String> captureStack(int maxDepth) {
+        ActiveContext current=ACTIVE_CONTEXT.get().peek();
+        if(current==null)return List.of();
+        List<String> frames=new ArrayList<>(maxDepth);
+        for(StackTraceElement element:Thread.currentThread().getStackTrace()){
+            String cls=element.getClassName();
+            if(cls.equals("java.lang.Thread")||cls.startsWith("dev.tripoder.runtime.script.")||cls.startsWith("dev.tripoder.selfhook.")
+                ||cls.startsWith("dev.tripoder.runtime.RuntimeJavaHookBackend")||cls.startsWith("dev.tripoder.runtime.RuntimeNativeHookBackend"))continue;
+            frames.add(cls+"."+element.getMethodName()+"("+(element.getFileName()==null?"Unknown":element.getFileName()+":"+element.getLineNumber())+")");
+            if(frames.size()>=maxDepth)break;
+        }
+        if(frames.isEmpty())frames.add(current.symbol);
+        return List.copyOf(frames);
+    }
+    static String callerModuleOffset() {
+        ActiveContext current=ACTIVE_CONTEXT.get().peek();
+        if(current==null)return "unknown+0x0";
+        return current.symbol+"+0x0";
+    }
+    private static Object toJsonSafe(Object value) {
+        if(value==null||value instanceof String||value instanceof Boolean||value instanceof Double)return value;
+        if(value instanceof java.math.BigInteger)return value.toString();
+        if(value instanceof List<?> list){List<Object> out=new ArrayList<>(list.size());for(Object item:list)out.add(toJsonSafe(item));return Collections.unmodifiableList(out);}
+        if(value instanceof Map<?,?> map){Map<String,Object> out=new LinkedHashMap<>();for(var e:map.entrySet())out.put(String.valueOf(e.getKey()),toJsonSafe(e.getValue()));return Collections.unmodifiableMap(out);}
+        return String.valueOf(value);
+    }
+    private synchronized void appendEvent(String symbol,String tag,Object payload) {
+        if(state!=State.INSTALLING&&state!=State.ACTIVE)return;
+        long seq=++eventSeq;
+        Map<String,Object> entry=new LinkedHashMap<>();
+        entry.put("seq",(double)seq);entry.put("revision",revision);entry.put("symbol",symbol);entry.put("tag",tag);entry.put("payload",payload);
+        if(events.size()>=256){events.pollFirst();droppedEvents++;}
+        events.addLast(Collections.unmodifiableMap(entry));
+    }
+    public synchronized EventSnapshot events(long sinceSeq) {
+        List<Map<String,Object>> selected=new ArrayList<>();
+        for(Map<String,Object> item:events)if(((Double)item.get("seq")).longValue()>sinceSeq)selected.add(item);
+        return new EventSnapshot(List.copyOf(selected),droppedEvents,eventSeq);
     }
     /** Called by the existing approved activate command, never by a script. */
     public void activate(String expectedGeneration,String expectedRevision) {
@@ -88,13 +139,20 @@ public final class HookInvocationSession {
             enabled=state==State.INSTALLING||state==State.ACTIVE;captured=parameters;inFlight++;withinBudget=inFlight<=64;if(enabled)hits++;
         }
         depth.set(nesting+1);
+        Deque<ActiveContext> stack=ACTIVE_CONTEXT.get();
+        stack.push(new ActiveContext(this,symbol));
         try {
             if(!enabled)return original.call(args);
             // Capture original Throwable separately even when the guest throws ScriptFault itself.
             final Throwable[] originalFailure={null};
             try {
                 if(nesting>=64||!withinBudget)throw new ScriptFault("HOOK_REENTRY_BUDGET");
-                return rule.execute(captured,args,values->{try{return original.call(values);}catch(Throwable t){originalFailure[0]=t;throw t;}});
+                return rule.execute(captured,args,values->{
+                    stack.pop();
+                    try{return original.call(values);}
+                    catch(Throwable t){originalFailure[0]=t;throw t;}
+                    finally{stack.push(new ActiveContext(this,symbol));}
+                });
             }catch(Throwable failure) {
                 if(originalFailure[0]==failure)throw failure;
                 if(failure instanceof HookBackendUncertain)throw failure;
@@ -103,6 +161,8 @@ public final class HookInvocationSession {
                 throw new IllegalStateException("HOOK_EXECUTION:"+failure.getMessage(),failure);
             }
         } finally {
+            stack.pop();
+            if(stack.isEmpty())ACTIVE_CONTEXT.remove();
             if(nesting==0)depth.remove();else depth.set(nesting);
             synchronized(this){inFlight--;}
         }

@@ -7,6 +7,7 @@ public final class RuntimeFactory extends AppComponentFactory {
     @Override public BroadcastReceiver instantiateReceiver(ClassLoader cl,String name,Intent intent)throws InstantiationException,IllegalAccessException,ClassNotFoundException{
         if(RuntimeReceiverSlots.isStub(name))try{
             var host=RuntimeApplication.host;
+            if(host!=null&&RuntimePendingIntentPayload.version(host,intent)!=null)return new RuntimeRejectedReceiver("PENDING_VERSION_RETIRED");
             if(host==null||intent==null||intent.getComponent()==null||!intent.getComponent().equals(new android.content.ComponentName(host,name))||!host.getPackageName().equals(intent.getPackage())||intent.getAction()!=null)throw new SecurityException("BROADCAST_PHYSICAL_COMPONENT_MISMATCH");
             String rejected=bootstrap(name,"restoreReceiver",RuntimeBroadcastIntent.ticket(intent));
             if(rejected!=null)return new RuntimeRejectedReceiver(rejected);

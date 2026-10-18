@@ -1,0 +1,339 @@
+
+/private/tmp/tripoder-art-replay-20261017/android/product/build/native/libtripoderselfhook.so:	file format elf64-littleaarch64
+
+Disassembly of section .text:
+
+00000000000206b8 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative>:
+   206b8: d503233f     	paciasp
+   206bc: a9ba7bfd     	stp	x29, x30, [sp, #-0x60]!
+   206c0: a9016ffc     	stp	x28, x27, [sp, #0x10]
+   206c4: a90267fa     	stp	x26, x25, [sp, #0x20]
+   206c8: a9035ff8     	stp	x24, x23, [sp, #0x30]
+   206cc: a90457f6     	stp	x22, x21, [sp, #0x40]
+   206d0: a9054ff4     	stp	x20, x19, [sp, #0x50]
+   206d4: 910003fd     	mov	x29, sp
+   206d8: d14017ff     	sub	sp, sp, #0x5, lsl #12   // =0x5000
+   206dc: d10043ff     	sub	sp, sp, #0x10
+   206e0: b4000422     	cbz	x2, 0x20764 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0xac>
+   206e4: f9400008     	ldr	x8, [x0]
+   206e8: aa0203e1     	mov	x1, x2
+   206ec: 2a0303f3     	mov	w19, w3
+   206f0: aa0203f5     	mov	x21, x2
+   206f4: aa0003f6     	mov	x22, x0
+   206f8: f942ad08     	ldr	x8, [x8, #0x558]
+   206fc: d63f0100     	blr	x8
+   20700: 12820008     	mov	w8, #-0x1001            // =-4097
+   20704: 0b080008     	add	w8, w0, w8
+   20708: 3140051f     	cmn	w8, #0x1, lsl #12       // =0x1000
+   2070c: 540002c3     	b.lo	0x20764 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0xac>
+   20710: 2a0003f4     	mov	w20, w0
+   20714: 910023e0     	add	x0, sp, #0x8
+   20718: 2a1f03e1     	mov	w1, wzr
+   2071c: 52820002     	mov	w2, #0x1000             // =4096
+   20720: 910023f7     	add	x23, sp, #0x8
+   20724: 9400729b     	bl	0x3d190 <memset@plt>
+   20728: f94002c8     	ldr	x8, [x22]
+   2072c: 914007e4     	add	x4, sp, #0x1, lsl #12   // =0x1000
+   20730: aa1603e0     	mov	x0, x22
+   20734: 91002084     	add	x4, x4, #0x8
+   20738: aa1503e1     	mov	x1, x21
+   2073c: 2a1f03e2     	mov	w2, wzr
+   20740: f9432d08     	ldr	x8, [x8, #0x658]
+   20744: 2a1403e3     	mov	w3, w20
+   20748: d63f0100     	blr	x8
+   2074c: f94002c8     	ldr	x8, [x22]
+   20750: aa1603e0     	mov	x0, x22
+   20754: f9439108     	ldr	x8, [x8, #0x720]
+   20758: d63f0100     	blr	x8
+   2075c: 72001c1f     	tst	w0, #0xff
+   20760: 54000180     	b.eq	0x20790 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0xd8>
+   20764: 2a1f03e0     	mov	w0, wzr
+   20768: 914017ff     	add	sp, sp, #0x5, lsl #12   // =0x5000
+   2076c: 910043ff     	add	sp, sp, #0x10
+   20770: a9454ff4     	ldp	x20, x19, [sp, #0x50]
+   20774: a94457f6     	ldp	x22, x21, [sp, #0x40]
+   20778: a9435ff8     	ldp	x24, x23, [sp, #0x30]
+   2077c: a94267fa     	ldp	x26, x25, [sp, #0x20]
+   20780: a9416ffc     	ldp	x28, x27, [sp, #0x10]
+   20784: a8c67bfd     	ldp	x29, x30, [sp], #0x60
+   20788: d50323bf     	autiasp
+   2078c: d65f03c0     	ret
+   20790: 72001e7f     	tst	w19, #0xff
+   20794: 2a1403f5     	mov	w21, w20
+   20798: 914007e8     	add	x8, sp, #0x1, lsl #12   // =0x1000
+   2079c: 91002108     	add	x8, x8, #0x8
+   207a0: 52800029     	mov	w9, #0x1                // =1
+   207a4: 5280970a     	mov	w10, #0x4b8             // =1208
+   207a8: 1a9f07eb     	cset	w11, ne
+   207ac: d0000236     	adrp	x22, 0x66000 <originals+0x17470>
+   207b0: 913082d6     	add	x22, x22, #0xc20
+   207b4: aa1503ec     	mov	x12, x21
+   207b8: b840450d     	ldr	w13, [x8], #0x4
+   207bc: 713ffdbf     	cmp	w13, #0xfff
+   207c0: 54fffd28     	b.hi	0x20764 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0xac>
+   207c4: 386d6aee     	ldrb	w14, [x23, x13]
+   207c8: 3707fcee     	tbnz	w14, #0x0, 0x20764 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0xac>
+   207cc: 9baa59ae     	umaddl	x14, w13, w10, x22
+   207d0: 382d6ae9     	strb	w9, [x23, x13]
+   207d4: 9111edcd     	add	x13, x14, #0x47b
+   207d8: 08dffdad     	ldarb	w13, [x13]
+   207dc: 710005bf     	cmp	w13, #0x1
+   207e0: 54fffc21     	b.ne	0x20764 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0xac>
+   207e4: 9111f1cd     	add	x13, x14, #0x47c
+   207e8: 08dffdad     	ldarb	w13, [x13]
+   207ec: 6b0b01bf     	cmp	w13, w11
+   207f0: 54fffba0     	b.eq	0x20764 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0xac>
+   207f4: 9108e1cd     	add	x13, x14, #0x238
+   207f8: 88dffdad     	ldar	w13, [x13]
+   207fc: 710401bf     	cmp	w13, #0x100
+   20800: 54fffb20     	b.eq	0x20764 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0xac>
+   20804: f100058c     	subs	x12, x12, #0x1
+   20808: 54fffd81     	b.ne	0x207b8 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x100>
+   2080c: 72001e7f     	tst	w19, #0xff
+   20810: 54000060     	b.eq	0x2081c <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x164>
+   20814: 940029e4     	bl	0x2afa4 <tp_art_entry_writer_activate>
+   20818: 3607fa60     	tbz	w0, #0x0, 0x20764 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0xac>
+   2081c: d0000234     	adrp	x20, 0x66000 <originals+0x17470>
+   20820: 912ea294     	add	x20, x20, #0xba8
+   20824: 910013e0     	add	x0, sp, #0x4
+   20828: f9400a88     	ldr	x8, [x20, #0x10]
+   2082c: 390013ff     	strb	wzr, [sp, #0x4]
+   20830: 390003ff     	strb	wzr, [sp]
+   20834: d63f0100     	blr	x8
+   20838: f9400288     	ldr	x8, [x20]
+   2083c: f0ffff01     	adrp	x1, 0x3000 <slot+0x2c00>
+   20840: 913f0021     	add	x1, x1, #0xfc0
+   20844: 910003e0     	mov	x0, sp
+   20848: 2a1f03e2     	mov	w2, wzr
+   2084c: d63f0100     	blr	x8
+   20850: d0000220     	adrp	x0, 0x66000 <originals+0x17470>
+   20854: 912fe000     	add	x0, x0, #0xbf8
+   20858: 97fffb3a     	bl	0x1f540 <tp_art_interpreter_claim_locked>
+   2085c: 36001b00     	tbz	w0, #0x0, 0x20bbc <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x504>
+   20860: 940029fc     	bl	0x2b050 <tp_art_entry_writer_installed>
+   20864: 36001ac0     	tbz	w0, #0x0, 0x20bbc <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x504>
+   20868: 914007f9     	add	x25, sp, #0x1, lsl #12  // =0x1000
+   2086c: aa1f03f8     	mov	x24, xzr
+   20870: 5280971a     	mov	w26, #0x4b8             // =1208
+   20874: 91002339     	add	x25, x25, #0x8
+   20878: 52800817     	mov	w23, #0x40              // =64
+   2087c: d000023b     	adrp	x27, 0x66000 <originals+0x17470>
+   20880: 14000005     	b	0x20894 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x1dc>
+   20884: 91000718     	add	x24, x24, #0x1
+   20888: 7100011f     	cmp	w8, #0x0
+   2088c: fa551302     	ccmp	x24, x21, #0x2, ne
+   20890: 54000a42     	b.hs	0x209d8 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x320>
+   20894: b8b87b28     	ldrsw	x8, [x25, x24, lsl #2]
+   20898: d503201f     	nop
+   2089c: 9b3a591c     	smaddl	x28, w8, w26, x22
+   208a0: f9400380     	ldr	x0, [x28]
+   208a4: 940002de     	bl	0x2141c <tp_art_storage_read_root>
+   208a8: f9400788     	ldr	x8, [x28, #0x8]
+   208ac: aa0003f4     	mov	x20, x0
+   208b0: aa0803e0     	mov	x0, x8
+   208b4: 940002da     	bl	0x2141c <tp_art_storage_read_root>
+   208b8: eb00029f     	cmp	x20, x0
+   208bc: 540006e1     	b.ne	0x20998 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x2e0>
+   208c0: f9400380     	ldr	x0, [x28]
+   208c4: b9447389     	ldr	w9, [x28, #0x470]
+   208c8: b9400808     	ldr	w8, [x0, #0x8]
+   208cc: 6b09011f     	cmp	w8, w9
+   208d0: 54000641     	b.ne	0x20998 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x2e0>
+   208d4: 79401808     	ldrh	w8, [x0, #0xc]
+   208d8: b9447789     	ldr	w9, [x28, #0x474]
+   208dc: 6b09011f     	cmp	w8, w9
+   208e0: 540005c1     	b.ne	0x20998 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x2e0>
+   208e4: 3951eb88     	ldrb	w8, [x28, #0x47a]
+   208e8: 12bffc89     	mov	w9, #0x1bffff           // =1835007
+   208ec: 370000e8     	tbnz	w8, #0x0, 0x20908 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x250>
+   208f0: f9400789     	ldr	x9, [x28, #0x8]
+   208f4: f940080a     	ldr	x10, [x0, #0x10]
+   208f8: f9400929     	ldr	x9, [x9, #0x10]
+   208fc: eb09015f     	cmp	x10, x9
+   20900: 540004c1     	b.ne	0x20998 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x2e0>
+   20904: 12bfff89     	mov	w9, #0x3ffff            // =262143
+   20908: b940040a     	ldr	w10, [x0, #0x4]
+   2090c: b9446f8b     	ldr	w11, [x28, #0x46c]
+   20910: 0a090149     	and	w9, w10, w9
+   20914: 6b0b013f     	cmp	w9, w11
+   20918: 54000401     	b.ne	0x20998 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x2e0>
+   2091c: 53082149     	ubfx	w9, w10, #8, #1
+   20920: 6b08013f     	cmp	w9, w8
+   20924: 540003a1     	b.ne	0x20998 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x2e0>
+   20928: f9400781     	ldr	x1, [x28, #0x8]
+   2092c: 94000818     	bl	0x2298c <tp_art_backup_rooted_locked>
+   20930: 36000340     	tbz	w0, #0x0, 0x20998 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x2e0>
+   20934: f9400388     	ldr	x8, [x28]
+   20938: 9108e389     	add	x9, x28, #0x238
+   2093c: f9400d08     	ldr	x8, [x8, #0x18]
+   20940: 88dffd29     	ldar	w9, [x9]
+   20944: 340000e9     	cbz	w9, 0x20960 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x2a8>
+   20948: 9111f389     	add	x9, x28, #0x47c
+   2094c: 08dffd29     	ldarb	w9, [x9]
+   20950: 7100053f     	cmp	w9, #0x1
+   20954: 54000061     	b.ne	0x20960 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x2a8>
+   20958: f9422389     	ldr	x9, [x28, #0x440]
+   2095c: 14000008     	b	0x2097c <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x2c4>
+   20960: 3951eb89     	ldrb	w9, [x28, #0x47a]
+   20964: d000022a     	adrp	x10, 0x66000 <originals+0x17470>
+   20968: 912e614a     	add	x10, x10, #0xb98
+   2096c: 7100013f     	cmp	w9, #0x0
+   20970: 52800709     	mov	w9, #0x38               // =56
+   20974: 9a971129     	csel	x9, x9, x23, ne
+   20978: f8696949     	ldr	x9, [x10, x9]
+   2097c: eb09011f     	cmp	x8, x9
+   20980: 540000c1     	b.ne	0x20998 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x2e0>
+   20984: f9400388     	ldr	x8, [x28]
+   20988: 39401d08     	ldrb	w8, [x8, #0x7]
+   2098c: 721f011f     	tst	w8, #0x2
+   20990: 1a9f17e8     	cset	w8, eq
+   20994: 14000002     	b	0x2099c <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x2e4>
+   20998: 2a1f03e8     	mov	w8, wzr
+   2099c: 9108e389     	add	x9, x28, #0x238
+   209a0: 88dffd29     	ldar	w9, [x9]
+   209a4: 35fff709     	cbnz	w9, 0x20884 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x1cc>
+   209a8: b9423789     	ldr	w9, [x28, #0x234]
+   209ac: 34fff6c9     	cbz	w9, 0x20884 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x1cc>
+   209b0: f945ef6a     	ldr	x10, [x27, #0xbd8]
+   209b4: 9109038b     	add	x11, x28, #0x240
+   209b8: f840856c     	ldr	x12, [x11], #0x8
+   209bc: f9400d8c     	ldr	x12, [x12, #0x18]
+   209c0: eb0a019f     	cmp	x12, x10
+   209c4: 1a9f17ec     	cset	w12, eq
+   209c8: f1000529     	subs	x9, x9, #0x1
+   209cc: 0a080188     	and	w8, w12, w8
+   209d0: 54ffff41     	b.ne	0x209b8 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x300>
+   209d4: 17ffffac     	b	0x20884 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x1cc>
+   209d8: 34000f28     	cbz	w8, 0x20bbc <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x504>
+   209dc: b0000114     	adrp	x20, 0x41000 <current_call+0x40fc8>
+   209e0: 914007f7     	add	x23, sp, #0x1, lsl #12  // =0x1000
+   209e4: 52800039     	mov	w25, #0x1               // =1
+   209e8: f9475e94     	ldr	x20, [x20, #0xeb8]
+   209ec: 910022f7     	add	x23, x23, #0x8
+   209f0: 52809718     	mov	w24, #0x4b8             // =1208
+   209f4: 1400000a     	b	0x20a1c <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x364>
+   209f8: 91124101     	add	x1, x8, #0x490
+   209fc: aa1403e0     	mov	x0, x20
+   20a00: 94002d65     	bl	0x2bf94 <tp_entry_owner_register>
+   20a04: 7100001f     	cmp	w0, #0x0
+   20a08: 1a9f17e8     	cset	w8, eq
+   20a0c: 34000188     	cbz	w8, 0x20a3c <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x384>
+   20a10: eb15033f     	cmp	x25, x21
+   20a14: 91000739     	add	x25, x25, #0x1
+   20a18: 54000122     	b.hs	0x20a3c <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x384>
+   20a1c: b88046e8     	ldrsw	x8, [x23], #0x4
+   20a20: d503201f     	nop
+   20a24: 9b385908     	smaddl	x8, w8, w24, x22
+   20a28: 9108e109     	add	x9, x8, #0x238
+   20a2c: 88dffd29     	ldar	w9, [x9]
+   20a30: 34fffe49     	cbz	w9, 0x209f8 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x340>
+   20a34: 52800028     	mov	w8, #0x1                // =1
+   20a38: 35fffec8     	cbnz	w8, 0x20a10 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x358>
+   20a3c: 34000c08     	cbz	w8, 0x20bbc <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x504>
+   20a40: d0ffff08     	adrp	x8, 0x2000 <slot+0x1c00>
+   20a44: 913af108     	add	x8, x8, #0xebc
+   20a48: 72001e7f     	tst	w19, #0xff
+   20a4c: b0ffff29     	adrp	x9, 0x5000 <slot+0x4c00>
+   20a50: 91112129     	add	x9, x9, #0x448
+   20a54: 914007fb     	add	x27, sp, #0x1, lsl #12  // =0x1000
+   20a58: aa1f03f8     	mov	x24, xzr
+   20a5c: 1a9f07f9     	cset	w25, ne
+   20a60: 9a88013a     	csel	x26, x9, x8, eq
+   20a64: 9100237b     	add	x27, x27, #0x8
+   20a68: 5280971c     	mov	w28, #0x4b8             // =1208
+   20a6c: b8b87b68     	ldrsw	x8, [x27, x24, lsl #2]
+   20a70: d503201f     	nop
+   20a74: 9b3c5917     	smaddl	x23, w8, w28, x22
+   20a78: 3951eae8     	ldrb	w8, [x23, #0x47a]
+   20a7c: 370000a8     	tbnz	w8, #0x0, 0x20a90 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x3d8>
+   20a80: f94002e9     	ldr	x9, [x23]
+   20a84: b940052a     	ldr	w10, [x9, #0x4]
+   20a88: 120b794a     	and	w10, w10, #0xffefffff
+   20a8c: b900052a     	str	w10, [x9, #0x4]
+   20a90: 72001e7f     	tst	w19, #0xff
+   20a94: 54000060     	b.eq	0x20aa0 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x3e8>
+   20a98: f94222e8     	ldr	x8, [x23, #0x440]
+   20a9c: 14000008     	b	0x20abc <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x404>
+   20aa0: 7100011f     	cmp	w8, #0x0
+   20aa4: 52800808     	mov	w8, #0x40               // =64
+   20aa8: 52800709     	mov	w9, #0x38               // =56
+   20aac: 9a881128     	csel	x8, x9, x8, ne
+   20ab0: d0000229     	adrp	x9, 0x66000 <originals+0x17470>
+   20ab4: 912e6129     	add	x9, x9, #0xb98
+   20ab8: f8686928     	ldr	x8, [x9, x8]
+   20abc: 911222e9     	add	x9, x23, #0x488
+   20ac0: c89ffd28     	stlr	x8, [x9]
+   20ac4: f94002e0     	ldr	x0, [x23]
+   20ac8: f9000c08     	str	x8, [x0, #0x18]
+   20acc: 94000254     	bl	0x2141c <tp_art_storage_read_root>
+   20ad0: f94006e8     	ldr	x8, [x23, #0x8]
+   20ad4: aa0003f4     	mov	x20, x0
+   20ad8: aa0803e0     	mov	x0, x8
+   20adc: 94000250     	bl	0x2141c <tp_art_storage_read_root>
+   20ae0: eb00029f     	cmp	x20, x0
+   20ae4: 540006c1     	b.ne	0x20bbc <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x504>
+   20ae8: f94002e8     	ldr	x8, [x23]
+   20aec: b94472ea     	ldr	w10, [x23, #0x470]
+   20af0: b9400909     	ldr	w9, [x8, #0x8]
+   20af4: 6b0a013f     	cmp	w9, w10
+   20af8: 54000621     	b.ne	0x20bbc <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x504>
+   20afc: 79401909     	ldrh	w9, [x8, #0xc]
+   20b00: b94476ea     	ldr	w10, [x23, #0x474]
+   20b04: 6b0a013f     	cmp	w9, w10
+   20b08: 540005a1     	b.ne	0x20bbc <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x504>
+   20b0c: 3951eae9     	ldrb	w9, [x23, #0x47a]
+   20b10: 12bffc8a     	mov	w10, #0x1bffff          // =1835007
+   20b14: 370000e9     	tbnz	w9, #0x0, 0x20b30 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x478>
+   20b18: f94006ea     	ldr	x10, [x23, #0x8]
+   20b1c: f940090b     	ldr	x11, [x8, #0x10]
+   20b20: f940094a     	ldr	x10, [x10, #0x10]
+   20b24: eb0a017f     	cmp	x11, x10
+   20b28: 540004a1     	b.ne	0x20bbc <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x504>
+   20b2c: 12bfff8a     	mov	w10, #0x3ffff           // =262143
+   20b30: b940050b     	ldr	w11, [x8, #0x4]
+   20b34: b9446eec     	ldr	w12, [x23, #0x46c]
+   20b38: 0a0a016a     	and	w10, w11, w10
+   20b3c: 6b0c015f     	cmp	w10, w12
+   20b40: 540003e1     	b.ne	0x20bbc <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x504>
+   20b44: 5308216a     	ubfx	w10, w11, #8, #1
+   20b48: 6b09015f     	cmp	w10, w9
+   20b4c: 54000381     	b.ne	0x20bbc <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x504>
+   20b50: 911222e9     	add	x9, x23, #0x488
+   20b54: f9400d08     	ldr	x8, [x8, #0x18]
+   20b58: c8dffd29     	ldar	x9, [x9]
+   20b5c: eb09011f     	cmp	x8, x9
+   20b60: 540002e1     	b.ne	0x20bbc <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x504>
+   20b64: 9111f2e8     	add	x8, x23, #0x47c
+   20b68: 089ffd19     	stlrb	w25, [x8]
+   20b6c: 9108e2e8     	add	x8, x23, #0x238
+   20b70: 885ffd09     	ldaxr	w9, [x8]
+   20b74: 11000529     	add	w9, w9, #0x1
+   20b78: 880afd09     	stlxr	w10, w9, [x8]
+   20b7c: 35ffffaa     	cbnz	w10, 0x20b70 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x4b8>
+   20b80: 91000718     	add	x24, x24, #0x1
+   20b84: 9112c2e8     	add	x8, x23, #0x4b0
+   20b88: eb15031f     	cmp	x24, x21
+   20b8c: c89ffd1a     	stlr	x26, [x8]
+   20b90: 54fff6e3     	b.lo	0x20a6c <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0x3b4>
+   20b94: d0000233     	adrp	x19, 0x66000 <originals+0x17470>
+   20b98: 912ec273     	add	x19, x19, #0xbb0
+   20b9c: 910003e0     	mov	x0, sp
+   20ba0: f9400268     	ldr	x8, [x19]
+   20ba4: d63f0100     	blr	x8
+   20ba8: f9400a68     	ldr	x8, [x19, #0x10]
+   20bac: 910013e0     	add	x0, sp, #0x4
+   20bb0: d63f0100     	blr	x8
+   20bb4: 52800020     	mov	w0, #0x1                // =1
+   20bb8: 17fffeec     	b	0x20768 <Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative+0xb0>
+   20bbc: d0000233     	adrp	x19, 0x66000 <originals+0x17470>
+   20bc0: 912ec273     	add	x19, x19, #0xbb0
+   20bc4: 910003e0     	mov	x0, sp
+   20bc8: f9400268     	ldr	x8, [x19]
+   20bcc: d63f0100     	blr	x8
+   20bd0: f9400a68     	ldr	x8, [x19, #0x10]
+   20bd4: 910013e0     	add	x0, sp, #0x4
+   20bd8: d63f0100     	blr	x8
+   20bdc: f0ffff00     	adrp	x0, 0x3000 <slot+0x2c00>
+   20be0: 91374400     	add	x0, x0, #0xdd1
+   20be4: 9400011f     	bl	0x21060 <__wrap_android_set_abort_message>
+   20be8: 94000122     	bl	0x21070 <__wrap_abort>

@@ -9,13 +9,18 @@ public final class JavaHookValues {
     private JavaHookValues(){}
     public static void requireType(Class<?> type,boolean result){
         if(type==boolean.class||type==byte.class||type==short.class||type==int.class||type==long.class||type==char.class
-            ||type==float.class||type==double.class||type==String.class||result&&type==void.class)return;
+            ||type==float.class||type==double.class||type==String.class||type==byte[].class||result&&type==void.class)return;
         throw new IllegalArgumentException("HOOK_JAVA_ABI_UNSUPPORTED:"+type.getName());
     }
     public static Object decode(Class<?> type,Object value){
         requireType(type,true);Object decoded;
         if(type==void.class){if(value!=null)throw invalid(type);decoded=ScriptValues.UNDEFINED;}
         else if(type==String.class){if(value!=null&&!(value instanceof String))throw invalid(type);decoded=value;}
+        else if(type==byte[].class){
+            if(value!=null&&!(value instanceof byte[]))throw invalid(type);
+            if(value==null)decoded=null;
+            else{byte[] b=(byte[])value;ScriptFault.require(b.length<=4096,"HOOK_TYPE:[B");decoded=java.util.HexFormat.of().formatHex(b);}
+        }
         else if(type==boolean.class){if(!(value instanceof Boolean))throw invalid(type);decoded=value;}
         else if(type==char.class){if(!(value instanceof Character))throw invalid(type);decoded=String.valueOf((Character)value);}
         else if(type==long.class){if(!(value instanceof Long))throw invalid(type);decoded=BigInteger.valueOf((Long)value);}
@@ -28,6 +33,7 @@ public final class JavaHookValues {
     public static Object encode(Class<?> type,Object value){
         requireType(type,true);Object checked=ScriptValues.abi(type.getName(),value);
         if(type==void.class)return null;if(type==String.class||type==boolean.class)return checked;
+        if(type==byte[].class)return checked==null?null:java.util.HexFormat.of().parseHex((String)checked);
         if(type==char.class)return ((String)checked).charAt(0);if(type==long.class)return ((BigInteger)checked).longValueExact();
         if(type==byte.class)return ((Double)checked).byteValue();if(type==short.class)return ((Double)checked).shortValue();
         if(type==int.class)return ((Double)checked).intValue();if(type==float.class)return ((Double)checked).floatValue();return checked;

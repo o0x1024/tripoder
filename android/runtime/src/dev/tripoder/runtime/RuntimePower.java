@@ -16,7 +16,7 @@ final class RuntimePower {
     boolean ignoring(String packageName){if(!engine.packageName.equals(packageName))throw new SecurityException("POWER_PACKAGE_NOT_GRANTED");return platform().isIgnoringBatteryOptimizations(engine.host.getPackageName());}
     Map<Integer,Float> thresholds(){return new HashMap<>(platform().getThermalHeadroomThresholds());}
     void add(Object listener,Executor executor,boolean isHeadroom){
-        if(listener==null||!engine.ownsLoader(listener.getClass().getClassLoader()))throw new SecurityException("THERMAL_LISTENER_OWNER_INVALID");
+        if(listener==null||!engine.ownsReceiverLoader(listener.getClass().getClassLoader()))throw new SecurityException("THERMAL_LISTENER_OWNER_INVALID");
         Objects.requireNonNull(executor,"THERMAL_EXECUTOR_REQUIRED");Map<Object,Registration> records=isHeadroom?headroom:status;Registration registration=new Registration(listener,executor,records);
         synchronized(this){if(records.containsKey(listener))throw new IllegalArgumentException("THERMAL_LISTENER_ALREADY_REGISTERED");if(status.size()+headroom.size()>=32)throw new IllegalStateException("THERMAL_LISTENER_LIMIT");records.put(listener,registration);}
         try{

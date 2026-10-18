@@ -9,6 +9,11 @@ final class RuntimeSelfHookSystemEdges {
     private static final Set<String> UID=Set.of("getUidRxBytes(int)","getUidTxBytes(int)","getUidRxPackets(int)","getUidTxPackets(int)","getUidStats(int,int)");
     private static final Set<String> DEVICE=Set.of("getMobileRxBytes()","getMobileTxBytes()","getMobileRxPackets()","getMobileTxPackets()",
         "getTotalRxBytes()","getTotalTxBytes()","getTotalRxPackets()","getTotalTxPackets()","getRxBytes(java.lang.String)","getTxBytes(java.lang.String)","getRxPackets(java.lang.String)","getTxPackets(java.lang.String)");
+    private static final Set<String> TAGGING=Set.of("setThreadStatsTag(int)","getThreadStatsTag()","clearThreadStatsTag()",
+        "getAndSetThreadStatsTag(int)","getThreadStatsUid()","tagSocket(java.net.Socket)","untagSocket(java.net.Socket)",
+        "tagDatagramSocket(java.net.DatagramSocket)","untagDatagramSocket(java.net.DatagramSocket)",
+        "tagFileDescriptor(java.io.FileDescriptor)","untagFileDescriptor(java.io.FileDescriptor)",
+        "incrementOperationCount(int)","incrementOperationCount(int,int)");
     private RuntimeSelfHookSystemEdges(){}
     static void traffic(RuntimeManagedInstaller installer)throws Exception{
         Map<Executable,RuntimeManagedInstaller.Callback> callbacks=new LinkedHashMap<>();Set<String> seen=new HashSet<>();
@@ -18,6 +23,9 @@ final class RuntimeSelfHookSystemEdges {
                 if(key.equals("getTotalStats(int)"))RuntimeBridge.trafficKind((Integer)args[0]);
                 if(UID.contains(key)){RuntimeBridge.trafficUid((Integer)args[0]);return original.call(args);}
                 if(DEVICE.contains(key)||key.equals("getTotalStats(int)")||key.equals("getIfaceStats(java.lang.String,int)"))return original.call(args);
+                // Tags label this UID's traffic. Attribution UID setters are a different
+                // capability and must never enter through a method-name wildcard.
+                if(TAGGING.contains(key))return original.call(args);
                 throw new SecurityException("TRAFFIC_CAPABILITY_NOT_GRANTED:"+key);
             });
         }

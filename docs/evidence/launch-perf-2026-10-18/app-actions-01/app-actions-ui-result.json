@@ -1,0 +1,151 @@
+{
+  "runId": "control-62f38027f1374889",
+  "startedAt": 1792259236835,
+  "uid": 10400,
+  "pid": 15984,
+  "deviceBuild": "Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys",
+  "scope": "native-application-tap-long-press-and-deletion",
+  "existingUserPendingOperation": "",
+  "testOperationJournal": "ui-acceptance-control-62f38027f1374889",
+  "workbenchStartupStatus": {
+    "schema": 31,
+    "hookReady": true,
+    "lease": "86135a46-eb86-4fc5-b709-4c0a1df2d00d",
+    "enginePid": 16078,
+    "engineUid": 10400,
+    "strongIsolation": false,
+    "authority": "95235e87-8c09-49cf-a210-0aee7d4dd1b8",
+    "controllerUid": 10400
+  },
+  "captures": [
+    "control-62f38027f1374889-long-press-menu.png",
+    "control-62f38027f1374889-project-space.png",
+    "control-62f38027f1374889-direct-launch.png",
+    "control-62f38027f1374889-project-index-after-delete.png"
+  ],
+  "project": "d5acfc3c-9f90-4e18-8076-dd3dd325515f",
+  "spaceA": "tap-a-62f38027f1374889",
+  "spaceB": "tap-b-62f38027f1374889",
+  "workerUid": 10400,
+  "guestLaunched": true,
+  "hostAppLaunched": false,
+  "passed": true,
+  "checks": [
+    {
+      "name": "real-workbench-foreground-startup-connected",
+      "passed": true,
+      "observed": ""
+    },
+    {
+      "name": "long-press-does-not-launch",
+      "passed": true,
+      "observed": "management menu without a launch operation"
+    },
+    {
+      "name": "new-installation-has-no-project-binding",
+      "passed": true,
+      "observed": "older retained projects do not bind this new installation"
+    },
+    {
+      "name": "tap-launches-without-a-project",
+      "passed": true,
+      "observed": "standalone launcher in engine task"
+    },
+    {
+      "name": "direct-launch-never-creates-or-binds-project",
+      "passed": true,
+      "observed": "project records unchanged"
+    },
+    {
+      "name": "first-launch-has-durable-success",
+      "passed": true,
+      "observed": "gateway completion queried on return"
+    },
+    {
+      "name": "repeat-tap-keeps-space-data",
+      "passed": true,
+      "observed": "count = 1"
+    },
+    {
+      "name": "explicit-space-selection-uses-independent-data",
+      "passed": true,
+      "observed": "space B count = 0"
+    },
+    {
+      "name": "selected-space-is-remembered",
+      "passed": true,
+      "observed": "second tap opens space B directly"
+    },
+    {
+      "name": "single-bound-project-launches-its-space",
+      "passed": true,
+      "observed": "bound project opens space A (count = 1)"
+    },
+    {
+      "name": "stale-delete-rejected",
+      "passed": true,
+      "observed": "exact generation required"
+    },
+    {
+      "name": "rejected-delete-has-terminal-receipt",
+      "passed": true,
+      "observed": "no unqueryable pending operation"
+    },
+    {
+      "name": "delete-asks-for-no-space-or-confirmation",
+      "passed": true,
+      "observed": "one choice, no dialog"
+    },
+    {
+      "name": "delete-stops-background-app-and-removes-every-install",
+      "passed": true,
+      "observed": {
+        "message": "删除应用「启动验收计数器」 · 已完成",
+        "resources": {
+          "available": 6,
+          "unresolvedTruncated": false,
+          "retained": 2,
+          "slots": "[{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":true,\"index\":0,\"allocated\":false,\"activityResources\":false,\"service\":false},{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":false,\"index\":1,\"allocated\":false,\"activityResources\":false,\"service\":false},{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":false,\"index\":2,\"allocated\":false,\"activityResources\":false,\"service\":true},{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":false,\"index\":3,\"allocated\":false,\"activityResources\":false,\"service\":false},{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":false,\"index\":4,\"allocated\":false,\"activityResources\":false,\"service\":false},{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":false,\"index\":5,\"allocated\":false,\"activityResources\":false,\"service\":false},{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":false,\"index\":6,\"allocated\":false,\"activityResources\":false,\"service\":false},{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":false,\"index\":7,\"allocated\":false,\"activityResources\":false,\"service\":false}]",
+          "tasks": "[{\"taskId\":4440,\"numActivities\":1,\"baseActivity\":\"dev.tripoder.engine\\/dev.tripoder.hooklab.WorkbenchActivity\",\"topActivity\":\"dev.tripoder.engine\\/dev.tripoder.hooklab.WorkbenchActivity\",\"origActivity\":\"\",\"baseComponent\":\"dev.tripoder.engine\\/dev.tripoder.hooklab.WorkbenchActivity\"}]",
+          "total": 8,
+          "allocated": 0,
+          "referencesTruncated": false,
+          "unresolvedActivities": "[]",
+          "activityReferences": "[]"
+        }
+      }
+    },
+    {
+      "name": "delete-removes-project-source",
+      "passed": true,
+      "observed": "project directory removed"
+    },
+    {
+      "name": "delete-removes-project-binding",
+      "passed": true,
+      "observed": "binding row removed, not left stale"
+    },
+    {
+      "name": "grid-has-no-tile-for-deleted-app",
+      "passed": true,
+      "observed": "no installation remains"
+    },
+    {
+      "name": "deleted-app-project-is-not-in-project-index",
+      "passed": true,
+      "observed": "project removed with its application"
+    },
+    {
+      "name": "no-launcher-does-not-start-arbitrary-activity",
+      "passed": true,
+      "observed": "no fallback to arbitrary or host Activity"
+    },
+    {
+      "name": "rejected-launch-has-terminal-receipt",
+      "passed": true,
+      "observed": "launch rejected before worker startup"
+    }
+  ],
+  "fullP5Accepted": false,
+  "finishedAt": 1792259271158
+}

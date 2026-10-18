@@ -11,7 +11,7 @@ public final class PackageFrameworkAccess {
     private final Class<?> contextType,managerType,contract;
     private final Constructor<?> constructor;
     private final Field endpoint,global,services,contextCache;
-    private final Method systemContext,packageGetter,userId,feature,sandbox;
+    private final Method systemContext,packageGetter,userId,feature,features,sandbox,notifyPackageUse,notifyDexLoad,notifyPackagesReplaced,componentEnabled;
     private final Method[] disable=new Method[3];
     private final Map<String,Method> physical=new HashMap<>(),logical=new HashMap<>();
     private final Object physicalEndpoint;
@@ -27,7 +27,12 @@ public final class PackageFrameworkAccess {
         physical.put("application",FixedFrameworkMembers.method(16,"getApplicationInfo","(Ljava/lang/String;JI)Landroid/content/pm/ApplicationInfo;",false));
         for(String kind:new String[]{"Activity","Service","Provider"})physical.put("get"+kind+"Info",FixedFrameworkMembers.method(16,"get"+kind+"Info","(Landroid/content/ComponentName;JI)Landroid/content/pm/"+kind+"Info;",false));
         feature=FixedFrameworkMembers.method(16,"hasSystemFeature","(Ljava/lang/String;I)Z",false);sandbox=FixedFrameworkMembers.method(16,"getSdkSandboxPackageName","()Ljava/lang/String;",false);
-        logical.put("hasSystemFeature",feature);logical.put("getSdkSandboxPackageName",sandbox);
+        features=FixedFrameworkMembers.method(16,"getSystemAvailableFeatures","()Landroid/content/pm/ParceledListSlice;",false);
+        notifyPackageUse=FixedFrameworkMembers.method(16,"notifyPackageUse","(Ljava/lang/String;I)V",false);
+        notifyDexLoad=FixedFrameworkMembers.method(16,"notifyDexLoad","(Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;)V",false);
+        notifyPackagesReplaced=FixedFrameworkMembers.method(16,"notifyPackagesReplacedReceived","([Ljava/lang/String;)V",false);
+        componentEnabled=FixedFrameworkMembers.method(16,"getComponentEnabledSetting","(Landroid/content/ComponentName;I)I",false);
+        logical.put("hasSystemFeature",feature);logical.put("getSdkSandboxPackageName",sandbox);logical.put("getComponentEnabledSetting",componentEnabled);
         logical.putAll(physical);logical.put("getPackageInfo",physical.get("package"));logical.put("getApplicationInfo",physical.get("application"));
         logical.put("getPackageInfoVersioned",FixedFrameworkMembers.method(16,"getPackageInfoVersioned","(Landroid/content/pm/VersionedPackage;JI)Landroid/content/pm/PackageInfo;",false));
         logical.put("resolveContentProvider",FixedFrameworkMembers.method(16,"resolveContentProvider","(Ljava/lang/String;JI)Landroid/content/pm/ProviderInfo;",false));
@@ -55,6 +60,13 @@ public final class PackageFrameworkAccess {
     }
     public static Object physical(String kind,Object key,long flags,int user){PackageFrameworkAccess v=require();Method method=v.physical.get(kind);if(method==null)throw new IllegalArgumentException("PHYSICAL_PACKAGE_QUERY_KIND");return FixedFrameworkMembers.call(method,v.physicalEndpoint,key,flags,user);}
     public static boolean feature(String name,int version){PackageFrameworkAccess v=require();return (Boolean)FixedFrameworkMembers.call(v.feature,v.physicalEndpoint,name,version);}
+    /** The physical device feature table as the platform's own ParceledListSlice. */
+    public static Object features(){PackageFrameworkAccess v=require();return FixedFrameworkMembers.call(v.features,v.physicalEndpoint);}
     public static String sandbox(){PackageFrameworkAccess v=require();return (String)FixedFrameworkMembers.call(v.sandbox,v.physicalEndpoint);}
+    public static void notifyPackageUse(String name,int reason){PackageFrameworkAccess v=require();FixedFrameworkMembers.call(v.notifyPackageUse,v.physicalEndpoint,name,reason);}
+    public static void notifyDexLoad(String name,Map<String,String> contexts,String isa){PackageFrameworkAccess v=require();FixedFrameworkMembers.call(v.notifyDexLoad,v.physicalEndpoint,name,contexts,isa);}
+    /** ActivityThread's physical package-replacement receipt, including the empty handled set. */
+    public static void notifyPackagesReplacedReceived(String[] packages){PackageFrameworkAccess v=require();FixedFrameworkMembers.call(v.notifyPackagesReplaced,v.physicalEndpoint,(Object)packages);}
+    public static int componentEnabled(ComponentName component,int user){PackageFrameworkAccess v=require();return (Integer)FixedFrameworkMembers.call(v.componentEnabled,v.physicalEndpoint,component,user);}
     public static Object query(PackageManager manager,String name,Object... args){PackageFrameworkAccess v=require();Method method=v.logical.get(name);if(method==null)throw new IllegalArgumentException("LOGICAL_PACKAGE_QUERY_KIND");return FixedFrameworkMembers.call(method,endpoint(manager),args);}
 }

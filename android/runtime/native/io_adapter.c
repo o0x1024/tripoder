@@ -19,6 +19,10 @@ static int inspect_leaf(struct tp_path *path,bool nofollow,bool missing_allowed)
 int tp_openat(int dirfd,const char *name,int flags,unsigned mode){
     enum tp_access access=((flags&O_ACCMODE)!=O_RDONLY||(flags&(O_CREAT|O_TRUNC|O_APPEND))||((flags&O_TMPFILE)==O_TMPFILE))?TP_WRITE:TP_READ;
     struct tp_path path;if(tp_resolve(dirfd,name,access,&path)<0)return -1;int result=-1;
+    if(access==TP_READ&&!path.owned&&path.parent==AT_FDCWD&&!path.trailing_slash&&path.leaf[0]=='/'&&path.leaf[1]=='p'&&path.leaf[2]=='r'&&path.leaf[3]=='o'&&path.leaf[4]=='c'&&path.leaf[5]=='/'){
+        result=tp_open_proc(path.leaf,flags);
+        if(result>=0||errno!=ENOSYS){tp_release(&path);return result;}
+    }
     if(inspect_leaf(&path,false,(flags&O_CREAT)!=0)==0)result=(int)syscall(SYS_openat,path.parent,path.leaf,flags|(path.owned?O_NOFOLLOW:0)|(path.trailing_slash?O_DIRECTORY:0),mode);
     tp_release(&path);return result;
 }
@@ -48,7 +52,12 @@ int tp_faccessat(int dirfd,const char *name,int mode){
 }
 ssize_t tp_readlinkat(int dirfd,const char *name,char *out,size_t size){
     struct tp_path path;if(tp_resolve(dirfd,name,TP_METADATA,&path)<0)return -1;ssize_t result=-1;
-    if(inspect_leaf(&path,true,false)==0)result=(ssize_t)syscall(SYS_readlinkat,path.parent,path.leaf,out,size);tp_release(&path);return result;
+    char raw[PATH_MAX];
+    if(inspect_leaf(&path,true,false)==0){
+        ssize_t n=(ssize_t)syscall(SYS_readlinkat,path.parent,path.leaf,raw,sizeof(raw)-1);
+        if(n>=0)result=tp_unresolve(raw,(size_t)n,out,size);
+    }
+    tp_release(&path);return result;
 }
 int tp_chdir(const char *name){
     int fd=tp_openat(AT_FDCWD,name,O_PATH|O_DIRECTORY|O_CLOEXEC,0);if(fd<0)return -1;

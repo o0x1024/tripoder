@@ -1,0 +1,116 @@
+{
+  "schema": 1,
+  "phase": "native-core-benchmark",
+  "runId": "00402ce6-c7a1-49a8-a52c-d118748cf014",
+  "package": "dev.tripoder.selfhookprobe",
+  "uid": 10415,
+  "pid": 28822,
+  "timestampMs": 1792170785258,
+  "apkSha256": "fea2903cad58aabbe61a768c413520a206620b32425017f0b09c3712c0d86938",
+  "build": {
+    "schema": 1,
+    "buildId": "c1a0117e-d530-4bf6-b2ae-dc08d1a25847",
+    "timestamp": "2026-10-16T17:11:22.717026+00:00",
+    "sourceDigest": "8ea65f010ecdeb674387ffcd61820ef3777f3fe670eebe00b77bbdaf0fa1a288",
+    "nativeSha256": "84d6a9a83f709eeb96ebf20f228e54f09a14674af7bcc68922521dffd287c9ae",
+    "fixtureSha256": "71e223f4177d345697ec30449140e6d5412b1ece25dd56afbb4ace4368d6a9fb",
+    "ownedNativeBuildId": "35f7a9cf53abc669b72243b532e5c41fb9cdfc5a",
+    "ownedNativePacBuildId": "c5804f499f2705cefa7fd9c60800f4bc9c6e787d",
+    "scope": "H1\/H2a owned ELF, native thread parking and fixed-platform ART with static caller indexing"
+  },
+  "debuggable": false,
+  "platform": {
+    "fingerprint": "Xiaomi\/madrid\/madrid:17\/CP2A.260605.016\/OS4.0.24.0.XEOCNXM:user\/release-keys",
+    "sdk": 37,
+    "abi": "arm64-v8a",
+    "process64Bit": true,
+    "pageSize": 4096,
+    "binaries": {
+      "\/apex\/com.android.runtime\/bin\/linker64": "b6dd216b7a775b8f04c825cada286bfe7ddaeecf2c0c10e617287118965abc00",
+      "\/apex\/com.android.runtime\/lib64\/bionic\/libc.so": "b963b539545b64aa8fbcaed3228d04bcb6466bfd47055aa16e4ccdcadfdc461e",
+      "\/apex\/com.android.art\/lib64\/libart.so": "2d4a3575e5b71b537d89c176ac82ad3e32a56a3d43161009de3e728c962fab13"
+    }
+  },
+  "selinuxContext": "u:r:untrusted_app:s0:c159,c257,c512,c768",
+  "platformGatePassed": true,
+  "nativeSha256": "84d6a9a83f709eeb96ebf20f228e54f09a14674af7bcc68922521dffd287c9ae",
+  "fixtureSha256": "71e223f4177d345697ec30449140e6d5412b1ece25dd56afbb4ace4368d6a9fb",
+  "ownedNativeSha256": "fd5fab021db64251c3593acbd5b9ab09153493ee83dfc413571326a7d81827c4",
+  "benchmark": {
+    "javaSamplesPerPath": 1000000,
+    "nativeSamplesPerPath": 100000,
+    "clockOverheadIncluded": true,
+    "workerCpu": 5,
+    "warmupNsPerPath": 500000000,
+    "productAuthorityConnected": false,
+    "directC": {
+      "count": 100000,
+      "callsPerSample": 64,
+      "meanNs": 7.75226875,
+      "p50Ns": 7.328125,
+      "p95Ns": 8.140625,
+      "p99Ns": 8.140625,
+      "rawFile": "direct-c.bin",
+      "sha256": "51b5358f3b276c3016a593172f4c866488796ffdf752402e6b5209eab7659fd9"
+    },
+    "hookC": {
+      "count": 100000,
+      "callsPerSample": 64,
+      "meanNs": 181.32822359375,
+      "p50Ns": 180.671875,
+      "p95Ns": 181.484375,
+      "p99Ns": 183.90625,
+      "rawFile": "hook-c.bin",
+      "sha256": "56024c9088f31d656cd91c7f2c04b1125bad7b22f2fc223fb87807985baf2e74"
+    },
+    "prepareNs": 37431511,
+    "publishNs": 49218646,
+    "retireNs": 59875625,
+    "jniBaseline": {
+      "count": 1000000,
+      "callsPerSample": 1,
+      "meanNs": 29.868918,
+      "p50Ns": 52,
+      "p95Ns": 52,
+      "p99Ns": 53,
+      "rawFile": "jni-baseline.bin",
+      "sha256": "12bb5096a0ed8cc16865bade4c662004814a9562d88ff75e224061d29f1da57f"
+    },
+    "jniHook": {
+      "count": 1000000,
+      "callsPerSample": 1,
+      "meanNs": 1162.588956,
+      "p50Ns": 990,
+      "p95Ns": 2135,
+      "p99Ns": 3333,
+      "rawFile": "jni-hook.bin",
+      "sha256": "e43722a38c4b7002e3d21f2270bf93ada5134197afd7cfef9ded0f5cc3a479da"
+    },
+    "foreignJniHook": {
+      "count": 100000,
+      "callsPerSample": 1,
+      "meanNs": 10881.15844,
+      "p50Ns": 10364,
+      "p95Ns": 13281,
+      "p99Ns": 17500,
+      "rawFile": "foreign-jni-hook.bin",
+      "sha256": "5790192ebe26a490bd83ceff9c289c05042bbeb0814cc9763aa98b2e241347c6"
+    },
+    "productRule": {
+      "count": 1000000,
+      "callsPerSample": 1,
+      "meanNs": 7155.523202,
+      "p50Ns": 6979,
+      "p95Ns": 9791,
+      "p99Ns": 11614,
+      "rawFile": "product-rule.bin",
+      "sha256": "baf8beaf363b455b7f63a26bd10f31af4156182d96f759103579b8afd9f97c28"
+    },
+    "affinityVerifiedAfterSamples": true,
+    "passed": true,
+    "semanticChecksPassed": true,
+    "performanceAccepted": false
+  },
+  "mapsSha256": "cacc561fef8b3f5e0b292a95cf445acd9a95d83daa9296c7934ed4d5fa409eb1",
+  "passed": true
+}

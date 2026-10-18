@@ -84,6 +84,26 @@ static enum tp_a64_status relative_branch(uint32_t instruction, unsigned bits,
 static enum tp_a64_status relocate_one(uint32_t instruction, uint64_t pc, uint64_t at,
                                       uint64_t source, uint64_t end, uint64_t destination,
                                       uint32_t *output) {
+    /* Reject reserved width/shift fields before admitting non-PC instructions. */
+    bool wide=(instruction&UINT32_C(0x1f800000))==UINT32_C(0x12800000);
+    bool logical=(instruction&UINT32_C(0x1f000000))==UINT32_C(0x0a000000);
+    bool arithmetic=(instruction&UINT32_C(0x1f200000))==UINT32_C(0x0b000000);
+    bool width64=(instruction&UINT32_C(0x80000000))!=0;
+    if((wide&&(((instruction>>29)&3)==1||(!width64&&((instruction>>21)&3)>=2)))
+       ||((logical||arithmetic)&&!width64&&(instruction&UINT32_C(0x8000)))
+       ||(arithmetic&&((instruction>>22)&3)==3))return TP_A64_UNSUPPORTED;
+    bool memory=(instruction&UINT32_C(0x3b000000))==UINT32_C(0x39000000);
+    if(memory){
+        unsigned size=instruction>>30,op=(instruction>>22)&3;bool vector=(instruction&UINT32_C(0x04000000))!=0;
+        if((vector&&op>=2&&size!=0)||(!vector&&((op==2&&size==3)||(op==3&&size>=2))))return TP_A64_UNSUPPORTED;
+    }
+    /* S/D arithmetic and moves, vector MOVI/EOR; no broad FP/SIMD admission. */
+    uint32_t fp=instruction&UINT32_C(0xffa0fc00),move=instruction&UINT32_C(0xfffffc00);
+    bool floating=fp==UINT32_C(0x1e200800)||fp==UINT32_C(0x1e201800)||fp==UINT32_C(0x1e202800)||fp==UINT32_C(0x1e203800)
+        ||(instruction&UINT32_C(0xffa01fe0))==UINT32_C(0x1e201000)
+        ||move==UINT32_C(0x9e660000)||move==UINT32_C(0x9e670000)||move==UINT32_C(0x1e260000)||move==UINT32_C(0x1e270000)
+        ||(instruction&UINT32_C(0x9ff8fc00))==UINT32_C(0x0f00e400)
+        ||(instruction&UINT32_C(0xbfe0fc00))==UINT32_C(0x2e201c00);
     if (instruction == TP_A64_NOP || instruction == TP_A64_BTI_C ||
         instruction == TP_A64_BTI_J || instruction == TP_A64_BTI_JC ||
         /* A normal LR return exits the original trampoline directly; its
@@ -91,17 +111,12 @@ static enum tp_a64_status relocate_one(uint32_t instruction, uint64_t pc, uint64
         instruction == UINT32_C(0xd65f03c0) ||
         /* MOVN/MOVZ/MOVK (opc=1 reserved), logical shifted-register and
          * ADD/SUB shifted-register. Register 31 is ZR, not SP, in these forms. */
-        ((instruction & UINT32_C(0x1f800000)) == UINT32_C(0x12800000) &&
-         ((instruction >> 29) & 3) != 1) ||
-        (instruction & UINT32_C(0x1f000000)) == UINT32_C(0x0a000000) ||
-        (instruction & UINT32_C(0x1f200000)) == UINT32_C(0x0b000000) ||
+        wide || logical || arithmetic ||
         /* Scalar FP and Advanced SIMD data processing: no memory, PC, SP or
          * implicit LR operand. No SVE/SME/unknown system instruction class. */
-        (instruction & UINT32_C(0x7f000000)) == UINT32_C(0x1e000000) ||
-        (instruction & UINT32_C(0x9f000000)) == UINT32_C(0x0e000000) ||
-        (instruction & UINT32_C(0x9f000000)) == UINT32_C(0x0f000000) ||
+        floating ||
         /* Unsigned-offset load/store, including SIMD: no base write-back. */
-        (instruction & UINT32_C(0x3b000000)) == UINT32_C(0x39000000) ||
+        memory ||
         /* ADD/SUB immediate, fixed bit 23 == 0. No PC or implicit LR operand. */
         (instruction & UINT32_C(0x1f800000)) == UINT32_C(0x11000000)) {
         *output = instruction;

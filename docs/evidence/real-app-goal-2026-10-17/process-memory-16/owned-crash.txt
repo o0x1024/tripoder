@@ -1,0 +1,29 @@
+--------- beginning of crash
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: FATAL EXCEPTION: main
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: Process: dev.tripoder.runtimeprobe:slot6, PID: 14424
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: java.lang.RuntimeException: Unable to instantiate receiver dev.tripoder.runtime.RuntimeReceiverSlots$R6
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at android.app.ActivityThread.handleReceiver(ActivityThread.java:6039)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at android.app.ActivityThread.-$$Nest$mhandleReceiver(ActivityThread.java:0)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3241)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at android.os.Handler.dispatchMessageImpl(Handler.java:146)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at android.os.Handler.dispatchMessage(Handler.java:129)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at android.os.Looper.loopOnce(Looper.java:315)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at android.os.Looper.loop(Looper.java:419)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at android.app.ActivityThread.main(ActivityThread.java:10847)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at java.lang.reflect.Method.invoke(Native Method)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: Caused by: java.lang.IllegalStateException: GUEST_RECEIVER_FAILED
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeFactory.instantiateReceiver(RuntimeFactory.java:15)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at android.app.ActivityThread.handleReceiver(ActivityThread.java:6027)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	... 10 more
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: Caused by: java.lang.SecurityException: BROADCAST_TARGET_MISMATCH
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3414)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at android.os.Parcel.createException(Parcel.java:3398)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at android.os.Parcel.readException(Parcel.java:3381)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at android.os.Parcel.readException(Parcel.java:3323)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeWire.call(RuntimeWire.java:53)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeEngine.brokerCall(RuntimeEngine.java:136)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeReceivers.instantiate(RuntimeReceivers.java:23)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	at dev.tripoder.runtime.RuntimeFactory.instantiateReceiver(RuntimeFactory.java:14)
+10-17 05:17:26.997 14424 14424 E AndroidRuntime: 	... 11 more

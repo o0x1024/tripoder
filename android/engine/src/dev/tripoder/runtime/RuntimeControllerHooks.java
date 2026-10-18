@@ -18,10 +18,10 @@ final class RuntimeControllerHooks {
         }
         target.putString("processes",processes.toString());return target;
     }
-    static Bundle execute(RuntimeBroker broker,Bundle input,String lease,int uid)throws Exception{
-        return executeAs(broker,input,lease,uid,"trusted-workbench",lease);
+    static Bundle execute(RuntimeBroker broker,Bundle input,String lease)throws Exception{
+        return executeAs(broker,input,lease,ControllerTrust.OPERATIONS,lease);
     }
-    static Bundle executeAs(RuntimeBroker broker,Bundle input,String lease,int uid,String caller,String owner)throws Exception{
+    static Bundle executeAs(RuntimeBroker broker,Bundle input,String lease,String caller,String owner)throws Exception{
         RuntimeControllerCommands.fields(input,"command","operation","project","bindingOperation","generation","processGeneration","request");
         String operation=ControlWire.required(input,"operation"),project=ControlWire.required(input,"project"),generation=ControlWire.required(input,"processGeneration"),raw=ControlWire.required(input,"request");
         if(raw.length()>28000)throw new IllegalArgumentException("HOOK_REQUEST_SIZE");
@@ -31,7 +31,7 @@ final class RuntimeControllerHooks {
         if(!input.getString("bindingOperation").equals(target.getString("bindingOperation"))||!input.getString("generation").equals(target.getString("generation")))throw new IllegalStateException("HOOK_PROJECT_BINDING_STALE");
         RuntimeHookClaims.Claim claim;
         synchronized(broker){
-            RuntimeControllerService.requireLease(lease,uid);requireBinding(broker,target);
+            RuntimeControllerService.requireLease(lease);requireBinding(broker,target);
             var slot=broker.requiredSlot(generation);var identity=slot.allocation.session.identity;
             if(!identity.spaceId.equals(target.getString("space"))||!identity.packageName.equals(target.getString("package"))||!identity.installGeneration.equals(target.getString("generation")))throw new SecurityException("HOOK_PROJECT_PROCESS_MISMATCH");
             claim=broker.hookClaims.begin(generation,project,target.getString("bindingOperation"),owner,command);

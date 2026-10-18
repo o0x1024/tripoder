@@ -165,7 +165,7 @@ def main():
         decoded = subprocess.run([str(args.sdk / 'build-tools/37.0.0/dexdump'), '-d', str(file)], capture_output=True, text=True, check=True)
         require('Ldev/tripoder/selfhook/ManagedHook;.dispatch' in decoded.stdout, 'INDEPENDENT_HELPER_DECODE')
     oracle = json.loads((d / 'helper-dex-oracle.json').read_text())
-    require(oracle['passed'] is True and oracle['checks'] == 79 and len(oracle['decoded']) == 36
+    require(oracle['passed'] is True and oracle['checks'] == 93 and len(oracle['decoded']) == 36
             and oracle['slotCapacity']==4096 and oracle['independentlyDecodedSlots']==[63,64,4095], 'HOST_HELPER_ORACLE')
     closure = json.loads((d / 'caller-closure-oracle.json').read_text())
     require(closure['passed'] is True and closure['checks'] == 17 and closure['completeRuntimeCoverage'] is False, 'CALLER_ORACLE')

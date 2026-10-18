@@ -26,7 +26,7 @@ final class EngineConnection implements ServiceConnection {
         synchronized(this){if(connecting||session!=null)return;connecting=true;state="正在连接引擎";failure="";}changed();
         try{
             // Called from a workbench page, so the authority's foreground service start is user-initiated.
-            Intent intent=new Intent().setClassName(host,SERVICE);synchronized(this){life=new ControlWire.Owner(android.os.Process.myUid());}
+            Intent intent=new Intent().setClassName(host,SERVICE);synchronized(this){life=new ControlWire.Owner();}
             if(page.startForegroundService(intent)==null)throw new IllegalStateException("ENGINE_START_REJECTED");
             synchronized(this){if(bound){host.unbindService(this);bound=false;}bound=host.bindService(intent,this,Context.BIND_AUTO_CREATE);if(!bound)throw new IllegalStateException("ENGINE_BIND_REJECTED");}
         }catch(Exception error){failed(error);}
@@ -34,7 +34,7 @@ final class EngineConnection implements ServiceConnection {
     @Override public void onServiceConnected(ComponentName name,IBinder peer){
         synchronized(this){root=peer;}io.execute(()->{try{
             Bundle input=new Bundle();input.putBinder("owner",life);Bundle connected=ControlWire.call(peer,ControlWire.CONNECT,input);IBinder leasePeer=connected.getBinder("session");
-            if(leasePeer==null||connected.getInt("protocol")!=1||connected.getInt("engineUid")!=android.os.Process.myUid())throw new SecurityException("ENGINE_HANDSHAKE_REJECTED");
+            if(leasePeer==null||connected.getInt("protocol")!=1)throw new SecurityException("ENGINE_HANDSHAKE_REJECTED");
             Bundle current=ControlWire.call(leasePeer,ControlWire.EXECUTE,ControlWire.request("status"));
             synchronized(this){if(root!=peer)throw new DeadObjectException();session=leasePeer;lease=connected.getString("lease");status=current;connecting=false;state="新内核已连接";failure="";}changed();
         }catch(Exception error){failed(error);}});
@@ -42,7 +42,7 @@ final class EngineConnection implements ServiceConnection {
     @Override public void onServiceDisconnected(ComponentName name){failed(new DeadObjectException());}
     @Override public void onNullBinding(ComponentName name){failed(new IllegalStateException("ENGINE_NULL_BINDING"));}
     @Override public void onBindingDied(ComponentName name){failed(new DeadObjectException());}
-    private void failed(Exception error){synchronized(this){session=null;root=null;connecting=false;status=null;state="引擎连接不可用";failure=error.getClass().getSimpleName()+": "+String.valueOf(error.getMessage());}changed();}
+    private void failed(Exception error){synchronized(this){session=null;root=null;connecting=false;status=null;state="引擎连接不可用";failure=UiText.error(error);}changed();}
     void execute(Bundle request,Result callback){
         IBinder current;synchronized(this){current=session;}if(current==null){callback.complete(null,new IllegalStateException("ENGINE_NOT_CONNECTED"));return;}
         Bundle snapshot=new Bundle(request);io.execute(()->{Bundle result=null;Exception failure=null;try{result=ControlWire.call(current,ControlWire.EXECUTE,snapshot);}catch(Exception error){failure=error;if(error instanceof DeadObjectException)failed(error);}

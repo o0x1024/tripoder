@@ -17,7 +17,7 @@ public final class AgentUiIntegration extends ControlTestBase {
     private IBinder controller;private Object app,agents;private String project,process,binding,install;
     public static final String SOURCE="import { definePlan } from '@abox/hook';\nexport default definePlan({\n  id: 'counter-mcp', target, params: {},\n  setup(ctx) {\n    ctx.java.method('dev.tripoder.previewguest.CounterActivity', 'formatCount', ['int'])\n      .replace(({args}) => 'Hook ' + args[0]);\n  }\n});\n";
     @Override void test()throws Exception{
-        report.put("scope","external-mcp-owned-counter-native-ui").put("approvalByOwnedTestInstrumentation",true);startThroughWorkbench(false);
+        report.put("scope","external-mcp-owned-counter-native-ui").put("approvalByOwnedTestInstrumentation",true);WorkbenchUiTestBase.isolateOperationJournal(this);startThroughWorkbench(false);
         app=getTargetContext().getApplicationContext();controller=(IBinder)field(field(app,"engine"),"session");agents=field(app,"agents");Object projects=field(app,"projects");
         String space=run+"-agent";execute(controller,"createSpace","operation",id(),"space",space);
         JSONObject fixtures;try(var in=getContext().getAssets().open("install-fixtures.json")){fixtures=new JSONObject(new String(in.readAllBytes(),StandardCharsets.UTF_8));}
@@ -27,33 +27,31 @@ public final class AgentUiIntegration extends ControlTestBase {
         }finally{if(!apk.delete())throw new IOException("TEST_APK_COPY_NOT_REMOVED");}
         project=(String)invoke(projects,"create",new Class<?>[]{String.class},"MCP 真机验收 "+run.substring(8));binding=id();execute(controller,"bindProject","operation",binding,"project",project,"space",space,"package","dev.tripoder.previewguest","generation",install);
         String originalScript=(String)invoke(projects,"script",new Class<?>[]{String.class},project);
-        String launchOperation=id();Bundle prepared=execute(controller,"prepareLaunch","operation",launchOperation,"project",project,"bindingOperation",binding,"generation",install,"component","dev.tripoder.previewguest.CounterActivity");process=prepared.getString("generation");
-        report.put("workerPid",prepared.getInt("pid")).put("workerUid",prepared.getInt("uid")).put("project",project).put("space",space).put("processGeneration",process).put("installGeneration",install).put("ownedApkSha256",fixtures.getString("previewSha256")).put("apkRewritten",false);
+        String launchOperation=id();Bundle prepared=execute(controller,"prepareLaunch","operation",launchOperation,"project",project,"bindingOperation",binding,"generation",install,"component","dev.tripoder.previewguest.CounterActivity");process=prepared.getString("generation");Bundle worker=awaitWorker(controller,project,prepared);
+        report.put("workerPid",worker.getInt("pid")).put("workerUid",worker.getInt("uid")).put("project",project).put("space",space).put("processGeneration",process).put("installGeneration",install).put("ownedApkSha256",fixtures.getString("previewSha256")).put("apkRewritten",false);
         java.util.concurrent.atomic.AtomicReference<Activity> visible=new java.util.concurrent.atomic.AtomicReference<>();Application application=(Application)app;
         Application.ActivityLifecycleCallbacks watcher=new Application.ActivityLifecycleCallbacks(){public void onActivityCreated(Activity a,Bundle b){if(a.getClass().getName().equals("dev.tripoder.hooklab.WorkbenchProjectActivity"))visible.set(a);}public void onActivityStarted(Activity a){}public void onActivityResumed(Activity a){}public void onActivityPaused(Activity a){}public void onActivityStopped(Activity a){}public void onActivitySaveInstanceState(Activity a,Bundle b){}public void onActivityDestroyed(Activity a){}};application.registerActivityLifecycleCallbacks(watcher);
         try{
             getTargetContext().startActivity(new Intent().setClassName("dev.tripoder.engine","dev.tripoder.hooklab.WorkbenchProjectActivity").putExtra("project",project).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));waitNode("项目脚本编辑器",true,10000);
-            scrollTo("开启外部控制入口");click("开启外部控制入口");await(()->(Boolean)field(agents,"listening"),10000,"ENDPOINT_START");
+            click("外部 Agent");scrollTo("开启外部控制入口");click("开启外部控制入口");await(()->(Boolean)field(agents,"listening"),10000,"ENDPOINT_START");
             // Exercise rapid close/reopen with an actual TCP connection before any grant exists.
             try(java.net.Socket connection=new java.net.Socket("127.0.0.1",dev.tripoder.control.AgentCrypto.DEVICE_PORT)){connection.getOutputStream().write(new byte[]{0,0,0,0});connection.getOutputStream().flush();while(connection.getInputStream().read()!=-1){}}
             getTargetContext().startService(new Intent().setClassName("dev.tripoder.engine","dev.tripoder.hooklab.AgentControlService").setAction("stop"));await(()->!(Boolean)field(agents,"listening"),10000,"ENDPOINT_FIRST_STOP");
             SystemClock.sleep(2200);click("开启外部控制入口");await(()->(Boolean)field(agents,"listening"),10000,"ENDPOINT_REOPEN");check("endpoint-reopens-after-closed-tcp-connection",true,"same fixed loopback port; no authorization existed");
-            Object key=invoke(agents,"deviceKey",new Class<?>[0]);signal("ready",new JSONObject().put("publicKey",field(key,"publicKey")).put("fingerprint",field(key,"fingerprint")).put("project",project).put("pid",prepared.getInt("pid")).put("source",SOURCE));
+            Object key=invoke(agents,"deviceKey",new Class<?>[0]);signal("ready",new JSONObject().put("publicKey",field(key,"publicKey")).put("fingerprint",field(key,"fingerprint")).put("project",project).put("pid",worker.getInt("pid")).put("source",SOURCE));
             await(()->invoke(agents,"pending",new Class<?>[0])!=null,120000,"PAIR_REQUEST");SystemClock.sleep(2200);
-            scrollTo("批准配对请求");click("批准配对请求");click("dev.tripoder.previewguest · PID "+prepared.getInt("pid"));click("授权观察与准备");
+            scrollTo("批准配对请求");click("批准配对请求");click("dev.tripoder.previewguest · PID "+worker.getInt("pid"));click("授权观察与准备");
             await(()->!((String)field(agents,"session")).isEmpty(),10000,"PAIR_APPROVAL");check("phone-ui-pairs-real-process",inspect().getString("processGeneration").equals(process),inspect());
             if("sentinel".equals(args.getString("phase"))){SystemClock.sleep(55000);JSONObject pending=inspect();check("first-client-wait-survives-45-second-disconnect-window",pending.getString("state").equals("OPEN")&&!pending.getBoolean("clientConnected"),pending);signal("waiting-client",new JSONObject());}
             await(()->{JSONObject state=inspect();if(!state.getString("state").equals("OPEN"))throw new IllegalStateException("AGENT_CLOSED_BEFORE_PREPARE:"+state.getString("reason"));return state.has("preparedSourceSha256");},"sentinel".equals(args.getString("phase"))?420000:180000,"EXTERNAL_PREPARE");JSONObject review=inspect();check("only-owned-counter-source-approved",SOURCE.equals(review.getString("draftSource")),review.getString("preparedSourceSha256"));
             SystemClock.sleep(2200);scrollTo("审阅外部脚本");click("审阅外部脚本");click("批准此版本部署");signal("reviewed",new JSONObject().put("sourceSha256",review.getString("preparedSourceSha256")));
             await(()->inspect().getString("hookState").equals("ACTIVE"),180000,"EXTERNAL_ACTIVATE");check("external-activation-confirmed-by-engine",true,inspect());capture("agent-active");
-            // Pairing and human/model review may outlive the original 30-second launch capability.
-            // Expire/query that exact operation, then explicitly prepare a new foreground launch.
-            Bundle launchQuery=execute(controller,"query","operation",launchOperation);final String activeLaunchOperation;final Bundle activeLaunch;
-            if("RUNNING".equals(launchQuery.getString("state"))){activeLaunchOperation=launchOperation;activeLaunch=prepared;}
-            else if("FAILED".equals(launchQuery.getString("state"))&&"LAUNCH_CAPABILITY_EXPIRED_BEFORE_DISPATCH".equals(launchQuery.getString("detail"))){activeLaunchOperation=id();activeLaunch=execute(controller,"prepareLaunch","operation",activeLaunchOperation,"project",project,"bindingOperation",binding,"generation",install,"component","dev.tripoder.previewguest.CounterActivity");}
-            else throw new IllegalStateException("INITIAL_LAUNCH_OUTCOME_REQUIRES_RECONCILIATION:"+launchQuery.getString("state"));
+            // The issued entry has no expiry: it stays the application's root until it is started or handed back.
+            Bundle launchQuery=execute(controller,"query","operation",launchOperation);
+            if(!"RUNNING".equals(launchQuery.getString("state")))throw new IllegalStateException("INITIAL_LAUNCH_OUTCOME_REQUIRES_RECONCILIATION:"+launchQuery.getString("state"));
+            final Bundle activeLaunch=prepared;
             check("post-review-launch-keeps-exact-process",process.equals(activeLaunch.getString("generation")),activeLaunch.getString("generation"));
-            Activity page=visible.get();if(page==null)throw new IllegalStateException("PROJECT_PAGE_NOT_OBSERVED");runOnMainSync(()->page.startActivity(new Intent().setClassName("dev.tripoder.engine","dev.tripoder.runtime.RuntimeGuestGateway").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_MULTIPLE_TASK).putExtra("operation",activeLaunchOperation).putExtra("capability",activeLaunch.getString("capability")),ActivityOptions.makeBasic().setShareIdentityEnabled(true).toBundle()));
+            Activity page=visible.get();if(page==null)throw new IllegalStateException("PROJECT_PAGE_NOT_OBSERVED");runOnMainSync(()->page.startActivity(activeLaunch.getParcelable("intent",Intent.class)));
             waitNode("Hook 0",false,10000);click("＋  计数一次");waitNode("Hook 1",false,10000);check("actual-counter-calls-hook-twice",true,"Hook 0 -> Hook 1");capture("counter-hooked");signal("hits",new JSONObject().put("expectedHits",2));
             if("disconnect".equals(args.getString("phase"))){
                 await(()->inspect().getString("state").equals("CLOSED"),70000,"CONTACT_EXPIRY");JSONObject closed=inspect();check("disconnect-revokes-without-client-help",closed.getString("reason").equals("CONTACT_EXPIRED"),closed);
@@ -61,8 +59,8 @@ public final class AgentUiIntegration extends ControlTestBase {
                 await(()->new File(getTargetContext().getExternalFilesDir(null),"agent-"+run+"-contact-confirmed.json").isFile(),20000,"DESKTOP_CLOSE_RECONCILIATION");
                 getTargetContext().startService(new Intent().setClassName("dev.tripoder.engine","dev.tripoder.hooklab.AgentControlService").setAction("stop"));await(()->!(Boolean)field(agents,"listening"),10000,"ENDPOINT_STOP");return;
             }
-            await(()->inspect().getString("hookState").equals("DISABLED"),180000,"EXTERNAL_DISABLE");click("＋  计数一次");waitNode("2",false,10000);capture("counter-restored");check("actual-counter-original-restored-after-mcp-disable",true,"Hook 1 -> 2 in the same Activity and process");click("完成并返回 Tripoder");waitNode("脚本部署",false,10000);
-            check("external-draft-does-not-overwrite-editor",originalScript.equals(invoke(projects,"script",new Class<?>[]{String.class},project)),"unchanged");check("guest-runs-in-separate-process-of-same-uid",prepared.getInt("uid")==android.os.Process.myUid()&&prepared.getInt("pid")!=android.os.Process.myPid(),prepared.getInt("uid"));signal("restored",new JSONObject());
+            await(()->inspect().getString("hookState").equals("DISABLED"),180000,"EXTERNAL_DISABLE");click("＋  计数一次");waitNode("2",false,10000);capture("counter-restored");check("actual-counter-original-restored-after-mcp-disable",true,"Hook 1 -> 2 in the same Activity and process");click("完成并返回 Tripoder");waitNode("撤销会话并停止入口",false,10000);
+            check("external-draft-does-not-overwrite-editor",originalScript.equals(invoke(projects,"script",new Class<?>[]{String.class},project)),"unchanged");check("guest-runs-in-separate-process-of-same-uid",worker.getInt("uid")==android.os.Process.myUid()&&worker.getInt("pid")!=android.os.Process.myPid(),worker.getInt("uid"));signal("restored",new JSONObject());
             if("sentinel".equals(args.getString("phase")))execute(controller,"agentRevoke","session",(String)field(agents,"session"));
             await(()->inspect().getString("state").equals("CLOSED"),90000,"EXTERNAL_CLOSE");check("revocation-stop-confirmed",true,inspect());
             if(!"sentinel".equals(args.getString("phase"))){

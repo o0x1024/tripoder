@@ -32,6 +32,7 @@ final class RuntimeSelfHookBootstrap {
         NOTIFICATIONS,
         SHORTCUTS,
         JOBS,
+        PENDING_INTENTS,
         UI_EFFECTS,
         FAILURE_DIAGNOSTICS,
         HOOK_CONTROL

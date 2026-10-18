@@ -1,0 +1,363 @@
+{
+  "runId": "pending-314a94a064934b09",
+  "observedAtUtc": "2026-10-17T01:01:13.267959+00:00",
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "productApkReplaced": false,
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/b.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/runtime-probe/build/runtime-probe.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.b"
+      ],
+      "exitCode": 0,
+      "stdout": "package:/data/app/~~qA8TRtRuyZL3UJxaH2Humw==/dev.tripoder.p0.b-zQTC0-mUOUPlzXXG2fIK5g==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "sha256sum",
+        "/data/app/~~qA8TRtRuyZL3UJxaH2Humw==/dev.tripoder.p0.b-zQTC0-mUOUPlzXXG2fIK5g==/base.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "628847be4c661b810c5b031b941102373dfb5aa3ae2844cf7c84da9e07f786ae  /data/app/~~qA8TRtRuyZL3UJxaH2Humw==/dev.tripoder.p0.b-zQTC0-mUOUPlzXXG2fIK5g==/base.apk\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "getconf",
+        "PAGESIZE"
+      ],
+      "exitCode": 0,
+      "stdout": "4096\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "pm",
+        "path",
+        "dev.tripoder.p0.a"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "cmd",
+        "package",
+        "list",
+        "packages",
+        "-U",
+        "dev.tripoder.runtimeprobe"
+      ],
+      "exitCode": 0,
+      "stdout": "package:dev.tripoder.runtimeprobe uid:10409\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "date \"+%m-%d %H:%M:%S.%3N\""
+      ],
+      "exitCode": 0,
+      "stdout": "10-17 09:01:15.131\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "start",
+        "-W",
+        "-a",
+        "android.intent.action.MAIN",
+        "-c",
+        "android.intent.category.LAUNCHER",
+        "-f",
+        "0x10008000",
+        "-n",
+        "dev.tripoder.runtimeprobe/.P2ProbeActivity",
+        "--es",
+        "runId",
+        "pending-314a94a064934b09",
+        "--ez",
+        "pendingOnly",
+        "true"
+      ],
+      "exitCode": 0,
+      "stdout": "Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10008000 cmp=dev.tripoder.runtimeprobe/.P2ProbeActivity (has extras) }\nStatus: ok\nLaunchState: COLD\nActivity: dev.tripoder.runtimeprobe/.P2ProbeActivity\nTotalTime: 97\nWaitTime: 99\nComplete\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "test",
+        "-e",
+        "/sdcard/Android/data/dev.tripoder.p0.b/files/decoy-launch.txt"
+      ],
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-17 09:01:15.131"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of crash\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: FATAL EXCEPTION: main\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: Process: dev.tripoder.runtimeprobe:slot6, PID: 28487\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: org.chromium.base.JniAndroid$UncaughtExceptionException: Native stack trace:\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #00 pc 0x0000000003c3bfeb /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #01 pc 0x00000000045eb127 /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #02 pc 0x0000000005ae5b9b /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #03 pc 0x0000000005ae593f /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #04 pc 0x0000000005ae56f7 /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #05 pc 0x0000000005ae355f /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #06 pc 0x0000000005ae29eb /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #07 pc 0x0000000005ae218b /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #08 pc 0x0000000005ae210b /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #09 pc 0x0000000005ae1f9f /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #10 pc 0x0000000005ae1eff /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #11 pc 0x0000000005ae1e47 /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #12 pc 0x0000000005ae1d43 /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #13 pc 0x0000000005ac6347 /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #14 pc 0x0000000005ac535f /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #15 pc 0x0000000005ac4d17 /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #16 pc 0x0000000005abf03f /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #17 pc 0x0000000005abdc1f /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #18 pc 0x0000000005abda6b /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #19 pc 0x00000000000bc7a3 /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #20 pc 0x00000000000a5663 /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #21 pc 0x00000000003ce1d7 /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #22 pc 0x00000000001fc4cf /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #23 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #24 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #25 pc 0x00000000001fc4cf /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #26 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #27 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #28 pc 0x00000000001fc60b /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #29 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #30 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #31 pc 0x00000000001fc863 /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #32 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #33 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #34 pc 0x00000000001fca37 /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #35 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #36 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #37 pc 0x00000000001fc60b /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #38 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #39 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #40 pc 0x00000000001fc60b /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #41 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #42 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #43 pc 0x00000000001fca37 /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #44 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #45 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #46 pc 0x00000000001fca37 /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #47 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #48 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #49 pc 0x00000000001fc60b /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #50 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #51 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #52 pc 0x00000000001fc60b /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #53 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #54 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #55 pc 0x00000000001fc60b /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #56 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: #57 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: #58 pc 0x00000000001fc60b /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: #59 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: #60 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: #61 pc 0x00000000001fca37 /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat org.chromium.base.JniAndroid.handleException(chromium-SystemWebViewGoogle6432.aab-stable-803710603:21)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat J.N.OOZ(Native Method)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat WV.ud.a(chromium-SystemWebViewGoogle6432.aab-stable-803710603:9)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat com.android.webview.chromium.a.f(chromium-SystemWebViewGoogle6432.aab-stable-803710603:25)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat com.android.webview.chromium.a.<init>(chromium-SystemWebViewGoogle6432.aab-stable-803710603:30)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat WV.ix1.apply(chromium-SystemWebViewGoogle6432.aab-stable-803710603:14)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat java.util.HashMap.computeIfAbsent(HashMap.java:1231)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat WV.jx1.a(chromium-SystemWebViewGoogle6432.aab-stable-803710603:59)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat WV.uf2.run(chromium-SystemWebViewGoogle6432.aab-stable-803710603:560)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat WV.zf2.run(chromium-SystemWebViewGoogle6432.aab-stable-803710603:116)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat WV.dg2.c(chromium-SystemWebViewGoogle6432.aab-stable-803710603:13)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat WV.wf2.c(chromium-SystemWebViewGoogle6432.aab-stable-803710603:212)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat WV.wf2.d(chromium-SystemWebViewGoogle6432.aab-stable-803710603:64)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat com.android.webview.chromium.s0.e(chromium-SystemWebViewGoogle6432.aab-stable-803710603:11)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat com.android.webview.chromium.WebViewChromium.init(chromium-SystemWebViewGoogle6432.aab-stable-803710603:73)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.webkit.WebView.<init>(WebView.java:448)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.webkit.WebView.<init>(WebView.java:367)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.webkit.WebView.<init>(WebView.java:349)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.webkit.WebView.<init>(WebView.java:336)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.webkit.WebView.<init>(WebView.java:326)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat dev.tripoder.pendingfixture.UiWebViewChecks.lambda$run$0(UiWebViewChecks.java:19)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat dev.tripoder.pendingfixture.UiWebViewChecks$0.run(D8$$SyntheticClass:0)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.os.Handler.handleCallback(Handler.java:1129)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.os.Handler.dispatchMessageImpl(Handler.java:139)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.os.Handler.dispatchMessage(Handler.java:129)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.os.Looper.loopOnce(Looper.java:315)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.os.Looper.loop(Looper.java:419)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.app.ActivityThread.main(ActivityThread.java:10847)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat java.lang.reflect.Method.invoke(Native Method)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: Caused by: java.lang.IllegalStateException: RECEIVER_REGISTER_FAILED\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeReceivers.register(RuntimeReceivers.java:64)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat dev.tripoder.runtime.GuestContext.registerReceiver(GuestContext.java:123)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.content.ContextWrapper.registerReceiver(ContextWrapper.java:828)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.content.ContextWrapper.registerReceiver(ContextWrapper.java:828)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat WV.w10.c(chromium-SystemWebViewGoogle6432.aab-stable-803710603:7)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat org.chromium.net.ProxyChangeListener.c(chromium-SystemWebViewGoogle6432.aab-stable-803710603:54)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat org.chromium.net.ProxyChangeListener.start(chromium-SystemWebViewGoogle6432.aab-stable-803710603:10)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \t... 30 more\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: Caused by: java.lang.SecurityException: STICKY_RETURN_FILTER_MISMATCH\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.os.Parcel.createExceptionOrNull(Parcel.java:3414)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.os.Parcel.createException(Parcel.java:3398)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.os.Parcel.readException(Parcel.java:3381)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.os.Parcel.readException(Parcel.java:3323)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeWire.call(RuntimeWire.java:53)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeEngine.brokerCall(RuntimeEngine.java:157)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeReceivers.register(RuntimeReceivers.java:61)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \t... 36 more\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-17 09:01:15.131",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-17 09:01:15.131",
+        "TripoderHook:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-17 09:01:15.131",
+        "TripoderReceiver:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-17 09:01:15.131",
+        "TripoderSelfHook:I",
+        "TripoderRuntime:E",
+        "TripoderOwnership:I",
+        "TripoderJobs:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-17 09:01:15.807 28487 28513 I TripoderSelfHook: INSTALLING:PROCESS_EXECUTION_POLICY\n10-17 09:01:16.729 28487 28513 I TripoderSelfHook: INSTALLED:PROCESS_EXECUTION_POLICY:ns=921265469\n10-17 09:01:16.729 28487 28513 I TripoderSelfHook: INSTALLING:FRAMEWORK_ACCESS\n10-17 09:01:16.729 28487 28513 I TripoderSelfHook: INSTALLED:FRAMEWORK_ACCESS:ns=739532\n10-17 09:01:16.729 28487 28513 I TripoderSelfHook: INSTALLING:APPLICATION_OWNERSHIP\n10-17 09:01:16.730 28487 28513 I TripoderSelfHook: INSTALLED:APPLICATION_OWNERSHIP:ns=497813\n10-17 09:01:16.730 28487 28513 I TripoderSelfHook: INSTALLING:REFLECTION_VIEW\n10-17 09:01:16.763 28487 28513 I TripoderSelfHook: INSTALLED:REFLECTION_VIEW:ns=32629375\n10-17 09:01:16.763 28487 28513 I TripoderSelfHook: INSTALLING:ACTIVITY_CREATION\n10-17 09:01:16.781 28487 28513 I TripoderSelfHook: INSTALLED:ACTIVITY_CREATION:ns=18593750\n10-17 09:01:16.781 28487 28513 I TripoderSelfHook: INSTALLING:ACTIVITY_DELIVERY\n10-17 09:01:16.804 28487 28513 I TripoderSelfHook: INSTALLED:ACTIVITY_DELIVERY:ns=22661093\n10-17 09:01:16.804 28487 28513 I TripoderSelfHook: INSTALLING:ACTIVITY_ROUTING\n10-17 09:01:16.833 28487 28513 I TripoderSelfHook: INSTALLED:ACTIVITY_ROUTING:ns=28525886\n10-17 09:01:16.833 28487 28513 I TripoderSelfHook: INSTALLING:SERVICES\n10-17 09:01:16.862 28487 28513 I TripoderSelfHook: INSTALLED:SERVICES:ns=29469531\n10-17 09:01:16.862 28487 28513 I TripoderSelfHook: INSTALLING:PROVIDERS\n10-17 09:01:16.919 28487 28513 I TripoderSelfHook: INSTALLED:PROVIDERS:ns=57131667\n10-17 09:01:16.919 28487 28513 I TripoderSelfHook: INSTALLING:RECEIVERS\n10-17 09:01:16.931 28487 28513 I TripoderSelfHook: INSTALLED:RECEIVERS:ns=11548072\n10-17 09:01:16.931 28487 28513 I TripoderSelfHook: INSTALLING:PACKAGES\n10-17 09:01:17.841 28487 28513 I TripoderSelfHook: INSTALLED:PACKAGES:ns=910370260\n10-17 09:01:17.841 28487 28513 I TripoderSelfHook: INSTALLING:STORAGE\n10-17 09:01:17.998 28487 28513 I TripoderSelfHook: INSTALLED:STORAGE:ns=156357188\n10-17 09:01:17.998 28487 28513 I TripoderSelfHook: INSTALLING:ACTIVITY_MANAGER\n10-17 09:01:18.295 28487 28513 I TripoderSelfHook: INSTALLED:ACTIVITY_MANAGER:ns=297308958\n10-17 09:01:18.295 28487 28513 I TripoderSelfHook: INSTALLING:CONNECTIVITY\n10-17 09:01:18.704 28487 28513 I TripoderSelfHook: INSTALLED:CONNECTIVITY:ns=409340156\n10-17 09:01:18.704 28487 28513 I TripoderSelfHook: INSTALLING:WIFI_P2P\n10-17 09:01:18.894 28487 28513 I TripoderSelfHook: INSTALLED:WIFI_P2P:ns=190048906\n10-17 09:01:18.895 28487 28513 I TripoderSelfHook: INSTALLING:NETWORK_STATS\n10-17 09:01:19.063 28487 28513 I TripoderSelfHook: INSTALLED:NETWORK_STATS:ns=168897760\n10-17 09:01:19.063 28487 28513 I TripoderSelfHook: INSTALLING:TELEPHONY\n10-17 09:01:19.883 28487 28513 I TripoderSelfHook: INSTALLED:TELEPHONY:ns=819882604\n10-17 09:01:19.883 28487 28513 I TripoderSelfHook: INSTALLING:AUDIO\n10-17 09:01:20.413 28487 28513 I TripoderSelfHook: INSTALLED:AUDIO:ns=529800261\n10-17 09:01:20.413 28487 28513 I TripoderSelfHook: INSTALLING:BATTERY\n10-17 09:01:20.433 28487 28513 I TripoderSelfHook: INSTALLED:BATTERY:ns=19731511\n10-17 09:01:20.433 28487 28513 I TripoderSelfHook: INSTALLING:POWER\n10-17 09:01:20.569 28487 28513 I TripoderSelfHook: INSTALLED:POWER:ns=136173230\n10-17 09:01:20.569 28487 28513 I TripoderSelfHook: INSTALLING:NOTIFICATIONS\n10-17 09:01:20.722 28487 28513 I TripoderSelfHook: INSTALLED:NOTIFICATIONS:ns=153043021\n10-17 09:01:20.722 28487 28513 I TripoderSelfHook: INSTALLING:SHORTCUTS\n10-17 09:01:20.770 28487 28513 I TripoderSelfHook: INSTALLED:SHORTCUTS:ns=47460677\n10-17 09:01:20.770 28487 28513 I TripoderSelfHook: INSTALLING:JOBS\n10-17 09:01:20.833 28487 28513 I TripoderSelfHook: INSTALLED:JOBS:ns=63339583\n10-17 09:01:20.833 28487 28513 I TripoderSelfHook: INSTALLING:PENDING_INTENTS\n10-17 09:01:20.982 28487 28513 I TripoderSelfHook: INSTALLED:PENDING_INTENTS:ns=148841667\n10-17 09:01:20.982 28487 28513 I TripoderSelfHook: INSTALLING:UI_EFFECTS\n10-17 09:01:20.989 28487 28513 I TripoderSelfHook: INSTALLED:UI_EFFECTS:ns=6734271\n10-17 09:01:20.989 28487 28513 I TripoderSelfHook: INSTALLING:FAILURE_DIAGNOSTICS\n10-17 09:01:20.999 28487 28513 I TripoderSelfHook: INSTALLED:FAILURE_DIAGNOSTICS:ns=10268073\n10-17 09:01:20.999 28487 28513 I TripoderSelfHook: INSTALLING:HOOK_CONTROL\n10-17 09:01:21.139 28487 28513 I TripoderSelfHook: INSTALLED:HOOK_CONTROL:ns=139881719\n10-17 09:01:21.139 28487 28513 I TripoderSelfHook: READY:READY:27/27:bindings=2270:ns=5331869685\n10-17 09:01:21.139 28487 28513 I TripoderSelfHook: PREPARATION_METRICS:{\"mappingCalls\":6884,\"mappingNs\":2565457468,\"ownerComparisons\":2575315,\"ownerLookupNs\":13480075}\n10-17 09:01:21.139 28487 28513 I TripoderSelfHook: MANAGED_PREPARATION_METRICS:{\"entries\":2270,\"validationNs\":369408125,\"dexBuildNs\":93399738,\"dexLoadNs\":28172344,\"helperResolveNs\":33028482,\"storageNs\":616308642,\"entryPrepareNs\":2615163145}\n10-17 09:01:21.147 28487 28487 I TripoderOwnership: before-attach host=42338199 guest=254504324 {\"stage\":\"AWAITING_GUEST\",\"constructs\":0,\"attaches\":0,\"physicalChecks\":2,\"retainedGlobalRefs\":10,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":8,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-17 09:01:21.155 28487 28487 I TripoderOwnership: after-attach host=42338199 guest=254504324 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":7,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-17 09:01:21.159 28487 28487 I TripoderOwnership: after-onCreate host=42338199 guest=254504324 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":9,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "crash",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-17 09:01:15.131"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of crash\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: FATAL EXCEPTION: main\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: Process: dev.tripoder.runtimeprobe:slot6, PID: 28487\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: org.chromium.base.JniAndroid$UncaughtExceptionException: Native stack trace:\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #00 pc 0x0000000003c3bfeb /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #01 pc 0x00000000045eb127 /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #02 pc 0x0000000005ae5b9b /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #03 pc 0x0000000005ae593f /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #04 pc 0x0000000005ae56f7 /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #05 pc 0x0000000005ae355f /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #06 pc 0x0000000005ae29eb /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #07 pc 0x0000000005ae218b /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #08 pc 0x0000000005ae210b /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #09 pc 0x0000000005ae1f9f /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #10 pc 0x0000000005ae1eff /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #11 pc 0x0000000005ae1e47 /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #12 pc 0x0000000005ae1d43 /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #13 pc 0x0000000005ac6347 /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #14 pc 0x0000000005ac535f /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #15 pc 0x0000000005ac4d17 /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #16 pc 0x0000000005abf03f /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #17 pc 0x0000000005abdc1f /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #18 pc 0x0000000005abda6b /data/app/~~LNzcCMrSsfUySysq7XdD-g==/com.google.android.webview-T4slynl5TgTaFXpe0XA-rQ==/base.apk (offset 0xdbc000) (BuildId: a615f6714b07c6b1da71a60cef59111c2fe2519f)\n10-17 09:01:21.574 28487 28487 E AndroidRuntime: #19 pc 0x00000000000bc7a3 /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #20 pc 0x00000000000a5663 /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #21 pc 0x00000000003ce1d7 /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #22 pc 0x00000000001fc4cf /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #23 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #24 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #25 pc 0x00000000001fc4cf /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #26 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #27 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #28 pc 0x00000000001fc60b /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #29 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #30 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #31 pc 0x00000000001fc863 /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #32 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #33 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #34 pc 0x00000000001fca37 /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #35 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #36 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #37 pc 0x00000000001fc60b /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #38 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #39 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #40 pc 0x00000000001fc60b /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #41 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #42 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #43 pc 0x00000000001fca37 /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #44 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #45 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #46 pc 0x00000000001fca37 /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #47 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #48 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #49 pc 0x00000000001fc60b /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #50 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #51 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #52 pc 0x00000000001fc60b /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #53 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #54 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #55 pc 0x00000000001fc60b /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.575 28487 28487 E AndroidRuntime: #56 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: #57 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: #58 pc 0x00000000001fc60b /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: #59 pc 0x00000000000fffbb /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: #60 pc 0x00000000003ce37f /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: #61 pc 0x00000000001fca37 /apex/com.android.art/lib64/libart.so (BuildId: 1e1b74c56bf2a881aa15e6aad3d7317b)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat org.chromium.base.JniAndroid.handleException(chromium-SystemWebViewGoogle6432.aab-stable-803710603:21)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat J.N.OOZ(Native Method)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat WV.ud.a(chromium-SystemWebViewGoogle6432.aab-stable-803710603:9)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat com.android.webview.chromium.a.f(chromium-SystemWebViewGoogle6432.aab-stable-803710603:25)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat com.android.webview.chromium.a.<init>(chromium-SystemWebViewGoogle6432.aab-stable-803710603:30)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat WV.ix1.apply(chromium-SystemWebViewGoogle6432.aab-stable-803710603:14)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat java.util.HashMap.computeIfAbsent(HashMap.java:1231)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat WV.jx1.a(chromium-SystemWebViewGoogle6432.aab-stable-803710603:59)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat WV.uf2.run(chromium-SystemWebViewGoogle6432.aab-stable-803710603:560)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat WV.zf2.run(chromium-SystemWebViewGoogle6432.aab-stable-803710603:116)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat WV.dg2.c(chromium-SystemWebViewGoogle6432.aab-stable-803710603:13)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat WV.wf2.c(chromium-SystemWebViewGoogle6432.aab-stable-803710603:212)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat WV.wf2.d(chromium-SystemWebViewGoogle6432.aab-stable-803710603:64)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat com.android.webview.chromium.s0.e(chromium-SystemWebViewGoogle6432.aab-stable-803710603:11)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat com.android.webview.chromium.WebViewChromium.init(chromium-SystemWebViewGoogle6432.aab-stable-803710603:73)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.webkit.WebView.<init>(WebView.java:448)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.webkit.WebView.<init>(WebView.java:367)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.webkit.WebView.<init>(WebView.java:349)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.webkit.WebView.<init>(WebView.java:336)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.webkit.WebView.<init>(WebView.java:326)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat dev.tripoder.pendingfixture.UiWebViewChecks.lambda$run$0(UiWebViewChecks.java:19)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat dev.tripoder.pendingfixture.UiWebViewChecks$0.run(D8$$SyntheticClass:0)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.os.Handler.handleCallback(Handler.java:1129)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.os.Handler.dispatchMessageImpl(Handler.java:139)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.os.Handler.dispatchMessage(Handler.java:129)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.os.Looper.loopOnce(Looper.java:315)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.os.Looper.loop(Looper.java:419)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.app.ActivityThread.main(ActivityThread.java:10847)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat java.lang.reflect.Method.invoke(Native Method)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:598)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1150)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: Caused by: java.lang.IllegalStateException: RECEIVER_REGISTER_FAILED\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeReceivers.register(RuntimeReceivers.java:64)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat dev.tripoder.runtime.GuestContext.registerReceiver(GuestContext.java:123)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.content.ContextWrapper.registerReceiver(ContextWrapper.java:828)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.content.ContextWrapper.registerReceiver(ContextWrapper.java:828)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat WV.w10.c(chromium-SystemWebViewGoogle6432.aab-stable-803710603:7)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat org.chromium.net.ProxyChangeListener.c(chromium-SystemWebViewGoogle6432.aab-stable-803710603:54)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat org.chromium.net.ProxyChangeListener.start(chromium-SystemWebViewGoogle6432.aab-stable-803710603:10)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \t... 30 more\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: Caused by: java.lang.SecurityException: STICKY_RETURN_FILTER_MISMATCH\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.os.Parcel.createExceptionOrNull(Parcel.java:3414)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.os.Parcel.createException(Parcel.java:3398)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.os.Parcel.readException(Parcel.java:3381)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat android.os.Parcel.readException(Parcel.java:3323)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeWire.call(RuntimeWire.java:53)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeEngine.brokerCall(RuntimeEngine.java:157)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \tat dev.tripoder.runtime.RuntimeReceivers.register(RuntimeReceivers.java:61)\n10-17 09:01:21.578 28487 28487 E AndroidRuntime: \t... 36 more\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-17 09:01:15.131",
+        "TripoderART:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-17 09:01:15.131",
+        "TripoderHook:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-17 09:01:15.131",
+        "TripoderReceiver:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "logcat",
+        "-b",
+        "main",
+        "-d",
+        "--uid=10409",
+        "-T",
+        "10-17 09:01:15.131",
+        "TripoderSelfHook:I",
+        "TripoderRuntime:E",
+        "TripoderOwnership:I",
+        "TripoderJobs:I",
+        "*:S"
+      ],
+      "exitCode": 0,
+      "stdout": "--------- beginning of main\n10-17 09:01:15.807 28487 28513 I TripoderSelfHook: INSTALLING:PROCESS_EXECUTION_POLICY\n10-17 09:01:16.729 28487 28513 I TripoderSelfHook: INSTALLED:PROCESS_EXECUTION_POLICY:ns=921265469\n10-17 09:01:16.729 28487 28513 I TripoderSelfHook: INSTALLING:FRAMEWORK_ACCESS\n10-17 09:01:16.729 28487 28513 I TripoderSelfHook: INSTALLED:FRAMEWORK_ACCESS:ns=739532\n10-17 09:01:16.729 28487 28513 I TripoderSelfHook: INSTALLING:APPLICATION_OWNERSHIP\n10-17 09:01:16.730 28487 28513 I TripoderSelfHook: INSTALLED:APPLICATION_OWNERSHIP:ns=497813\n10-17 09:01:16.730 28487 28513 I TripoderSelfHook: INSTALLING:REFLECTION_VIEW\n10-17 09:01:16.763 28487 28513 I TripoderSelfHook: INSTALLED:REFLECTION_VIEW:ns=32629375\n10-17 09:01:16.763 28487 28513 I TripoderSelfHook: INSTALLING:ACTIVITY_CREATION\n10-17 09:01:16.781 28487 28513 I TripoderSelfHook: INSTALLED:ACTIVITY_CREATION:ns=18593750\n10-17 09:01:16.781 28487 28513 I TripoderSelfHook: INSTALLING:ACTIVITY_DELIVERY\n10-17 09:01:16.804 28487 28513 I TripoderSelfHook: INSTALLED:ACTIVITY_DELIVERY:ns=22661093\n10-17 09:01:16.804 28487 28513 I TripoderSelfHook: INSTALLING:ACTIVITY_ROUTING\n10-17 09:01:16.833 28487 28513 I TripoderSelfHook: INSTALLED:ACTIVITY_ROUTING:ns=28525886\n10-17 09:01:16.833 28487 28513 I TripoderSelfHook: INSTALLING:SERVICES\n10-17 09:01:16.862 28487 28513 I TripoderSelfHook: INSTALLED:SERVICES:ns=29469531\n10-17 09:01:16.862 28487 28513 I TripoderSelfHook: INSTALLING:PROVIDERS\n10-17 09:01:16.919 28487 28513 I TripoderSelfHook: INSTALLED:PROVIDERS:ns=57131667\n10-17 09:01:16.919 28487 28513 I TripoderSelfHook: INSTALLING:RECEIVERS\n10-17 09:01:16.931 28487 28513 I TripoderSelfHook: INSTALLED:RECEIVERS:ns=11548072\n10-17 09:01:16.931 28487 28513 I TripoderSelfHook: INSTALLING:PACKAGES\n10-17 09:01:17.841 28487 28513 I TripoderSelfHook: INSTALLED:PACKAGES:ns=910370260\n10-17 09:01:17.841 28487 28513 I TripoderSelfHook: INSTALLING:STORAGE\n10-17 09:01:17.998 28487 28513 I TripoderSelfHook: INSTALLED:STORAGE:ns=156357188\n10-17 09:01:17.998 28487 28513 I TripoderSelfHook: INSTALLING:ACTIVITY_MANAGER\n10-17 09:01:18.295 28487 28513 I TripoderSelfHook: INSTALLED:ACTIVITY_MANAGER:ns=297308958\n10-17 09:01:18.295 28487 28513 I TripoderSelfHook: INSTALLING:CONNECTIVITY\n10-17 09:01:18.704 28487 28513 I TripoderSelfHook: INSTALLED:CONNECTIVITY:ns=409340156\n10-17 09:01:18.704 28487 28513 I TripoderSelfHook: INSTALLING:WIFI_P2P\n10-17 09:01:18.894 28487 28513 I TripoderSelfHook: INSTALLED:WIFI_P2P:ns=190048906\n10-17 09:01:18.895 28487 28513 I TripoderSelfHook: INSTALLING:NETWORK_STATS\n10-17 09:01:19.063 28487 28513 I TripoderSelfHook: INSTALLED:NETWORK_STATS:ns=168897760\n10-17 09:01:19.063 28487 28513 I TripoderSelfHook: INSTALLING:TELEPHONY\n10-17 09:01:19.883 28487 28513 I TripoderSelfHook: INSTALLED:TELEPHONY:ns=819882604\n10-17 09:01:19.883 28487 28513 I TripoderSelfHook: INSTALLING:AUDIO\n10-17 09:01:20.413 28487 28513 I TripoderSelfHook: INSTALLED:AUDIO:ns=529800261\n10-17 09:01:20.413 28487 28513 I TripoderSelfHook: INSTALLING:BATTERY\n10-17 09:01:20.433 28487 28513 I TripoderSelfHook: INSTALLED:BATTERY:ns=19731511\n10-17 09:01:20.433 28487 28513 I TripoderSelfHook: INSTALLING:POWER\n10-17 09:01:20.569 28487 28513 I TripoderSelfHook: INSTALLED:POWER:ns=136173230\n10-17 09:01:20.569 28487 28513 I TripoderSelfHook: INSTALLING:NOTIFICATIONS\n10-17 09:01:20.722 28487 28513 I TripoderSelfHook: INSTALLED:NOTIFICATIONS:ns=153043021\n10-17 09:01:20.722 28487 28513 I TripoderSelfHook: INSTALLING:SHORTCUTS\n10-17 09:01:20.770 28487 28513 I TripoderSelfHook: INSTALLED:SHORTCUTS:ns=47460677\n10-17 09:01:20.770 28487 28513 I TripoderSelfHook: INSTALLING:JOBS\n10-17 09:01:20.833 28487 28513 I TripoderSelfHook: INSTALLED:JOBS:ns=63339583\n10-17 09:01:20.833 28487 28513 I TripoderSelfHook: INSTALLING:PENDING_INTENTS\n10-17 09:01:20.982 28487 28513 I TripoderSelfHook: INSTALLED:PENDING_INTENTS:ns=148841667\n10-17 09:01:20.982 28487 28513 I TripoderSelfHook: INSTALLING:UI_EFFECTS\n10-17 09:01:20.989 28487 28513 I TripoderSelfHook: INSTALLED:UI_EFFECTS:ns=6734271\n10-17 09:01:20.989 28487 28513 I TripoderSelfHook: INSTALLING:FAILURE_DIAGNOSTICS\n10-17 09:01:20.999 28487 28513 I TripoderSelfHook: INSTALLED:FAILURE_DIAGNOSTICS:ns=10268073\n10-17 09:01:20.999 28487 28513 I TripoderSelfHook: INSTALLING:HOOK_CONTROL\n10-17 09:01:21.139 28487 28513 I TripoderSelfHook: INSTALLED:HOOK_CONTROL:ns=139881719\n10-17 09:01:21.139 28487 28513 I TripoderSelfHook: READY:READY:27/27:bindings=2270:ns=5331869685\n10-17 09:01:21.139 28487 28513 I TripoderSelfHook: PREPARATION_METRICS:{\"mappingCalls\":6884,\"mappingNs\":2565457468,\"ownerComparisons\":2575315,\"ownerLookupNs\":13480075}\n10-17 09:01:21.139 28487 28513 I TripoderSelfHook: MANAGED_PREPARATION_METRICS:{\"entries\":2270,\"validationNs\":369408125,\"dexBuildNs\":93399738,\"dexLoadNs\":28172344,\"helperResolveNs\":33028482,\"storageNs\":616308642,\"entryPrepareNs\":2615163145}\n10-17 09:01:21.147 28487 28487 I TripoderOwnership: before-attach host=42338199 guest=254504324 {\"stage\":\"AWAITING_GUEST\",\"constructs\":0,\"attaches\":0,\"physicalChecks\":2,\"retainedGlobalRefs\":10,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":8,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-17 09:01:21.155 28487 28487 I TripoderOwnership: after-attach host=42338199 guest=254504324 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":7,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n10-17 09:01:21.159 28487 28487 I TripoderOwnership: after-onCreate host=42338199 guest=254504324 {\"stage\":\"ATTACHED\",\"constructs\":1,\"attaches\":1,\"physicalChecks\":9,\"retainedGlobalRefs\":18,\"viewReady\":true,\"viewEnabled\":true,\"viewTransitions\":1,\"viewRoots\":9,\"mappedGets\":0,\"mappedSets\":0,\"denials\":0}\n",
+      "stderr": ""
+    }
+  ],
+  "decoyApkSha256": "628847be4c661b810c5b031b941102373dfb5aa3ae2844cf7c84da9e07f786ae",
+  "decoyMarkerBefore": false,
+  "pageSize": 4096,
+  "aInstalledInHost": false,
+  "ownedUid": 10409,
+  "deviceLogStart": "10-17 09:01:15.131",
+  "decoyMarkerAfter": false,
+  "hostMatchesBuild": true,
+  "fixturesMatchBuild": true,
+  "p1FixturesMatchBuild": true,
+  "p2FixturesMatchBuild": true,
+  "allDeviceAssertionsPassed": true,
+  "nativeMemoryCrashObserved": false,
+  "nativeFatalSignalObserved": false,
+  "javaFatalObserved": true,
+  "expectedFixtureUncaught": [],
+  "unexpectedJavaFatalObserved": true,
+  "unexpectedPendingIngressFailure": false,
+  "selfHookInstallationSamples": [
+    {
+      "pid": 28487,
+      "bindings": 2270,
+      "durationNs": 5331869685
+    }
+  ],
+  "passed": false,
+  "error": "Device assertions failed; inspect device-result.json",
+  "finishedAtUtc": "2026-10-17T01:03:55.190453+00:00"
+}

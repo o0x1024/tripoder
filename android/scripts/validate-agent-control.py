@@ -12,7 +12,7 @@ def sha(path):
 def self_hook_samples(log):
     return [{'pid': int(pid), 'bindings': int(bindings), 'durationNs': int(duration)}
             for pid, bindings, duration in re.findall(
-                r'^\S+\s+\S+\s+(\d+)\s+\d+\s+I\s+TripoderSelfHook\s*:\s+READY:READY:26/26:bindings=(\d+):ns=(\d+)$',
+                r'^\S+\s+\S+\s+(\d+)\s+\d+\s+I\s+TripoderSelfHook\s*:\s+READY:READY:27/27:bindings=(\d+):ns=(\d+)$',
                 log, re.MULTILINE)]
 
 def verify_runtime_status(status, *, pid, uid, generation, core_path, native_sha256, native_size):
@@ -188,7 +188,7 @@ def main():
             (evidence/'engine-bootstrap.txt').write_text(bootstrap.stdout)
             report['selfHookInstallationSamples']=self_hook_samples(bootstrap.stdout)
             if bootstrap.returncode:report['passed']=False;report['fatalOrLogFailure']=True
-            if report.get('passed') and not any(item['pid']==report.get('workerPid') and item['bindings']==2215 for item in report['selfHookInstallationSamples']):
+            if report.get('passed') and not any(item['pid']==report.get('workerPid') and item['bindings'] in (2270,2271) for item in report['selfHookInstallationSamples']):
                 report['passed']=False;report['workerBootstrapEvidenceMissing']=True
         report['finishedAtUtc']=datetime.datetime.now(datetime.timezone.utc).isoformat();report['desktopSourceSha256']={str(path.relative_to(repo)):sha(path) for path in sorted((repo/'agent').glob('*.mjs'))};shutil.copyfile(build/'build-receipt.json',evidence/'build-receipt.json');(evidence/'device-observation.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
     if not report['passed']:raise RuntimeError('DEVICE_ACCEPTANCE_FAILED')

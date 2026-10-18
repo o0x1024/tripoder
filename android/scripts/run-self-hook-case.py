@@ -30,6 +30,14 @@ ACTIVITIES['inbound']='NativeInboundProbeActivity'
 ACTIVITIES['native-export']='NativeExportProbeActivity'
 ACTIVITIES['native-export-pac']='NativeExportProbeActivity'
 ACTIVITIES['native-race']='NativeRaceProbeActivity'
+ACTIVITIES['native-upgrade']='NativeUpgradeProbeActivity'
+ACTIVITIES['native-ranges']='NativeRangeProbeActivity'
+ACTIVITIES['native-commit-death']='NativeUpgradeProbeActivity'
+ACTIVITIES['native-benchmark']='NativeBenchmarkProbeActivity'
+ACTIVITIES['native-affinity']='NativeBenchmarkProbeActivity'
+ACTIVITIES['managed-admission']='ManagedAdmissionProbeActivity'
+ACTIVITIES['managed-visibility']='ManagedVisibilityProbeActivity'
+ACTIVITIES['managed-real-guest']='ManagedRealGuestProbeActivity'
 ACTIVITIES['native-inflight-death']='NativeRaceProbeActivity'
 ACTIVITIES['native-jni']='NativeJniProbeActivity'
 ACTIVITIES['product-native']='ProductNativeProbeActivity'
@@ -60,7 +68,7 @@ def main():
     args = parser.parse_args()
     if args.activity in ('inflight','startup') and args.expected!='aot':
         raise RuntimeError('INFLIGHT_REQUIRES_AOT')
-    if (args.expected=='native') != (args.activity in ('scalar','entry','inventory','capacity','service-token','product-framework','product-java','modules','modules-death','inbound','native-export','native-export-pac','native-race','native-inflight-death','native-jni','product-native','product-mixed','native-leaf','catalog','catalog-empty','manager-installer','manager-all','constructor','early-application','jni-register','jni-sdk')):
+    if (args.expected=='native') != (args.activity in ('scalar','entry','inventory','capacity','service-token','product-framework','product-java','modules','modules-death','inbound','native-export','native-export-pac','native-race','native-upgrade','native-ranges','native-commit-death','native-benchmark','native-affinity','managed-admission','managed-visibility','managed-real-guest','native-inflight-death','native-jni','product-native','product-mixed','native-leaf','catalog','catalog-empty','manager-installer','manager-all','constructor','early-application','jni-register','jni-sdk')):
         raise RuntimeError('NATIVE_FIXTURE_REQUIRES_NATIVE_EXECUTION_MODE')
     if args.expected == 'cold' and args.activity != 'abi':
         raise RuntimeError('COLD_ACCEPTANCE_REQUIRES_ABI_ACTIVITY')
@@ -105,10 +113,12 @@ def main():
     if args.activity in ('modules','modules-death'):
         for name in ['linker-contract.json','notifier-template.json','notifier-template.txt','module-lifetime-host.json']:
             shutil.copyfile(BUILD/name,directory/name)
-    if args.activity=='inbound':
+    if args.activity in ('inbound','native-upgrade'):
         for name in ['inbound-audit.json','inbound-audit.txt']:
             shutil.copyfile(BUILD/name,directory/name)
-    if args.activity in ('native-export','native-export-pac','native-race','native-inflight-death'):
+    if args.activity in ('native-upgrade','native-ranges','native-commit-death'):
+        shutil.copyfile(BUILD/'native-upgrade-host.json',directory/'native-upgrade-host.json')
+    if args.activity in ('native-export','native-export-pac','native-race','native-upgrade','native-ranges','native-commit-death','native-benchmark','native-inflight-death'):
         for name in ['native-prefix-audit.json','native-template-audit.json','native-template-audit.txt']:
             shutil.copyfile(BUILD/name,directory/name)
     for source, name in [(BUILD / 'self-hook-probe/signature.txt', 'signature.txt'),
@@ -148,7 +158,9 @@ def main():
         extras = ['--ez', 'selfAccess', 'true'] if args.activity == 'framework' else ['--es', 'artCompilation', args.expected]
         if args.activity == 'script': extras += ['--ez','ownedScriptScope','true']
         if args.activity == 'startup': extras += ['--ez','earlyPolicy','true']
-        if args.activity in ('modules-death','native-inflight-death'):extras += ['--ez','activeUnload','true']
+        if args.activity in ('modules-death','native-inflight-death','native-commit-death'):extras += ['--ez','activeUnload','true']
+        if args.activity == 'native-commit-death':extras += ['--ez','commitFailure','true']
+        if args.activity == 'native-affinity':extras += ['--ez','affinityDiagnostic','true']
         if args.activity == 'native-export-pac':extras += ['--ez','pac','true']
         if args.activity == 'catalog-empty':extras += ['--ez','emptyCatalog','true']
         if args.activity == 'manager-all':extras += ['--ez','allManagers','true']
@@ -159,9 +171,9 @@ def main():
             raise RuntimeError('COLD_LAUNCH_REQUIRED')
         print(json.dumps({'runId': run, 'activity': args.activity, 'status': 'RUNNING'}), flush=True)
         remote = '/sdcard/Android/data/' + PACKAGE + '/files/' + run
-        if args.activity in ('modules-death','native-inflight-death'):
+        if args.activity in ('modules-death','native-inflight-death','native-commit-death'):
             from self_module_death import collect
-            collect(command,directory,remote,PACKAGE)
+            collect(command,directory,remote,PACKAGE,230 if args.activity=='native-commit-death' else 198)
             return
         deadline = time.monotonic() + (600 if args.activity in ('capacity','manager-all') else 120)
         while command(None, 'shell', 'test', '-f', remote + '/result.json', check=False).returncode:

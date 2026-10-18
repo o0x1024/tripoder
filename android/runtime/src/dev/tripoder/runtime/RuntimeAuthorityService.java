@@ -25,7 +25,7 @@ public class RuntimeAuthorityService extends Service {
             if(broker==null)broker=RuntimeAuthorityOwner.get(getApplicationContext());
             }
             String command=RuntimeWire.required(input,"command");
-            if(command.equals("install")||command.equals("probeInstall")||command.equals("probeJobsReport")||command.equals("probeClosedFixture"))return dispatch(input);
+            if(command.equals("install")||command.equals("probeInstall")||command.equals("probeJobsReport")||command.equals("probeClosedFixture")||command.equals("probePending"))return dispatch(input);
             if(command.equals("hook"))return RuntimeHookOperations.execute(broker,RuntimeWire.required(input,"operation"),RuntimeWire.required(input,"generation"),input.getString("request"),"runtime-probe");
             if(command.equals("ensureProcess")){
                 var slot=broker.processes.ensure(RuntimeWire.required(input,"space"),RuntimeWire.required(input,"package"),RuntimeWire.required(input,"processName"));return broker.processEvidence(slot);

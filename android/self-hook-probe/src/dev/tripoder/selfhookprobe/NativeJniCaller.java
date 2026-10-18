@@ -8,6 +8,7 @@ public final class NativeJniCaller {
     public static native int error(int value);
     public static native int count(int index);
     public static native long[] concurrent();
+    public static native boolean preAttached();
     public static native long[] floatingEnvironment();
     public static native boolean close();
 }

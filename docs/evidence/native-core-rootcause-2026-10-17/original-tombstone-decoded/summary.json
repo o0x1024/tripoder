@@ -1,0 +1,344 @@
+{
+ "pid": 28573,
+ "tid": 28831,
+ "uid": 10400,
+ "timestamp": "2026-10-17 00:39:46.549942310+0800",
+ "abort": "TP_MANAGED_ENTRY_OWNERSHIP",
+ "threads": [
+  {
+   "tid": 28589,
+   "name": "FinalizerDaemon",
+   "frames": 28,
+   "memory": [],
+   "top": [
+    "syscall",
+    "art::ConditionVariable::WaitHoldingLocks(art::Thread*)",
+    "art::Monitor::Wait(art::Thread*, art::ObjPtr<art::mirror::Object>, long, int, bool, art::ThreadState)",
+    "art_quick_generic_jni_trampoline",
+    "art_quick_invoke_stub"
+   ]
+  },
+  {
+   "tid": 28586,
+   "name": "Jit thread pool",
+   "frames": 6,
+   "memory": [],
+   "top": [
+    "syscall",
+    "art::ConditionVariable::WaitHoldingLocks(art::Thread*)",
+    "art::ThreadPoolWorker::Run()",
+    "art::ThreadPoolWorker::Callback(void*)",
+    "__pthread_start(void*) (.__uniq.67847048707805468364044055584648682506)"
+   ]
+  },
+  {
+   "tid": 28599,
+   "name": "AppCustomScenar",
+   "frames": 14,
+   "memory": [],
+   "top": [
+    "__epoll_pwait",
+    "android::Looper::pollOnce(int, int*, int*, void**)",
+    "android::android_os_MessageQueue_nativePollOnce(_JNIEnv*, _jobject*, long, int) (.__uniq.190462215528616872930035678816392364378)",
+    "art_quick_generic_jni_trampoline",
+    "android.os.MessageQueue.nextLegacy"
+   ]
+  },
+  {
+   "tid": 28588,
+   "name": "ReferenceQueueD",
+   "frames": 24,
+   "memory": [],
+   "top": [
+    "syscall",
+    "art::ConditionVariable::WaitHoldingLocks(art::Thread*)",
+    "art::Monitor::Wait(art::Thread*, art::ObjPtr<art::mirror::Object>, long, int, bool, art::ThreadState)",
+    "art_quick_generic_jni_trampoline",
+    "art_quick_invoke_stub"
+   ]
+  },
+  {
+   "tid": 28595,
+   "name": "Profile Saver",
+   "frames": 5,
+   "memory": [],
+   "top": [
+    "syscall",
+    "art::ConditionVariable::TimedWait(art::Thread*, long, int)",
+    "art::ProfileSaver::RunProfileSaverThread(void*)",
+    "__pthread_start(void*) (.__uniq.67847048707805468364044055584648682506)",
+    "__start_thread"
+   ]
+  },
+  {
+   "tid": 28587,
+   "name": "HeapTaskDaemon",
+   "frames": 12,
+   "memory": [],
+   "top": [
+    "syscall",
+    "art::ConditionVariable::TimedWait(art::Thread*, long, int)",
+    "art::gc::TaskProcessor::RunAllTasks(art::Thread*)",
+    "art_jni_trampoline",
+    "java.lang.Daemons$HeapTaskDaemon.runInternal"
+   ]
+  },
+  {
+   "tid": 28596,
+   "name": "MiuiMonitorThre",
+   "frames": 14,
+   "memory": [],
+   "top": [
+    "__epoll_pwait",
+    "android::Looper::pollOnce(int, int*, int*, void**)",
+    "android::android_os_MessageQueue_nativePollOnce(_JNIEnv*, _jobject*, long, int) (.__uniq.190462215528616872930035678816392364378)",
+    "art_quick_generic_jni_trampoline",
+    "android.os.MessageQueue.nextLegacy"
+   ]
+  },
+  {
+   "tid": 28594,
+   "name": "binder:28573_3",
+   "frames": 10,
+   "memory": [],
+   "top": [
+    "",
+    "ioctl",
+    "android::IPCThreadState::talkWithDriver(bool)",
+    "android::IPCThreadState::joinThreadPool(bool)",
+    "android::PoolThread::threadLoop()"
+   ]
+  },
+  {
+   "tid": 28592,
+   "name": "binder:28573_2",
+   "frames": 10,
+   "memory": [],
+   "top": [
+    "",
+    "ioctl",
+    "android::IPCThreadState::talkWithDriver(bool)",
+    "android::IPCThreadState::joinThreadPool(bool)",
+    "android::PoolThread::threadLoop()"
+   ]
+  },
+  {
+   "tid": 28609,
+   "name": "binder:28573_4",
+   "frames": 10,
+   "memory": [],
+   "top": [
+    "",
+    "ioctl",
+    "android::IPCThreadState::talkWithDriver(bool)",
+    "android::IPCThreadState::joinThreadPool(bool)",
+    "android::PoolThread::threadLoop()"
+   ]
+  },
+  {
+   "tid": 28585,
+   "name": "perfetto_hprof_",
+   "frames": 4,
+   "memory": [],
+   "top": [
+    "read",
+    "void* std::__1::__thread_proxy[abi:nn220000]<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ArtPlugin_Initialize::$_7>>(void*)",
+    "__pthread_start(void*) (.__uniq.67847048707805468364044055584648682506)",
+    "__start_thread"
+   ]
+  },
+  {
+   "tid": 28584,
+   "name": "Signal Catcher",
+   "frames": 5,
+   "memory": [],
+   "top": [
+    "",
+    "sigwaitinfo64",
+    "art::SignalCatcher::Run(void*)",
+    "__pthread_start(void*) (.__uniq.67847048707805468364044055584648682506)",
+    "__start_thread"
+   ]
+  },
+  {
+   "tid": 28593,
+   "name": "dex_preload_t",
+   "frames": 14,
+   "memory": [],
+   "top": [
+    "__epoll_pwait",
+    "android::Looper::pollOnce(int, int*, int*, void**)",
+    "android::android_os_MessageQueue_nativePollOnce(_JNIEnv*, _jobject*, long, int) (.__uniq.190462215528616872930035678816392364378)",
+    "art_quick_generic_jni_trampoline",
+    "android.os.MessageQueue.nextLegacy"
+   ]
+  },
+  {
+   "tid": 28591,
+   "name": "binder:28573_1",
+   "frames": 66,
+   "memory": [],
+   "top": [
+    "syscall",
+    "art::Thread::Park(bool, long)",
+    "art::Unsafe_park(_JNIEnv*, _jobject*, unsigned char, long) (.__uniq.319429422067363160645159987129209045680)",
+    "art_quick_generic_jni_trampoline",
+    "art_quick_invoke_stub"
+   ]
+  },
+  {
+   "tid": 28597,
+   "name": "Timer-0",
+   "frames": 11,
+   "memory": [],
+   "top": [
+    "syscall",
+    "art::ConditionVariable::WaitHoldingLocks(art::Thread*)",
+    "art::Monitor::Wait(art::Thread*, art::ObjPtr<art::mirror::Object>, long, int, bool, art::ThreadState)",
+    "art_jni_trampoline",
+    "java.util.TimerThread.mainLoop"
+   ]
+  },
+  {
+   "tid": 28573,
+   "name": "er.engine:slot1",
+   "frames": 35,
+   "memory": [],
+   "top": [
+    "__epoll_pwait",
+    "android::Looper::pollOnce(int, int*, int*, void**)",
+    "android::android_os_MessageQueue_nativePollOnce(_JNIEnv*, _jobject*, long, int) (.__uniq.190462215528616872930035678816392364378)",
+    "art_quick_generic_jni_trampoline",
+    "art_quick_invoke_stub"
+   ]
+  },
+  {
+   "tid": 28831,
+   "name": "TripoderSelfHoo",
+   "frames": 80,
+   "memory": [
+    [
+     "x3",
+     "0x6cfc329d20",
+     1024
+    ],
+    [
+     "x11",
+     "0x6cfc333020",
+     1024
+    ],
+    [
+     "x14",
+     "0x893cdc0",
+     1024
+    ],
+    [
+     "x16",
+     "0x6fbe34f400",
+     256
+    ],
+    [
+     "x17",
+     "0x6fbe333560",
+     256
+    ],
+    [
+     "x18",
+     "0x6c6ef28000",
+     1024
+    ],
+    [
+     "x22",
+     "0x6c70ca4590",
+     1024
+    ],
+    [
+     "x25",
+     "0x6cfc32add0",
+     1024
+    ],
+    [
+     "x27",
+     "0x6c70ca3fe0",
+     1024
+    ],
+    [
+     "x28",
+     "0x6c70f31990",
+     1024
+    ],
+    [
+     "x29",
+     "0x6cfc329da0",
+     1024
+    ],
+    [
+     "lr",
+     "0x6fbe2cfdc0",
+     256
+    ],
+    [
+     "sp",
+     "0x6cfc329d20",
+     4096
+    ],
+    [
+     "pc",
+     "0x6fbe2cfdf0",
+     256
+    ],
+    [
+     "esr",
+     "0x91ffffe0",
+     1024
+    ]
+   ],
+   "top": [
+    "abort",
+    "Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative",
+    "art_quick_generic_jni_trampoline",
+    "art_quick_invoke_static_stub",
+    "bool art::interpreter::DoCall<false>(art::ArtMethod*, art::Thread*, art::ShadowFrame&, art::Instruction const*, unsigned short, bool, art::JValue*)"
+   ]
+  },
+  {
+   "tid": 28590,
+   "name": "FinalizerWatchd",
+   "frames": 36,
+   "memory": [],
+   "top": [
+    "syscall",
+    "art::ConditionVariable::TimedWait(art::Thread*, long, int)",
+    "art::Monitor::Wait(art::Thread*, art::ObjPtr<art::mirror::Object>, long, int, bool, art::ThreadState)",
+    "art_quick_generic_jni_trampoline",
+    "art_quick_invoke_static_stub"
+   ]
+  },
+  {
+   "tid": 28598,
+   "name": "Timer-1",
+   "frames": 11,
+   "memory": [],
+   "top": [
+    "syscall",
+    "art::ConditionVariable::WaitHoldingLocks(art::Thread*)",
+    "art::Monitor::Wait(art::Thread*, art::ObjPtr<art::mirror::Object>, long, int, bool, art::ThreadState)",
+    "art_jni_trampoline",
+    "java.util.TimerThread.mainLoop"
+   ]
+  },
+  {
+   "tid": 28601,
+   "name": "Verification th",
+   "frames": 6,
+   "memory": [],
+   "top": [
+    "syscall",
+    "art::ConditionVariable::WaitHoldingLocks(art::Thread*)",
+    "art::ThreadPoolWorker::Run()",
+    "art::ThreadPoolWorker::Callback(void*)",
+    "__pthread_start(void*) (.__uniq.67847048707805468364044055584648682506)"
+   ]
+  }
+ ]
+}

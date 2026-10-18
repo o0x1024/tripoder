@@ -22,6 +22,9 @@ public final class P1Authority extends RuntimeAuthorityService {
     @Override protected Bundle dispatch(Bundle input)throws Exception{
         String command=RuntimeWire.required(input,"command");Bundle out=new Bundle();
         switch(command){
+            case "probeProviderIntegrityStats":return broker.apks.integrityStats();
+            case "probeInstallProviderIndex":out.putString("result",RuntimeInstallProviderIndexProbe.run(this).toString());return out;
+            case "probeUnrelatedProviderInstall":return RuntimeInstallProviderIndexProbe.isolateUnrelated(broker,RuntimeWire.required(input,"space"));
             case "probePackageResourcesReport":{
                 var session=broker.contract.getSession(RuntimeWire.required(input,"generation"));
                 if(!session.identity.packageName.equals("dev.tripoder.provideridentity")||session.state!=ExecutionContract.ProcessState.RUNNING)throw new SecurityException("PACKAGE_RESOURCES_FIXTURE_REQUIRED");
@@ -70,6 +73,7 @@ public final class P1Authority extends RuntimeAuthorityService {
                 try(var c=broker.store.getReadableDatabase().rawQuery("SELECT COUNT(*) FROM broadcast_deliveries WHERE target=? AND source='' AND sourceIdentity=? AND state='COMPLETED'",new String[]{session.processGeneration,"PLATFORM_PROTECTED:android.intent.action.BATTERY_CHANGED"})){if(!c.moveToFirst())throw new AssertionError("STICKY_RECEIPT_MISSING");out.putInt("completedStickyCallbacks",c.getInt(0));}return out;
             }
             case "probeJobsReport":return RuntimeJobInspection.read(broker,input);
+            case "probePending":return RuntimePendingInspection.call(broker,input);
             case "probePassiveGate":case "probePassiveReport":return PassiveBindingProbe.command(this,broker,input);
             case "probeServiceStartupReport":{
                 var session=broker.contract.getSession(RuntimeWire.required(input,"generation"));

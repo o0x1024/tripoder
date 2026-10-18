@@ -32,7 +32,7 @@ def main():
         return result.stdout.strip()
     inputs=[runtime/name for name in ['RuntimeSelfHookBootstrap.java','RuntimeSelfHookLoaders.java',
         'RuntimeSelfHookLifecycle.java','RuntimeSelfHookProviderCalls.java','RuntimeSelfHookSelection.java','RuntimeSelfHookBoundaries.java',
-        'RuntimeSelfHookManagerPolicy.java','RuntimeStartupDeadline.java']]
+        'RuntimeSelfHookManagerPolicy.java','RuntimeStartupDeadline.java','RuntimePendingIntentPolicy.java','PreferencesWait.java','ServiceRecoveryPolicy.java']]
     inputs+=sorted((here/'src/dev').rglob('*.java'))+sorted((here/'src/fixture').rglob('*.java'))
     before={str(path.relative_to(repo)):digest(path) for path in inputs}
     run(javac,'--release','17','-d',fixture,here/'src/fixture/OwnedApplication.java')
@@ -42,7 +42,10 @@ def main():
              run(java,'-cp',classes,'dev.tripoder.runtime.ComponentTest'),
              run(java,'-cp',classes,'dev.tripoder.runtime.BoundaryTest'),
              run(java,'-cp',classes,'dev.tripoder.runtime.ManagerPolicyTest'),
-             run(java,'-cp',classes,'dev.tripoder.runtime.StartupDeadlineTest')]
+             run(java,'-cp',classes,'dev.tripoder.runtime.StartupDeadlineTest'),
+             run(java,'-cp',classes,'dev.tripoder.runtime.PendingIntentPolicyTest'),
+             run(java,'-cp',classes,'dev.tripoder.runtime.PreferencesWaitTest'),
+             run(java,'-cp',classes,'dev.tripoder.runtime.ServiceRecoveryPolicyTest')]
     if before!={str(path.relative_to(repo)):digest(path) for path in inputs}:raise RuntimeError('HOST_SOURCES_CHANGED_DURING_CHECK')
     report={'schema':1,'hostOutputs':outputs,'sourceSha256':before,'runnerSha256':digest(Path(__file__).resolve()),
             'deviceExecuted':False,'productAccepted':False}
@@ -51,6 +54,7 @@ def main():
         sdk_classes=build/'sdk-classes';sdk_classes.mkdir(exist_ok=True)
         sources=sorted(path for path in (repo/'android/runtime/src').rglob('*.java') if path.name!='RuntimeAuthorityService.java')
         sources+=sorted((repo/'android/control/src').rglob('*.java'))+sorted((repo/'android/engine/src').rglob('*.java'))
+        sources+=sorted((repo/'android/workbench/src').rglob('*.java'))
         sources += sorted((repo/'android/self-hook/java').rglob('*.java'))
         component_config=build/'RuntimeComponentBuild.java'
         component_config.write_text('package dev.tripoder.runtime; final class RuntimeComponentBuild { static final String ACTIVITY_POOL_PREFIX="TaskP"; }\n')

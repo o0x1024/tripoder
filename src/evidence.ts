@@ -1,6 +1,6 @@
 import { requireThat } from "./errors.js";
 
-export type JavaType = "void" | "boolean" | "byte" | "short" | "int" | "long" | "float" | "double" | "char" | "java.lang.String";
+export type JavaType = "void" | "boolean" | "byte" | "short" | "int" | "long" | "float" | "double" | "char" | "java.lang.String" | "[B" | "byte[]";
 export type NativeType = "void" | "int32" | "uint32" | "int64" | "uint64" | "float" | "double";
 export type AbiType = JavaType | NativeType;
 export type HookValue = string | boolean | number | bigint | null | undefined;
@@ -54,7 +54,7 @@ export function snapshotEvidence(evidence: EvidenceSnapshot): EvidenceSnapshot {
   requireThat(evidence.abi === "arm64-v8a", "UNSUPPORTED_ABI", "This prototype only models arm64-v8a");
   const ids = new Set<string>();
   requireThat(evidence.capabilities.every(c => c === "java-hook" || c === "native-hook"), "INVALID_EVIDENCE", "Unknown capability");
-  const javaTypes = new Set(["void", "boolean", "byte", "short", "int", "long", "float", "double", "char", "java.lang.String"]);
+  const javaTypes = new Set(["void", "boolean", "byte", "short", "int", "long", "float", "double", "char", "java.lang.String", "[B", "byte[]"]);
   const nativeTypes = new Set(["void", "int32", "uint32", "int64", "uint64", "float", "double"]);
   const symbols = evidence.symbols.map((symbol): HookSymbol => {
     requireThat(symbol.id.length > 0 && !ids.has(symbol.id), "INVALID_EVIDENCE", `Duplicate or empty symbol ID: ${symbol.id}`);
@@ -92,6 +92,7 @@ export function validateHookValue(type: AbiType, value: unknown, location: strin
     case "void": valid = value === undefined; break;
     case "boolean": valid = typeof value === "boolean"; break;
     case "java.lang.String": valid = value === null || typeof value === "string"; break;
+    case "[B": case "byte[]": valid = value === null || (typeof value === "string" && value.length <= 8192 && (value.length & 1) === 0 && /^[0-9a-fA-F]*$/.test(value)); break;
     case "char": valid = typeof value === "string" && value.length === 1; break;
     case "long": case "int64": valid = typeof value === "bigint" && value >= -(1n << 63n) && value < (1n << 63n); break;
     case "uint64": valid = typeof value === "bigint" && value >= 0n && value < (1n << 64n); break;

@@ -25,7 +25,7 @@ final class RuntimeSelfHookFixedComponents {
                     :(receiver,args,original)->RuntimeSelfHookPlatformCallbacks.stopSelf((Service)receiver,(Integer)args[0],original);break;
                 case "stopSelfResult":callback=(receiver,args,original)->RuntimeSelfHookPlatformCallbacks.stopSelfResult((Service)receiver,(Integer)args[0],original);break;
                 case "startForeground":case "stopForeground":case "getForegroundServiceType":
-                    callback=(receiver,args,original)->RuntimeSelfHookPlatformCallbacks.foreground((Service)receiver,args,original);break;
+                    callback=(receiver,args,original)->RuntimeSelfHookPlatformCallbacks.foreground((Service)receiver,method.getName(),args,original);break;
                 default:throw new IllegalStateException("FIXED_SERVICE_BINDING_UNHANDLED:"+method);
             }
             callbacks.put(method,callback);

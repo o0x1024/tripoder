@@ -1,0 +1,115 @@
+{
+  "schema": 1,
+  "phase": "native-core-benchmark",
+  "runId": "3ee838a1-ded1-42dc-b0d9-bb4587d67f72",
+  "package": "dev.tripoder.selfhookprobe",
+  "uid": 10415,
+  "pid": 24628,
+  "timestampMs": 1792170551606,
+  "apkSha256": "454f299a2d7d27be782cff4fc7ee031de98cb960418df79fb8fbb8c51ac5eb8b",
+  "build": {
+    "schema": 1,
+    "buildId": "cf2a50af-c810-4547-a2bd-94fdf7c37564",
+    "timestamp": "2026-10-16T17:06:31.661225+00:00",
+    "sourceDigest": "e0a1736649fd1db6e2dac29f665abdd4ed3ac727177dd89759b953a8b6e3bf3a",
+    "nativeSha256": "27ab08ae5c15cd20ab8ae7b1322dc2eb2ae7911d0502378d15a9646465078d3a",
+    "fixtureSha256": "71e223f4177d345697ec30449140e6d5412b1ece25dd56afbb4ace4368d6a9fb",
+    "ownedNativeBuildId": "35f7a9cf53abc669b72243b532e5c41fb9cdfc5a",
+    "ownedNativePacBuildId": "c5804f499f2705cefa7fd9c60800f4bc9c6e787d",
+    "scope": "H1\/H2a owned ELF, native thread parking and fixed-platform ART with static caller indexing"
+  },
+  "debuggable": false,
+  "platform": {
+    "fingerprint": "Xiaomi\/madrid\/madrid:17\/CP2A.260605.016\/OS4.0.24.0.XEOCNXM:user\/release-keys",
+    "sdk": 37,
+    "abi": "arm64-v8a",
+    "process64Bit": true,
+    "pageSize": 4096,
+    "binaries": {
+      "\/apex\/com.android.runtime\/bin\/linker64": "b6dd216b7a775b8f04c825cada286bfe7ddaeecf2c0c10e617287118965abc00",
+      "\/apex\/com.android.runtime\/lib64\/bionic\/libc.so": "b963b539545b64aa8fbcaed3228d04bcb6466bfd47055aa16e4ccdcadfdc461e",
+      "\/apex\/com.android.art\/lib64\/libart.so": "2d4a3575e5b71b537d89c176ac82ad3e32a56a3d43161009de3e728c962fab13"
+    }
+  },
+  "selinuxContext": "u:r:untrusted_app:s0:c159,c257,c512,c768",
+  "platformGatePassed": true,
+  "nativeSha256": "27ab08ae5c15cd20ab8ae7b1322dc2eb2ae7911d0502378d15a9646465078d3a",
+  "fixtureSha256": "71e223f4177d345697ec30449140e6d5412b1ece25dd56afbb4ace4368d6a9fb",
+  "ownedNativeSha256": "fd5fab021db64251c3593acbd5b9ab09153493ee83dfc413571326a7d81827c4",
+  "benchmark": {
+    "samplesPerPath": 100000,
+    "clockOverheadIncluded": true,
+    "workerCpu": 5,
+    "warmupNsPerPath": 500000000,
+    "productAuthorityConnected": false,
+    "directC": {
+      "count": 100000,
+      "callsPerSample": 64,
+      "meanNs": 7.72122015625,
+      "p50Ns": 7.328125,
+      "p95Ns": 8.140625,
+      "p99Ns": 8.140625,
+      "rawFile": "direct-c.bin",
+      "sha256": "82c4d5aba611ce91bc8b7ce55ce0fdaea659770d1d885077d86b73b04b4e8fc0"
+    },
+    "hookC": {
+      "count": 100000,
+      "callsPerSample": 64,
+      "meanNs": 176.77843859375,
+      "p50Ns": 177.40625,
+      "p95Ns": 178.21875,
+      "p99Ns": 179.03125,
+      "rawFile": "hook-c.bin",
+      "sha256": "ccbb825d0aab93c3aedc386a25a21bd286ac5ead313aebaf340a16b515dd539a"
+    },
+    "prepareNs": 31670833,
+    "publishNs": 44477500,
+    "retireNs": 59680573,
+    "jniBaseline": {
+      "count": 100000,
+      "callsPerSample": 1,
+      "meanNs": 30.01215,
+      "p50Ns": 52,
+      "p95Ns": 52,
+      "p99Ns": 53,
+      "rawFile": "jni-baseline.bin",
+      "sha256": "9ac73fbfe628af9c2fc79b1db18160b36c137fa1f86c3b0973294ce4ace7d383"
+    },
+    "jniHook": {
+      "count": 100000,
+      "callsPerSample": 1,
+      "meanNs": 1037.78037,
+      "p50Ns": 834,
+      "p95Ns": 1980,
+      "p99Ns": 4010,
+      "rawFile": "jni-hook.bin",
+      "sha256": "046ec4b293999b63df9d4d8f5b4518fd7113ff06b05f6ed189903ceae9d032d5"
+    },
+    "foreignJniHook": {
+      "count": 10000,
+      "callsPerSample": 1,
+      "meanNs": 10599.2946,
+      "p50Ns": 9896,
+      "p95Ns": 13281,
+      "p99Ns": 15521,
+      "rawFile": "foreign-jni-hook.bin",
+      "sha256": "f1eb0cf4a418ab4d9780fcdfbb776343bd7be86d90a9d4111e76e2b9fb2ffee4"
+    },
+    "productRule": {
+      "count": 100000,
+      "callsPerSample": 1,
+      "meanNs": 7159.72633,
+      "p50Ns": 6927,
+      "p95Ns": 10104,
+      "p99Ns": 12084,
+      "rawFile": "product-rule.bin",
+      "sha256": "ef45b8e57b6754466f9f6968a0bf0351999b3b2589a7b99245a4eb2abdf54504"
+    },
+    "affinityVerifiedAfterSamples": true,
+    "passed": true,
+    "semanticChecksPassed": true,
+    "performanceAccepted": false
+  },
+  "mapsSha256": "076b0784bd5f64f841fcb8fab2a4b3585a468fb7467272e11f61359c87d2b9f1",
+  "passed": true
+}

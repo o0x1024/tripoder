@@ -27,9 +27,9 @@ public final class ComponentTest {
         public void completed(Object value,String event)throws Throwable {events.add("event:"+event);if(completionFailure!=null)throw completionFailure;}
     }
     private static final class ReceiverRoute implements RuntimeSelfHookLifecycle.ReceiverRoute {
-        boolean owned=true,closed;final List<String> events=new ArrayList<>();Throwable afterFailure;RuntimeException contextFailure;
+        boolean owned=true,closed,local;final List<String> events=new ArrayList<>();Throwable afterFailure;RuntimeException contextFailure;
         public boolean owns(Object value){events.add("owns");return owned;}
-        public Object pending(Object value){events.add("pending");return PENDING;}
+        public Object pending(Object value){events.add("pending");return local?null:PENDING;}
         public Object before(Object value,Object intent,Object pending){events.add("before");check(intent==PHYSICAL&&pending==PENDING);return closed?null:LOGICAL;}
         public Object context(Object value){events.add("context");check(value==CONTEXT);if(contextFailure!=null)throw contextFailure;return GUEST_CONTEXT;}
         public void after(Object value,boolean success)throws Throwable {events.add("after:"+success);if(afterFailure!=null)throw afterFailure;}
@@ -73,6 +73,9 @@ public final class ComponentTest {
         RuntimeSelfHookLifecycle.receiver(rr,receive,receiver,delivery,a->{rr.events.add("original");check(a[0]==GUEST_CONTEXT&&a[1]==LOGICAL);return null;});
         check(rr.events.equals(List.of("owns","pending","before","context","original","after:true")));
         check(delivery[0]==CONTEXT&&delivery[1]==PHYSICAL);
+        rr.events.clear();rr.local=true;
+        check(RuntimeSelfHookLifecycle.receiver(rr,receive,receiver,delivery,a->{check(a==delivery);return RESULT;})==RESULT);
+        check(rr.events.equals(List.of("owns","pending")));rr.local=false;
         rr.events.clear();rr.owned=false;
         RuntimeSelfHookLifecycle.receiver(rr,receive,receiver,delivery,a->{check(a==delivery);return null;});check(rr.events.equals(List.of("owns")));
         rr.events.clear();rr.owned=true;

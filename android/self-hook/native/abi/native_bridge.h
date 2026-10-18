@@ -6,6 +6,7 @@ struct tp_native_bridge {
     struct tp_native_prefix plan;
     unsigned seals,fde_pcs;
     int fd,error;
+    enum tp_a64_status planner_status;
     void *handle;
     const char *stage;
 };

@@ -15,6 +15,7 @@ struct tp_art_access {
 int tp_art_access_bind(struct tp_art_access *result);
 int tp_art_validate_code(const struct tp_art_access *access,uintptr_t rva,const void *bytes,unsigned size);
 int tp_art_readable(uintptr_t address, unsigned bytes);
+void tp_art_mapping_metrics(uint64_t *calls,uint64_t *nanoseconds);
 uintptr_t tp_art_method_address(JNIEnv *env, jobject method);
 struct tp_art_method_view { uint32_t owner, flags, dex_index, indices; uintptr_t data, quick; };
 /* One JNI method identity/mapping check and one mutator snapshot. ArtMethod

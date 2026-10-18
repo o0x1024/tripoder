@@ -54,16 +54,19 @@ final class WorkbenchAgentControl {
         return new JSONObject().put("protocol",1).put("nonce",id).put("ok",pending.failure.isEmpty()).put("state",pending.session.isEmpty()?"PENDING_PHONE_APPROVAL":"PAIRED").put("session",pending.session).put("project",pending.project).put("error",pending.failure);
     }
     void approve(Pairing request,String project,Bundle target,JSONObject process,EngineConnection.Result callback)throws Exception{
+        approve(request,project,target,process,false,callback);
+    }
+    void approve(Pairing request,String project,Bundle target,JSONObject process,boolean autoApprove,EngineConnection.Result callback)throws Exception{
         synchronized(this){if(pending!=request||request.approving||!request.session.isEmpty()||SystemClock.elapsedRealtime()>request.expires)throw new IllegalStateException("AGENT_PAIR_REQUEST_STALE");request.approving=true;}
-        Bundle input=ControlWire.request("agentGrant","operation",UUID.randomUUID().toString(),"session",request.id,"publicKey",request.key,"project",project,"bindingOperation",target.getString("bindingOperation"),"generation",target.getString("generation"),"processGeneration",process.getString("processGeneration"));
+        Bundle input=ControlWire.request("agentGrant","operation",UUID.randomUUID().toString(),"session",request.id,"publicKey",request.key,"project",project,"bindingOperation",target.getString("bindingOperation"),"generation",target.getString("generation"),"processGeneration",process.getString("processGeneration"),"autoApprove",String.valueOf(autoApprove));
         app.engine.execute(input,(reply,error)->{
-            synchronized(this){request.approving=false;if(error==null){session=request.session=request.id;this.project=request.project=project;message="外部会话已授权 · 部署仍需审阅脚本";}else{request.failure=error.getMessage();message="授权未确认："+error.getMessage();}}
+            synchronized(this){request.approving=false;if(error==null){session=request.session=request.id;this.project=request.project=project;message=autoApprove?"外部会话已授权（会话内自动部署）":"外部会话已授权 · 部署仍需审阅脚本";}else{request.failure=error.getMessage();message="授权没有完成："+UiText.error(error);}}
             callback.complete(reply,error);
         });
     }
     void revoke(EngineConnection.Result callback){
         String id=session;if(id.isEmpty()){callback.complete(new Bundle(),null);return;}
-        app.engine.execute(ControlWire.request("agentRevoke","session",id),(reply,error)->{message=error==null?"已撤销新操作；正在确认受控进程停止":"撤销未确认："+error.getMessage();callback.complete(reply,error);});
+        app.engine.execute(ControlWire.request("agentRevoke","session",id),(reply,error)->{message=error==null?"已撤销会话，正在确认应用停止":"撤销结果待确认："+UiText.error(error);callback.complete(reply,error);});
     }
     synchronized void closed(){listening=false;pending=null;session="";project="";message="外部控制已关闭；引擎独立处理授权撤销与到期";}
 }

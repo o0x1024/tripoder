@@ -19,9 +19,13 @@ final class RuntimePreferences implements SharedPreferences {
     private final Map<OnSharedPreferenceChangeListener,Boolean> listeners=new WeakHashMap<>();
     private Map<String,Object> values;
     private volatile Throwable diskFailure;
+    /** Identity of the file generation the in-memory view was read from; taken before the read so a concurrent external write is never hidden. */
+    private volatile String loadedStamp;
+    private String stamp(){try{StructStat s=Os.stat(file.toString());return s.st_ino+":"+s.st_size+":"+s.st_mtim.tv_sec+"."+s.st_mtim.tv_nsec;}catch(ErrnoException absent){return "absent";}}
     RuntimePreferences(RuntimeStorage storage,File file,ExecutorService writer){
         this.storage=storage;this.file=file;this.writer=writer;disk=new PreferencesDisk(storage,file);
-        try{values=disk.access(()->PreferencesXml.read(file));}
+        String before=stamp();
+        try{values=PreferencesWait.complete(writer.submit(()->disk.access(()->PreferencesXml.read(file))));loadedStamp=before;}
         catch(Exception error){throw new IllegalStateException("PREFERENCES_LOAD_FAILED:"+error.getMessage(),error);}
     }
     private void healthy(){if(diskFailure!=null)throw new IllegalStateException("PREFERENCES_WRITE_FAILED",diskFailure);}
@@ -51,16 +55,18 @@ final class RuntimePreferences implements SharedPreferences {
         return new Publication(written,changed,observers);
     }
     private void notify(Publication publication){Runnable callback=()->{for(String key:publication.changed)for(var listener:publication.listeners)listener.onSharedPreferenceChanged(this,key);};if(Looper.myLooper()==Looper.getMainLooper())callback.run();else main.post(callback);}
-    private static <T>T await(Future<T> future){try{return future.get();}catch(InterruptedException error){Thread.currentThread().interrupt();throw new IllegalStateException("PREFERENCES_WAIT_INTERRUPTED",error);}catch(ExecutionException error){throw new IllegalStateException("PREFERENCES_WRITE_FAILED",error.getCause());}}
-    void flush(){Future<?> barrier;synchronized(this){barrier=writer.submit(()->{});}await(barrier);healthy();}
+    void flush(){Future<?> barrier;synchronized(this){barrier=writer.submit(()->{});}PreferencesWait.complete(barrier);healthy();}
     synchronized void reload(){
         // Writers never take this monitor: a concurrent apply cannot be lost during the reload.
-        flush();try{values=disk.access(()->PreferencesXml.read(file));}
+        // Like the platform's MODE_MULTI_PROCESS handling, re-read only when the file generation changed since the last read. Own writes change it,
+        // so the next call after a local commit still re-reads once (queued behind that commit) and picks up any external update merged into it.
+        healthy();String before=stamp();if(before.equals(loadedStamp))return;
+        try{values=PreferencesWait.complete(writer.submit(()->disk.access(()->PreferencesXml.read(file))));loadedStamp=before;healthy();}
         catch(Exception error){diskFailure=error;throw new IllegalStateException("PREFERENCES_RELOAD_FAILED",error);}
     }
     synchronized boolean delete(){
         healthy();values.clear();Future<Boolean> deletion=writer.submit(()->{try{healthy();return disk.access(()->{File stage=new File(file+".new");storage.check(stage);if(file.exists())java.nio.file.Files.delete(file.toPath());if(stage.exists())java.nio.file.Files.delete(stage.toPath());RuntimeFiles.sync(file.getParentFile());return true;});}catch(Exception error){diskFailure=error;throw new IllegalStateException("PREFERENCES_DELETE_FAILED",error);}});
-        return await(deletion);
+        return PreferencesWait.complete(deletion);
     }
     private record Publication(Future<Boolean> written,List<String> changed,List<OnSharedPreferenceChangeListener> listeners){}
     private final class Edit implements Editor {
@@ -75,7 +81,7 @@ final class RuntimePreferences implements SharedPreferences {
         @Override public Editor remove(String key){return put(key,null);}
         @Override public synchronized Editor clear(){clear=true;return this;}
         private synchronized Publication publish(){Publication p=submit(new LinkedHashMap<>(modified),clear);modified.clear();clear=false;return p;}
-        @Override public boolean commit(){Publication p=publish();boolean result=await(p.written);RuntimePreferences.this.notify(p);return result;}
+        @Override public boolean commit(){Publication p=publish();boolean result;try{result=PreferencesWait.commit(p.written);}catch(InterruptedException signal){return false;}RuntimePreferences.this.notify(p);return result;}
         @Override public void apply(){Publication p=publish();RuntimePreferences.this.notify(p);}
     }
 }

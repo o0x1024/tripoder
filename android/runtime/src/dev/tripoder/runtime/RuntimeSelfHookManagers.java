@@ -101,6 +101,17 @@ final class RuntimeSelfHookManagers {
             default:throw new IllegalArgumentException("SYSTEM_MANAGER_FAMILY");
         }
         return RuntimeSelfHookManagerPolicy.plan(family,owner,completeFixedInventory,new RuntimeSelfHookManagerPolicy.Route() {
+            public Object platform(){
+                switch(family){
+                    case AUDIO:return RuntimeBridge.audioPlatform();
+                    case CONNECTIVITY:return RuntimeBridge.networkPlatform();
+                    case POWER:return RuntimeBridge.powerPlatform();
+                    default:throw new IllegalStateException("SYSTEM_MANAGER_PHYSICAL_ROUTE_UNSUPPORTED:"+family);
+                }
+            }
+            public void admitObservation(RuntimeSelfHookManagerPolicy.Family observed) {
+                if(observed==RuntimeSelfHookManagerPolicy.Family.CONNECTIVITY)RuntimeBridge.networkPlatform();// the guest must have declared ACCESS_NETWORK_STATE
+            }
             public boolean owns(Object receiver) {
                 require();
                 switch(family) {
@@ -133,7 +144,7 @@ final class RuntimeSelfHookManagers {
                     case WIFI_P2P:return RuntimeSelfHookManagerExtras.wifi(key,arguments);
                     case NETWORK_STATS:throw new SecurityException("NETWORK_HISTORY_CAPABILITY_NOT_GRANTED:"+key);
                     case NOTIFICATIONS:return RuntimeSelfHookManagerExtras.notification(key,arguments);
-                    case SHORTCUTS:return RuntimeBridge.shortcutPinSupported();
+                    case SHORTCUTS:return RuntimeSelfHookManagerExtras.shortcut(key,arguments);
                     default:throw new IllegalArgumentException("SYSTEM_MANAGER_FAMILY");
                 }
             }
@@ -146,7 +157,10 @@ final class RuntimeSelfHookManagers {
             case "isLowRamDevice()":return RuntimeBridge.lowRamDevice();
             case "getMemoryInfo(android.app.ActivityManager$MemoryInfo)":RuntimeBridge.memoryInfo((ActivityManager.MemoryInfo)args[0]);return null;
             case "getRunningAppProcesses()":return RuntimeBridge.processView();
+            case "getProcessMemoryInfo([I)":return RuntimeBridge.processMemory((int[])args[0]);
             case "getHistoricalProcessStartReasons(int)":return RuntimeSelfHookHistory.query((Integer)args[0],require().framework);
+            case "setProcessStateSummary([B)":RuntimeBridge.setProcessStateSummary((byte[])args[0]);return null;
+            case "getHistoricalProcessExitReasons(java.lang.String,int,int)":return RuntimeBridge.historicalExits((String)args[0],(Integer)args[1],(Integer)args[2]);
             default:throw new UnsupportedOperationException("ACTIVITY_MANAGER_CAPABILITY_UNSUPPORTED:"+key);
         }
     }
@@ -220,6 +234,7 @@ final class RuntimeSelfHookManagers {
             case "getStreamMinVolume(int)":return RuntimeBridge.audioPlatform().getStreamMinVolume((Integer)args[0]);
             case "isStreamMute(int)":return RuntimeBridge.audioPlatform().isStreamMute((Integer)args[0]);
             case "getDevices(int)":return RuntimeBridge.audioPlatform().getDevices((Integer)args[0]);
+            case "preDispatchKeyEvent(android.view.KeyEvent,int)":dev.tripoder.selfhook.ManagerFrameworkAccess.audioPreDispatchKeyEvent(RuntimeBridge.audioPlatform(),(android.view.KeyEvent)args[0],(Integer)args[1]);return null;
             case "getProperty(java.lang.String)":return RuntimeBridge.audioProperty((String)args[0]);
             case "registerAudioDeviceCallback(android.media.AudioDeviceCallback,android.os.Handler)":RuntimeBridge.audioRegister((AudioDeviceCallback)args[0],(Handler)args[1]);return null;
             case "unregisterAudioDeviceCallback(android.media.AudioDeviceCallback)":RuntimeBridge.audioUnregister((AudioDeviceCallback)args[0]);return null;

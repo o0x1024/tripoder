@@ -69,18 +69,49 @@ final class RuntimePackages implements InvocationHandler {
         // ActivityThread's exact system Context performs framework package queries
         // before an Activity exists. It still receives the same logical package world.
         if(context==frameworkContext)return manager(context,engine.resources);
+        if(engine.webView.owns(context.getPackageName()))return manager(context,engine.webView.contextResources(context));
         String pkg=context.getPackageName();if(!pkg.equals(engine.packageName)&&!pkg.equals(infrastructurePackage))throw new SecurityException("PACKAGE_CONTEXT_IDENTITY_DENIED");
         Resources view=pkg.equals(engine.packageName)?context.getResources():engine.resources;
         if(view.getAssets()!=engine.resources.getAssets())throw new SecurityException("PACKAGE_CONTEXT_RESOURCE_ORIGIN_DENIED");
         return manager(context,view);
     }
+    /** Platform-service packages outside the logical package world; Binder reports an absent package as null. */
+    private static final java.util.Set<String> ABSENT_SERVICES=java.util.Set.of("com.google.android.gms","com.android.vending","com.google.android.gsf","com.huawei.hms","com.huawei.hwid","com.xiaomi.market","com.heytap.market","com.vivo.appstore","com.tencent.mm","com.eg.android.AlipayGphone","com.sina.weibo","com.tencent.mobileqq");
+    /** Not this guest, the host, or a WebView provider: invisible to the caller, so every query about it answers "absent" in Binder's own terms (null, false, zero). */
+    private static final class PackageAbsent extends RuntimeException{PackageAbsent(String pkg){super("PACKAGE_ABSENT:"+pkg,null,false,false);}}
     private boolean infrastructure(String pkg){
         if(engine.host.getPackageName().equals(pkg))return true;
-        if(!engine.packageName.equals(pkg))throw new UnsupportedOperationException("OTHER_PACKAGE_QUERY_UNSUPPORTED:"+pkg);
+        if(!engine.packageName.equals(pkg))throw new PackageAbsent(pkg);
         return false;
     }
     private void user(Object value){if(!(value instanceof Integer)||((Integer)value)!=RuntimePackageBridge.userId())throw new SecurityException("PACKAGE_USER_UNSUPPORTED");}
+    String installer(String pkg){
+        if(!engine.packageName.equals(pkg))throw new SecurityException("INSTALLER_QUERY_OUTSIDE_INSTALL");
+        // This APK was installed into this data incarnation by the Runtime host.
+        return engine.host.getPackageName();
+    }
+    private final Map<String,Integer> guestComponentStates=new HashMap<>();
+    int componentEnabled(ComponentName component,int user){
+        if(component==null)throw new IllegalArgumentException("COMPONENT_REQUIRED");
+        if(engine.webView.owns(component.getPackageName()))return engine.webView.componentEnabled(component,user);
+        if(!engine.packageName.equals(component.getPackageName()))throw new SecurityException("WEBVIEW_COMPONENT_QUERY_DENIED:"+component);
+        if(user!=RuntimePackageBridge.userId())throw new SecurityException("PACKAGE_USER_UNSUPPORTED");
+        synchronized(this){return guestComponentStates.getOrDefault(component.getClassName(),PackageManager.COMPONENT_ENABLED_STATE_DEFAULT);}
+    }
+    void setComponentEnabled(ComponentName component,int newState,int flags){
+        if(component==null||!engine.packageName.equals(component.getPackageName()))throw new SecurityException("COMPONENT_STATE_CHANGE_DENIED:"+component);
+        if(newState<PackageManager.COMPONENT_ENABLED_STATE_DEFAULT||newState>PackageManager.COMPONENT_ENABLED_STATE_DISABLED_UNTIL_USED)throw new IllegalArgumentException("COMPONENT_STATE_INVALID:"+newState);
+        synchronized(this){guestComponentStates.put(component.getClassName(),newState);}
+    }
     @Override public Object invoke(Object proxy,Method method,Object[] input)throws Throwable{
+        try{return dispatch(proxy,method,input);}
+        catch(PackageAbsent|PackageManager.NameNotFoundException absent){
+            Class<?> type=method.getReturnType();
+            if(type==boolean.class)return false;if(type==int.class)return 0;if(type==long.class)return 0L;
+            return null;
+        }
+    }
+    private Object dispatch(Object proxy,Method method,Object[] input)throws Throwable{
         Object[] a=input==null?new Object[0]:input;
         if(method.getDeclaringClass()==Object.class){switch(method.getName()){case "toString":return "TripoderPackageEndpoint";case "hashCode":return System.identityHashCode(proxy);case "equals":return proxy==a[0];default:throw new AssertionError(method);}}
         String key=method.getName()+Arrays.toString(method.getParameterTypes());
@@ -88,6 +119,8 @@ final class RuntimePackages implements InvocationHandler {
             case "asBinder[]":return binder();
             case "getPackageInfo[class java.lang.String, long, int]":{
                 user(a[2]);String pkg=(String)a[0];long flags=(Long)a[1];
+                if(engine.webView.owns(pkg))return engine.webView.packageInfo(pkg,flags,(Integer)a[2]);
+                if(ABSENT_SERVICES.contains(pkg))return null;
                 if(infrastructure(pkg))return RuntimePackageBridge.physicalPackageInfo(pkg,flags,(Integer)a[2]);
                 return metadata.getPackageInfo(pkg,PackageManager.PackageInfoFlags.of(flags));
             }
@@ -97,13 +130,14 @@ final class RuntimePackages implements InvocationHandler {
                 return metadata.getPackageInfo(selected,PackageManager.PackageInfoFlags.of((Long)a[1]));
             }
             case "getApplicationInfo[class java.lang.String, long, int]":{
-                user(a[2]);String pkg=(String)a[0];if(infrastructure(pkg))return RuntimePackageBridge.physicalApplicationInfo(pkg,(Long)a[1],(Integer)a[2]);
+                user(a[2]);String pkg=(String)a[0];if(engine.webView.owns(pkg))return engine.webView.applicationInfo(pkg,(Long)a[1],(Integer)a[2]);if(ABSENT_SERVICES.contains(pkg))return null;if(infrastructure(pkg))return RuntimePackageBridge.physicalApplicationInfo(pkg,(Long)a[1],(Integer)a[2]);
                 return metadata.getApplicationInfo(pkg,PackageManager.ApplicationInfoFlags.of((Long)a[1]));
             }
             case "getServiceInfo[class android.content.ComponentName, long, int]":
             case "getProviderInfo[class android.content.ComponentName, long, int]":
             case "getActivityInfo[class android.content.ComponentName, long, int]":{
                 user(a[2]);ComponentName component=(ComponentName)a[0];if(component==null)throw new IllegalArgumentException("COMPONENT_REQUIRED");
+                if(method.getName().equals("getServiceInfo")&&engine.webView.owns(component.getPackageName()))return engine.webView.serviceInfo(component,(Long)a[1],(Integer)a[2]);
                 if(infrastructure(component.getPackageName()))return RuntimePackageBridge.physicalComponent(method.getName(),component,(Long)a[1],(Integer)a[2]);
                 try{
                     if(method.getName().equals("getServiceInfo"))return metadata.getServiceInfo(component,PackageManager.ComponentInfoFlags.of((Long)a[1]));
@@ -113,7 +147,13 @@ final class RuntimePackages implements InvocationHandler {
             }
             case "resolveContentProvider[class java.lang.String, long, int]":user(a[2]);return metadata.resolveContentProvider((String)a[0],PackageManager.ComponentInfoFlags.of((Long)a[1]));
             case "hasSystemFeature[class java.lang.String, int]":return RuntimePackageBridge.physicalFeature((String)a[0],(Integer)a[1]);
+            case "getSystemAvailableFeatures[]":return RuntimePackageBridge.physicalFeatures();
             case "getSdkSandboxPackageName[]":return RuntimePackageBridge.physicalSdkSandboxPackageName();
+            case "getPermissionControllerPackageName[]":return engine.brokerCall(RuntimeWire.PERMISSION_CONTROLLER,engine.auth()).getString("package");
+            case "notifyPackageUse[class java.lang.String, int]":RuntimePackageBridge.notifyWebViewUse((String)a[0],(Integer)a[1]);return null;
+            case "notifyDexLoad[class java.lang.String, interface java.util.Map, class java.lang.String]":RuntimePackageBridge.notifyDexLoad((String)a[0],(Map<?,?>)a[1],(String)a[2]);return null;
+            case "notifyPackagesReplacedReceived[class [Ljava.lang.String;]":RuntimePackageBridge.notifyPackagesReplacedReceived((String[])a[0]);return null;
+            case "getComponentEnabledSetting[class android.content.ComponentName, int]":user(a[1]);return componentEnabled((ComponentName)a[0],(Integer)a[1]);
             case "isInstantApp[class java.lang.String, int]":user(a[1]);infrastructure((String)a[0]);return false;
             case "getPackagesForUid[int]":
                 if(((Integer)a[0])!=android.os.Process.myUid())throw new UnsupportedOperationException("PACKAGE_UID_UNSUPPORTED");
@@ -123,7 +163,8 @@ final class RuntimePackages implements InvocationHandler {
     }
     synchronized Resources resources(PackageManager manager,String pkg,ApplicationInfo supplied){
         if(supplied!=null&&!Objects.equals(pkg,supplied.packageName))throw new SecurityException("XML_APPLICATION_IDENTITY_MISMATCH");
-        if(infrastructure(pkg))return infrastructureResources;
+        if(engine.webView.owns(pkg))return engine.webView.resources(pkg,supplied);
+        try{if(infrastructure(pkg))return infrastructureResources;}catch(PackageAbsent absent){throw new Resources.NotFoundException(absent.getMessage());}
         Resources view=resources.get(manager);
         if(view==null)throw new SecurityException("PACKAGE_RESOURCE_FACADE_UNREGISTERED");return view;
     }

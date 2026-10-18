@@ -30,7 +30,8 @@ final class RuntimeNativeHookBackend {
         return new HookInvocationSession.PreparedBackend(){
             private NativeHook.Handle[] handles;private boolean published,retired;
             public void publish(HookInvocationSession.Dispatch dispatch)throws Exception {
-                if(published||retired||!live(plan.evidence()))throw new IllegalStateException("HOOK_NATIVE_PUBLICATION_STALE");
+                if(published||retired)throw new IllegalStateException("HOOK_NATIVE_PUBLICATION_STATE");
+                if(!live(plan.evidence()))throw new HookPublicationRejected(new IllegalStateException("HOOK_NATIVE_PUBLICATION_STALE"));
                 List<NativeHook.Handle> prepared=new ArrayList<>();
                 try {
                 for(Binding binding:bindings){var target=binding.target();int[] types=binding.arguments().stream().mapToInt(type->NativeHookValues.type(type,false)).toArray();

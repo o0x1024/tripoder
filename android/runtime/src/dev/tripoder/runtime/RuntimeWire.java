@@ -19,10 +19,18 @@ public final class RuntimeWire {
     public static final int BROADCAST_SYSTEM_CLAIM=42;
     public static final int ACTIVITY_ENTRY_STATUS=43,BROADCAST_STICKY_VIEW=44;
     public static final int JOB_ROUTE=45,JOB_BEGIN=46,JOB_EVENT=47;
+    public static final int PENDING_INTENT=48;
+    public static final int EXIT_HISTORY=49;
+    /** Late delivery of the bind-time abort capability to an identity-free spare worker that was bound before it had a launch. */
+    public static final int ABORT_CONFIGURE=50;
+    /** The package that presents runtime-permission dialogs; answered by the authority, whose PackageManager is the platform's. */
+    public static final int PERMISSION_CONTROLLER=51;
+    /** Authority to its own worker: perform a pending activity/service start as the guest application (a fired PendingIntent token). */
+    public static final int DISPATCH_PENDING=52;
     public abstract static class Endpoint extends Binder {
         @Override protected final boolean onTransact(int code, Parcel data, Parcel reply, int flags) throws RemoteException {
             if(code==INTERFACE_TRANSACTION){reply.writeString(DESCRIPTOR);return true;}
-            if(code<FIRST_CALL_TRANSACTION||code>JOB_EVENT)return super.onTransact(code,data,reply,flags);
+            if(code<FIRST_CALL_TRANSACTION||code>DISPATCH_PENDING)return super.onTransact(code,data,reply,flags);
             data.enforceInterface(DESCRIPTOR);
             final int pid=Binder.getCallingPid(),uid=Binder.getCallingUid();
             if(data.dataAvail()>64*1024)throw new SecurityException("REQUEST_TOO_LARGE");

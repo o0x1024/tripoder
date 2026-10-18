@@ -60,6 +60,7 @@ final class RuntimeSelfHookApplication {
         value.viewPrepared=true;ApplicationAdapter.beginView();
         java.util.Map<java.lang.reflect.Executable,RuntimeManagedInstaller.Callback> callbacks=new java.util.LinkedHashMap<>();
         callbacks.put((Method)value.members.methods[1],(receiver,args,original)->ApplicationAdapter.current());
+        callbacks.put(FrameworkAccess.activityThreadApplicationMethod(),(receiver,args,original)->ApplicationAdapter.current());
         callbacks.put(FrameworkAccess.processNameMethod(),(receiver,args,original)->value.engine.processName);
         installer.install(callbacks);
     }

@@ -36,6 +36,7 @@ final class ControlInstallChecks {
             test.check("upgrade-invalidates-project-binding",test.rejected(()->test.execute(session,"resolveProject","project",project),IllegalStateException.class,"PROJECT_BINDING_STALE"),true);
             String rebind=id();Bundle rebound=test.execute(session,"bindProject","operation",rebind,"project",project,"space",space,"package","dev.tripoder.p0.a","generation",current,"expectedBinding",binding);
             test.check("explicit-rebind-retains-app-data",bound.getString("dataId").equals(rebound.getString("dataId"))&&current.equals(rebound.getString("generation")),test.json(rebound));
+            test.check("rebind-cannot-change-application",test.rejected(()->test.execute(session,"bindProject","operation",id(),"project",project,"space",space,"package","dev.tripoder.p0.b","generation",current,"expectedBinding",rebind),IllegalStateException.class,"PROJECT_PACKAGE_CHANGE_UNSUPPORTED"),true);
             test.check("stale-binding-revision-cannot-overwrite-current",test.rejected(()->test.execute(session,"bindProject","operation",id(),"project",project,"space",space,"package","dev.tripoder.p0.a","generation",current,"expectedBinding",binding),IllegalStateException.class,"PROJECT_BINDING_CONFLICT"),true);
             test.report.put("project",project).put("bindingOperation",rebind).put("installGeneration",current).put("dataId",bound.getString("dataId")).put("installFixture",fixtures);
         }finally{if(!base.delete()||!upgrade.delete())throw new IOException("TEST_COPY_CLEANUP_FAILED");}

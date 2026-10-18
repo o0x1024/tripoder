@@ -1,0 +1,213 @@
+{
+  "runId": "control-c811cc84b9fd4f27",
+  "startedAt": 1792289285491,
+  "uid": 10400,
+  "pid": 11475,
+  "deviceBuild": "Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys",
+  "scope": "native-application-tap-long-press-and-deletion",
+  "existingUserPendingOperation": "",
+  "testOperationJournal": "ui-acceptance-control-c811cc84b9fd4f27",
+  "workbenchStartupStatus": {
+    "schema": 32,
+    "hookReady": true,
+    "lease": "79b98ae5-d780-4a48-9652-0072e979702d",
+    "enginePid": 11552,
+    "engineUid": 10400,
+    "strongIsolation": false,
+    "authority": "97cd2d7d-b48c-4cb5-a3c7-cf388fecfd26",
+    "controllerUid": 10400
+  },
+  "captures": [
+    "control-c811cc84b9fd4f27-long-press-menu.png",
+    "control-c811cc84b9fd4f27-project-space.png",
+    "control-c811cc84b9fd4f27-direct-launch.png",
+    "control-c811cc84b9fd4f27-delete-confirmation.png",
+    "control-c811cc84b9fd4f27-project-index-after-delete.png",
+    "control-c811cc84b9fd4f27-orphaned-application-projects.png",
+    "control-c811cc84b9fd4f27-space-delete-confirmation.png"
+  ],
+  "project": "803283a8-6af0-4d00-8623-0cc3c33b3de3",
+  "spaceA": "tap-a-c811cc84b9fd4f27",
+  "spaceB": "tap-b-c811cc84b9fd4f27",
+  "workerUid": 10400,
+  "guestLaunched": true,
+  "hostAppLaunched": false,
+  "passed": true,
+  "checks": [
+    {
+      "name": "real-workbench-foreground-startup-connected",
+      "passed": true,
+      "observed": ""
+    },
+    {
+      "name": "long-press-does-not-launch",
+      "passed": true,
+      "observed": "management menu without a launch operation"
+    },
+    {
+      "name": "new-installation-has-no-project-binding",
+      "passed": true,
+      "observed": "older retained projects do not bind this new installation"
+    },
+    {
+      "name": "tap-launches-without-a-project",
+      "passed": true,
+      "observed": "standalone launcher in engine task"
+    },
+    {
+      "name": "direct-launch-never-creates-or-binds-project",
+      "passed": true,
+      "observed": "project records unchanged"
+    },
+    {
+      "name": "first-launch-has-durable-success",
+      "passed": true,
+      "observed": "gateway completion queried on return"
+    },
+    {
+      "name": "repeat-tap-keeps-space-data",
+      "passed": true,
+      "observed": "count = 1"
+    },
+    {
+      "name": "explicit-space-selection-uses-independent-data",
+      "passed": true,
+      "observed": "space B count = 0"
+    },
+    {
+      "name": "selected-space-is-remembered",
+      "passed": true,
+      "observed": "second tap opens space B directly"
+    },
+    {
+      "name": "project-in-another-space-does-not-take-over-tap",
+      "passed": true,
+      "observed": "default space B stays in effect (count = 0)"
+    },
+    {
+      "name": "single-bound-project-launches-in-chosen-space",
+      "passed": true,
+      "observed": "bound project opens space A (count = 1)"
+    },
+    {
+      "name": "stale-delete-rejected",
+      "passed": true,
+      "observed": "exact generation required"
+    },
+    {
+      "name": "rejected-delete-has-terminal-receipt",
+      "passed": true,
+      "observed": "no unqueryable pending operation"
+    },
+    {
+      "name": "delete-confirms-once-with-consequence",
+      "passed": true,
+      "observed": "confirmation names both spaces and the bound project; no operation before acceptance"
+    },
+    {
+      "name": "delete-stops-background-app-and-removes-every-install",
+      "passed": true,
+      "observed": {
+        "message": "删除应用「启动验收计数器」 · 已完成",
+        "resources": {
+          "available": 2,
+          "unresolvedTruncated": false,
+          "retained": 6,
+          "slots": "[{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":true,\"index\":0,\"spare\":false,\"allocated\":false,\"activityResources\":false,\"service\":false},{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":true,\"index\":1,\"spare\":false,\"allocated\":false,\"activityResources\":false,\"service\":false},{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":true,\"index\":2,\"spare\":false,\"allocated\":false,\"activityResources\":false,\"service\":false},{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":true,\"index\":3,\"spare\":false,\"allocated\":false,\"activityResources\":false,\"service\":false},{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":false,\"index\":4,\"spare\":false,\"allocated\":false,\"activityResources\":false,\"service\":false},{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":false,\"index\":5,\"spare\":false,\"allocated\":false,\"activityResources\":false,\"service\":false},{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":true,\"index\":6,\"spare\":false,\"allocated\":false,\"activityResources\":false,\"service\":false},{\"activity\":false,\"broadcast\":false,\"provider\":false,\"job\":false,\"index\":7,\"spare\":true,\"allocated\":false,\"activityResources\":false,\"service\":false}]",
+          "spare": 1,
+          "tasks": "[{\"taskId\":4951,\"numActivities\":1,\"baseActivity\":\"dev.tripoder.engine\\/dev.tripoder.hooklab.WorkbenchActivity\",\"topActivity\":\"dev.tripoder.engine\\/dev.tripoder.hooklab.WorkbenchActivity\",\"origActivity\":\"\",\"baseComponent\":\"dev.tripoder.engine\\/dev.tripoder.hooklab.WorkbenchActivity\"}]",
+          "total": 8,
+          "allocated": 0,
+          "referencesTruncated": false,
+          "unresolvedActivities": "[]",
+          "activityReferences": "[]"
+        }
+      }
+    },
+    {
+      "name": "delete-removes-project-source",
+      "passed": true,
+      "observed": "project directory removed"
+    },
+    {
+      "name": "delete-removes-project-binding",
+      "passed": true,
+      "observed": "binding row removed, not left stale"
+    },
+    {
+      "name": "grid-has-no-tile-for-deleted-app",
+      "passed": true,
+      "observed": "no installation remains"
+    },
+    {
+      "name": "deleted-app-project-is-not-in-project-index",
+      "passed": true,
+      "observed": "project removed with its application"
+    },
+    {
+      "name": "no-launcher-does-not-start-arbitrary-activity",
+      "passed": true,
+      "observed": "no fallback to arbitrary or host Activity"
+    },
+    {
+      "name": "rejected-launch-has-terminal-receipt",
+      "passed": true,
+      "observed": "launch rejected before worker startup"
+    },
+    {
+      "name": "project-cannot-move-to-another-application",
+      "passed": true,
+      "observed": "binding unchanged"
+    },
+    {
+      "name": "removed-application-leaves-stale-binding",
+      "passed": true,
+      "observed": {
+        "project": "8eea038c-d3ac-43e4-b44a-9cbfab602b1f",
+        "space": "tap-a-c811cc84b9fd4f27",
+        "package": "dev.tripoder.launcherfixture",
+        "generation": "4def802b-a925-4fbe-8ecc-bf17cda0103b",
+        "state": "STALE",
+        "bindingOperation": "392c4a0c-d901-4fa0-9fbd-c43e58cc9552"
+      }
+    },
+    {
+      "name": "orphaned-projects-deleted-without-installation",
+      "passed": true,
+      "observed": "source and binding removed although no installation remained"
+    },
+    {
+      "name": "orphan-notice-gone",
+      "passed": true,
+      "observed": "no remaining binding"
+    },
+    {
+      "name": "space-delete-confirms-consequence",
+      "passed": true,
+      "observed": "one confirmation, nothing sent before it"
+    },
+    {
+      "name": "space-delete-removes-space-installs-and-projects",
+      "passed": true,
+      "observed": {
+        "message": "删除空间「tap-a-c811cc84b9fd4f27」 · 已完成"
+      }
+    },
+    {
+      "name": "empty-space-deleted",
+      "passed": true,
+      "observed": {
+        "space": "tap-b-c811cc84b9fd4f27",
+        "installs": 0,
+        "deletedProjects": "[]"
+      }
+    },
+    {
+      "name": "missing-space-delete-rejected",
+      "passed": true,
+      "observed": "terminal receipt"
+    }
+  ],
+  "fullP5Accepted": false,
+  "finishedAt": 1792289333182
+}

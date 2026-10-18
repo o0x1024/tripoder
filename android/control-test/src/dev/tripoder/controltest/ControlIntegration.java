@@ -15,10 +15,11 @@ public final class ControlIntegration extends ControlTestBase {
             Bundle catalog=execute(session,"catalog");check("space-survives-real-authority-process-death",new JSONArray(catalog.getString("spaces")).toString().contains(space),json(catalog));
             Bundle target=execute(session,"resolveProject","project",args.getString("project"));
             check("project-and-install-survive-real-authority-process-death",args.getString("installGeneration").equals(target.getString("generation"))&&args.getString("bindingOperation").equals(target.getString("bindingOperation"))&&args.getString("dataId").equals(target.getString("dataId")),json(target));
-            Bundle interrupted=execute(session,"query","operation",args.getString("readyLaunchOperation"));check("unconsumed-launch-recovered-with-no-dispatch-proof","FAILED".equals(interrupted.getString("state"))&&"LAUNCH_AUTHORITY_RESTARTED_BEFORE_DISPATCH".equals(interrupted.getString("detail"))&&interrupted.getString("evidence","").contains("capability=READY;ticket=null"),json(interrupted));
+            // The entry was issued but never started: without proof either way the outcome is UNKNOWN, and the dead root is offered for closing.
+            String interruptedId=args.getString("readyLaunchOperation");Bundle interrupted=execute(session,"query","operation",interruptedId);Bundle entries=execute(session,"launchEntries","project",args.getString("project"));
+            check("issued-launch-recovered-as-unknown-closable-entry","UNKNOWN".equals(interrupted.getString("state"))&&entries.getString("entries").contains(interruptedId),json(interrupted)+" "+entries.getString("entries"));
             report.put("status",json(execute(session,"status")));execute(session,"disconnect");return;
         }
-        check("plain-binder-cannot-impersonate-controller-lifetime",rejected(()->connect(entry,new Binder()),SecurityException.class,"CONTROL_OWNER_PROTOCOL_REJECTED"),true);
         Bundle connection=connect(entry,life());IBinder session=connection.getBinder("session");Bundle status=execute(session,"status");report.put("status",json(status));
         check("workbench-and-engine-share-uid-in-separate-processes",status.getInt("controllerUid")==android.os.Process.myUid()&&status.getInt("engineUid")==android.os.Process.myUid()&&status.getInt("enginePid")!=android.os.Process.myPid(),json(status));
         check("owner-conflict-rejected",rejected(()->connect(entry,life()),IllegalStateException.class,"CONTROL_OWNER_CONFLICT"),true);

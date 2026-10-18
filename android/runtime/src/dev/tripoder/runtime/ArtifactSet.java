@@ -24,6 +24,15 @@ public final class ArtifactSet {
     public final List<Part> parts;
     public final List<FileRecord> nativeFiles,files;
     public final List<ApkManifest.Component> components;
+    /** One manifest intent-filter as plain data (no framework types), so it can be read where the platform's IntentFilter is unavailable. */
+    public static final class FilterSpec {
+        public final int priority;public final List<String> actions=new ArrayList<>(),categories=new ArrayList<>();
+        /** scheme, host, port, path, pathPrefix, pathPattern, pathAdvancedPattern, pathSuffix, mimeType (null when absent). */
+        public final List<String[]> data=new ArrayList<>();
+        FilterSpec(int priority){this.priority=priority;}
+    }
+    /** Intent filters by "type/name". Present only when the descriptor was published with them (the lite descriptor is). */
+    public volatile Map<String,List<FilterSpec>> filterSpecs=Map.of();
     public final List<String> processes,signerDigests;
     public final ApkManifest baseManifest;
 
@@ -42,6 +51,7 @@ public final class ArtifactSet {
         private final ArtifactSetZip.Scan scan;
         private final List<String> signers;
         Part(File file,ArtifactSetZip.Scan scan,ApkManifest manifest,List<String> signers)throws Exception{this.file=file;this.path=file.getName();this.sha256=digest(file);this.size=Files.size(file.toPath());this.scan=scan;this.manifest=manifest;this.signers=signers;entries=Collections.unmodifiableList(scan.entries);}
+        Part(File file,String path,String sha256,long size,ApkManifest manifest,List<FileRecord> entries,List<String> signers){this.file=file;this.path=path;this.sha256=sha256;this.size=size;this.scan=null;this.manifest=manifest;this.signers=signers;this.entries=Collections.unmodifiableList(entries);}
         Map<String,Object> json(){Map<String,Object> o=new TreeMap<>();o.put("path",path);o.put("sha256",sha256);o.put("size",size);o.put("manifest",manifest.json());List<Object> es=new ArrayList<>();for(FileRecord e:entries)es.add(e.json());o.put("entries",es);return o;}
     }
     private ArtifactSet(File directory,List<Part> parts,List<FileRecord> nativeFiles,List<ApkManifest.Component> components,List<String> processes)throws Exception{
@@ -53,6 +63,13 @@ public final class ArtifactSet {
         List<Object> ps=new ArrayList<>();for(Part p:parts)ps.add(p.json());o.put("parts",ps);List<Object> fs=new ArrayList<>();for(FileRecord f:files)fs.add(f.json());o.put("files",fs);List<Object> cs=new ArrayList<>();for(ApkManifest.Component c:components)cs.add(c.json());o.put("components",cs);o.put("processes",processes);
         descriptorJson=json(o);if(descriptorJson.getBytes(StandardCharsets.UTF_8).length>16*1024*1024)throw reject("DESCRIPTOR_LIMIT");descriptorSha=hash(descriptorJson.getBytes(StandardCharsets.UTF_8));
     }
+    private ArtifactSet(File directory,String descriptorJson,String descriptorSha,List<Part> parts,List<FileRecord> nativeFiles,List<ApkManifest.Component> components,List<String> processes){
+        this.directory=directory;this.descriptorJson=descriptorJson;this.descriptorSha=descriptorSha;this.parts=Collections.unmodifiableList(parts);this.base=parts.get(0).file;baseManifest=parts.get(0).manifest;packageName=baseManifest.packageName;versionCode=baseManifest.versionCode;
+        signerDigests=Collections.unmodifiableList(parts.get(0).signers);signerSha=signerDigests.size()==1?signerDigests.get(0):hashUnchecked(String.join("\n",signerDigests).getBytes(StandardCharsets.UTF_8));
+        this.nativeFiles=Collections.unmodifiableList(nativeFiles);this.components=Collections.unmodifiableList(components);this.processes=Collections.unmodifiableList(processes);
+        List<FileRecord> all=new ArrayList<>();for(Part p:parts)all.add(new FileRecord(p.path,p.sha256,p.size));all.addAll(nativeFiles);all.sort(Comparator.comparing(r->r.path));files=Collections.unmodifiableList(all);
+    }
+    private static String hashUnchecked(byte[] bytes){try{return hash(bytes);}catch(Exception error){throw new IllegalStateException(error);}}
     /** Input: a private directory containing only regular root-level APKs. Output is sealed in place. */
     public static ArtifactSet materialize(File staged)throws Exception{
         Path root=root(staged);List<Path> apks=apkInputs(root,false);ArtifactSet set=inspect(root,apks);
@@ -66,6 +83,233 @@ public final class ArtifactSet {
         // performs a full independent verification after the atomic directory move.
         return set;
     }
+    /** Fast worker reconstruction from a sealed artifact directory already verified by authority. */
+    public static ArtifactSet loadVerified(File published,String descriptorSha)throws Exception{
+        if(descriptorSha==null||!descriptorSha.matches("[0-9a-f]{64}"))throw reject("DESCRIPTOR_DIGEST_INVALID");
+        Path root=root(published);Path descriptor=root.resolve(DESCRIPTOR);regular(descriptor);
+        if(Files.size(descriptor)>16*1024*1024)throw reject("DESCRIPTOR_CORRUPT");
+        byte[] rawBytes=Files.readAllBytes(descriptor);
+        if(!hash(rawBytes).equals(descriptorSha))throw reject("DESCRIPTOR_CORRUPT");
+        String rawJson=new String(rawBytes,StandardCharsets.UTF_8);
+        ArtifactSet set=parse(root,rawJson,descriptorSha);
+        return finishLoad(root,set);
+    }
+    /** Worker path: authority already verified this tree; the worker re-checks only the tree stamp, never the descriptor bytes. */
+    public static ArtifactSet loadTrusted(File published,String descriptorSha,String liteJson,String stampDigest)throws Exception{
+        if(descriptorSha==null||!descriptorSha.matches("[0-9a-f]{64}"))throw reject("DESCRIPTOR_DIGEST_INVALID");
+        Path root=root(published);
+        if(!ArtifactIntegrityCache.stampDigest(root.toFile()).equals(stampDigest))throw reject("ARTIFACT_STAMP_MISMATCH");
+        return parse(root,liteJson,descriptorSha);
+    }
+    /** Descriptor without per-resource records: workers need only top-level DEX entries. */
+    private String lite;
+    public synchronized String liteJson()throws Exception{
+        if(lite==null){
+            org.json.JSONObject o=new org.json.JSONObject(descriptorJson);org.json.JSONArray ps=o.getJSONArray("parts");
+            for(int i=0;i<ps.length();i++){
+                org.json.JSONObject part=ps.getJSONObject(i);org.json.JSONArray all=part.getJSONArray("entries"),kept=new org.json.JSONArray();
+                for(int j=0;j<all.length();j++){String path=all.getJSONObject(j).getString("path");if(path.indexOf('/')<0&&path.endsWith(".dex"))kept.put(all.getJSONObject(j));}
+                part.put("entries",kept);
+            }
+            o.put("filters",filtersJson());
+            lite=o.toString();
+        }
+        return lite;
+    }
+    /** Publishes the lite descriptor as a digest-named side file (the 64 KB wire limit cannot carry it) plus the tree stamp the worker must reproduce. */
+    void putTrustedLoad(android.os.Bundle bundle)throws Exception{
+        String lite=liteJson();byte[] bytes=lite.getBytes(StandardCharsets.UTF_8);String sha=hash(bytes);
+        File dir=new File(directory.getParentFile().getParentFile(),"launch-lite");
+        File file=new File(dir,descriptorSha+"-"+sha+".json");
+        if(!file.isFile()||file.length()!=bytes.length){
+            if(!dir.isDirectory()&&!dir.mkdirs()&&!dir.isDirectory())throw new IOException("LAUNCH_LITE_DIRECTORY");
+            File tmp=new File(dir,file.getName()+"."+android.os.Process.myPid()+"."+Thread.currentThread().getId()+".tmp");
+            try(OutputStream out=new FileOutputStream(tmp)){out.write(bytes);}
+            if(!tmp.renameTo(file)){tmp.delete();throw new IOException("LAUNCH_LITE_PUBLISH");}
+        }
+        bundle.putString("descriptorLiteFile",file.toString());bundle.putString("descriptorLiteSha",sha);
+        bundle.putString("artifactStamp",ArtifactIntegrityCache.stampDigest(directory));
+    }
+    /** Worker side of putTrustedLoad: bytes are hashed once and the same bytes are parsed. */
+    public static ArtifactSet loadTrusted(File published,String descriptorSha,String liteFile,String liteSha,String stampDigest)throws Exception{
+        byte[] bytes=Files.readAllBytes(new File(liteFile).toPath());
+        if(!hash(bytes).equals(liteSha))throw reject("DESCRIPTOR_LITE_CORRUPT");
+        return loadTrusted(published,descriptorSha,new String(bytes,StandardCharsets.UTF_8),stampDigest);
+    }
+    private static Map<String,List<FilterSpec>> readFilters(android.util.JsonReader r)throws Exception{
+        Map<String,List<FilterSpec>> out=new HashMap<>();r.beginArray();
+        while(r.hasNext()){
+            String type=null,name=null;List<FilterSpec> specs=new ArrayList<>();r.beginObject();
+            while(r.hasNext()){
+                switch(r.nextName()){
+                    case "t"->type=r.nextString();
+                    case "n"->name=r.nextString();
+                    case "f"->{
+                        r.beginArray();
+                        while(r.hasNext()){
+                            FilterSpec spec=null;List<String> actions=new ArrayList<>(),categories=new ArrayList<>();List<String[]> data=new ArrayList<>();int priority=0;
+                            r.beginObject();
+                            while(r.hasNext()){
+                                switch(r.nextName()){
+                                    case "p"->priority=r.nextInt();
+                                    case "a"->{r.beginArray();while(r.hasNext())actions.add(r.nextString());r.endArray();}
+                                    case "c"->{r.beginArray();while(r.hasNext())categories.add(r.nextString());r.endArray();}
+                                    case "d"->{r.beginArray();while(r.hasNext()){String[] row=new String[9];r.beginArray();for(int i=0;i<9&&r.hasNext();i++){if(r.peek()==android.util.JsonToken.NULL){r.nextNull();row[i]=null;}else row[i]=r.nextString();}while(r.hasNext())r.skipValue();r.endArray();data.add(row);}r.endArray();}
+                                    default->r.skipValue();
+                                }
+                            }
+                            r.endObject();spec=new FilterSpec(priority);spec.actions.addAll(actions);spec.categories.addAll(categories);spec.data.addAll(data);specs.add(spec);
+                        }
+                        r.endArray();
+                    }
+                    default->r.skipValue();
+                }
+            }
+            r.endObject();if(type!=null&&name!=null)out.put(type+"/"+name,specs);
+        }
+        r.endArray();return out;
+    }
+    /** The intent-filters of every component, taken from the full manifest tree (which only the authority has) for the lite descriptor. */
+    private org.json.JSONArray filtersJson()throws Exception{
+        org.json.JSONArray all=new org.json.JSONArray();
+        Set<String> seen=new HashSet<>();
+        for(Part part:parts)for(ApkManifest.Component component:part.manifest.components){
+            if(!seen.add(component.type+"/"+component.name))continue;
+            org.json.JSONArray filters=new org.json.JSONArray();
+            for(ApkManifest.Element element:component.declaration.children){
+                if(!element.name.equals("intent-filter"))continue;
+                int priority=0;try{priority=Integer.parseInt(element.android("priority","0"));}catch(NumberFormatException ignored){}
+                org.json.JSONArray actions=new org.json.JSONArray(),categories=new org.json.JSONArray(),data=new org.json.JSONArray();
+                for(ApkManifest.Element child:element.children){
+                    String value=child.android("name","");
+                    if(child.name.equals("action")&&!value.isEmpty())actions.put(value);
+                    else if(child.name.equals("category")&&!value.isEmpty())categories.put(value);
+                    else if(child.name.equals("data")){
+                        org.json.JSONArray row=new org.json.JSONArray();
+                        for(String key:new String[]{"scheme","host","port","path","pathPrefix","pathPattern","pathAdvancedPattern","pathSuffix","mimeType"}){String v=child.android(key,null);row.put(v==null?org.json.JSONObject.NULL:v);}
+                        data.put(row);
+                    }
+                }
+                filters.put(new org.json.JSONObject().put("p",priority).put("a",actions).put("c",categories).put("d",data));
+            }
+            if(filters.length()>0)all.put(new org.json.JSONObject().put("t",component.type).put("n",component.name).put("f",filters));
+        }
+        return all;
+    }
+    private static ArtifactSet parse(Path root,String rawJson,String descriptorSha)throws Exception{
+        Map<String,List<FilterSpec>> filters=Map.of();
+        int schema=-1,platform=-1;String abi=null,topPkg=null,topSignerSha=null;long topVersion=-1;
+        List<String> signers=new ArrayList<>();List<Part> parts=new ArrayList<>();List<FileRecord> nativeFiles=new ArrayList<>();List<ApkManifest.Component> components=new ArrayList<>();List<String> processes=new ArrayList<>();
+        try(android.util.JsonReader r=new android.util.JsonReader(new StringReader(rawJson))){
+            r.beginObject();
+            while(r.hasNext()){
+                switch(r.nextName()){
+                    case "schema"->schema=r.nextInt();
+                    case "platform"->platform=r.nextInt();
+                    case "abi"->abi=r.nextString();
+                    case "packageName"->topPkg=r.nextString();
+                    case "versionCode"->topVersion=r.nextLong();
+                    case "signerSha"->topSignerSha=r.nextString();
+                    case "signerDigests"->{r.beginArray();while(r.hasNext())signers.add(r.nextString());r.endArray();}
+                    case "parts"->{
+                        r.beginArray();
+                        while(r.hasNext()){
+                            String path=null,sha=null;long size=-1;ApkManifest manifest=null;List<FileRecord> entries=new ArrayList<>();
+                            r.beginObject();
+                            while(r.hasNext()){
+                                switch(r.nextName()){
+                                    case "path"->path=r.nextString();
+                                    case "sha256"->sha=r.nextString();
+                                    case "size"->size=r.nextLong();
+                                    case "manifest"->manifest=ApkManifest.fromJsonReader(r);
+                                    case "entries"->{
+                                        r.beginArray();
+                                        while(r.hasNext()){
+                                            String ep=null,es=null;long ez=-1;
+                                            r.beginObject();
+                                            while(r.hasNext()){
+                                                switch(r.nextName()){
+                                                    case "path"->{ep=r.nextString();}
+                                                    case "sha256"->es=r.nextString();
+                                                    case "size"->ez=r.nextLong();
+                                                    default->r.skipValue();
+                                                }
+                                            }
+                                            r.endObject();
+                                            // Worker consumers read only top-level DEX; thousands of resource records are dead weight under interpretation.
+                                            if(ep!=null&&ep.indexOf('/')<0&&ep.endsWith(".dex"))entries.add(new FileRecord(ep,es,ez));
+                                        }
+                                        r.endArray();
+                                    }
+                                    default->r.skipValue();
+                                }
+                            }
+                            r.endObject();
+                            parts.add(new Part(root.resolve(path).toFile(),path,sha,size,manifest,entries,signers));
+                        }
+                        r.endArray();
+                    }
+                    case "files"->{
+                        r.beginArray();
+                        while(r.hasNext()){
+                            String fp=null,fs=null;long fz=-1;
+                            r.beginObject();
+                            while(r.hasNext()){
+                                switch(r.nextName()){
+                                    case "path"->fp=r.nextString();
+                                    case "sha256"->fs=r.nextString();
+                                    case "size"->fz=r.nextLong();
+                                    default->r.skipValue();
+                                }
+                            }
+                            r.endObject();
+                            if(fp!=null&&fp.startsWith("lib/"))nativeFiles.add(new FileRecord(fp,fs,fz));
+                        }
+                        r.endArray();
+                    }
+                    case "components"->{
+                        r.beginArray();
+                        while(r.hasNext()){
+                            String type=null,name=null,process=null,permission="",authorities="",targetActivity="";Boolean exported=null,enabled=null;
+                            r.beginObject();
+                            while(r.hasNext()){
+                                switch(r.nextName()){
+                                    case "type"->type=r.nextString();
+                                    case "name"->name=r.nextString();
+                                    case "process"->process=r.nextString();
+                                    case "permission"->permission=r.nextString();
+                                    case "authorities"->authorities=r.nextString();
+                                    case "targetActivity"->targetActivity=r.nextString();
+                                    case "exported"->{if(r.peek()==android.util.JsonToken.NULL){r.nextNull();exported=null;}else exported=r.nextBoolean();}
+                                    case "enabled"->{if(r.peek()==android.util.JsonToken.NULL){r.nextNull();enabled=null;}else enabled=r.nextBoolean();}
+                                    default->r.skipValue();
+                                }
+                            }
+                            r.endObject();
+                            components.add(new ApkManifest.Component(new ApkManifest.Element(type,"",Map.of(),List.of()),type,name,process,permission,authorities,targetActivity,exported,enabled));
+                        }
+                        r.endArray();
+                    }
+                    case "processes"->{r.beginArray();while(r.hasNext())processes.add(r.nextString());r.endArray();}
+                    case "filters"->filters=readFilters(r);
+                    default->r.skipValue();
+                }
+            }
+            r.endObject();
+        }
+        if(schema!=1||platform!=PLATFORM||!"arm64-v8a".equals(abi)||parts.isEmpty())throw reject("DESCRIPTOR_CONTENT_MISMATCH");
+        for(int i=0;i<parts.size();i++){Part p=parts.get(i);parts.set(i,new Part(p.file,p.path,p.sha256,p.size,p.manifest,p.entries,signers));}
+        ArtifactSet set=new ArtifactSet(root.toFile(),rawJson,descriptorSha,parts,nativeFiles,components,processes);set.filterSpecs=filters;
+        if(!set.packageName.equals(topPkg)||set.versionCode!=topVersion||!set.signerSha.equals(topSignerSha))throw reject("DESCRIPTOR_CONTENT_MISMATCH");
+        return set;
+    }
+    private static ArtifactSet finishLoad(Path root,ArtifactSet set)throws Exception{
+        Set<String> expected=new TreeSet<>();expected.add(DESCRIPTOR);expected.add("lib");for(FileRecord r:set.files)expected.add(r.path);Set<String> actual=new TreeSet<>();
+        try(var walk=Files.walk(root)){for(Iterator<Path> it=walk.iterator();it.hasNext();){Path path=it.next();if(path.equals(root))continue;String relative=root.relativize(path).toString().replace(File.separatorChar,'/');if(Files.isSymbolicLink(path))throw reject("ARTIFACT_SYMLINK");actual.add(relative);if(relative.equals("lib")){if(!Files.isDirectory(path,LinkOption.NOFOLLOW_LINKS))throw reject("LIB_DIRECTORY_INVALID");}else regular(path);readonly(path);}}
+        if(!actual.equals(expected))throw reject("ARTIFACT_FILE_SET_MISMATCH");readonly(root);
+        for(FileRecord r:set.files){Path path=root.resolve(r.path);if(Files.size(path)!=r.size)throw reject("ARTIFACT_FILE_CORRUPT:"+r.path);}
+        return set;
+    }
     /** No writes. Revalidates signature, set graph, every ZIP byte and every extracted file. */
     public static ArtifactSet verify(File published,String descriptorSha)throws Exception{
         if(descriptorSha==null||!descriptorSha.matches("[0-9a-f]{64}"))throw reject("DESCRIPTOR_DIGEST_INVALID");
@@ -75,17 +319,25 @@ public final class ArtifactSet {
         Set<String> expected=new TreeSet<>();expected.add(DESCRIPTOR);expected.add("lib");for(FileRecord r:set.files)expected.add(r.path);Set<String> actual=new TreeSet<>();
         try(var walk=Files.walk(root)){for(Iterator<Path> it=walk.iterator();it.hasNext();){Path path=it.next();if(path.equals(root))continue;String relative=root.relativize(path).toString().replace(File.separatorChar,'/');if(Files.isSymbolicLink(path))throw reject("ARTIFACT_SYMLINK");actual.add(relative);if(relative.equals("lib")){if(!Files.isDirectory(path,LinkOption.NOFOLLOW_LINKS))throw reject("LIB_DIRECTORY_INVALID");}else regular(path);readonly(path);}}
         if(!actual.equals(expected))throw reject("ARTIFACT_FILE_SET_MISMATCH");readonly(root);
-        for(FileRecord r:set.files){Path path=root.resolve(r.path);if(Files.size(path)!=r.size||!digest(path.toFile()).equals(r.sha256))throw reject("ARTIFACT_FILE_CORRUPT:"+r.path);}
+        List<java.util.concurrent.CompletableFuture<String>> checks=new ArrayList<>();
+        for(FileRecord r:set.files){Path path=root.resolve(r.path);checks.add(java.util.concurrent.CompletableFuture.supplyAsync(()->{try{return Files.size(path)!=r.size||!digest(path.toFile()).equals(r.sha256)?r.path:null;}catch(Exception error){throw new java.util.concurrent.CompletionException(error);}}));}
+        for(var check:checks){String bad;try{bad=check.join();}catch(java.util.concurrent.CompletionException error){Throwable cause=error.getCause();if(cause instanceof Exception)throw (Exception)cause;throw error;}if(bad!=null)throw reject("ARTIFACT_FILE_CORRUPT:"+bad);}
         return set;
     }
     private static ArtifactSet inspect(Path root,List<Path> files)throws Exception{
         Map<String,Part> bySplit=new TreeMap<>();long bytes=0,expanded=0;
         for(Path file:files){regular(file);long size=Files.size(file);bytes+=size;if(size==0||size>MAX_APK_BYTES||bytes>MAX_SET_BYTES)throw reject("APK_BYTES_LIMIT");
-            ArtifactSetZip.Scan scan=ArtifactSetZip.scan(file.toFile());expanded+=scan.expanded;if(expanded>ArtifactSetZip.MAX_EXPANDED)throw reject("SET_EXPANDED_LIMIT");
-            ApkVerifier.Result verification=new ApkVerifier.Builder(file.toFile()).setMinCheckedPlatformVersion(PLATFORM).setMaxCheckedPlatformVersion(PLATFORM).build().verify();
+            // Signature verification and the full ZIP byte scan read the same immutable file independently; neither consumes the other's result.
+            java.util.concurrent.CompletableFuture<ApkVerifier.Result> signature=java.util.concurrent.CompletableFuture.supplyAsync(()->{
+                try{return new ApkVerifier.Builder(file.toFile()).setMinCheckedPlatformVersion(PLATFORM).setMaxCheckedPlatformVersion(PLATFORM).build().verify();}catch(Exception error){throw new java.util.concurrent.CompletionException(error);}
+            });
+            ArtifactSetZip.Scan scan;ApkVerifier.Result verification;
+            try{scan=ArtifactSetZip.scan(file.toFile());}catch(Exception error){signature.cancel(true);throw error;}
+            try{verification=signature.join();}catch(java.util.concurrent.CompletionException error){Throwable cause=error.getCause();if(cause instanceof Exception)throw (Exception)cause;throw error;}
+            expanded+=scan.expanded;if(expanded>ArtifactSetZip.MAX_EXPANDED)throw reject("SET_EXPANDED_LIMIT");
             if(!verification.isVerified()||verification.containsErrors()||!(verification.isVerifiedUsingV2Scheme()||verification.isVerifiedUsingV3Scheme()||verification.isVerifiedUsingV31Scheme()||verification.isVerifiedUsingV32Scheme()))throw reject("APK_SIGNATURE_INVALID");
             List<String> signers=new ArrayList<>();for(X509Certificate cert:verification.getSignerCertificates())signers.add(hash(cert.getEncoded()));Collections.sort(signers);if(signers.isEmpty()||new HashSet<>(signers).size()!=signers.size())throw reject("APK_SIGNERS_INVALID");
-            ApkManifest manifest=ApkManifest.parse(scan.manifests.get("AndroidManifest.xml"));Part part=new Part(file.toFile(),scan,manifest,signers);if(bySplit.put(manifest.splitName,part)!=null)throw reject("DUPLICATE_SPLIT");
+            ApkManifest manifest=ApkManifest.parse(scan.manifests.get("AndroidManifest.xml"),new ArscValues(file.toFile()));Part part=new Part(file.toFile(),scan,manifest,signers);if(bySplit.put(manifest.splitName,part)!=null)throw reject("DUPLICATE_SPLIT");
         }
         Part base=bySplit.get("");if(base==null)throw reject("BASE_MISSING");
         if(base.manifest.featureSplit||!base.manifest.configForSplit.isEmpty()||!base.manifest.usesSplits.isEmpty())throw reject("BASE_DEPENDENCY_INVALID");

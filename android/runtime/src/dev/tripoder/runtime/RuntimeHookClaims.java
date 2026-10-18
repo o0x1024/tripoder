@@ -13,17 +13,18 @@ final class RuntimeHookClaims {
     RuntimeHookClaims(RuntimeBroker broker){this.broker=broker;}
     Claim begin(String process,String project,String binding,String lease,String command){
         locked();
-        if(!Set.of("modules","observe","prepare","activate","disable","updateParameters","cancelPreparation","discard","status").contains(command))throw new IllegalArgumentException("HOOK_COMMAND_UNSUPPORTED");
+        Set<String> stateless=Set.of("status","modules","events","dexSearch","dexInspect","nativeExports","uiDump","uiAction","diagnostics","manifestInspect","storageInspect","networkTraffic","httpRequest","guestInvoke");
+        if(!stateless.contains(command)&&!Set.of("observe","prepare","activate","disable","updateParameters","cancelPreparation","discard").contains(command))throw new IllegalArgumentException("HOOK_COMMAND_UNSUPPORTED");
         if(broker.contract.getSession(process).state!=ExecutionContract.ProcessState.RUNNING)throw new IllegalStateException("HOOK_PROCESS_NOT_RUNNING");
         Claim claim=claims.get(process);
         if(claim==null){
-            if(!Set.of("observe","status","modules").contains(command))throw new IllegalStateException("HOOK_PROJECT_OBSERVATION_REQUIRED");
+            if(!command.equals("observe")&&!stateless.contains(command))throw new IllegalStateException("HOOK_PROJECT_OBSERVATION_REQUIRED");
             claim=new Claim(process,project,binding,lease);claims.put(process,claim);
         }else{
             if(!claim.project.equals(project)||!claim.binding.equals(binding))throw new SecurityException("HOOK_PROJECT_OWNER_CONFLICT");
             if(claim.busy)throw new IllegalStateException("HOOK_CONTROL_BUSY");
             if(claim.uncertain&&!command.equals("status"))throw new IllegalStateException("HOOK_OUTCOME_QUERY_REQUIRED");
-            boolean newOwnerControl=Set.of("status","modules","disable","discard").contains(command)||command.equals("updateParameters")&&claim.state.equals("ACTIVE");
+            boolean newOwnerControl=stateless.contains(command)||Set.of("disable","discard").contains(command)||command.equals("updateParameters")&&claim.state.equals("ACTIVE");
             if(!claim.lease.equals(lease)&&!newOwnerControl)throw new SecurityException("HOOK_PREPARATION_LEASE_REVOKED");
         }
         claim.busy=true;if(command.equals("observe"))claim.retained=true;return claim;

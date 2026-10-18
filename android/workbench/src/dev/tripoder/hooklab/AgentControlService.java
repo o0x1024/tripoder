@@ -29,7 +29,7 @@ public final class AgentControlService extends Service {
             // a second live listener must still fail instead of sharing the authorization endpoint.
             control.deviceKey();socket=new ServerSocket();socket.setReuseAddress(true);socket.bind(new InetSocketAddress(InetAddress.getByName("127.0.0.1"),AgentCrypto.DEVICE_PORT),4);control.listening=true;control.message="等待桌面客户端请求配对";
             acceptor.execute(()->{while(!socket.isClosed())try{Socket client=socket.accept();connections.add(client);try{clients.execute(()->serve(client));}catch(RejectedExecutionException busy){connections.remove(client);client.close();}}catch(IOException ended){if(!socket.isClosed())control.message="连接监听失败："+ended.getClass().getSimpleName();break;}});
-        }catch(Exception error){startupFailure="外部入口启动失败："+error.getClass().getSimpleName()+":"+error.getMessage();control.message=startupFailure;android.util.Log.w("TripoderAgent",startupFailure,error);stopSelf();}
+        }catch(Exception error){startupFailure="外部控制入口没有开启："+UiText.error(error);control.message=startupFailure;android.util.Log.w("TripoderAgent",startupFailure,error);stopSelf();}
         return START_NOT_STICKY;
     }
     private void serve(Socket socket){try(socket){

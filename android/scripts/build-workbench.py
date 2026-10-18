@@ -26,9 +26,8 @@ def main():
     android=Path(__file__).resolve().parents[1];repo=android.parent;build=android/'product/build'
     source_roots=[android/name for name in ['runtime/src','runtime/native','runtime/licenses','control','control-test','engine','workbench','self-hook/java','self-hook/native','self-hook/include']]
     source_roots.append(repo/'src')
-    legacy_ui=[android/'app/src/main/java/dev/tripoder/hooklab'/name for name in ['ProductUi.java','UiInsets.java']]
     files=sorted(p for directory in source_roots for p in directory.rglob('*') if p.is_file() and 'build' not in p.parts)
-    files += legacy_ui+[Path(__file__).resolve(),android/'scripts/runtime_apk_builder.py',android/'scripts/runtime_activity_slots.py',android/'scripts/runtime_job_slots.py',android/'scripts/self_hook_native.py']
+    files += [Path(__file__).resolve(),android/'scripts/runtime_apk_builder.py',android/'scripts/runtime_activity_slots.py',android/'scripts/runtime_job_slots.py',android/'scripts/self_hook_native.py']
     self_hook_java=sorted((android/'self-hook/java').rglob('*.java'))
     files += self_hook_java
     fixture_base=android/'runtime-probe/build/a.apk';fixture_upgrade=android/'runtime-probe/build/assets/a-upgrade.apk'
@@ -66,7 +65,7 @@ def main():
     slot_sources,manifest=generate_activity_slots(build,manifest,"TaskP")
     slot_sources+=job_sources
     core=sorted(p for p in (android/'runtime/src').rglob('*.java') if p.name!='RuntimeAuthorityService.java')
-    sources=core+self_hook_java+common+legacy_ui+sorted((android/'engine/src').rglob('*.java'))+sorted((android/'workbench/src').rglob('*.java'))+slot_sources
+    sources=core+self_hook_java+common+sorted((android/'engine/src').rglob('*.java'))+sorted((android/'workbench/src').rglob('*.java'))+slot_sources
     engine=builder.apk('tripoder',sources,manifest,assets=assets,libraries=[self_hook],jars=[builder.apksig()])
     with zipfile.ZipFile(engine) as archive:
         if sorted(name for name in archive.namelist() if name.startswith('lib/'))!=['lib/arm64-v8a/libtripoderselfhook.so']:

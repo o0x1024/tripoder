@@ -27,6 +27,15 @@ public final class HelperDex {
     private final List<int[]> sections=new ArrayList<>();
     private int ownerDigitsOffset,slotValueOffset;
     private record Shape(String result,List<String> parameters,boolean instance,int digits){}
+    private static final Map<Shape,Template> TEMPLATES=new LinkedHashMap<>();
+    private static final class Sealer {
+        final java.security.MessageDigest sha1;final Adler32 checksum=new Adler32();
+        Sealer(){try{sha1=java.security.MessageDigest.getInstance("SHA-1");}catch(java.security.NoSuchAlgorithmException error){throw new IllegalStateException(error);}}
+        void seal(byte[] file){
+            sha1.update(file,32,file.length-32);System.arraycopy(sha1.digest(),0,file,12,20);
+            checksum.reset();checksum.update(file,12,file.length-12);put(file,8,(int)checksum.getValue());
+        }
+    }
     private static final class Template {
         final byte[] bytes;final int owner,slot,digits;
         Template(HelperDex writer,byte[] bytes){
@@ -35,10 +44,10 @@ public final class HelperDex {
                 ||((bytes[slot]&255)|((bytes[slot+1]&255)<<8))!=writer.slot)throw new IllegalStateException("HELPER_TEMPLATE_OFFSETS");
             for(int i=0;i<digits;i++)if(bytes[owner+i]!=(byte)text.charAt(i))throw new IllegalStateException("HELPER_TEMPLATE_OWNER");
         }
-        byte[] instantiate(int value){
+        byte[] instantiate(int value,Sealer sealer){
             String text=Integer.toString(value);if(text.length()!=digits)throw new IllegalStateException("HELPER_TEMPLATE_WIDTH");
             byte[] result=bytes.clone();for(int i=0;i<digits;i++)result[owner+i]=(byte)text.charAt(i);
-            result[slot]=(byte)value;result[slot+1]=(byte)(value>>>8);seal(result);return result;
+            result[slot]=(byte)value;result[slot+1]=(byte)(value>>>8);sealer.seal(result);return result;
         }
     }
     private static final class Proto {
@@ -55,22 +64,37 @@ public final class HelperDex {
         if(slot<0||slot>=HookCapacity.MAX_ENTRIES)throw new IllegalArgumentException("HELPER_SLOT_BUDGET");
         this.abi=abi;this.slot=slot;this.owner="Ldev/tripoder/selfhook/generated/Entry"+slot+";";
     }
-    public static byte[] create(AbiSignature abi,int slot){return createBatch(List.of(abi),slot)[0];}
+    /** Canonical single-helper writer, also used as the uncached host oracle. */
+    public static byte[] create(AbiSignature abi,int slot){return new HelperDex(abi,slot).write(new Sealer());}
+    /** Pure immutable bytes: no helper class loading, slot reservation or Hook
+     * publication. Fixed boot adapters can compute these before deoptimization. */
+    public static synchronized void prepareTemplates(List<AbiSignature> signatures){
+        if(signatures==null||signatures.isEmpty()||signatures.size()>HookCapacity.MAX_ENTRIES)throw new IllegalArgumentException("HELPER_SLOT_BUDGET");
+        Sealer sealer=new Sealer();
+        for(AbiSignature abi:signatures)for(int slot=0;slot<HookCapacity.MAX_ENTRIES;slot=slot==0?10:slot*10)template(abi,slot,sealer);
+    }
     /** Each shape/decimal width is encoded and parsed once. Instantiation only
      * changes the class-name digits and dispatch constant, then seals hashes.
-     * This cache is local to one batch and never admits a second code format. */
-    public static byte[][] createBatch(List<AbiSignature> signatures,int first){
+     * Immutable templates contain erased ABI strings and bytes, never guest
+     * classes. Reuse across fixed installer groups; each result remains a private
+     * byte array. The existing entry limit also bounds retained shape templates. */
+    public static synchronized byte[][] createBatch(List<AbiSignature> signatures,int first){
         if(signatures==null||signatures.isEmpty()||first<0||first>=HookCapacity.MAX_ENTRIES||signatures.size()>HookCapacity.MAX_ENTRIES-first)
             throw new IllegalArgumentException("HELPER_SLOT_BUDGET");
-        Map<Shape,Template> templates=new LinkedHashMap<>();byte[][] result=new byte[signatures.size()][];
+        Sealer sealer=new Sealer();byte[][] result=new byte[signatures.size()][];
         for(int i=0;i<result.length;i++){
             AbiSignature abi=signatures.get(i);int slot=first+i;
-            Shape shape=new Shape(AbiSignature.reference(abi.result)?OBJECT:abi.result,List.copyOf(abi.helperParameters()),abi.instance,Integer.toString(slot).length());
-            Template template=templates.get(shape);
-            if(template==null){HelperDex writer=new HelperDex(abi,slot);template=new Template(writer,writer.write());templates.put(shape,template);}
-            result[i]=template.instantiate(slot);
+            result[i]=template(abi,slot,sealer).instantiate(slot,sealer);
         }
         return result;
+    }
+    private static Template template(AbiSignature abi,int slot,Sealer sealer){
+        Shape shape=new Shape(AbiSignature.reference(abi.result)?OBJECT:abi.result,List.copyOf(abi.helperParameters()),abi.instance,Integer.toString(slot).length());
+        Template template=TEMPLATES.get(shape);
+        if(template==null){
+            if(TEMPLATES.size()>=HookCapacity.MAX_ENTRIES)throw new IllegalStateException("HELPER_TEMPLATE_BUDGET");
+            HelperDex writer=new HelperDex(abi,slot);template=new Template(writer,writer.write(sealer));TEMPLATES.put(shape,template);
+        }return template;
     }
     public static String className(int slot){return "dev.tripoder.selfhook.generated.Entry"+slot;}
     private static String shortType(String type){return AbiSignature.reference(type)?"L":type;}
@@ -87,7 +111,7 @@ public final class HelperDex {
     private int methodIndex(Method method){return methods.indexOf(method);}
     private void emit(int... words){for(int word:words){if((word&~65535)!=0)throw new IllegalArgumentException("DEX_WORD");code.add(word);}}
     private void invoke(int opcode,Method method,int start,int words){emit(opcode|(words<<8),methodIndex(method),start);}
-    private byte[] write(){
+    private byte[] write(Sealer sealer){
         type(OBJECT);type(ARRAY);
         // Reference types share the same quick ABI. Erase them in the helper;
         // the original class identity is checked by ManagedHook, so private
@@ -152,12 +176,8 @@ public final class HelperDex {
         put(file,32,file.length);put(file,36,112);put(file,40,0x12345678);put(file,52,map);
         int[] table={strings.size(),stringIds,types.size(),typeIds,protos.size(),protoIds,0,0,methods.size(),methodIds,1,classDefs,file.length-dataStart,dataStart};
         for(int i=0;i<table.length;i++)put(file,56+i*4,table[i]);
-        seal(file);
+        sealer.seal(file);
         new DexFile(file);return file;
-    }
-    private static void seal(byte[] file){
-        byte[] signature=DexFile.digest("SHA-1",Arrays.copyOfRange(file,32,file.length));System.arraycopy(signature,0,file,12,20);
-        Adler32 checksum=new Adler32();checksum.update(file,12,file.length-12);put(file,8,(int)checksum.getValue());
     }
     private void section(int type,int count,int offset){sections.add(new int[]{type,count,offset});}
     private static void put(byte[] data,int at,int value){for(int i=0;i<4;i++)data[at+i]=(byte)(value>>>(i*8));}

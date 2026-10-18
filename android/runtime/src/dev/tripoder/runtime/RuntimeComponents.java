@@ -26,7 +26,7 @@ final class RuntimeComponents {
         if(!component.permission.isEmpty())throw new SecurityException("COMPONENT_PERMISSION_UNSUPPORTED");
     }
     static void requireExecutable(ApkStore.BundleInstall install){
-        if(install.artifacts.parts.size()!=1)throw new IllegalStateException("RUNTIME_SPLIT_EXECUTION_NOT_YET_SUPPORTED");
+        if(install.artifacts.parts.isEmpty())throw new IllegalStateException("RUNTIME_SPLIT_EXECUTION_NOT_YET_SUPPORTED");
         for(var c:install.components())if(!c.type.equals("activity")&&!c.type.equals("activity-alias")&&!c.type.equals("service")&&!c.type.equals("provider")&&!c.type.equals("receiver"))throw new IllegalStateException("RUNTIME_COMPONENT_SET_NOT_SUPPORTED");
     }
     private RuntimeComponents(){}

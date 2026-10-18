@@ -1,0 +1,124 @@
+{
+  "runId": "control-93fb40d3b4b84327",
+  "startedAt": 1792226632980,
+  "uid": 10400,
+  "pid": 12367,
+  "deviceBuild": "Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys",
+  "scope": "original-target-first-launch-only",
+  "target": "com.tencent.mm",
+  "apkSha256": "f2a725bc04302ad218a563533ae79356e66b64aa711b275bc919a8d432f7e15d",
+  "apkRewritten": false,
+  "loginAttempted": false,
+  "businessScenarioVerified": false,
+  "workbenchStartupStatus": {
+    "schema": 31,
+    "hookReady": true,
+    "lease": "e5de8eba-3be3-4162-9803-99afa77259b5",
+    "enginePid": 12439,
+    "engineUid": 10400,
+    "strongIsolation": false,
+    "authority": "b3791fff-4c05-479f-a062-491c407b67a3",
+    "controllerUid": 10400
+  },
+  "claimedExistingInstall": {
+    "generation": "a776a2fe-6b4d-42bd-9155-f25ed20b02e8",
+    "project": "7703bdbe-88a3-4ad9-9f17-71aecb68d6ff",
+    "reusedBinding": true
+  },
+  "targetReceipt": {
+    "project": "7703bdbe-88a3-4ad9-9f17-71aecb68d6ff",
+    "binding": "50adface-8c77-4134-9971-768d53a1e067",
+    "generation": "a776a2fe-6b4d-42bd-9155-f25ed20b02e8",
+    "sha256": "f2a725bc04302ad218a563533ae79356e66b64aa711b275bc919a8d432f7e15d"
+  },
+  "space": "p6-20261014",
+  "launcher": {
+    "component": "com.tencent.mm.ui.LauncherUI",
+    "launcher": true,
+    "supported": true,
+    "reason": ""
+  },
+  "launchOperation": "37cf008c-952d-4f7a-b2cb-73f4b6114791",
+  "workerPid": 12540,
+  "workerUid": 10400,
+  "processGeneration": "fd88ae94dd1e5fa2d1abb4b444fdcfd813b4300fb0a372d906c62463f8b6a491",
+  "launchReceipt": {
+    "detail": "",
+    "result": "activity-CREATE-callback-completed",
+    "state": "SUCCEEDED",
+    "evidence": ""
+  },
+  "stabilitySamples": [
+    {
+      "time": 1792226651928,
+      "originalAlive": true,
+      "processes": [
+        {
+          "processGeneration": "fd88ae94dd1e5fa2d1abb4b444fdcfd813b4300fb0a372d906c62463f8b6a491",
+          "pid": 12540,
+          "processName": "com.tencent.mm"
+        }
+      ]
+    },
+    {
+      "time": 1792226652935,
+      "originalAlive": false,
+      "processes": []
+    }
+  ],
+  "error": "java.lang.IllegalStateException: ASSERTION_FAILED:target-original-worker-remains-running-for-30-seconds\n\tat dev.tripoder.controltest.ControlTestBase.check(ControlTestBase.java:65)\n\tat dev.tripoder.controltest.TargetLaunchIntegration.runTarget(TargetLaunchIntegration.java:92)\n\tat dev.tripoder.controltest.TargetLaunchIntegration.test(TargetLaunchIntegration.java:18)\n\tat dev.tripoder.controltest.ControlTestBase.onStart(ControlTestBase.java:43)\n\tat dev.tripoder.controltest.TargetLaunchIntegration.onStart(TargetLaunchIntegration.java:15)\n\tat android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2705)\n",
+  "passed": false,
+  "checks": [
+    {
+      "name": "real-workbench-foreground-startup-connected",
+      "passed": true,
+      "observed": ""
+    },
+    {
+      "name": "original-apk-digest-matches",
+      "passed": true,
+      "observed": "f2a725bc04302ad218a563533ae79356e66b64aa711b275bc919a8d432f7e15d"
+    },
+    {
+      "name": "declared-launcher-policy-supported",
+      "passed": true,
+      "observed": {
+        "component": "com.tencent.mm.ui.LauncherUI",
+        "launcher": true,
+        "supported": true,
+        "reason": ""
+      }
+    },
+    {
+      "name": "target-application-initialized",
+      "passed": true,
+      "observed": {
+        "component": "com.tencent.mm.ui.LauncherUI",
+        "installGeneration": "a776a2fe-6b4d-42bd-9155-f25ed20b02e8",
+        "pid": 12540,
+        "uid": 10400,
+        "state": "RUNNING",
+        "processName": "com.tencent.mm",
+        "generation": "fd88ae94dd1e5fa2d1abb4b444fdcfd813b4300fb0a372d906c62463f8b6a491",
+        "operation": "37cf008c-952d-4f7a-b2cb-73f4b6114791"
+      }
+    },
+    {
+      "name": "target-first-activity-acknowledged",
+      "passed": true,
+      "observed": {
+        "detail": "",
+        "result": "activity-CREATE-callback-completed",
+        "state": "SUCCEEDED",
+        "evidence": ""
+      }
+    },
+    {
+      "name": "target-original-worker-remains-running-for-30-seconds",
+      "passed": false,
+      "observed": []
+    }
+  ],
+  "fullP5Accepted": false,
+  "finishedAt": 1792226652938
+}

@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 /* ClassExt's native-root visitor is the GC owner; LinearAlloc owns storage.
  * Neither a foreign declared method slot nor an untracked malloc clone is used.
@@ -41,6 +42,7 @@ static jclass class_class;
 static jmethodID fast_allocate,fast_owner;
 static uintptr_t (*art_read_root)(const uint32_t *);
 static _Atomic unsigned read_barrier_adjustments;
+static _Atomic uint64_t owner_comparisons,owner_lookup_ns;
 static bool attempted;
 static _Atomic bool bound;
 static const char *stage="NOT_STARTED";
@@ -55,15 +57,30 @@ uintptr_t tp_art_storage_read_root(const uint32_t *value){return read_root(value
 
 /* Class equality stays in a single Runnable transition. JNI handles remain
  * rooted across concurrent copying; no raw heap address becomes a map key. */
+static unsigned unique_owner_slots[TP_MANAGED_ENTRY_LIMIT];
+static unsigned unique_owner_count;
 static jint find_owner_fast(JNIEnv *env,jclass unused,jclass owner){
     (void)unused;if(!atomic_load_explicit(&bound,memory_order_acquire)||!owner)return -2;
     void *thread=art.access.current();if(!thread||(atomic_load_explicit((_Atomic uint32_t *)thread,memory_order_relaxed)>>24)!=0)return -2;
-    jint previous=-1;
-    for(unsigned i=0;i<used;i++)if(slots[i].owner&&(*env)->IsSameObject(env,owner,slots[i].owner)){
-        if(!atomic_load_explicit(&slots[i].published,memory_order_acquire))return -2;previous=(jint)i;
+    struct timespec start,end;bool clock_ok=clock_gettime(CLOCK_MONOTONIC,&start)==0;
+    jint previous=-1;unsigned comps=0;
+    for(unsigned k=unique_owner_count;k>0;k--){
+        unsigned i=unique_owner_slots[k-1];comps++;
+        if(slots[i].owner&&(*env)->IsSameObject(env,owner,slots[i].owner)){
+            if(!atomic_load_explicit(&slots[i].published,memory_order_acquire)){previous=-2;break;}
+            previous=(jint)i;break;
+        }
     }
+    atomic_fetch_add(&owner_comparisons,comps);
+    if(clock_ok&&clock_gettime(CLOCK_MONOTONIC,&end)==0)atomic_fetch_add(&owner_lookup_ns,(uint64_t)(end.tv_sec-start.tv_sec)*1000000000u+(uint64_t)(end.tv_nsec-start.tv_nsec));
     return previous;
 }
+JNIEXPORT jstring JNICALL Java_dev_tripoder_selfhook_OriginalMethodStorage_preparationMetrics(JNIEnv *env,jclass cls){
+    (void)cls;uint64_t calls=0,ns=0;tp_art_mapping_metrics(&calls,&ns);char output[256];
+    snprintf(output,sizeof(output),"{\"mappingCalls\":%llu,\"mappingNs\":%llu,\"ownerComparisons\":%llu,\"ownerLookupNs\":%llu}",(unsigned long long)calls,(unsigned long long)ns,(unsigned long long)atomic_load(&owner_comparisons),(unsigned long long)atomic_load(&owner_lookup_ns));
+    return (*env)->NewStringUTF(env,output);
+}
+static void *cached_loader_field, *cached_dex_cache_field;
 static jboolean allocate_fast(JNIEnv *env,jclass unused,jint index){
     (void)unused;
     if(!atomic_load_explicit(&bound,memory_order_acquire)||index<0||(unsigned)index>=used)return JNI_FALSE;
@@ -90,9 +107,12 @@ static jboolean allocate_fast(JNIEnv *env,jclass unused,jint index){
         // ART's allocator requires the real Class.classLoader field (null for
         // boot classes). Resolve it in this Runnable transition, with roots.
         stage="ACTUAL_DEFINING_LOADER";
-        uintptr_t class_type=decode_object(thread,class_class);
-        void *loader_field=find_field(class_type,(struct string_view){"classLoader",11},
-            (struct string_view){"Ljava/lang/ClassLoader;",sizeof("Ljava/lang/ClassLoader;")-1});
+        if(!cached_loader_field){
+            uintptr_t class_type=decode_object(thread,class_class);
+            cached_loader_field=find_field(class_type,(struct string_view){"classLoader",11},
+                (struct string_view){"Ljava/lang/ClassLoader;",sizeof("Ljava/lang/ClassLoader;")-1});
+        }
+        void *loader_field=cached_loader_field;
         if(!loader_field)break;
         jobject loader_ref=(*env)->GetObjectField(env,s->owner,encode_field(loader_field));
         if((*env)->ExceptionCheck(env))break;
@@ -112,9 +132,12 @@ static jboolean allocate_fast(JNIEnv *env,jclass unused,jint index){
         if(!ext_ref)break;
         (*env)->SetObjectArrayElement(env,s->ext_box,0,ext_ref);
         (*env)->DeleteLocalRef(env,ext_ref);
-        class_type=decode_object(thread,class_class);
-        void *field=find_field(class_type,(struct string_view){"dexCache",8},
-            (struct string_view){"Ljava/lang/Object;",sizeof("Ljava/lang/Object;")-1});
+        if(!cached_dex_cache_field){
+            uintptr_t class_type=decode_object(thread,class_class);
+            cached_dex_cache_field=find_field(class_type,(struct string_view){"dexCache",8},
+                (struct string_view){"Ljava/lang/Object;",sizeof("Ljava/lang/Object;")-1});
+        }
+        void *field=cached_dex_cache_field;
         if(!field){stage="DEX_CACHE_FIELD_NOT_FOUND";break;}
         jfieldID id=encode_field(field);
         jobject cache=(*env)->GetObjectField(env,s->owner,id);
@@ -240,18 +263,129 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_OriginalMethodStorage_prep
     }
     art.access.resume(&mutators);art.jit_resume(&jit);
     if(!valid&&s->published)fatal("TP_BACKUP_ROOT_PUBLICATION_MISMATCH");
+    if(valid&&!previous&&unique_owner_count<TP_MANAGED_ENTRY_LIMIT)unique_owner_slots[unique_owner_count++]=index;
     stage=valid?"PREPARED":"CLASS_EXT_OWNERSHIP_REJECTED";return valid?JNI_TRUE:JNI_FALSE;
+}
+JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_OriginalMethodStorage_prepareBatchNative(JNIEnv *env,jclass cls,
+    jobjectArray targets,jobjectArray owners,jobjectArray shorties){
+    if(!atomic_load(&bound)||!targets||!owners||!shorties)return JNI_FALSE;
+    jsize count=(*env)->GetArrayLength(env,targets);
+    if(count<1||(unsigned)count>TP_MANAGED_ENTRY_LIMIT-used
+        ||(*env)->GetArrayLength(env,owners)!=count||(*env)->GetArrayLength(env,shorties)!=count)return JNI_FALSE;
+    static uintptr_t batch_addresses[TP_MANAGED_ENTRY_LIMIT];
+    static struct tp_art_method_view batch_before[TP_MANAGED_ENTRY_LIMIT];
+    static uintptr_t batch_native_originals[TP_MANAGED_ENTRY_LIMIT];
+    static bool batch_new_owner[TP_MANAGED_ENTRY_LIMIT];
+    for(jsize k=0;k<count;k++){
+        jobject target=(*env)->GetObjectArrayElement(env,targets,k);
+        uintptr_t addr=target?tp_art_method_address(env,target):0;
+        (*env)->DeleteLocalRef(env,target);
+        if(!addr)return JNI_FALSE;
+        for(unsigned i=0;i<used;i++)if((uintptr_t)slots[i].target==addr)return JNI_FALSE;
+        for(jsize j=0;j<k;j++)if(batch_addresses[j]==addr)return JNI_FALSE;
+        batch_addresses[k]=addr;
+    }
+    if(art.access.current()==NULL)return JNI_FALSE;
+    char obs_scope=0;
+    art.access.suspend(&obs_scope,"tripoder-owned-method-batch-snapshot",false);
+    for(jsize k=0;k<count;k++){
+        uint32_t words[8];
+        for(unsigned i=0;i<8;i++)words[i]=((volatile uint32_t *)batch_addresses[k])[i];
+        memcpy(&batch_before[k],words,sizeof(words));
+    }
+    art.access.resume(&obs_scope);
+    for(jsize k=0;k<count;k++)if((batch_before[k].flags&0x80000400)!=0||!batch_before[k].data)return JNI_FALSE;
+    jclass cache_class=(*env)->FindClass(env,"java/lang/DexCache"),object_class=(*env)->FindClass(env,"java/lang/Object");
+    if(!cache_class||!object_class)return JNI_FALSE;
+    unsigned first=used;
+    unsigned prev_unique_owners=unique_owner_count;
+    bool alloc_ok=true;
+    for(jsize k=0;k<count;k++){
+        jobject target=(*env)->GetObjectArrayElement(env,targets,k);
+        jclass owner=(*env)->GetObjectArrayElement(env,owners,k);
+        jstring shorty=(*env)->GetObjectArrayElement(env,shorties,k);
+        if(!target||!owner||!shorty){alloc_ok=false;break;}
+        jint previous_index=(*env)->CallStaticIntMethod(env,cls,fast_owner,owner);
+        if((*env)->ExceptionCheck(env)||previous_index< -1||(unsigned)(previous_index+1)>used){alloc_ok=false;break;}
+        struct storage_slot *previous=previous_index<0?NULL:&slots[previous_index];
+        unsigned index=used++;
+        struct storage_slot *s=&slots[index];
+        s->position=index;
+        s->target=(void *)batch_addresses[k];
+        s->owner=root(env,owner);s->target_ref=root(env,target);
+        s->methods=root(env,previous?previous->methods:(jobject)(*env)->NewLongArray(env,TP_MANAGED_ENTRY_LIMIT));
+        s->caches=root(env,previous?previous->caches:(jobject)(*env)->NewObjectArray(env,TP_MANAGED_ENTRY_LIMIT,cache_class,NULL));
+        s->ext_box=root(env,(*env)->NewObjectArray(env,1,object_class,NULL));
+        if(!s->target||!s->owner||!s->target_ref||!s->methods||!s->caches||!s->ext_box){alloc_ok=false;break;}
+        if(!(*env)->CallStaticBooleanMethod(env,cls,fast_allocate,(jint)index)||(*env)->ExceptionCheck(env)){alloc_ok=false;break;}
+        s->ext=root(env,(*env)->GetObjectArrayElement(env,s->ext_box,0));
+        if(!s->ext){alloc_ok=false;break;}
+        (*env)->DeleteGlobalRef(env,s->ext_box);s->ext_box=NULL;
+        batch_native_originals[k]=0;
+        if(batch_before[k].flags&0x100){
+            batch_native_originals[k]=tp_art_jni_original_prepare(env,index,s->target,s->backup,shorty);
+            if(!batch_native_originals[k]){alloc_ok=false;break;}
+        }
+        // Mark provisionally published so subsequent methods in the same batch
+        // with the same declaring class reuse this ClassExt and arrays via find_owner_fast!
+        atomic_store_explicit(&s->published,true,memory_order_release);
+        batch_new_owner[k]=(previous==NULL);
+        if(batch_new_owner[k]&&unique_owner_count<TP_MANAGED_ENTRY_LIMIT)unique_owner_slots[unique_owner_count++]=index;
+        (*env)->DeleteLocalRef(env,target);(*env)->DeleteLocalRef(env,owner);(*env)->DeleteLocalRef(env,shorty);
+    }
+    if(!alloc_ok){
+        for(unsigned idx=first;idx<used;idx++)atomic_store_explicit(&slots[idx].published,false,memory_order_release);
+        unique_owner_count=prev_unique_owners;
+        return JNI_FALSE;
+    }
+    stage="PUBLISH_ROOTED_BACKUP";
+    void *thread=art.access.current();char jit=0,mutators=0;
+    art.jit_suspend(&jit);art.access.suspend(&mutators,"tripoder-backup-root-publication",false);
+    bool valid=true;
+    for(jsize k=0;k<count&&valid;k++){
+        unsigned index=first+(unsigned)k;
+        struct storage_slot *s=&slots[index];
+        uintptr_t ext=decode_object(thread,s->ext),klass=decode_object(thread,s->owner);
+        valid=ext&&klass&&read_root(&s->target->owner)==klass&&!(s->target->flags&0x400)&&
+            ((!*(uint32_t *)(ext+0x1c)&&!*(uint32_t *)(ext+0x20))||
+             (read_root((uint32_t *)(ext+0x1c))==decode_object(thread,s->caches)&&read_root((uint32_t *)(ext+0x20))==decode_object(thread,s->methods)));
+        if(valid){
+            art.copy(s->backup,s->target,8);
+            s->initial_owner=(uint32_t)read_root(&s->backup->owner);
+            s->initial_ext=ext;s->initial_methods=decode_object(thread,s->methods);s->initial_caches=decode_object(thread,s->caches);
+            if(batch_native_originals[k]){s->backup->data=batch_native_originals[k];s->backup->quick=art.jni_bridge;}
+            else{s->backup->flags=(s->backup->flags&~UINT32_C(0x00900000))|UINT32_C(0x02000000);s->backup->quick=art.interpreter_bridge;}
+            uintptr_t methods=decode_object(thread,s->methods);
+            if(*(uintptr_t *)(methods+16+s->position*8))fatal("TP_BACKUP_MAP_SLOT_OWNED");
+            *(uintptr_t *)(methods+16+s->position*8)=(uintptr_t)s->backup;
+            set_arrays(ext,methods,decode_object(thread,s->caches));
+            valid=rooted(s,thread);
+        }
+    }
+    art.access.resume(&mutators);art.jit_resume(&jit);
+    if(!valid)fatal("TP_BACKUP_ROOT_PUBLICATION_MISMATCH");
+    stage="PREPARED";return JNI_TRUE;
 }
 
 struct tp_art_method_view *tp_art_backup_lookup(const struct tp_art_method_view *target){
-    for(unsigned i=0;i<used;i++)if(slots[i].published&&slots[i].target==target)return slots[i].backup;
+    for(unsigned i=used;i>0;i--)if(slots[i-1].published&&slots[i-1].target==target)return slots[i-1].backup;
     return NULL;
+}
+struct tp_art_method_view *tp_art_backup_lookup_slot(unsigned index,const struct tp_art_method_view *target){
+    if(index<used&&slots[index].published&&slots[index].target==target)return slots[index].backup;
+    return tp_art_backup_lookup(target);
 }
 bool tp_art_backup_rooted_locked(const struct tp_art_method_view *target,const struct tp_art_method_view *backup){
     void *thread=art.access.current();if(!thread)return false;
-    for(unsigned i=0;i<used;i++)if(slots[i].published&&slots[i].target==target)
-        return slots[i].backup==backup&&rooted(&slots[i],thread);
+    for(unsigned i=used;i>0;i--)if(slots[i-1].published&&slots[i-1].target==target)
+        return slots[i-1].backup==backup&&rooted(&slots[i-1],thread);
     return false;
+}
+bool tp_art_backup_rooted_slot_locked(unsigned index,const struct tp_art_method_view *target,const struct tp_art_method_view *backup){
+    void *thread=art.access.current();if(!thread)return false;
+    if(index<used&&slots[index].published&&slots[index].target==target)
+        return slots[index].backup==backup&&rooted(&slots[index],thread);
+    return tp_art_backup_rooted_locked(target,backup);
 }
 int tp_art_backup_snapshot(const struct tp_art_method_view *target,struct tp_art_method_view *backup){
     for(unsigned i=0;i<used;i++)if(slots[i].published&&slots[i].target==target){

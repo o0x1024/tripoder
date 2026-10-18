@@ -59,10 +59,13 @@ public final class ManagedHook {
     // signature. Keep managed roots; never key this by moving heap addresses.
     private static final Map<Executable,Entry> targets=new java.util.HashMap<>();
     private static int used;
+    private static long validationNs,dexBuildNs,dexLoadNs,helperResolveNs,storageNs,entryPrepareNs;
+    public static synchronized String preparationMetrics(){return "{\"entries\":"+used+",\"validationNs\":"+validationNs+",\"dexBuildNs\":"+dexBuildNs+",\"dexLoadNs\":"+dexLoadNs+",\"helperResolveNs\":"+helperResolveNs+",\"storageNs\":"+storageNs+",\"entryPrepareNs\":"+entryPrepareNs+"}";}
     private static boolean processInitializationAttempted,processInitialized;
     private static boolean changing;
     private ManagedHook(){}
     private static native boolean prepareNative(int slot,Executable target,Method helper,Class<?> owner,String shorty,Executable[] callers);
+    private static native int prepareBatchNative(int first,Executable[] targets,Method[] helpers,Class<?>[] owners,String[] shorties,Executable[][] callerArrays);
     private static native boolean toggleBatchNative(int[] slots,boolean active);
     private static native Object originalNative(int slot,Object receiver,Object[] args);
     private static native String reportNative(int slot);
@@ -138,19 +141,58 @@ public final class ManagedHook {
         if(requested==null)throw new IllegalArgumentException("HOOK_PREPARE_BUDGET");
         Map<Executable,Executable[]> snapshot=new LinkedHashMap<>(requested);
         if(snapshot.isEmpty()||snapshot.size()>HookCapacity.MAX_ENTRIES-used)throw new IllegalArgumentException("HOOK_PREPARE_BUDGET");
-        Map<Executable,AbiSignature> signatures=new LinkedHashMap<>();int nativeCount=0;
+        long measured=System.nanoTime();Map<Executable,AbiSignature> signatures=new LinkedHashMap<>();int nativeCount=0;
         for(var item:snapshot.entrySet()){
             Executable[] callers=item.getValue()==null?null:item.getValue().clone();validateTarget(item.getKey(),callers);
             item.setValue(callers);signatures.put(item.getKey(),new AbiSignature(item.getKey()));if(Modifier.isNative(item.getKey().getModifiers()))nativeCount++;
         }
         if(nativeCount>nativeOriginalRemainingNative())throw new IllegalStateException("NATIVE_ORIGINAL_CAPACITY");
-        int first=used;used+=snapshot.size();byte[][] dexes=HelperDex.createBatch(java.util.List.copyOf(signatures.values()),first);
-        ByteBuffer[] buffers=new ByteBuffer[dexes.length];for(int i=0;i<dexes.length;i++)buffers[i]=ByteBuffer.wrap(dexes[i]);int index;
+        validationNs+=System.nanoTime()-measured;measured=System.nanoTime();
+        int count=snapshot.size();
+        int first=used;used+=count;byte[][] dexes=HelperDex.createBatch(java.util.List.copyOf(signatures.values()),first);
+        dexBuildNs+=System.nanoTime()-measured;measured=System.nanoTime();
+        ByteBuffer[] buffers=new ByteBuffer[dexes.length];for(int i=0;i<dexes.length;i++)buffers[i]=ByteBuffer.wrap(dexes[i]);
         InMemoryDexClassLoader loader=new InMemoryDexClassLoader(buffers,ManagedHook.class.getClassLoader());
-        Map<Executable,Handle> result=new LinkedHashMap<>();index=0;
+        dexLoadNs+=System.nanoTime()-measured;measured=System.nanoTime();
+        Executable[] targetArr=new Executable[count];
+        Method[] helperArr=new Method[count];
+        Class<?>[] ownerArr=new Class<?>[count];
+        String[] shortyArr=new String[count];
+        Executable[][] callerArrs=new Executable[count][];
+        int index=0;
         for(var item:snapshot.entrySet()){
-            result.put(item.getKey(),prepareEntry(first+index,item.getKey(),item.getValue(),signatures.get(item.getKey()),loader,dexes[index]));index++;
+            int id=first+index;
+            Executable target=item.getKey();
+            AbiSignature abi=signatures.get(target);
+            Class<?> helperClass=Class.forName(HelperDex.className(id),true,loader);
+            Class<?>[] helperTypes=new Class<?>[abi.parameters.size()+(abi.instance?1:0)];int at=0;
+            if(abi.instance)helperTypes[at++]=Object.class;
+            for(Class<?> type:target.getParameterTypes())helperTypes[at++]=type.isPrimitive()?type:Object.class;
+            Method helper=helperClass.getDeclaredMethod("invoke",helperTypes);
+            Class<?> resultType=target instanceof Method?((Method)target).getReturnType():void.class;
+            if(helper.getReturnType()!=(resultType.isPrimitive()?resultType:Object.class))throw new IllegalStateException("HELPER_SIGNATURE");
+            StringBuilder shorty=new StringBuilder(AbiSignature.reference(abi.result)?"L":abi.result);
+            for(String arg:abi.parameters)shorty.append(AbiSignature.reference(arg)?"L":arg);
+            targetArr[index]=target;
+            helperArr[index]=helper;
+            ownerArr[index]=target.getDeclaringClass();
+            shortyArr[index]=shorty.toString();
+            callerArrs[index]=item.getValue();
+            index++;
         }
+        helperResolveNs+=System.nanoTime()-measured;measured=System.nanoTime();
+        if(!OriginalMethodStorage.prepareBatch(targetArr,shortyArr))throw new IllegalStateException("ORIGINAL_STORAGE_REQUIRED: "+OriginalMethodStorage.report());
+        storageNs+=System.nanoTime()-measured;measured=System.nanoTime();
+        Map<Executable,Handle> result=new LinkedHashMap<>();
+        for(int i=0;i<count;i++){
+            int id=first+i;
+            Entry entry=new Entry(id,targetArr[i],helperArr[i],loader,dexes[i]);
+            entries.set(id,entry);targets.put(targetArr[i],entry);
+            result.put(targetArr[i],new Handle(entry));
+        }
+        int failedSlot=prepareBatchNative(first,targetArr,helperArr,ownerArr,shortyArr,callerArrs);
+        if(failedSlot>=0)throw new IllegalStateException("MANAGED_ENTRY_PREPARE: "+reportNative(failedSlot));
+        entryPrepareNs+=System.nanoTime()-measured;
         return java.util.Collections.unmodifiableMap(result);
     }
     private static void validateTarget(Executable target,Executable[] knownCallers){
@@ -168,21 +210,6 @@ public final class ManagedHook {
             if(name.equals("jdk.internal.reflect.CallerSensitive")||name.equals("sun.reflect.CallerSensitive")
                 ||name.endsWith(".CallerSensitive"))throw new IllegalArgumentException("CALLER_SENSITIVE_REQUIRES_ORIGINAL_FRAME_ADAPTER");
         }
-    }
-    private static Handle prepareEntry(int id,Executable target,Executable[] callers,AbiSignature abi,InMemoryDexClassLoader loader,byte[] dex)throws Exception {
-        Class<?> helperClass=Class.forName(HelperDex.className(id),true,loader);
-        Class<?>[] helperTypes=new Class<?>[abi.parameters.size()+(abi.instance?1:0)];int at=0;
-        if(abi.instance)helperTypes[at++]=Object.class;
-        for(Class<?> type:target.getParameterTypes())helperTypes[at++]=type.isPrimitive()?type:Object.class;
-        Method helper=helperClass.getDeclaredMethod("invoke",helperTypes);
-        Class<?> result=target instanceof Method?((Method)target).getReturnType():void.class;
-        if(helper.getReturnType()!=(result.isPrimitive()?result:Object.class))throw new IllegalStateException("HELPER_SIGNATURE");
-        if(!OriginalMethodStorage.prepare(target))throw new IllegalStateException("ORIGINAL_STORAGE_REQUIRED: "+OriginalMethodStorage.report());
-        StringBuilder shorty=new StringBuilder(AbiSignature.reference(abi.result)?"L":abi.result);
-        for(String arg:abi.parameters)shorty.append(AbiSignature.reference(arg)?"L":arg);
-        Entry entry=new Entry(id,target,helper,loader,dex);entries.set(id,entry);targets.put(target,entry);
-        if(!prepareNative(id,target,helper,target.getDeclaringClass(),shorty.toString(),callers))throw new IllegalStateException("MANAGED_ENTRY_PREPARE: "+reportNative(id));
-        return new Handle(entry);
     }
     /** Called solely by the generated helper; arguments remain managed roots. */
     public static Object dispatch(int id,Object receiver,Object[] args) throws Throwable {

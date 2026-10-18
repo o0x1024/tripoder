@@ -6,20 +6,10 @@ import java.util.*;
 /** Workbench control transport. Guest component routing uses its separate internal protocol. */
 public final class ControlWire {
     public static final String DESCRIPTOR="dev.tripoder.control.v1";
-    public static final String OWNER_DESCRIPTOR=DESCRIPTOR+".owner",PROOF_DESCRIPTOR=DESCRIPTOR+".owner-proof";
     public static final int CONNECT=1,EXECUTE=2;
     private ControlWire(){}
-    /** Reverse challenge proves the lifetime Binder is hosted by the actual connecting process. */
-    public static final class Owner extends Binder {
-        private final int engineUid;
-        public Owner(int engineUid){this.engineUid=engineUid;}
-        @Override protected boolean onTransact(int code,Parcel data,Parcel reply,int flags)throws RemoteException{
-            if(code!=FIRST_CALL_TRANSACTION||Binder.getCallingUid()!=engineUid)throw new SecurityException("OWNER_CHALLENGE_CALLER_REJECTED");
-            data.enforceInterface(OWNER_DESCRIPTOR);if(data.dataAvail()>4096||data.hasFileDescriptors())throw new SecurityException("OWNER_CHALLENGE_INVALID");
-            IBinder proof=data.readStrongBinder();String nonce=data.readString();data.enforceNoDataAvail();if(proof==null||nonce==null||!nonce.matches("[0-9a-f]{64}"))throw new SecurityException("OWNER_CHALLENGE_INVALID");
-            Parcel request=Parcel.obtain(),response=Parcel.obtain();try{request.writeInterfaceToken(PROOF_DESCRIPTOR);request.writeString(nonce);if(!proof.transact(FIRST_CALL_TRANSACTION,request,response,0))throw new RemoteException("OWNER_PROOF_REJECTED");response.readException();reply.writeNoException();return true;}finally{request.recycle();response.recycle();}
-        }
-    }
+    /** Lifetime token of a controller: the engine links to its death to revoke the lease. */
+    public static final class Owner extends Binder {}
     public abstract static class Endpoint extends Binder {
         protected abstract void authorize(int code,int pid,int uid);
         protected abstract Bundle handle(int code,Bundle input,int pid,int uid)throws Exception;

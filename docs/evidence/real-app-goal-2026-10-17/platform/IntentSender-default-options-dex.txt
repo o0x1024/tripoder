@@ -1,0 +1,33 @@
+      name          : 'getSendIntentDefaultOptions'
+      type          : '()Landroid/os/Bundle;'
+      access        : 0x0002 (PRIVATE)
+      hiddenapi     : 0x0002 (BLOCKED)
+      code          -
+      registers     : 3
+      ins           : 1
+      outs          : 2
+      insns size    : 23 16-bit code units
+3de2d0:                                        |[3de2d0] android.content.IntentSender.getSendIntentDefaultOptions:()Landroid/os/Bundle;
+3de2e0: 7100 64f8 0000                         |0000: invoke-static {}, Lcom/android/internal/hidden_from_bootclasspath/com/android/window/flags/Flags;.balCoverIntentSender:()Z // method@f864
+3de2e6: 0a00                                   |0003: move-result v0
+3de2e8: 3900 0500                              |0004: if-nez v0, 0009 // +0005
+3de2ec: 6200 257f                              |0006: sget-object v0, Landroid/content/IntentSender;.SEND_INTENT_DEFAULT_OPTIONS:Landroid/os/Bundle; // field@7f25
+3de2f0: 1100                                   |0008: return-object v0
+3de2f2: 1700 1cff 3218                         |0009: const-wide/32 v0, #float 2.31348e-24 // #1832ff1c
+3de2f8: 7120 6072 1000                         |000c: invoke-static {v0, v1}, Landroid/app/compat/CompatChanges;.isChangeEnabled:(J)Z // method@7260
+3de2fe: 0a00                                   |000f: move-result v0
+3de300: 3900 0500                              |0010: if-nez v0, 0015 // +0005
+3de304: 6200 257f                              |0012: sget-object v0, Landroid/content/IntentSender;.SEND_INTENT_DEFAULT_OPTIONS:Landroid/os/Bundle; // field@7f25
+3de308: 1100                                   |0014: return-object v0
+3de30a: 1200                                   |0015: const/4 v0, #int 0 // #0
+3de30c: 1100                                   |0016: return-object v0
+      catches       : (none)
+      positions     :
+        0x0000 line=233
+        0x0006 line=234
+        0x0009 line=236
+        0x0012 line=237
+        0x0015 line=239
+      locals        :
+        0x0000 - 0x0017 reg=2 this Landroid/content/IntentSender;
+

@@ -8,16 +8,27 @@ import java.util.*;
 final class RuntimeSelfHookPlatform implements SelfHookControl.Platform {
     private final Map<String,Object> identity;
     private final RuntimeJavaHookBackend javaBackend;private final RuntimeNativeHookBackend nativeBackend;
-    private final RuntimeNativeObservation nativeObservation;
+    private final RuntimeJavaObservation javaObservation;private final RuntimeNativeObservation nativeObservation;
     private List<Map<String,Object>> metadata=List.of();
     @SuppressWarnings("unchecked") RuntimeSelfHookPlatform(Map<String,Object> identity,RuntimeJavaObservation javaObservation,RuntimeNativeObservation nativeObservation){
-        this.identity=(Map<String,Object>)ScriptValues.freeze(identity);this.javaBackend=new RuntimeJavaHookBackend(javaObservation);
+        this.identity=(Map<String,Object>)ScriptValues.freeze(identity);this.javaObservation=javaObservation;this.javaBackend=new RuntimeJavaHookBackend(javaObservation);
         this.nativeBackend=new RuntimeNativeHookBackend(nativeObservation);this.nativeObservation=nativeObservation;
     }
     public Map<String,Object> identity(){return identity;}
     public Set<String> capabilities(){return Set.of("java-hook","native-hook");}
     public List<Map<String,Object>> modules(){return nativeObservation.modules();}
     public List<Map<String,Object>> moduleEvents(){return nativeObservation.moduleEvents();}
+    public List<String> searchDexClasses(String packagePrefix,int limit){try{return javaObservation.searchClasses(packagePrefix,limit);}catch(Exception error){throw new IllegalStateException(error);}}
+    public Map<String,Object> inspectDexClass(String className){try{return javaObservation.inspectClass(className);}catch(Exception error){throw new IllegalStateException(error);}}
+    public List<Map<String,Object>> searchNativeExports(String moduleName,String symbolPrefix,int limit){try{return nativeObservation.searchExports(moduleName,symbolPrefix,limit);}catch(Exception error){throw new IllegalStateException(error);}}
+    public Map<String,Object> dumpUiHierarchy(boolean includeInvisible){try{return RuntimeStartupDiagnostics.dumpUiHierarchy(includeInvisible);}catch(Exception error){throw new IllegalStateException(error);}}
+    public Map<String,Object> dispatchUiAction(Map<String,Object> action){try{return RuntimeStartupDiagnostics.dispatchUiAction(action);}catch(Exception error){throw new IllegalStateException(error);}}
+    public List<Map<String,Object>> diagnostics(){return RuntimeStartupDiagnostics.recentFailures();}
+    public Map<String,Object> inspectManifest(){try{return RuntimeSecurityAudit.inspectManifest();}catch(Exception error){throw new IllegalStateException(error);}}
+    public Map<String,Object> inspectStorage(String category,int limit){try{return RuntimeSecurityAudit.inspectStorage(category,limit);}catch(Exception error){throw new IllegalStateException(error);}}
+    public Map<String,Object> listNetworkTraffic(long sinceSeq,int limit){try{return RuntimeSecurityAudit.listNetworkTraffic(sinceSeq,limit);}catch(Exception error){throw new IllegalStateException(error);}}
+    public Map<String,Object> sendHttpRequest(Map<String,Object> request){try{return RuntimeSecurityAudit.sendHttpRequest(request);}catch(Exception error){throw new IllegalStateException(error);}}
+    public Map<String,Object> invokeGuestMethod(Map<String,Object> target){try{return RuntimeSecurityAudit.invokeGuestMethod(target);}catch(Exception error){throw new IllegalStateException(error);}}
     public SelfHookControl.Observation observe(List<Map<String,Object>> selectors){
         discardObservation();List<Map<String,Object>> java=new ArrayList<>(),nativeSymbols=new ArrayList<>();
         try {

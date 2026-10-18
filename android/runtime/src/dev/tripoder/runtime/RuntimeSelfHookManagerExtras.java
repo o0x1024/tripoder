@@ -1,4 +1,5 @@
 package dev.tripoder.runtime;
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationChannelGroup;
 import android.content.Context;
@@ -22,6 +23,8 @@ final class RuntimeSelfHookManagerExtras {
     @SuppressWarnings("unchecked") static Object notification(String key,Object[] args){
         int index=NOTIFICATION.indexOf(key);if(index>=0)return RuntimeSelfHookManagers.extraFramework().notificationProperty(RuntimeBridge.notificationPlatform(),index);
         switch(key){
+            case "notify(int,android.app.Notification)":RuntimeBridge.notificationPost(null,(Integer)args[0],(Notification)args[1]);return null;
+            case "notify(java.lang.String,int,android.app.Notification)":RuntimeBridge.notificationPost((String)args[0],(Integer)args[1],(Notification)args[2]);return null;
             case "cancel(int)":RuntimeBridge.notificationCancel(null,(Integer)args[0]);return null;
             case "cancel(java.lang.String,int)":RuntimeBridge.notificationCancel((String)args[0],(Integer)args[1]);return null;
             case "cancelAll()":RuntimeBridge.notificationCancelAll();return null;
@@ -37,6 +40,12 @@ final class RuntimeSelfHookManagerExtras {
             case "deleteNotificationChannel(java.lang.String)":RuntimeBridge.notificationDeleteChannel((String)args[0]);return null;
             case "deleteNotificationChannelGroup(java.lang.String)":RuntimeBridge.notificationDeleteGroup((String)args[0]);return null;
             default:throw new UnsupportedOperationException("NOTIFICATION_CAPABILITY_UNSUPPORTED:"+key);
+        }
+    }
+    static Object shortcut(String key,Object[] args){
+        switch(key){
+            case "isRequestPinShortcutSupported()":return RuntimeBridge.shortcutPinSupported();
+            default:throw new UnsupportedOperationException("SHORTCUT_CAPABILITY_UNSUPPORTED:"+key);
         }
     }
 }

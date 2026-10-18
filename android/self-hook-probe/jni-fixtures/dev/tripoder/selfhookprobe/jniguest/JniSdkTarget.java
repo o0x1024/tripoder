@@ -9,6 +9,7 @@ public final class JniSdkTarget {
     public native String text(String value,double fraction,long exact,Object[] references);
     public static native void fail();
     public static native int missing();
+    public static native boolean read(String value);
     public static long invoke(int mode){long[] v=new long[32];for(int i=0;i<32;i++)v[i]=Long.rotateLeft(0xfedcba9876543210L,i);
         return switch(mode){case 0->values(v[0],v[1],v[2],v[3],v[4],v[5],v[6],v[7],v[8],v[9],v[10],v[11],v[12],v[13],v[14],v[15],v[16],v[17],v[18],v[19],v[20],v[21],v[22],v[23],v[24],v[25],v[26],v[27],v[28],v[29],v[30],v[31]);case 1->fast(v[0],v[1],v[2],v[3],v[4],v[5],v[6],v[7],v[8],v[9],v[10],v[11],v[12],v[13],v[14],v[15],v[16],v[17],v[18],v[19],v[20],v[21],v[22],v[23],v[24],v[25],v[26],v[27],v[28],v[29],v[30],v[31]);case 2->critical(v[0],v[1],v[2],v[3],v[4],v[5],v[6],v[7],v[8],v[9],v[10],v[11],v[12],v[13],v[14],v[15],v[16],v[17],v[18],v[19],v[20],v[21],v[22],v[23],v[24],v[25],v[26],v[27],v[28],v[29],v[30],v[31]);default->throw new AssertionError("mode");};
     }

@@ -14,6 +14,10 @@ public final class CapabilityChecks {
         try { attempt.run(); return false; }
         catch (UnsupportedOperationException error) { return error.getMessage().startsWith(code); }
     }
+    private static boolean notFound(Attempt attempt) throws Exception {
+        try { attempt.run(); return false; }
+        catch (android.content.pm.PackageManager.NameNotFoundException expected) { return true; }
+    }
     public static JSONObject run(Context context) throws Exception {
         Context app = context.getApplicationContext();
         File root = app.getDataDir();
@@ -31,8 +35,10 @@ public final class CapabilityChecks {
         Context configured = app.createConfigurationContext(new Configuration(app.getResources().getConfiguration()));
         checks.put("configured-context-retains-identity", configured.getPackageName().equals(app.getPackageName())
                 && configured.getFilesDir().equals(app.getFilesDir()) && configured.getClassLoader() == app.getClassLoader());
-        checks.put("unknown-service-rejected", denied(() -> app.getSystemService("tripoder.unsupported.service"), "SYSTEM_SERVICE_UNSUPPORTED"));
-        checks.put("host-package-query-rejected", denied(() -> app.getPackageManager().getApplicationInfo("dev.tripoder.p0.b", 0), "OTHER_PACKAGE_QUERY_UNSUPPORTED"));
+        // Android answers a service name that does not exist with null; it is not an error the app can have a handler for.
+        checks.put("unknown-service-absent", app.getSystemService("tripoder.unsupported.service") == null);
+        // A package outside the guest's world is not installed as far as the guest can tell.
+        checks.put("other-package-query-not-found", notFound(() -> app.getPackageManager().getApplicationInfo("dev.tripoder.p0.b", 0)));
         boolean missingProvider=false;
         try { app.getContentResolver().call("tripoder.unsupported", "GET", "key", null); }
         catch (IllegalArgumentException error) {
@@ -40,7 +46,10 @@ public final class CapabilityChecks {
         }
         checks.put("other-provider-rejected", missingProvider);
         checks.put("settings-write-rejected", denied(() -> app.getContentResolver().call("settings", "PUT_system", "tripoder_p0_forbidden", Bundle.EMPTY), "PROVIDER_CALL_UNSUPPORTED"));
-        checks.put("obb-rejected", denied(app::getObbDir, "OBB_UNSUPPORTED"));
+        // OBB/media roots are guest-private directories under the guest data root, never shared storage.
+        checks.put("obb-dir-is-guest-private", app.getObbDir().getAbsolutePath().startsWith(app.getDataDir().getAbsolutePath()+java.io.File.separator)
+                && app.getObbDirs().length == 1 && app.getExternalMediaDirs().length == 1
+                && app.getExternalMediaDirs()[0].getAbsolutePath().startsWith(app.getDataDir().getAbsolutePath()+java.io.File.separator));
         boolean traversal = false;
         try { app.getFileStreamPath("../host-file"); }
         catch (IllegalArgumentException error) { traversal = "INVALID_FILE_NAME".equals(error.getMessage()); }

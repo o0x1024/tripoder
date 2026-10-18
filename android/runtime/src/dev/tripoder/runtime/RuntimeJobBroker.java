@@ -169,7 +169,7 @@ final class RuntimeJobBroker {
         if(!install.info.packageName.equals(component.getPackageName()))throw new SecurityException("JOB_SERVICE_OUTSIDE_INSTALL");
         var declared=RuntimeComponents.declared(install,"service",component.getClassName());
         if(!"android.permission.BIND_JOB_SERVICE".equals(declared.permission))throw new SecurityException("JOB_SERVICE_BIND_PERMISSION_REQUIRED");
-        ServiceInfo found=null;if(install.info.services!=null)for(var info:install.info.services)if(info.name.equals(declared.name)){if(found!=null)throw new SecurityException("JOB_SERVICE_AMBIGUOUS");found=info;}
+        ServiceInfo found=null;if(install.info.services!=null)for(var info:install.info.services)if(info.name.equals(declared.name)){if(found!=null&&(found.enabled!=info.enabled||found.exported!=info.exported||!Objects.equals(found.processName,info.processName)||!Objects.equals(found.permission,info.permission)))throw new SecurityException("JOB_SERVICE_AMBIGUOUS");found=info;}
         if(found==null||!found.enabled||!found.applicationInfo.enabled||!"android.permission.BIND_JOB_SERVICE".equals(found.permission))throw new SecurityException("JOB_SERVICE_DECLARATION_INVALID");
         if((found.flags&(ServiceInfo.FLAG_ISOLATED_PROCESS|ServiceInfo.FLAG_EXTERNAL_SERVICE))!=0||!Set.of("false","0").contains(declared.attributes.getOrDefault("android:isolatedProcess","false"))||!Set.of("false","0").contains(declared.attributes.getOrDefault("android:externalService","false")))throw new UnsupportedOperationException("JOB_SERVICE_PROCESS_KIND_UNSUPPORTED");
         return found;

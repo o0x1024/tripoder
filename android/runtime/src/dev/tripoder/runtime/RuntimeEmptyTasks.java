@@ -8,7 +8,6 @@ import org.json.*;
 /** Automatic cleanup requires an empty task; explicit uninstall also permits retained owned records. */
 public final class RuntimeEmptyTasks {
     private static final String REQUESTED="TASK_REMOVAL_REQUESTED:";
-    private static final String GATEWAY="dev.tripoder.runtime.RuntimeGuestGateway";
     public static JSONArray reclaim(RuntimeBroker broker,String generation)throws Exception {return reclaim(broker,generation,null);}
     /** Explicit uninstall may remove retained Activity records, after all owned processes are dead. */
     static JSONArray removeApplicationTasks(RuntimeBroker broker,String space,String pkg,String install)throws Exception{return reclaim(broker,null,new String[]{space,pkg,install});}
@@ -54,41 +53,46 @@ public final class RuntimeEmptyTasks {
     private static Plan plan(RuntimeBroker broker,ActivityManager.RecentTaskInfo info,String generation,String[] removal)throws Exception {
         if(info==null||info.taskId<0)return null;
         if(removal==null&&(info.numActivities!=0||info.baseActivity!=null||info.topActivity!=null))return null;
-        Intent intent=info.baseIntent;if(intent==null||!new ComponentName(broker.host,GATEWAY).equals(intent.getComponent()))return null;
-        String operation=intent.getStringExtra("operation"),capability=intent.getStringExtra("capability");
-        if(operation==null||capability==null||!capability.matches("[a-f0-9]{64}"))return null;
-        var entry=new ControllerLaunchLedger(broker).get(operation);
-        if(entry==null||!entry.state.equals("DISPATCHED")||entry.ticket==null||!entry.hash.equals(ApkStore.textDigest(capability)))return null;
-        if(removal!=null&&(!removal[0].equals(entry.space)||!removal[1].equals(entry.pkg)||!removal[2].equals(entry.install)))return null;
-        var root=broker.activities.get(entry.ticket);
-        if(!root.space.equals(entry.space)||!root.pkg.equals(entry.pkg)||!root.install.equals(entry.install)||!root.component.equals(entry.component))return null;
+        Intent intent=info.baseIntent;if(intent==null||intent.getComponent()==null)return null;
+        // Every root, controller or guest-started, is authenticated by its own ticket and delivery record.
+        if(!broker.host.getPackageName().equals(intent.getComponent().getPackageName()))return null;
+        String rootTicket=intent.getStringExtra("tripoder.ticket");if(rootTicket==null)return null;
+        var actual=broker.activities.get(rootTicket);
+        String delivery=broker.activities.launches.forTicket(rootTicket);
+        if(!actual.stub.equals(intent.getComponent().getClassName())||!actual.component.equals(intent.getStringExtra("tripoder.component"))||!delivery.equals(intent.getStringExtra("tripoder.delivery")))return null;
+        var launch=broker.activities.launches.get(delivery);
+        if(!launch.generation.equals(intent.getStringExtra("tripoder.generation")))return null;
+        String operation=launch.operation,space=actual.space,pkg=actual.pkg,install=actual.install,process=launch.generation,component=actual.component,hash=launch.payloadDigest!=null?launch.payloadDigest:delivery;
+        if(removal!=null&&(!removal[0].equals(space)||!removal[1].equals(pkg)||!removal[2].equals(install)))return null;
+        var root=broker.activities.get(rootTicket);
+        if(!root.space.equals(space)||!root.pkg.equals(pkg)||!root.install.equals(install)||!root.component.equals(component))return null;
         if(generation!=null&&!generation.equals(root.generation))return null;
-        try(var c=broker.store.getReadableDatabase().rawQuery("SELECT 1 FROM sessions WHERE generation=? AND space=? AND package=? AND installGeneration=? AND processName=?",new String[]{entry.process,root.space,root.pkg,root.install,root.process})){if(!c.moveToFirst())return null;}
-        String proof;try(var c=broker.store.getReadableDatabase().rawQuery("SELECT resourceProof FROM activity_tickets WHERE ticket=?",new String[]{entry.ticket})){if(!c.moveToFirst())return null;proof=c.getString(0);}
+        try(var c=broker.store.getReadableDatabase().rawQuery("SELECT 1 FROM sessions WHERE generation=? AND space=? AND package=? AND installGeneration=? AND processName=?",new String[]{process,root.space,root.pkg,root.install,root.process})){if(!c.moveToFirst())return null;}
+        String proof;try(var c=broker.store.getReadableDatabase().rawQuery("SELECT resourceProof FROM activity_tickets WHERE ticket=?",new String[]{rootTicket})){if(!c.moveToFirst())return null;proof=c.getString(0);}
         boolean attached=root.taskId==info.taskId&&root.instance!=null&&"OWNED_TASK_ATTACHED".equals(proof);
         boolean fenced=root.taskId==info.taskId&&proof!=null&&proof.startsWith(REQUESTED);
-        // A gateway task ID alone does not prove where Android placed the guest.
-        // Unattached launches and a guest reparented into another task remain pinned.
+        // Only the root's observed attachment proves the physical resource owner.
+        // Unattached launches remain pinned even when their task is empty.
         if(root.taskId!=info.taskId||root.instance==null||(!attached&&!fenced))return null;
-        if(entry.gatewayTaskId>=0&&entry.gatewayTaskId!=info.taskId)return null;
         // A replacement generation may already be entering recovery; never reclaim under it.
         try(var c=broker.store.getReadableDatabase().rawQuery("SELECT 1 FROM sessions WHERE space=? AND package=? AND installGeneration=? AND processName=? AND state!='DEAD' LIMIT 1",new String[]{root.space,root.pkg,root.install,root.process})){if(c.moveToFirst())return null;}
-        List<String> tickets=new ArrayList<>();Set<String> physical=new HashSet<>();physical.add(GATEWAY);
-        try(var c=broker.store.getReadableDatabase().rawQuery("SELECT t.ticket,t.space,t.package,t.installGeneration,t.generation,s.state,t.stub FROM activity_tickets t LEFT JOIN sessions s ON s.generation=t.generation WHERE t.taskId=? OR t.ticket=? ORDER BY t.ticket",new String[]{Integer.toString(info.taskId),entry.ticket})){
+        List<String> tickets=new ArrayList<>();Set<String> physical=new HashSet<>();
+        try(var c=broker.store.getReadableDatabase().rawQuery("SELECT t.ticket,t.space,t.package,t.installGeneration,t.generation,s.state,t.stub,s.space,s.package,s.installGeneration,t.processName,s.processName FROM activity_tickets t LEFT JOIN sessions s ON s.generation=t.generation WHERE t.taskId=? OR t.ticket=? ORDER BY t.ticket",new String[]{Integer.toString(info.taskId),rootTicket})){
             while(c.moveToNext()){
-                // Automatic cleanup is generation-scoped; uninstall is installation-scoped.
-                // Neither can remove another application's task or a live process's record.
-                if(!entry.space.equals(c.getString(1))||!entry.pkg.equals(c.getString(2))||!entry.install.equals(c.getString(3))||(removal==null&&!root.generation.equals(c.getString(4)))||!"DEAD".equals(c.getString(5)))return null;
+                // Android retains one task across process recreation. Its tickets may
+                // belong to several generations; each must prove the same installation
+                // ownership and an independently confirmed dead session.
+                if(!space.equals(c.getString(1))||!pkg.equals(c.getString(2))||!install.equals(c.getString(3))||!"DEAD".equals(c.getString(5))||!space.equals(c.getString(7))||!pkg.equals(c.getString(8))||!install.equals(c.getString(9))||!Objects.equals(c.getString(10),c.getString(11)))return null;
                 tickets.add(c.getString(0));physical.add(c.getString(6));
             }
         }
-        if(!tickets.contains(entry.ticket))return null;
+        if(!tickets.contains(rootTicket))return null;
+        try(var c=broker.store.getReadableDatabase().rawQuery("SELECT 1 FROM sessions WHERE space=? AND package=? AND installGeneration=? AND state!='DEAD' LIMIT 1",new String[]{space,pkg,install})){if(c.moveToFirst())return null;}
         if(removal!=null){
-            for(ComponentName component:new ComponentName[]{info.baseActivity,info.topActivity,info.origActivity})if(component!=null&&(!broker.host.getPackageName().equals(component.getPackageName())||!physical.contains(component.getClassName())))return null;
-            try(var c=broker.store.getReadableDatabase().rawQuery("SELECT 1 FROM sessions WHERE space=? AND package=? AND installGeneration=? AND state!='DEAD' LIMIT 1",removal)){if(c.moveToFirst())return null;}
+            for(ComponentName name:new ComponentName[]{info.baseActivity,info.topActivity,info.origActivity})if(name!=null&&(!broker.host.getPackageName().equals(name.getPackageName())||!physical.contains(name.getClassName())))return null;
         }
-        String digest=ApkStore.textDigest((removal==null?"empty-ingress-task-v1\n":"uninstall-ingress-task-v1\n")+info.taskId+"\n"+operation+"\n"+entry.hash+"\n"+entry.process+"\n"+root.generation+"\n"+String.join("\n",tickets));
-        return new Plan("task-reclaim-"+digest,info.taskId,operation,entry.ticket,digest,tickets);
+        String digest=ApkStore.textDigest((removal==null?"empty-ingress-task-v1\n":"uninstall-ingress-task-v1\n")+info.taskId+"\n"+operation+"\n"+hash+"\n"+process+"\n"+root.generation+"\n"+String.join("\n",tickets));
+        return new Plan("task-reclaim-"+digest,info.taskId,operation,rootTicket,digest,tickets);
     }
     private static void reconcile(RuntimeBroker broker,String generation,JSONArray results)throws Exception {
         var refs=RuntimeTaskReferences.observe(broker.host);Map<String,List<String>> tickets=new TreeMap<>();Map<String,Integer> ids=new HashMap<>();

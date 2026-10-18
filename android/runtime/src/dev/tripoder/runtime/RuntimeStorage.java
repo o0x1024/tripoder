@@ -24,6 +24,12 @@ final class RuntimeStorage {
         if(!root.equals(new File(RuntimeWire.required(input,"data"))))throw new SecurityException("STORAGE_IDENTITY_MISMATCH");
         directory(root);canonicalRoot=root.getCanonicalFile();
     }
+    /** A namespace view over the same guest data incarnation (device-protected storage); never leaves the guest data root. */
+    private RuntimeStorage(RuntimeStorage parent,String subdirectory)throws Exception{
+        space=parent.space;packageName=parent.packageName;installGeneration=parent.installGeneration;dataId=parent.dataId;processGeneration=parent.processGeneration;
+        anchor=parent.anchor;root=new File(parent.root,name(subdirectory));directory(root);canonicalRoot=root.getCanonicalFile();
+    }
+    RuntimeStorage view(String subdirectory)throws Exception{return new RuntimeStorage(this,subdirectory);}
     static String name(String name){if(name==null||name.isEmpty()||name.equals(".")||name.equals("..")||name.indexOf('/')>=0||name.indexOf('\0')>=0||name.getBytes(java.nio.charset.StandardCharsets.UTF_8).length>200)throw new IllegalArgumentException("INVALID_FILE_NAME");return name;}
     private void directory(File file){
         Path base=anchor.toPath(),target=file.toPath();if(!target.startsWith(base)||!target.normalize().equals(target))throw new SecurityException("STORAGE_PATH_OUTSIDE_ROOT");
@@ -59,6 +65,28 @@ final class RuntimeStorage {
     }
     synchronized boolean deletePreferences(String name){
         name(name);RuntimePreferences p=(RuntimePreferences)preferences(name,Context.MODE_PRIVATE);return p.delete();
+    }
+    /** Same data incarnation only (e.g. credential-protected to device-protected view): bytes move, and no stale in-memory view keeps serving the old file. */
+    boolean movePreferencesFrom(RuntimeStorage source,String name)throws java.io.IOException{
+        if(!source.anchor.equals(anchor)||!source.dataId.equals(dataId)||!source.processGeneration.equals(processGeneration))throw new SecurityException("STORAGE_MOVE_ACROSS_INCARNATIONS_DENIED");
+        name(name);if(source==this)return true;
+        File from=source.file("shared_prefs",name+".xml"),to=file("shared_prefs",name+".xml");
+        RuntimePreferences live;synchronized(source){live=source.preferences.get(name);}if(live!=null)live.flush();
+        if(!Files.exists(from.toPath(),LinkOption.NOFOLLOW_LINKS))return true;
+        synchronized(this){
+            Files.move(from.toPath(),to.toPath(),StandardCopyOption.REPLACE_EXISTING);
+            File backup=new File(from.getPath()+".bak");if(backup.exists())Files.move(backup.toPath(),new File(to.getPath()+".bak").toPath(),StandardCopyOption.REPLACE_EXISTING);
+            RuntimePreferences mine=preferences.get(name);if(mine!=null)mine.reload();
+        }
+        synchronized(source){source.preferences.remove(name);}
+        return true;
+    }
+    boolean moveDatabaseFrom(RuntimeStorage source,String name)throws java.io.IOException{
+        if(!source.anchor.equals(anchor)||!source.dataId.equals(dataId)||!source.processGeneration.equals(processGeneration))throw new SecurityException("STORAGE_MOVE_ACROSS_INCARNATIONS_DENIED");
+        if(source==this)return true;File from=source.database(name),to=database(name);
+        if(!Files.exists(from.toPath(),LinkOption.NOFOLLOW_LINKS))return true;
+        for(String suffix:new String[]{"","-wal","-shm","-journal"}){File s=new File(from+suffix);if(Files.exists(s.toPath(),LinkOption.NOFOLLOW_LINKS))Files.move(s.toPath(),new File(to+suffix).toPath(),StandardCopyOption.REPLACE_EXISTING);}
+        return true;
     }
     void flush(){List<RuntimePreferences> snapshot;synchronized(this){snapshot=new ArrayList<>(preferences.values());}for(var p:snapshot)p.flush();}
     File database(String name){

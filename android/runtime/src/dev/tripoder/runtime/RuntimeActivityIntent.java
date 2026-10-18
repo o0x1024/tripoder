@@ -12,13 +12,19 @@ import java.util.*;
 /** Explicit Activity capability with a bounded task-flag set and bounded typed data extras. */
 final class RuntimeActivityIntent {
     private RuntimeActivityIntent(){}
-    static final int FLAGS=Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED|Intent.FLAG_ACTIVITY_SINGLE_TOP;
+    // Standard start flags travel on the physical stub intent, so the platform's own task engine applies them to the stub Activities that stand for the guest's;
+    // the ledger follows the resulting destroy/attach events like any other. Only flags whose meaning needs the caller's identity or a result channel stay out.
+    static final int FLAGS=Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED|Intent.FLAG_ACTIVITY_SINGLE_TOP
+        |Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_CLEAR_TASK|Intent.FLAG_ACTIVITY_NO_ANIMATION|Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
+        |Intent.FLAG_ACTIVITY_NO_HISTORY|Intent.FLAG_ACTIVITY_REORDER_TO_FRONT|Intent.FLAG_ACTIVITY_MULTIPLE_TASK;
     static void requireFlags(int flags){if((flags&~FLAGS)!=0)throw new IllegalArgumentException("INTENT_FLAGS_UNSUPPORTED:0x"+Integer.toHexString(flags));}
     static Intent snapshot(Intent input)throws Exception{
+        ClassLoader guest=RuntimeEngine.current==null?null:RuntimeEngine.current.loader;if(guest!=null)input.setExtrasClassLoader(guest);
         String before=digest(input);Intent snapshot;Parcel parcel=Parcel.obtain();
         try{input.writeToParcel(parcel,0);if(parcel.hasFileDescriptors()||parcel.dataSize()>64*1024)throw new IllegalArgumentException("ACTIVITY_PARCEL_UNSUPPORTED");parcel.setDataPosition(0);snapshot=Intent.CREATOR.createFromParcel(parcel);if(parcel.dataAvail()!=0)throw new IllegalArgumentException("ACTIVITY_PARCEL_TRAILING_DATA");}finally{parcel.recycle();}
         // Real platform parcel cloning also owns nested Intent objects and retains Android's
         // origin/security metadata. Never clear creator tokens or launch security protection.
+        if(guest!=null)snapshot.setExtrasClassLoader(guest);
         if(!before.equals(digest(snapshot)))throw new IllegalStateException("ACTIVITY_INTENT_MUTATED_DURING_SNAPSHOT");return snapshot;
     }
     static String digest(Intent intent)throws Exception{
@@ -35,7 +41,10 @@ final class RuntimeActivityIntent {
     static String receivedDigest(Intent physical,Intent visible)throws Exception{
         // Android may add NEW_TASK/BROUGHT_TO_FRONT. The sealed request flag value
         // is fingerprinted; getIntent still exposes the actual delivered flags.
-        return digest(new Intent(visible).setFlags(physical.getIntExtra("tripoder.flags",0)));
+        Intent comparable=new Intent(visible).setFlags(physical.getIntExtra("tripoder.flags",0));
+        // Intent copies do not carry the extras class loader; the receiver's guest loader owns any package-defined Parcelable.
+        if(RuntimeEngine.current!=null&&RuntimeEngine.current.loader!=null)comparable.setExtrasClassLoader(RuntimeEngine.current.loader);
+        return digest(comparable);
     }
     static Intent visible(Intent physical,String pkg,ClassLoader loader){
         String component=RuntimeWire.required(physical.getExtras(),"tripoder.component");Intent visible=new Intent(physical);

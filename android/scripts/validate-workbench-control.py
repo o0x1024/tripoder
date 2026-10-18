@@ -30,7 +30,7 @@ def crash_status(log):
 def self_hook_samples(log):
     return [{'pid': int(pid), 'bindings': int(bindings), 'durationNs': int(duration)}
             for pid, bindings, duration in re.findall(
-                r'^\S+\s+\S+\s+(\d+)\s+\d+\s+I\s+TripoderSelfHook\s*:\s+READY:READY:26/26:bindings=(\d+):ns=(\d+)$',
+                r'^\S+\s+\S+\s+(\d+)\s+\d+\s+I\s+TripoderSelfHook\s*:\s+READY:READY:27/27:bindings=(\d+):ns=(\d+)$',
                 log, re.MULTILINE)]
 
 
@@ -96,11 +96,26 @@ def main():
     parser.add_argument('--evidence',required=True,type=Path)
     parser.add_argument('--install',action='store_true')
     parser.add_argument('--phase',choices=['control','hook-ui','library-ui','app-actions-ui','target','resources'],default='control')
-    parser.add_argument('--target',choices=['wechat','honor'])
+    parser.add_argument('--native-cycles',type=int,default=1)
+    parser.add_argument('--target',choices=['wechat','honor','wps'])
+    parser.add_argument('--wake',action='store_true',help='Target phase: after the guest is running, background it and launch again; the same process must return to the front')
+    parser.add_argument('--native-hook',action='store_true',help='Verify the original target xlog native query through the production Hook control path')
+    parser.add_argument('--managed-jni-hook',action='store_true',help='Verify the original WeChat native Java declaration through ART with original forwarding')
+    parser.add_argument('--inspect-pending',action='store_true',help='Read existing pending launch ownership without reclaiming tasks (resources phase only)')
     parser.add_argument('--close-launch-entry',help='Explicit exact UNKNOWN launch operation to close before a new target launch; never retires its resources')
     parser.add_argument('--close-activity-ticket',action='append',help='Exact observed unattached guest Activity route ticket; close its UNKNOWN operation before the next launch')
+    parser.add_argument('--list-entries',action='store_true',help='Target phase: list retained launch entries and stop without launching')
+    parser.add_argument('--close-only',action='store_true',help='Target phase: close the exact entry given and stop without launching')
+    parser.add_argument('--diagnose-uninstall',action='store_true',help='Target phase: run the real uninstall once and record the exact failure, without launching')
+    parser.add_argument('--list-catalog',action='store_true',help='Target phase: list installs, projects and spaces and stop, changing nothing')
+    parser.add_argument('--reverify-install',nargs=3,metavar=('SPACE','PACKAGE','GENERATION'),help='Target phase: re-run the full verification of one CORRUPT install and restore it only if every check passes')
+    parser.add_argument('--delete-application',action='store_true',help='Target phase: delete the target application, its data and projects with the engine command behind the user\'s Delete, and stop')
     args=parser.parse_args();repo=Path(__file__).resolve().parents[2];build=repo/'android/product/build'
+    if args.inspect_pending and args.phase!='resources':parser.error('--inspect-pending requires --phase resources')
+    if not 1<=args.native_cycles<=24 or (args.native_cycles!=1 and args.phase!='control'):parser.error('--native-cycles requires control phase and a value from 1 to 24')
     if args.phase=='target' and args.target is None:parser.error('--target is required for target phase')
+    if args.native_hook and (args.phase!='target' or args.target=='wps'):parser.error('--native-hook requires target phase and a wechat or honor target')
+    if args.managed_jni_hook and (args.phase!='target' or args.target!='wechat'):parser.error('--managed-jni-hook requires target wechat')
     if args.close_activity_ticket is not None:
         if args.phase!='target' or args.close_launch_entry is not None:parser.error('--close-activity-ticket requires target phase and cannot be combined with --close-launch-entry')
         if len(args.close_activity_ticket)>16 or len(set(args.close_activity_ticket))!=len(args.close_activity_ticket):parser.error("Provide at most 16 distinct exact observed Activity tickets")
@@ -142,13 +157,24 @@ def main():
             except Exception:
                 progress=adb('shell','cat','/sdcard/Android/data/'+target_package+'/files/progress-'+run+'.json',check=False)
                 (evidence/(label+'-progress.json')).write_text(progress.stdout if progress.returncode==0 else json.dumps({'runId':run,'progressUnavailable':progress.stderr}))
+                if runner=='TargetLaunchIntegration':
+                    try:
+                        threads=adb('shell','cat','/sdcard/Android/data/'+target_package+'/files/'+run+'-thread-stall.txt',check=False)
+                        (evidence/(label+'-thread-stall.txt')).write_text(threads.stdout if threads.returncode==0 else threads.stderr)
+                        authority=adb('shell','dumpsys','activity','service','dev.tripoder.engine/dev.tripoder.runtime.RuntimeControllerService','threads',check=False,timeout=15)
+                        (evidence/'authority-threads.txt').write_text(authority.stdout+authority.stderr)
+                    except Exception as diagnostic:
+                        (evidence/'thread-collection-error.txt').write_text(str(diagnostic))
                 raise
             finally:
                 if process.poll() is None:process.kill();process.communicate();adb('shell','am','force-stop',target_package)
         else:output=adb(*command,timeout=90)
         (evidence/(label+'-instrumentation.txt')).write_text(output.stdout+output.stderr)
         remote='/sdcard/Android/data/'+target_package+'/files/result-'+run+'.json'
-        result=json.loads(adb('shell','cat',remote).stdout);(evidence/(label+'-result.json')).write_text(json.dumps(result,ensure_ascii=False,indent=2))
+        raw=adb('shell','cat',remote).stdout
+        digest=re.findall(r'^INSTRUMENTATION_RESULT: resultSha256=([a-f0-9]{64})\s*$',output.stdout,re.MULTILINE)
+        if digest!=[hashlib.sha256(raw.encode()).hexdigest()]:raise RuntimeError('DEVICE_RESULT_RECEIPT_MISMATCH:'+label)
+        result=json.loads(raw);(evidence/(label+'-result.json')).write_text(json.dumps(result,ensure_ascii=False,indent=2))
         for name in result.get('captures',[]):
             if not re.fullmatch(re.escape(run)+r'-[a-z-]+\.png',name):raise RuntimeError('SCREENSHOT_NAME_INVALID')
             adb('pull','/sdcard/Android/data/'+target_package+'/files/'+name,str(evidence/name))
@@ -178,16 +204,25 @@ def main():
         report['deviceLogStart']=device_start;report['ownedUid']=owned_uid;report['ownedUids']=owned_uids
         if args.phase=='target':
             source=repo/'android/runtime-probe/build/targets'/(args.target+'.apk')
-            expected={'wechat':'f2a725bc04302ad218a563533ae79356e66b64aa711b275bc919a8d432f7e15d','honor':'6841b1eae92b3d87b00e986f86086cbe436bcb52e4b6a3c6829f368714538384'}[args.target]
+            expected={'wechat':'f2a725bc04302ad218a563533ae79356e66b64aa711b275bc919a8d432f7e15d','honor':'6841b1eae92b3d87b00e986f86086cbe436bcb52e4b6a3c6829f368714538384','wps':'71df658765efeaa59e81733046b66ca7e94430eece14b9f996afa7c1b15e3ff7'}[args.target]
             if sha(source)!=expected:raise RuntimeError('ORIGINAL_TARGET_DIGEST_MISMATCH')
             destination='/sdcard/Android/data/dev.tripoder.engine/files/acceptance'
             adb('shell','mkdir','-p',destination);adb('push',str(source),destination+'/'+args.target+'.apk',timeout=150)
             report['targetApkSha256']=expected
             explicit={'closeLaunchEntry':args.close_launch_entry} if args.close_launch_entry is not None else {}
             if args.close_activity_ticket is not None:explicit['closeActivityTicket']=','.join(args.close_activity_ticket)
+            if args.list_entries:explicit['listEntries']='true'
+            if args.list_catalog:explicit['listCatalog']='true'
+            if args.delete_application:explicit['deleteApplication']='true'
+            if args.reverify_install:explicit.update({'reverifySpace':args.reverify_install[0],'reverifyPackage':args.reverify_install[1],'reverifyGeneration':args.reverify_install[2]})
+            if args.diagnose_uninstall:explicit['diagnoseUninstall']='true'
+            if args.close_only:explicit['closeOnly']='true'
+            if args.wake:explicit['wake']='true'
+            if args.native_hook:explicit['nativeHook']='true'
+            if args.managed_jni_hook:explicit['managedJniHook']='true'
             first=instrument('target-'+args.target,'TargetLaunchIntegration','dev.tripoder.engine',target=args.target,**explicit);results=[first];engine_uid=first['workerUid']
         elif args.phase=='resources':
-            first=instrument('resources','ControlResourceInspection','dev.tripoder.engine');results=[first];engine_uid=first['workerUid']
+            first=instrument('resources','ControlResourceInspection','dev.tripoder.engine',inspectionOnly='true' if args.inspect_pending else 'false');results=[first];engine_uid=first['workerUid']
         elif args.phase=='library-ui':
             first=instrument('library-ui','LibraryUiIntegration','dev.tripoder.engine');results=[first];engine_uid=first['workerUid']
         elif args.phase=='app-actions-ui':
@@ -195,7 +230,7 @@ def main():
         elif args.phase=='hook-ui':
             first=instrument('hook-ui','HookUiIntegration','dev.tripoder.engine');results=[first];engine_uid=first['workerUid']
         else:
-            first=instrument('controller','ControlIntegration','dev.tripoder.engine')
+            first=instrument('controller','ControlIntegration','dev.tripoder.engine',nativeCycles=args.native_cycles)
             adb('shell','am','force-stop','dev.tripoder.engine')
             recovered=instrument('recovery','ControlIntegration','dev.tripoder.engine',phase='recovery',**{key:first[key] for key in ['operation','space','project','installGeneration','bindingOperation','dataId','readyLaunchOperation']})
             if first['status']['authority']==recovered['status']['authority']:raise RuntimeError('AUTHORITY_DEATH_NOT_OBSERVED')
@@ -240,9 +275,9 @@ def main():
                     if logs.returncode:report['passed']=False;report['logCollectionFailed']=True
                 except Exception as error:
                     report['passed']=False;report['logCollectionFailed']=True;report['logCollectionError']=str(error)
-        if args.phase=='hook-ui' and report.get('passed') and not any(item['pid']==report.get('workerPid') and item['bindings']==2215 for item in report.get('selfHookInstallationSamples',[])):
+        if args.phase=='hook-ui' and report.get('passed') and not any(item['pid']==report.get('workerPid') and item['bindings'] in (2270,2271) for item in report.get('selfHookInstallationSamples',[])):
             report['passed']=False;report['workerBootstrapEvidenceMissing']=True
-        report['finishedAtUtc']=datetime.datetime.now(datetime.timezone.utc).isoformat();(evidence/'device-observation.json').write_text(json.dumps(report,ensure_ascii=False,indent=2));shutil.copyfile(build/'build-receipt.json',evidence/'build-receipt.json')
+        report['finishedAtUtc']=datetime.datetime.now(datetime.timezone.utc).isoformat();(evidence/'device-observation.json').write_text(json.dumps(report,ensure_ascii=False,indent=2));(evidence/'build-receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
     if report.get('nativeFatalSignalObserved') or report.get('javaFatalExceptionObserved') or report.get('ownedFatalObserved') or report.get('logCollectionFailed') or report.get('workerBootstrapEvidenceMissing'):raise RuntimeError('OWNED_LOG_EVIDENCE_FAILED')
     print(json.dumps({key:report[key] for key in ['passed','checks','controllerUid','engineUid','fullP5Accepted']}),flush=True)
 

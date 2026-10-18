@@ -82,7 +82,7 @@ tp_scalar_inbound_admit:
     adrp x1,tp_scalar_admissions
     add x1,x1,:lo12:tp_scalar_admissions
     add x1,x1,x0,lsl #5
-    ldr x2,[x1]
+    ldar x2,[x1]
     cbz x2,.Ladmit_done
 #ifdef TP_SELF_HOOK_TESTING
     add x7,x1,#24
@@ -137,7 +137,7 @@ tp_scalar_inbound_leave:
     adrp x1,tp_scalar_admissions
     add x1,x1,:lo12:tp_scalar_admissions
     add x1,x1,x0,lsl #5
-    ldr x2,[x1]
+    ldar x2,[x1]
     cbz x2,.Lleave_done
     ldr x7,[x1,#16]
 .Lactive_sub:

@@ -17,7 +17,7 @@ final class RuntimeProviders {
     private final Map<String,Entry> entries=new LinkedHashMap<>();
     private final Set<ContentProvider> instances=Collections.newSetFromMap(new IdentityHashMap<>());
     private static final class Entry {
-        final String lease;final ProviderInfo info;final CompletableFuture<ContentProvider> ready=new CompletableFuture<>();volatile Thread initializing;
+        final String lease;final ProviderInfo info;final CompletableFuture<ContentProvider> ready=new CompletableFuture<>();volatile Thread initializing;final java.util.concurrent.atomic.AtomicBoolean claimed=new java.util.concurrent.atomic.AtomicBoolean();
         Entry(String lease,ProviderInfo info){this.lease=lease;this.info=info;}
     }
     RuntimeProviders(RuntimeEngine engine,ProviderInfo[] infos,Bundle publications,List<ApkManifest.Component> declarations){
@@ -32,7 +32,8 @@ final class RuntimeProviders {
     }
     void initialize()throws Exception{
         List<Entry> ordered=new ArrayList<>();synchronized(entries){for(Entry entry:entries.values())if(engine.processName.equals(entry.info.processName))ordered.add(entry);}ordered.sort(Comparator.comparingInt((Entry e)->e.info.initOrder).reversed());
-        for(Entry entry:ordered)initialize(entry);
+        // A same-process caller may already have installed a provider on its own thread (see ready); installation happens once.
+        for(Entry entry:ordered)if(entry.claimed.compareAndSet(false,true))initialize(entry);
     }
     private void initialize(Entry entry)throws Exception{
             entry.initializing=Thread.currentThread();
@@ -65,6 +66,10 @@ final class RuntimeProviders {
     boolean owns(ContentProvider provider){synchronized(instances){return instances.contains(provider);}}
     ContentProvider ready(String lease)throws Exception{
         Entry entry;synchronized(entries){entry=entries.get(lease);}if(entry==null)throw new SecurityException("PROVIDER_LEASE_NOT_IN_PROCESS");
+        // Android AMS answers a same-process request with canRunHere: the caller installs the provider on its own
+        // thread, so a worker may use it while the main thread is still inside Application.attach.
+        if(!entry.ready.isDone()&&Binder.getCallingPid()==android.os.Process.myPid()&&Looper.myLooper()!=Looper.getMainLooper()&&engine.application!=null&&engine.componentFactory!=null
+            &&engine.processName.equals(entry.info.processName)&&entry.claimed.compareAndSet(false,true))initialize(entry);
         if(!entry.ready.isDone()&&(entry.initializing==Thread.currentThread()||Looper.myLooper()==Looper.getMainLooper()))throw new IllegalStateException("PROVIDER_INITIALIZATION_CYCLE");
         // A cold dependency may still be installing its pre-guest hooks. Share the
         // authority's original deadline; never restart a shorter timer at each layer.

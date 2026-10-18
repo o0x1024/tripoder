@@ -12,7 +12,7 @@ final class RuntimeActivityValues {
     static final int MAX_BYTES=48*1024;
     static void extras(DataOutputStream out,Bundle extras)throws IOException{bundle(out,extras,0,new int[]{0,0},Collections.newSetFromMap(new IdentityHashMap<>()));}
     private static void bundle(DataOutputStream out,Bundle bundle,int depth,int[] count,Set<Object> path)throws IOException{
-        if(bundle==null){out.writeInt(-1);return;}
+        if(bundle==null||bundle.isEmpty()){out.writeInt(-1);return;}
         if(depth>8||!path.add(bundle))throw new IllegalArgumentException("ACTIVITY_BUNDLE_UNSUPPORTED");
         try{
             if(bundle.size()>256)throw new IllegalArgumentException("ACTIVITY_EXTRAS_TOO_MANY");
@@ -50,9 +50,17 @@ final class RuntimeActivityValues {
             try{ArrayList<?> items=(ArrayList<?>)value;out.writeByte(20);size(out,items.size());for(Object item:items)value(out,item,depth+1,count,path);}finally{path.remove(value);}
         }
         else if(value.getClass()==Intent.class){out.writeByte(21);intent(out,(Intent)value,depth+1,count,path);}
+        else if(value instanceof android.os.Parcelable&&guestOwned(value.getClass())){
+            // A Parcelable defined by this package's own loader is application data, not authority: it travels only to components of the same
+            // package. Its exact Parcel bytes join the sealed digest; descriptors never do, and the receiver re-creates it with its own loader.
+            out.writeByte(22);text(out,value.getClass().getName());android.os.Parcel parcel=android.os.Parcel.obtain();
+            try{parcel.writeParcelable((android.os.Parcelable)value,0);if(parcel.hasFileDescriptors())throw new IllegalArgumentException("ACTIVITY_PARCELABLE_DESCRIPTOR_UNSUPPORTED:"+value.getClass().getName());byte[] raw=parcel.marshall();size(out,raw.length);out.write(raw);}
+            finally{parcel.recycle();}
+        }
         else throw new IllegalArgumentException("ACTIVITY_EXTRA_TYPE_UNSUPPORTED:"+value.getClass().getName());
         bound(out);
     }
+    private static boolean guestOwned(Class<?> type){RuntimeEngine engine=RuntimeEngine.current;return engine!=null&&type.getClassLoader()!=null&&engine.ownsLoader(type.getClassLoader());}
     private static void intent(DataOutputStream out,Intent intent,int depth,int[] count,Set<Object> path)throws IOException{
         if(depth>8||!path.add(intent))throw new IllegalArgumentException("ACTIVITY_NESTED_INTENT_CYCLE_OR_DEPTH");
         try{

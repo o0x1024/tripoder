@@ -35,6 +35,28 @@ final class ActivityLedger {
             row.put("componentLease",components.lease(stub));db.insertOrThrow("activity_tickets",null,row);launches.prepare(ticket,identity.processGeneration,launchOperation,resultOperation!=null,callerPackage,payloadDigest,source,flags);associate.accept(ticket);db.setTransactionSuccessful();return ticket;
         }finally{db.endTransaction();}
     }
+    void releaseUnused(){components.releaseUnused();}
+    /** The physical start for a controller-created root: a launcher-style entry whose stub roots a fresh task the platform then owns. */
+    android.content.Intent controllerEntry(android.content.Context host,String id,boolean launcher){
+        Ticket ticket=get(id);android.content.Intent intent=new android.content.Intent().setComponent(new android.content.ComponentName(host,ticket.stub)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK|android.content.Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+            .putExtra("tripoder.component",ticket.component).putExtra("tripoder.generation",ticket.generation).putExtra("tripoder.ticket",id).putExtra("tripoder.delivery",launches.forTicket(id));
+        if(launcher)intent.setAction(android.content.Intent.ACTION_MAIN).addCategory(android.content.Intent.CATEGORY_LAUNCHER);return intent;
+    }
+    void releaseComponentsForUninstall(String space,String pkg){components.releaseForUninstall(space,pkg);}
+    /** Explicit uninstall or dead-installation cleanup: a ticket that never attached to an Android task (taskId < 0), whose process generation is DEAD, owns no live resource. It is retired with its proof recorded so the in-use check does not wait forever on it; a ticket with an attached task or a live generation is never touched. Returns how many were retired. */
+    int retireDeadUnattached(String space,String pkg,String install,String operation){
+        SQLiteDatabase db=store.getWritableDatabase();int retired=0;
+        try(Cursor c=db.rawQuery("SELECT t.ticket,t.generation FROM activity_tickets t JOIN sessions s ON s.generation=t.generation WHERE t.space=? AND t.package=? AND t.installGeneration=? AND t.taskId<0 AND t.destroyedConfirmed=0 AND s.state='DEAD' AND t.state NOT IN ('FINISHED','REVOKED','RETIRED')",new String[]{space,pkg,install})){
+            while(c.moveToNext()){
+                ContentValues row=new ContentValues();row.put("state","RETIRED");row.put("resourceProof","UNINSTALL_DEAD_UNATTACHED;operation="+operation+";generation-dead="+c.getString(1));
+                if(db.update("activity_tickets",row,"ticket=? AND taskId<0 AND state NOT IN ('FINISHED','REVOKED','RETIRED')",new String[]{c.getString(0)})==1)retired++;
+            }
+        }
+        // A delivery whose ticket is already terminal, in a generation that is dead, can no longer happen: a late system start meets a finished ticket and is rejected, whether the ticket ended just now or earlier. Its operation keeps its original outcome, including UNKNOWN; only the physical delivery record is closed.
+        ContentValues launch=new ContentValues();launch.put("state","RETIRED");
+        db.update("activity_launches",launch,"state IN ('PREPARED','ENTERED','UNKNOWN') AND candidate IN (SELECT t.ticket FROM activity_tickets t JOIN sessions s ON s.generation=t.generation WHERE t.space=? AND t.package=? AND t.installGeneration=? AND t.state IN ('FINISHED','REVOKED','RETIRED') AND s.state='DEAD')",new String[]{space,pkg,install});
+        return retired;
+    }
     Ticket get(String id){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT * FROM activity_tickets WHERE ticket=?",new String[]{id})){if(!c.moveToFirst())throw new SecurityException("ACTIVITY_TICKET_MISSING");return new Ticket(c);}}
     void caller(String delivery,android.os.Bundle out){var launch=launches.get(delivery);launch.caller(out);if("ACTIVITY".equals(launch.callerKind))out.putString("callerPhysical",get(launch.sourceTicket).stub);}
     Ticket source(String id,String instance,RuntimeBroker.Slot slot,int taskId){

@@ -20,24 +20,49 @@ final class RuntimeReceivers {
     synchronized boolean owns(BroadcastReceiver receiver){if(receivers.containsKey(receiver))return true;for(FinalDelivery result:finals.values())if(result.receiver==receiver)return true;return false;}
     BroadcastReceiver instantiate(Intent physical)throws Exception{
         String ticket=RuntimeBroadcastIntent.ticket(physical);Bundle b=engine.auth();b.putString("ticket",ticket);b.putBoolean("prepare",true);
-        Bundle declaration=engine.brokerCall(RuntimeWire.BROADCAST_CLAIM,b);Intent logical=RuntimeBroadcastIntent.decode(declaration.getByteArray("payload"));String component=declaration.getString("component");
+        Bundle declaration=engine.brokerCall(RuntimeWire.BROADCAST_CLAIM,b);Intent logical=RuntimeBroadcastIntent.attachBinders(RuntimeBroadcastIntent.decode(declaration.getByteArray("payload")),declaration);String component=declaration.getString("component");
         engine.startApplication();
         BroadcastReceiver receiver=engine.componentFactory.instantiateReceiver(engine.loader,component,logical);
-        if(receiver==null||!engine.ownsLoader(receiver.getClass().getClassLoader()))throw new SecurityException("RECEIVER_LOADER_MISMATCH");
-        synchronized(this){receivers.put(receiver,new Registration(component,ticket,false));}RuntimeBridge.installReceiverAdapter(receiver);return receiver;
+        if(receiver==null||!engine.ownsReceiverLoader(receiver.getClass().getClassLoader()))throw new SecurityException("RECEIVER_LOADER_MISMATCH");
+        Registration registration=new Registration(component,ticket,false);
+        synchronized(this){receivers.put(receiver,registration);}RuntimeBridge.installReceiverAdapter(receiver);return receiver;
+    }
+    /** Sticky broadcasts sent by this application. Android keeps them system-wide; in a guest only this application can send or see them, so the process-local
+     *  latest-per-action store gives the same answers within one process (another process of the same app does not see it). */
+    private final Map<String,Intent> appSticky=new LinkedHashMap<>();
+    void sendSticky(Intent intent,String permission,Bundle options){
+        if(intent==null||intent.getAction()==null)throw new IllegalArgumentException("STICKY_ACTION_REQUIRED");
+        if(!engine.requestedPermissions.contains("android.permission.BROADCAST_STICKY"))throw new SecurityException("Requires BROADCAST_STICKY permission");
+        synchronized(appSticky){appSticky.put(intent.getAction(),new Intent(intent));}
+        send(intent,permission,options,false,null,null,0,null,null);
+    }
+    void removeSticky(Intent intent){
+        if(!engine.requestedPermissions.contains("android.permission.BROADCAST_STICKY"))throw new SecurityException("Requires BROADCAST_STICKY permission");
+        if(intent!=null&&intent.getAction()!=null)synchronized(appSticky){appSticky.remove(intent.getAction());}
+    }
+    private Intent appStickyFor(IntentFilter filter){
+        synchronized(appSticky){for(Intent held:appSticky.values())if(filter.match(held.getAction(),held.getType(),held.getScheme(),held.getData(),held.getCategories(),"TripoderSticky")>=0)return new Intent(held);}
+        return null;
     }
     Intent register(BroadcastReceiver receiver,IntentFilter filter,String permission,Handler scheduler,int flags){
+        Intent heldSticky=appStickyFor(filter);
+        if(receiver==null&&heldSticky!=null)return heldSticky;
+        Intent platformSticky=registerRegistered(receiver,filter,permission,scheduler,flags);
+        return platformSticky!=null?platformSticky:heldSticky;
+    }
+    private Intent registerRegistered(BroadcastReceiver receiver,IntentFilter filter,String permission,Handler scheduler,int flags){
         byte[] encoded=RuntimeBroadcastIntent.filter(filter);
-        if(flags!=Context.RECEIVER_EXPORTED&&flags!=Context.RECEIVER_NOT_EXPORTED&&!(flags==0&&(RuntimeSystemBroadcasts.only(filter)||filter.countActions()==0)))throw new UnsupportedOperationException("RECEIVER_POLICY_UNSUPPORTED:flags=0x"+Integer.toHexString(flags)+";permission="+permission+";actions="+actions(filter));
+        boolean legacyZeroFlags=flags==0&&engine.info!=null&&engine.info.targetSdkVersion<34;
+        if(flags!=Context.RECEIVER_EXPORTED&&flags!=Context.RECEIVER_NOT_EXPORTED&&!legacyZeroFlags&&!(flags==0&&(RuntimeSystemBroadcasts.only(filter)||filter.countActions()==0)))throw new UnsupportedOperationException("RECEIVER_POLICY_UNSUPPORTED:flags=0x"+Integer.toHexString(flags)+";permission="+permission+";actions="+actions(filter));
         Set<String> systems=new HashSet<>();for(int i=0;i<filter.countActions();i++){String action=filter.getAction(i);if(RuntimeSystemBroadcasts.ACTIONS.contains(action)){if(!RuntimeBridge.protectedBroadcast(action))throw new SecurityException("PLATFORM_BROADCAST_NOT_PROTECTED:"+action);systems.add(action);}}
         if(receiver==null){
             if(permission!=null||filter.countActions()!=1||!RuntimeSystemBroadcasts.STICKY.contains(filter.getAction(0)))throw new UnsupportedOperationException("STICKY_QUERY_SHAPE_UNSUPPORTED");
             Bundle request=engine.auth();request.putBoolean("stickyQuery",true);request.putByteArray("filter",encoded);
             try{Bundle response=engine.brokerCall(RuntimeWire.BROADCAST_REGISTER,request);return response.containsKey("payload")?RuntimeBroadcastIntent.decode(response.getByteArray("payload")):null;}catch(Exception error){throw new IllegalStateException("STICKY_QUERY_FAILED",error);}
         }
-        if(!engine.ownsLoader(receiver.getClass().getClassLoader()))throw new SecurityException("RECEIVER_LOADER_MISMATCH");
+        if(!engine.ownsReceiverLoader(receiver.getClass().getClassLoader()))throw new SecurityException("RECEIVER_LOADER_MISMATCH:"+receiver.getClass().getName()+"@"+receiver.getClass().getClassLoader()+";webview="+engine.webView.ownsProviderLoader(receiver.getClass().getClassLoader()));
         synchronized(this){if(transitions.contains(receiver))throw new IllegalStateException("RECEIVER_REGISTRATION_IN_PROGRESS");Registration prior=receivers.get(receiver);if(prior!=null&&!prior.closed)throw new UnsupportedOperationException("RECEIVER_MULTIPLE_FILTERS_NOT_IMPLEMENTED");if(receivers.size()+retiredActions.size()>=256)throw new IllegalStateException("RECEIVER_REGISTRATION_LIMIT");transitions.add(receiver);}
-        Bundle b=engine.auth();b.putByteArray("filter",encoded);b.putBoolean("exported",flags==Context.RECEIVER_EXPORTED);b.putString("permission",permission);
+        Bundle b=engine.auth();b.putByteArray("filter",encoded);b.putBoolean("exported",flags==Context.RECEIVER_EXPORTED||(legacyZeroFlags&&!RuntimeSystemBroadcasts.only(filter)&&filter.countActions()>0));b.putString("permission",permission);
         try{
             Bundle admitted=engine.brokerCall(RuntimeWire.BROADCAST_REGISTER,b);String id=admitted.getString("registration");Registration registration=new Registration("",id,true,Set.copyOf(systems));
             Bundle ack=engine.auth();ack.putString("registration",id);
@@ -70,8 +95,14 @@ final class RuntimeReceivers {
     }
     void send(Intent logical,String permission,Bundle options,boolean ordered,BroadcastReceiver result,Handler scheduler,int initialCode,String initialData,Bundle initialExtras){
         if(options!=null)throw new UnsupportedOperationException("BROADCAST_OPTIONS_UNSUPPORTED");
-        Bundle extras=RuntimeProviderFacade.primitive(initialExtras);byte[] payload=RuntimeBroadcastIntent.encode(logical);
-        Bundle b=engine.auth();b.putByteArray("payload",payload);b.putBoolean("ordered",ordered);b.putString("operation",UUID.randomUUID().toString());b.putString("receiverPermission",permission);
+        Bundle extras=RuntimeProviderFacade.primitive(initialExtras);byte[] payload;
+        Intent bytesOnly=new Intent(logical);Bundle binders=RuntimeBroadcastIntent.detachBinders(bytesOnly);
+        try{payload=RuntimeBroadcastIntent.encode(bytesOnly);}
+        catch(RuntimeBroadcastIntent.BinderPayload binder){
+            // Not delivering is what an app with no matching receiver observes; throwing would take down whichever thread merely announced something.
+            android.util.Log.w("TripoderBroadcast","broadcast not delivered: its extras carry a Binder, which this runtime cannot hold for later delivery (action="+logical.getAction()+")");return;
+        }
+        Bundle b=engine.auth();b.putByteArray("payload",payload);if(binders!=null)b.putBundle("binders",binders);b.putBoolean("ordered",ordered);b.putString("operation",UUID.randomUUID().toString());b.putString("receiverPermission",permission);
         try{
             ArrayList<Bundle> routed=engine.brokerCall(RuntimeWire.BROADCAST_ROUTE,b).getParcelableArrayList("deliveries",Bundle.class);
             for(Bundle delivery:routed){String ticket=delivery.getString("ticket");Intent physical=new Intent().setPackage(engine.host.getPackageName()).setFlags(logical.getFlags()).putExtra("tripoder.delivery",ticket);
@@ -79,7 +110,7 @@ final class RuntimeReceivers {
                 if(!ordered){engine.host.sendBroadcast(physical);continue;}
                 BroadcastReceiver finalReceiver=result;
                 if(finalReceiver==null)finalReceiver=new BroadcastReceiver(){@Override public void onReceive(Context c,Intent i){event(ticket,"","systemDone");}};
-                else{if(!engine.ownsLoader(finalReceiver.getClass().getClassLoader()))throw new SecurityException("RECEIVER_LOADER_MISMATCH");synchronized(this){finals.put(ticket,new FinalDelivery(finalReceiver,RuntimeBroadcastIntent.decode(payload)));}RuntimeBridge.installReceiverAdapter(finalReceiver);}
+                else{if(!engine.ownsReceiverLoader(finalReceiver.getClass().getClassLoader()))throw new SecurityException("RECEIVER_LOADER_MISMATCH");synchronized(this){finals.put(ticket,new FinalDelivery(finalReceiver,RuntimeBroadcastIntent.decode(payload)));}RuntimeBridge.installReceiverAdapter(finalReceiver);}
                 engine.host.sendOrderedBroadcast(physical,null,finalReceiver,scheduler,initialCode,initialData,extras);
             }
         }catch(Exception error){throw new IllegalStateException("BROADCAST_SEND_UNCONFIRMED",error);}
@@ -108,7 +139,8 @@ final class RuntimeReceivers {
         if(ticket==null)throw new SecurityException("SYSTEM_RECEIVER_NOT_REGISTERED");
         if(registration.dynamic?!BroadcastLedger.action(registration.id).equals(physical.getAction()):!registration.id.equals(ticket))throw new SecurityException("BROADCAST_RECEIVER_MISMATCH");
         String instance=UUID.randomUUID().toString();Bundle b=engine.auth();b.putString("ticket",ticket);b.putString("component",registration.component);b.putString("registration",registration.dynamic?registration.id:"");b.putString("instance",instance);
-        try{Bundle admitted=engine.brokerCall(RuntimeWire.BROADCAST_CLAIM,b);if(admitted.getBoolean("rejectedClosedRegistration"))return null;if(admitted.getBoolean("ordered")!=receiver.isOrderedBroadcast())throw new SecurityException("BROADCAST_ORDERED_MISMATCH");Invocation invocation=new Invocation(receiver,ticket,instance,token);synchronized(this){if(pending.put(token,invocation)!=null)throw new SecurityException("PENDING_RESULT_REUSED");}current.get().push(invocation);return RuntimeBroadcastIntent.decode(admitted.getByteArray("payload"));}
+        b.putBoolean("observedOrdered",receiver.isOrderedBroadcast());
+        try{Bundle admitted=engine.brokerCall(RuntimeWire.BROADCAST_CLAIM,b);if(admitted.getBoolean("rejectedClosedRegistration"))return null;if(admitted.getBoolean("ordered")!=receiver.isOrderedBroadcast())throw new SecurityException("BROADCAST_ORDERED_MISMATCH");Invocation invocation=new Invocation(receiver,ticket,instance,token);synchronized(this){if(pending.put(token,invocation)!=null)throw new SecurityException("PENDING_RESULT_REUSED");}current.get().push(invocation);return RuntimeBroadcastIntent.attachBinders(RuntimeBroadcastIntent.decode(admitted.getByteArray("payload")),admitted);}
         catch(Exception error){throw new IllegalStateException("RECEIVER_CLAIM_FAILED",error);}
     }
     void after(BroadcastReceiver receiver,boolean success){Invocation invocation=current.get().poll();if(invocation==null||invocation.receiver!=receiver)throw new SecurityException("RECEIVER_CALLBACK_STACK_MISMATCH");if(current.get().isEmpty())current.remove();if(invocation.finalResult)return;

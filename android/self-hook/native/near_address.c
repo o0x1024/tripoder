@@ -5,24 +5,46 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
+#if defined(__ANDROID__) && !defined(fopen)
+#include <fcntl.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+static FILE *raw_maps_open(void){
+    int fd=(int)syscall(SYS_openat,AT_FDCWD,"/proc/self/maps",O_RDONLY|O_CLOEXEC,0);
+    if(fd<0)return NULL;
+    FILE *file=fdopen(fd,"r");
+    if(!file){int saved=errno;syscall(SYS_close,fd);errno=saved;}
+    return file;
+}
+#else
+#define raw_maps_open() fopen("/proc/self/maps","r")
+#endif
 
 #define CANDIDATES 128u
 static void offer(uintptr_t low,uintptr_t high,uintptr_t preferred,uintptr_t values[CANDIDATES],unsigned *count){
     if(low>UINTPTR_MAX-4095)return;
     low=(low+4095)&~(uintptr_t)4095;high&=~(uintptr_t)4095;
-    if(low>high||*count==CANDIDATES)return;
+    if(low>high)return;
     uintptr_t at=preferred&~(uintptr_t)4095;if(at<low)at=low;if(at>high)at=high;
     uintptr_t choices[3]={at,low,high};
-    for(unsigned i=0;i<3&&*count<CANDIDATES;i++){
+    for(unsigned i=0;i<3;i++){
         bool duplicate=false;for(unsigned j=0;j<*count;j++)if(values[j]==choices[i])duplicate=true;
-        if(!duplicate)values[(*count)++]=choices[i];
+        if(duplicate)continue;
+        if(*count<CANDIDATES){values[(*count)++]=choices[i];continue;}
+        unsigned farthest=0;uintptr_t far=0;
+        for(unsigned j=0;j<*count;j++){
+            uintptr_t distance=values[j]>preferred?values[j]-preferred:preferred-values[j];
+            if(distance>far){far=distance;farthest=j;}
+        }
+        uintptr_t distance=choices[i]>preferred?choices[i]-preferred:preferred-choices[i];
+        if(distance<far)values[farthest]=choices[i];
     }
 }
 void *tp_near_address_reserve_range(uintptr_t low,uintptr_t high,uintptr_t preferred,size_t bytes,int protection){
     if(!bytes||(bytes&4095)||bytes>65536||low>high||high>UINTPTR_MAX-bytes||
         (protection!=PROT_NONE&&protection!=(PROT_READ|PROT_WRITE))){errno=EINVAL;return MAP_FAILED;}
     uintptr_t candidates[CANDIDATES],cursor=low;unsigned count=0,lines=0;bool valid=true;
-    FILE *file=fopen("/proc/self/maps","r");if(!file)return MAP_FAILED;
+    FILE *file=raw_maps_open();if(!file)return MAP_FAILED;
     char line[2048];unsigned long begin,end;
     while(fgets(line,sizeof(line),file)){
         if(++lines>65536||!strchr(line,'\n')||sscanf(line,"%lx-%lx",&begin,&end)!=2||begin>=end){valid=false;break;}

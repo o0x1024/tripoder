@@ -11,7 +11,7 @@ final class RuntimeProviderBroker {
     private final RuntimeBroker broker;
     private final Map<String,Map<String,Integer>> waits=new HashMap<>();
     RuntimeProviderBroker(RuntimeBroker broker){this.broker=broker;}
-    static String authority(String authority){if(authority==null||!authority.matches("[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,199}")||authority.equals("settings"))throw new SecurityException("PROVIDER_AUTHORITY_INVALID");return authority;}
+    static String authority(String authority){if(authority==null||!authority.matches("[a-zA-Z0-9_][a-zA-Z0-9_.:-]{0,199}")||authority.equals("settings"))throw new SecurityException("PROVIDER_AUTHORITY_INVALID");return authority;}
     static List<String> aliases(String authorities){List<String> out=Arrays.asList(authorities.split(";",-1));Set<String> unique=new HashSet<>();for(String a:out)if(!unique.add(authority(a)))throw new SecurityException("PROVIDER_AUTHORITY_DUPLICATE");return out;}
     private static ProviderInfo metadata(ApkStore.BundleInstall install,String component){return new RuntimeProviderIndex(install.info.providers,install.components()).component(component);}
     private static void access(ProviderInfo p,String caller,String kind,Uri uri){
@@ -30,17 +30,22 @@ final class RuntimeProviderBroker {
     }
     Bundle acquire(Bundle input,int pid,int uid)throws Exception{
         String source=RuntimeWire.required(input,"generation"),logical=authority(RuntimeWire.required(input,"authority"));boolean existing=input.getBoolean("existing");
-        ApkStore.BundleInstall install=null;String component=null,process=null,space;RuntimeBroker.Slot to;boolean local=false;
+        String space;InstallProviderIndex.Target targetInstall;
         synchronized(broker){
-            var session=broker.contract.authenticate(source,pid,uid);space=session.identity.spaceId;
-            try(Cursor c=broker.store.getReadableDatabase().rawQuery("SELECT package FROM installs WHERE space=? ORDER BY package",new String[]{space})){
-                while(c.moveToNext()){var candidate=broker.apks.get(space,c.getString(0));for(var declared:candidate.components())if(declared.type.equals("provider")&&declared.enabled&&aliases(declared.authorities).contains(logical)){
-                    if(install!=null)throw new SecurityException("PROVIDER_AUTHORITY_CONFLICT");install=candidate;component=declared.name;process=declared.process;
-                }}
+            space=broker.contract.authenticate(source,pid,uid).identity.spaceId;
+            targetInstall=InstallProviderIndex.find(broker.store.getReadableDatabase(),space,logical);
+            if(targetInstall==null)return new Bundle();
+        }
+        // Only the indexed owner is verified. Full APK I/O cannot hold the broker monitor.
+        ApkStore.BundleInstall install=broker.apks.get(space,targetInstall.pkg);
+        String component=null,process=null;RuntimeBroker.Slot to;boolean local;
+        synchronized(broker){
+            var session=broker.contract.authenticate(source,pid,uid);
+            if(!targetInstall.generation.equals(install.generation)||!targetInstall.same(InstallProviderIndex.find(broker.store.getReadableDatabase(),space,logical)))throw new SecurityException("PROVIDER_STALE_INSTALL");
+            for(var declared:install.components())if(declared.type.equals("provider")&&declared.enabled&&aliases(declared.authorities).contains(logical)){
+                component=declared.name;process=declared.process;break;
             }
-            // Authenticated lookup in this space completed with no declaration. This is
-            // Android's absent-provider result, not a transport failure or permission grant.
-            if(install==null)return new Bundle();
+            if(component==null)return new Bundle();
             ProviderInfo info=metadata(install,component);if(!session.identity.packageName.equals(install.info.packageName)&&!info.exported)throw new SecurityException("PROVIDER_NOT_EXPORTED");
             local=info.multiprocess&&session.identity.packageName.equals(install.info.packageName)&&!process.equals(session.identity.processName);
             if(local)process=session.identity.processName;

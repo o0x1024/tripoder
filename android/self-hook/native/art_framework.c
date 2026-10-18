@@ -5,6 +5,21 @@
 #include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef __ANDROID__
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+static FILE *raw_maps_open(void){
+    int fd=(int)syscall(SYS_openat,AT_FDCWD,"/proc/self/maps",O_RDONLY|O_CLOEXEC,0);
+    if(fd<0)return NULL;
+    FILE *maps=fdopen(fd,"r");
+    if(!maps){int saved=errno;syscall(SYS_close,fd);errno=saved;}
+    return maps;
+}
+#else
+#define raw_maps_open() fopen("/proc/self/maps","r")
+#endif
 
 /* Only this registry is exposed. Raw metadata never crosses into Java. The
  * three FastNative calls retain ART's Runnable/shared-mutator transition. Each
@@ -16,7 +31,7 @@ struct string_view { const char *data; size_t size; };
 struct range { uintptr_t begin,end; };
 static struct {
     struct tp_art_access access;
-    jclass classes[55];
+    jclass classes[59];
     struct range ranges[2048];
     unsigned range_count;
     void *manager;
@@ -72,7 +87,8 @@ static const char *names[]={"android/app/Application","android/app/ActivityThrea
     "android/net/wifi/p2p/WifiP2pManager",
     "android/net/wifi/p2p/WifiP2pManager$Channel",
     "android/app/ActivityThread$ActivityClientRecord","android/os/UserHandle",
-    "android/app/JobSchedulerImpl","android/app/job/JobInfo","android/app/job/JobParameters","android/app/job/JobService","android/app/job/IJobCallback$Stub$Proxy"};
+    "android/app/JobSchedulerImpl","android/app/job/JobInfo","android/app/job/JobParameters","android/app/job/JobService","android/app/job/IJobCallback$Stub$Proxy",
+    "android/app/PendingIntent","android/content/IntentSender","android/app/AlarmManager","android/app/ApplicationExitInfo"};
 _Static_assert(sizeof(names)/sizeof(names[0])==sizeof(registry.classes)/sizeof(registry.classes[0]),"fixed boot class roots");
 static const struct { unsigned owner;const char *name,*type; } fields[]={
     {1,"mInitialApplication","Landroid/app/Application;"},{0,"mLoadedApk","Landroid/app/LoadedApk;"},
@@ -231,7 +247,7 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_FrameworkAccess_prepareNat
         if(!registry.classes[i])return JNI_FALSE;
     }
     stage="READABLE_RANGES";
-    FILE *maps=fopen("/proc/self/maps","r");if(!maps)return JNI_FALSE;
+    FILE *maps=raw_maps_open();if(!maps)return JNI_FALSE;
     char line[2048],mode[5];unsigned long start,end;
     while(fgets(line,sizeof(line),maps))if(sscanf(line,"%lx-%lx %4s",&start,&end,mode)==3&&mode[0]=='r'){
         // Validation needs the readable address union, not one slot per VMA.

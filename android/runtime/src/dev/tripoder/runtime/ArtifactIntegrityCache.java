@@ -7,8 +7,8 @@ import java.util.*;
 
 /** Authority-local verified objects. Any inode, mode, size, nanosecond time or tree change revalidates. */
 final class ArtifactIntegrityCache {
-    private static final long MAX_BYTES=32L*1024*1024;
-    private static final int MAX_SETS=32;
+    private static final long MAX_BYTES=128L*1024*1024;
+    private static final int MAX_SETS=64;
     private final LinkedHashMap<String,Entry> entries=new LinkedHashMap<>(16,.75f,true);
     private long bytes,hits,verified;
     private static final class Entry {
@@ -31,6 +31,11 @@ final class ArtifactIntegrityCache {
         while(entries.size()>MAX_SETS||bytes>MAX_BYTES){var oldest=entries.entrySet().iterator();var item=oldest.next();bytes-=item.getValue().cost;oldest.remove();}
     }
     synchronized android.os.Bundle stats(){android.os.Bundle b=new android.os.Bundle();b.putLong("hits",hits);b.putLong("fullVerifications",verified);b.putLong("retainedBytes",bytes);b.putInt("sets",entries.size());return b;}
+    /** Stable digest of the immutable tree stamp; any inode, size, mode or time change alters it. */
+    static String stampDigest(File directory)throws Exception{
+        StringBuilder text=new StringBuilder();for(var e:stamp(directory).entrySet())text.append(e.getKey()).append('\0').append(e.getValue()).append('\n');
+        return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(text.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+    }
     private static Map<String,String> stamp(File directory)throws Exception{
         if(Files.isSymbolicLink(directory.toPath()))throw new SecurityException("ARTIFACT_SYMLINK");
         Map<String,String> values=new TreeMap<>();Path root=directory.toPath();

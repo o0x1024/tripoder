@@ -38,7 +38,8 @@ final class FixedFrameworkMembers {
         "android.net.wifi.p2p.WifiP2pManager",
         "android.net.wifi.p2p.WifiP2pManager$Channel",
         "android.app.ActivityThread$ActivityClientRecord","android.os.UserHandle",
-        "android.app.JobSchedulerImpl","android.app.job.JobInfo","android.app.job.JobParameters","android.app.job.JobService","android.app.job.IJobCallback$Stub$Proxy"};
+        "android.app.JobSchedulerImpl","android.app.job.JobInfo","android.app.job.JobParameters","android.app.job.JobService","android.app.job.IJobCallback$Stub$Proxy",
+        "android.app.PendingIntent","android.content.IntentSender","android.app.AlarmManager","android.app.ApplicationExitInfo"};
     static Class<?> owner(int index)throws Exception{return Class.forName(NAMES[index],false,null);}
     static Field field(int slot,int owner,String name,String type,boolean isStatic)throws Exception {
         Field value=FrameworkAccess.fixedField(slot);

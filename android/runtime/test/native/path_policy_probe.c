@@ -15,6 +15,7 @@ int tp_fstatat(int,const char *,struct stat *,int);
 int tp_unlinkat(int,const char *,int);
 int tp_renameat2(int,const char *,int,const char *,unsigned);
 int tp_symlinkat(const char *,int,const char *);
+ssize_t tp_readlinkat(int,const char *,char *,size_t);
 static int checks,failures;
 static void check(const char *name,int okay){printf("{\"name\":\"%s\",\"passed\":%s,\"errno\":%d}\n",name,okay?"true":"false",errno);fflush(stdout);checks++;if(!okay)failures++;}
 static void setup(int okay){if(!okay){perror("setup");exit(2);}}
@@ -48,6 +49,9 @@ int main(int argc,char **argv){
     setup(snprintf(link,sizeof(link),"%s/link",files)<(int)sizeof(link));setup(symlink(file,link)==0);
     int linked=tp_openat(AT_FDCWD,"/data/data/dev.tripoder.iofixture/files/link",O_RDONLY,0);check("leaf-symlink-no-follow",linked==-1&&errno==ELOOP);
     linked=tp_openat(AT_FDCWD,"/data/data/dev.tripoder.iofixture/files/link/",O_RDONLY,0);check("trailing-slash-cannot-follow-link",linked==-1&&(errno==ELOOP||errno==ENOTDIR));
+    setup(unlink(link)==0);setup(symlink(files,link)==0);
+    char target_buf[PATH_MAX]={0};ssize_t link_len=tp_readlinkat(AT_FDCWD,"/data/data/dev.tripoder.iofixture/files/link",target_buf,sizeof(target_buf)-1);
+    check("readlinkat-reverses-physical-to-logical-path",link_len>0&&!strcmp(target_buf,"/data/user/0/dev.tripoder.iofixture/files"));
     setup(unlink(link)==0);setup(symlink(artifacts,link)==0);linked=tp_openat(AT_FDCWD,"/data/data/dev.tripoder.iofixture/files/link/../value",O_RDONLY,0);check("symlink-parent-not-normalized-away",linked==-1&&(errno==ELOOP||errno==ENOTDIR));setup(unlink(link)==0);
     linked=tp_symlinkat(file,dir,"forbidden-link");check("new-symlink-explicitly-unsupported",linked==-1&&errno==EOPNOTSUPP);
     struct stat info;check("logical-stat-real-inode",tp_fstatat(AT_FDCWD,logical,&info,0)==0&&info.st_size==5);
@@ -58,5 +62,11 @@ int main(int argc,char **argv){
     void *map=mmap(NULL,4096,PROT_READ|PROT_WRITE,MAP_SHARED,dupped,0);check("mmap-real-file-description",map!=MAP_FAILED);
     close(dupped);if(map!=MAP_FAILED){check("mapping-survives-fd-close",memcmp(map,"value",5)==0);memcpy(map,"after",5);check("shared-mapping-msync",msync(map,4096,MS_SYNC)==0);check("munmap",munmap(map,4096)==0);}
     close(dir);int cwd=tp_openat(AT_FDCWD,"relative",O_CREAT|O_EXCL|O_RDWR,0600);check("cwd-is-guest-data",cwd>=0);if(cwd>=0)close(cwd);
+    setup(symlink(file,link)==0);memset(target_buf,0,sizeof(target_buf));link_len=tp_readlinkat(AT_FDCWD,"/data/data/dev.tripoder.iofixture/files/link",target_buf,sizeof(target_buf)-1);
+    check("readlinkat-reverses-artifact-to-logical-apk-path",link_len>0&&!strcmp(target_buf,"/data/app/~~tripoder/dev.tripoder.iofixture/base.apk"));setup(unlink(link)==0);
+    int logical_apk=tp_openat(AT_FDCWD,"/data/app/~~tripoder/dev.tripoder.iofixture/base.apk",O_RDONLY,0);char apk_bytes[16]={0};
+    check("logical-artifact-apk-open",logical_apk>=0&&read(logical_apk,apk_bytes,14)==14&&!strcmp(apk_bytes,"owned-artifact"));if(logical_apk>=0)close(logical_apk);
+    int proc_cmd=tp_openat(AT_FDCWD,"/proc/self/cmdline",O_RDONLY,0);char cmd_bytes[64]={0};
+    check("proc-self-cmdline-virtualized",proc_cmd>=0&&read(proc_cmd,cmd_bytes,sizeof(cmd_bytes)-1)==(ssize_t)strlen("dev.tripoder.iofixture")+1&&!strcmp(cmd_bytes,"dev.tripoder.iofixture"));if(proc_cmd>=0)close(proc_cmd);
     printf("{\"summary\":true,\"passed\":%s,\"checks\":%d,\"failures\":%d,\"hookInstalled\":false,\"strongIsolationVerified\":false}\n",failures==0?"true":"false",checks,failures);return failures?1:0;
 }

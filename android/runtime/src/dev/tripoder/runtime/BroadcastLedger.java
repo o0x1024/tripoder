@@ -12,7 +12,7 @@ final class BroadcastLedger {
     BroadcastLedger(RuntimeStore store){this.store=store;}
     static void create(SQLiteDatabase db){
         db.execSQL("CREATE TABLE broadcast_registrations(id TEXT PRIMARY KEY,generation TEXT NOT NULL,space TEXT NOT NULL,package TEXT NOT NULL,action TEXT NOT NULL,filter BLOB NOT NULL,exported INTEGER NOT NULL,state TEXT NOT NULL,volumeRoots TEXT NOT NULL,permission TEXT NOT NULL)");
-        db.execSQL("CREATE TABLE broadcast_deliveries(ticket TEXT PRIMARY KEY,operation TEXT UNIQUE NOT NULL,source TEXT NOT NULL,sourceIdentity TEXT NOT NULL,target TEXT NOT NULL,component TEXT NOT NULL,registration TEXT NOT NULL,payload BLOB NOT NULL,digest TEXT NOT NULL,ordered INTEGER NOT NULL,state TEXT NOT NULL,instance TEXT NOT NULL,returned INTEGER NOT NULL,finished INTEGER NOT NULL,asynchronous INTEGER NOT NULL,systemDone INTEGER NOT NULL,resourceRetired INTEGER NOT NULL DEFAULT 0,resourceProof TEXT)");
+        db.execSQL("CREATE TABLE broadcast_deliveries(ticket TEXT PRIMARY KEY,operation TEXT UNIQUE NOT NULL,source TEXT NOT NULL,sourceIdentity TEXT NOT NULL,target TEXT NOT NULL,component TEXT NOT NULL,registration TEXT NOT NULL,payload BLOB NOT NULL,digest TEXT NOT NULL,ordered INTEGER NOT NULL,state TEXT NOT NULL,instance TEXT NOT NULL,returned INTEGER NOT NULL,finished INTEGER NOT NULL,asynchronous INTEGER NOT NULL,systemDone INTEGER NOT NULL,resourceRetired INTEGER NOT NULL DEFAULT 0,resourceProof TEXT,externalOrigin INTEGER NOT NULL DEFAULT 0)");
     }
     static String token(){byte[] bytes=new byte[32];new java.security.SecureRandom().nextBytes(bytes);return HexFormat.of().formatHex(bytes);}
     String registration(ExecutionContract.Session source,byte[] filter,boolean exported,Set<String> roots,String permission){String id=token();ContentValues v=new ContentValues();v.put("id",id);v.put("generation",source.processGeneration);v.put("space",source.identity.spaceId);v.put("package",source.identity.packageName);v.put("action",action(id));v.put("filter",filter);v.put("exported",exported?1:0);v.put("state","PREPARED");v.put("volumeRoots",new org.json.JSONArray(roots).toString());v.put("permission",permission==null?"":permission);store.getWritableDatabase().insertOrThrow("broadcast_registrations",null,v);return id;}
@@ -39,10 +39,27 @@ final class BroadcastLedger {
     void registrationState(String id,String generation,String prior,String next){ContentValues v=new ContentValues();v.put("state",next);if(store.getWritableDatabase().update("broadcast_registrations",v,"id=? AND generation=? AND state=?",new String[]{id,generation,prior})!=1)throw new SecurityException("RECEIVER_REGISTRATION_TRANSITION");}
     List<Bundle> registrations(String space){List<Bundle> out=new ArrayList<>();try(Cursor c=store.getReadableDatabase().rawQuery("SELECT id,generation,package,filter,exported,permission FROM broadcast_registrations WHERE space=? AND state='ACTIVE'",new String[]{space})){while(c.moveToNext()){Bundle b=new Bundle();b.putString("registration",c.getString(0));b.putString("target",c.getString(1));b.putString("package",c.getString(2));b.putByteArray("filter",c.getBlob(3));b.putBoolean("exported",c.getInt(4)!=0);b.putString("permission",c.getString(5));out.add(b);}}return out;}
     String prepare(String operation,ExecutionContract.Session source,String target,String component,String registration,byte[] payload,boolean ordered)throws Exception{
-        String ticket=token();ContentValues v=new ContentValues();v.put("ticket",ticket);v.put("operation",operation);v.put("source",source.processGeneration);v.put("sourceIdentity",source.identity.key());v.put("target",target);v.put("component",component);v.put("registration",registration);v.put("payload",payload);v.put("digest",RuntimeBroadcastIntent.digest(payload));v.put("ordered",ordered?1:0);v.put("state","PREPARED");v.put("instance","");for(String key:List.of("returned","finished","asynchronous","systemDone"))v.put(key,0);store.getWritableDatabase().insertOrThrow("broadcast_deliveries",null,v);return ticket;
+        return prepare(operation,source.processGeneration,source.identity.key(),target,component,registration,payload,ordered,false);
     }
-    Bundle get(String ticket){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT operation,source,sourceIdentity,target,component,registration,payload,digest,ordered,state,instance,returned,finished,asynchronous,systemDone FROM broadcast_deliveries WHERE ticket=?",new String[]{ticket})){
-        if(!c.moveToFirst())throw new SecurityException("BROADCAST_TICKET_UNKNOWN");Bundle b=new Bundle();b.putString("ticket",ticket);String[] names={"operation","source","sourceIdentity","target","component","registration"};for(int i=0;i<names.length;i++)b.putString(names[i],c.getString(i));b.putByteArray("payload",c.getBlob(6));b.putString("digest",c.getString(7));b.putBoolean("ordered",c.getInt(8)!=0);b.putString("state",c.getString(9));b.putString("instance",c.getString(10));for(int i=0;i<4;i++)b.putBoolean(new String[]{"returned","finished","asynchronous","systemDone"}[i],c.getInt(11+i)!=0);return b;
+    String prepareExternal(String operation,String version,String creator,String target,String component,String registration,byte[] payload,boolean ordered)throws Exception{
+        return prepare(operation,"pending:"+version,creator,target,component,registration,payload,ordered,true);
+    }
+    private String prepare(String operation,String source,String identity,String target,String component,String registration,byte[] payload,boolean ordered,boolean external)throws Exception{
+        String ticket=token();ContentValues v=new ContentValues();v.put("ticket",ticket);v.put("operation",operation);v.put("source",source);v.put("sourceIdentity",identity);v.put("target",target);v.put("component",component);v.put("registration",registration);v.put("payload",payload);v.put("digest",RuntimeBroadcastIntent.digest(payload));v.put("ordered",ordered?1:0);v.put("externalOrigin",external?1:0);v.put("state","PREPARED");v.put("instance","");for(String key:List.of("returned","finished","asynchronous","systemDone"))v.put(key,0);store.getWritableDatabase().insertOrThrow("broadcast_deliveries",null,v);return ticket;
+    }
+    void externalOrdered(String ticket,String target,boolean ordered){Bundle value=get(ticket);if(!value.getBoolean("externalOrigin")||!target.equals(value.getString("target"))||!"PREPARED".equals(value.getString("state")))throw new SecurityException("BROADCAST_EXTERNAL_ORDER_OWNER");ContentValues v=new ContentValues();v.put("ordered",ordered?1:0);update(ticket,v);}
+    void rejectExternal(String ticket,String target,ExecutionContract contract){Bundle value=get(ticket);if(!value.getBoolean("externalOrigin")||!target.equals(value.getString("target"))||!"PREPARED".equals(value.getString("state")))throw new SecurityException("BROADCAST_EXTERNAL_REJECTION_OWNER");ContentValues v=new ContentValues();v.put("state","REJECTED");v.put("resourceRetired",1);v.put("resourceProof","PENDING_VERSION_RETIRED_BEFORE_GUEST_CLAIM");update(ticket,v);contract.fail(value.getString("operation"),"PENDING_VERSION_RETIRED_BEFORE_GUEST_CLAIM");}
+    void externalSendUnknown(String ticket,ExecutionContract contract){
+        Bundle value=get(ticket);if(!value.getBoolean("externalOrigin"))throw new SecurityException("BROADCAST_EXTERNAL_ORIGIN_REQUIRED");
+        if(value.getString("state").equals("COMPLETED")||value.getString("state").equals("REJECTED"))return;
+        // A sender wait expiring does not revoke the already submitted Android
+        // delivery. Keep PREPARED/RUNNING admission; exact later callbacks can
+        // reconcile the operation using returned+finished receipts. Cancellation
+        // and target death retain their separate, explicit fencing paths.
+        if(contract.query(value.getString("operation")).state==ExecutionContract.OperationState.RUNNING)contract.markUnknown(value.getString("operation"),"PENDING_SYSTEM_SEND_UNCONFIRMED");
+    }
+    Bundle get(String ticket){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT operation,source,sourceIdentity,target,component,registration,payload,digest,ordered,state,instance,returned,finished,asynchronous,systemDone,externalOrigin FROM broadcast_deliveries WHERE ticket=?",new String[]{ticket})){
+        if(!c.moveToFirst())throw new SecurityException("BROADCAST_TICKET_UNKNOWN");Bundle b=new Bundle();b.putString("ticket",ticket);String[] names={"operation","source","sourceIdentity","target","component","registration"};for(int i=0;i<names.length;i++)b.putString(names[i],c.getString(i));b.putByteArray("payload",c.getBlob(6));b.putString("digest",c.getString(7));b.putBoolean("ordered",c.getInt(8)!=0);b.putString("state",c.getString(9));b.putString("instance",c.getString(10));for(int i=0;i<4;i++)b.putBoolean(new String[]{"returned","finished","asynchronous","systemDone"}[i],c.getInt(11+i)!=0);b.putBoolean("externalOrigin",c.getInt(15)!=0);return b;
     }}
     Bundle claim(String ticket,String generation,String component,String registration,String instance)throws Exception{
         Bundle b=get(ticket);if(!b.getString("target").equals(generation)||!b.getString("component").equals(component)||!b.getString("registration").equals(registration))throw new SecurityException("BROADCAST_TICKET_NOT_CLAIMABLE");
@@ -54,7 +71,7 @@ final class BroadcastLedger {
     void event(String ticket,String generation,String instance,String event,ExecutionContract contract){
         Bundle b=get(ticket);boolean system=event.equals("systemDone");
         if(!generation.equals(b.getString(system?"source":"target"))||!system&&!instance.equals(b.getString("instance")))throw new SecurityException("BROADCAST_EVENT_OWNER_MISMATCH");
-        if(system&&!b.getBoolean("ordered"))throw new SecurityException("BROADCAST_NOT_ORDERED");
+        if(system&&(!b.getBoolean("ordered")||b.getBoolean("externalOrigin")))throw new SecurityException("BROADCAST_SENDER_RECEIPT_NOT_OWNED");
         if(!Set.of("returned","finished","asynchronous","systemDone","failed").contains(event)||b.getString("state").equals("COMPLETED"))throw new IllegalStateException("BROADCAST_EVENT_TRANSITION");
         if(event.equals("failed")){ContentValues v=new ContentValues();v.put("state","UNKNOWN");update(ticket,v);contract.markUnknown(b.getString("operation"),"BROADCAST_CALLBACK_FAILED_EFFECT_UNKNOWN");return;}
         if(b.getBoolean(event))throw new IllegalStateException("BROADCAST_DUPLICATE_EVENT");
@@ -66,8 +83,8 @@ final class BroadcastLedger {
             update(ticket,v);return;
         }
         if(b.getBoolean("returned")&&b.getBoolean("finished")){
-            if(!b.getBoolean("ordered")||b.getBoolean("systemDone")){
-                v.put("state","COMPLETED");String op=b.getString("operation");String result=b.getBoolean("ordered")?"ANDROID_ORDERED_RESULT_OBSERVED":"RECEIVER_CALLBACK_AND_FINISH_RETURNED";
+            if(b.getBoolean("externalOrigin")||!b.getBoolean("ordered")||b.getBoolean("systemDone")){
+                v.put("state","COMPLETED");String op=b.getString("operation");String result=b.getBoolean("ordered")&&!b.getBoolean("externalOrigin")?"ANDROID_ORDERED_RESULT_OBSERVED":"RECEIVER_CALLBACK_AND_FINISH_RETURNED";
                 if(contract.query(op).state==ExecutionContract.OperationState.UNKNOWN)contract.reconcile(op,ExecutionContract.OperationState.SUCCEEDED,result,"ticket="+ticket+";returned=true;finished=true;systemDone="+b.getBoolean("systemDone"));else contract.succeed(op,result);
             }else v.put("state","FINISH_REQUESTED");
         }
@@ -78,7 +95,16 @@ final class BroadcastLedger {
         try(Cursor c=store.getReadableDatabase().rawQuery("SELECT ticket,operation FROM broadcast_deliveries WHERE target=? AND state NOT IN ('COMPLETED','UNKNOWN')",new String[]{generation})){while(c.moveToNext()){ContentValues v=new ContentValues();v.put("state","UNKNOWN");update(c.getString(0),v);contract.markUnknown(c.getString(1),"BROADCAST_TARGET_DIED_DELIVERY_UNCONFIRMED");}}
         store.getWritableDatabase().execSQL("UPDATE broadcast_deliveries SET resourceRetired=1,resourceProof='TARGET_DEAD_AND_INGRESS_FENCED' WHERE target=? AND state IN ('UNKNOWN','COMPLETED') AND EXISTS(SELECT 1 FROM sessions s WHERE s.generation=target AND s.state='DEAD') AND (registration='' OR EXISTS(SELECT 1 FROM broadcast_registrations r WHERE r.id=registration AND r.generation=target AND r.state='CLOSED'))",new Object[]{generation});
     }
-    void recover(ExecutionContract contract){List<String> targets=new ArrayList<>();try(Cursor c=store.getReadableDatabase().rawQuery("SELECT DISTINCT target FROM broadcast_deliveries UNION SELECT DISTINCT generation FROM broadcast_registrations",null)){while(c.moveToNext())targets.add(c.getString(0));}for(String target:targets)dead(target,contract);}
+    /** Every generation recorded before this authority started is dead, so recovery is the same fencing as dead() applied to all rows at once. Doing it per target
+     *  scanned the whole delivery table once per generation, which grows with every broadcast an app ever received and stalled authority start. */
+    void recover(ExecutionContract contract){
+        var db=store.getWritableDatabase();
+        db.execSQL("UPDATE broadcast_registrations SET state='CLOSED' WHERE state!='CLOSED'");
+        List<String[]> open=new ArrayList<>();
+        try(Cursor c=store.getReadableDatabase().rawQuery("SELECT ticket,operation FROM broadcast_deliveries WHERE state NOT IN ('COMPLETED','UNKNOWN')",null)){while(c.moveToNext())open.add(new String[]{c.getString(0),c.getString(1)});}
+        for(String[] row:open){ContentValues v=new ContentValues();v.put("state","UNKNOWN");update(row[0],v);contract.markUnknown(row[1],"BROADCAST_TARGET_DIED_DELIVERY_UNCONFIRMED");}
+        db.execSQL("UPDATE broadcast_deliveries SET resourceRetired=1,resourceProof='TARGET_DEAD_AND_INGRESS_FENCED' WHERE resourceRetired=0 AND state IN ('UNKNOWN','COMPLETED') AND EXISTS(SELECT 1 FROM sessions s WHERE s.generation=target AND s.state='DEAD') AND (registration='' OR EXISTS(SELECT 1 FROM broadcast_registrations r WHERE r.id=registration AND r.generation=target AND r.state='CLOSED'))");
+    }
     boolean occupied(String stub){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT 1 FROM broadcast_deliveries b JOIN sessions s ON b.target=s.generation WHERE s.activityStub=? AND b.state!='COMPLETED' AND b.resourceRetired=0 LIMIT 1",new String[]{stub})){return c.moveToFirst();}}
     boolean retired(String ticket){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT resourceRetired FROM broadcast_deliveries WHERE ticket=?",new String[]{ticket})){if(!c.moveToFirst())throw new SecurityException("BROADCAST_TICKET_UNKNOWN");return c.getInt(0)!=0;}}
     /** Called on every cold or warm physical Factory ingress, before any guest code. */

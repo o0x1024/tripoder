@@ -37,7 +37,8 @@ public final class ApkManifest {
         Component(Element e,ApkManifest m,Element app){
             declaration=e;type=e.name;attributes=e.attributes;
             name=className(m.packageName,text(e.android("name",null),"COMPONENT_NAME"));
-            process=processName(m.packageName,text(e.android("process",app.android("process",m.applicationProcess)),"PROCESS"));
+            String rawProcess=e.android("process",app.android("process",m.applicationProcess));
+            process=processName(m.packageName,rawProcess!=null&&rawProcess.isEmpty()?m.applicationProcess:text(rawProcess,"PROCESS"));
             permission=text(e.android("permission",app.android("permission","")),"PERMISSION");
             authorities=text(e.android("authorities",""),"AUTHORITIES");
             targetActivity=e.android("targetActivity",null)==null?"":className(m.packageName,text(e.android("targetActivity",null),"ALIAS_TARGET"));
@@ -50,7 +51,37 @@ public final class ApkManifest {
         Component(Component declaration,boolean exported,boolean enabled){
             this.declaration=declaration.declaration;type=declaration.type;name=declaration.name;process=declaration.process;permission=declaration.permission;authorities=declaration.authorities;targetActivity=declaration.targetActivity;attributes=declaration.attributes;this.exported=exported;this.enabled=enabled;
         }
+        Component(Element declaration,String type,String name,String process,String permission,String authorities,String targetActivity,Boolean exported,Boolean enabled){
+            this.declaration=declaration;this.type=type;this.name=name;this.process=process;this.permission=permission;this.authorities=authorities;this.targetActivity=targetActivity;this.attributes=declaration.attributes;this.exported=exported;this.enabled=enabled;
+        }
         Map<String,Object> json(){Map<String,Object> out=new TreeMap<>();out.put("type",type);out.put("name",name);out.put("process",process);out.put("permission",permission);out.put("authorities",authorities);out.put("targetActivity",targetActivity);out.put("exported",exported);out.put("enabled",enabled);out.put("declaration",declaration.json());return out;}
+    }
+    static ApkManifest fromJsonReader(android.util.JsonReader r)throws Exception{
+        return new ApkManifest(elementFromJsonReader(r,0));
+    }
+    private static Element elementFromJsonReader(android.util.JsonReader r,int depth)throws Exception{
+        String name=null,namespace="";Map<String,String> attrs=new TreeMap<>();List<Element> children=new ArrayList<>();
+        r.beginObject();
+        while(r.hasNext()){
+            switch(r.nextName()){
+                case "name"->name=r.nextString();
+                case "namespace"->namespace=r.nextString();
+                case "attributes"->{r.beginObject();while(r.hasNext())attrs.put(r.nextName(),r.nextString());r.endObject();}
+                case "children"->{
+                    if(depth==0){
+                        r.beginArray();
+                        while(r.hasNext()){
+                            Element child=elementFromJsonReader(r,1);
+                            if("application".equals(child.name)||"uses-sdk".equals(child.name)||"uses-split".equals(child.name))children.add(child);
+                        }
+                        r.endArray();
+                    }else r.skipValue();
+                }
+                default->r.skipValue();
+            }
+        }
+        r.endObject();
+        return new Element(name,namespace,attrs,children);
     }
     private ApkManifest(Element root){
         declaration=root;if(!root.name.equals("manifest")||!root.namespace.isEmpty())throw bad("MANIFEST_ROOT");
@@ -77,7 +108,13 @@ public final class ApkManifest {
         for(Element e:app.children)if(Set.of("activity","activity-alias","service","receiver","provider").contains(e.name))cs.add(new Component(e,this,app));
         components=Collections.unmodifiableList(cs);
     }
-    public static ApkManifest parse(byte[] binaryXml)throws Exception {
+    public static ApkManifest parse(byte[] binaryXml)throws Exception {return parse(binaryXml,null);}
+    /** Only a process name written as a resource reference is resolved. The old parser rejected such a manifest outright, so no installed descriptor depends on it. Every other reference stays textual: the descriptor recorded at install time includes these attribute values verbatim and is re-derived byte for byte when the install is verified, so changing how an attribute such as enabled is read would invalidate installs that already exist. */
+    private static String resolved(ArscValues values,String name,int id)throws Exception{
+        if(values!=null&&(name.equals("process")||name.equals("authorities")))return values.string(id);
+        return "@0x"+Integer.toHexString(id);
+    }
+    public static ApkManifest parse(byte[] binaryXml,ArscValues resources)throws Exception {
         if(binaryXml==null||binaryXml.length==0||binaryXml.length>4*1024*1024)throw bad("MANIFEST_SIZE");
         AndroidBinXmlParser p=new AndroidBinXmlParser(ByteBuffer.wrap(binaryXml));
         BinXmlTypedValues typed=new BinXmlTypedValues(binaryXml);
@@ -85,7 +122,6 @@ public final class ApkManifest {
         while(p.getEventType()!=AndroidBinXmlParser.EVENT_END_DOCUMENT){
             if(p.getEventType()==AndroidBinXmlParser.EVENT_START_ELEMENT){
                 if(++count>20000||stack.size()>64||p.getAttributeCount()>512)throw bad("MANIFEST_COMPLEXITY");
-                if(p.getNamespace()!=null&&!p.getNamespace().isEmpty())throw bad("MANIFEST_ELEMENT_NAMESPACE_UNSUPPORTED");
                 Map<String,String> attrs=new TreeMap<>();
                 int[][] values=typed.next(p.getAttributeCount());
                 for(int i=0;i<p.getAttributeCount();i++){
@@ -95,7 +131,7 @@ public final class ApkManifest {
                         case AndroidBinXmlParser.VALUE_TYPE_STRING:value=p.getAttributeStringValue(i);break;
                         case AndroidBinXmlParser.VALUE_TYPE_INT:value=Long.toString(Integer.toUnsignedLong(p.getAttributeIntValue(i)));break;
                         case AndroidBinXmlParser.VALUE_TYPE_BOOLEAN:value=Boolean.toString(p.getAttributeBooleanValue(i));break;
-                        case AndroidBinXmlParser.VALUE_TYPE_REFERENCE:value="@0x"+Integer.toHexString(p.getAttributeIntValue(i));break;
+                        case AndroidBinXmlParser.VALUE_TYPE_REFERENCE:value=ANDROID.equals(ns)?resolved(resources,p.getAttributeName(i),p.getAttributeIntValue(i)):"@0x"+Integer.toHexString(p.getAttributeIntValue(i));break;
                         case AndroidBinXmlParser.VALUE_TYPE_UNSUPPORTED:value=BinXmlTypedValues.preserve(values[i]);break;
                         default:throw bad("MANIFEST_ATTRIBUTE_TYPE_UNSUPPORTED");
                     }
@@ -119,7 +155,7 @@ public final class ApkManifest {
     static boolean bool(String value,boolean absent){if(value==null)return absent;if(value.equals("true")||value.equals("1"))return true;if(value.equals("false")||value.equals("0"))return false;throw bad("MANIFEST_BOOLEAN");}
     static Boolean declaredBool(String value,boolean absent){if(value!=null&&value.matches("@0x[0-9a-f]{1,8}"))return null;return bool(value,absent);}
     static String className(String pkg,String value){String n=value.startsWith(".")?pkg+value:value.indexOf('.')<0?pkg+"."+value:value;if(!n.matches("[a-zA-Z_$][a-zA-Z0-9_$]*(\\.[a-zA-Z_$][a-zA-Z0-9_$]*)+"))throw bad("CLASS_NAME");return n;}
-    static String processName(String pkg,String value){String n=value.startsWith(":")?pkg+value:value;if(!n.matches("[a-zA-Z_][a-zA-Z0-9_.]*(?::[a-zA-Z0-9_][a-zA-Z0-9_.]*)?"))throw bad("PROCESS_NAME");return n;}
+    static String processName(String pkg,String value){String n=value.startsWith(":")?pkg+value:value;if(!n.matches("\\.?[a-zA-Z_][a-zA-Z0-9_.-]*(?::[a-zA-Z0-9_][a-zA-Z0-9_.:-]*)?"))throw bad("PROCESS_NAME");return n;}
     static List<String> types(String value){if(value.isEmpty())return List.of();TreeSet<String> set=new TreeSet<>();for(String v:value.split(",",-1)){identifier(v);if(!set.add(v))throw bad("DUPLICATE_SPLIT_TYPE");}return Collections.unmodifiableList(new ArrayList<>(set));}
     Map<String,Object> json(){return declaration.json();}
 }

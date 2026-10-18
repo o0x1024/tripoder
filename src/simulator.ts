@@ -13,9 +13,11 @@ interface Revision<S extends Parameters> {
 export interface SimulationEvent {
   readonly revision: number;
   readonly symbolId: string;
-  readonly kind: "simulated-hit" | "hook-error" | "original-error";
+  readonly kind: "simulated-hit" | "hook-error" | "original-error" | "debug-event";
   readonly stage?: "before" | "replace" | "after";
   readonly detail?: string;
+  readonly tag?: string;
+  readonly payload?: unknown;
 }
 export interface InvocationResult {
   readonly value: HookValue;
@@ -81,6 +83,7 @@ export class HookSimulator<S extends Parameters> {
   #record(event: SimulationEvent): void {
     this.#events.push(Object.freeze({ ...event }));
     if (this.#events.length > 128) this.#events.shift();
+    if (event.kind === "debug-event") return;
     const key = `${event.revision}:${event.symbolId}`;
     const stats = this.#stats.get(key) ?? { hits: 0, errors: 0 };
     if (event.kind === "simulated-hit") stats.hits++;
@@ -114,6 +117,20 @@ export class HookSimulator<S extends Parameters> {
     validateArguments(rule.symbol, incoming);
     let args: readonly HookValue[] = Object.freeze([...incoming]);
     this.#record({ revision: state.revision, symbolId, kind: "simulated-hit" });
+    const previousEmit = state.plan.emitSink?.fn;
+    const previousStack = state.plan.emitSink?.stack;
+    const previousCaller = state.plan.emitSink?.caller;
+    if (state.plan.emitSink) {
+      state.plan.emitSink.fn = (tag, payload) => {
+        this.#record({ revision: state.revision, symbolId, kind: "debug-event", tag, payload });
+      };
+      state.plan.emitSink.stack = (maxDepth) => Object.freeze([
+        rule.symbol.kind === "java" ? `${rule.symbol.className}.${rule.symbol.methodName}` : `${rule.symbol.moduleName}!${rule.symbol.symbol}`
+      ].slice(0, maxDepth));
+      state.plan.emitSink.caller = () => rule.symbol.kind === "native"
+        ? `${rule.symbol.moduleName}+0x0`
+        : `${rule.symbol.className}.${rule.symbol.methodName}`;
+    }
     const fail = (stage: "before" | "replace" | "after", error: unknown): never => {
       const failure = error instanceof Error ? error
         : new HookError("HOOK_EXECUTION", `${symbolId} ${stage}: callback threw a non-Error value`);
@@ -131,38 +148,46 @@ export class HookSimulator<S extends Parameters> {
         throw error;
       }
     };
-    if (rule.handlers.replace) {
-      let value: HookValue;
-      try {
-        const candidate = synchronous(rule.handlers.replace(Object.freeze({ args, params: state.params })));
-        validateHookValue(rule.symbol.returnType, candidate, `${symbolId} replacement`);
-        value = candidate;
-      } catch (error) {
-        return fail("replace", error);
+    try {
+      if (rule.handlers.replace) {
+        let value: HookValue;
+        try {
+          const candidate = synchronous(rule.handlers.replace(Object.freeze({ args, params: state.params })));
+          validateHookValue(rule.symbol.returnType, candidate, `${symbolId} replacement`);
+          value = candidate;
+        } catch (error) {
+          return fail("replace", error);
+        }
+        return { value, revision: state.revision, hookOutcome: "applied" };
+      }
+      if (rule.handlers.before) {
+        try {
+          const candidate = synchronous(rule.handlers.before(Object.freeze({ args, params: state.params })));
+          requireThat(Array.isArray(candidate), "HOOK_TYPE", "before must return an argument array");
+          validateArguments(rule.symbol, candidate);
+          args = Object.freeze([...candidate]);
+        } catch (error) {
+          return fail("before", error);
+        }
+      }
+      let value = callOriginal(args);
+      if (rule.handlers.after) {
+        try {
+          const candidate = synchronous(rule.handlers.after(Object.freeze({ args, params: state.params, result: value })));
+          validateHookValue(rule.symbol.returnType, candidate, `${symbolId} after result`);
+          value = candidate;
+        } catch (error) {
+          // The original has already executed. Report failure without returning its result or replaying it.
+          return fail("after", error);
+        }
       }
       return { value, revision: state.revision, hookOutcome: "applied" };
-    }
-    if (rule.handlers.before) {
-      try {
-        const candidate = synchronous(rule.handlers.before(Object.freeze({ args, params: state.params })));
-        requireThat(Array.isArray(candidate), "HOOK_TYPE", "before must return an argument array");
-        validateArguments(rule.symbol, candidate);
-        args = Object.freeze([...candidate]);
-      } catch (error) {
-        return fail("before", error);
+    } finally {
+      if (state.plan.emitSink) {
+        state.plan.emitSink.fn = previousEmit;
+        state.plan.emitSink.stack = previousStack;
+        state.plan.emitSink.caller = previousCaller;
       }
     }
-    let value = callOriginal(args);
-    if (rule.handlers.after) {
-      try {
-        const candidate = synchronous(rule.handlers.after(Object.freeze({ args, params: state.params, result: value })));
-        validateHookValue(rule.symbol.returnType, candidate, `${symbolId} after result`);
-        value = candidate;
-      } catch (error) {
-        // The original has already executed. Report failure without returning its result or replaying it.
-        return fail("after", error);
-      }
-    }
-    return { value, revision: state.revision, hookOutcome: "applied" };
   }
 }

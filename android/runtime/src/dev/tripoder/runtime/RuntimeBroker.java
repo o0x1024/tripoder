@@ -13,9 +13,13 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
     public final RuntimeCatalog catalog;
     public final ProjectBindings projects;
     public final ProcessSupervisor processes;
+    /** Binder extras of broadcasts in flight, by delivery ticket. Memory only: a Binder cannot outlive the processes that hold it. */
+    final java.util.Map<String,Bundle> broadcastBinders=java.util.Collections.synchronizedMap(new java.util.LinkedHashMap<String,Bundle>(){@Override protected boolean removeEldestEntry(java.util.Map.Entry<String,Bundle> eldest){return size()>256;}});
     final ActivityLedger activities;
     private final ActivityStartReceipts activityStarts;
     final JobLedger jobs;
+    final PendingIntentLedger pendingIntents;
+    final RuntimePendingIntentBroker pendingIntentBroker;
     final RuntimeJobBroker jobBroker;
     final JobAttemptLedger jobAttempts;
     final ServiceLedger services;
@@ -23,7 +27,7 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
     final ProviderLedger providers;
     private final RuntimeProviderBroker providerBroker;
     final BroadcastLedger broadcasts;
-    private final RuntimeBroadcastBroker broadcastBroker;
+    final RuntimeBroadcastBroker broadcastBroker;
     private final ApplicationStartLedger applicationStarts;
     public ExecutionContract contract;
     final RuntimeHookClaims hookClaims=new RuntimeHookClaims(this);
@@ -32,12 +36,15 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
     private static final class Delivery {final String source,target,sourceTicket;boolean authorized;String receivingInstance;Delivery(String s,String t,String ticket){source=s;target=t;sourceTicket=ticket;}}
     public final JSONArray events=new JSONArray();
     public volatile String lastCallback,lastOperation;
+    private long BOOT_MARK;
+    private void bootStep(String name){long now=android.os.SystemClock.elapsedRealtime();if(now-BOOT_MARK>200)android.util.Log.w("TripoderBoot","SLOW_RECOVER_STEP "+name+" ms="+(now-BOOT_MARK));}
     public RuntimeBroker(Context context){
         host=context;store=new RuntimeStore(context);var activityComponents=new ActivityComponentLedger(store,context);catalog=new RuntimeCatalog(store,activityComponents);contract=new ExecutionContract(store);apks=new ApkStore(context,store,catalog,contract,this);activities=new ActivityLedger(store,contract,activityComponents);services=new ServiceLedger(store);serviceBroker=new RuntimeServiceBroker(this);
+        pendingIntents=new PendingIntentLedger(store);pendingIntentBroker=new RuntimePendingIntentBroker(this);
         jobs=new JobLedger(store);jobAttempts=new JobAttemptLedger(this);jobBroker=new RuntimeJobBroker(this);
         providers=new ProviderLedger(store);providerBroker=new RuntimeProviderBroker(this);projects=new ProjectBindings(context,store,catalog,apks,contract);
         broadcasts=new BroadcastLedger(store);broadcastBroker=new RuntimeBroadcastBroker(this);
-        try{applicationStarts=new ApplicationStartLedger(store,context);store.recoverSessions(context);contract.onRecover();jobs.recovered();JobAttemptLedger.recover(store.getWritableDatabase());jobBroker.reconcileSchedules();new ControllerLaunchLedger(this).recover();providers.recover(contract);broadcasts.recover(contract);activities.recover(context);services.reconcile(context);apks.recover();projects.recover();}
+        try{applicationStarts=new ApplicationStartLedger(store,context);BOOT_MARK=android.os.SystemClock.elapsedRealtime();store.recoverSessions(context);bootStep("store.recoverSessions(context)");BOOT_MARK=android.os.SystemClock.elapsedRealtime();contract.onRecover();bootStep("contract.onRecover()");BOOT_MARK=android.os.SystemClock.elapsedRealtime();jobs.recovered();bootStep("jobs.recovered()");BOOT_MARK=android.os.SystemClock.elapsedRealtime();JobAttemptLedger.recover(store.getWritableDatabase());bootStep("JobAttemptLedger.recover(store.getWritab");BOOT_MARK=android.os.SystemClock.elapsedRealtime();jobBroker.reconcileSchedules();bootStep("jobBroker.reconcileSchedules()");BOOT_MARK=android.os.SystemClock.elapsedRealtime();pendingIntentBroker.retireDirectTransports();bootStep("retireDirectTransports()");BOOT_MARK=android.os.SystemClock.elapsedRealtime();providers.recover(contract);bootStep("providers.recover(contract)");BOOT_MARK=android.os.SystemClock.elapsedRealtime();broadcasts.recover(contract);bootStep("broadcasts.recover(contract)");BOOT_MARK=android.os.SystemClock.elapsedRealtime();activities.recover(context);bootStep("activities.recover(context)");BOOT_MARK=android.os.SystemClock.elapsedRealtime();services.reconcile(context);bootStep("services.reconcile(context)");BOOT_MARK=android.os.SystemClock.elapsedRealtime();apks.recover();bootStep("apks.recover()");BOOT_MARK=android.os.SystemClock.elapsedRealtime();projects.recover();bootStep("projects.recover()");}
         catch(Exception error){store.close();throw new IllegalStateException("AUTHORITY_RECOVERY_FAILED",error);}
         activityStarts=new ActivityStartReceipts(store,context,activities,this);processes=new ProcessSupervisor(this);
     }
@@ -100,6 +107,9 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
     }
     synchronized Slot slotForTermination(String gen){Slot slot=slots.get(gen);if(slot==null)throw new IllegalStateException("STALE_SESSION");return slot;}
     @Override protected Bundle handle(int code,Bundle input,int pid,int uid)throws Exception {
+        if(code==RuntimeWire.PENDING_INTENT)return pendingIntentBroker.route(input,pid,uid);
+        if(code==RuntimeWire.EXIT_HISTORY)return RuntimeExitHistory.query(this,input,pid,uid);
+        if(code==RuntimeWire.PERMISSION_CONTROLLER)return RuntimePermissionController.query(this,input,pid,uid);
         if(code==RuntimeWire.JOB_ROUTE)return jobBroker.route(input,pid,uid);
         if(code==RuntimeWire.PROCESS_VIEW)return RuntimeProcessView.query(this,input,pid,uid);
         if(code==RuntimeWire.ROUTE)return routeActivity(input,pid,uid);
@@ -166,10 +176,13 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
         if(uid!=android.os.Process.myUid())throw new SecurityException("CALLER_UID_MISMATCH");
         String generation=RuntimeWire.required(input,"generation"),pkg=RuntimeWire.required(input,"package"),component=RuntimeWire.required(input,"component"),op=RuntimeWire.required(input,"operation");
         boolean wantsResult=input.getBoolean("wantsResult");
-        String sourceTicket=RuntimeWire.required(input,"ticket"),sourceInstance=RuntimeWire.required(input,"instance"),payloadDigest=RuntimeWire.required(input,"requestDigest");
+        // A start requested through an Application/Service Context has no source Activity; it is a new task started by the process itself, as Android treats a non-Activity caller.
+        boolean fromContext=input.getBoolean("fromContext");
+        String sourceTicket=fromContext?"":RuntimeWire.required(input,"ticket"),sourceInstance=fromContext?"":RuntimeWire.required(input,"instance"),payloadDigest=RuntimeWire.required(input,"requestDigest");
+        if(fromContext&&(wantsResult||(input.getInt("flags",0)&Intent.FLAG_ACTIVITY_NEW_TASK)==0))throw new IllegalArgumentException("CONTEXT_START_REQUIRES_NEW_TASK_WITHOUT_RESULT");
         ExecutionContract.Session source;ApkStore.BundleInstall target;String targetProcess;
         synchronized(this){
-            source=contract.authenticate(generation,pid,uid);activities.source(sourceTicket,sourceInstance,requiredSlot(generation),input.getInt("taskId",-1));target=apks.get(source.identity.spaceId,pkg);
+            source=contract.authenticate(generation,pid,uid);if(!fromContext)activities.source(sourceTicket,sourceInstance,requiredSlot(generation),input.getInt("taskId",-1));target=apks.get(source.identity.spaceId,pkg);
             var declared=RuntimeComponents.activity(target,component);RuntimeComponents.authorize(declared,source.identity.packageName);targetProcess=declared.processName;
             RuntimeActivityIntent.requireFlags(input.getInt("flags",0));if(wantsResult&&(input.getInt("flags",0)&Intent.FLAG_ACTIVITY_NEW_TASK)!=0)throw new UnsupportedOperationException("ACTIVITY_RESULT_NEW_TASK_UNSUPPORTED");
             if(wantsResult&&(input.getInt("flags",0)&Intent.FLAG_ACTIVITY_SINGLE_TOP)!=0)throw new UnsupportedOperationException("ACTIVITY_RESULT_SINGLE_TOP_UNSUPPORTED");
@@ -183,7 +196,7 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
             // bootstrap/Application. Android owns the actual process entry.
             Slot to=processes.reserveComponent(target,targetProcess);
             synchronized(this){
-                contract.authenticate(generation,pid,uid);var caller=activities.source(sourceTicket,sourceInstance,requiredSlot(generation),input.getInt("taskId",-1));String toGen=to.allocation.session.processGeneration;
+                contract.authenticate(generation,pid,uid);var caller=fromContext?null:activities.source(sourceTicket,sourceInstance,requiredSlot(generation),input.getInt("taskId",-1));String toGen=to.allocation.session.processGeneration;
                 if(requiredSlot(toGen)!=to||!to.install.generation.equals(target.generation))throw new IllegalStateException("STALE_INSTALL");
                 String callback=null;if(wantsResult){callback=contract.issueCallback(generation,toGen,op,System.currentTimeMillis()+60000);lastCallback=callback;lastOperation=op;deliveries.put(op,new Delivery(generation,toGen,sourceTicket));}
                 String ticket=activities.prepare(to,component,wantsResult?op:null,op,source.identity.packageName,payloadDigest,caller,input.getInt("flags",0));Bundle result=new Bundle();result.putString("stub",activities.get(ticket).stub);result.putString("generation",toGen);if(callback!=null)result.putString("callback",callback);result.putString("operation",op);result.putString("ticket",ticket);result.putString("delivery",activities.launches.forTicket(ticket));return result;

@@ -49,6 +49,7 @@ public final class RuntimeBridge {
     public static java.util.List<android.app.NotificationChannelGroup> notificationGroups(){return RuntimeEngine.current.notifications.groups();}
     public static void notificationDeleteChannel(String id){RuntimeEngine.current.notifications.deleteChannel(id);}
     public static void notificationDeleteGroup(String id){RuntimeEngine.current.notifications.deleteGroup(id);}
+    public static void notificationPost(String tag,int id,android.app.Notification notification){RuntimeEngine.current.notifications.post(tag,id,notification);}
     public static void notificationCancel(String tag,int id){RuntimeEngine.current.notifications.cancel(tag,id);}
     public static void notificationCancelAll(){RuntimeEngine.current.notifications.cancelAll();}
     private RuntimeBridge(){}
@@ -76,7 +77,9 @@ public final class RuntimeBridge {
     public static boolean lowRamDevice(){return RuntimeEngine.current.activityManager.lowRam();}
     public static void memoryInfo(ActivityManager.MemoryInfo output){RuntimeEngine.current.activityManager.memoryInfo(output);}
     public static java.util.List<ActivityManager.RunningAppProcessInfo> processView()throws Exception{return RuntimeEngine.current.activityManager.processes();}
+    public static android.os.Debug.MemoryInfo[] processMemory(int[] pids)throws Exception{return RuntimeEngine.current.activityManager.processMemory(pids);}
     public static java.util.ArrayList<android.os.Bundle> historicalStarts(int max)throws Exception{return RuntimeEngine.current.activityManager.history(max);}
+    public static java.util.List<android.app.ApplicationExitInfo> historicalExits(String pkg,int pid,int max)throws Exception{return RuntimeEngine.current.activityManager.exits(pkg,pid,max);}
     public static void storageFinisher(Runnable finisher){RuntimeSelfHookApplication.addFinisher(finisher);}
     public static String nativeStorageSpec()throws Exception{return RuntimeEngine.current.storage.nativeSpec(new java.io.File(RuntimeEngine.current.info.sourceDir).getParentFile());}
     public static boolean owns(Activity activity){return activity!=null&&RuntimeEngine.current!=null&&RuntimeEngine.current.ownsActivity(activity);}
@@ -124,6 +127,8 @@ public final class RuntimeBridge {
     public static void registerSettingsObserver(android.net.Uri uri,boolean descendants,android.database.ContentObserver observer,int user){RuntimeEngine.current.providers.settingsObservers.register(uri,descendants,observer,user);}
     public static void unregisterSettingsObserver(android.database.ContentObserver observer){RuntimeEngine.current.providers.settingsObservers.unregister(observer);}
     public static int[] batchSelectionKeys(ContentProviderOperation operation,int index){return RuntimeSelfHookComponents.selectionKeys(operation,index);}
+    /** The physical summary is the Runtime exit-attribution marker; guest summaries are retained logically and never overwrite it. */
+    public static void setProcessStateSummary(byte[] summary){RuntimeEngine.current.setGuestProcessStateSummary(summary);}
     public static void installReceiverAdapter(BroadcastReceiver receiver){RuntimeSelfHookComponents.installReceiver(receiver);}
     public static boolean ownsReceiver(BroadcastReceiver receiver){return RuntimeEngine.current!=null&&RuntimeEngine.current.receivers.owns(receiver);}
     public static Intent receiverBefore(BroadcastReceiver receiver,Intent intent,Object pending){return RuntimeEngine.current.receivers.before(receiver,intent,pending);}
@@ -132,6 +137,24 @@ public final class RuntimeBridge {
     public static void receiverFinished(Object pending){RuntimeEngine.current.receivers.finished(pending);}
     public static void attach(Activity activity){RuntimeSelfHookActivities.attach(activity);}
     public static Intent route(Activity caller,Intent intent,int requestCode)throws Exception{return RuntimeEngine.current.route(caller,intent,requestCode);}
+    public static Intent routeFromContext(Intent intent)throws Exception{return RuntimeEngine.current.routeFromContext(intent);}
+    public static android.content.ComponentName resolveOwnActivity(Intent intent){return RuntimeEngine.current==null?null:GuestIntentResolver.resolveActivity(RuntimeEngine.current,intent);}
+    private static final java.util.Map<android.app.Service,Integer> FOREGROUND=java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+    public static Object serviceForeground(android.app.Service service,String name,Object[] args){
+        RuntimeEngine engine=RuntimeEngine.current;
+        switch(name){
+            case "startForeground":{int id=(Integer)args[0];engine.notifications.post(null,id,(android.app.Notification)args[1]);FOREGROUND.put(service,id);return null;}
+            case "stopForeground":{
+                boolean remove=args[0] instanceof Boolean?(Boolean)args[0]:(((Integer)args[0])&android.app.Service.STOP_FOREGROUND_REMOVE)!=0;
+                Integer id=FOREGROUND.get(service);if(id!=null&&remove){engine.notifications.facade().cancel(id);}if(remove)FOREGROUND.remove(service);return null;
+            }
+            case "getForegroundServiceType":return 0;
+            default:throw new UnsupportedOperationException("FOREGROUND_SERVICE_CALL_UNSUPPORTED:"+name);
+        }
+    }
+    public static void noteSystemResult(Activity caller,int requestCode)throws Exception{RuntimeEngine.current.noteSystemResult(caller,requestCode);}
+    public static android.content.ComponentName resolveOwnService(Intent intent){if(RuntimeEngine.current==null)return null;var hits=GuestIntentResolver.query(RuntimeEngine.current,"service",intent,0);return hits.isEmpty()||hits.get(0).serviceInfo==null?null:new android.content.ComponentName(hits.get(0).serviceInfo.packageName,hits.get(0).serviceInfo.name);}
+    public static boolean startsHost(Intent intent){return RuntimeEngine.current!=null&&RuntimeEngine.current.targetsHost(intent);}
     public static void activityStartResult(Object intent,int result)throws Exception{RuntimeEngine.current.activityStartResult(intent,result);}
     public static void returning(Activity activity,int code,Intent data)throws Exception{RuntimeEngine.current.returning(activity,code,data);}
     public static String receiving(Activity activity,int requestCode,int resultCode,ComponentCaller caller)throws Exception{if(!owns(activity))throw new SecurityException("RESULT_RECEIVER_MISMATCH");return RuntimeEngine.current.receiving(activity,requestCode,resultCode,caller);}

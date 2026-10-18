@@ -128,6 +128,7 @@ public final class ScriptValues {
             case "void": valid = value == UNDEFINED; break;
             case "boolean": valid = value instanceof Boolean; break;
             case "java.lang.String": valid = value == null || value instanceof String; break;
+            case "[B": case "byte[]": valid = value == null || (value instanceof String && ((String)value).length() <= 8192 && (((String)value).length() & 1) == 0 && ((String)value).matches("[0-9a-fA-F]*")); break;
             case "char": valid = value instanceof String && ((String)value).length() == 1; break;
             case "long": case "int64": valid = integerRange(value, 63, true); break;
             case "uint64": valid = integerRange(value, 64, false); break;

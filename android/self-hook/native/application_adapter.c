@@ -9,6 +9,7 @@ static struct {
     unsigned retained,checks,constructs,attaches;
     pid_t tid;
     const char *stage;
+    const char *broken;
 } state={.stage="NOT_STARTED"};
 static _Atomic bool attempted,ownership_ready,view_attempted,begun,creation_attempted;
 static const char *class_names[]={"android/app/Application","android/app/ActivityThread","android/app/LoadedApk",
@@ -34,19 +35,33 @@ static bool physical(JNIEnv *env,bool attached){
     jobject initial=(*env)->GetObjectField(env,thread,state.fields[0]);
     jobject apk=(*env)->GetObjectField(env,host,state.fields[1]);
     jobject host_owner=(*env)->GetObjectField(env,state.roots[PHYSICAL],state.fields[2]);
-    bool valid=!(*env)->ExceptionCheck(env)&&same(env,current,thread)&&same(env,initial,host)&&
-        same(env,apk,state.roots[PHYSICAL])&&same(env,host_owner,host);
+    // Which invariant broke is recorded so a failure names the field a guest rewrote, instead of one undifferentiated identity error.
+    state.broken="";
+    bool valid=!(*env)->ExceptionCheck(env);
+    if(!valid)state.broken="exception";
+    else if(!same(env,current,thread))valid=false,state.broken="ActivityThread.currentActivityThread";
+    else if(!same(env,initial,host))valid=false,state.broken="ActivityThread.mInitialApplication";
+    else if(!same(env,apk,state.roots[PHYSICAL]))valid=false,state.broken="host.mLoadedApk";
+    else if(!same(env,host_owner,host))valid=false,state.broken="host LoadedApk.mApplication";
     if(valid&&state.roots[LOGICAL]){
         jobject owner=(*env)->GetObjectField(env,state.roots[LOGICAL],state.fields[2]);
         valid=same(env,owner,guest)&&!same(env,state.roots[PHYSICAL],state.roots[LOGICAL]);
+        if(!valid)state.broken="logical LoadedApk.mApplication";
         const unsigned expected[]={LOADER,LOADER,RESOURCES,FACTORY,DECLARED};
+        const char *names[]={"logical.mClassLoader","logical.mDefaultClassLoader","logical.mResources","logical.mAppComponentFactory","logical.mApplicationInfo"};
         for(unsigned i=0;valid&&i<5;i++){
             jobject value=(*env)->GetObjectField(env,state.roots[LOGICAL],state.fields[4+i]);
+            if(expected[i]==RESOURCES&&value&&!same(env,value,state.roots[RESOURCES])){
+                // The guest's own LoadedApk.mResources is the guest's to replace (resource hot-update and theming frameworks do). It holds no host identity, so follow it instead of rejecting it.
+                jobject followed=(*env)->NewGlobalRef(env,value);
+                if(followed){(*env)->DeleteGlobalRef(env,state.roots[RESOURCES]);state.roots[RESOURCES]=followed;}
+            }
             valid=same(env,value,state.roots[expected[i]]);
+            if(!valid)state.broken=names[i];
         }
     }
     if(valid&&attached){jobject guest_apk=(*env)->GetObjectField(env,guest,state.fields[1]);
-        valid=same(env,guest_apk,state.roots[LOGICAL]);}
+        valid=same(env,guest_apk,state.roots[LOGICAL]);if(!valid)state.broken="guest.mLoadedApk";}
     (*env)->PopLocalFrame(env,NULL);
     if(valid)state.checks++;
     return valid;
@@ -157,7 +172,7 @@ JNIEXPORT void JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_attachNativ
     state.attaches++;
     (*env)->CallNonvirtualVoidMethod(env,state.roots[GUEST],state.classes[0],state.methods[6],wrapper);
     if((*env)->ExceptionCheck(env))goto done;
-    if(!physical(env,true)){fail(env,"APPLICATION_POST_ATTACH_IDENTITY");goto done;}
+    if(!physical(env,true)){static char why[128];snprintf(why,sizeof(why),"APPLICATION_POST_ATTACH_IDENTITY:%s",state.broken?state.broken:"?");fail(env,why);goto done;}
     state.stage="ATTACHED";
 done:
     (*env)->PopLocalFrame(env,NULL);

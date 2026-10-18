@@ -10,7 +10,7 @@ def verify(directory,run):
     need(case['entryCapacity']==1024 and case['finalSlot']==1023 and case['unwindCases']==13,'ENTRY_CAPACITY_AND_ACTUAL_UNWIND')
     need(case['hookInstalled'] is case['productAccepted'] is False,'INBOUND_SCOPE')
     audit=json.loads((directory/'inbound-audit.json').read_text())
-    need(audit['passed'] is True and audit['entries']==1024 and audit['frameBytes']==240 and audit['fdeRanges']==2 and audit['pac'] is True,'INBOUND_ELF_AUDIT')
+    need(audit['passed'] is True and audit['entries']==1024 and audit['frameBytes']==240 and audit['fdeRanges']==4 and audit['pac'] is True and audit['admissionNoExternalCalls'] is True,'INBOUND_ELF_AUDIT')
     need(audit['auditSha256']==sha(directory/'inbound-audit.txt'),'INBOUND_AUDIT_IDENTITY')
     report.update(checks=78,typedCases=13,concurrentCalls=4000,unwindCases=13,verifierSha256=sha(Path(__file__)),
         scope='Real compiled caller → immutable Native entry → scalar dispatch → nested entry/original → ABI return/errno; no export patch or product JNI yet')

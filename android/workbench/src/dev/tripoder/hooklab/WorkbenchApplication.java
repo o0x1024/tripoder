@@ -5,11 +5,13 @@ package dev.tripoder.hooklab;
 public final class WorkbenchApplication extends dev.tripoder.runtime.RuntimeApplication {
     EngineConnection engine;
     WorkbenchOperations operations;WorkbenchImports imports;WorkbenchProjects projects;
+    WorkbenchPresentations presentations;WorkbenchSpaces spaces;
     final WorkbenchHooks hooks=new WorkbenchHooks();
     WorkbenchAgentControl agents;
     @Override public void onCreate(){
         super.onCreate();
         if(!getPackageName().equals(getProcessName()))return;
+        presentations=new WorkbenchPresentations(this);spaces=new WorkbenchSpaces(this);
         engine=new EngineConnection(this);operations=new WorkbenchOperations(this,engine);imports=new WorkbenchImports(this,operations);projects=new WorkbenchProjects(this);agents=new WorkbenchAgentControl(this);
     }
 }

@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <stddef.h>
 struct tp_scalar_admission {
-    _Atomic uint64_t *state;
+    _Atomic(_Atomic uint64_t *) state;
     uint64_t identity;
     _Atomic unsigned *active;
     _Atomic unsigned test_gate;

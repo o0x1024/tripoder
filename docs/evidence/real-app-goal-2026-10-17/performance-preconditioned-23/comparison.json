@@ -1,0 +1,1568 @@
+{
+  "schema": 2,
+  "rounds": 5,
+  "preconditionRounds": 1,
+  "requestedCpu": 5,
+  "benchmarkSourceSha256": {
+    "android/self-hook-probe/native/probe_native_benchmark.c": "3d80b621c09bedac0d49905f050100f37c0adccefbb89da28795df6b7052187a",
+    "android/self-hook-probe/src/dev/tripoder/runtime/OwnedNativeBenchmarkChecks.java": "1ac2fae3a6c5ceb967bdd57cbf5c9b1ebf4686139af19193ffcc96fefeaeecaf",
+    "android/self-hook-probe/src/dev/tripoder/selfhookprobe/NativeBenchmark.java": "6d97704542e591146be2397ff726475e3df28d81369bb1ef5177469ba8923b94",
+    "android/self-hook-probe/src/dev/tripoder/selfhookprobe/NativeBenchmarkProbeActivity.java": "9c4aa754834f19a7c18012297dc8769d87e07afd83a53c522e4dc304f63df981"
+  },
+  "comparisons": {
+    "hookC": {
+      "meanNs": {
+        "baselineMedian": 225.1294946875,
+        "currentMedian": 209.32048625,
+        "changePercent": -7.0221844807337845,
+        "spreadPercent": {
+          "baseline": 21.68921466411089,
+          "current": 22.610087901752134
+        }
+      },
+      "p95Ns": {
+        "baselineMedian": 229.484375,
+        "currentMedian": 213.21875,
+        "changePercent": -7.087900864710283,
+        "spreadPercent": {
+          "baseline": 21.631374685095665,
+          "current": 22.13102740729884
+        }
+      },
+      "p99Ns": {
+        "baselineMedian": 229.5,
+        "currentMedian": 214.03125,
+        "changePercent": -6.740196078431371,
+        "spreadPercent": {
+          "baseline": 22.337962962962962,
+          "current": 23.572784348080013
+        }
+      }
+    },
+    "jniHook": {
+      "meanNs": {
+        "baselineMedian": 1503.128576,
+        "currentMedian": 1296.918988,
+        "changePercent": -13.718692551820677,
+        "spreadPercent": {
+          "baseline": 25.654124747342966,
+          "current": 23.44127673454959
+        }
+      },
+      "p95Ns": {
+        "baselineMedian": 3125,
+        "currentMedian": 1563,
+        "changePercent": -49.983999999999995,
+        "spreadPercent": {
+          "baseline": 34.976,
+          "current": 23.352527191298783
+        }
+      },
+      "p99Ns": {
+        "baselineMedian": 4896,
+        "currentMedian": 4427,
+        "changePercent": -9.579248366013072,
+        "spreadPercent": {
+          "baseline": 28.737745098039213,
+          "current": 30.58504630675401
+        }
+      }
+    },
+    "foreignJniHook": {
+      "meanNs": {
+        "baselineMedian": 13653.17733,
+        "currentMedian": 1190.29749,
+        "changePercent": -91.28190119244573,
+        "spreadPercent": {
+          "baseline": 22.596609165992568,
+          "current": 20.230523211470437
+        }
+      },
+      "p95Ns": {
+        "baselineMedian": 16615,
+        "currentMedian": 1562,
+        "changePercent": -90.59885645501053,
+        "spreadPercent": {
+          "baseline": 19.747216370749324,
+          "current": 16.709346991037133
+        }
+      },
+      "p99Ns": {
+        "baselineMedian": 21250,
+        "currentMedian": 3802,
+        "changePercent": -82.10823529411765,
+        "spreadPercent": {
+          "baseline": 26.71529411764706,
+          "current": 39.74224092582851
+        }
+      }
+    },
+    "productRule": {
+      "meanNs": {
+        "baselineMedian": 8988.722612,
+        "currentMedian": 8359.392053,
+        "changePercent": -7.001334740932375,
+        "spreadPercent": {
+          "baseline": 21.16667263110333,
+          "current": 22.133935999998734
+        }
+      },
+      "p95Ns": {
+        "baselineMedian": 12135,
+        "currentMedian": 11615,
+        "changePercent": -4.285125669550882,
+        "spreadPercent": {
+          "baseline": 19.744540585084465,
+          "current": 20.628497632371932
+        }
+      },
+      "p99Ns": {
+        "baselineMedian": 14323,
+        "currentMedian": 14114,
+        "changePercent": -1.4591915101584862,
+        "spreadPercent": {
+          "baseline": 21.44802066606158,
+          "current": 23.253507156015303
+        }
+      }
+    }
+  },
+  "clockOverheadIncluded": true,
+  "cQuantilesDescribe64CallBatches": true,
+  "baselineNoiseExceedsFivePercent": true,
+  "medianRegressionExceedsFivePercent": false,
+  "frequencyPolicyEnvelopeUnchanged": false,
+  "frequencyConstantWithinSamplesProven": false,
+  "performanceAccepted": false,
+  "productAccepted": false,
+  "results": [
+    {
+      "phase": "precondition",
+      "round": 1,
+      "version": "current",
+      "runId": "36e12279-a53a-459d-b178-7f221b996a3b",
+      "apkSha256": "7104c67ca7cf9ab8639c8391e8c75256aa11b9f54a47c3727a0cf19dae4b69e9",
+      "nativeSha256": "8267eae3eb0e06ba10d871e6e9ee2f3274dc759bcd5be5ad6c082f6302d0c770",
+      "data": {
+        "javaSamplesPerPath": 1000000,
+        "nativeSamplesPerPath": 100000,
+        "clockOverheadIncluded": true,
+        "workerCpu": 5,
+        "warmupNsPerPath": 500000000,
+        "productAuthorityConnected": false,
+        "prepareNs": 32033542,
+        "publishNs": 43536615,
+        "retireNs": 50738333,
+        "diagnosticInstrumentation": false,
+        "directC": {
+          "count": 100000,
+          "writeNs": 3474375,
+          "callsPerSample": 64,
+          "meanNs": 7.74009578125,
+          "p50Ns": 7.328125,
+          "p95Ns": 8.140625,
+          "p99Ns": 8.140625,
+          "rawFile": "direct-c.bin",
+          "sha256": "2600b2a786a9dad1d604aaa259be92fd03b0099ffc96b73a223b8179fe239343"
+        },
+        "hookC": {
+          "count": 100000,
+          "writeNs": 2065678,
+          "callsPerSample": 64,
+          "meanNs": 178.0326621875,
+          "p50Ns": 177.40625,
+          "p95Ns": 178.21875,
+          "p99Ns": 178.234375,
+          "rawFile": "hook-c.bin",
+          "sha256": "c774f60c6e02ab2bdf1385c3e9e9c60de54f5c720fc45dab66968514ba6e9e23"
+        },
+        "jniBaseline": {
+          "count": 1000000,
+          "writeNs": 21181250,
+          "callsPerSample": 1,
+          "meanNs": 29.826496,
+          "p50Ns": 52,
+          "p95Ns": 52,
+          "p99Ns": 53,
+          "rawFile": "jni-baseline.bin",
+          "sha256": "092f639634b393a1497020082b1cfd70b7903ef888489253fd3d9d30e2a050b6"
+        },
+        "jniHook": {
+          "count": 1000000,
+          "writeNs": 18306719,
+          "callsPerSample": 1,
+          "meanNs": 1066.237062,
+          "p50Ns": 989,
+          "p95Ns": 1354,
+          "p99Ns": 3385,
+          "rawFile": "jni-hook.bin",
+          "sha256": "379b2e8cc1733bc0681704aa28e32a89401a2180692c3af97b4e364811ed7da2"
+        },
+        "foreignJniHook": {
+          "count": 100000,
+          "writeNs": 2778125,
+          "callsPerSample": 1,
+          "meanNs": 971.01765,
+          "p50Ns": 885,
+          "p95Ns": 1302,
+          "p99Ns": 3177,
+          "rawFile": "foreign-jni-hook.bin",
+          "sha256": "b1b295ced74830a3e43898e8ba9be574223452e166561daddc721c5c8fc96602"
+        },
+        "productRule": {
+          "count": 1000000,
+          "writeNs": 19032969,
+          "callsPerSample": 1,
+          "meanNs": 7208.851267,
+          "p50Ns": 6979,
+          "p95Ns": 9947,
+          "p99Ns": 11823,
+          "rawFile": "product-rule.bin",
+          "sha256": "e9bb719b679f6a89ea84f95f31c1e0d95f0501140598c1892fbae246750f2a2d"
+        },
+        "sampleBuffersPrefaulted": true,
+        "artifactWritesAfterMeasurements": true,
+        "affinityVerifiedAfterSamples": true,
+        "passed": true,
+        "semanticChecksPassed": true,
+        "performanceAccepted": false,
+        "finalPssKb": 119453
+      },
+      "frequencyBefore": {
+        "hostMonotonicNs": 781684812836125,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "2304000",
+          "scaling_min_freq": "1382400",
+          "scaling_max_freq": "2304000",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      },
+      "frequencyAfter": {
+        "hostMonotonicNs": 781699948310083,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "1382400",
+          "scaling_min_freq": "480000",
+          "scaling_max_freq": "2764800",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      }
+    },
+    {
+      "phase": "precondition",
+      "round": 1,
+      "version": "baseline",
+      "runId": "927cb187-fca7-4a4a-bcc0-62bb3100b288",
+      "apkSha256": "3fa70f27aed23c4e55767e19eac49ff5a36ca4ea4d877bc80cd2f1ae5cd63395",
+      "nativeSha256": "d156eab027bcd03d0d8ccb23f8760dd74bb43412087522819706ffaf31bcef7c",
+      "data": {
+        "javaSamplesPerPath": 1000000,
+        "nativeSamplesPerPath": 100000,
+        "clockOverheadIncluded": true,
+        "workerCpu": 5,
+        "warmupNsPerPath": 500000000,
+        "productAuthorityConnected": false,
+        "prepareNs": 33092865,
+        "publishNs": 45928646,
+        "retireNs": 47551875,
+        "diagnosticInstrumentation": false,
+        "directC": {
+          "count": 100000,
+          "writeNs": 3595313,
+          "callsPerSample": 64,
+          "meanNs": 7.82212734375,
+          "p50Ns": 7.328125,
+          "p95Ns": 8.140625,
+          "p99Ns": 8.140625,
+          "rawFile": "direct-c.bin",
+          "sha256": "b737ff420ca08e8365100e01a36b7f1652aa1271142614829610fb2a02e26ac6"
+        },
+        "hookC": {
+          "count": 100000,
+          "writeNs": 2164791,
+          "callsPerSample": 64,
+          "meanNs": 181.7627565625,
+          "p50Ns": 180.671875,
+          "p95Ns": 181.484375,
+          "p99Ns": 181.484375,
+          "rawFile": "hook-c.bin",
+          "sha256": "8cd62e94dfb8fd40cf4b6b8ff3c5139fd36bd261cb97468c9ac5328b4bfb8a4f"
+        },
+        "jniBaseline": {
+          "count": 1000000,
+          "writeNs": 19387343,
+          "callsPerSample": 1,
+          "meanNs": 30.024502,
+          "p50Ns": 52,
+          "p95Ns": 52,
+          "p99Ns": 53,
+          "rawFile": "jni-baseline.bin",
+          "sha256": "9d29fbabf4a074a14770b7a13947322f4df92210a13ba3dfd73e3225bcac1d2b"
+        },
+        "jniHook": {
+          "count": 1000000,
+          "writeNs": 18700885,
+          "callsPerSample": 1,
+          "meanNs": 1135.259949,
+          "p50Ns": 938,
+          "p95Ns": 2292,
+          "p99Ns": 3906,
+          "rawFile": "jni-hook.bin",
+          "sha256": "b245e61753cb6ce121b559325d809c4f13dfc02db32dfd75d81737aeab411fa2"
+        },
+        "foreignJniHook": {
+          "count": 100000,
+          "writeNs": 2264844,
+          "callsPerSample": 1,
+          "meanNs": 10740.88417,
+          "p50Ns": 10105,
+          "p95Ns": 13385,
+          "p99Ns": 16667,
+          "rawFile": "foreign-jni-hook.bin",
+          "sha256": "9e3db9b81962b64a39324364451f9b06771c01250fbe1dd761f26e803bfd94f2"
+        },
+        "productRule": {
+          "count": 1000000,
+          "writeNs": 18257604,
+          "callsPerSample": 1,
+          "meanNs": 7106.287162,
+          "p50Ns": 6928,
+          "p95Ns": 9792,
+          "p99Ns": 11458,
+          "rawFile": "product-rule.bin",
+          "sha256": "ab19c7cdd58396c6557f515ea0ddef3acd78009c4f60b230fc982bafdc9fd4c9"
+        },
+        "sampleBuffersPrefaulted": true,
+        "artifactWritesAfterMeasurements": true,
+        "affinityVerifiedAfterSamples": true,
+        "passed": true,
+        "semanticChecksPassed": true,
+        "performanceAccepted": false,
+        "finalPssKb": 105672
+      },
+      "frequencyBefore": {
+        "hostMonotonicNs": 781702095770208,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "2304000",
+          "scaling_min_freq": "1152000",
+          "scaling_max_freq": "2304000",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      },
+      "frequencyAfter": {
+        "hostMonotonicNs": 781718513988416,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "1152000",
+          "scaling_min_freq": "480000",
+          "scaling_max_freq": "2764800",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      }
+    },
+    {
+      "phase": "measurement",
+      "round": 1,
+      "version": "baseline",
+      "runId": "8b31912e-0410-402b-aa08-6d3559e9c24c",
+      "apkSha256": "3fa70f27aed23c4e55767e19eac49ff5a36ca4ea4d877bc80cd2f1ae5cd63395",
+      "nativeSha256": "d156eab027bcd03d0d8ccb23f8760dd74bb43412087522819706ffaf31bcef7c",
+      "data": {
+        "javaSamplesPerPath": 1000000,
+        "nativeSamplesPerPath": 100000,
+        "clockOverheadIncluded": true,
+        "workerCpu": 5,
+        "warmupNsPerPath": 500000000,
+        "productAuthorityConnected": false,
+        "prepareNs": 36844896,
+        "publishNs": 41509323,
+        "retireNs": 50572447,
+        "diagnosticInstrumentation": false,
+        "directC": {
+          "count": 100000,
+          "writeNs": 3433542,
+          "callsPerSample": 64,
+          "meanNs": 7.74547484375,
+          "p50Ns": 7.328125,
+          "p95Ns": 8.140625,
+          "p99Ns": 8.140625,
+          "rawFile": "direct-c.bin",
+          "sha256": "b9074bb3c960abbcb2bbe85559acfe131e71b02af5beccf3052ec96231d53d41"
+        },
+        "hookC": {
+          "count": 100000,
+          "writeNs": 2047865,
+          "callsPerSample": 64,
+          "meanNs": 181.00819734375,
+          "p50Ns": 179.859375,
+          "p95Ns": 181.484375,
+          "p99Ns": 181.484375,
+          "rawFile": "hook-c.bin",
+          "sha256": "86d19645659f1f5291969f66334ef5cc72f9a32859784bc86e3dc602d091e8eb"
+        },
+        "jniBaseline": {
+          "count": 1000000,
+          "writeNs": 18905000,
+          "callsPerSample": 1,
+          "meanNs": 30.357676,
+          "p50Ns": 52,
+          "p95Ns": 52,
+          "p99Ns": 53,
+          "rawFile": "jni-baseline.bin",
+          "sha256": "f2a9dabf07dfb0db4aa604b021e480041a49995f5044feeec5874d9565b32f94"
+        },
+        "jniHook": {
+          "count": 1000000,
+          "writeNs": 18319532,
+          "callsPerSample": 1,
+          "meanNs": 1158.06892,
+          "p50Ns": 989,
+          "p95Ns": 2240,
+          "p99Ns": 3750,
+          "rawFile": "jni-hook.bin",
+          "sha256": "5a58cac983a5fbb1704cf34f2d2a1805638462ed8305089db5a06b3c93582f7e"
+        },
+        "foreignJniHook": {
+          "count": 100000,
+          "writeNs": 2018438,
+          "callsPerSample": 1,
+          "meanNs": 10929.59713,
+          "p50Ns": 10312,
+          "p95Ns": 13594,
+          "p99Ns": 16146,
+          "rawFile": "foreign-jni-hook.bin",
+          "sha256": "bbf1281e84025349fd0928000df91dde7d01b3e36b4eaf59c06f318e480130c4"
+        },
+        "productRule": {
+          "count": 1000000,
+          "writeNs": 18319167,
+          "callsPerSample": 1,
+          "meanNs": 7232.788914,
+          "p50Ns": 7031,
+          "p95Ns": 9896,
+          "p99Ns": 11615,
+          "rawFile": "product-rule.bin",
+          "sha256": "9bd555404c38965a4670ddd60553965445678ac080f050ffcfcaa4da385980bb"
+        },
+        "sampleBuffersPrefaulted": true,
+        "artifactWritesAfterMeasurements": true,
+        "affinityVerifiedAfterSamples": true,
+        "passed": true,
+        "semanticChecksPassed": true,
+        "performanceAccepted": false,
+        "finalPssKb": 88984
+      },
+      "frequencyBefore": {
+        "hostMonotonicNs": 781720796086041,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "2304000",
+          "scaling_min_freq": "1152000",
+          "scaling_max_freq": "2304000",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      },
+      "frequencyAfter": {
+        "hostMonotonicNs": 781737286719166,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "1152000",
+          "scaling_min_freq": "480000",
+          "scaling_max_freq": "2764800",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      }
+    },
+    {
+      "phase": "measurement",
+      "round": 1,
+      "version": "current",
+      "runId": "ea8831c3-9dcf-4baf-8e6a-993e39caa2c4",
+      "apkSha256": "7104c67ca7cf9ab8639c8391e8c75256aa11b9f54a47c3727a0cf19dae4b69e9",
+      "nativeSha256": "8267eae3eb0e06ba10d871e6e9ee2f3274dc759bcd5be5ad6c082f6302d0c770",
+      "data": {
+        "javaSamplesPerPath": 1000000,
+        "nativeSamplesPerPath": 100000,
+        "clockOverheadIncluded": true,
+        "workerCpu": 5,
+        "warmupNsPerPath": 500000000,
+        "productAuthorityConnected": false,
+        "prepareNs": 34082136,
+        "publishNs": 41439896,
+        "retireNs": 47693594,
+        "diagnosticInstrumentation": false,
+        "directC": {
+          "count": 100000,
+          "writeNs": 3645885,
+          "callsPerSample": 64,
+          "meanNs": 7.77523984375,
+          "p50Ns": 7.328125,
+          "p95Ns": 8.140625,
+          "p99Ns": 8.140625,
+          "rawFile": "direct-c.bin",
+          "sha256": "d9fd084ae611d855c4927077e9ac6ec95b4b54226d3ca7f36d7ea9e44685bb64"
+        },
+        "hookC": {
+          "count": 100000,
+          "writeNs": 2009896,
+          "callsPerSample": 64,
+          "meanNs": 178.43537890625,
+          "p50Ns": 177.40625,
+          "p95Ns": 178.234375,
+          "p99Ns": 181.46875,
+          "rawFile": "hook-c.bin",
+          "sha256": "350a86137f5a6fd416de3ec094a4c46e630d417f238af66d7515b0459d6a3b9c"
+        },
+        "jniBaseline": {
+          "count": 1000000,
+          "writeNs": 18684843,
+          "callsPerSample": 1,
+          "meanNs": 29.867719,
+          "p50Ns": 52,
+          "p95Ns": 52,
+          "p99Ns": 53,
+          "rawFile": "jni-baseline.bin",
+          "sha256": "5ad1cdd5ee1a7c9cb8563394bbbd7c54c62f686396fb752ecd0acb2c0a70ce2a"
+        },
+        "jniHook": {
+          "count": 1000000,
+          "writeNs": 19404688,
+          "callsPerSample": 1,
+          "meanNs": 1061.570245,
+          "p50Ns": 989,
+          "p95Ns": 1458,
+          "p99Ns": 3229,
+          "rawFile": "jni-hook.bin",
+          "sha256": "a1d672e42164a8f57ea9e51ac524200460e9ba90254a12a92cc0decb4cdc8a96"
+        },
+        "foreignJniHook": {
+          "count": 100000,
+          "writeNs": 2060468,
+          "callsPerSample": 1,
+          "meanNs": 1066.44175,
+          "p50Ns": 989,
+          "p95Ns": 1407,
+          "p99Ns": 3437,
+          "rawFile": "foreign-jni-hook.bin",
+          "sha256": "7821456e4e0b0d37d7d48559cd86d186e9262b35674dadd1091a2b3c1224f50c"
+        },
+        "productRule": {
+          "count": 1000000,
+          "writeNs": 18794323,
+          "callsPerSample": 1,
+          "meanNs": 7130.916315,
+          "p50Ns": 6927,
+          "p95Ns": 9792,
+          "p99Ns": 11458,
+          "rawFile": "product-rule.bin",
+          "sha256": "2e2e3cd98e0ca518065eb90eebe93a6587f0bc80fe9402375d3530094560efde"
+        },
+        "sampleBuffersPrefaulted": true,
+        "artifactWritesAfterMeasurements": true,
+        "affinityVerifiedAfterSamples": true,
+        "passed": true,
+        "semanticChecksPassed": true,
+        "performanceAccepted": false,
+        "finalPssKb": 130959
+      },
+      "frequencyBefore": {
+        "hostMonotonicNs": 781739515186875,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "2304000",
+          "scaling_min_freq": "1152000",
+          "scaling_max_freq": "2304000",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      },
+      "frequencyAfter": {
+        "hostMonotonicNs": 781754679985250,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "1382400",
+          "scaling_min_freq": "480000",
+          "scaling_max_freq": "2764800",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      }
+    },
+    {
+      "phase": "measurement",
+      "round": 2,
+      "version": "current",
+      "runId": "7d274d86-73eb-4f76-98a4-a8c74351cf17",
+      "apkSha256": "7104c67ca7cf9ab8639c8391e8c75256aa11b9f54a47c3727a0cf19dae4b69e9",
+      "nativeSha256": "8267eae3eb0e06ba10d871e6e9ee2f3274dc759bcd5be5ad6c082f6302d0c770",
+      "data": {
+        "javaSamplesPerPath": 1000000,
+        "nativeSamplesPerPath": 100000,
+        "clockOverheadIncluded": true,
+        "workerCpu": 5,
+        "warmupNsPerPath": 500000000,
+        "productAuthorityConnected": false,
+        "prepareNs": 34945000,
+        "publishNs": 42422447,
+        "retireNs": 47391666,
+        "diagnosticInstrumentation": false,
+        "directC": {
+          "count": 100000,
+          "writeNs": 3608334,
+          "callsPerSample": 64,
+          "meanNs": 7.74575359375,
+          "p50Ns": 7.328125,
+          "p95Ns": 8.140625,
+          "p99Ns": 8.140625,
+          "rawFile": "direct-c.bin",
+          "sha256": "d88c3314047f8a11a787b1f28e898e0c802b4f4d76cb149fecae12e513a47381"
+        },
+        "hookC": {
+          "count": 100000,
+          "writeNs": 2070937,
+          "callsPerSample": 64,
+          "meanNs": 178.247198125,
+          "p50Ns": 177.40625,
+          "p95Ns": 178.234375,
+          "p99Ns": 178.234375,
+          "rawFile": "hook-c.bin",
+          "sha256": "6e7bdb1e43f03bae6807d310e4fceeb29d3c69b9a306726e0dc6ba95d943aca5"
+        },
+        "jniBaseline": {
+          "count": 1000000,
+          "writeNs": 19140937,
+          "callsPerSample": 1,
+          "meanNs": 29.917965,
+          "p50Ns": 52,
+          "p95Ns": 52,
+          "p99Ns": 53,
+          "rawFile": "jni-baseline.bin",
+          "sha256": "5db877e4c0836fc1b41a8eb96f673bc1e21c29fdb6ba095152194cc3842ef56a"
+        },
+        "jniHook": {
+          "count": 1000000,
+          "writeNs": 19223073,
+          "callsPerSample": 1,
+          "meanNs": 1068.292058,
+          "p50Ns": 989,
+          "p95Ns": 1302,
+          "p99Ns": 3697,
+          "rawFile": "jni-hook.bin",
+          "sha256": "c694e31b763072c8ee5666ce1f48e74dd55c704757222d3365b8fe9ec2d08ecc"
+        },
+        "foreignJniHook": {
+          "count": 100000,
+          "writeNs": 1990364,
+          "callsPerSample": 1,
+          "meanNs": 1034.03284,
+          "p50Ns": 938,
+          "p95Ns": 1354,
+          "p99Ns": 3177,
+          "rawFile": "foreign-jni-hook.bin",
+          "sha256": "63aa4c7d9f2a8a6a8aef8601d4b2e6c940d390376e6c9bd87fe64a788021d5cd"
+        },
+        "productRule": {
+          "count": 1000000,
+          "writeNs": 18514115,
+          "callsPerSample": 1,
+          "meanNs": 7159.686938,
+          "p50Ns": 7031,
+          "p95Ns": 9895,
+          "p99Ns": 11563,
+          "rawFile": "product-rule.bin",
+          "sha256": "82dfea878b420ec794fe2f1c17a3a9d6fc78ac3197216afe3b0a07dd58182b2b"
+        },
+        "sampleBuffersPrefaulted": true,
+        "artifactWritesAfterMeasurements": true,
+        "affinityVerifiedAfterSamples": true,
+        "passed": true,
+        "semanticChecksPassed": true,
+        "performanceAccepted": false,
+        "finalPssKb": 105794
+      },
+      "frequencyBefore": {
+        "hostMonotonicNs": 781756849435458,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "2304000",
+          "scaling_min_freq": "1152000",
+          "scaling_max_freq": "2304000",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      },
+      "frequencyAfter": {
+        "hostMonotonicNs": 781771939962916,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "2764800",
+          "scaling_min_freq": "480000",
+          "scaling_max_freq": "2764800",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      }
+    },
+    {
+      "phase": "measurement",
+      "round": 2,
+      "version": "baseline",
+      "runId": "90419bbc-a209-439a-ad92-0847ac4928ed",
+      "apkSha256": "3fa70f27aed23c4e55767e19eac49ff5a36ca4ea4d877bc80cd2f1ae5cd63395",
+      "nativeSha256": "d156eab027bcd03d0d8ccb23f8760dd74bb43412087522819706ffaf31bcef7c",
+      "data": {
+        "javaSamplesPerPath": 1000000,
+        "nativeSamplesPerPath": 100000,
+        "clockOverheadIncluded": true,
+        "workerCpu": 5,
+        "warmupNsPerPath": 500000000,
+        "productAuthorityConnected": false,
+        "prepareNs": 42634687,
+        "publishNs": 55225417,
+        "retireNs": 64079427,
+        "diagnosticInstrumentation": false,
+        "directC": {
+          "count": 100000,
+          "writeNs": 4471615,
+          "callsPerSample": 64,
+          "meanNs": 7.7657746875,
+          "p50Ns": 7.328125,
+          "p95Ns": 8.140625,
+          "p99Ns": 8.140625,
+          "rawFile": "direct-c.bin",
+          "sha256": "a7a8126f7c6da1d178f7570a0f964ca65f876d4670ba109b26a780102e88d23f"
+        },
+        "hookC": {
+          "count": 100000,
+          "writeNs": 2667136,
+          "callsPerSample": 64,
+          "meanNs": 182.40844484375,
+          "p50Ns": 179.859375,
+          "p95Ns": 181.484375,
+          "p99Ns": 181.484375,
+          "rawFile": "hook-c.bin",
+          "sha256": "9677b438466ef2748c69afd5f572199967021653fc5db8ed26ff241a58688067"
+        },
+        "jniBaseline": {
+          "count": 1000000,
+          "writeNs": 24125521,
+          "callsPerSample": 1,
+          "meanNs": 29.793307,
+          "p50Ns": 52,
+          "p95Ns": 52,
+          "p99Ns": 53,
+          "rawFile": "jni-baseline.bin",
+          "sha256": "43d8a9ccc8409ba24075e61e81ab0275ae56fbf3ed6f5875daa4cdddbab2ed38"
+        },
+        "jniHook": {
+          "count": 1000000,
+          "writeNs": 23543802,
+          "callsPerSample": 1,
+          "meanNs": 1187.362397,
+          "p50Ns": 990,
+          "p95Ns": 2396,
+          "p99Ns": 3959,
+          "rawFile": "jni-hook.bin",
+          "sha256": "d2eacb6799c12fd15547d567134da3c6782b67bbaedcc9ed9a27c3d4c6ddbeb8"
+        },
+        "foreignJniHook": {
+          "count": 100000,
+          "writeNs": 2629948,
+          "callsPerSample": 1,
+          "meanNs": 10825.09549,
+          "p50Ns": 10208,
+          "p95Ns": 13594,
+          "p99Ns": 16406,
+          "rawFile": "foreign-jni-hook.bin",
+          "sha256": "4ed8058fd5b610008a7b00b0de3bb67def402a4cdff05e518abc7bb4b66bd4b0"
+        },
+        "productRule": {
+          "count": 1000000,
+          "writeNs": 23443178,
+          "callsPerSample": 1,
+          "meanNs": 8351.427835,
+          "p50Ns": 8281,
+          "p95Ns": 11458,
+          "p99Ns": 13906,
+          "rawFile": "product-rule.bin",
+          "sha256": "ebe23c6e807122cbd59c750ad96cfab8aa452aa13eafb2062cb6c039aec067a1"
+        },
+        "sampleBuffersPrefaulted": true,
+        "artifactWritesAfterMeasurements": true,
+        "affinityVerifiedAfterSamples": true,
+        "passed": true,
+        "semanticChecksPassed": true,
+        "performanceAccepted": false,
+        "finalPssKb": 106449
+      },
+      "frequencyBefore": {
+        "hostMonotonicNs": 781774019468791,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "1497600",
+          "scaling_min_freq": "1152000",
+          "scaling_max_freq": "2534400",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      },
+      "frequencyAfter": {
+        "hostMonotonicNs": 781791586322958,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "1382400",
+          "scaling_min_freq": "480000",
+          "scaling_max_freq": "2188800",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      }
+    },
+    {
+      "phase": "measurement",
+      "round": 3,
+      "version": "baseline",
+      "runId": "dd65ae1d-9f05-480c-b64f-c625d49dda94",
+      "apkSha256": "3fa70f27aed23c4e55767e19eac49ff5a36ca4ea4d877bc80cd2f1ae5cd63395",
+      "nativeSha256": "d156eab027bcd03d0d8ccb23f8760dd74bb43412087522819706ffaf31bcef7c",
+      "data": {
+        "javaSamplesPerPath": 1000000,
+        "nativeSamplesPerPath": 100000,
+        "clockOverheadIncluded": true,
+        "workerCpu": 5,
+        "warmupNsPerPath": 500000000,
+        "productAuthorityConnected": false,
+        "prepareNs": 34000208,
+        "publishNs": 44081354,
+        "retireNs": 62719583,
+        "diagnosticInstrumentation": false,
+        "directC": {
+          "count": 100000,
+          "writeNs": 4497604,
+          "callsPerSample": 64,
+          "meanNs": 7.7701090625,
+          "p50Ns": 7.328125,
+          "p95Ns": 8.140625,
+          "p99Ns": 8.140625,
+          "rawFile": "direct-c.bin",
+          "sha256": "2240d5a14b390a2573e17bf4c5e805470fc1790d694df42f0b2784038efcc8b1"
+        },
+        "hookC": {
+          "count": 100000,
+          "writeNs": 2666094,
+          "callsPerSample": 64,
+          "meanNs": 225.1294946875,
+          "p50Ns": 227.859375,
+          "p95Ns": 231.125,
+          "p99Ns": 232.75,
+          "rawFile": "hook-c.bin",
+          "sha256": "56083e9e59efd49bb2e98cd7005f75babe56905386cde8810ad6d676a65d912f"
+        },
+        "jniBaseline": {
+          "count": 1000000,
+          "writeNs": 23491198,
+          "callsPerSample": 1,
+          "meanNs": 37.800417,
+          "p50Ns": 52,
+          "p95Ns": 53,
+          "p99Ns": 53,
+          "rawFile": "jni-baseline.bin",
+          "sha256": "5f6ab6a1d24e3d9080234532a881b88d281f0095f842206ae512dd48e1d62996"
+        },
+        "jniHook": {
+          "count": 1000000,
+          "writeNs": 23843906,
+          "callsPerSample": 1,
+          "meanNs": 1503.128576,
+          "p50Ns": 1250,
+          "p95Ns": 3333,
+          "p99Ns": 5157,
+          "rawFile": "jni-hook.bin",
+          "sha256": "1bb36253b29b4b37e09e46dcf111e56f8b122934d0939888fb1697ac686778c8"
+        },
+        "foreignJniHook": {
+          "count": 100000,
+          "writeNs": 2579688,
+          "callsPerSample": 1,
+          "meanNs": 13702.03319,
+          "p50Ns": 13021,
+          "p95Ns": 16875,
+          "p99Ns": 21406,
+          "rawFile": "foreign-jni-hook.bin",
+          "sha256": "5ab79eebcedc621d94c024d3588ccaa5d6bead3026c9665fbd33cb4f56dd614d"
+        },
+        "productRule": {
+          "count": 1000000,
+          "writeNs": 23293178,
+          "callsPerSample": 1,
+          "meanNs": 8988.722612,
+          "p50Ns": 9010,
+          "p95Ns": 12135,
+          "p99Ns": 14323,
+          "rawFile": "product-rule.bin",
+          "sha256": "8ded5ed476337e5d7539fb5880688ff021cec135daf70c0dab49665cf7d2cb2e"
+        },
+        "sampleBuffersPrefaulted": true,
+        "artifactWritesAfterMeasurements": true,
+        "affinityVerifiedAfterSamples": true,
+        "passed": true,
+        "semanticChecksPassed": true,
+        "performanceAccepted": false,
+        "finalPssKb": 130743
+      },
+      "frequencyBefore": {
+        "hostMonotonicNs": 781793699606166,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "2304000",
+          "scaling_min_freq": "1152000",
+          "scaling_max_freq": "2304000",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      },
+      "frequencyAfter": {
+        "hostMonotonicNs": 781813163074083,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "1152000",
+          "scaling_min_freq": "480000",
+          "scaling_max_freq": "2188800",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      }
+    },
+    {
+      "phase": "measurement",
+      "round": 3,
+      "version": "current",
+      "runId": "79b99fb9-99d5-4706-bb01-eec84e0c6c6e",
+      "apkSha256": "7104c67ca7cf9ab8639c8391e8c75256aa11b9f54a47c3727a0cf19dae4b69e9",
+      "nativeSha256": "8267eae3eb0e06ba10d871e6e9ee2f3274dc759bcd5be5ad6c082f6302d0c770",
+      "data": {
+        "javaSamplesPerPath": 1000000,
+        "nativeSamplesPerPath": 100000,
+        "clockOverheadIncluded": true,
+        "workerCpu": 5,
+        "warmupNsPerPath": 500000000,
+        "productAuthorityConnected": false,
+        "prepareNs": 33037969,
+        "publishNs": 43782604,
+        "retireNs": 63324531,
+        "diagnosticInstrumentation": false,
+        "directC": {
+          "count": 100000,
+          "writeNs": 4495365,
+          "callsPerSample": 64,
+          "meanNs": 7.70627078125,
+          "p50Ns": 7.328125,
+          "p95Ns": 8.140625,
+          "p99Ns": 8.140625,
+          "rawFile": "direct-c.bin",
+          "sha256": "ea046c8f8250967b9db5f4b136c5b01c4194f4ddfefdc7f3d59e74baf36357f8"
+        },
+        "hookC": {
+          "count": 100000,
+          "writeNs": 2704219,
+          "callsPerSample": 64,
+          "meanNs": 218.09550296875,
+          "p50Ns": 213.21875,
+          "p95Ns": 225.421875,
+          "p99Ns": 225.4375,
+          "rawFile": "hook-c.bin",
+          "sha256": "a20ef01385f06a29d71bfd393acb85a21dd4199422026f141e661e14d3b3f5f7"
+        },
+        "jniBaseline": {
+          "count": 1000000,
+          "writeNs": 24069323,
+          "callsPerSample": 1,
+          "meanNs": 37.696795,
+          "p50Ns": 52,
+          "p95Ns": 53,
+          "p99Ns": 53,
+          "rawFile": "jni-baseline.bin",
+          "sha256": "09a7419cab1e8aa42f0902dc55e8d7f7138293f512db1488e64e43f281967b41"
+        },
+        "jniHook": {
+          "count": 1000000,
+          "writeNs": 23533542,
+          "callsPerSample": 1,
+          "meanNs": 1297.161209,
+          "p50Ns": 1198,
+          "p95Ns": 1614,
+          "p99Ns": 4427,
+          "rawFile": "jni-hook.bin",
+          "sha256": "dee44ca3348111ea706e8599d76b3b9452ed324e00085be138b8ed3e724d658e"
+        },
+        "foreignJniHook": {
+          "count": 100000,
+          "writeNs": 2597187,
+          "callsPerSample": 1,
+          "meanNs": 1190.29749,
+          "p50Ns": 1093,
+          "p95Ns": 1562,
+          "p99Ns": 3802,
+          "rawFile": "foreign-jni-hook.bin",
+          "sha256": "ae554a187560472a7ac1e8abe8d020fa797bac3e9da77b65b1154f2f7d17efda"
+        },
+        "productRule": {
+          "count": 1000000,
+          "writeNs": 23464011,
+          "callsPerSample": 1,
+          "meanNs": 8359.392053,
+          "p50Ns": 8281,
+          "p95Ns": 11615,
+          "p99Ns": 14114,
+          "rawFile": "product-rule.bin",
+          "sha256": "0084ae8f2418d633fc7622d2702ca598e641bdfab8a99da00a6aaed89b56ab2a"
+        },
+        "sampleBuffersPrefaulted": true,
+        "artifactWritesAfterMeasurements": true,
+        "affinityVerifiedAfterSamples": true,
+        "passed": true,
+        "semanticChecksPassed": true,
+        "performanceAccepted": false,
+        "finalPssKb": 123274
+      },
+      "frequencyBefore": {
+        "hostMonotonicNs": 781815428078541,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "2304000",
+          "scaling_min_freq": "1152000",
+          "scaling_max_freq": "2304000",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      },
+      "frequencyAfter": {
+        "hostMonotonicNs": 781832535262083,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "1382400",
+          "scaling_min_freq": "480000",
+          "scaling_max_freq": "2188800",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      }
+    },
+    {
+      "phase": "measurement",
+      "round": 4,
+      "version": "current",
+      "runId": "c246ff57-28ef-4089-8a2c-468da6996fe7",
+      "apkSha256": "7104c67ca7cf9ab8639c8391e8c75256aa11b9f54a47c3727a0cf19dae4b69e9",
+      "nativeSha256": "8267eae3eb0e06ba10d871e6e9ee2f3274dc759bcd5be5ad6c082f6302d0c770",
+      "data": {
+        "javaSamplesPerPath": 1000000,
+        "nativeSamplesPerPath": 100000,
+        "clockOverheadIncluded": true,
+        "workerCpu": 5,
+        "warmupNsPerPath": 500000000,
+        "productAuthorityConnected": false,
+        "prepareNs": 43699948,
+        "publishNs": 53133385,
+        "retireNs": 73459010,
+        "diagnosticInstrumentation": false,
+        "directC": {
+          "count": 100000,
+          "writeNs": 4405833,
+          "callsPerSample": 64,
+          "meanNs": 7.75096328125,
+          "p50Ns": 7.328125,
+          "p95Ns": 8.140625,
+          "p99Ns": 8.140625,
+          "rawFile": "direct-c.bin",
+          "sha256": "39921da2b81b381a6625f482cdee2cda4b74917b521a321c1c87dc6e59686ae5"
+        },
+        "hookC": {
+          "count": 100000,
+          "writeNs": 4167813,
+          "callsPerSample": 64,
+          "meanNs": 209.32048625,
+          "p50Ns": 212.390625,
+          "p95Ns": 213.21875,
+          "p99Ns": 214.03125,
+          "rawFile": "hook-c.bin",
+          "sha256": "82c6f03495a390228fd8769598b61a5caf7f334c1f1ac490ad44b9b9c7268fcb"
+        },
+        "jniBaseline": {
+          "count": 1000000,
+          "writeNs": 24108802,
+          "callsPerSample": 1,
+          "meanNs": 37.843852,
+          "p50Ns": 52,
+          "p95Ns": 53,
+          "p99Ns": 53,
+          "rawFile": "jni-baseline.bin",
+          "sha256": "1cb8e8cfa71238ab3b7e4edcbddc227de537fea270e36604c43e9faaea489d8f"
+        },
+        "jniHook": {
+          "count": 1000000,
+          "writeNs": 23433750,
+          "callsPerSample": 1,
+          "meanNs": 1296.918988,
+          "p50Ns": 1198,
+          "p95Ns": 1563,
+          "p99Ns": 4427,
+          "rawFile": "jni-hook.bin",
+          "sha256": "bb8cd4a27287250e1e323273d82794fc30e3815c77e2e2654408d842378f4eee"
+        },
+        "foreignJniHook": {
+          "count": 100000,
+          "writeNs": 2497500,
+          "callsPerSample": 1,
+          "meanNs": 1226.06592,
+          "p50Ns": 1094,
+          "p95Ns": 1562,
+          "p99Ns": 4688,
+          "rawFile": "foreign-jni-hook.bin",
+          "sha256": "21f3c9d287a5f74e94eedd081d554030cfcfc5a0a78b2fab71c9d8ffc29c720e"
+        },
+        "productRule": {
+          "count": 1000000,
+          "writeNs": 23198438,
+          "callsPerSample": 1,
+          "meanNs": 8826.823927,
+          "p50Ns": 8750,
+          "p95Ns": 11823,
+          "p99Ns": 14166,
+          "rawFile": "product-rule.bin",
+          "sha256": "dc4d57983cf8084c47dfbdbab751f1d332e66ebbaf73938422f57537cfc554ed"
+        },
+        "sampleBuffersPrefaulted": true,
+        "artifactWritesAfterMeasurements": true,
+        "affinityVerifiedAfterSamples": true,
+        "passed": true,
+        "semanticChecksPassed": true,
+        "performanceAccepted": false,
+        "finalPssKb": 99402
+      },
+      "frequencyBefore": {
+        "hostMonotonicNs": 781834839017458,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "2304000",
+          "scaling_min_freq": "1152000",
+          "scaling_max_freq": "2304000",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      },
+      "frequencyAfter": {
+        "hostMonotonicNs": 781852531528916,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "1382400",
+          "scaling_min_freq": "480000",
+          "scaling_max_freq": "2188800",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      }
+    },
+    {
+      "phase": "measurement",
+      "round": 4,
+      "version": "baseline",
+      "runId": "fb4d6cba-e58f-4cd0-8d2c-d713561ac86c",
+      "apkSha256": "3fa70f27aed23c4e55767e19eac49ff5a36ca4ea4d877bc80cd2f1ae5cd63395",
+      "nativeSha256": "d156eab027bcd03d0d8ccb23f8760dd74bb43412087522819706ffaf31bcef7c",
+      "data": {
+        "javaSamplesPerPath": 1000000,
+        "nativeSamplesPerPath": 100000,
+        "clockOverheadIncluded": true,
+        "workerCpu": 5,
+        "warmupNsPerPath": 500000000,
+        "productAuthorityConnected": false,
+        "prepareNs": 34257500,
+        "publishNs": 44326093,
+        "retireNs": 64341927,
+        "diagnosticInstrumentation": false,
+        "directC": {
+          "count": 100000,
+          "writeNs": 4293906,
+          "callsPerSample": 64,
+          "meanNs": 7.71254890625,
+          "p50Ns": 7.328125,
+          "p95Ns": 8.140625,
+          "p99Ns": 8.140625,
+          "rawFile": "direct-c.bin",
+          "sha256": "408d1b72fc0e5545c1dee49381eb9b67d3d65853e437a583224547eda1d548eb"
+        },
+        "hookC": {
+          "count": 100000,
+          "writeNs": 2598386,
+          "callsPerSample": 64,
+          "meanNs": 229.83701671875,
+          "p50Ns": 228.671875,
+          "p95Ns": 229.5,
+          "p99Ns": 230.3125,
+          "rawFile": "hook-c.bin",
+          "sha256": "9a5caac4ab8e4c9f2dd3702796bc6160068cd7e5bd71ca30f2781d0aeb724e74"
+        },
+        "jniBaseline": {
+          "count": 1000000,
+          "writeNs": 23634375,
+          "callsPerSample": 1,
+          "meanNs": 37.796567,
+          "p50Ns": 52,
+          "p95Ns": 53,
+          "p99Ns": 53,
+          "rawFile": "jni-baseline.bin",
+          "sha256": "6b6cb609dc3f23d5e2323f5fc1fd669afdabe206c9edfebb4a41b5988803e86c"
+        },
+        "jniHook": {
+          "count": 1000000,
+          "writeNs": 23702396,
+          "callsPerSample": 1,
+          "meanNs": 1524.430875,
+          "p50Ns": 1302,
+          "p95Ns": 3177,
+          "p99Ns": 5052,
+          "rawFile": "jni-hook.bin",
+          "sha256": "42b8381f66c8de35cc49a2c73922dff20b16b2a7d3cabd8f8c79000582ffeb4d"
+        },
+        "foreignJniHook": {
+          "count": 100000,
+          "writeNs": 2507604,
+          "callsPerSample": 1,
+          "meanNs": 13910.25061,
+          "p50Ns": 13230,
+          "p95Ns": 16875,
+          "p99Ns": 21823,
+          "rawFile": "foreign-jni-hook.bin",
+          "sha256": "d1981880a21a707174e5d1dbab8b397388c923bc4c76a27c12cb0d8885ac05da"
+        },
+        "productRule": {
+          "count": 1000000,
+          "writeNs": 23397604,
+          "callsPerSample": 1,
+          "meanNs": 9110.164248,
+          "p50Ns": 9062,
+          "p95Ns": 12292,
+          "p99Ns": 14687,
+          "rawFile": "product-rule.bin",
+          "sha256": "db7da49f09c97f3ff05de65a3b1459b06381a6306214e335f4558d2da4616cce"
+        },
+        "sampleBuffersPrefaulted": true,
+        "artifactWritesAfterMeasurements": true,
+        "affinityVerifiedAfterSamples": true,
+        "passed": true,
+        "semanticChecksPassed": true,
+        "performanceAccepted": false,
+        "finalPssKb": 105491
+      },
+      "frequencyBefore": {
+        "hostMonotonicNs": 781854816705500,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "2534400",
+          "scaling_min_freq": "1152000",
+          "scaling_max_freq": "2534400",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      },
+      "frequencyAfter": {
+        "hostMonotonicNs": 781874330154583,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "806400",
+          "scaling_min_freq": "480000",
+          "scaling_max_freq": "2188800",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      }
+    },
+    {
+      "phase": "measurement",
+      "round": 5,
+      "version": "baseline",
+      "runId": "d3e2baf6-f943-4e39-8c0d-3268a149ea03",
+      "apkSha256": "3fa70f27aed23c4e55767e19eac49ff5a36ca4ea4d877bc80cd2f1ae5cd63395",
+      "nativeSha256": "d156eab027bcd03d0d8ccb23f8760dd74bb43412087522819706ffaf31bcef7c",
+      "data": {
+        "javaSamplesPerPath": 1000000,
+        "nativeSamplesPerPath": 100000,
+        "clockOverheadIncluded": true,
+        "workerCpu": 5,
+        "warmupNsPerPath": 500000000,
+        "productAuthorityConnected": false,
+        "prepareNs": 42362552,
+        "publishNs": 50292031,
+        "retireNs": 78778282,
+        "diagnosticInstrumentation": false,
+        "directC": {
+          "count": 100000,
+          "writeNs": 4441145,
+          "callsPerSample": 64,
+          "meanNs": 7.73050453125,
+          "p50Ns": 7.328125,
+          "p95Ns": 8.140625,
+          "p99Ns": 8.140625,
+          "rawFile": "direct-c.bin",
+          "sha256": "5c955a34975da413ce9b2e7014d3b2949b0bc050d5c7b0be7b7d72ba39e103bf"
+        },
+        "hookC": {
+          "count": 100000,
+          "writeNs": 2578854,
+          "callsPerSample": 64,
+          "meanNs": 229.19180921875,
+          "p50Ns": 227.875,
+          "p95Ns": 229.484375,
+          "p99Ns": 229.5,
+          "rawFile": "hook-c.bin",
+          "sha256": "d06ac1b5f0e7906c29eda234fdbb30e283004de8cd2054fa12f37c999ad62117"
+        },
+        "jniBaseline": {
+          "count": 1000000,
+          "writeNs": 23734480,
+          "callsPerSample": 1,
+          "meanNs": 37.726934,
+          "p50Ns": 52,
+          "p95Ns": 53,
+          "p99Ns": 53,
+          "rawFile": "jni-baseline.bin",
+          "sha256": "a8988e8deea66b925ca1bcbd321de137509d47ae7d933a6e7092d37d220682df"
+        },
+        "jniHook": {
+          "count": 1000000,
+          "writeNs": 23861667,
+          "callsPerSample": 1,
+          "meanNs": 1543.6834,
+          "p50Ns": 1354,
+          "p95Ns": 3125,
+          "p99Ns": 4896,
+          "rawFile": "jni-hook.bin",
+          "sha256": "c8692f2a11f934e02b56c6c1ccbad2c57cb2e762e7205ada0327c7c869bc9289"
+        },
+        "foreignJniHook": {
+          "count": 100000,
+          "writeNs": 2593646,
+          "callsPerSample": 1,
+          "meanNs": 13653.17733,
+          "p50Ns": 12969,
+          "p95Ns": 16615,
+          "p99Ns": 21250,
+          "rawFile": "foreign-jni-hook.bin",
+          "sha256": "80a16f18dd940094913ae9e0f20e10fddf8cfc3e5ef168e299cd1ff7df1c1c24"
+        },
+        "productRule": {
+          "count": 1000000,
+          "writeNs": 23730104,
+          "callsPerSample": 1,
+          "meanNs": 9135.402403,
+          "p50Ns": 9115,
+          "p95Ns": 12291,
+          "p99Ns": 14635,
+          "rawFile": "product-rule.bin",
+          "sha256": "8a029a31b8872a086ccc9ed35f0deb80b46778a37afe71774759be22db7af8d1"
+        },
+        "sampleBuffersPrefaulted": true,
+        "artifactWritesAfterMeasurements": true,
+        "affinityVerifiedAfterSamples": true,
+        "passed": true,
+        "semanticChecksPassed": true,
+        "performanceAccepted": false,
+        "finalPssKb": 131054
+      },
+      "frequencyBefore": {
+        "hostMonotonicNs": 781876558228083,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "2534400",
+          "scaling_min_freq": "1152000",
+          "scaling_max_freq": "2534400",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      },
+      "frequencyAfter": {
+        "hostMonotonicNs": 781896066854666,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "806400",
+          "scaling_min_freq": "480000",
+          "scaling_max_freq": "2188800",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      }
+    },
+    {
+      "phase": "measurement",
+      "round": 5,
+      "version": "current",
+      "runId": "93cbcfcd-b6f6-4b97-8231-e1e20670fef4",
+      "apkSha256": "7104c67ca7cf9ab8639c8391e8c75256aa11b9f54a47c3727a0cf19dae4b69e9",
+      "nativeSha256": "8267eae3eb0e06ba10d871e6e9ee2f3274dc759bcd5be5ad6c082f6302d0c770",
+      "data": {
+        "javaSamplesPerPath": 1000000,
+        "nativeSamplesPerPath": 100000,
+        "clockOverheadIncluded": true,
+        "workerCpu": 5,
+        "warmupNsPerPath": 500000000,
+        "productAuthorityConnected": false,
+        "prepareNs": 42220833,
+        "publishNs": 56152552,
+        "retireNs": 80834531,
+        "diagnosticInstrumentation": false,
+        "directC": {
+          "count": 100000,
+          "writeNs": 4416302,
+          "callsPerSample": 64,
+          "meanNs": 7.7524190625,
+          "p50Ns": 7.328125,
+          "p95Ns": 8.140625,
+          "p99Ns": 8.140625,
+          "rawFile": "direct-c.bin",
+          "sha256": "bdba4b5d13cf6d4efe7f58ecab475ff1e5e416115fdf09d0edcf03590c447582"
+        },
+        "hookC": {
+          "count": 100000,
+          "writeNs": 2607761,
+          "callsPerSample": 64,
+          "meanNs": 225.5747440625,
+          "p50Ns": 224.609375,
+          "p95Ns": 225.421875,
+          "p99Ns": 228.6875,
+          "rawFile": "hook-c.bin",
+          "sha256": "39005aaec26ff415e12f4f129ebfc0af105e3aba8ee08556b77de495fbb5d4e0"
+        },
+        "jniBaseline": {
+          "count": 1000000,
+          "writeNs": 23798958,
+          "callsPerSample": 1,
+          "meanNs": 37.803005,
+          "p50Ns": 52,
+          "p95Ns": 53,
+          "p99Ns": 53,
+          "rawFile": "jni-baseline.bin",
+          "sha256": "fd8dd4634db2a449c8709b1c3dc2ff27677487691ec4ab6e287dca419380620e"
+        },
+        "jniHook": {
+          "count": 1000000,
+          "writeNs": 23765313,
+          "callsPerSample": 1,
+          "meanNs": 1365.584614,
+          "p50Ns": 1250,
+          "p95Ns": 1667,
+          "p99Ns": 4583,
+          "rawFile": "jni-hook.bin",
+          "sha256": "1a2b31933ad015509087305610b4d6f834df7f3567d846b94027735d29eb10c2"
+        },
+        "foreignJniHook": {
+          "count": 100000,
+          "writeNs": 2523854,
+          "callsPerSample": 1,
+          "meanNs": 1274.83625,
+          "p50Ns": 1146,
+          "p95Ns": 1615,
+          "p99Ns": 4167,
+          "rawFile": "foreign-jni-hook.bin",
+          "sha256": "e51146ef846d4e64dfc6cc54cfe914ef8a145b162e7584ecf939f8d1b2015955"
+        },
+        "productRule": {
+          "count": 1000000,
+          "writeNs": 23650364,
+          "callsPerSample": 1,
+          "meanNs": 8981.178802,
+          "p50Ns": 8958,
+          "p95Ns": 12188,
+          "p99Ns": 14740,
+          "rawFile": "product-rule.bin",
+          "sha256": "bd4a76948df03efcc0fa709bd8d1bfcb08c88fde74afdfc6de1e6838119116d6"
+        },
+        "sampleBuffersPrefaulted": true,
+        "artifactWritesAfterMeasurements": true,
+        "affinityVerifiedAfterSamples": true,
+        "passed": true,
+        "semanticChecksPassed": true,
+        "performanceAccepted": false,
+        "finalPssKb": 131011
+      },
+      "frequencyBefore": {
+        "hostMonotonicNs": 781898317267541,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "2304000",
+          "scaling_min_freq": "1152000",
+          "scaling_max_freq": "2304000",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      },
+      "frequencyAfter": {
+        "hostMonotonicNs": 781916593060125,
+        "cpu": 5,
+        "values": {
+          "scaling_cur_freq": "1382400",
+          "scaling_min_freq": "480000",
+          "scaling_max_freq": "2188800",
+          "cpuinfo_max_freq": "4032000",
+          "scaling_governor": "walt",
+          "related_cpus": "3 4 5"
+        },
+        "errors": {}
+      }
+    }
+  ]
+}

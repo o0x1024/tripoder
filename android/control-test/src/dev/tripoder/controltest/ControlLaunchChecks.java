@@ -1,11 +1,12 @@
 package dev.tripoder.controltest;
 
+import android.content.Intent;
 import android.os.*;
 import dev.tripoder.control.ControlWire;
 import org.json.*;
 import java.util.UUID;
 
-/** Real worker preparation and one-use admission; actual gateway presentation is a separate UI gate. */
+/** Real worker preparation and the issued root entry; starting that entry is a separate UI gate. */
 final class ControlLaunchChecks {
     private final ControlTestBase test;private final IBinder session;
     ControlLaunchChecks(ControlTestBase test,IBinder session){this.test=test;this.session=session;}
@@ -17,18 +18,21 @@ final class ControlLaunchChecks {
         test.check("launch-rejects-stale-project-binding",test.rejected(()->test.execute(session,"prepareLaunch","operation",stale,"project",project,"bindingOperation",UUID.randomUUID().toString(),"generation",generation,"component","dev.tripoder.p0.a.AActivity"),IllegalStateException.class,"LAUNCH_BINDING_STALE"),true);
         test.check("rejected-launch-has-failed-receipt","FAILED".equals(test.execute(session,"query","operation",stale).getString("state")),stale);
         String operation=UUID.randomUUID().toString();Bundle request=ControlWire.request("prepareLaunch","operation",operation,"project",project,"bindingOperation",binding,"generation",generation,"component","dev.tripoder.p0.a.AActivity");
-        Bundle prepared=ControlWire.call(session,ControlWire.EXECUTE,request);String capability=prepared.getString("capability");Bundle facts=new Bundle(prepared);facts.remove("capability");
-        test.check("launch-preparation-has-real-running-worker",prepared.getInt("pid")>0&&prepared.getInt("uid")==android.os.Process.myUid()&&prepared.getInt("pid")!=android.os.Process.myPid()&&"RUNNING".equals(prepared.getString("state"))&&generation.equals(prepared.getString("installGeneration")),test.json(facts));
-        test.check("launch-capability-is-256-bit-one-time-value",capability!=null&&capability.matches("[a-f0-9]{64}"),"raw token omitted");
-        test.check("duplicate-launch-does-not-return-another-capability",test.rejected(()->ControlWire.call(session,ControlWire.EXECUTE,request),IllegalStateException.class,"LAUNCH_ALREADY_ACCEPTED_QUERY_REQUIRED"),true);
+        Bundle prepared=ControlWire.call(session,ControlWire.EXECUTE,request);Intent entry=prepared.getParcelable("intent",Intent.class);Bundle facts=new Bundle(prepared);facts.remove("intent");
+        // One call waits for the guest Application and returns the root entry; nothing is started until the caller starts that Intent.
+        test.check("launch-waits-for-guest-application",generation.equals(prepared.getString("installGeneration"))&&prepared.getString("generation")!=null&&"RUNNING".equals(prepared.getString("state"))&&prepared.getString("processName")!=null,test.json(facts));
+        test.check("launch-entry-is-own-stub-with-ticket",entry!=null&&entry.getComponent()!=null&&"dev.tripoder.engine".equals(entry.getComponent().getPackageName())&&entry.getStringExtra("tripoder.ticket")!=null&&prepared.getString("generation").equals(entry.getStringExtra("tripoder.generation"))&&(entry.getFlags()&(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_MULTIPLE_TASK))==(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_MULTIPLE_TASK),entry==null?"null":entry.toString());
+        test.check("duplicate-launch-does-not-return-another-entry",test.rejected(()->ControlWire.call(session,ControlWire.EXECUTE,request),IllegalStateException.class,"LAUNCH_ALREADY_ACCEPTED_QUERY_REQUIRED"),true);
         Bundle pending=test.execute(session,"query","operation",operation);
-        test.check("preparation-is-not-activity-success","RUNNING".equals(pending.getString("state"))&&!pending.containsKey("capability"),test.json(pending));
-        test.check("cancel-not-accepted-does-not-cancel-prepared-launch","RUNNING".equals(test.execute(session,"cancelNotAccepted","operation",operation).getString("state")),operation);
-        long end=SystemClock.elapsedRealtime()+35000;Bundle expired;
-        do{SystemClock.sleep(250);expired=test.execute(session,"query","operation",operation);}while("RUNNING".equals(expired.getString("state"))&&SystemClock.elapsedRealtime()<end);
-        test.check("unconsumed-launch-expires-without-component-replay","FAILED".equals(expired.getString("state"))&&"LAUNCH_CAPABILITY_EXPIRED_BEFORE_DISPATCH".equals(expired.getString("detail")),test.json(expired));
-        test.check("expired-operation-cannot-be-prepared-again",test.rejected(()->ControlWire.call(session,ControlWire.EXECUTE,request),IllegalStateException.class,"LAUNCH_ALREADY_ACCEPTED_QUERY_REQUIRED"),true);
+        test.check("issued-entry-is-not-activity-success","RUNNING".equals(pending.getString("state")),test.json(pending));
+        test.check("cancel-not-accepted-does-not-cancel-issued-launch","RUNNING".equals(test.execute(session,"cancelNotAccepted","operation",operation).getString("state")),operation);
+        String concurrent=UUID.randomUUID().toString();Bundle second=new Bundle(request);second.putString("operation",concurrent);
+        test.check("issued-entry-holds-the-application-root",test.rejected(()->ControlWire.call(session,ControlWire.EXECUTE,second),IllegalStateException.class,"APPLICATION_ACTIVITY_ALREADY_OPEN_OR_UNCONFIRMED"),true);
+        Bundle abandoned=test.execute(session,"abandonLaunch","operation",operation);Bundle settled=test.execute(session,"query","operation",operation);
+        test.check("unstarted-entry-is-handed-back","FAILED".equals(settled.getString("state"))&&"LAUNCH_NOT_DISPATCHED".equals(settled.getString("detail"))&&entry.getStringExtra("tripoder.ticket").equals(abandoned.getString("ticket")),test.json(settled));
+        test.check("entry-is-handed-back-once",test.rejected(()->test.execute(session,"abandonLaunch","operation",operation),IllegalStateException.class,"LAUNCH_ENTRY_NOT_PENDING"),true);
+        test.check("abandoned-operation-cannot-be-launched-again",test.rejected(()->ControlWire.call(session,ControlWire.EXECUTE,request),IllegalStateException.class,"LAUNCH_ALREADY_ACCEPTED_QUERY_REQUIRED"),true);
         String interrupted=UUID.randomUUID().toString();Bundle next=new Bundle(request);next.putString("operation",interrupted);Bundle ready=ControlWire.call(session,ControlWire.EXECUTE,next);test.report.put("readyLaunchOperation",interrupted);
-        test.check("second-launch-prepared-for-real-authority-death","RUNNING".equals(test.execute(session,"query","operation",interrupted).getString("state"))&&ready.containsKey("capability"),interrupted);
+        test.check("second-launch-issued-for-real-authority-death","RUNNING".equals(test.execute(session,"query","operation",interrupted).getString("state"))&&ready.getParcelable("intent",Intent.class)!=null,interrupted);
     }
 }

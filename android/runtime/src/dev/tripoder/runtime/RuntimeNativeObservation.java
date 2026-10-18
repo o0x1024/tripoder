@@ -23,7 +23,7 @@ final class RuntimeNativeObservation {
         for(int i=0;i<names.size();i++){
             String name=names.get(i);if(!name.matches("lib[a-zA-Z0-9_+.$-]+\\.so"))throw new IllegalArgumentException("HOOK_MODULE_NAME");
             String path=inventory.path(name);
-            if(path==null||!path.startsWith("/")||!new File(path).getName().equals(name)||!path.equals(new File(path).getCanonicalPath()))throw new SecurityException("HOOK_MODULE_ARTIFACT_PATH");
+            if(path==null||!path.startsWith("/")||!new File(path).getName().equals(name)||!path.equals(RuntimeSelfHookStorage.physicalArtifactPath(path)))throw new SecurityException("HOOK_MODULE_ARTIFACT_PATH");
             artifacts.put(name,new Artifact(i,name,path));paths[i]=path;
         }
         if(!ownerLive.getAsBoolean())throw new IllegalStateException("HOOK_PROCESS_STALE");NativeModules.initialize(paths);
@@ -98,6 +98,17 @@ final class RuntimeNativeObservation {
             String event=switch((int)raw[i+4]){case 1->"added";case 2->"removed";case 3->"ambiguous";case 4->"unique";default->throw new IllegalStateException("HOOK_MODULE_EVENT_KIND");};
             Artifact library=ordered.get(index);out.add(Map.of("event",event,"moduleName",library.name(),"path",library.path(),"base","0x"+Long.toHexString(raw[i+3]),"generation",(double)raw[i+2],"sequence",Long.toUnsignedString(raw[i])));
         }return List.copyOf(out);
+    }
+    synchronized List<Map<String,Object>> searchExports(String moduleName,String symbolPrefix,int limit)throws Exception {
+        if(!ownerLive.getAsBoolean())throw new IllegalStateException("HOOK_PROCESS_STALE");
+        Artifact artifact=artifacts.get(moduleName);if(artifact==null)throw new SecurityException("HOOK_MODULE_OUTSIDE_GUEST");
+        Library library=inspect(artifact);
+        List<Map<String,Object>> raw=RuntimeElfExports.search(new File(library.path()),symbolPrefix,limit);
+        List<Map<String,Object>> out=new ArrayList<>(raw.size());
+        for(Map<String,Object> item:raw){
+            Map<String,Object> copy=new LinkedHashMap<>(item);copy.put("moduleName",moduleName);copy.put("buildId",library.buildId());out.add(immutable(copy));
+        }
+        return List.copyOf(out);
     }
     private static String text(Map<String,Object> value,String key){Object raw=value.get(key);if(!(raw instanceof String)||((String)raw).isEmpty())throw new IllegalArgumentException("HOOK_NATIVE_FIELD:"+key);return (String)raw;}
     private static List<String> strings(Object input){if(!(input instanceof List<?>))throw new IllegalArgumentException("HOOK_NATIVE_TYPES");List<String> values=new ArrayList<>();for(Object value:(List<?>)input){if(!(value instanceof String))throw new IllegalArgumentException("HOOK_NATIVE_TYPE");values.add((String)value);}return List.copyOf(values);}

@@ -2,13 +2,27 @@
 #include "art_access.h"
 #include "art_fixed_contract.h"
 #include "art_managed_contract.h"
+#include <errno.h>
+#include <fcntl.h>
 #include <link.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <sys/sysmacros.h>
 #include <pthread.h>
+#include <stdatomic.h>
+#include <time.h>
+#include <unistd.h>
+
+static FILE *raw_maps_open(void) {
+    int fd = (int)syscall(SYS_openat, AT_FDCWD, "/proc/self/maps", O_RDONLY | O_CLOEXEC, 0);
+    if (fd < 0) return NULL;
+    FILE *stream = fdopen(fd, "r");
+    if (!stream) { int saved = errno; syscall(SYS_close, fd); errno = saved; }
+    return stream;
+}
 
 static const char *path = "/apex/com.android.art/lib64/libart.so";
 static int find(struct dl_phdr_info *info, size_t size, void *data) {
@@ -17,9 +31,9 @@ static int find(struct dl_phdr_info *info, size_t size, void *data) {
     *(uintptr_t *)data = info->dlpi_addr;
     return 1;
 }
-static int mapped(uintptr_t address, unsigned bytes, uintptr_t rva, const struct stat *file) {
+static int mapped_inner(uintptr_t address, unsigned bytes, uintptr_t rva, const struct stat *file) {
     if (address == 0 || address > UINTPTR_MAX - bytes) return 0;
-    FILE *stream = fopen("/proc/self/maps", "r");
+    FILE *stream = raw_maps_open();
     if (stream == NULL) return 0;
     char line[2048], mode[5];
     unsigned long start, end, offset, inode;
@@ -47,10 +61,65 @@ static int mapped(uintptr_t address, unsigned bytes, uintptr_t rva, const struct
     fclose(stream);
     return result;
 }
+static _Atomic uint64_t mapping_calls,mapping_ns;
+static uint64_t monotonic_ns(void){struct timespec value;return clock_gettime(CLOCK_MONOTONIC,&value)==0?(uint64_t)value.tv_sec*1000000000u+(uint64_t)value.tv_nsec:0;}
+static int mapped(uintptr_t address,unsigned bytes,uintptr_t rva,const struct stat *file){
+    uint64_t start=monotonic_ns();int result=mapped_inner(address,bytes,rva,file);uint64_t end=monotonic_ns();
+    atomic_fetch_add(&mapping_calls,1);if(start&&end>=start)atomic_fetch_add(&mapping_ns,end-start);return result;
+}
+void tp_art_mapping_metrics(uint64_t *calls,uint64_t *nanoseconds){*calls=atomic_load(&mapping_calls);*nanoseconds=atomic_load(&mapping_ns);}
+struct tp_readable_range { uintptr_t begin, end; };
+static pthread_mutex_t readable_lock = PTHREAD_MUTEX_INITIALIZER;
+static struct tp_readable_range readable_ranges[2048];
+static unsigned readable_count;
+static int refresh_readable_ranges_locked(uintptr_t address, unsigned bytes) {
+    FILE *maps = raw_maps_open();
+    if (!maps) return 0;
+    readable_count = 0;
+    char line[2048], mode[5];
+    unsigned long start, end;
+    int found = 0;
+    while (fgets(line, sizeof(line), maps)) {
+        char *sep, *limit_end;
+        start = strtoul(line, &sep, 16);
+        if (sep == line || *sep != '-') continue;
+        end = strtoul(sep + 1, &limit_end, 16);
+        if (limit_end == sep + 1 || *limit_end != ' ') continue;
+        if (limit_end[1] != 'r') continue;
+        (void)mode;
+        if (readable_count && readable_ranges[readable_count - 1].end == start) {
+            readable_ranges[readable_count - 1].end = end;
+        } else if (readable_count < 2048) {
+            readable_ranges[readable_count++] = (struct tp_readable_range){start, end};
+        }
+        if (readable_count && readable_ranges[readable_count - 1].begin <= address
+            && address + bytes <= readable_ranges[readable_count - 1].end) {
+            found = 1;
+        }
+    }
+    fclose(maps);
+    return found;
+}
 int tp_art_readable(uintptr_t address, unsigned bytes) {
     // The pinned ARM64 platform tags malloc pointers. Preserve the access
     // pointer's tag, stripping only the TBI byte when consulting canonical maps.
-    return mapped(address & UINT64_C(0x00ffffffffffffff), bytes, 0, NULL);
+    address &= UINT64_C(0x00ffffffffffffff);
+    if (address == 0 || address > UINTPTR_MAX - bytes) return 0;
+    uint64_t start = monotonic_ns();
+    int result = 0;
+    pthread_mutex_lock(&readable_lock);
+    for (unsigned i = 0; i < readable_count; i++) {
+        if (readable_ranges[i].begin <= address && address + bytes <= readable_ranges[i].end) {
+            result = 1;
+            break;
+        }
+    }
+    if (!result) result = refresh_readable_ranges_locked(address, bytes);
+    pthread_mutex_unlock(&readable_lock);
+    uint64_t end = monotonic_ns();
+    atomic_fetch_add(&mapping_calls, 1);
+    if (start && end >= start) atomic_fetch_add(&mapping_ns, end - start);
+    return result;
 }
 int tp_art_validate_code(const struct tp_art_access *access,uintptr_t rva,const void *bytes,unsigned size) {
     struct stat file;
@@ -87,13 +156,18 @@ int tp_art_access_bind(struct tp_art_access *result){
     if(!result||pthread_once(&access_once,initialize_access)||!process_access_valid)return 0;
     *result=process_access;return 1;
 }
+static _Atomic jfieldID art_method_field;
 uintptr_t tp_art_method_address(JNIEnv *env, jobject method) {
-    jclass executable = (*env)->FindClass(env, "java/lang/reflect/Executable");
-    if (executable == NULL) return 0;
-    jfieldID field = (*env)->GetFieldID(env, executable, "artMethod", "J");
-    if (field == NULL) { (*env)->DeleteLocalRef(env, executable); return 0; }
+    jfieldID field = atomic_load_explicit(&art_method_field, memory_order_acquire);
+    if (field == NULL) {
+        jclass executable = (*env)->FindClass(env, "java/lang/reflect/Executable");
+        if (executable == NULL) return 0;
+        field = (*env)->GetFieldID(env, executable, "artMethod", "J");
+        (*env)->DeleteLocalRef(env, executable);
+        if (field == NULL) return 0;
+        atomic_store_explicit(&art_method_field, field, memory_order_release);
+    }
     uintptr_t address = (uintptr_t)(*env)->GetLongField(env, method, field);
-    (*env)->DeleteLocalRef(env, executable);
     if ((*env)->ExceptionCheck(env) || (address & 7) || !tp_art_readable(address, 32)) return 0;
     return address;
 }

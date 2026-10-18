@@ -44,7 +44,7 @@ bool tp_scalar_inbound_admission(unsigned slot,_Atomic uint64_t *state,uint32_t 
     if(slot>=TP_NATIVE_ENTRY_LIMIT||!state||!generation||!active||tp_scalar_admissions[slot].state
        ||!atomic_load_explicit(&bindings[slot].ready,memory_order_acquire))return false;
     tp_scalar_admissions[slot].identity=((uint64_t)generation<<32)|TP_MODULE_LIVE_BIT;
-    tp_scalar_admissions[slot].active=active;tp_scalar_admissions[slot].state=state;return true;
+    tp_scalar_admissions[slot].active=active;atomic_store_explicit(&tp_scalar_admissions[slot].state,state,memory_order_release);return true;
 }
 extern const unsigned char tp_scalar_inbound_entries_end[],tp_scalar_inbound_common[],tp_scalar_inbound_admitted[];
 extern const unsigned char tp_scalar_inbound_admit[],tp_scalar_inbound_admit_end[];

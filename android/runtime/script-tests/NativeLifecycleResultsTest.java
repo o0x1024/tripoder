@@ -15,5 +15,15 @@ final class NativeLifecycleResultsTest {
         try{clean.activate("generation-1","revision-1");throw new AssertionError("clean refusal accepted");}
         catch(IllegalStateException expected){check(expected.getCause() instanceof HookPublicationRejected,"known unpublished refusal retained");}
         check(clean.status().state()==HookInvocationSession.State.FAILED&&rejected.fatal==0,"clean refusal without process kill");
+        SourceControlTest.Platform platform=new SourceControlTest.Platform();platform.backend.rejectPublish=true;
+        SelfHookControl control=SourceControlTest.control(platform,new java.util.concurrent.atomic.AtomicLong(100));
+        String evidence=SourceControlTest.observe(control);
+        var prepared=SourceControlTest.result(SourceControlTest.command(control,"prepare","evidenceId",evidence,"source",SourceControlTest.SOURCE));
+        SourceControlTest.failed(SourceControlTest.command(control,"activate","token",prepared.get("token"),"sourceSha256",prepared.get("sourceSha256")),"HOOK_PUBLICATION_UNCHANGED");
+        check(SourceControlTest.result(SourceControlTest.command(control,"status")).get("state").equals("IDLE"),"known refusal releases control session");
+        SourceControlTest.failed(SourceControlTest.command(control,"activate","token",prepared.get("token"),"sourceSha256",prepared.get("sourceSha256")),"HOOK_PREPARATION_STALE");
+        platform.backend.rejectPublish=false;evidence=SourceControlTest.observe(control);
+        prepared=SourceControlTest.result(SourceControlTest.command(control,"prepare","evidenceId",evidence,"source",SourceControlTest.SOURCE));
+        check(SourceControlTest.result(SourceControlTest.command(control,"activate","token",prepared.get("token"),"sourceSha256",prepared.get("sourceSha256"))).get("state").equals("ACTIVE"),"fresh authorization can follow known refusal");
     }
 }

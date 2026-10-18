@@ -100,9 +100,20 @@ final class RuntimeSelfHookActivities {
             if(name.equals("checkStartActivityResult")){RuntimeBridge.activityStartResult(args[1],(Integer)args[0]);return original.call(args);}
             if(name.startsWith("execStartActivit")){
                 Class<?>[] types=target.getParameterTypes();boolean supported=name.equals("execStartActivity")&&types.length==7&&types[3]==Activity.class;
-                if(!supported)throw new UnsupportedOperationException("ACTIVITY_START_SIGNATURE_UNSUPPORTED");Activity activity=(Activity)args[3];
-                if(!RuntimeBridge.owns(activity))throw new SecurityException("ACTIVITY_START_CALLER_UNOWNED");if(args[6]!=null)throw new UnsupportedOperationException("ACTIVITY_START_OPTIONS_UNSUPPORTED");
-                Object[] routed=args.clone();routed[4]=RuntimeBridge.route(activity,(Intent)args[4],(Integer)args[5]);return original.call(routed);
+                if(!supported)throw new UnsupportedOperationException("ACTIVITY_START_SIGNATURE_UNSUPPORTED");Activity activity=(Activity)args[3];Intent intent=(Intent)args[4];
+                // A null Activity is a start through an Application or Service Context.
+                if(activity!=null&&!RuntimeBridge.owns(activity))throw new SecurityException("ACTIVITY_START_CALLER_UNOWNED");
+                if(intent==null||RuntimeBridge.startsHost(intent))throw new SecurityException("ACTIVITY_START_HOST_COMPONENT_DENIED");
+                // A component of a guest in this space is routed through the ledger. Anything else (an implicit action, a real installed app, the system) is the platform's to resolve, as it is for any app.
+                // An implicit intent that one of the guest's own filters matches is a start of that component, exactly as Android would resolve it.
+                if(intent.getComponent()==null){android.content.ComponentName own=RuntimeBridge.resolveOwnActivity(intent);if(own!=null){intent=new Intent(intent).setComponent(own);args=args.clone();args[4]=intent;}}
+                if(intent.getComponent()!=null){
+                    try{Object[] routed=args.clone();routed[4]=activity!=null?RuntimeBridge.route(activity,intent,(Integer)args[5]):RuntimeBridge.routeFromContext(intent);return original.call(routed);}
+                    catch(android.content.ActivityNotFoundException absent){if(!String.valueOf(absent.getMessage()).startsWith("PACKAGE_NOT_IN_SPACE"))throw absent;}
+                }
+                // A result requested from the platform (permission dialog, picker) comes back without an authority operation; remember it so the return is accepted.
+                if(activity!=null&&args[5] instanceof Integer&&(Integer)args[5]>=0)RuntimeBridge.noteSystemResult(activity,(Integer)args[5]);
+                return original.call(args);
             }
             Activity activity=(Activity)receiver;
             if(name.equals("finish")){if(activity.getClass()==RuntimeRejectedActivity.class)return original.call(args);if(!RuntimeBridge.owns(activity))throw new SecurityException("RESULT_CALLER_UNSUPPORTED");RuntimeBridge.returning(activity,ActivityFrameworkAccess.resultCode(activity),ActivityFrameworkAccess.resultData(activity));return original.call(args);}

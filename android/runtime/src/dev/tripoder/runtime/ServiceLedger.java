@@ -26,7 +26,9 @@ final class ServiceLedger {
     Lease reserve(RuntimeBroker.Slot slot,String component){
         var identity=slot.allocation.session.identity;
         try(Cursor c=store.getReadableDatabase().rawQuery("SELECT * FROM service_leases WHERE space=? AND package=? AND component=? AND state!='RELEASED'",new String[]{identity.spaceId,identity.packageName,component})){
-            if(c.moveToFirst()){Lease existing=new Lease(c);owner(existing,slot);if(!existing.generation.equals(slot.allocation.session.processGeneration))rebind(existing,slot);return get(existing.id);}
+            // reserve is reached only by a newly admitted SERVICE_ROUTE request.
+            // Retained stub ownership is reusable; the old Hook plan is not replayed.
+            if(c.moveToFirst()){Lease existing=new Lease(c);owner(existing,slot);if(!existing.generation.equals(slot.allocation.session.processGeneration))rebind(existing,slot,ServiceRecoveryPolicy.Admission.NEW_REQUEST);return get(existing.id);}
         }
         return insert(identity.spaceId,identity.packageName,identity.installGeneration,identity.processName,slot.activityStub,component,slot.allocation.session.processGeneration,"RESERVED");
     }
@@ -59,10 +61,16 @@ final class ServiceLedger {
     }
     Lease binding(String source,String connection){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT lease FROM service_calls WHERE source=? AND connection=? AND kind='bind' AND state='APPLIED'",new String[]{source,connection})){if(!c.moveToFirst())throw new IllegalArgumentException("SERVICE_CONNECTION_NOT_BOUND");return get(c.getString(0));}}
     Lease restore(String stub){Lease lease=forStub(stub);if(lease.state.equals("PASSIVE"))throw new SecurityException("PASSIVE_SERVICE_HAS_NO_START_AUTHORITY");requireDead(lease.generation);return lease;}
-    void rebind(Lease lease,RuntimeBroker.Slot slot){owner(lease,slot);if(lease.state.equals("PASSIVE")){if(!lease.generation.isEmpty()||lease.instance!=null)throw new SecurityException("PASSIVE_SERVICE_STATE_INVALID");}else requireDead(lease.generation);ContentValues row=new ContentValues();row.put("generation",slot.allocation.session.processGeneration);row.put("state","RESERVED");row.putNull("instance");update(lease.id,row);}
+    void rebind(Lease lease,RuntimeBroker.Slot slot){rebind(lease,slot,ServiceRecoveryPolicy.Admission.SYSTEM_RECOVERY);}
+    private void rebind(Lease lease,RuntimeBroker.Slot slot,ServiceRecoveryPolicy.Admission admission){owner(lease,slot);if(lease.state.equals("PASSIVE")){if(!lease.generation.isEmpty()||lease.instance!=null)throw new SecurityException("PASSIVE_SERVICE_STATE_INVALID");}else requireDead(lease.generation,admission);ContentValues row=new ContentValues();row.put("generation",slot.allocation.session.processGeneration);row.put("state","RESERVED");row.putNull("instance");update(lease.id,row);}
     String retainedStub(String space,String pkg,String install,String process){String found=null;try(Cursor c=store.getReadableDatabase().rawQuery("SELECT DISTINCT processStub,installGeneration FROM service_leases WHERE space=? AND package=? AND processName=? AND state!='RELEASED'",new String[]{space,pkg,process})){while(c.moveToNext()){if(!c.getString(1).equals(install))throw new IllegalStateException("SERVICE_INSTALL_PIN_CONFLICT");if(found!=null&&!found.equals(c.getString(0)))throw new IllegalStateException("SERVICE_PROCESS_PIN_CONFLICT");found=c.getString(0);}}return found;}
     boolean occupied(String processStub){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT id FROM service_leases WHERE processStub=? AND state!='RELEASED' LIMIT 1",new String[]{processStub})){return c.moveToFirst();}}
     boolean occupiedByOther(String stub,ApkStore.BundleInstall install,String process){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT 1 FROM service_leases WHERE processStub=? AND state!='RELEASED' AND NOT(space IS ? AND package IS ? AND installGeneration IS ? AND processName IS ?) LIMIT 1",new String[]{stub,install.space,install.info.packageName,install.generation,process})){return c.moveToFirst();}}
+    /** Explicit uninstall of one installation: a call still PREPARED whose calling generation is DEAD can no longer take effect, because Android drops the caller's connections when its process dies. It is closed as ABANDONED, not REJECTED, so it stays distinguishable; the lease itself is then released only by the usual reconcile rules. */
+    int abandonDeadCalls(String space,String pkg,String install){
+        ContentValues row=new ContentValues();row.put("state","ABANDONED");
+        return store.getWritableDatabase().update("service_calls",row,"state='PREPARED' AND source IN (SELECT generation FROM sessions WHERE state='DEAD') AND lease IN (SELECT id FROM service_leases WHERE space=? AND package=? AND installGeneration=?)",new String[]{space,pkg,install});
+    }
     /** No timeout-based reclamation. Dead callers and actual absence of an AMS service are required. */
     void reconcile(Context host){
         List<ActivityManager.RunningServiceInfo> observed=((ActivityManager)host.getSystemService(Context.ACTIVITY_SERVICE)).getRunningServices(Integer.MAX_VALUE);
@@ -78,6 +86,7 @@ final class ServiceLedger {
         }
     }
     private void owner(Lease lease,RuntimeBroker.Slot slot){var identity=slot.allocation.session.identity;if(!lease.space.equals(identity.spaceId)||!lease.pkg.equals(identity.packageName)||!lease.install.equals(identity.installGeneration)||!lease.process.equals(identity.processName)||!lease.processStub.equals(slot.activityStub))throw new SecurityException("SERVICE_LEASE_OWNER_MISMATCH");}
-    private void requireDead(String generation){store.requireOpen(generation);if(store.hookRecoveryBlocked(generation))throw new SecurityException("HOOK_COMPONENT_RECOVERY_REQUIRES_EXPLICIT_START");try(Cursor c=store.getReadableDatabase().rawQuery("SELECT state FROM sessions WHERE generation=?",new String[]{generation})){if(!c.moveToFirst()||!c.getString(0).equals("DEAD"))throw new SecurityException("SERVICE_PREVIOUS_PROCESS_NOT_DEAD");}}
+    private void requireDead(String generation){requireDead(generation,ServiceRecoveryPolicy.Admission.SYSTEM_RECOVERY);}
+    private void requireDead(String generation,ServiceRecoveryPolicy.Admission admission){ServiceRecoveryPolicy.require(store.closeRequested(generation),store.isDead(generation),store.hookRecoveryBlocked(generation),admission);}
     private void update(String id,ContentValues row){if(store.getWritableDatabase().update("service_leases",row,"id=?",new String[]{id})!=1)throw new IllegalStateException("SERVICE_PERSIST_FAILED");}
 }

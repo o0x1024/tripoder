@@ -23,8 +23,8 @@ final class GuestPackageManager extends DeniedPackageManager {
     @Override public boolean hasSystemFeature(String name) { return platform.hasSystemFeature(name); }
     @Override public boolean hasSystemFeature(String name, int version) { return platform.hasSystemFeature(name, version); }
     @Override public boolean isInstantApp() { return false; }
-    @Override public android.content.pm.PackageInfo getPackageInfo(String name,int flags){return GuestPackageInfo.get(engine,name,Integer.toUnsignedLong(flags));}
-    @Override public android.content.pm.PackageInfo getPackageInfo(String name,PackageInfoFlags flags){if(flags==null)throw new IllegalArgumentException("PACKAGE_INFO_FLAGS_REQUIRED");return GuestPackageInfo.get(engine,name,flags.getValue());}
+    @Override public android.content.pm.PackageInfo getPackageInfo(String name,int flags)throws NameNotFoundException{return GuestPackageInfo.get(engine,name,Integer.toUnsignedLong(flags));}
+    @Override public android.content.pm.PackageInfo getPackageInfo(String name,PackageInfoFlags flags)throws NameNotFoundException{if(flags==null)throw new IllegalArgumentException("PACKAGE_INFO_FLAGS_REQUIRED");return GuestPackageInfo.get(engine,name,flags.getValue());}
     @Override public android.content.pm.PackageInfo getPackageInfo(android.content.pm.VersionedPackage name,int flags)throws NameNotFoundException{return getPackageInfo(name,PackageInfoFlags.of(Integer.toUnsignedLong(flags)));}
     @Override public android.content.pm.PackageInfo getPackageInfo(android.content.pm.VersionedPackage name,PackageInfoFlags flags)throws NameNotFoundException{
         // Android resolves the version selector for static shared libraries only.
@@ -32,35 +32,40 @@ final class GuestPackageManager extends DeniedPackageManager {
         if(name==null)throw new IllegalArgumentException("VERSIONED_PACKAGE_REQUIRED");return getPackageInfo(name.getPackageName(),flags);
     }
 
-    private void requireSelf(String packageName) {
+    /** Another package is not visible to the guest: Android answers NameNotFoundException, never an unsupported-operation error. */
+    private void requireSelf(String packageName) throws NameNotFoundException {
         if (!engine.packageName.equals(packageName))
-            throw new UnsupportedOperationException("OTHER_PACKAGE_QUERY_UNSUPPORTED:" + packageName);
+            throw new NameNotFoundException(String.valueOf(packageName));
     }
 
-    @Override public ApplicationInfo getApplicationInfo(String packageName, int flags) {
+    @Override public ApplicationInfo getApplicationInfo(String packageName, int flags) throws NameNotFoundException {
         return applicationInfo(packageName, Integer.toUnsignedLong(flags));
     }
 
-    @Override public ApplicationInfo getApplicationInfo(String packageName, ApplicationInfoFlags flags) {
+    @Override public ApplicationInfo getApplicationInfo(String packageName, ApplicationInfoFlags flags) throws NameNotFoundException {
         if (flags == null) throw new IllegalArgumentException("APPLICATION_INFO_FLAGS_REQUIRED");
         return applicationInfo(packageName, flags.getValue());
     }
 
-    private ApplicationInfo applicationInfo(String packageName, long flags) {
+    private ApplicationInfo applicationInfo(String packageName, long flags) throws NameNotFoundException {
         requireSelf(packageName);
-        if ((flags & ~(long) GET_META_DATA) != 0)
+        long supported = GET_META_DATA | GET_SHARED_LIBRARY_FILES | GET_ACTIVITIES | GET_RECEIVERS | GET_SERVICES | GET_PROVIDERS | MATCH_DISABLED_COMPONENTS | MATCH_DIRECT_BOOT_AWARE | MATCH_DIRECT_BOOT_UNAWARE | MATCH_UNINSTALLED_PACKAGES | MATCH_DEFAULT_ONLY;
+        if ((flags & ~supported) != 0)
             throw new UnsupportedOperationException("APPLICATION_INFO_FLAGS_UNSUPPORTED:0x" + Long.toHexString(flags));
         return copyApplicationInfo(engine.info, (flags & GET_META_DATA) != 0);
     }
 
     static ApplicationInfo copyApplicationInfo(ApplicationInfo source, boolean includeMetadata) {
         ApplicationInfo copy = new ApplicationInfo(source);
+        if (source.splitNames != null) copy.splitNames = source.splitNames.clone();
+        if (source.splitSourceDirs != null) copy.splitSourceDirs = source.splitSourceDirs.clone();
+        if (source.splitPublicSourceDirs != null) copy.splitPublicSourceDirs = source.splitPublicSourceDirs.clone();
         copy.metaData = includeMetadata && source.metaData != null ? source.metaData.deepCopy() : null;
         return copy;
     }
 
     @Override public XmlResourceParser getXml(String packageName, int resourceId, ApplicationInfo application) {
-        requireSelf(packageName);
+        if (!engine.packageName.equals(packageName)) return null;
         if (application != null && !packageName.equals(application.packageName))
             throw new SecurityException("XML_APPLICATION_IDENTITY_MISMATCH");
         // Caller-supplied paths never select an APK. Only the verified installation owns resources.
@@ -68,12 +73,12 @@ final class GuestPackageManager extends DeniedPackageManager {
         catch (Resources.NotFoundException missing) { return null; }
     }
 
-    @Override public Resources getResourcesForApplication(String packageName) {
+    @Override public Resources getResourcesForApplication(String packageName) throws NameNotFoundException {
         requireSelf(packageName);
         return resources;
     }
 
-    @Override public Resources getResourcesForApplication(ApplicationInfo application) {
+    @Override public Resources getResourcesForApplication(ApplicationInfo application) throws NameNotFoundException {
         if (application == null) throw new IllegalArgumentException("APPLICATION_INFO_REQUIRED");
         requireSelf(application.packageName);
         return resources;
@@ -112,7 +117,8 @@ final class GuestPackageManager extends DeniedPackageManager {
     @Override public ProviderInfo resolveContentProvider(String authority,ComponentInfoFlags flags){
         if(flags==null)throw new IllegalArgumentException("PROVIDER_FLAGS_REQUIRED");
         RuntimeProviderBroker.authority(authority);ProviderInfo info=engine.providerIndex.authority(authority);
-        if(info==null)throw new UnsupportedOperationException("OTHER_PACKAGE_PROVIDER_QUERY_UNSUPPORTED:"+authority);
+        // An authority outside this package is not visible: Android resolves it to null.
+        if(info==null)return null;
         return providerInfo(info,flags.getValue());
     }
 }

@@ -2,6 +2,7 @@
 #include <jni.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -28,6 +29,29 @@ JNIEXPORT jstring JNICALL Java_dev_tripoder_p2_NativeStorage_run(JNIEnv *env,jcl
     int mapped=openat(dir,"mapped",O_RDWR|O_CREAT|O_TRUNC,0600);int sized=mapped>=0&&ftruncate(mapped,4096)==0;void *view=sized?mmap(NULL,4096,PROT_READ|PROT_WRITE,MAP_SHARED,mapped,0):MAP_FAILED;if(mapped>=0)close(mapped);
     check(&report,"jni-mmap-after-close",view!=MAP_FAILED);if(view!=MAP_FAILED){memcpy(view,"mapped",6);check(&report,"jni-msync-real-mapping",msync(view,4096,MS_SYNC)==0);munmap(view,4096);}
     readfd=openat(dir,"mapped",O_RDONLY);memset(buffer,0,sizeof(buffer));check(&report,"jni-shared-mmap-reopen",readfd>=0&&read(readfd,buffer,6)==6&&!memcmp(buffer,"mapped",6));if(readfd>=0)close(readfd);
+    int cmdfd=open("/proc/self/cmdline",O_RDONLY|O_CLOEXEC);memset(buffer,0,sizeof(buffer));ssize_t cmdlen=cmdfd>=0?read(cmdfd,buffer,sizeof(buffer)-1):-1;if(cmdfd>=0)close(cmdfd);
+    size_t pkglen=strlen(pkg);
+    check(&report,"jni-proc-cmdline-virtualized",cmdlen>=(ssize_t)pkglen+1&&!strncmp(buffer,pkg,pkglen)&&(buffer[pkglen]=='\0'||buffer[pkglen]==':')&&strstr(buffer,"runtimeprobe")==NULL&&strstr(buffer,"engine")==NULL);
+    int statusfd=open("/proc/self/status",O_RDONLY|O_CLOEXEC);char status_buf[4096]={0};ssize_t statuslen=statusfd>=0?read(statusfd,status_buf,sizeof(status_buf)-1):-1;if(statusfd>=0)close(statusfd);
+    check(&report,"jni-proc-status-virtualized",statuslen>0&&strstr(status_buf,"TracerPid:\t0\n")!=NULL&&strstr(status_buf,"dev.tripoder.engine")==NULL&&strstr(status_buf,"dev.tripoder.runtimeprobe")==NULL);
+    int mapsfd=open("/proc/self/maps",O_RDONLY|O_CLOEXEC);bool maps_clean=mapsfd>=0,maps_has_logical=false;
+    if(mapsfd>=0){
+        FILE *mf=fdopen(mapsfd,"r");
+        if(!mf){close(mapsfd);maps_clean=false;}
+        else{
+            char line[2048];
+            while(fgets(line,sizeof(line),mf)){
+                if(strstr(line,"libtripoderselfhook.so")||strstr(line,"dev.tripoder.engine")||strstr(line,"dev.tripoder.runtimeprobe")||strstr(line,"/memfd:tripoder-dex"))maps_clean=false;
+                if(strstr(line,"/data/app/~~tripoder/"))maps_has_logical=true;
+            }
+            fclose(mf);
+        }
+    }
+    check(&report,"jni-proc-maps-stealth",maps_clean&&maps_has_logical);
+    const char *apk_leaf=strrchr(apk,'/');apk_leaf=apk_leaf?apk_leaf+1:"base.apk";
+    char logical_apk[PATH_MAX];snprintf(logical_apk,sizeof(logical_apk),"/data/app/~~tripoder/%s/%s",pkg,apk_leaf);
+    int apkfd=open(logical_apk,O_RDONLY|O_CLOEXEC);unsigned char magic[2]={0};bool apk_ok=apkfd>=0&&read(apkfd,magic,2)==2&&magic[0]=='P'&&magic[1]=='K';if(apkfd>=0)close(apkfd);
+    check(&report,"jni-logical-artifact-apk-readable",apk_ok);
     if(fd>=0)close(fd);if(dir>=0)close(dir);report.json[report.used++]=']';report.json[report.used]='\0';
     (*env)->ReleaseStringUTFChars(env,package,pkg);(*env)->ReleaseStringUTFChars(env,code,apk);(*env)->ReleaseStringUTFChars(env,token,value);return (*env)->NewStringUTF(env,report.json);
 }

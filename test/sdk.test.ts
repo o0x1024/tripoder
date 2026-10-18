@@ -304,3 +304,33 @@ test("failed preparation leaves a running plan and its counters untouched", () =
   assert.throws(() => r.activate(preparePlan(plan(ctx => ctx.java.method("missing", "method", []).replace(() => "x")), evidence)), { code: "TARGET_NOT_FOUND" });
   assert.deepEqual(r.inspect(), current);
 });
+
+test("byte[] ([B and byte[]) Java hooks match normalized types and validate hex encoding", () => {
+  const cryptoEvidence = changed({
+    symbols: [
+      ...evidence.symbols,
+      {
+        id: "mac-sign",
+        kind: "java",
+        loaded: true,
+        className: "javax.crypto.Mac",
+        methodName: "doFinal",
+        classLoaderId: "main",
+        argumentTypes: ["[B"],
+        returnType: "[B",
+      },
+    ],
+  });
+  const r = new HookSimulator<typeof params>(cryptoEvidence);
+  const p = preparePlan(plan(ctx => {
+    ctx.java.method("javax.crypto.Mac", "doFinal", ["byte[]"], { returnType: "byte[]" })
+      .before(({ args }) => [args[0] === "deadbeef" ? "cafebabe" : args[0]])
+      .after(({ result }) => result);
+  }), cryptoEvidence);
+  r.activate(p);
+  assert.equal(r.invoke("mac-sign", ["deadbeef"], args => args[0]).value, "cafebabe");
+  assert.equal(r.invoke("mac-sign", [null], () => null).value, null);
+  assert.throws(() => r.invoke("mac-sign", ["xyz"], () => "00"), { code: "HOOK_TYPE" });
+  assert.throws(() => r.invoke("mac-sign", ["abc"], () => "00"), { code: "HOOK_TYPE" });
+});
+

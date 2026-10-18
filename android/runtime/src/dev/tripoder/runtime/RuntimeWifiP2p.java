@@ -29,7 +29,7 @@ final class RuntimeWifiP2p {
     WifiP2pManager.Channel initialize(Context context,Looper looper,WifiP2pManager.ChannelListener listener){
         context(context);permissions();Objects.requireNonNull(looper,"WIFI_P2P_LOOPER_REQUIRED");
         if(!looper.getThread().isAlive())throw new IllegalStateException("WIFI_P2P_LOOPER_CLOSED");
-        if(listener!=null&&!engine.ownsLoader(listener.getClass().getClassLoader()))throw new SecurityException("WIFI_P2P_CALLBACK_OWNER_INVALID");
+        if(listener!=null&&!engine.ownsReceiverLoader(listener.getClass().getClassLoader()))throw new SecurityException("WIFI_P2P_CALLBACK_OWNER_INVALID");
         Registration registration=new Registration(listener);
         synchronized(this){if(channels.size()+pending>=16)throw new IllegalStateException("WIFI_P2P_CHANNEL_LIMIT");pending++;}
         try{

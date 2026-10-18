@@ -17,10 +17,14 @@ final class NativeJniChecks {
         check(!NativeModules.attest(0,module.generation,Long.MAX_VALUE,buildId),"NON_EXECUTABLE_RVA_REJECTED");
         AtomicInteger addCalls=new AtomicInteger(),onceRejected=new AtomicInteger(),foreignRejected=new AtomicInteger();
         AtomicReference<NativeHook.Invocation> expired=new AtomicReference<>();
+        Thread javaOwner=Thread.currentThread();java.util.Set<Thread> nativeOwners=java.util.concurrent.ConcurrentHashMap.newKeySet();
+        java.util.concurrent.atomic.AtomicBoolean borrowed=new java.util.concurrent.atomic.AtomicBoolean();
         NativeHook.Handle add=NativeHook.prepare(0,module.generation,rvas[0],library,NativeHook.I32,new int[]{NativeHook.I32,NativeHook.I32},call->{
+            if(Thread.currentThread()!=javaOwner){if(Thread.currentThread().isDaemon()==borrowed.get())throw new IllegalStateException("NATIVE_THREAD_ATTACHMENT_OWNERSHIP");nativeOwners.add(Thread.currentThread());}
             if(addCalls.getAndIncrement()==0){
                 Thread foreign=new Thread(()->{try{call.original(call.arguments(),call.incomingErrno());}catch(IllegalStateException expected){foreignRejected.incrementAndGet();}});
                 foreign.start();foreign.join();expired.set(call);
+                check(NativeJniCaller.exact(17)==22,"NESTED_JNI_ORIGINAL_USES_OWN_SIGNATURE_AND_TOKEN");
             }
             NativeHook.Result original=call.original(call.arguments(),call.incomingErrno());
             try{call.original(call.arguments(),call.incomingErrno());}catch(IllegalStateException expected){onceRejected.incrementAndGet();}
@@ -40,6 +44,15 @@ final class NativeJniChecks {
         System.gc();long[] workers=NativeJniCaller.concurrent();
         check(workers.length==3&&workers[0]==4&&workers[1]==400&&workers[2]==0,"FOREIGN_NATIVE_THREADS_ATTACH_DISPATCH_DETACH");
         check(addCalls.get()==401&&onceRejected.get()==401,"NATIVE_THREADS_USE_PINNED_CONTEXT");
+        var threadResources=NativeHook.resources();
+        check(nativeOwners.size()==4,"ONE_JAVA_THREAD_IDENTITY_PER_FOREIGN_PTHREAD");
+        check(((Number)threadResources.get("jniOwnedThreadLeases")).longValue()==0,"FOREIGN_THREAD_LEASES_END_AT_PTHREAD_EXIT");
+        check(((Number)threadResources.get("jniThreadAttachments")).longValue()==4&&((Number)threadResources.get("jniThreadDetachments")).longValue()==4,"ONE_ATTACH_AND_DETACH_PER_FOREIGN_THREAD");
+        check(Thread.currentThread()==javaOwner,"JAVA_ORIGIN_THREAD_ATTACHMENT_BORROWED");
+        borrowed.set(true);check(NativeJniCaller.preAttached(),"EXTERNALLY_ATTACHED_NATIVE_THREAD_BORROWED");borrowed.set(false);
+        threadResources=NativeHook.resources();
+        check(((Number)threadResources.get("jniOwnedThreadLeases")).longValue()==0&&((Number)threadResources.get("jniThreadAttachments")).longValue()==4&&((Number)threadResources.get("jniThreadDetachments")).longValue()==4,"BORROWED_THREAD_DOES_NOT_ACQUIRE_BRIDGE_LEASE");
+        check(nativeOwners.size()==5&&nativeOwners.stream().noneMatch(Thread::isAlive),"ALL_NATIVE_THREAD_PEERS_TERMINATED");
         NativeHook.retire(exact);check(NativeJniCaller.exact(17)==17&&NativeJniCaller.add(3,4)==107,"JNI_SHARED_PAGE_RETIRE_ONE");
         NativeHook.retire(add,fraction,error);check(NativeModules.snapshot(0).references==0,"ALL_PUBLICATION_LEASES_RELEASED");
         check(NativeJniCaller.add(3,4)==7&&NativeJniCaller.fraction(2.0)==2.5,"JNI_ORIGINALS_RESTORED");
@@ -56,7 +69,7 @@ final class NativeJniChecks {
         long[] events=NativeModules.events();boolean added=false,removed=false;
         for(int i=0;i<events.length;i+=5){added|=events[i+4]==1;removed|=events[i+4]==2;}
         check(added&&removed,"NOTIFIER_DRIVEN_NATIVE_EVENT_HISTORY");
-        return new JSONObject().put("checks",checks).put("nativeThreads",4).put("foreignCalls",400).put("addCallbacks",addCalls.get()).put("onceRejected",onceRejected.get()).put("foreignOriginalRejected",foreignRejected.get())
+        return new JSONObject().put("checks",checks).put("nativeThreads",4).put("foreignCalls",400).put("addCallbacks",addCalls.get()).put("onceRejected",onceRejected.get()).put("foreignOriginalRejected",foreignRejected.get()).put("threadLeaseProof",new JSONObject(threadResources))
             .put("actualJavaNativeCore",true).put("scriptBackendConnected",false).put("productAuthorityConnected",false).put("productAccepted",false);
     }
 }

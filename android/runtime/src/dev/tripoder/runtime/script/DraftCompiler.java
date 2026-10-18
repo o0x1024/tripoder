@@ -67,13 +67,38 @@ public final class DraftCompiler {
             Map<String,Object> holder=Collections.singletonMap("schema",Collections.unmodifiableMap(schema));schemas.put(holder,spec);return holder;
         }));return Collections.unmodifiableMap(out);
     }
-    private Map<String,Object> context(){return Map.of("java",Map.of("method",RestrictedAst.capability(this::javaMethod)),"native",Map.of("function",RestrictedAst.capability(this::nativeFunction)));}
+    private Map<String,Object> context(){return Map.of("java",Map.of("method",RestrictedAst.capability(this::javaMethod)),"native",Map.of("function",RestrictedAst.capability(this::nativeFunction)),"debug",Map.of("emitEvent",RestrictedAst.capability(this::emitEvent),"captureJavaStack",RestrictedAst.capability(this::captureJavaStack),"callerModuleOffset",RestrictedAst.capability(this::callerModuleOffset)));}
+    private Object emitEvent(List<Object> args){
+        require(!collecting,"HOOK_EMIT_OUTSIDE_INVOCATION");arity(args,1,2);
+        String tag=string(args.get(0));require(tag.matches("[a-zA-Z0-9_.:-]{1,64}"),"HOOK_EVENT_TAG");
+        Object payload=args.size()==2?args.get(1):null;
+        if(payload==ScriptValues.UNDEFINED)payload=null;
+        payload=ScriptValues.freeze(payload);
+        HookInvocationSession.recordEvent(tag,payload);
+        return ScriptValues.UNDEFINED;
+    }
+    private Object captureJavaStack(List<Object> args){
+        require(!collecting,"HOOK_EMIT_OUTSIDE_INVOCATION");arity(args,0,1);
+        int maxDepth=8;
+        if(args.size()==1&&args.get(0)!=ScriptValues.UNDEFINED){
+            Object raw=args.get(0);
+            require(raw instanceof Double&&(Double)raw==Math.rint((Double)raw)&&(Double)raw>=1&&(Double)raw<=32,"HOOK_STACK_DEPTH");
+            maxDepth=((Double)raw).intValue();
+        }
+        return ScriptValues.freeze(HookInvocationSession.captureStack(maxDepth));
+    }
+    private Object callerModuleOffset(List<Object> args){
+        require(!collecting,"HOOK_EMIT_OUTSIDE_INVOCATION");arity(args,0,0);
+        return HookInvocationSession.callerModuleOffset();
+    }
+    private static String normJavaType(Object t){return "byte[]".equals(t)?"[B":String.valueOf(t);}
+    private static List<String> normJavaTypes(List<String> list){List<String> out=new ArrayList<>(list.size());for(String s:list)out.add(normJavaType(s));return out;}
     private Object javaMethod(List<Object> args){
         require(collecting,"SETUP_CLOSED");arity(args,3,4);require(evidence.capabilities.contains("java-hook"),"CAPABILITY_MISSING");
-        String className=string(args.get(0)),method=string(args.get(1));List<String> parameters=strings(args.get(2));Map<String,Object> options=args.size()==4?object(args.get(3)):Map.of();
+        String className=string(args.get(0)),method=string(args.get(1));List<String> parameters=normJavaTypes(strings(args.get(2)));Map<String,Object> options=args.size()==4?object(args.get(3)):Map.of();
         require(Set.of("classLoaderId","returnType").containsAll(options.keySet()),"HOOK_SELECTOR_OPTIONS");List<Map<String,Object>> selected=new ArrayList<>();
-        for(var symbol:evidence.symbols)if("java".equals(symbol.get("kind"))&&className.equals(symbol.get("className"))&&method.equals(symbol.get("methodName"))&&parameters.equals(symbol.get("argumentTypes"))
-            &&(!options.containsKey("classLoaderId")||Objects.equals(options.get("classLoaderId"),symbol.get("classLoaderId")))&&(!options.containsKey("returnType")||Objects.equals(options.get("returnType"),symbol.get("returnType"))))selected.add(symbol);
+        for(var symbol:evidence.symbols)if("java".equals(symbol.get("kind"))&&className.equals(symbol.get("className"))&&method.equals(symbol.get("methodName"))&&parameters.equals(normJavaTypes(strings(symbol.get("argumentTypes"))))
+            &&(!options.containsKey("classLoaderId")||Objects.equals(options.get("classLoaderId"),symbol.get("classLoaderId")))&&(!options.containsKey("returnType")||Objects.equals(normJavaType(options.get("returnType")),normJavaType(symbol.get("returnType")))))selected.add(symbol);
         require(!selected.isEmpty(),"TARGET_NOT_FOUND");require(selected.size()==1,"TARGET_AMBIGUOUS");return builder(selected.get(0));
     }
     private Object nativeFunction(List<Object> args){

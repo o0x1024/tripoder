@@ -66,7 +66,8 @@ final class ApkInstallTransaction {
                     values.put("apk",published.base.toString());values.put("sha256",published.parts.get(0).sha256);values.put("descriptorSha",published.descriptorSha);
                     values.put("state","COMMITTED");values.put("reason","");values.put("version",published.versionCode);values.put("signer",published.signerSha);values.put("dataId",dataId);values.put("operation",operation);
                     if(old!=null){apks.catalog.invalidateProjects(space,pkg);db.delete("installs","space=? AND package=?",new String[]{space,pkg});}
-                    db.insertOrThrow("installs",null,values);fault.at("AFTER_METADATA");
+                    db.insertOrThrow("installs",null,values);
+                    InstallProviderIndex.publish(db,space,generation,InstallProviderIndex.authorities(published));fault.at("AFTER_METADATA");
                     apks.contract.succeed(operation,generation);InstallHistory.committed(apks.store,apks.contract,generation,old==null?null:old.generation,operation);fault.at("BEFORE_COMMIT");db.setTransactionSuccessful();
                 }finally{db.endTransaction();}
             }

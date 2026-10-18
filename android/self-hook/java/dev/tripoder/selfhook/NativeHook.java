@@ -14,25 +14,24 @@ public final class NativeHook {
         public Result(long bits,int errorNumber){this.bits=bits;this.errorNumber=errorNumber;}
     }
     public static final class Invocation {
-        private final long token;private final int[] types;private final long[] arguments;
+        private final long token;private final long[] arguments;
         private final Thread owner=Thread.currentThread();private final int incoming;
         private boolean called,closed;
-        private Invocation(long token,int[] types,long[] arguments,int incoming){this.token=token;this.types=types;this.arguments=arguments;this.incoming=incoming;}
+        private Invocation(long token,long[] arguments,int incoming){this.token=token;this.arguments=arguments;this.incoming=incoming;}
         public long[] arguments(){return arguments.clone();}
         public int incomingErrno(){return incoming;}
         public Result original(long[] replacement,int errorNumber){
             if(owner!=Thread.currentThread()||called||closed)throw new IllegalStateException("NATIVE_ORIGINAL_NOT_OWNED");
-            called=true;long[] value=original0(token,types,replacement,errorNumber);
-            if(value==null||value.length!=2)throw new IllegalStateException("NATIVE_ORIGINAL_REJECTED");
-            return new Result(value[0],Math.toIntExact(value[1]));
+            called=true;Result value=original0(token,replacement,errorNumber);
+            if(value==null)throw new IllegalStateException("NATIVE_ORIGINAL_REJECTED");return value;
         }
     }
     private static final class Context {
-        final int[] types;final Handler handler;
-        Context(int[] types,Handler handler){this.types=types;this.handler=handler;}
-        @SuppressWarnings("unused") private long[] dispatchNative(long token,long[] values,int incoming) throws Throwable {
-            Invocation invocation=new Invocation(token,types,values,incoming);
-            try {Result result=handler.invoke(invocation);if(result==null)throw new IllegalStateException("NATIVE_RESULT_REQUIRED");return new long[]{result.bits,result.errorNumber};}
+        final Class<Result> resultType=Result.class;final Handler handler;
+        Context(Handler handler){this.handler=handler;}
+        @SuppressWarnings("unused") private Result dispatchNative(long token,long[] values,int incoming) throws Throwable {
+            Invocation invocation=new Invocation(token,values,incoming);
+            try {Result result=handler.invoke(invocation);if(result==null)throw new IllegalStateException("NATIVE_RESULT_REQUIRED");return result;}
             finally {invocation.closed=true;}
         }
     }
@@ -42,16 +41,24 @@ public final class NativeHook {
         public int nativeId(){return id;}
     }
     private NativeHook(){}
+    /** Observation only: zero in-flight is not permission to reclaim code. */
+    public static java.util.Map<String,Object> resources(){
+        long[] values=resources0();if(values==null||values.length!=12)throw new IllegalStateException("NATIVE_RESOURCE_REPORT");
+        String[] names={"issued","prepared","active","retired","failed","inFlight","inboundUsed","retainedImages","jniGlobalRoots","jniOwnedThreadLeases","jniThreadAttachments","jniThreadDetachments"};
+        java.util.Map<String,Object> result=new java.util.LinkedHashMap<>();
+        for(int i=0;i<names.length;i++)result.put(names[i],values[i]);
+        result.put("publishedResourcesRetained",true);return java.util.Collections.unmodifiableMap(result);
+    }
     private static boolean contractChecked;
     private static synchronized void requireContract(){
-        if(contractChecked)return;long[] expected={VOID,I32,U32,I64,U64,F32,F64,16,1024};
+        if(contractChecked)return;long[] expected={4,VOID,I32,U32,I64,U64,F32,F64,16,1024};
         if(!java.util.Arrays.equals(expected,contract0()))throw new IllegalStateException("NATIVE_ABI_CONTRACT_MISMATCH");contractChecked=true;
     }
     public static Handle prepare(int module,long generation,long exportRva,String canonicalPath,int result,int[] parameters,Handler handler){
         if(module<0||generation<=0||generation>0xffffffffL||exportRva<0||(exportRva&3)!=0||handler==null||parameters==null||parameters.length>16||result<VOID||result>F64)throw new IllegalArgumentException("NATIVE_BINDING");
         requireContract();
         int[] types=parameters.clone();for(int type:types)if(type<I32||type>F64)throw new IllegalArgumentException("NATIVE_ARGUMENT_TYPE");
-        Context context=new Context(types,handler);int id=prepare0(module,generation,exportRva,NativeModules.path(canonicalPath),result,types,context);
+        Context context=new Context(handler);int id=prepare0(module,generation,exportRva,NativeModules.path(canonicalPath),result,types,context);
         if(id<0)throw new IllegalStateException("NATIVE_PREPARATION_REJECTED");return new Handle(id,context);
     }
     public static synchronized void publish(Handle... handles){
@@ -74,6 +81,7 @@ public final class NativeHook {
     private static native int prepare0(int module,long generation,long rva,byte[] path,int result,int[] arguments,Context context);
     private static native int publish0(int[] ids);
     private static native int retire0(int[] ids);
-    private static native long[] original0(long token,int[] types,long[] arguments,int incomingErrno);
+    private static native Result original0(long token,long[] arguments,int incomingErrno);
     private static native long[] contract0();
+    private static native long[] resources0();
 }
