@@ -87,6 +87,7 @@ final class RuntimeSelfHookComponents {
         Map<Method,Callback> callbacks=new LinkedHashMap<>();
         for(int i=0;i<names.length;i++) {
             Method target=publicLifecycle(service.getClass(),names[i],types[i]);
+            if(target==null)continue;
             callbacks.put(target,(receiver,arguments,original)->RuntimeSelfHookLifecycle.service(value.services,target,receiver,arguments,original));
         }
         value.install(callbacks);
@@ -100,9 +101,16 @@ final class RuntimeSelfHookComponents {
     private void ownedType(Object component) {
         if(component==null||!engine.ownsLoader(component.getClass().getClassLoader()))throw new SecurityException("SELF_COMPONENT_LOADER_MISMATCH");
     }
+    /**
+     * A lifecycle implementation inherited from a boot class (IntentService.onBind, JobService.onStartJob, ...) is
+     * framework code: the guest never runs there, and hooking a framework class globally would require a registered
+     * boot adapter. Only a guest or guest-library override is ours to wrap; when none exists the platform
+     * implementation runs unchanged, exactly as it does on a real device.
+     */
     private static Method publicLifecycle(Class<?> type,String name,Class<?>... parameters) {
         try {
             Method method=type.getMethod(name,parameters);
+            if(method.getDeclaringClass().getClassLoader()==null)return null;
             if(Modifier.isStatic(method.getModifiers())||Modifier.isAbstract(method.getModifiers()))
                 throw new IllegalStateException("SELF_COMPONENT_LIFECYCLE_NOT_CONCRETE:"+method);
             return method;

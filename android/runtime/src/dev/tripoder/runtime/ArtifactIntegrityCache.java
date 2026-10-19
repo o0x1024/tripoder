@@ -55,7 +55,7 @@ final class ArtifactIntegrityCache {
             for(Iterator<Path> it=paths.iterator();it.hasNext();){
                 Path path=it.next();if(values.size()>ArtifactSetZip.MAX_ENTRIES+ArtifactSet.MAX_PARTS+2)throw new SecurityException("ARTIFACT_FILE_COUNT_LIMIT");
                 StructStat s=Os.lstat(path.toString());if(!OsConstants.S_ISREG(s.st_mode)&&!OsConstants.S_ISDIR(s.st_mode))throw new SecurityException("ARTIFACT_NOT_REGULAR");
-                if((s.st_mode&0222)!=0)throw new SecurityException("ARTIFACT_NOT_IMMUTABLE");
+                if((s.st_mode&0222)!=0)throw new SecurityException("ARTIFACT_NOT_IMMUTABLE:"+root.relativize(path)+":"+Integer.toOctalString(s.st_mode&07777));
                 values.put(root.relativize(path).toString(),s.st_dev+":"+s.st_ino+":"+s.st_mode+":"+s.st_nlink+":"+s.st_uid+":"+s.st_gid+":"+s.st_size+":"+s.st_mtim.tv_sec+":"+s.st_mtim.tv_nsec+":"+s.st_ctim.tv_sec+":"+s.st_ctim.tv_nsec);
             }
         }return values;

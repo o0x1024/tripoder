@@ -26,7 +26,7 @@ final class RuntimeJobs {
         engine.startApplication();Delegate delegate;
         synchronized(this){delegate=delegates.get(gateway);}
         if(delegate==null){
-            String component=RuntimeWire.required(admitted,"component");var created=engine.componentFactory.instantiateService(engine.loader,component,new Intent().setComponent(new ComponentName(engine.packageName,component)));
+            String component=RuntimeWire.required(admitted,"component");var created=engine.componentFactory.instantiateService(engine.guestLoader(),component,new Intent().setComponent(new ComponentName(engine.packageName,component)));
             if(!(created instanceof JobService)||!engine.ownsLoader(created.getClass().getClassLoader()))throw new SecurityException("JOB_SERVICE_CLASS_REJECTED");
             JobService service=(JobService)created;delegate=new Delegate(gateway,service,component);
             synchronized(this){delegates.put(gateway,delegate);services.put(service,delegate);}

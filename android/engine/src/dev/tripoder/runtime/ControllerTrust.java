@@ -8,7 +8,7 @@ import android.content.Context;
  *  security boundary against guests; it keeps guest code from reaching the lease by accident. */
 final class ControllerTrust {
     /** The workbench starts guests as an outside caller would: only exported Activities, recorded with this caller package. A product rule, not trust. */
-    static final String WORKBENCH_CALLER="dev.tripoder.engine";
+    static String workbenchCaller(Context host){return host.getPackageName();}
     /** Operation owner for everything the workbench submits; agent sessions own their operations under their own subject. */
     static final String OPERATIONS="trusted-workbench";
     static void require(Context host,int pid,int uid){

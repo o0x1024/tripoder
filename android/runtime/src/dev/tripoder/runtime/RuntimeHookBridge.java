@@ -29,7 +29,7 @@ public final class RuntimeHookBridge {
             .put("descriptorSha256",RuntimeWire.required(input,"descriptorSha"))
             .put("processGeneration",engine.generation).put("pid",android.os.Process.myPid())
             .put("target",new JSONObject().put("packageName",engine.packageName).put("versionCode",Long.toString(artifacts.versionCode)).put("apkSha256",RuntimeWire.required(input,"sha256")));
-        javaObservation=new RuntimeJavaObservation(()->engine.loader,engine::ownsLoader,()->RuntimeEngine.current==engine,identitySnapshot());
+        javaObservation=new RuntimeJavaObservation(engine::guestLoader,engine::ownsLoader,()->RuntimeEngine.current==engine,identitySnapshot());
     }
     private static RuntimeHookBridge current(){RuntimeEngine e=RuntimeEngine.current;if(e==null||e.application==null)throw new IllegalStateException("HOOK_APPLICATION_NOT_READY");return e.hooks;}
     public static String identity(){return current().identity.toString();}

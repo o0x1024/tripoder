@@ -10,14 +10,14 @@ final class SettingsReadProvider extends ContentProvider {
     SettingsReadProvider(ContentResolver system){this.system=system;}
     @Override public boolean onCreate(){return true;}
     static void uri(Uri uri){
-        if(uri==null||!"content".equals(uri.getScheme()))throw new UnsupportedOperationException("PROVIDER_URI_UNSUPPORTED");
-        if("settings".equals(uri.getAuthority())){
-            if(uri.getPathSegments().isEmpty()||!java.util.Set.of("system","secure","global").contains(uri.getPathSegments().get(0)))
-                throw new UnsupportedOperationException("PROVIDER_URI_UNSUPPORTED");
-            return;
-        }
-        if("media".equals(uri.getAuthority())||"downloads".equals(uri.getAuthority()))return;
-        throw new UnsupportedOperationException("PROVIDER_URI_UNSUPPORTED");
+        if(!readable(uri))throw new UnsupportedOperationException("PROVIDER_URI_UNSUPPORTED");
+    }
+    /** Query targets. Observation registration is wider: a ContentObserver grants no data access. */
+    static boolean readable(Uri uri){
+        if(uri==null||!"content".equals(uri.getScheme()))return false;
+        if("settings".equals(uri.getAuthority()))
+            return !uri.getPathSegments().isEmpty()&&java.util.Set.of("system","secure","global").contains(uri.getPathSegments().get(0));
+        return "media".equals(uri.getAuthority())||"downloads".equals(uri.getAuthority());
     }
     @Override public Bundle call(String authority,String method,String arg,Bundle extras){
         // DeviceConfig is read by the platform's Autofill/ContentCapture UI

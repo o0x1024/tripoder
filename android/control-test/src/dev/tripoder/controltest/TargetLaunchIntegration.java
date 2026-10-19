@@ -118,9 +118,9 @@ public final class TargetLaunchIntegration extends ControlTestBase {
         Application.ActivityLifecycleCallbacks observer=new Application.ActivityLifecycleCallbacks(){public void onActivityCreated(Activity a,Bundle b){if(a.getClass().getName().equals("dev.tripoder.hooklab.WorkbenchProjectActivity"))page.set(a);}public void onActivityStarted(Activity a){}public void onActivityResumed(Activity a){}public void onActivityPaused(Activity a){}public void onActivityStopped(Activity a){}public void onActivitySaveInstanceState(Activity a,Bundle b){}public void onActivityDestroyed(Activity a){}};
         application.registerActivityLifecycleCallbacks(observer);
         try{
-            getTargetContext().startActivity(new Intent().setClassName("dev.tripoder.engine","dev.tripoder.hooklab.WorkbenchProjectActivity").putExtra("project",record.getString("project")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            getTargetContext().startActivity(new Intent().setComponent(engineComponent("dev.tripoder.hooklab.WorkbenchProjectActivity")).putExtra("project",record.getString("project")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             long deadline=SystemClock.elapsedRealtime()+8000;while(page.get()==null&&SystemClock.elapsedRealtime()<deadline)SystemClock.sleep(25);if(page.get()==null)throw new IllegalStateException("PROJECT_PAGE_NOT_CREATED");waitForIdleSync();
-            runOnMainSync(()->page.get().startActivity(prepared.getParcelable("intent",Intent.class)));
+            runOnMainSync(()->{Intent start=prepared.getParcelable("intent",Intent.class);android.util.Log.i("TripoderLaunch","controller start component="+start.getComponent().flattenToShortString()+" ticket="+start.getStringExtra("tripoder.ticket"));page.get().startActivity(start);});
             Bundle receipt;deadline=SystemClock.elapsedRealtime()+15000;do{receipt=execute(session,"query","operation",launch);if(!"RUNNING".equals(receipt.getString("state")))break;SystemClock.sleep(100);}while(SystemClock.elapsedRealtime()<deadline);
             report.put("launchReceipt",json(receipt));check("target-first-activity-acknowledged","SUCCEEDED".equals(receipt.getString("state")),json(receipt));
         }finally{application.unregisterActivityLifecycleCallbacks(observer);}
@@ -157,9 +157,9 @@ public final class TargetLaunchIntegration extends ControlTestBase {
     /** Tapping an application that is already running must bring its own task back, in the same process, with no second root. */
     private void wakeRunningApplication(IBinder session,String pkg,JSONObject record,JSONObject launcher,Bundle first)throws Exception{
         shell("input keyevent KEYCODE_HOME");SystemClock.sleep(1500);
-        check("wake-guest-is-backgrounded",!focusedWindow().contains("dev.tripoder.engine/")&&!focusedWindow().contains(pkg+"/"),focusedWindow());
+        check("wake-guest-is-backgrounded",!focusedWindow().contains(enginePackage()+"/")&&!focusedWindow().contains(pkg+"/"),focusedWindow());
         // The user taps the icon inside the workbench, so the app is in the foreground when the wake is requested.
-        shell("am start -n dev.tripoder.engine/dev.tripoder.hooklab.WorkbenchActivity");SystemClock.sleep(2000);
+        shell("am start -n "+enginePackage()+"/dev.tripoder.hooklab.WorkbenchActivity");SystemClock.sleep(2000);
         check("wake-requested-from-foreground-workbench",focusedWindow().contains("WorkbenchActivity"),focusedWindow());
         String wake=id();
         Bundle woken=execute(session,"prepareLaunch","operation",wake,"project",record.getString("project"),"bindingOperation",record.getString("binding"),"generation",record.getString("generation"),"component",launcher.getString("component"));
@@ -167,8 +167,8 @@ public final class TargetLaunchIntegration extends ControlTestBase {
         Bundle receipt=execute(session,"query","operation",wake);
         check("wake-operation-succeeded","SUCCEEDED".equals(receipt.getString("state")),json(receipt));
         SystemClock.sleep(1500);
-        report.put("wakeFocus",focusedWindow()).put("wakeTasks",shell("dumpsys activity activities").lines().filter(l->l.contains("dev.tripoder.engine")&&(l.contains("topResumedActivity")||l.contains("ResumedActivity")||l.contains("Task{"))).limit(20).collect(java.util.stream.Collectors.joining("\n")));
-        check("wake-guest-is-foreground-again",(focusedWindow().contains("dev.tripoder.engine/")||focusedWindow().contains(pkg+"/"))&&!focusedWindow().contains("WorkbenchActivity"),focusedWindow());
+        report.put("wakeFocus",focusedWindow()).put("wakeTasks",shell("dumpsys activity activities").lines().filter(l->l.contains(enginePackage())&&(l.contains("topResumedActivity")||l.contains("ResumedActivity")||l.contains("Task{"))).limit(20).collect(java.util.stream.Collectors.joining("\n")));
+        check("wake-guest-is-foreground-again",(focusedWindow().contains(enginePackage()+"/")||focusedWindow().contains(pkg+"/"))&&!focusedWindow().contains("WorkbenchActivity"),focusedWindow());
         JSONArray live=new JSONArray(execute(session,"hookProcesses","project",record.getString("project")).getString("processes"));boolean same=false;
         for(int i=0;i<live.length();i++){JSONObject process=live.getJSONObject(i);if(first.getString("generation").equals(process.getString("processGeneration"))&&first.getInt("pid")==process.getInt("pid"))same=true;}
         check("wake-keeps-the-same-guest-process",same,live);

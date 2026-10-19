@@ -34,7 +34,8 @@ public class RuntimeAuthorityService extends Service {
             if(command.equals("prepareActivity")){
                 String space=RuntimeWire.required(input,"space"),pkg=RuntimeWire.required(input,"package"),component=RuntimeWire.required(input,"component"),process;
                 synchronized(broker){process=RuntimeComponents.activity(broker.apks.get(space,pkg),component).processName;}
-                var slot=broker.processes.ensure(space,pkg,process);Bundle output=broker.processEvidence(slot);output.putParcelable("intent",broker.launch(slot.allocation.session.processGeneration,component));return output;
+                var slot=broker.processes.ensure(space,pkg,process);Bundle output=broker.processEvidence(slot);Intent prepared=broker.launch(slot.allocation.session.processGeneration,component);
+                android.util.Log.i("TripoderLaunch","prepared component="+prepared.getComponent().flattenToShortString()+" ticket="+prepared.getStringExtra("tripoder.ticket"));output.putParcelable("intent",prepared);return output;
             }
             synchronized(broker){return dispatch(input);}
         }

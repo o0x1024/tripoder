@@ -16,6 +16,9 @@ abstract class ControlTestBase extends Instrumentation {
     interface Attempt {void run()throws Exception;}
     @Override public void onCreate(Bundle args){super.onCreate(args);this.args=args;run=args.getString("runId");if(run==null||!run.matches("control-[a-f0-9]{16}"))throw new IllegalArgumentException("CONTROL_TEST_RUN_REQUIRED");start();}
     abstract void test()throws Exception;
+    /** The engine under test is the instrumentation target, so a renamed build runs the same harness. */
+    final String enginePackage(){return getTargetContext().getPackageName();}
+    final ComponentName engineComponent(String activity){return new ComponentName(enginePackage(),activity);}
     void startThroughWorkbench()throws Exception{
         startThroughWorkbench(true);
     }
@@ -28,7 +31,7 @@ abstract class ControlTestBase extends Instrumentation {
         };
         app.registerActivityLifecycleCallbacks(observer);
         File signal=new File(getTargetContext().getExternalFilesDir(null),"launch-workbench-"+run+".json");
-        try(var output=new FileOutputStream(signal)){output.write(new JSONObject().put("runId",run).put("component","dev.tripoder.engine/dev.tripoder.hooklab.WorkbenchActivity").toString().getBytes(StandardCharsets.UTF_8));output.getFD().sync();}
+        try(var output=new FileOutputStream(signal)){output.write(new JSONObject().put("runId",run).put("component",enginePackage()+"/dev.tripoder.hooklab.WorkbenchActivity").toString().getBytes(StandardCharsets.UTF_8));output.getFD().sync();}
         Object application=getTargetContext().getApplicationContext();var field=application.getClass().getDeclaredField("engine");field.setAccessible(true);
         long initDeadline=SystemClock.elapsedRealtime()+5000;while(field.get(application)==null){if(SystemClock.elapsedRealtime()>initDeadline)throw new IllegalStateException("APPLICATION_INITIALIZATION_TIMEOUT");SystemClock.sleep(10);}
         Object engine=field.get(application);
@@ -57,7 +60,7 @@ abstract class ControlTestBase extends Instrumentation {
         }catch(Exception error){passed=false;result.putString("error",error.toString());}finish(passed?Activity.RESULT_OK:Activity.RESULT_CANCELED,result);
     }}
     IBinder bind(String pkg,String service)throws Exception{Link link=new Link();links.add(link);link.bound=getTargetContext().bindService(new Intent().setComponent(new ComponentName(pkg,service)),link,Context.BIND_AUTO_CREATE);if(!link.bound||!link.ready.await(15,TimeUnit.SECONDS)||link.peer==null)throw new IllegalStateException("TEST_BIND_FAILED:"+pkg);return link.peer;}
-    IBinder engine()throws Exception{return bind("dev.tripoder.engine","dev.tripoder.runtime.RuntimeControllerService");}
+    IBinder engine()throws Exception{return bind(enginePackage(),"dev.tripoder.runtime.RuntimeControllerService");}
     Bundle connect(IBinder entry,IBinder life)throws Exception{Bundle input=new Bundle();input.putBinder("owner",life);return ControlWire.call(entry,ControlWire.CONNECT,input);}
     ControlWire.Owner life(){return new ControlWire.Owner();}
     /** Runs as the shell user, e.g. to bring an app back the way the user would from the launcher. */

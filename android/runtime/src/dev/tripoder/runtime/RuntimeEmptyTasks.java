@@ -71,9 +71,11 @@ public final class RuntimeEmptyTasks {
         String proof;try(var c=broker.store.getReadableDatabase().rawQuery("SELECT resourceProof FROM activity_tickets WHERE ticket=?",new String[]{rootTicket})){if(!c.moveToFirst())return null;proof=c.getString(0);}
         boolean attached=root.taskId==info.taskId&&root.instance!=null&&"OWNED_TASK_ATTACHED".equals(proof);
         boolean fenced=root.taskId==info.taskId&&proof!=null&&proof.startsWith(REQUESTED);
-        // Only the root's observed attachment proves the physical resource owner.
-        // Unattached launches remain pinned even when their task is empty.
-        if(root.taskId!=info.taskId||root.instance==null||(!attached&&!fenced))return null;
+        // A root that never materialised (the entry was dispatched but no Activity instance was ever created) can no
+        // longer enter: the installation's sessions must all be DEAD below, so no client exists that could attach it.
+        // Such an empty task owns no guest UI and only pins a process stub; retaining it forever exhausts capacity.
+        boolean neverEntered=removal==null&&root.taskId==info.taskId&&root.instance==null;
+        if(root.taskId!=info.taskId||(!neverEntered&&root.instance==null)||(!neverEntered&&!attached&&!fenced))return null;
         // A replacement generation may already be entering recovery; never reclaim under it.
         try(var c=broker.store.getReadableDatabase().rawQuery("SELECT 1 FROM sessions WHERE space=? AND package=? AND installGeneration=? AND processName=? AND state!='DEAD' LIMIT 1",new String[]{root.space,root.pkg,root.install,root.process})){if(c.moveToFirst())return null;}
         List<String> tickets=new ArrayList<>();Set<String> physical=new HashSet<>();

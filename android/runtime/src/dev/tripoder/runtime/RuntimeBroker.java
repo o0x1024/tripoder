@@ -171,6 +171,14 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
         if(code==RuntimeWire.JOB_EVENT)return jobBroker.attemptEvent(input,from);
         switch(code){
             case RuntimeWire.ACTIVITY_ENTRY_STATUS:{String candidate=RuntimeWire.required(input,"candidate"),kind=input.getString("kind","new-intent");if(!Set.of("factory","new-intent").contains(kind))throw new SecurityException("ACTIVITY_ENTRY_KIND_INVALID");boolean closed=activities.closedEntry(candidate,RuntimeWire.required(input,"stub"),from);if(closed)ActivityEntryFences.rejected(this,candidate,kind);result.putBoolean("closed",closed);return result;}
+            case RuntimeWire.ACTIVITY_RECORD:{
+                // A launch record is identified by its lease, not by the component name a platform may rewrite on the
+                // intent it serialises (HyperOS resolves the record's visible component back from the ActivityInfo it
+                // was given). The lease names the slot this generation owns; only that generation may ask.
+                String ticket=RuntimeWire.required(input,"ticket");var row=activities.get(ticket);
+                if(!row.generation.equals(generation))throw new SecurityException("ACTIVITY_RECORD_FOREIGN_GENERATION");
+                result.putString("stub",row.stub);result.putString("component",row.component);break;
+            }
             case RuntimeWire.SERVICE_ACK:return serviceBroker.acknowledge(input,generation);
             case RuntimeWire.SERVICE_CLAIM:return services.claim(RuntimeWire.required(input,"stub"),from,RuntimeWire.required(input,"instance"));
             case RuntimeWire.SERVICE_EVENT:services.lifecycle(RuntimeWire.required(input,"lease"),generation,RuntimeWire.required(input,"instance"),RuntimeWire.required(input,"event"));break;

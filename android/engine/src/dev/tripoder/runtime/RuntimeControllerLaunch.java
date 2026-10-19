@@ -39,7 +39,7 @@ final class RuntimeControllerLaunch {
             if(!binding.equals(target.getString("bindingOperation"))||!generation.equals(target.getString("generation")))throw new IllegalStateException("LAUNCH_BINDING_STALE");
             var install=broker.apks.get(target.getString("space"),target.getString("package"));if(!generation.equals(install.generation))throw new IllegalStateException("LAUNCH_BINDING_STALE");
             String component=application?launcherComponent(install):input.getString("component");
-            ActivityInfo activity=RuntimeComponents.activity(install,component);RuntimeComponents.authorize(activity,ControllerTrust.WORKBENCH_CALLER);
+            ActivityInfo activity=RuntimeComponents.activity(install,component);RuntimeComponents.authorize(activity,ControllerTrust.workbenchCaller(broker.host));
             // Retire authenticated empty tasks before deciding whether a root remains
             // open. The same proof-based maintenance is used by ProcessSupervisor.
             RuntimeEmptyTasks.reclaim(broker,null);
@@ -71,7 +71,7 @@ final class RuntimeControllerLaunch {
                 if(broker.contract.getSession(slot.allocation.session.processGeneration).state!=ExecutionContract.ProcessState.RUNNING)throw new IllegalStateException("LAUNCH_PROCESS_STALE");
                 // Checked again in the transaction that creates the root, so concurrent launches of one installation open one root.
                 ActivityEntryFences.requireNoOpenRoot(broker.store,install.space,install.info.packageName,generation);
-                String ticket=broker.activities.prepare(slot,component,null,operation,ControllerTrust.WORKBENCH_CALLER,null,null);
+                String ticket=broker.activities.prepare(slot,component,null,operation,ControllerTrust.workbenchCaller(broker.host),null,null);
                 Intent intent=broker.activities.controllerEntry(broker.host,ticket,launcher(install,component));issued.put(operation,android.os.SystemClock.elapsedRealtime());
                 Bundle out=broker.processEvidence(slot);out.putString("operation",operation);out.putString("component",component);out.putParcelable("intent",intent);return out;
             }

@@ -1,11 +1,12 @@
 #include "managed_abi.h"
 #include <string.h>
-static struct {jclass type;jmethodID unbox,box;} primitives[8];
+static struct {jclass type;jfieldID value;jmethodID unbox,box;} primitives[8];
 static bool ready;
 static const char kinds[]="ZBSCIJFD";
 bool tp_managed_abi_bind(JNIEnv *env){
     if(ready)return true;
     const char *types[]={"java/lang/Boolean","java/lang/Byte","java/lang/Short","java/lang/Character","java/lang/Integer","java/lang/Long","java/lang/Float","java/lang/Double"};
+    const char *sigs[]={"Z","B","S","C","I","J","F","D"};
     const char *names[]={"booleanValue","byteValue","shortValue","charValue","intValue","longValue","floatValue","doubleValue"};
     const char *unbox[]={"()Z","()B","()S","()C","()I","()J","()F","()D"};
     const char *box[]={"(Z)Ljava/lang/Boolean;","(B)Ljava/lang/Byte;","(S)Ljava/lang/Short;","(C)Ljava/lang/Character;","(I)Ljava/lang/Integer;","(J)Ljava/lang/Long;","(F)Ljava/lang/Float;","(D)Ljava/lang/Double;"};
@@ -13,6 +14,8 @@ bool tp_managed_abi_bind(JNIEnv *env){
         jclass local=(*env)->FindClass(env,types[i]);if(!local)return false;
         primitives[i].type=(*env)->NewGlobalRef(env,local);(*env)->DeleteLocalRef(env,local);
         if(!primitives[i].type)return false;
+        primitives[i].value=(*env)->GetFieldID(env,primitives[i].type,"value",sigs[i]);
+        if(!primitives[i].value)(*env)->ExceptionClear(env);
         primitives[i].unbox=(*env)->GetMethodID(env,primitives[i].type,names[i],unbox[i]);
         primitives[i].box=(*env)->GetStaticMethodID(env,primitives[i].type,"valueOf",box[i]);
         if(!primitives[i].unbox||!primitives[i].box)return false;
@@ -33,7 +36,7 @@ jobject tp_managed_abi_original(JNIEnv *env,jclass owner,jmethodID original,bool
         if(!type||!refs[i]){invalid(env);goto done;}
         unsigned k=(unsigned)(type-kinds);
         if(!(*env)->IsInstanceOf(env,refs[i],primitives[k].type)){invalid(env);goto done;}
-#define UNBOX(letter,Member,Type) case letter:args[i].Member=(*env)->Call##Type##Method(env,refs[i],primitives[k].unbox);break
+#define UNBOX(letter,Member,Type) case letter:args[i].Member=primitives[k].value?(*env)->Get##Type##Field(env,refs[i],primitives[k].value):(*env)->Call##Type##Method(env,refs[i],primitives[k].unbox);break
         switch(kind){UNBOX('Z',z,Boolean);UNBOX('B',b,Byte);UNBOX('S',s,Short);UNBOX('C',c,Char);UNBOX('I',i,Int);UNBOX('J',j,Long);UNBOX('F',f,Float);UNBOX('D',d,Double);}
 #undef UNBOX
         if((*env)->ExceptionCheck(env))goto done;

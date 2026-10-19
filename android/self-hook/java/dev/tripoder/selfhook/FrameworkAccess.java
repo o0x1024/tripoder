@@ -11,7 +11,8 @@ import java.lang.reflect.Modifier;
 public final class FrameworkAccess {
     private FrameworkAccess() {}
     private static boolean prepared;
-    private static final Object[][] declarationCache=new Object[59][];
+    // One slot per fixed boot class root; the index space is defined by art_framework.c names[].
+    private static final Object[][] declarationCache=new Object[60][];
     private static native boolean prepareNative(Method field,Method count,Method method);
     public static native String statusNative();
     @FastNative private static native Field fieldNative(int slot);
@@ -27,14 +28,15 @@ public final class FrameworkAccess {
     private static final String[] FIELD_TYPES={"Landroid/app/Application;","Landroid/app/LoadedApk;","Landroid/app/Application;",
         "Landroid/app/Instrumentation;","Ljava/lang/ClassLoader;","Ljava/lang/ClassLoader;","Landroid/content/res/Resources;",
         "Landroid/app/AppComponentFactory;","Landroid/content/pm/ApplicationInfo;","Ljava/lang/String;","Landroid/content/Context;","Landroid/app/ActivityThread;"};
-    private static final int[] METHOD_OWNERS={1,1,2,2,3,3,0,5,5};
+    private static final int[] METHOD_OWNERS={1,1,2,2,3,3,0,5,5,1};
     private static final String[] METHOD_NAMES={"currentActivityThread","currentApplication","<init>","getCompatibilityInfo",
-        "createAppContext","setOuterContext","attach","addFinisher","removeFinisher"};
+        "createAppContext","setOuterContext","attach","addFinisher","removeFinisher","currentPackageName"};
     private static final String[] METHOD_TYPES={"()Landroid/app/ActivityThread;","()Landroid/app/Application;",
         "(Landroid/app/ActivityThread;Landroid/content/pm/ApplicationInfo;Landroid/content/res/CompatibilityInfo;Ljava/lang/ClassLoader;ZZZ)V",
         "()Landroid/content/res/CompatibilityInfo;","(Landroid/app/ActivityThread;Landroid/app/LoadedApk;Ljava/lang/String;)Landroid/app/ContextImpl;",
-        "(Landroid/content/Context;)V","(Landroid/content/Context;)V","(Ljava/lang/Runnable;)V","(Ljava/lang/Runnable;)V"};
-    private static final boolean[] METHOD_STATIC={true,true,false,false,true,false,false,true,true};
+        "(Landroid/content/Context;)V","(Landroid/content/Context;)V","(Ljava/lang/Runnable;)V","(Ljava/lang/Runnable;)V",
+        "()Ljava/lang/String;"};
+    private static final boolean[] METHOD_STATIC={true,true,false,false,true,false,false,true,true,true};
 
     public static synchronized Members prepare() throws Exception {
         if(prepared)throw new IllegalStateException("FRAMEWORK_ACCESS_ALREADY_PREPARED");
@@ -116,6 +118,11 @@ public final class FrameworkAccess {
     public static Method processNameMethod()throws Exception{
         return FixedFrameworkMembers.method(0,"getProcessName","()Ljava/lang/String;",true);
     }
+    /**
+     * Fixed slot of {@code ActivityThread.currentPackageName()}: the host bind record, which a guest process must
+     * answer with its own package. It is a registry member so the hook target and its adapter share one index.
+     */
+    public static final int CURRENT_PACKAGE_NAME=9;
     /** One typed Service group in the same registry; no alternate name resolver. */
     static synchronized Object[] serviceTokenMembers() throws Exception {
         if(!prepared)throw new IllegalStateException("FIXED_SERVICE_MEMBER_ORDER");

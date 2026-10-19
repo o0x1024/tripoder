@@ -40,6 +40,18 @@ final class RuntimeSelfHookManagerPolicy {
             case TELEPHONY:return Set.of("getPhoneType()","getSimState()","getSimState(int)","getPhoneCount()","getActiveModemCount()",
                 "getSupportedModemCount()","isVoiceCapable()","isSmsCapable()","isDataCapable()",
                 "getNetworkCountryIso()","getSimCountryIso()","getNetworkType()","getDataNetworkType()","getNetworkOperator()","getNetworkOperatorName()","getSimOperator()","getSimOperatorName()",
+                // Per-subscription variants observe the same device state; they expose no subscriber identifier.
+                "getVoiceNetworkType()","getDataState()",
+                // A subscription-scoped manager is the platform's own factory result; the subscription is a device
+                // property, not a guest-owned resource, and every identity-bearing query stays denied below.
+                "createForSubscriptionId(int)",
+                // Cell information is device state. It is enumerated because the legacy listener API and the cell-info
+                // query are commonly used together; the route answers from the platform when granted and otherwise
+                // reports an empty radio neighbourhood, which is also what a device without a modem returns.
+                "getAllCellInfo()",
+                // The legacy listener API is a subscription, not a query. Registering it must succeed on a device that
+                // has no radio state to report; the route forwards when the host holds the grant and is a no-op otherwise.
+                "listen(android.telephony.PhoneStateListener,int)",
                 "registerTelephonyCallback(java.util.concurrent.Executor,android.telephony.TelephonyCallback)",
                 "registerTelephonyCallback(int,java.util.concurrent.Executor,android.telephony.TelephonyCallback)",
                 "unregisterTelephonyCallback(android.telephony.TelephonyCallback)");
@@ -83,15 +95,26 @@ final class RuntimeSelfHookManagerPolicy {
     private static final Set<String> PROCESS_NETWORK=Set.of("bindProcessToNetwork(android.net.Network)","setProcessDefaultNetwork(android.net.Network)");
     /** Families whose state is device-wide and carries no identifier of the device or the caller: network state and power/thermal state. */
     static boolean observation(Family family,String signature){
-        // Audio (Bluetooth addresses), battery (serial/manufacture identifiers) and telephony expose device identifiers; they stay explicit-only.
+        // Audio (Bluetooth addresses), battery (serial/manufacture identifiers) and telephony identifiers stay explicit-only.
         // Audio focus, volume and routing state are device-wide and tied to no package identity. Device enumeration, recording configurations and callbacks (which expose other
         // clients and Bluetooth addresses) are not among them.
         if(family==Family.AUDIO)return AUDIO_CONTROL.matcher(signature).matches();
+        if(family==Family.TELEPHONY)return telephonyObservation(signature);
         if(family!=Family.CONNECTIVITY&&family!=Family.POWER)return false;
         if(family==Family.CONNECTIVITY&&PROCESS_NETWORK.contains(signature))return true;
         return OBSERVATION.matcher(signature).matches()&&!signature.contains("Callback")&&!signature.contains("Listener");
     }
-    static Object invoke(Family family,Route route,String signature,Object receiver,Object[] arguments,
+    /** Identity-bearing telephony queries stay denied; radio/sim state describes the device, not the subscriber. */
+    private static boolean telephonyObservation(String signature){
+        String name=signature.substring(0,signature.indexOf('('));
+        if(TELEPHONY_IDENTITY.contains(name)||name.contains("SubscriberId")||name.contains("Icc")||name.contains("DeviceId"))return false;
+        return name.startsWith("getNetwork")||name.startsWith("getSim")||name.startsWith("getVoice")||name.startsWith("getData")
+            ||name.startsWith("getPhone")||name.startsWith("getActiveModem")||name.startsWith("getSupportedModem")
+            ||name.startsWith("isVoice")||name.startsWith("isSms")||name.startsWith("isData")||name.equals("getCallState");
+    }
+    private static final Set<String> TELEPHONY_IDENTITY=Set.of("getDeviceId","getImei","getMeid","getSubscriberId","getSimSerialNumber",
+        "getLine1Number","getNai","getDeviceSoftwareVersion","getManufacturerCode","getGroupIdLevel1","getIccAuthentication","getUiccCardsInfo");
+    static Object invoke(Family family,Route route,String signature,Class<?> returnType,Object receiver,Object[] arguments,
                          RuntimeSelfHookLifecycle.Original original)throws Throwable {
         if(!route.owns(receiver))return original.call(arguments);
         if(!required(family).contains(signature)){
@@ -100,12 +123,40 @@ final class RuntimeSelfHookManagerPolicy {
             // implementation (and its permission checks) is the faithful answer; refusing only makes apps that merely read state fail.
             if(observation(family,signature)){
                 route.admitObservation(family);
-                return original.call(arguments);
+                try{return original.call(arguments);}
+                catch(SecurityException denied){
+                    // The sandbox's own grant state is not part of the guest's device: a guest may declare a permission the
+                    // host was never granted. Observation must then report the capability as unavailable (the API's neutral
+                    // value, e.g. NETWORK_TYPE_UNKNOWN) instead of leaking a host permission failure into guest control flow.
+                    android.util.Log.w("TripoderRuntime","DEVICE_STATE_UNAVAILABLE:"+family+":"+signature+":"+denied.getMessage());
+                    return unavailable(returnType);
+                }
             }
             String capability=family==Family.NOTIFICATIONS?"NOTIFICATION":family==Family.SHORTCUTS?"SHORTCUT":family.name();
             throw new UnsupportedOperationException(capability+"_CAPABILITY_UNSUPPORTED:"+signature);
         }
-        return route.execute(receiver,signature,arguments);
+        try{return route.execute(receiver,signature,arguments);}
+        catch(SecurityException denied){
+            // Enumerated observation methods take the same rule as admitted ones: a capability the sandbox was never
+            // granted reads as unavailable device state, never as a caller error raised by the host's permission set.
+            if(observation(family,signature)){
+                android.util.Log.w("TripoderRuntime","DEVICE_STATE_UNAVAILABLE:"+family+":"+signature+":"+denied.getMessage());
+                return unavailable(returnType);
+            }
+            throw denied;
+        }
+    }
+    /** The neutral value each observation API already defines for "this device has no such state". */
+    private static Object unavailable(Class<?> type) {
+        if(type==boolean.class)return false;
+        if(type==byte.class)return (byte)0;
+        if(type==short.class)return (short)0;
+        if(type==int.class)return 0;
+        if(type==long.class)return 0L;
+        if(type==float.class)return 0f;
+        if(type==double.class)return 0d;
+        if(type==char.class)return (char)0;
+        return null;
     }
     /** The inventory must come from the one fixed Framework registry, never filtered ordinary reflection. */
     static Map<Method,Callback> plan(Family family,Class<?> owner,Method[] inventory,Route route) {
@@ -118,7 +169,7 @@ final class RuntimeSelfHookManagerPolicy {
             if(Modifier.isStatic(method.getModifiers()))continue;
             if(Modifier.isAbstract(method.getModifiers()))throw new IllegalArgumentException("SYSTEM_MANAGER_ABSTRACT_TARGET");
             String key=signature(method);signatures.add(key);
-            result.put(method,(receiver,arguments,original)->invoke(family,route,key,receiver,arguments,
+            result.put(method,(receiver,arguments,original)->invoke(family,route,key,method.getReturnType(),receiver,arguments,
                 values->physicalOriginal(method,route,receiver,values,original)));
         }
         for(String required:required(family))if(!signatures.contains(required))

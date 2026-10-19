@@ -13,12 +13,16 @@
 /* Independent, process-immutable namespace policy. Direct internal syscalls avoid
  * recursively entering the intercepted libc wrappers. No privileged operations. */
 static char data_paths[4][PATH_MAX], artifact_paths[3][PATH_MAX];
+static size_t data_path_lens[4], artifact_path_lens[3];
 static char guest_process[256], guest_comm[16];
 static int data_fd=-1, artifact_fd=-1;
 static bool configured;
 
+static bool prefix_len(const char *path,const char *root,size_t n) {
+    return strncmp(path,root,n)==0&&(path[n]=='/'||path[n]=='\0');
+}
 static bool prefix(const char *path,const char *root) {
-    size_t n=strlen(root);return strncmp(path,root,n)==0&&(path[n]=='/'||path[n]=='\0');
+    return prefix_len(path,root,strlen(root));
 }
 static int fail(int value){errno=value;return -1;}
 static int copy(char *out,const char *in){if(in==NULL)return fail(EFAULT);size_t n=strnlen(in,PATH_MAX);if(n>=PATH_MAX)return fail(ENAMETOOLONG);memcpy(out,in,n+1);return 0;}
@@ -40,9 +44,12 @@ int tp_configure(const char *data,const char *data_canonical,const char *artifac
     if(configured||data_fd>=0||artifact_fd>=0)return fail(EALREADY);
     if(!package||!*package||strchr(package,'/')||strlen(package)>200)return fail(EINVAL);
     if(copy(data_paths[0],data)<0||copy(data_paths[1],data_canonical)<0||copy(artifact_paths[0],artifacts)<0||copy(artifact_paths[1],artifacts_canonical)<0)return -1;
-    for(int i=0;i<2;i++)if(data_paths[i][0]!='/'||artifact_paths[i][0]!='/')return fail(EINVAL);
+    for(int i=0;i<2;i++)if(data_paths[i][0]!='/'||artifact_paths[i][0]!='/'
+        ||!(data_path_lens[i]=strlen(data_paths[i]))||!(artifact_path_lens[i]=strlen(artifact_paths[i])))return fail(EINVAL);
     snprintf(data_paths[2],PATH_MAX,"/data/data/%s",package);snprintf(data_paths[3],PATH_MAX,"/data/user/0/%s",package);
     snprintf(artifact_paths[2],PATH_MAX,"/data/app/~~tripoder/%s",package);
+    data_path_lens[2]=strlen(data_paths[2]);data_path_lens[3]=strlen(data_paths[3]);
+    artifact_path_lens[2]=strlen(artifact_paths[2]);
     snprintf(guest_process,sizeof(guest_process),"%s",package);set_comm(package);
     data_fd=(int)syscall(SYS_openat,AT_FDCWD,data,O_PATH|O_DIRECTORY|O_CLOEXEC|O_NOFOLLOW,0);if(data_fd<0)return -1;
     artifact_fd=(int)syscall(SYS_openat,AT_FDCWD,artifacts,O_PATH|O_DIRECTORY|O_CLOEXEC|O_NOFOLLOW,0);if(artifact_fd<0)return -1;
@@ -135,22 +142,22 @@ int tp_resolve(int dirfd,const char *path,enum tp_access access,struct tp_path *
     if(!configured)return fail(ENOSYS);if(!path)return fail(EFAULT);size_t size=strnlen(path,PATH_MAX);if(size>=PATH_MAX)return fail(ENAMETOOLONG);if(size==0)return fail(ENOENT);
     if(is_linker_exec(path))return fail(EACCES);
     if(path[0]=='/'){
-        for(int i=0;i<4;i++)if(prefix(path,data_paths[i])){
-            const char *rel=path+strlen(data_paths[i]);
+        for(int i=0;i<4;i++)if(prefix_len(path,data_paths[i],data_path_lens[i])){
+            const char *rel=path+data_path_lens[i];
             if(!dot_component(rel))return fast_anchor(data_fd,rel,out);
             return anchored(data_fd,rel,out);
         }
-        for(int i=0;i<3;i++)if(prefix(path,artifact_paths[i])){
+        for(int i=0;i<3;i++)if(prefix_len(path,artifact_paths[i],artifact_path_lens[i])){
             if(access==TP_WRITE)return fail(EROFS);
-            const char *rel=path+strlen(artifact_paths[i]);
-            if(prefix(rel,"/lib/arm64/")){
+            const char *rel=path+artifact_path_lens[i];
+            if(prefix_len(rel,"/lib/arm64",10)&&rel[10]=='/'){
                 char alias[PATH_MAX];
                 int n=snprintf(alias,sizeof(alias),"/lib/%s",rel+11);
                 if(n<=0||(size_t)n>=sizeof(alias))return fail(ENAMETOOLONG);
                 if(!dot_component(alias))return fast_anchor(artifact_fd,alias,out);
                 return anchored(artifact_fd,alias,out);
             }
-            if(prefix(rel,"/lib/arm64-v8a/")){
+            if(prefix_len(rel,"/lib/arm64-v8a",14)&&rel[14]=='/'){
                 char alias[PATH_MAX];
                 int n=snprintf(alias,sizeof(alias),"/lib/%s",rel+15);
                 if(n<=0||(size_t)n>=sizeof(alias))return fail(ENAMETOOLONG);
@@ -164,18 +171,18 @@ int tp_resolve(int dirfd,const char *path,enum tp_access access,struct tp_path *
         if(dot_component(path))return fail(EACCES);
         // /proc is also a namespace of magic links. Content opens through a process
         // root/cwd/fd alias require the later descriptor-capability layer, not this grant.
-        if(access==TP_READ&&prefix(path,"/proc"))for(const char *p=path;*p;p++)if(*p=='/'&&(prefix(p,"/root")||prefix(p,"/cwd")||prefix(p,"/fd")))return fail(EACCES);
+        if(access==TP_READ&&prefix_len(path,"/proc",5))for(const char *p=path;*p;p++)if(*p=='/'&&(prefix_len(p,"/root",5)||prefix_len(p,"/cwd",4)||prefix_len(p,"/fd",3)))return fail(EACCES);
         if(device_node(path)||(access!=TP_WRITE&&platform_read(path))||(access==TP_METADATA&&metadata_ancestor(path))){if(copy(out->leaf,path)<0)return -1;return 0;}
         return fail(EACCES);
     }
     if(dirfd==AT_FDCWD&&!dot_component(path))return fast_anchor(data_fd,path,out);
     char directory[PATH_MAX];if(fd_path(dirfd,directory)<0)return -1;
-    for(int i=0;i<2;i++)if(prefix(directory,data_paths[i])){
+    for(int i=0;i<2;i++)if(prefix_len(directory,data_paths[i],data_path_lens[i])){
         if(dirfd!=AT_FDCWD&&!dot_component(path))return fast_anchor(dirfd,path,out);
         int anchor=dirfd==AT_FDCWD?(int)syscall(SYS_openat,AT_FDCWD,".",O_PATH|O_DIRECTORY|O_CLOEXEC,0):dirfd;if(anchor<0)return -1;
         int result=anchored(anchor,path,out),saved=errno;if(dirfd==AT_FDCWD)syscall(SYS_close,anchor);errno=saved;return result;
     }
-    for(int i=0;i<2;i++)if(prefix(directory,artifact_paths[i])){
+    for(int i=0;i<2;i++)if(prefix_len(directory,artifact_paths[i],artifact_path_lens[i])){
         if(access==TP_WRITE)return fail(EROFS);if(dirfd==AT_FDCWD)return fail(EACCES);
         if(!dot_component(path))return fast_anchor(dirfd,path,out);
         return anchored(dirfd,path,out);

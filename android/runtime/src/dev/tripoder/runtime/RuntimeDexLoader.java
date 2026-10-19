@@ -15,6 +15,12 @@ final class RuntimeDexLoader {
     private static final long MAX_DEX_BYTES=512L*1024*1024;
     private record DexTarget(File apk,ArtifactSet.FileRecord file,File extracted){}
     static ClassLoader create(ArtifactSet set,String libraries,ClassLoader parent)throws Exception{
+        return createInternal(set,libraries,parent,true);
+    }
+    static ClassLoader createForGuest(ArtifactSet set,String libraries,ClassLoader parent)throws Exception{
+        return createInternal(set,libraries,parent,false);
+    }
+    private static ClassLoader createInternal(ArtifactSet set,String libraries,ClassLoader parent,boolean retainMemfdMappings)throws Exception{
         if(set.parts.isEmpty())throw new IllegalStateException("RUNTIME_SPLIT_EXECUTION_NOT_YET_SUPPORTED");
         // The exact same physical name must reach ART, linker notifications and
         // Native observation. Resolve the platform's data-directory alias once,
@@ -40,36 +46,64 @@ final class RuntimeDexLoader {
                 records.add(new DexTarget(part.file,file,new File(set.directory,ArtifactSet.dexExtractedPath(p,file.path))));
             }
         }
-        ByteBuffer[] buffers=new ByteBuffer[records.size()];
-        // One central-directory parse per APK with DEX entries: ZipFile is safe for concurrent getInputStream,
-        // and parsing it per DEX (interpreted) dominated LOAD for large applications.
-        Map<File,ZipFile> openZips=new LinkedHashMap<>();
-        try{
-            for(var target:records)if(!target.extracted().isFile()&&!openZips.containsKey(target.apk()))openZips.put(target.apk(),new ZipFile(target.apk()));
-            if(records.size()==1){
-                DexTarget target=records.get(0);
-                buffers[0]=target.extracted().isFile()?mapExtracted(target.extracted(),target.file()):mapEntry(openZips.get(target.apk()),target.file());
-            }else{
-                int threads=Math.min(records.size(),Math.max(2,Runtime.getRuntime().availableProcessors()));
-                var pool=java.util.concurrent.Executors.newFixedThreadPool(threads);
-                try{
-                    List<java.util.concurrent.Future<ByteBuffer>> futures=new ArrayList<>(records.size());
-                    for(var target:records){ZipFile apk=openZips.get(target.apk());futures.add(pool.submit(()->target.extracted().isFile()?mapExtracted(target.extracted(),target.file()):mapEntry(apk,target.file())));}
-                    for(int i=0;i<records.size();i++){
-                        try{buffers[i]=futures.get(i).get();}
-                        catch(java.util.concurrent.ExecutionException error){
-                            Throwable cause=error.getCause();
-                            if(cause instanceof Exception ex)throw ex;
-                            if(cause instanceof Error err)throw err;
-                            throw error;
+        if(retainMemfdMappings){
+            ByteBuffer[] buffers=new ByteBuffer[records.size()];
+            // One central-directory parse per APK with DEX entries: ZipFile is safe for concurrent getInputStream,
+            // and parsing it per DEX (interpreted) dominated LOAD for large applications.
+            Map<File,ZipFile> openZips=new LinkedHashMap<>();
+            try{
+                for(var target:records)if(!target.extracted().isFile()&&!openZips.containsKey(target.apk()))openZips.put(target.apk(),new ZipFile(target.apk()));
+                if(records.size()==1){
+                    DexTarget target=records.get(0);
+                    buffers[0]=target.extracted().isFile()?mapExtracted(target.extracted(),target.file()):mapEntry(openZips.get(target.apk()),target.file());
+                }else{
+                    int threads=Math.min(records.size(),Math.max(2,Runtime.getRuntime().availableProcessors()));
+                    var pool=java.util.concurrent.Executors.newFixedThreadPool(threads);
+                    try{
+                        List<java.util.concurrent.Future<ByteBuffer>> futures=new ArrayList<>(records.size());
+                        for(var target:records){ZipFile apk=openZips.get(target.apk());futures.add(pool.submit(()->target.extracted().isFile()?mapExtracted(target.extracted(),target.file()):mapEntry(apk,target.file())));}
+                        for(int i=0;i<records.size();i++){
+                            try{buffers[i]=futures.get(i).get();}
+                            catch(java.util.concurrent.ExecutionException error){
+                                Throwable cause=error.getCause();
+                                if(cause instanceof Exception ex)throw ex;
+                                if(cause instanceof Error err)throw err;
+                                throw error;
+                            }
                         }
-                    }
-                }finally{pool.shutdownNow();}
+                    }finally{pool.shutdownNow();}
+                }
+            }finally{
+                for(ZipFile zip:openZips.values())try{zip.close();}catch(IOException ignored){}
             }
-        }finally{
-            for(ZipFile zip:openZips.values())try{zip.close();}catch(IOException ignored){}
         }
-        return new InMemoryDexClassLoader(buffers,libraries,new RuntimeResourceLoader(parent,apkFiles));
+        // Android defines application classes with a PathClassLoader over the installed APK sequence, in installation
+        // order. The verified archive *is* that installation, so the defining loader is the platform's own loader over
+        // it: DEX order, native library search and resource lookup are the platform's, and every observable answer
+        // (LoadedApk.mClassLoader, SomeGuestClass.class.getClassLoader(), Thread.getContextClassLoader) has the type a
+        // real installation produces. A loader ART only ever uses for in-memory code cannot be handed to guests that
+        // inspect their own loader (App Bundle runtimes, hot-fix frameworks, quinox).
+        StringBuilder dexPath=new StringBuilder();
+        for(File apk:apkFiles)dexPath.append(dexPath.length()==0?"":File.pathSeparator).append(apk.getAbsolutePath());
+        return new RuntimeGuestLoader(dexPath.toString(),libraries,new RuntimeResourceLoader(parent,apkFiles));
+    }
+
+    /** The platform's own DEX container element, one per verified buffer, in archive order. */
+    private static Object inMemoryElements(ByteBuffer[] buffers,ClassLoader owner)throws Exception{
+        Class<?> dexFileType=Class.forName("dalvik.system.DexFile");
+        java.lang.reflect.Method open=dexFileType.getMethod("openInMemoryDexFile",ByteBuffer.class);
+        Class<?> elementType=Class.forName("dalvik.system.DexPathList$Element");
+        java.lang.reflect.Constructor<?> element;
+        try{element=elementType.getDeclaredConstructor(dexFileType,File.class,File.class);}
+        catch(NoSuchMethodException single){element=elementType.getDeclaredConstructor(dexFileType);}
+        element.setAccessible(true);
+        Object elements=java.lang.reflect.Array.newInstance(elementType,buffers.length);
+        for(int i=0;i<buffers.length;i++){
+            Object dex=open.invoke(null,buffers[i]);
+            java.lang.reflect.Array.set(elements,i,element.getParameterCount()==3?element.newInstance(dex,null,null):element.newInstance(dex));
+        }
+        if(java.lang.reflect.Array.getLength(elements)!=buffers.length)throw new IllegalStateException("DEX_ELEMENT_INSTALL_UNCONFIRMED");
+        return elements;
     }
     private static ByteBuffer mapExtracted(File extracted,ArtifactSet.FileRecord expected)throws Exception{
         ArtifactSet.regular(extracted.toPath());ArtifactSet.readonly(extracted.toPath());

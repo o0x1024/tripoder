@@ -11,7 +11,9 @@ import java.util.concurrent.*;
 final class EngineConnection implements ServiceConnection {
     interface Listener {void changed();}
     interface Result {void complete(Bundle value,Exception error);}
-    static final String ENGINE="dev.tripoder.engine",SERVICE="dev.tripoder.runtime.RuntimeControllerService";
+    static final String SERVICE="dev.tripoder.runtime.RuntimeControllerService";
+    /** Always this APK's own id, so an alternate id builds against itself and never reaches another install. */
+    static String engine(Context context){return context.getPackageName();}
     private final Context host;private final Handler main=new Handler(Looper.getMainLooper());
     private final ExecutorService io=Executors.newFixedThreadPool(2);
     private final List<Listener> listeners=new CopyOnWriteArrayList<>();

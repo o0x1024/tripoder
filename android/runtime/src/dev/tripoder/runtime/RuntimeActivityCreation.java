@@ -19,13 +19,22 @@ public final class RuntimeActivityCreation {
         Permit(RuntimeEngine engine,Intent physical,Intent visible,String ticket,String instance,String name,Bundle caller){this.engine=engine;this.physical=new Intent(physical);this.visible=visible;this.ticket=ticket;this.instance=instance;this.name=name;this.caller=caller;rejected=null;}
         public boolean rejected(){return rejected!=null;}
         public boolean constructing(){return phase.equals("CONSTRUCTING");}
-        public ClassLoader loader(){require();return engine.loader;}
+        public ClassLoader loader(){require();return engine.guestLoader();}
         public String name(){require();return name;}
         public Intent intent(){require();return visible;}
         private void require(){if(CURRENT.get()!=this||thread!=Thread.currentThread().getId()||rejected())throw new SecurityException("ACTIVITY_CREATION_PERMIT_INVALID");}
         public void enter(){require();if(!phase.equals("PREPARED"))throw new SecurityException("ACTIVITY_CREATION_REENTERED");phase="CONSTRUCTING";}
         public void bindRecord(Object record,IBinder token){require();if(this.record!=null||record==null||token==null)throw new SecurityException("ACTIVITY_CREATION_RECORD_INVALID");this.record=record;this.token=token;}
-        public void requireArguments(String physicalName,Intent supplied){require();if(!RuntimeActivitySlots.target(physical.getComponent().getClassName()).equals(physicalName)||supplied==null||!Objects.equals(physical.getComponent(),supplied.getComponent())||!Objects.equals(ticket,supplied.getStringExtra("tripoder.ticket"))||!Objects.equals(physical.getStringExtra("tripoder.delivery"),supplied.getStringExtra("tripoder.delivery")))throw new SecurityException("ACTIVITY_CREATION_ARGUMENTS_MISMATCH");}
+        /**
+         * Bind the platform's construction call to this admission. The platform may hand back either form of the same
+         * record: the physical slot it resolved or the guest-visible component it derived from the ActivityInfo. Both
+         * name the one admitted identity; the lease ticket and delivery still have to match exactly.
+         */
+        public void requireArguments(String suppliedName,Intent supplied){require();
+            String slot=physical.getComponent().getClassName();
+            boolean name=RuntimeActivitySlots.target(slot).equals(suppliedName)||visible.getComponent().getClassName().equals(suppliedName);
+            boolean component=supplied!=null&&(physical.getComponent().equals(supplied.getComponent())||visible.getComponent().equals(supplied.getComponent()));
+            if(!name||!component||!Objects.equals(ticket,supplied.getStringExtra("tripoder.ticket"))||!Objects.equals(physical.getStringExtra("tripoder.delivery"),supplied.getStringExtra("tripoder.delivery")))throw new SecurityException("ACTIVITY_CREATION_ARGUMENTS_MISMATCH");}
         public Activity complete(Activity activity){require();if(!constructing())throw new SecurityException("ACTIVITY_CREATION_PHASE_INVALID");
             if(activity==null||activity.getBaseContext()!=null||engine.ownsActivity(activity)||!engine.ownsLoader(activity.getClass().getClassLoader()))throw new SecurityException("ACTIVITY_CREATION_RESULT_NOT_FRESH_OWNED_INSTANCE");
             ComponentName expected=new ComponentName(engine.packageName,RuntimeWire.required(physical.getExtras(),"tripoder.component"));
@@ -46,14 +55,20 @@ public final class RuntimeActivityCreation {
     public static Activity constructDefault(Instrumentation instrumentation,ClassLoader loader,String name,Intent visible)throws Exception{
         Permit permit=CURRENT.get();if(permit==null)throw new SecurityException("ACTIVITY_CREATION_PERMIT_MISSING");permit.require();
         if(!permit.constructing()||!permit.engine.ownsLoader(loader)||visible==null||visible.getComponent()==null||!permit.engine.packageName.equals(visible.getComponent().getPackageName()))throw new SecurityException("ACTIVITY_CONSTRUCTION_ARGUMENTS_INVALID");
-        // Preserve Android's app-created Instrumentation rule: an unbound instance uses DEFAULT.
-        AppComponentFactory factory=RuntimeBridge.instrumentationBound(instrumentation)?permit.engine.componentFactory:new AppComponentFactory();
+        // Android gives the application's AppComponentFactory authority over every component the application
+        // declares; Instrumentation only falls back to DEFAULT when it has no ActivityThread at all. Using DEFAULT for
+        // a guest component silently drops the app's own component mapping (App Bundle / Atlas / plugin runtimes) and
+        // makes classes that the app resolves through its factory unreachable.
+        AppComponentFactory factory=permit.engine.componentFactory!=null?permit.engine.componentFactory:new AppComponentFactory();
         return factory.instantiateActivity(loader,name,visible);
     }
     public static void attaching(Activity activity,Intent physical,ActivityInfo info,IBinder token){
-        Permit permit;synchronized(ATTACHMENTS){permit=ATTACHMENTS.remove(activity);}Intent expected=permit==null?null:permit.physical;
+        Permit permit;synchronized(ATTACHMENTS){permit=ATTACHMENTS.remove(activity);}Intent expected=permit==null?null:permit.physical;Intent visible=permit==null?null:permit.visible;
         if(permit!=null&&permit.token!=null&&!permit.token.equals(token))throw new SecurityException("ACTIVITY_ATTACH_TOKEN_MISMATCH");
-        if(expected==null||physical==null||info==null||!Objects.equals(expected.getComponent(),physical.getComponent())||!Objects.equals(expected.getStringExtra("tripoder.ticket"),physical.getStringExtra("tripoder.ticket"))||!Objects.equals(expected.getStringExtra("tripoder.delivery"),physical.getStringExtra("tripoder.delivery"))||!RuntimeActivitySlots.target(expected.getComponent().getClassName()).equals(RuntimeActivitySlots.target(info.name)))throw new SecurityException("ACTIVITY_ATTACH_CAPABILITY_MISMATCH");
+        // Same dual form as requireArguments: the slot the platform resolved, or the guest-visible component it derived.
+        boolean component=expected!=null&&physical!=null&&(expected.getComponent().equals(physical.getComponent())||visible.getComponent().equals(physical.getComponent()));
+        boolean target=expected!=null&&info!=null&&(RuntimeActivitySlots.target(expected.getComponent().getClassName()).equals(RuntimeActivitySlots.owns(info.name)?RuntimeActivitySlots.target(info.name):info.name)||visible.getComponent().getClassName().equals(info.name));
+        if(expected==null||physical==null||info==null||!component||!target||!Objects.equals(expected.getStringExtra("tripoder.ticket"),physical.getStringExtra("tripoder.ticket"))||!Objects.equals(expected.getStringExtra("tripoder.delivery"),physical.getStringExtra("tripoder.delivery")))throw new SecurityException("ACTIVITY_ATTACH_CAPABILITY_MISMATCH");
         THEMES.put(info,RuntimeEngine.current.theme(activity));
     }
     public static Integer theme(ActivityInfo info){return THEMES.get(info);}

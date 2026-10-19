@@ -97,7 +97,7 @@ public final class RuntimeBridge {
     public static Intent serviceIntent(Service service,Intent intent){return RuntimeEngine.current.services.visible(service,intent);}
     public static ComponentName serviceComponent(Service service){return RuntimeEngine.current.services.physical(service);}
     public static void serviceEvent(Service service,String event)throws Exception{RuntimeEngine.current.services.lifecycle(service,event);}
-    public static Application application(){return RuntimeEngine.current.application;}
+    public static Application application(){return RuntimeEngine.current.guestApplication();}
     public static Context context(Context original){if(original instanceof GuestContext){if(((GuestContext)original).engine!=RuntimeEngine.current)throw new SecurityException("ACTIVITY_CONTEXT_ENGINE_MISMATCH");return original;}return new GuestContext(original,RuntimeEngine.current);}
     public static void requireActivityContext(Context context){java.util.Set<Context> seen=java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());while(context!=null&&seen.size()<16&&seen.add(context)){if(context instanceof GuestContext&&((GuestContext)context).engine==RuntimeEngine.current)return;context=context instanceof ContextWrapper?((ContextWrapper)context).getBaseContext():null;}throw new SecurityException("ACTIVITY_LOGICAL_BASE_CONTEXT_REQUIRED");}
     public static Resources resources(){return RuntimeEngine.current.resources;}
@@ -127,6 +127,7 @@ public final class RuntimeBridge {
     public static void checkSettingsUri(android.net.Uri uri){SettingsReadProvider.uri(uri);}
     public static void registerSettingsObserver(android.net.Uri uri,boolean descendants,android.database.ContentObserver observer,int user){RuntimeEngine.current.providers.settingsObservers.register(uri,descendants,observer,user);}
     public static void unregisterSettingsObserver(android.database.ContentObserver observer){RuntimeEngine.current.providers.settingsObservers.unregister(observer);}
+    public static boolean notifyLocalChange(android.net.Uri uri){return RuntimeEngine.current.providers.settingsObservers.notifyLocal(uri);}
     public static int[] batchSelectionKeys(ContentProviderOperation operation,int index){return RuntimeSelfHookComponents.selectionKeys(operation,index);}
     /** The physical summary is the Runtime exit-attribution marker; guest summaries are retained logically and never overwrite it. */
     public static void setProcessStateSummary(byte[] summary){RuntimeEngine.current.setGuestProcessStateSummary(summary);}

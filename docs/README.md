@@ -12,5 +12,6 @@
 | [self-hook-design.md](self-hook-design.md) | **Self-Hook 与脚本引擎设计**：ART Java Hook（`ManagedHook`、`ExecuteNterpImpl` 汇编解释器加速、GC Root 读屏障、Caller-Sensitive 栈归属）、ARM64 Native Hook（指令重定位规划、信号线程停顿、`mremap` W^X 匿名页原子发布）、`fixed_libc` 双页 10 函数路径包装器，以及受限 TypeScript（`RestrictedAst`）编译器与解释器。 |
 | [guest-compatibility.md](guest-compatibility.md) | **Guest 应用兼容性分层与基线**：从第一性原理拆解的 L1–L13 兼容性契约矩阵、真机多应用实测基线以及已知边界（Split APK、裸 `svc #0`、GMS 强依赖）。 |
 | [launch-performance.md](launch-performance.md) | **Guest 启动性能架构与优化**：冷/温启动四阶段关键路径拆解、Nterp 汇编解释器替代 Switch 解释器（10x–30x 加速）、免网关直达启动、`InstallProviderIndex` 索引等六大核心优化与耗时基线。 |
+| [hardening-and-runtime-performance.md](hardening-and-runtime-performance.md) | **加壳/加固兼容与运行期性能优化方案**：商业加壳/加固应用（一代/二代壳、Dex2C/VMP、`svc #0`、SSL Pinning）无差别运行与 Hook/抓包/透明代理测试的四层纵深方案，以及运行期严重卡顿（如网易云音乐）的六大根因定位与优化路线图。 |
 | [agent-mcp-design.md](agent-mcp-design.md) | **AI Agent 控制面与 MCP 规范**：ECDSA P-256 签名会话租约（`AgentSession`）、24 个标准 MCP 工具原语（生命周期、内省、动态 Hook、主动调用、存储/网络审计、UI 驱动）及自动化安全测试 OODA 闭环。 |
 | [evidence/README.md](evidence/README.md) | **测试证据输出目录说明**：供 `android/scripts/` 自动化验证脚本写入本地临时运行产物（不纳入长久版本堆积）。 |

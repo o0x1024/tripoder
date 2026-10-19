@@ -23,7 +23,22 @@ final class RuntimeSelfHookActivities {
             else switch(target.getName()){
                 case "newActivity":{Method method=(Method)target;callbacks.put(target,value.newActivity(method));value.instrumentations.add(method);break;}
                 case "performLaunchActivity":callbacks.put(target,(receiver,args,original)->{
-                    Intent physical=ActivityFrameworkAccess.recordIntent(args[0]);if(!RuntimeActivityCreation.physical(physical))return original.call(args);
+                    Intent physical=ActivityFrameworkAccess.recordIntent(args[0]);
+                    if(!RuntimeActivityCreation.physical(physical)){
+                        // The record's component may be the guest-visible name the platform resolved from the
+                        // ActivityInfo it was given; its lease still names this process's slot. Adopt the lease.
+                        Intent leased=RuntimeEngine.current==null?null:RuntimeEngine.current.leasedRecord(physical);
+                        if(leased==null){
+                            android.util.Log.w("TripoderActivities","unleased-record component="
+                                +(physical==null||physical.getComponent()==null?"none":physical.getComponent().flattenToShortString())
+                                +" ticket="+(physical==null?"none":String.valueOf(physical.getStringExtra("tripoder.ticket"))));
+                            return original.call(args);
+                        }
+                        android.util.Log.i("TripoderActivities","adopted-record component="
+                            +(physical.getComponent()==null?"none":physical.getComponent().flattenToShortString())
+                            +" stub="+leased.getComponent().getClassName());
+                        physical=leased;
+                    }
                     RuntimeActivityCreation.Permit permit=RuntimeActivityCreation.begin(physical);
                     try{
                         // A rejected hot launch still runs the real performLaunchActivity so Android registers the
@@ -57,7 +72,14 @@ final class RuntimeSelfHookActivities {
         installer.install(Map.of(method,newActivity(method)));instrumentations.add(method);
     }
     private RuntimeManagedInstaller.Callback newActivity(Method target){return (receiver,args,original)->{
-        RuntimeActivityCreation.Permit permit=RuntimeActivityCreation.current();if(permit==null)return original.call(args);
+        RuntimeActivityCreation.Permit permit=RuntimeActivityCreation.current();
+        if(permit==null){
+            // The platform asked for an activity this process never leased. Log the loader it would have used; this is
+            // the difference between "the guest class is missing" and "the runtime handed the platform the wrong world".
+            android.util.Log.w("TripoderActivities","newActivity without permit name="+args[1]
+                +" loader="+RuntimeSelfHookApplication.loaderChain((ClassLoader)args[0]));
+            return original.call(args);
+        }
         if(permit.rejected())return RuntimeActivityCreation.constructRejected((Intent)args[2]);
         boolean base=target.getDeclaringClass()==Instrumentation.class;
         if(permit.constructing())return base?RuntimeActivityCreation.constructDefault((Instrumentation)receiver,(ClassLoader)args[0],(String)args[1],(Intent)args[2]):original.call(args);

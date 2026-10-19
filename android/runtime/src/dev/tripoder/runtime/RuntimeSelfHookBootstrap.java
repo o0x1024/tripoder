@@ -19,6 +19,7 @@ final class RuntimeSelfHookBootstrap {
         SERVICES,
         PROVIDERS,
         RECEIVERS,
+        WIDGETS,
         PACKAGES,
         STORAGE,
         ACTIVITY_MANAGER,

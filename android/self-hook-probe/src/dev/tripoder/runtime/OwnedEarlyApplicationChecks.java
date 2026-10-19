@@ -38,7 +38,7 @@ public final class OwnedEarlyApplicationChecks {
         check((Integer)factoryType.getMethod("phases").invoke(null)==6,"ALL_FACTORY_AND_APPLICATION_CONSTRUCTION_PHASES");
         members.fields[0].setAccessible(true);
         check(ApplicationAdapter.current()==null&&members.fields[0].get(((Method)members.methods[0]).invoke(null))==null,"NULL_VIEW_UNTIL_GUEST_PUBLISHED");
-        PhysicalApplication.check();Context logical=ApplicationAdapter.create(host,guest,info,selected,factory,host.getResources());
+        PhysicalApplication.check();Context logical=ApplicationAdapter.create(host,guest,info,selected,selected,factory,host.getResources());
         check(ApplicationAdapter.current()==guest&&((Method)members.methods[1]).invoke(null)==guest,"GUEST_PUBLISHED_ONCE_AFTER_CONSTRUCTION");
         check(logical.getApplicationContext()==guest&&logical.getPackageName().equals(info.packageName),"REAL_LOGICAL_CONTEXT");
         ApplicationAdapter.attach(logical);ApplicationAdapter.check();PhysicalApplication.check();guest.onCreate();ApplicationAdapter.check();PhysicalApplication.check();

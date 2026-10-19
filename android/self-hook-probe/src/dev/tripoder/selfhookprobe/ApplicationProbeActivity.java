@@ -54,7 +54,7 @@ public final class ApplicationProbeActivity extends Activity {
             Application guest=factory.instantiateApplication(loader,LogicalApplicationFixture.class.getName());
             require(guest.getClass()!=LogicalApplicationFixture.class&&guest.getClass().getClassLoader()==definingLoader&&
                 Class.forName(guest.getClass().getName(),false,loader)==guest.getClass(),"DELEGATING_LOADER_APPLICATION_IDENTITY");
-            Context logical=ApplicationAdapter.create(host,guest,info,loader,factory,getResources());
+            Context logical=ApplicationAdapter.create(host,guest,info,loader,definingLoader,factory,getResources());
             require(logical.getClass().getName().equals("android.app.ContextImpl")&&logical.getApplicationContext()==guest&&
                 logical.getClassLoader()==loader&&logical.getPackageName().equals(info.packageName),"LOGICAL_CONTEXT_CONSTRUCTION");
             Context wrapper=new ContextWrapper(new ContextWrapper(logical));

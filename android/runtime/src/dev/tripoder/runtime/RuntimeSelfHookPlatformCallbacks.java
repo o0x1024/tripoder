@@ -81,12 +81,23 @@ final class RuntimeSelfHookPlatformCallbacks {
     static Object unregisterObserver(ContentResolver resolver,ContentObserver observer,RuntimeSelfHookLifecycle.Original original)throws Throwable {
         RuntimeSelfHookComponents.requireActive();return RuntimeSelfHookBoundaries.unregisterObserver(OBSERVERS,resolver,observer,original);
     }
-    static Object persistablePermission(ContentResolver resolver,Object[] arguments,RuntimeSelfHookLifecycle.Original original)throws Throwable {
-        RuntimeSelfHookComponents.requireActive();return RuntimeSelfHookBoundaries.denyOwned(value->RuntimeBridge.ownsResolver((ContentResolver)value),
-            resolver,"URI_PERSISTABLE_GRANT_NOT_IMPLEMENTED",arguments,original);
+    static Object persistablePermission(ContentResolver resolver,String method,Object[] arguments,RuntimeSelfHookLifecycle.Original original)throws Throwable {
+        RuntimeSelfHookComponents.requireActive();
+        if(!RuntimeBridge.ownsResolver(resolver))return original.call(arguments);
+        switch(method){
+            case "takePersistableUriPermission":RuntimeUriGrants.take((Uri)arguments[0],(Integer)arguments[1]);return null;
+            case "releasePersistableUriPermission":RuntimeUriGrants.release((Uri)arguments[0],(Integer)arguments[1]);return null;
+            case "getPersistedUriPermissions":case "getOutgoingPersistedUriPermissions":return RuntimeUriGrants.persisted();
+            default:throw new IllegalStateException("URI_PERMISSION_METHOD_UNSUPPORTED:"+method);
+        }
     }
     static Object notifyChange(ContentResolver resolver,Object[] arguments,RuntimeSelfHookLifecycle.Original original)throws Throwable {
-        RuntimeSelfHookComponents.requireActive();return original.call(arguments);
+        RuntimeSelfHookComponents.requireActive();
+        // A guest provider is not registered with the platform, so a platform notify would address another package's
+        // authority. Guest writes fan out to the observers registered against the guest's own authority instead.
+        if(arguments.length>0&&arguments[0] instanceof Uri&&RuntimeBridge.ownsResolver(resolver)
+            &&RuntimeBridge.notifyLocalChange((Uri)arguments[0]))return null;
+        return original.call(arguments);
     }
     static Object peekService(BroadcastReceiver receiver,Object[] arguments,RuntimeSelfHookLifecycle.Original original)throws Throwable {
         RuntimeSelfHookComponents.requireActive();return original.call(arguments);

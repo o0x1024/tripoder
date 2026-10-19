@@ -28,19 +28,50 @@ public final class GuestContext extends GuestStorageContext {
     private GuestContext(Context base,RuntimeEngine engine,Resources resources){this(base,engine,resources,base);}
     private GuestContext(Context base,RuntimeEngine engine,Resources resources,Context platform){this(base,engine,resources,platform,null);}
     private final boolean deviceProtected;
+    /**
+     * The application-context plumbing a real application's base context exposes.
+     *
+     * <p>On a device, {@code Application.getBaseContext()} is a platform {@code ContextImpl} holding
+     * {@code mOuterContext} (the owning application) and {@code mPackageInfo} (its {@code LoadedApk}). Hot-fix and
+     * plugin runtimes read and rewrite both during {@code attach} and {@code onCreate}; a wrapper that hides them
+     * makes that contract unreachable. These fields name the same objects the guest's real {@code ContextImpl}
+     * holds: the owning application and the guest's own {@code LoadedApk}.
+     */
+    private android.content.Context mOuterContext;
+    private Object mPackageInfo;
     GuestContext(Context base,RuntimeEngine engine,Resources resources,Context platform,ClassLoader resourceOnlyLoader){this(base,engine,resources,platform,resourceOnlyLoader,engine.storage,false);}
-    private GuestContext(Context base,RuntimeEngine engine,Resources resources,Context platform,ClassLoader resourceOnlyLoader,RuntimeStorage storage,boolean deviceProtected){super(base,storage);this.deviceProtected=deviceProtected;this.engine=engine;this.guestResources=resources;this.platform=platform;this.resourceOnlyLoader=resourceOnlyLoader;this.guestPackages=engine.packages.manager(this,resources);}
+    private GuestContext(Context base,RuntimeEngine engine,Resources resources,Context platform,ClassLoader resourceOnlyLoader,RuntimeStorage storage,boolean deviceProtected){super(base,storage);this.deviceProtected=deviceProtected;this.engine=engine;this.guestResources=resources;this.platform=platform;this.resourceOnlyLoader=resourceOnlyLoader;this.guestPackages=engine.packages.manager(this,resources);
+        this.mPackageInfo=dev.tripoder.selfhook.ApplicationAdapter.packageInfo();}
+    /** Mirror of {@code ContextImpl.setOuterContext}: runs before the guest's {@code Application.attach}. */
+    void attachedApplication(android.app.Application application){mOuterContext=application;}
     /** Mirrors ContextImpl: the deprecated int BIND_EXTERNAL_SERVICE bit is the long-flag form for BindServiceFlags. */
     private static long serviceFlags(int flags){long value=Integer.toUnsignedLong(flags);if((flags&BIND_EXTERNAL_SERVICE)!=0)value=(value&~Integer.toUnsignedLong(BIND_EXTERNAL_SERVICE))|BIND_EXTERNAL_SERVICE_LONG;return value;}
     @Override public String getPackageName(){return engine.packageName;}
+    /**
+     * Platform services validate the operation package against the real UID (AppOps, storage volumes, widgets). The
+     * guest's package is not installed for this UID, so presenting it there is rejected even though the guest is
+     * behaving exactly as it would on a device. Two identities are therefore kept separate: {@link #getPackageName()}
+     * is what the guest sees, while the operation package is the installed package that owns this UID. Services that
+     * attribute work to the caller then accept it, and the runtime translates anything guest-specific itself.
+     */
+    @Override public String getOpPackageName(){return platform.getPackageName();}
+    @Override public String getAttributionTag(){return null;}
     @Override public ClassLoader getClassLoader(){return resourceOnlyLoader==null?engine.loader:resourceOnlyLoader;}
     @Override public Resources getResources(){return guestResources;}
     @Override public AssetManager getAssets(){return guestResources.getAssets();}
-    @Override public Context getApplicationContext(){return resourceOnlyLoader!=null?null:engine.application==null?this:engine.application;}
+    @Override public Context getApplicationContext(){if(resourceOnlyLoader!=null)return null;android.app.Application visible=engine.guestApplication();return visible==null?this:visible;}
     @Override public ApplicationInfo getApplicationInfo(){return engine.applicationInfo;}
     @Override public String getPackageCodePath(){return getApplicationInfo().sourceDir;}
     @Override public String getPackageResourcePath(){return getApplicationInfo().publicSourceDir;}
-    @Override public PackageManager getPackageManager(){return guestPackages;}
+    @Override public PackageManager getPackageManager(){tracePackageManagerCaller();return guestPackages;}
+    /** Diagnostic: records the exact guest stack that resolves its package world through this context (bounded). */
+    private static final java.util.concurrent.atomic.AtomicInteger PACKAGE_MANAGER_TRACES=new java.util.concurrent.atomic.AtomicInteger();
+    private void tracePackageManagerCaller(){
+        if(PACKAGE_MANAGER_TRACES.incrementAndGet()>6)return;
+        StringBuilder out=new StringBuilder("GUEST_GET_PM pkg="+engine.packageName+" managerNull="+(guestPackages==null));
+        for(StackTraceElement frame:new Throwable().getStackTrace())out.append("\n    ").append(frame);
+        android.util.Log.i("TripoderPackages",out.toString());
+    }
     // A guest is granted only what its own manifest asks for (the host holds the permission on its behalf); an undeclared permission is simply not held.
     private int guestPermission(String permission,int result){return permission!=null&&engine.requestedPermissions.contains(permission)?result:PackageManager.PERMISSION_DENIED;}
     @Override public int checkSelfPermission(String permission){return guestPermission(permission,super.checkSelfPermission(permission));}

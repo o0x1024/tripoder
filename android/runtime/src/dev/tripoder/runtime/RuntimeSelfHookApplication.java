@@ -62,6 +62,8 @@ final class RuntimeSelfHookApplication {
         callbacks.put((Method)value.members.methods[1],(receiver,args,original)->ApplicationAdapter.current());
         callbacks.put(FrameworkAccess.activityThreadApplicationMethod(),(receiver,args,original)->ApplicationAdapter.current());
         callbacks.put(FrameworkAccess.processNameMethod(),(receiver,args,original)->value.engine.processName);
+        // currentPackageName() reads the host's bind record; guest code asking who it is must get the guest package.
+        callbacks.put((Method)value.members.methods[FrameworkAccess.CURRENT_PACKAGE_NAME],(receiver,args,original)->value.engine.packageName);
         installer.install(callbacks);
     }
 
@@ -96,7 +98,13 @@ final class RuntimeSelfHookApplication {
         // Its instance belongs to this guest, while its defining Class is boot.
         RuntimeSelfHookLoaders.requireApplication(loader,guest.getClass(),value.engine.platformDefaultApplication?Application.class:null,value.engine::ownsLoader);
         value.guest=guest;
-        return ApplicationAdapter.create(value.host,guest,info,loader,factory,resources);
+        Context created=ApplicationAdapter.create(value.host,guest,info,loader,value.engine.artifactLoader(),factory,resources);
+        // Two identities exist by design: what the guest sees, and what platform services validate against the real
+        // UID. Both are recorded before attach so a package/UID rejection inside Application.attach is attributable.
+        try{android.util.Log.i("TripoderIdentity","create package="+created.getPackageName()
+            +" opPackage="+created.getOpPackageName()+" host="+value.host.getPackageName()
+            +" uid="+android.os.Process.myUid());}catch(Throwable ignored){}
+        return created;
     }
 
     static void attach(Application guest,Context context) {
@@ -104,15 +112,57 @@ final class RuntimeSelfHookApplication {
         if(guest==null||guest!=value.guest||context==null||value.attachAttempted)
             throw new SecurityException("SELF_APPLICATION_ATTACH_IDENTITY_MISMATCH");
         value.attachAttempted=true;
+        // The base context carries the platform application-context plumbing (mOuterContext/mPackageInfo) before the
+        // guest's attachBaseContext runs, exactly as ActivityThread sets it up before Application.attach.
+        if(context instanceof GuestContext)((GuestContext)context).attachedApplication(guest);
         ApplicationAdapter.attach(context);
         value.attached=true;
     }
+
+    /** The application the guest published on its LoadedApk after onCreate, or the created instance before that. */
+    static Application installedApplication(){require();return ApplicationAdapter.installedApplication();}
 
     static void check(Context host,Application guest) {
         mainThread();RuntimeSelfHookApplication value=require();
         if(!value.attached||host!=value.host||guest!=value.guest)
             throw new SecurityException("SELF_APPLICATION_CHECK_IDENTITY_MISMATCH");
         ApplicationAdapter.check();
+    }
+
+    /**
+     * The guest's own LoadedApk is authoritative for its class loader: hot-fix and plugin runtimes replace it during
+     * attachBaseContext to install patch/plugin DEX. Components published after attach must resolve through the loader
+     * the guest just installed, otherwise classes it made reachable are reported missing.
+     *
+     * <p>Ownership is rooted at the verified defining loader, not at the facade object the runtime first published:
+     * RePlugin installs a sibling loader ({@code parent = original.getParent()}) that delegates to the original through
+     * a field, and that loader is legitimate precisely because every class it resolves still comes from this
+     * installation's DEX sequence.
+     */
+    static ClassLoader adoptLoader(ClassLoader current) {
+        RuntimeSelfHookApplication value=require();
+        ClassLoader declared=ApplicationAdapter.loader();
+        if(declared==null||declared==current){android.util.Log.i("TripoderLoader","attach kept="+loaderChain(current));return current;}
+        android.util.Log.i("TripoderLoader","attach declared="+loaderChain(declared));
+        if(!value.engine.ownsLoader(declared))throw new SecurityException("SELF_APPLICATION_LOADER_IDENTITY_MISMATCH");
+        return declared;
+    }
+    /**
+     * The loader the application publishes on its own LoadedApk right now, or null before create.
+     *
+     * <p>This is the loader Android itself would hand to {@code Instrumentation} when the platform asks the
+     * application to instantiate a component, so it is the authority for later component construction. It is read per
+     * question rather than cached at attach: hot-fix, plugin and App Bundle runtimes install their DEX during
+     * Application.onCreate, after attach.
+     */
+    static ClassLoader publishedLoader(){
+        try{return ApplicationAdapter.loader();}catch(Throwable unavailable){return null;}
+    }
+    /** Bounded class-loader chain for startup evidence; a loader alone never proves which DEX it can see. */
+    static String loaderChain(ClassLoader start){
+        StringBuilder out=new StringBuilder();ClassLoader current=start;
+        for(int i=0;current!=null&&i<6;i++){if(i>0)out.append(" -> ");out.append(current.getClass().getName());current=current.getParent();}
+        return out.toString();
     }
 
     static void observe(String stage,Context physical,Application guest) {
@@ -124,6 +174,12 @@ final class RuntimeSelfHookApplication {
         if(value.attached)ApplicationAdapter.check();
         android.util.Log.i("TripoderOwnership",stage+" host="+System.identityHashCode(value.host)+
             " guest="+System.identityHashCode(guest)+" "+ApplicationAdapter.reportNative());
+        if(stage.equals("after-attach")){
+            // Two identities exist by design: what the guest sees, and what platform services validate against the real
+            // UID. Recording both here makes any package/UID rejection traceable to the context that produced it.
+            try{android.util.Log.i("TripoderIdentity","attached package="+guest.getPackageName()
+                +" opPackage="+guest.getOpPackageName()+" uid="+android.os.Process.myUid());}catch(Throwable ignored){}
+        }
     }
 
     static void addFinisher(Runnable finisher) {

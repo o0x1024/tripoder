@@ -27,6 +27,14 @@ public final class RuntimeEngine {
     final long firstInstallTime,lastUpdateTime;
     private final Map<String,ActivityInfo> activityInfos=new HashMap<>();
     public Application application;
+    /**
+     * The application the guest installed as the process application. A hot-fix or plugin proxy may replace the
+     * {@link android.app.LoadedApk} application with its own delegate during {@code onCreate}; the created instance
+     * stays the ownership anchor, while components created afterwards run with the installed application exactly as
+     * they do on a device. Null means the created instance is still the process application.
+     */
+    private Application published;
+    Application guestApplication(){return published!=null?published:application;}
     private ContentResolver settingsResolver;
     private SettingsReadProvider settingsProvider;
     private final IBinder broker;
@@ -110,11 +118,15 @@ public final class RuntimeEngine {
         List<String> signers=new ArrayList<>();for(Signature signature:pkg.signingInfo.getApkContentsSigners())signers.add(ArtifactSet.hex(java.security.MessageDigest.getInstance("SHA-256").digest(signature.toByteArray())));Collections.sort(signers);
         if(!signers.equals(artifacts.signerDigests))throw new SecurityException("PACKAGE_SIGNING_METADATA_MISMATCH");packageArchive=pkg;
         requestedPermissions=pkg.requestedPermissions==null?Set.of():Set.copyOf(Arrays.asList(pkg.requestedPermissions));
-        info=new ApplicationInfo(pkg.applicationInfo);info.sourceDir=apk.toString();info.publicSourceDir=apk.toString();info.dataDir=data.toString();info.deviceProtectedDataDir=new File(data,"device-protected").toString();info.nativeLibraryDir=new File(apk.getParentFile(),"lib").getCanonicalPath();info.uid=android.os.Process.myUid();GuestPackageManager.setPrimaryCpuAbi(info,"arm64-v8a");
+        // ApplicationInfo's copy constructor copies its own fields but not PackageItemInfo.metaData. The archive
+        // metadata is part of the verified manifest an installed application receives from PackageManager, so carry it
+        // explicitly; otherwise every guest reading its own <meta-data> sees null (Alipay's logging key, for example).
+        info=new ApplicationInfo(pkg.applicationInfo);info.metaData=pkg.applicationInfo.metaData==null?null:new android.os.Bundle(pkg.applicationInfo.metaData);info.sourceDir=apk.toString();info.publicSourceDir=apk.toString();info.dataDir=data.toString();info.deviceProtectedDataDir=new File(data,"device-protected").toString();info.nativeLibraryDir=new File(apk.getParentFile(),"lib").getCanonicalPath();info.uid=android.os.Process.myUid();GuestPackageManager.setPrimaryCpuAbi(info,"arm64-v8a");
         applicationInfo=GuestPackageManager.copyApplicationInfo(info,true);
         for(ActivityInfo activity:RuntimeActivityIndex.create(artifacts,pkg).values())if(processName.equals(activity.processName))activityInfos.put(activity.name,activity);
         boot("activityIndex",bootStart);
-        artifactLoader=RuntimeDexLoader.create(artifacts,info.nativeLibraryDir,host.getClassLoader());loader=artifactLoader;
+        ClassLoader defining=RuntimeDexLoader.createForGuest(artifacts,info.nativeLibraryDir,host.getClassLoader());
+        artifactLoader=defining;loader=new RuntimeGuestLoader(defining,info.nativeLibraryDir);
         boot("dexLoader",bootStart);
         resources=host.getPackageManager().getResourcesForApplication(info);
         boot("resources",bootStart);
@@ -134,25 +146,28 @@ public final class RuntimeEngine {
         boot("hooks",bootStart);
         if(!adapterReady)throw new IllegalStateException("SELF_HOOK_READY_PUBLICATION_MISSING");
         installWindowSessionProxy();
+        installAppWidgetBoundary();
         RuntimeFixedPreparation.neutralizeVendorMonitors();
-        Thread sampler = new Thread(() -> {
-            Thread main = Looper.getMainLooper().getThread();
-            while (true) {
-                try {
-                    Thread.sleep(1000);
-                    StackTraceElement[] stack = main.getStackTrace();
-                    if (stack != null && stack.length > 0) {
-                        StringBuilder sb = new StringBuilder();
-                        for (int i = 0; i < Math.min(stack.length, 15); i++) {
-                            sb.append("\n  at ").append(stack[i]);
+        if (Boolean.getBoolean("tripoder.debug.mainSampler")) {
+            Thread sampler = new Thread(() -> {
+                Thread main = Looper.getMainLooper().getThread();
+                while (true) {
+                    try {
+                        Thread.sleep(1000);
+                        StackTraceElement[] stack = main.getStackTrace();
+                        if (stack != null && stack.length > 0) {
+                            StringBuilder sb = new StringBuilder();
+                            for (int i = 0; i < Math.min(stack.length, 15); i++) {
+                                sb.append("\n  at ").append(stack[i]);
+                            }
+                            android.util.Log.i("TripoderSampler", "MainThread[" + processName + "]:" + sb);
                         }
-                        android.util.Log.i("TripoderSampler", "MainThread[" + processName + "]:" + sb);
-                    }
-                } catch (Throwable ignored) {}
-            }
-        }, "Tripoder-MainSampler");
-        sampler.setDaemon(true);
-        sampler.start();
+                    } catch (Throwable ignored) {}
+                }
+            }, "Tripoder-MainSampler");
+            sampler.setDaemon(true);
+            sampler.start();
+        }
         applicationStart=new java.util.concurrent.FutureTask<>(()->{
             recordStart("STARTING");
             try{
@@ -163,6 +178,11 @@ public final class RuntimeEngine {
             boolean bypassShell=false;
             if(appName.equals("com.netease.nis.wrapper.MyApplication")){appName="com.netease.cloudmusic.CloudMusicApplication";bypassShell=true;} // TEST: bypass NIS shell
             updateActivityThreadProcessName(processName);
+            try{Class<?> at=Class.forName("android.app.ActivityThread");
+                Object op=at.getMethod("currentOpPackageName").invoke(null);
+                Object current=at.getMethod("getApplication").invoke(null);
+                android.util.Log.i("TripoderIdentity","instantiate app="+appName+" currentOpPackage="+op
+                    +" application="+(current==null?"null":current.getClass().getName()));}catch(Throwable ignored){}
             application=componentFactory.instantiateApplication(loader,appName);
             if(application==null)throw new IllegalStateException("FACTORY_APPLICATION_MISSING");
             RuntimeBridge.observeApplicationOwnership("before-attach",host,application);
@@ -216,7 +236,11 @@ public final class RuntimeEngine {
             }
             try{RuntimeBridge.attachApplication(application,guestContext);}
             finally{RuntimeBridge.observeApplicationOwnership("after-attach",host,application);}
+            android.util.Log.i("TripoderBoot","APPLICATION_ATTACH base="+(application.getBaseContext()==null?"null":application.getBaseContext().getClass().getName()));
             RuntimeBridge.checkApplicationOwnership(host,application);
+            // attachBaseContext is where hot-fix/plugin runtimes publish the loader that can see their DEX. Anything
+            // published from here on (providers, activities) must resolve through that loader.
+            loader=RuntimeSelfHookApplication.adoptLoader(loader);Thread.currentThread().setContextClassLoader(loader);
             application.registerActivityLifecycleCallbacks((RuntimeApplication)host);
             boolean deferredProviders = !bypassShell && isHardenedShell(application, loader, info);
 
@@ -225,21 +249,23 @@ public final class RuntimeEngine {
             }
             recordStart("ON_CREATE");
             try{new Instrumentation().callApplicationOnCreate(application);}
-            finally{RuntimeBridge.observeApplicationOwnership("after-onCreate",host,application);}
+            finally{
+                Application installed=RuntimeSelfHookApplication.installedApplication();
+                if(installed!=null&&installed!=application)published=installed;
+                RuntimeBridge.observeApplicationOwnership("after-onCreate",host,application);
+            }
+            loader=RuntimeSelfHookApplication.adoptLoader(loader);Thread.currentThread().setContextClassLoader(loader);
             if (deferredProviders) {
                 providers.initialize();
             }
             application.unregisterActivityLifecycleCallbacks((RuntimeApplication)host);
             application.registerActivityLifecycleCallbacks((RuntimeApplication)host);
+            if (published != null && published != application) {
+                published.unregisterActivityLifecycleCallbacks((RuntimeApplication)host);
+                published.registerActivityLifecycleCallbacks((RuntimeApplication)host);
+            }
             RuntimeBridge.checkApplicationOwnership(host,application);
-            Thread scoutImmunity = new Thread(() -> {
-                for (int i = 0; i < 30; i++) {
-                    RuntimeFixedPreparation.neutralizeVendorMonitors();
-                    try { Thread.sleep(1000); } catch (Throwable ignored) {}
-                }
-            }, "Tripoder-Scout-Immunity");
-            scoutImmunity.setDaemon(true);
-            scoutImmunity.start();
+            RuntimeFixedPreparation.neutralizeVendorMonitors();
             recordStart("READY");ready=true;event("application-ready");return null;
             }catch(Exception|Error error){try{recordStart("FAILED");}catch(Exception receipt){error.addSuppressed(receipt);}throw error;}
         });
@@ -290,7 +316,37 @@ public final class RuntimeEngine {
     volatile List<ApkManifest.Component> manifestDeclarations=List.of();
     volatile Map<String,List<ArtifactSet.FilterSpec>> filterSpecs=Map.of();
     boolean isBroker(Object value){return value!=null&&value==broker;}
+    /** The verified defining loader: the only ClassLoader that holds this installation's DEX. */
+    ClassLoader artifactLoader(){return artifactLoader;}
     boolean ownsLoader(ClassLoader candidate){for(ClassLoader c=candidate;c!=null;c=c.getParent())if(c==artifactLoader)return true;return false;}
+    /**
+     * The physical form of a launch record.
+     *
+     * <p>Android does not promise that the intent a client receives still names the component the caller started: a
+     * platform may resolve a record's visible component back from the ActivityInfo it was given, so the same record
+     * can arrive as the guest component while still carrying its lease. The lease is the identity; its slot is the
+     * physical component this process owns. Returns null when the record carries no lease of this generation.
+     */
+    public Intent leasedRecord(Intent intent)throws Exception{
+        if(intent==null)return null;String ticket=intent.getStringExtra("tripoder.ticket");if(ticket==null)return null;
+        Bundle query=auth();query.putString("ticket",ticket);Bundle row=RuntimeWire.call(broker,RuntimeWire.ACTIVITY_RECORD,query);
+        String stub=RuntimeWire.required(row,"stub");if(!RuntimeActivitySlots.owns(stub))throw new SecurityException("ACTIVITY_LEASE_STUB_INVALID");
+        return new Intent(intent).setComponent(new ComponentName(host.getPackageName(),stub));
+    }
+    /**
+     * The loader authoritative for resolving guest classes at this moment.
+     *
+     * <p>Android gives the application authority over its own class loader: {@code LoadedApk.mClassLoader} is what the
+     * platform passes to every component factory, and hot-fix, plugin and App Bundle runtimes replace it to install DEX
+     * that only their loader can see. A component constructed through the loader captured at boot therefore reports
+     * classes the application legitimately published as missing. This follows the published loader while its parent
+     * chain still ends at this installation's verified loader; anything else would be a foreign loader and keeps the
+     * verified loader.
+     */
+    public ClassLoader guestLoader(){
+        ClassLoader published=RuntimeSelfHookApplication.publishedLoader();
+        return published!=null&&published!=loader&&ownsLoader(published)?published:loader;
+    }
     /** Guest code, or the exact platform WebView provider loader captured as an explicit dependency. */
     boolean ownsReceiverLoader(ClassLoader candidate){return ownsLoader(candidate)||webView.ownsProviderLoader(candidate);}
     boolean ownsActivity(Activity activity){return activityInstances.containsKey(activity);}
@@ -303,12 +359,12 @@ public final class RuntimeEngine {
     public void event(String stage){try{Bundle b=auth();b.putString("stage",stage);RuntimeWire.call(broker,RuntimeWire.EVENT,b);}catch(Exception e){throw new IllegalStateException("BROKER_EVENT_FAILED",e);}}
     RuntimeActivityCreation.Permit claimCreation(Intent intent)throws Exception {
         // Bundle values unparcel lazily and keep the loader seen at their first access; own it before any extras read.
-        intent.setExtrasClassLoader(loader);
+        intent.setExtrasClassLoader(guestLoader());
         String ticket=RuntimeWire.required(intent.getExtras(),"tripoder.ticket");Bundle gate=auth();gate.putString("candidate",ticket);gate.putString("stub",intent.getComponent().getClassName());gate.putString("kind","factory");
         if(RuntimeWire.call(broker,RuntimeWire.ACTIVITY_ENTRY_STATUS,gate).getBoolean("closed"))return new RuntimeActivityCreation.Permit(ActivityEntryFences.REJECTED);
         String activityName=intent.getStringExtra("tripoder.component");
         if(!activityInfos.containsKey(activityName))throw new SecurityException("ACTIVITY_SESSION_MISMATCH");
-        Intent visible=RuntimeActivityIntent.visible(intent,packageName,loader);
+        Intent visible=RuntimeActivityIntent.visible(intent,packageName,guestLoader());
         String instance=UUID.randomUUID().toString();Bundle claim=auth();claim.putString("ticket",ticket);claim.putString("component",activityName);claim.putString("instance",instance);claim.putString("stub",intent.getComponent().getClassName());claim.putString("delivery",RuntimeWire.required(intent.getExtras(),"tripoder.delivery"));claim.putString("payloadDigest",RuntimeActivityIntent.receivedDigest(intent,visible));Bundle claimed=RuntimeWire.call(broker,RuntimeWire.ACTIVITY_CLAIM,claim);
         if(claimed.containsKey("rejectedActivity"))return new RuntimeActivityCreation.Permit(claimed.getString("rejectedActivity"));
         ActivityInfo effective=RuntimeActivityIndex.require(activityInfos,activityName);
@@ -493,6 +549,56 @@ public final class RuntimeEngine {
         } catch (Throwable t) {
             android.util.Log.e("TripoderHardened", "Failed to install IWindowSession proxy", t);
         }
+    }
+    /**
+     * App widget queries are component-scoped: the platform answers them by checking the provider's package against
+     * the caller's UID, and a guest package was never installed for this UID, so forwarding the guest's query can only
+     * produce a SecurityException. A virtual device does not publish guest widget providers, so the boundary answers
+     * exactly what an empty device answers and forwards only host-scoped calls.
+     */
+    private void installAppWidgetBoundary() {
+        try {
+            // The contract is whatever interface AppWidgetManager stores its binder as. Android has moved it between
+            // packages (android.appwidget.IAppWidgetService -> com.android.internal.appwidget.IAppWidgetService), and
+            // the boundary must implement the type the platform actually calls, not a remembered name.
+            Class<?> manager=Class.forName("android.appwidget.AppWidgetManager");
+            java.lang.reflect.Field service=manager.getDeclaredField("sService");service.setAccessible(true);
+            Class<?> contract=service.getType();
+            Object real=service.get(null);
+            Object proxy=java.lang.reflect.Proxy.newProxyInstance(contract.getClassLoader(),new Class<?>[]{contract},(p,method,args)->{
+                String name=method.getName();
+                if("asBinder".equals(name))return real==null?null:((android.os.IInterface)real).asBinder();
+                if("queryLocalInterface".equals(name))return contract.getName().equals(args==null?null:args[0])?p:null;
+                if("hashCode".equals(name))return System.identityHashCode(p);
+                if("equals".equals(name))return p==(args==null?null:args[0]);
+                if(!hostScoped(args))return absent(method.getReturnType());
+                if(real==null)return absent(method.getReturnType());
+                try{return method.invoke(real,args);}catch(java.lang.reflect.InvocationTargetException ite){throw ite.getCause();}
+            });
+            service.set(null,proxy);
+            android.util.Log.i("TripoderHardened","Installed IAppWidgetService boundary");
+        } catch (Throwable t) {
+            android.util.Log.e("TripoderHardened","Failed to install IAppWidgetService boundary",t);
+        }
+    }
+    private boolean hostScoped(Object[] args){
+        if(args==null)return true;
+        for(Object arg:args){
+            if(arg instanceof android.content.ComponentName name&&!host.getPackageName().equals(name.getPackageName()))return false;
+            if(arg instanceof String name&&packageName.equals(name))return false;
+        }
+        return true;
+    }
+    private static Object absent(Class<?> type){
+        if(type==int[].class)return new int[0];
+        if(type==long[].class)return new long[0];
+        if(type==boolean.class)return false;
+        if(type==int.class)return 0;
+        if(type==long.class)return 0L;
+        if(type==void.class)return null;
+        if(type==java.util.List.class)return java.util.Collections.emptyList();
+        if(type.isArray())return java.lang.reflect.Array.newInstance(type.getComponentType(),0);
+        return null;
     }
 }
 

@@ -30,7 +30,7 @@ final class RuntimeBroadcastBroker {
         }
         if(code==RuntimeWire.BROADCAST_STICKY_VIEW){
             String registration=RuntimeWire.required(input,"registration");Intent sticky=RuntimeBroadcastIntent.decode(input.getByteArray("payload"));
-            if(!RuntimeSystemBroadcasts.STICKY.contains(sticky.getAction())||!RuntimeBroadcastIntent.matches(RuntimeBroadcastIntent.filter(ledger.activeFilter(registration,generation)),sticky))throw new SecurityException("STICKY_RETURN_FILTER_MISMATCH");
+            if(!RuntimeSystemBroadcasts.STICKY.contains(sticky.getAction())||!RuntimeBroadcastIntent.matches(ledger.activeParsedFilter(registration,generation),sticky))throw new SecurityException("STICKY_RETURN_FILTER_MISMATCH");
             out.putByteArray("payload",RuntimeSystemBroadcasts.encode(sticky,ledger.activeRoots(registration,generation)));return out;
         }
         if(code==RuntimeWire.BROADCAST_SYSTEM_CLAIM){
@@ -41,7 +41,7 @@ final class RuntimeBroadcastBroker {
             if(media){Set<String> observed=new HashSet<>(roots);observed.addAll(RuntimeSystemBroadcasts.roots(broker.host));roots=Set.copyOf(observed);}
             Intent logical=RuntimeSystemBroadcasts.visible(observedIntent,roots);
             if(!RuntimeSystemBroadcasts.ownPackageEvent(logical,source.identity.packageName))throw new SecurityException("PACKAGE_EVENT_NOT_VISIBLE");
-            if(!RuntimeBroadcastIntent.matches(RuntimeBroadcastIntent.filter(ledger.activeFilter(registration,generation)),logical))throw new SecurityException("SYSTEM_RECEIVER_FILTER_MISMATCH");
+            if(!RuntimeBroadcastIntent.matches(ledger.activeParsedFilter(registration,generation),logical))throw new SecurityException("SYSTEM_RECEIVER_FILTER_MISMATCH");
             if(media)ledger.rememberRoots(registration,generation,roots);
             byte[] payload=RuntimeSystemBroadcasts.encode(logical,roots);String operation="system-receiver-"+UUID.randomUUID();
             broker.contract.accept(operation,source.identity.key(),RuntimeBroadcastIntent.digest(payload));broker.contract.start(operation);
@@ -78,17 +78,17 @@ final class RuntimeBroadcastBroker {
             if(receiverPermission==null||RuntimeSystemBroadcasts.holds(install,sender,receiverPermission)){var to=broker.processes.reserveComponent(install,declared.process);Bundle target=new Bundle();target.putString("target",to.allocation.session.processGeneration);target.putString("component",declared.name);target.putString("registration","");target.putString("stub",RuntimeReceiverSlots.type(RuntimeSlot.index(to.activityStub)).getName());targets.add(target);}
         }else{
             requireDynamicImplicit(sender,intent);
-            for(Bundle registration:broker.broadcasts.registrations(sender.space)){
-                if(intent.getPackage()!=null&&!intent.getPackage().equals(registration.getString("package")))continue;
-                if(!registration.getBoolean("exported")&&!sender.info.packageName.equals(registration.getString("package")))continue;
-                if(!RuntimeBroadcastIntent.matches(RuntimeBroadcastIntent.filter(registration.getByteArray("filter")),intent))continue;
-                String permission=registration.getString("permission");
+            for(BroadcastLedger.ActiveRegistration registration:broker.broadcasts.activeRegistrationsForSpace(sender.space)){
+                if(intent.getPackage()!=null&&!intent.getPackage().equals(registration.pkg))continue;
+                if(!registration.exported&&!sender.info.packageName.equals(registration.pkg))continue;
+                if(!RuntimeBroadcastIntent.matches(registration.parsedFilter,intent))continue;
+                String permission=registration.permission;
                 if(receiverPermission!=null||!permission.isEmpty()){
-                    var owner=broker.apks.get(sender.space,registration.getString("package"));
+                    var owner=broker.apks.get(sender.space,registration.pkg);
                     if(receiverPermission!=null&&!RuntimeSystemBroadcasts.holds(owner,sender,receiverPermission))continue;
                     if(!permission.isEmpty()&&!RuntimeSystemBroadcasts.holds(sender,owner,permission))continue;
                 }
-                broker.requiredSlot(registration.getString("target"));Bundle target=new Bundle();target.putString("target",registration.getString("target"));target.putString("component","");target.putString("registration",registration.getString("registration"));target.putString("action",BroadcastLedger.action(registration.getString("registration")));targets.add(target);
+                broker.requiredSlot(registration.generation);Bundle target=new Bundle();target.putString("target",registration.generation);target.putString("component","");target.putString("registration",registration.id);target.putString("action",BroadcastLedger.action(registration.id));targets.add(target);
             }
         }
         if(targets.size()>128)throw new IllegalArgumentException("BROADCAST_FANOUT_LIMIT");return targets;

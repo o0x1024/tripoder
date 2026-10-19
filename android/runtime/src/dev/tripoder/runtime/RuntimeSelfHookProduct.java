@@ -33,6 +33,7 @@ final class RuntimeSelfHookProduct {
         plan.put(SERVICES,RuntimeSelfHookFixedComponents::services);
         plan.put(PROVIDERS,RuntimeSelfHookFixedComponents::providers);
         plan.put(RECEIVERS,RuntimeSelfHookFixedComponents::receivers);
+        plan.put(WIDGETS,RuntimeSelfHookFixedComponents::widgets);
         plan.put(PACKAGES,()->RuntimeSelfHookPackages.install(value.managed));
         plan.put(STORAGE,RuntimeSelfHookStorage::install);
         plan.put(ACTIVITY_MANAGER,()->value.manager(RuntimeSelfHookManagerPolicy.Family.ACTIVITY_MANAGER));

@@ -22,6 +22,7 @@ final class RuntimePackages implements InvocationHandler {
     private Resources infrastructureResources;
     private Context frameworkContext;
     private boolean activationStarted;
+    private static final java.util.concurrent.atomic.AtomicInteger ENDPOINT_MISSES=new java.util.concurrent.atomic.AtomicInteger();
     private volatile boolean active;
     RuntimePackages(RuntimeEngine engine){this.engine=engine;}
     boolean active(){return active;}
@@ -75,10 +76,15 @@ final class RuntimePackages implements InvocationHandler {
         if(view.getAssets()!=engine.resources.getAssets())throw new SecurityException("PACKAGE_CONTEXT_RESOURCE_ORIGIN_DENIED");
         return manager(context,view);
     }
-    /** Platform-service packages outside the logical package world; Binder reports an absent package as null. */
-    private static final java.util.Set<String> ABSENT_SERVICES=java.util.Set.of("com.google.android.gms","com.android.vending","com.google.android.gsf","com.huawei.hms","com.huawei.hwid","com.xiaomi.market","com.heytap.market","com.vivo.appstore","com.tencent.mm","com.eg.android.AlipayGphone","com.sina.weibo","com.tencent.mobileqq");
     /** Not this guest, the host, or a WebView provider: invisible to the caller, so every query about it answers "absent" in Binder's own terms (null, false, zero). */
     private static final class PackageAbsent extends RuntimeException{PackageAbsent(String pkg){super("PACKAGE_ABSENT:"+pkg,null,false,false);}}
+    /**
+     * The single decision that defines which package world answers a query. The guest's own package is served by the
+     * verified archive (its real ApplicationInfo, components and metadata); the host package is physical
+     * infrastructure; every other name is absent. A name list must never be consulted before this rule: the guest's
+     * own identity cannot depend on which applications happen to be installed on the device, and shadowing it makes
+     * the guest read null for its own manifest metadata.
+     */
     private boolean infrastructure(String pkg){
         if(engine.host.getPackageName().equals(pkg))return true;
         if(!engine.packageName.equals(pkg))throw new PackageAbsent(pkg);
@@ -120,7 +126,6 @@ final class RuntimePackages implements InvocationHandler {
             case "getPackageInfo[class java.lang.String, long, int]":{
                 user(a[2]);String pkg=(String)a[0];long flags=(Long)a[1];
                 if(engine.webView.owns(pkg))return engine.webView.packageInfo(pkg,flags,(Integer)a[2]);
-                if(ABSENT_SERVICES.contains(pkg))return null;
                 if(infrastructure(pkg))return RuntimePackageBridge.physicalPackageInfo(pkg,flags,(Integer)a[2]);
                 return metadata.getPackageInfo(pkg,PackageManager.PackageInfoFlags.of(flags));
             }
@@ -130,7 +135,7 @@ final class RuntimePackages implements InvocationHandler {
                 return metadata.getPackageInfo(selected,PackageManager.PackageInfoFlags.of((Long)a[1]));
             }
             case "getApplicationInfo[class java.lang.String, long, int]":{
-                user(a[2]);String pkg=(String)a[0];if(engine.webView.owns(pkg))return engine.webView.applicationInfo(pkg,(Long)a[1],(Integer)a[2]);if(ABSENT_SERVICES.contains(pkg))return null;if(infrastructure(pkg))return RuntimePackageBridge.physicalApplicationInfo(pkg,(Long)a[1],(Integer)a[2]);
+                user(a[2]);String pkg=(String)a[0];if(engine.webView.owns(pkg))return engine.webView.applicationInfo(pkg,(Long)a[1],(Integer)a[2]);if(infrastructure(pkg))return RuntimePackageBridge.physicalApplicationInfo(pkg,(Long)a[1],(Integer)a[2]);
                 return metadata.getApplicationInfo(pkg,PackageManager.ApplicationInfoFlags.of((Long)a[1]));
             }
             case "getServiceInfo[class android.content.ComponentName, long, int]":
@@ -159,8 +164,15 @@ final class RuntimePackages implements InvocationHandler {
             case "queryProperty[class java.lang.String, int]":return null;
             case "getPackagesForUid[int]":
                 if(((Integer)a[0])!=android.os.Process.myUid())throw new UnsupportedOperationException("PACKAGE_UID_UNSUPPORTED");
-                return new String[]{engine.packageName,engine.host.getPackageName()};
-            default:throw new UnsupportedOperationException("PACKAGE_ENDPOINT_UNSUPPORTED:"+key);
+                // This endpoint is the platform's IPackageManager, and its callers use the answer as the UID owner
+                // (StorageManager.getVolumeList -> AppOpsManager.checkPackage). A guest name here is a package the
+                // platform has never installed for this UID, so the platform rejects the call. Guest identity belongs
+                // to the guest-visible PackageManager facade; the platform world only ever sees the installed host.
+                return new String[]{engine.host.getPackageName()};
+            default:{
+                if(ENDPOINT_MISSES.incrementAndGet()<=12)android.util.Log.w("TripoderPackages","ENDPOINT_UNSUPPORTED key="+key);
+                throw new UnsupportedOperationException("PACKAGE_ENDPOINT_UNSUPPORTED:"+key);
+            }
         }
     }
     synchronized Resources resources(PackageManager manager,String pkg,ApplicationInfo supplied){

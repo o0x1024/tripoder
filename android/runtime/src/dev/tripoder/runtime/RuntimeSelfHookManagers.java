@@ -9,6 +9,7 @@ import android.net.Network;
 import android.net.NetworkRequest;
 import android.os.Handler;
 import android.os.Looper;
+import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 import java.lang.reflect.Method;
@@ -220,6 +221,16 @@ final class RuntimeSelfHookManagers {
             case "getNetworkOperatorName()":return RuntimeBridge.telephonyPlatform().getNetworkOperatorName();
             case "getSimOperator()":return RuntimeBridge.telephonyPlatform().getSimOperator();
             case "getSimOperatorName()":return RuntimeBridge.telephonyPlatform().getSimOperatorName();
+            case "getVoiceNetworkType()":return RuntimeBridge.telephonyPlatform().getVoiceNetworkType();
+            case "getDataState()":return RuntimeBridge.telephonyPlatform().getDataState();
+            case "createForSubscriptionId(int)":return RuntimeBridge.telephonyPlatform().createForSubscriptionId((Integer)args[0]);
+            case "getAllCellInfo()":
+                try{return RuntimeBridge.telephonyPlatform().getAllCellInfo();}
+                catch(SecurityException denied){android.util.Log.w("TripoderRuntime","DEVICE_STATE_UNAVAILABLE:TELEPHONY:getAllCellInfo():"+denied.getMessage());return java.util.Collections.emptyList();}
+            case "listen(android.telephony.PhoneStateListener,int)":
+                try{RuntimeBridge.telephonyPlatform().listen((PhoneStateListener)args[0],(Integer)args[1]);}
+                catch(SecurityException denied){android.util.Log.w("TripoderRuntime","DEVICE_STATE_UNAVAILABLE:TELEPHONY:listen:"+denied.getMessage());}
+                return null;
             case "registerTelephonyCallback(java.util.concurrent.Executor,android.telephony.TelephonyCallback)":
                 RuntimeBridge.telephonyRegister((Executor)args[0],(TelephonyCallback)args[1]);return null;
             case "registerTelephonyCallback(int,java.util.concurrent.Executor,android.telephony.TelephonyCallback)":

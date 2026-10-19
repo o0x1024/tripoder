@@ -16,12 +16,19 @@ final class RuntimeProviders {
     final RuntimeSettingsObservers settingsObservers;
     private final Map<String,Entry> entries=new LinkedHashMap<>();
     private final Set<ContentProvider> instances=Collections.newSetFromMap(new IdentityHashMap<>());
+    /**
+     * The providers this thread is inside right now, in install order. A cycle is re-entrance of one of these leases
+     * (A.onCreate needs B while B is still initializing), never "the main thread asked for a provider". Android itself
+     * installs same-process providers on the requesting thread, including from Application.attach and from another
+     * provider's onCreate, so the requesting looper says nothing about whether a cycle exists.
+     */
+    private static final ThreadLocal<Set<String>> INITIALIZING=ThreadLocal.withInitial(LinkedHashSet::new);
     private static final class Entry {
         final String lease;final ProviderInfo info;final CompletableFuture<ContentProvider> ready=new CompletableFuture<>();volatile Thread initializing;final java.util.concurrent.atomic.AtomicBoolean claimed=new java.util.concurrent.atomic.AtomicBoolean();
         Entry(String lease,ProviderInfo info){this.lease=lease;this.info=info;}
     }
     RuntimeProviders(RuntimeEngine engine,ProviderInfo[] infos,Bundle publications,List<ApkManifest.Component> declarations){
-        this.engine=engine;this.settingsObservers=new RuntimeSettingsObservers(engine.host.getContentResolver());
+        this.engine=engine;this.settingsObservers=new RuntimeSettingsObservers(engine.host.getContentResolver(),engine.providerIndex);
         for(ProviderInfo info:new RuntimeProviderIndex(infos,declarations).publications(engine.processName)){
             info.applicationInfo=new ApplicationInfo(engine.info);
             // Android startup attaches ProviderInfo without GET_META_DATA; explicit PM queries own it.
@@ -33,19 +40,29 @@ final class RuntimeProviders {
     void initialize()throws Exception{
         List<Entry> ordered=new ArrayList<>();synchronized(entries){for(Entry entry:entries.values())if(engine.processName.equals(entry.info.processName))ordered.add(entry);}ordered.sort(Comparator.comparingInt((Entry e)->e.info.initOrder).reversed());
         // A same-process caller may already have installed a provider on its own thread (see ready); installation happens once.
-        for(Entry entry:ordered)if(entry.claimed.compareAndSet(false,true))initialize(entry);
+        for(Entry entry:ordered)if(entry.claimed.compareAndSet(false,true)){
+            // Android installs startup providers with silent=true: a provider that cannot be created is logged and
+            // skipped, and the application still starts. It becomes an error only when something asks for that
+            // authority. A guest manifest can name providers whose class exists only in artifacts the guest loads at
+            // runtime (plugin/patch dex) or that are process-pit placeholders; aborting startup for them is a
+            // divergence from the platform, not a safety property.
+            try{initialize(entry);}catch(Throwable error){android.util.Log.e("TripoderRuntime","PROVIDER_INSTALL_FAILED:"+entry.info.name,error);}
+        }
     }
     private void initialize(Entry entry)throws Exception{
+            Set<String> stack=INITIALIZING.get();
+            if(!stack.add(entry.lease))throw new IllegalStateException("PROVIDER_INITIALIZATION_CYCLE");
             entry.initializing=Thread.currentThread();
-            publish(entry,"INITIALIZING");
             try{
-                ContentProvider instance=engine.componentFactory.instantiateProvider(engine.loader,entry.info.name);
+                publish(entry,"INITIALIZING");
+                ContentProvider instance=engine.componentFactory.instantiateProvider(engine.guestLoader(),entry.info.name);
                 if(instance==null||!engine.ownsLoader(instance.getClass().getClassLoader()))throw new SecurityException("PROVIDER_LOADER_MISMATCH");
                 synchronized(instances){instances.add(instance);}
                 // attachInfo invokes onCreate; invoking it again would duplicate guest side effects.
                 RuntimeProviderAttachments.attach(engine,instance,new GuestContext(engine.host,engine),entry.info);
                 publish(entry,"READY");entry.ready.complete(instance);
-            }catch(Throwable error){entry.ready.completeExceptionally(error);publish(entry,"FAILED");throw error;}finally{entry.initializing=null;}
+            }catch(Throwable error){entry.ready.completeExceptionally(error);publish(entry,"FAILED");throw error;}
+            finally{entry.initializing=null;stack.remove(entry.lease);if(stack.isEmpty())INITIALIZING.remove();}
     }
     /** Same-package multiprocess providers are first attached on the acquiring thread, once per process. */
     private void local(Bundle ref)throws Exception{
@@ -66,11 +83,15 @@ final class RuntimeProviders {
     boolean owns(ContentProvider provider){synchronized(instances){return instances.contains(provider);}}
     ContentProvider ready(String lease)throws Exception{
         Entry entry;synchronized(entries){entry=entries.get(lease);}if(entry==null)throw new SecurityException("PROVIDER_LEASE_NOT_IN_PROCESS");
-        // Android AMS answers a same-process request with canRunHere: the caller installs the provider on its own
-        // thread, so a worker may use it while the main thread is still inside Application.attach.
-        if(!entry.ready.isDone()&&Binder.getCallingPid()==android.os.Process.myPid()&&Looper.myLooper()!=Looper.getMainLooper()&&engine.application!=null&&engine.componentFactory!=null
-            &&engine.processName.equals(entry.info.processName)&&entry.claimed.compareAndSet(false,true))initialize(entry);
-        if(!entry.ready.isDone()&&(entry.initializing==Thread.currentThread()||Looper.myLooper()==Looper.getMainLooper()))throw new IllegalStateException("PROVIDER_INITIALIZATION_CYCLE");
+        // Android answers a same-process provider request with canRunHere: the requesting thread installs it, even
+        // when that thread is the main thread inside Application.attach. The only cycle is this thread already being
+        // inside the same provider (directly or through another provider's onCreate); the looper is not evidence.
+        if(!entry.ready.isDone()&&Binder.getCallingPid()==android.os.Process.myPid()&&engine.application!=null&&engine.componentFactory!=null
+            &&engine.processName.equals(entry.info.processName)){
+            if(INITIALIZING.get().contains(entry.lease))throw new IllegalStateException("PROVIDER_INITIALIZATION_CYCLE");
+            if(entry.claimed.compareAndSet(false,true))initialize(entry);
+        }
+        if(!entry.ready.isDone()&&entry.initializing==Thread.currentThread())throw new IllegalStateException("PROVIDER_INITIALIZATION_CYCLE");
         // A cold dependency may still be installing its pre-guest hooks. Share the
         // authority's original deadline; never restart a shorter timer at each layer.
         try{return entry.ready.get(RuntimeStartupDeadline.remaining(engine.startupDeadlineElapsed,SystemClock.elapsedRealtime()),TimeUnit.MILLISECONDS);}catch(TimeoutException error){throw new IllegalStateException("PROVIDER_INITIALIZATION_TIMEOUT",error);}

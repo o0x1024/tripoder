@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include <unistd.h>
 
-enum { HOST,GUEST,INFO,LOADER,FACTORY,RESOURCES,THREAD,PHYSICAL,LOGICAL,CONTEXT,DECLARED,ROOTS };
+enum { HOST,GUEST,INFO,LOADER,OWNER,FACTORY,RESOURCES,THREAD,PHYSICAL,LOGICAL,CONTEXT,DECLARED,ROOTS };
 static struct {
-    jclass classes[7];jfieldID fields[12];jmethodID methods[9];jobject roots[ROOTS];
+    jclass classes[7];jfieldID fields[12];jmethodID methods[10];jobject roots[ROOTS];
     unsigned retained,checks,constructs,attaches;
     pid_t tid;
     const char *stage;
@@ -27,9 +27,42 @@ static bool keep(JNIEnv *env,unsigned slot,jobject value){
     state.roots[slot]=(*env)->NewGlobalRef(env,value);
     if(state.roots[slot]){state.retained++;return true;}return false;
 }
+/**
+ * True when candidate resolves inside this installation's verified DEX sequence.
+ *
+ * <p>The ownership root is the defining loader that holds the verified DEX, not the {@code RuntimeGuestLoader}
+ * facade the runtime publishes as the application loader. Android itself lets an application replace the loader it
+ * publishes on its own {@code LoadedApk}; hot-fix and plugin runtimes do so during {@code attachBaseContext}. RePlugin,
+ * for example, installs a sibling loader built with {@code parent = original.getParent()} and keeps the original as a
+ * delegation field, so a parent-chain test rooted at the facade rejects a legitimate plugin loader. Rooting the test at
+ * the DEX sequence accepts every loader that can only resolve this guest's classes, while a loader from another
+ * installation never reaches this root.
+ */
+static bool owned_loader(JNIEnv *env,jobject candidate){
+    if(!candidate||!state.roots[OWNER])return false;
+    if(same(env,candidate,state.roots[OWNER]))return true;
+    jclass type=(*env)->FindClass(env,"java/lang/ClassLoader");
+    if(!type)return false;
+    jmethodID parent=(*env)->GetMethodID(env,type,"getParent","()Ljava/lang/ClassLoader;");
+    if(!parent)return false;
+    for(unsigned depth=0;candidate&&depth<32;depth++){
+        jobject next=(*env)->CallObjectMethod(env,candidate,parent);
+        if((*env)->ExceptionCheck(env))return false;
+        if(same(env,next,state.roots[OWNER]))return true;
+        candidate=next;
+    }
+    return false;
+}
+/** A guest-owned Application is one the guest attached to its own LoadedApk: the structural fact a hot-fix proxy creates. */
+static bool guest_attached(JNIEnv *env,jobject application){
+    if(!application||!state.roots[LOGICAL])return false;
+    if(!(*env)->IsInstanceOf(env,application,state.classes[0]))return false;
+    jobject apk=(*env)->GetObjectField(env,application,state.fields[1]);
+    return same(env,apk,state.roots[LOGICAL]);
+}
 static bool physical(JNIEnv *env,bool attached){
     if(state.tid&&state.tid!=gettid())return false;
-    if((*env)->PushLocalFrame(env,16)<0)return false;
+    if((*env)->PushLocalFrame(env,64)<0)return false;
     jobject host=state.roots[HOST],guest=state.roots[GUEST],thread=state.roots[THREAD];
     jobject current=(*env)->GetStaticObjectField(env,state.classes[1],state.fields[11]);
     jobject initial=(*env)->GetObjectField(env,thread,state.fields[0]);
@@ -40,14 +73,19 @@ static bool physical(JNIEnv *env,bool attached){
     bool valid=!(*env)->ExceptionCheck(env);
     if(!valid)state.broken="exception";
     else if(!same(env,current,thread))valid=false,state.broken="ActivityThread.currentActivityThread";
-    else if(!same(env,initial,host))valid=false,state.broken="ActivityThread.mInitialApplication";
+    // The process application is guest-owned state once a hot-fix proxy replaces it: what remains fixed is that the
+    // replacement was attached to this guest's LoadedApk, so no foreign application can become the process application.
+    else if(!same(env,initial,host)&&!guest_attached(env,initial))valid=false,state.broken="ActivityThread.mInitialApplication";
     else if(!same(env,apk,state.roots[PHYSICAL]))valid=false,state.broken="host.mLoadedApk";
     else if(!same(env,host_owner,host))valid=false,state.broken="host LoadedApk.mApplication";
     if(valid&&state.roots[LOGICAL]){
         jobject owner=(*env)->GetObjectField(env,state.roots[LOGICAL],state.fields[2]);
-        valid=same(env,owner,guest)&&!same(env,state.roots[PHYSICAL],state.roots[LOGICAL]);
+        valid=(same(env,owner,guest)||guest_attached(env,owner))&&!same(env,state.roots[PHYSICAL],state.roots[LOGICAL]);
         if(!valid)state.broken="logical LoadedApk.mApplication";
-        const unsigned expected[]={LOADER,LOADER,RESOURCES,FACTORY,DECLARED};
+        // The class loader pair belongs to the guest, exactly as its resources do: platform hot-fix and plugin runtimes
+        // replace it during attachBaseContext to publish patch/plugin DEX. Accept any replacement that still resolves
+        // inside this installation's verified DEX sequence, and reject one that would escape it.
+        const unsigned expected[]={OWNER,OWNER,RESOURCES,FACTORY,DECLARED};
         const char *names[]={"logical.mClassLoader","logical.mDefaultClassLoader","logical.mResources","logical.mAppComponentFactory","logical.mApplicationInfo"};
         for(unsigned i=0;valid&&i<5;i++){
             jobject value=(*env)->GetObjectField(env,state.roots[LOGICAL],state.fields[4+i]);
@@ -56,8 +94,12 @@ static bool physical(JNIEnv *env,bool attached){
                 jobject followed=(*env)->NewGlobalRef(env,value);
                 if(followed){(*env)->DeleteGlobalRef(env,state.roots[RESOURCES]);state.roots[RESOURCES]=followed;}
             }
-            valid=same(env,value,state.roots[expected[i]]);
-            if(!valid)state.broken=names[i];
+            if(expected[i]==OWNER){
+                if(!owned_loader(env,value)){valid=false;state.broken=names[i];}
+            }else{
+                valid=same(env,value,state.roots[expected[i]]);
+                if(!valid)state.broken=names[i];
+            }
         }
     }
     if(valid&&attached){jobject guest_apk=(*env)->GetObjectField(env,guest,state.fields[1]);
@@ -71,7 +113,7 @@ JNIEXPORT void JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_prepareOwne
     (void)unused;bool expected=false;
     if(!atomic_compare_exchange_strong(&attempted,&expected,true)){fail(env,"APPLICATION_ALREADY_CONFIGURED");return;}
     state.stage="MEMBER_IDS";
-    if(!fields||!methods||(*env)->GetArrayLength(env,fields)!=12||(*env)->GetArrayLength(env,methods)!=9)goto error;
+    if(!fields||!methods||(*env)->GetArrayLength(env,fields)!=12||(*env)->GetArrayLength(env,methods)!=10)goto error;
     for(unsigned i=0;i<7;i++){
         jclass local=(*env)->FindClass(env,class_names[i]);if(!local)goto error;
         state.classes[i]=(*env)->NewGlobalRef(env,local);(*env)->DeleteLocalRef(env,local);
@@ -82,7 +124,7 @@ JNIEXPORT void JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_prepareOwne
         if(!value)goto error;state.fields[i]=(*env)->FromReflectedField(env,value);(*env)->DeleteLocalRef(env,value);
         if(!state.fields[i]||(*env)->ExceptionCheck(env))goto error;
     }
-    for(unsigned i=0;i<9;i++){
+    for(unsigned i=0;i<10;i++){
         jobject value=(*env)->GetObjectArrayElement(env,methods,(jsize)i);
         if(!value)goto error;state.methods[i]=(*env)->FromReflectedMethod(env,value);(*env)->DeleteLocalRef(env,value);
         if(!state.methods[i]||(*env)->ExceptionCheck(env))goto error;
@@ -112,12 +154,15 @@ JNIEXPORT jobject JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_current(
     return tp_art_reflection_value(env);
 }
 JNIEXPORT jobject JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_createNative(JNIEnv *env,jclass unused,
-    jobject host,jobject guest,jobject info,jobject loader,jobject factory,jobject resources){
+    jobject host,jobject guest,jobject info,jobject loader,jobject owner,jobject factory,jobject resources){
     (void)unused;bool expected=false;
     if(!atomic_load_explicit(&begun,memory_order_acquire)||!atomic_compare_exchange_strong(&creation_attempted,&expected,true)
         ||!same(env,host,state.roots[HOST])){fail(env,"APPLICATION_CREATE_STATE");return NULL;}
     state.tid=gettid();
-    if(!keep(env,GUEST,guest)||!keep(env,INFO,info)||!keep(env,LOADER,loader)||!keep(env,FACTORY,factory)||!keep(env,RESOURCES,resources))goto error;
+    if(!keep(env,GUEST,guest)||!keep(env,INFO,info)||!keep(env,LOADER,loader)||!keep(env,OWNER,owner)||
+       !keep(env,FACTORY,factory)||!keep(env,RESOURCES,resources))goto error;
+    state.stage="LOADER_OWNERSHIP";
+    if(!owned_loader(env,loader))goto error;
     if(!physical(env,false)||!tp_art_reflection_promote(env,guest))goto error;
     jobject thread=state.roots[THREAD],apk=state.roots[PHYSICAL];
     state.stage="LOGICAL_LOADED_APK";
@@ -190,7 +235,25 @@ done:
 }
 JNIEXPORT void JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_checkNative(JNIEnv *env,jclass unused){
     (void)unused;
-    if(!state.attaches||!physical(env,true))fail(env,"APPLICATION_OWNERSHIP_VIOLATION");
+    if(!state.attaches||!physical(env,true)){static char why[160];snprintf(why,sizeof(why),"APPLICATION_OWNERSHIP_VIOLATION:%s",state.broken&&*state.broken?state.broken:"attachment");fail(env,why);}
+}
+/** The class loader the guest currently publishes on its own LoadedApk, which hot-fix frameworks may replace. */
+JNIEXPORT jobject JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_loaderNative(JNIEnv *env,jclass unused){
+    (void)unused;
+    if(!state.roots[LOGICAL])return NULL;
+    return (*env)->GetObjectField(env,state.roots[LOGICAL],state.fields[4]);
+}
+/** The guest's LoadedApk: the object its real ContextImpl exposes as mPackageInfo. */
+JNIEXPORT jobject JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_packageInfoNative(JNIEnv *env,jclass unused){
+    (void)unused;
+    if(!state.roots[LOGICAL])return NULL;
+    return (*env)->NewLocalRef(env,state.roots[LOGICAL]);
+}
+/** The Application the guest currently publishes on its LoadedApk; a hot-fix proxy replaces it during onCreate. */
+JNIEXPORT jobject JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_installedApplicationNative(JNIEnv *env,jclass unused){
+    (void)unused;
+    if(!state.roots[LOGICAL])return NULL;
+    return (*env)->GetObjectField(env,state.roots[LOGICAL],state.fields[2]);
 }
 JNIEXPORT void JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_closeViewNative(JNIEnv *env,jclass unused){
     (void)unused;

@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * code can execute. A late activation cannot migrate existing compiled frames. */
 public final class ManagedHook {
     public interface Handler { Object invoke(Invocation call) throws Throwable; }
+    private static final Object[] EMPTY_ARGS=new Object[0];
     public static final class Invocation {
         private final Entry entry;
         private final Object receiver;
@@ -24,9 +25,9 @@ public final class ManagedHook {
         private final Thread thread=Thread.currentThread();
         private boolean called,closed,originalCompleted;
         private Throwable originalFailure;
-        Invocation(Entry entry,Object receiver,Object[] args){this.entry=entry;this.receiver=receiver;this.args=args.clone();}
+        Invocation(Entry entry,Object receiver,Object[] args){this.entry=entry;this.receiver=receiver;this.args=args.length==0?EMPTY_ARGS:args.clone();}
         public Object receiver(){return receiver;}
-        public Object[] arguments(){return args.clone();}
+        public Object[] arguments(){return args.length==0?EMPTY_ARGS:args.clone();}
         public Object original(Object... replacement) throws Throwable {
             if(Thread.currentThread()!=thread||called||closed)throw new IllegalStateException("ORIGINAL_INVOCATION_NOT_OWNED");
             validateArguments(entry,receiver,replacement);called=true;
@@ -44,13 +45,24 @@ public final class ManagedHook {
         public byte[] relayBytes(){return relayNative(entry.id);}
     }
     private static final class Entry {
-        final int id;final Executable target;final Method helper;final Class<?>[] parameters;
-        final Class<?> result;final boolean instance,synchronizedMethod,constructor;
+        final int id;final Executable target;final Method helper;final Class<?>[] parameters,boxedParameters;
+        final Class<?> result,boxedResult;final boolean instance,synchronizedMethod,constructor,primitiveResult;
+        final boolean[] primitiveParameters;
         final InMemoryDexClassLoader loader;final byte[] dex;
         volatile Handler handler;
         Entry(int id,Executable target,Method helper,InMemoryDexClassLoader loader,byte[] dex){
             this.id=id;this.target=target;this.helper=helper;this.loader=loader;this.dex=dex;
-            parameters=target.getParameterTypes();constructor=target instanceof Constructor<?>;result=constructor?void.class:((Method)target).getReturnType();
+            parameters=target.getParameterTypes();
+            boxedParameters=new Class<?>[parameters.length];
+            primitiveParameters=new boolean[parameters.length];
+            for(int i=0;i<parameters.length;i++){
+                primitiveParameters[i]=parameters[i].isPrimitive();
+                boxedParameters[i]=boxType(parameters[i]);
+            }
+            constructor=target instanceof Constructor<?>;
+            result=constructor?void.class:((Method)target).getReturnType();
+            primitiveResult=result!=void.class&&result.isPrimitive();
+            boxedResult=boxType(result);
             instance=!Modifier.isStatic(target.getModifiers());synchronizedMethod=Modifier.isSynchronized(target.getModifiers());
         }
     }
@@ -228,20 +240,27 @@ public final class ManagedHook {
                 if(call.originalFailure!=null)throw call.originalFailure;
                 throw new IllegalStateException("CONSTRUCTOR_ORIGINAL_REQUIRED");
             }
-            validate(entry.result,result);return result;}
+            validateResult(entry,result);return result;}
         finally {call.closed=true;}
+    }
+    private static Class<?> boxType(Class<?> type){
+        if(!type.isPrimitive()||type==void.class)return type;
+        if(type==boolean.class)return Boolean.class;if(type==byte.class)return Byte.class;if(type==short.class)return Short.class;
+        if(type==char.class)return Character.class;if(type==int.class)return Integer.class;if(type==long.class)return Long.class;
+        if(type==float.class)return Float.class;return Double.class;
     }
     private static void validateArguments(Entry entry,Object receiver,Object[] args){
         if(entry.instance?!entry.target.getDeclaringClass().isInstance(receiver):receiver!=null)throw new IllegalArgumentException("ABI_RECEIVER");
         if(args==null||args.length!=entry.parameters.length)throw new IllegalArgumentException("ABI_ARGUMENT_COUNT");
-        for(int i=0;i<args.length;i++)validate(entry.parameters[i],args[i]);
+        for(int i=0;i<args.length;i++){
+            Object value=args[i];
+            if(value==null?entry.primitiveParameters[i]:!entry.boxedParameters[i].isInstance(value))
+                throw new IllegalArgumentException("ABI_VALUE_TYPE:"+entry.parameters[i].getName());
+        }
     }
-    private static void validate(Class<?> type,Object value){
-        if(type==void.class){if(value!=null)throw new IllegalArgumentException("ABI_VOID_RESULT");return;}
-        Class<?> actual=type;
-        if(type==boolean.class)actual=Boolean.class;else if(type==byte.class)actual=Byte.class;else if(type==short.class)actual=Short.class;
-        else if(type==char.class)actual=Character.class;else if(type==int.class)actual=Integer.class;else if(type==long.class)actual=Long.class;
-        else if(type==float.class)actual=Float.class;else if(type==double.class)actual=Double.class;
-        if(value==null?type.isPrimitive():!actual.isInstance(value))throw new IllegalArgumentException("ABI_VALUE_TYPE:"+type.getName());
+    private static void validateResult(Entry entry,Object value){
+        if(entry.result==void.class){if(value!=null)throw new IllegalArgumentException("ABI_VOID_RESULT");return;}
+        if(value==null?entry.primitiveResult:!entry.boxedResult.isInstance(value))
+            throw new IllegalArgumentException("ABI_VALUE_TYPE:"+entry.result.getName());
     }
 }

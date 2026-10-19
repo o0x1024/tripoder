@@ -17,6 +17,7 @@ static struct {
     jobject roots[ROOT_COUNT];
     _Atomic(jobject) logical;
     jfieldID field_id;
+    jfieldID application_apk;
     get_function get;
     set_function set;
     uint32_t flags[2];
@@ -33,6 +34,35 @@ static int matches(JNIEnv *env,jobject field,jobject owner) {
 static void deny(JNIEnv *env) {
     atomic_fetch_add(&view.denials,1);
     (*env)->ThrowNew(env,(jclass)view.roots[SECURITY],"INITIAL_APPLICATION_IDENTITY_IMMUTABLE");
+}
+/**
+ * True when candidate is an Application the guest attached to the same LoadedApk as the currently published one.
+ *
+ * <p>Android does not require a process application to stay the object that was first attached: hot-fix proxies
+ * construct a delegate, attach it to their own LoadedApk and then publish it on {@code ActivityThread}. The immutable
+ * fact is the LoadedApk, not the first Application instance, so the view follows exactly that structure.
+ */
+static bool guest_attached(JNIEnv *env,jobject candidate,jobject current) {
+    if (!candidate||!current||!view.application_apk) return false;
+    if ((*env)->IsSameObject(env,candidate,view.roots[PHYSICAL])) return false;
+    jobject candidate_apk=(*env)->GetObjectField(env,candidate,view.application_apk);
+    jobject current_apk=(*env)->GetObjectField(env,current,view.application_apk);
+    return candidate_apk&&current_apk&&(*env)->IsSameObject(env,candidate_apk,current_apk);
+}
+/** Publish a guest-owned delegate as the logical application, retaining every generation that was ever published. */
+static bool publish(JNIEnv *env,jobject candidate) {
+    jobject root=(*env)->NewGlobalRef(env,candidate);
+    if (!root) return false;
+    for (unsigned attempt=0;attempt<4;attempt++) {
+        jobject current=atomic_load_explicit(&view.logical,memory_order_acquire);
+        if ((*env)->IsSameObject(env,candidate,current)) { (*env)->DeleteGlobalRef(env,root); return true; }
+        if (!guest_attached(env,candidate,current)) { (*env)->DeleteGlobalRef(env,root); return false; }
+        // Old generations stay retained: a concurrent reader may still hold the value it loaded.
+        if (atomic_compare_exchange_strong_explicit(&view.logical,&current,root,memory_order_release,memory_order_acquire))
+            return true;
+    }
+    (*env)->DeleteGlobalRef(env,root);
+    return false;
 }
 static jobject get(JNIEnv *env,jobject field,jobject owner) {
     if (!atomic_load_explicit(&view.ready,memory_order_acquire)) fatal("TP_REFLECTION_CALLBACK_NOT_READY");
@@ -57,12 +87,11 @@ static void set(JNIEnv *env,jobject field,jobject owner,jobject value) {
     /* Preserve the real ART type-error/access-check ordering for invalid types.
      * Only a type-correct mapped write substitutes the immutable physical value. */
     if (selected&&value&&!(*env)->IsInstanceOf(env,value,(jclass)view.roots[VALUE_TYPE])) selected=0;
-    bool invalid=selected&&!(*env)->IsSameObject(env,value,atomic_load_explicit(&view.logical,memory_order_acquire));
     view.set(env,field,owner,selected?view.roots[PHYSICAL]:value);
     if ((*env)->ExceptionCheck(env)) { atomic_fetch_add(&view.original_exceptions,1); return; }
     if (selected) {
         atomic_fetch_add(&view.mapped_sets,1);
-        if (invalid) deny(env);
+        if (!publish(env,value)) deny(env);
     }
 }
 
@@ -91,6 +120,8 @@ static bool prepare(JNIEnv *env,jobject field,jobject owner,jobject physical,job
     jmethodID type=(*env)->GetMethodID(env,field_type,"getType","()Ljava/lang/Class;");
     jmethodID declaring=(*env)->GetMethodID(env,field_type,"getDeclaringClass","()Ljava/lang/Class;");
     if (!modifiers||!type||!declaring) goto done;
+    view.application_apk=(*env)->GetFieldID(env,(jclass)value_type,"mLoadedApk","Landroid/app/LoadedApk;");
+    if (!view.application_apk||(*env)->ExceptionCheck(env)) goto done;
     jint flags=(*env)->CallIntMethod(env,field,modifiers);
     jobject declared_type=(*env)->CallObjectMethod(env,field,type);
     jobject declared_owner=(*env)->CallObjectMethod(env,field,declaring);

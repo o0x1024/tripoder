@@ -52,7 +52,7 @@ final class RuntimeSelfHookFixedComponents {
                 case "unregisterContentObserver":callback=(receiver,args,original)->RuntimeSelfHookPlatformCallbacks.unregisterObserver((ContentResolver)receiver,(ContentObserver)args[0],original);break;
                 case "notifyChange":callback=(receiver,args,original)->RuntimeSelfHookPlatformCallbacks.notifyChange((ContentResolver)receiver,args,original);break;
                 case "takePersistableUriPermission":case "releasePersistableUriPermission":case "getPersistedUriPermissions":case "getOutgoingPersistedUriPermissions":
-                    callback=(receiver,args,original)->RuntimeSelfHookPlatformCallbacks.persistablePermission((ContentResolver)receiver,args,original);break;
+                    callback=(receiver,args,original)->RuntimeSelfHookPlatformCallbacks.persistablePermission((ContentResolver)receiver,method.getName(),args,original);break;
                 default:throw new IllegalStateException("FIXED_PROVIDER_BINDING_UNHANDLED:"+method);
             }
             callbacks.put(method,callback);
@@ -80,6 +80,13 @@ final class RuntimeSelfHookFixedComponents {
             }
             callbacks.put(method,callback);
         }
+        RuntimeSelfHookComponents.installFixed(callbacks);
+    }
+    /** Guest widget providers have no host in this virtual device: queries answer empty, writes are no-ops. */
+    static void widgets(){
+        Map<Method,RuntimeSelfHookComponents.Callback> callbacks=new LinkedHashMap<>();
+        for(Method method:FixedComponentHooks.methods(FixedComponentHooks.Group.WIDGETS))
+            callbacks.put(method,(receiver,args,original)->RuntimeSelfHookWidgets.dispatch(method,args,original));
         RuntimeSelfHookComponents.installFixed(callbacks);
     }
 }

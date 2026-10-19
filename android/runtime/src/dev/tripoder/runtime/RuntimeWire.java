@@ -27,10 +27,12 @@ public final class RuntimeWire {
     public static final int PERMISSION_CONTROLLER=51;
     /** Authority to its own worker: perform a pending activity/service start as the guest application (a fired PendingIntent token). */
     public static final int DISPATCH_PENDING=52;
+    /** Worker to authority: resolve a launch lease to the physical component this process owns for it. */
+    public static final int ACTIVITY_RECORD=53;
     public abstract static class Endpoint extends Binder {
         @Override protected final boolean onTransact(int code, Parcel data, Parcel reply, int flags) throws RemoteException {
             if(code==INTERFACE_TRANSACTION){reply.writeString(DESCRIPTOR);return true;}
-            if(code<FIRST_CALL_TRANSACTION||code>DISPATCH_PENDING)return super.onTransact(code,data,reply,flags);
+            if(code<FIRST_CALL_TRANSACTION||code>ACTIVITY_RECORD)return super.onTransact(code,data,reply,flags);
             data.enforceInterface(DESCRIPTOR);
             final int pid=Binder.getCallingPid(),uid=Binder.getCallingUid();
             if(data.dataAvail()>64*1024)throw new SecurityException("REQUEST_TOO_LARGE");

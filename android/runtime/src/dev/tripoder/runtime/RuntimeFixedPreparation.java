@@ -12,12 +12,9 @@ final class RuntimeFixedPreparation {
     private static Map<Executable,ManagedHook.Handle> reservations=Map.of();
     static void neutralizeVendorMonitors(){
         try{
-            try{
-                Class<?> mm=Class.forName("android.os.perfdebug.MessageMonitor");
-                Field enabled=mm.getDeclaredField("ENABLED");
-                enabled.setAccessible(true);
-                enabled.setBoolean(null,false);
-            }catch(Throwable ignored){}
+            // The platform's per-Looper MessageMonitor is intrinsic process state: the vendor Looper dereferences it on
+            // every dispatch. Nulling it (or disabling its ENABLED switch) leaves the dispatcher inconsistent and
+            // aborts the app on the next message, so instrumentation is never disabled by field surgery here.
             try{
                 Class<?> su=Class.forName("miui.mqsas.scout.ScoutUtils");
                 for(String fieldName: new String[]{"ENABLED_SCOUT", "ENABLED_LT_SCOUT", "ENABLED_CEHCK_FROZEN"}){
@@ -61,14 +58,6 @@ final class RuntimeFixedPreparation {
                     st.setAccessible(true);
                     st.set(null,null);
                 }catch(Throwable ignored){}
-            }catch(Throwable ignored){}
-            try{
-                android.os.Looper main=android.os.Looper.getMainLooper();
-                if(main!=null){
-                    Field monitor=android.os.Looper.class.getDeclaredField("mMonitor");
-                    monitor.setAccessible(true);
-                    monitor.set(main,null);
-                }
             }catch(Throwable ignored){}
             try{
                 ThreadGroup rootGroup=Thread.currentThread().getThreadGroup();
@@ -117,6 +106,7 @@ final class RuntimeFixedPreparation {
         targets.put((Method)members.methods[1],new Executable[0]);
         targets.put(FrameworkAccess.activityThreadApplicationMethod(),new Executable[0]);
         targets.put(FrameworkAccess.processNameMethod(),new Executable[0]);
+        targets.put((Method)members.methods[FrameworkAccess.CURRENT_PACKAGE_NAME],new Executable[0]);
         return targets;
     }
     static synchronized Map<Executable,ManagedHook.Handle> take()throws Exception{

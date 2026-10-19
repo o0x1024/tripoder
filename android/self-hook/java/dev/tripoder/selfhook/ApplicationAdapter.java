@@ -14,10 +14,19 @@ public final class ApplicationAdapter {
     private static native void prepareOwnershipNative(Application host,java.lang.reflect.Field[] fields,Object[] methods);
     private static native void beginViewNative();
     private static native Context createNative(Application host,Application guest,ApplicationInfo info,
-        ClassLoader loader,AppComponentFactory factory,Resources resources);
+        ClassLoader loader,ClassLoader owner,AppComponentFactory factory,Resources resources);
     public static native Application current();
     private static native void attachNative(Context context);
     private static native void checkNative();
+    /** The loader the guest itself publishes on its LoadedApk; equals the runtime loader until the guest replaces it. */
+    private static native ClassLoader loaderNative();
+    public static ClassLoader loader(){return loaderNative();}
+    /** The guest's LoadedApk: the object a real application context exposes as {@code mPackageInfo}. */
+    private static native Object packageInfoNative();
+    public static Object packageInfo(){return packageInfoNative();}
+    /** The Application the guest publishes on that LoadedApk; hot-fix proxies replace it during onCreate. */
+    private static native Application installedApplicationNative();
+    public static Application installedApplication(){return installedApplicationNative();}
     private static native void closeViewNative();
     public static native String reportNative();
     private static void mainThread(){
@@ -31,17 +40,23 @@ public final class ApplicationAdapter {
     }
     /** Publish the pending logical reflection view only after ownership capture. */
     public static void beginView(){beginViewNative();}
-    public static Context create(Application host,Application guest,ApplicationInfo info,ClassLoader loader,
+    /**
+     * @param loader the loader the platform publishes as the application loader; the guest may replace it during
+     *               attachBaseContext with a hot-fix/plugin loader
+     * @param owner  the verified defining loader of this installation's DEX sequence; every published loader must
+     *               resolve inside it, which is what keeps a replacement from escaping the installation
+     */
+    public static Context create(Application host,Application guest,ApplicationInfo info,ClassLoader loader,ClassLoader owner,
         AppComponentFactory factory,Resources resources){
         mainThread();
-        if(host==null||guest==null||host==guest||info==null||loader==null||factory==null||resources==null||
+        if(host==null||guest==null||host==guest||info==null||loader==null||owner==null||factory==null||resources==null||
             info.uid!=Process.myUid()||info.packageName==null||info.dataDir==null)
             throw new IllegalArgumentException("APPLICATION_FIXED_IDENTITY_REQUIRED");
         try{
             if(Class.forName(guest.getClass().getName(),false,loader)!=guest.getClass())
                 throw new IllegalArgumentException("APPLICATION_SELECTED_LOADER_IDENTITY");
         }catch(ClassNotFoundException error){throw new IllegalArgumentException("APPLICATION_SELECTED_LOADER_IDENTITY",error);}
-        return createNative(host,guest,info,loader,factory,resources);
+        return createNative(host,guest,info,loader,owner,factory,resources);
     }
     public static void attach(Context context){mainThread();attachNative(context);}
     public static void check(){mainThread();checkNative();}

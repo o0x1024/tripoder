@@ -21,7 +21,7 @@ final class RuntimeServices {
         String instance=UUID.randomUUID().toString();Bundle request=engine.auth();request.putString("stub",stub);request.putString("instance",instance);Bundle lease=engine.brokerCall(RuntimeWire.SERVICE_CLAIM,request);engine.startApplication();
         String name=RuntimeWire.required(lease,"component");Intent visible=input==null?null:new Intent(input).setComponent(new ComponentName(engine.packageName,name));if(visible!=null)visible.removeExtra("tripoder.serviceLease");
         android.util.Log.i("TripoderService", "instantiate stub=" + stub + " component=" + name);
-        Service service=engine.componentFactory.instantiateService(engine.loader,name,visible);if(service==null||!engine.ownsLoader(service.getClass().getClassLoader()))throw new SecurityException("SERVICE_LOADER_MISMATCH");
+        Service service=engine.componentFactory.instantiateService(engine.guestLoader(),name,visible);if(service==null||!engine.ownsLoader(service.getClass().getClassLoader()))throw new SecurityException("SERVICE_LOADER_MISMATCH");
         instances.put(service,new Identity(lease,instance));RuntimeBridge.installServiceAdapter(service);return service;
     }
     boolean owns(Service service){return instances.containsKey(service);}
@@ -31,14 +31,14 @@ final class RuntimeServices {
         if(stub||leased){
             // Engine-routed framework delivery: the physical stub component and the per-instance lease are both present. Strip them and present the guest-visible intent. Half a pair is an inconsistent (spoofed) delivery.
             if(!stub)throw new SecurityException("SERVICE_INTENT_STUB_MISMATCH");if(!leased)throw new SecurityException("SERVICE_INTENT_LEASE_MISMATCH");
-            Intent value=new Intent(input);value.removeExtra("tripoder.serviceLease");value.setComponent(new ComponentName(engine.packageName,identity.component));value.setExtrasClassLoader(engine.loader);return value;
+            Intent value=new Intent(input);value.removeExtra("tripoder.serviceLease");value.setComponent(new ComponentName(engine.packageName,identity.component));value.setExtrasClassLoader(engine.guestLoader());return value;
         }
         // Not engine-routed: the guest invoked its own hooked service lifecycle directly -- a service
         // that re-posts onStartCommand to itself from a Handler (Taobao ACCS, embedded in 高德, does
         // this). The argument is already a plain guest intent bearing neither the stub nor the lease,
         // so present it as-is (with the guest classloader) rather than rejecting a legal in-process
         // self-call. Same UID: no trust boundary is crossed by an app calling its own public method.
-        Intent value=new Intent(input);value.setExtrasClassLoader(engine.loader);return value;
+        Intent value=new Intent(input);value.setExtrasClassLoader(engine.guestLoader());return value;
     }
     void lifecycle(Service service,String event)throws Exception{
         android.util.Log.i("TripoderService", "service lifecycle start: " + service.getClass().getName() + " event=" + event);

@@ -69,24 +69,25 @@ final class RuntimeStorage {
         catch(ErrnoException error){FileNotFoundException out=new FileNotFoundException(error.getMessage());out.initCause(error);throw out;}
     }
     String[] list(String directory){String[] names=dir(directory).list();if(names==null)throw new IllegalStateException("STORAGE_LIST_FAILED");return names;}
+    /**
+     * One instance per file per data incarnation. The load happens under this storage's monitor so two callers can never
+     * open the same preference file at once: each load holds the file's own kernel lock, and a second concurrent load in
+     * this process fails with OverlappingFileLockException instead of waiting. Different files stay independent because
+     * each has its own RuntimePreferences/PreferencesDisk.
+     */
     SharedPreferences preferences(String name,int mode){
         if(mode!=Context.MODE_PRIVATE&&mode!=Context.MODE_MULTI_PROCESS)throw new IllegalArgumentException("PREFERENCES_MODE_UNSUPPORTED:0x"+Integer.toHexString(mode));name(name);
         RuntimePreferences found;
         synchronized(this){
             found=preferences.get(name);
+            if(found==null){
+                found=new RuntimePreferences(this,file("shared_prefs",name+".xml"),preferenceWriter);
+                if(!finisherRegistered){RuntimeBridge.storageFinisher(this::flush);finisherRegistered=true;}
+                preferences.put(name,found);
+            }
         }
-        if(found!=null){
-            if(mode==Context.MODE_MULTI_PROCESS)found.reload();
-            return found;
-        }
-        RuntimePreferences created=new RuntimePreferences(this,file("shared_prefs",name+".xml"),preferenceWriter);
-        synchronized(this){
-            if(!finisherRegistered){RuntimeBridge.storageFinisher(this::flush);finisherRegistered=true;}
-            found=preferences.get(name);
-            if(found!=null)return found;
-            preferences.put(name,created);
-            return created;
-        }
+        if(mode==Context.MODE_MULTI_PROCESS)found.reload();
+        return found;
     }
     boolean deletePreferences(String name){
         name(name);RuntimePreferences p=(RuntimePreferences)preferences(name,Context.MODE_PRIVATE);return p.delete();
@@ -114,6 +115,22 @@ final class RuntimeStorage {
         return true;
     }
     void flush(){List<RuntimePreferences> snapshot;synchronized(this){snapshot=new ArrayList<>(preferences.values());}for(var p:snapshot)p.flush();}
+    /**
+     * {@code Context.getDatabasePath} parity. A relative name is a file inside {@code databases/}; an absolute name is
+     * already a guest path (WorkManager and others pass one back in) and must stay absolute instead of being nested a
+     * second time under {@code databases/}. Either way the real parent directory is materialized in this incarnation,
+     * so a later native {@code open} of the returned path has somewhere to land.
+     */
+    File databasePath(String name,File guestData){
+        if(name==null||name.isEmpty())throw new IllegalArgumentException("INVALID_DATABASE_NAME");
+        if(new File(name).isAbsolute()){
+            File physical=RuntimeDatabasePath.resolve(root,canonicalRoot,packageName,name);
+            File parent=physical.getParentFile();if(parent!=null)directory(parent);
+            return new File(name);
+        }
+        File databases=dir("databases");check(new File(databases,name));
+        return new File(new File(guestData,"databases"),name);
+    }
     File database(String name){
         File path=name!=null&&new File(name).isAbsolute()?RuntimeDatabasePath.resolve(root,canonicalRoot,packageName,name):file("databases",name);
         check(path);for(String suffix:new String[]{"-wal","-shm","-journal"})check(new File(path+suffix));return path;

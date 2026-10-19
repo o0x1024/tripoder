@@ -21,8 +21,14 @@ def main():
     parser.add_argument('--build-tools', required=True)
     parser.add_argument('--java-home', required=True, type=Path)
     parser.add_argument('--ndk', required=True, type=Path)
+    parser.add_argument('--package', default='dev.tripoder.engine',
+                        help='Application id. A second id installs alongside the original, which is the only way to '
+                             'validate a build on a device signed with a key this machine does not hold.')
     add_platform_inputs(parser)
     args=parser.parse_args()
+    package=args.package
+    if not package or any(part=='' or not part.replace('_','a').isalnum() for part in package.split('.')) or '.' not in package:
+        raise SystemExit('INVALID_PACKAGE:'+repr(package))
     android=Path(__file__).resolve().parents[1];repo=android.parent;build=android/'product/build'
     source_roots=[android/name for name in ['runtime/src','runtime/native','runtime/licenses','control','control-test','engine','workbench','self-hook/java','self-hook/native','self-hook/include']]
     source_roots.append(repo/'src')
@@ -57,17 +63,28 @@ def main():
     for slot,letter in enumerate('ABCDEFGH'):
         entries.append(f'<service android:name="dev.tripoder.runtime.RuntimeSlot$Worker{letter}" android:exported="false" android:process=":slot{slot}"/>')
         for service in range(16):entries.append(f'<service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S{slot}_{service}" android:exported="false" android:process=":slot{slot}"/>')
-        entries.append(f'<provider android:name="dev.tripoder.runtime.RuntimeProviderTransport$P{slot}" android:authorities="dev.tripoder.engine.runtime.provider.{slot}" android:exported="false" android:process=":slot{slot}"/>')
+        entries.append(f'<provider android:name="dev.tripoder.runtime.RuntimeProviderTransport$P{slot}" android:authorities="{package}.runtime.provider.{slot}" android:exported="false" android:process=":slot{slot}"/>')
         entries.append(f'<receiver android:name="dev.tripoder.runtime.RuntimeReceiverSlots$R{slot}" android:exported="false" android:process=":slot{slot}"/>')
     manifest=generated/'EngineManifest.xml';text=(android/'engine/AndroidManifest.xml').read_text()
     if text.count('<!-- PROCESS_COMPONENT_POOL -->')!=1:raise RuntimeError('PROCESS_COMPONENT_POOL_MARKER_REQUIRED')
+    # One pass for every place the id is embedded (manifest package, provider authorities, task affinity), so a renamed
+    # build can never share an authority or affinity with the install it sits next to.
+    text=text.replace('dev.tripoder.engine','@PACKAGE@').replace('@PACKAGE@',package)
+    residual=text.replace(package,'')
+    if 'dev.tripoder.engine' in residual:
+        raise RuntimeError('PACKAGE_OVERRIDE_INCOMPLETE:'+','.join(sorted({line.strip() for line in text.splitlines() if 'dev.tripoder.engine' in line and package not in line})))
     manifest.write_text(text.replace('<!-- PROCESS_COMPONENT_POOL -->','\n'.join(entries)))
+    # The harness binds and starts the engine by its instrumentation target package, so the same sources can validate
+    # a renamed build installed next to an unmodifiable original. One target id, substituted in one place.
+    control_manifest=generated/'ControlTestManifest.xml';control_text=(android/'control-test/AndroidManifest.xml').read_text()
+    if 'dev.tripoder.engine' not in control_text:raise RuntimeError('CONTROL_TEST_TARGET_REQUIRED')
+    control_manifest.write_text(control_text.replace('dev.tripoder.engine',package))
     job_sources,manifest=generate_job_slots(build,manifest)
     slot_sources,manifest=generate_activity_slots(build,manifest,"TaskP")
     slot_sources+=job_sources
     core=sorted(p for p in (android/'runtime/src').rglob('*.java') if p.name!='RuntimeAuthorityService.java')
     sources=core+self_hook_java+common+sorted((android/'engine/src').rglob('*.java'))+sorted((android/'workbench/src').rglob('*.java'))+slot_sources
-    engine=builder.apk('tripoder',sources,manifest,assets=assets,libraries=[self_hook],jars=[builder.apksig()])
+    engine=builder.apk('tripoder' if package=='dev.tripoder.engine' else 'tripoder-'+package.rsplit('.',1)[-1],sources,manifest,assets=assets,libraries=[self_hook],jars=[builder.apksig()])
     with zipfile.ZipFile(engine) as archive:
         if sorted(name for name in archive.namelist() if name.startswith('lib/'))!=['lib/arm64-v8a/libtripoderselfhook.so']:
             raise RuntimeError('PRODUCT_NATIVE_PACKAGING_MISMATCH')
@@ -75,10 +92,10 @@ def main():
     shutil.copyfile(fixture_base,test_assets/'a.apk');shutil.copyfile(fixture_upgrade,test_assets/'a-upgrade.apk');shutil.copyfile(fixture_preview,test_assets/'preview-guest.apk');(test_assets/'install-fixtures.json').write_text(json.dumps(fixture_info))
     shutil.copyfile(fixture_launcher,test_assets/'launcher-guest.apk')
     shutil.copyfile(fixture_singletask,test_assets/'launcher-singletask.apk')
-    control_test=builder.apk('tripoder-control-test',common+sorted((android/'control-test/src').rglob('*.java')),android/'control-test/AndroidManifest.xml',assets=test_assets)
+    control_test=builder.apk('tripoder-control-test',common+sorted((android/'control-test/src').rglob('*.java')),control_manifest,assets=test_assets)
     after={str(p.relative_to(repo)):sha(p) for p in files}
     if before!=after:raise RuntimeError('SOURCES_CHANGED_DURING_BUILD')
-    receipt={'sourceSha256':before,'artifacts':{'engine':{'path':str(engine),'sha256':sha(engine),'package':'dev.tripoder.engine'}},'certificateSha256':builder.cert_sha256,'selfHookNative':native_receipt,'fridaInputs':[],'productFridaRemoved':True,'developmentSigningOnly':True,'virtualAppCodeUsed':False,'legacyRunnerIncluded':False,'probeControllerIncluded':False,'generatedManifestSha256':sha(manifest),'schema':1}
+    receipt={'sourceSha256':before,'artifacts':{'engine':{'path':str(engine),'sha256':sha(engine),'package':package}},'certificateSha256':builder.cert_sha256,'selfHookNative':native_receipt,'fridaInputs':[],'productFridaRemoved':True,'developmentSigningOnly':True,'virtualAppCodeUsed':False,'legacyRunnerIncluded':False,'probeControllerIncluded':False,'generatedManifestSha256':sha(manifest),'schema':1}
     receipt['artifacts']['controlTest']={'path':str(control_test),'sha256':sha(control_test),'package':'dev.tripoder.controltest','testOnly':True}
     receipt['installFixtures']=fixture_info
     (build/'build-receipt.json').write_text(json.dumps(receipt,indent=2))

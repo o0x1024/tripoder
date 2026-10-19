@@ -22,7 +22,7 @@ final class RuntimeReceivers {
         String ticket=RuntimeBroadcastIntent.ticket(physical);Bundle b=engine.auth();b.putString("ticket",ticket);b.putBoolean("prepare",true);
         Bundle declaration=engine.brokerCall(RuntimeWire.BROADCAST_CLAIM,b);Intent logical=RuntimeBroadcastIntent.attachBinders(RuntimeBroadcastIntent.decode(declaration.getByteArray("payload")),declaration);String component=declaration.getString("component");
         engine.startApplication();
-        BroadcastReceiver receiver=engine.componentFactory.instantiateReceiver(engine.loader,component,logical);
+        BroadcastReceiver receiver=engine.componentFactory.instantiateReceiver(engine.guestLoader(),component,logical);
         if(receiver==null||!engine.ownsReceiverLoader(receiver.getClass().getClassLoader()))throw new SecurityException("RECEIVER_LOADER_MISMATCH");
         Registration registration=new Registration(component,ticket,false);
         synchronized(this){receivers.put(receiver,registration);}RuntimeBridge.installReceiverAdapter(receiver);return receiver;

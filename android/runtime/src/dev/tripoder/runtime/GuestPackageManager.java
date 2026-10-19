@@ -62,11 +62,26 @@ final class GuestPackageManager extends DeniedPackageManager {
         if (source.splitPublicSourceDirs != null) copy.splitPublicSourceDirs = source.splitPublicSourceDirs.clone();
         copy.metaData = includeMetadata && source.metaData != null ? source.metaData.deepCopy() : null;
         if (source.packageName != null) {
+            String appDir = "/data/app/~~tripoder/" + source.packageName;
             copy.dataDir = "/data/user/0/" + source.packageName;
             copy.deviceProtectedDataDir = "/data/user_de/0/" + source.packageName;
-            copy.sourceDir = "/data/app/~~tripoder/" + source.packageName + "/base.apk";
-            copy.publicSourceDir = "/data/app/~~tripoder/" + source.packageName + "/base.apk";
-            copy.nativeLibraryDir = "/data/app/~~tripoder/" + source.packageName + "/lib";
+            copy.sourceDir = appDir + "/base.apk";
+            copy.publicSourceDir = appDir + "/base.apk";
+            if (copy.splitSourceDirs != null) {
+                for (int i = 0; i < copy.splitSourceDirs.length; i++) {
+                    if (copy.splitSourceDirs[i] != null) {
+                        copy.splitSourceDirs[i] = appDir + "/" + new java.io.File(copy.splitSourceDirs[i]).getName();
+                    }
+                }
+            }
+            if (copy.splitPublicSourceDirs != null) {
+                for (int i = 0; i < copy.splitPublicSourceDirs.length; i++) {
+                    if (copy.splitPublicSourceDirs[i] != null) {
+                        copy.splitPublicSourceDirs[i] = appDir + "/" + new java.io.File(copy.splitPublicSourceDirs[i]).getName();
+                    }
+                }
+            }
+            copy.nativeLibraryDir = appDir + "/lib";
             setPrimaryCpuAbi(copy, "arm64-v8a");
         }
         return copy;

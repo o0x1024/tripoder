@@ -22,7 +22,7 @@ public final class AppActionsUiIntegration extends WorkbenchUiTestBase {
         importApk("launcher-guest.apk",spaceA);generationA=install(spaceA,PACKAGE).getString("generation");
         int projectCount=((List<?>)invoke(projects,"all",new Class<?>[0])).size();String projectRefs=execute(session,"catalog").getString("projects");
         home();appTile().performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);waitNode("查看项目",false);waitNode("删除应用",false);capture("long-press-menu");
-        check("long-press-does-not-launch",getUiAutomation().getRootInActiveWindow().getPackageName().toString().equals("dev.tripoder.engine")&&!(Boolean)invoke(operations,"pending",new Class<?>[0]),"management menu without a launch operation");
+        check("long-press-does-not-launch",getUiAutomation().getRootInActiveWindow().getPackageName().toString().equals(enginePackage())&&!(Boolean)invoke(operations,"pending",new Class<?>[0]),"management menu without a launch operation");
         click("查看项目");waitNode("＋ 新建项目",false);boolean bound=false;JSONArray initialBindings=new JSONArray(projectRefs);for(int i=0;i<initialBindings.length();i++)if(generationA.equals(initialBindings.getJSONObject(i).getString("generation")))bound=true;
         check("new-installation-has-no-project-binding",!bound,"older retained projects do not bind this new installation");capture("project-space");clickBack();
         appTile().performAction(AccessibilityNodeInfo.ACTION_CLICK);SystemClock.sleep(300);if(find(getUiAutomation().getRootInActiveWindow(),"在哪个空间运行？",false)!=null)click(spaceA+" · 版本 1");waitGuest();check("tap-launches-without-a-project",true,"standalone launcher in engine task");capture("direct-launch");
@@ -135,7 +135,7 @@ public final class AppActionsUiIntegration extends WorkbenchUiTestBase {
     }
     private Set<Integer> slotPids(){
         Set<Integer> pids=new TreeSet<>();var processes=getTargetContext().getSystemService(android.app.ActivityManager.class).getRunningAppProcesses();
-        if(processes!=null)for(var process:processes)if(process.processName.startsWith("dev.tripoder.engine:slot"))pids.add(process.pid);return pids;
+        if(processes!=null)for(var process:processes)if(process.processName.startsWith(enginePackage()+":slot"))pids.add(process.pid);return pids;
     }
     private AccessibilityNodeInfo tile(String pkg)throws Exception{getUiAutomation().waitForIdle(300,3000);SystemClock.sleep(350);long end=SystemClock.elapsedRealtime()+8000;do{var node=findPackage(getUiAutomation().getRootInActiveWindow(),pkg);if(node!=null)return node;SystemClock.sleep(60);}while(SystemClock.elapsedRealtime()<end);throw new IllegalStateException("APPLICATION_TILE_MISSING:"+pkg);}
     private void importApk(String asset,String space)throws Exception{
@@ -146,9 +146,9 @@ public final class AppActionsUiIntegration extends WorkbenchUiTestBase {
     }
     private JSONObject install(String space,String pkg)throws Exception{JSONArray all=new JSONArray(execute(session,"catalog").getString("installs"));for(int i=0;i<all.length();i++){JSONObject value=all.getJSONObject(i);if(space.equals(value.getString("space"))&&pkg.equals(value.getString("package")))return value;}return null;}
     private JSONObject binding(String project)throws Exception{JSONArray all=new JSONArray(execute(session,"catalog").getString("projects"));for(int i=0;i<all.length();i++)if(project.equals(all.getJSONObject(i).getString("project")))return all.getJSONObject(i);throw new IllegalStateException("BINDING_MISSING");}
-    private void home()throws Exception{startActivitySync(new Intent().setClassName("dev.tripoder.engine","dev.tripoder.hooklab.WorkbenchActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));waitForIdleSync();getUiAutomation().waitForIdle(300,3000);clickDescription("更多");click("刷新");waitNode("添加应用",true);SystemClock.sleep(550);}
+    private void home()throws Exception{startActivitySync(new Intent().setComponent(engineComponent("dev.tripoder.hooklab.WorkbenchActivity")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));waitForIdleSync();getUiAutomation().waitForIdle(300,3000);clickDescription("更多");click("刷新");waitNode("添加应用",true);SystemClock.sleep(550);}
     private AccessibilityNodeInfo appTile()throws Exception{return tile(PACKAGE);}
-    private void waitGuest()throws Exception{try{waitNode("＋  计数一次",false);}catch(Exception error){report.put("launchUiStatus",field(operations,"message"));report.put("testJournal",new JSONObject(getTargetContext().getSharedPreferences("ui-acceptance-"+run,0).getAll()));report.put("launchResources",json(execute(session,"resources")));throw error;}String pkg=getUiAutomation().getRootInActiveWindow().getPackageName().toString();if(!pkg.equals("dev.tripoder.engine"))throw new IllegalStateException("GUEST_WINDOW_NOT_ENGINE:"+pkg);}
+    private void waitGuest()throws Exception{try{waitNode("＋  计数一次",false);}catch(Exception error){report.put("launchUiStatus",field(operations,"message"));report.put("testJournal",new JSONObject(getTargetContext().getSharedPreferences("ui-acceptance-"+run,0).getAll()));report.put("launchResources",json(execute(session,"resources")));throw error;}String pkg=getUiAutomation().getRootInActiveWindow().getPackageName().toString();if(!pkg.equals(enginePackage()))throw new IllegalStateException("GUEST_WINDOW_NOT_ENGINE:"+pkg);}
     private void returnFromGuest()throws Exception{scrollTo("完成并返回 Tripoder");click("完成并返回 Tripoder");waitNode("添加应用",true);awaitOperations();}
     private boolean lastSucceeded()throws Exception{return String.valueOf(field(operations,"message")).contains("已完成");}
     private void awaitOperations()throws Exception{awaitOperations(25000);}

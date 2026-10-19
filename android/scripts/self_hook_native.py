@@ -80,6 +80,34 @@ def build_native(repo, build, ndk, libc, art, linker):
     if not symbols or any(not name.startswith(('Java_dev_tripoder_selfhook_', 'Java_dev_tripoder_selfhook_coverage_',
                                                'Java_dev_tripoder_runtime_RuntimeSelfHookStorage_')) for name in symbols):
         raise RuntimeError('SELF_HOOK_PRODUCT_EXPORTS:'+exports)
+    # A JNI method is resolved by name; a declaration whose symbol is absent fails on the device at first use, and a
+    # symbol without a declaration is dead code. Neither can be caught by compiling, so the pair is checked here as a
+    # bijection instead of being discovered by a guest startup failure.
+    declared = {}
+    for source in (core/'java').rglob('*.java'):
+        text = source.read_text()
+        text = re.sub(r'/\*.*?\*/', '', text, flags=re.S)
+        text = re.sub(r'//[^\n]*', '', text)
+        text = ' '.join(text.split())
+        package = re.search(r'package\s+([\w.]+)\s*;', text)
+        if not package:
+            continue
+        for method in re.finditer(r'\bnative\b[^;{}]*?(\b\w+)\s*\(', text):
+            name = 'Java_'+package.group(1).replace('.','_')+'_'+source.stem+'_'+method.group(1)
+            declared[name] = source.name
+    java_exports = {name for name in symbols if name.startswith('Java_dev_tripoder_selfhook')}
+    # The other legal implementation is RegisterNatives from a table of method names; the table entry is the literal,
+    # so a declared method is implemented when either the direct export or its registration literal exists.
+    registered = set()
+    for source in list((core/'native').rglob('*.c'))+list((core/'native').rglob('*.cpp'))+list((core/'native').rglob('*.h')):
+        registered.update(re.findall(r'"(\w+)"', source.read_text()))
+    missing = sorted(name for name in declared
+                     if name not in java_exports and not any(export.startswith(name+'__') for export in java_exports)
+                     and name.rsplit('_',1)[-1] not in registered)
+    unexpected = sorted(name for name in java_exports
+                        if not any(name == expected or name.startswith(expected+'__') for expected in declared))
+    if missing or unexpected:
+        raise RuntimeError('SELF_HOOK_JNI_CONTRACT_MISMATCH:missing='+repr(missing)+':unexpected='+repr(unexpected))
     if before != {str(path.relative_to(repo)): sha(path) for path in sorted(inputs)}:
         raise RuntimeError('SELF_HOOK_NATIVE_SOURCES_CHANGED')
     report = {'schema':1, 'library':str(library), 'sha256':sha(library), 'sourceSha256':before,

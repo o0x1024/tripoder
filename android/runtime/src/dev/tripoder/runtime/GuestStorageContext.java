@@ -46,7 +46,7 @@ abstract class GuestStorageContext extends ContextWrapper {
         RuntimeStorage from=storageOf(source);if(from==null)return false;
         try{return storage.movePreferencesFrom(from,name);}catch(IOException failed){return false;}
     }
-    @Override public File getDatabasePath(String name){storage.dir("databases");return new File(new File(getDataDir(),"databases"),name);}
+    @Override public File getDatabasePath(String name){return storage.databasePath(name,getDataDir());}
     @Override public SQLiteDatabase openOrCreateDatabase(String name,int mode,SQLiteDatabase.CursorFactory factory){return storage.database(name,mode,factory,null);}
     @Override public SQLiteDatabase openOrCreateDatabase(String name,int mode,SQLiteDatabase.CursorFactory factory,DatabaseErrorHandler handler){return storage.database(name,mode,factory,handler);}
     @Override public boolean moveDatabaseFrom(Context source,String name){
