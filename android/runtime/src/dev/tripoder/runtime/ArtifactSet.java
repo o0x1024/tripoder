@@ -309,7 +309,7 @@ public final class ArtifactSet {
     }
     private static ArtifactSet finishLoad(Path root,ArtifactSet set)throws Exception{
         Set<String> expected=new TreeSet<>();expected.add(DESCRIPTOR);expected.add("lib");if(set.files.stream().anyMatch(f->f.path.startsWith("dex/")))expected.add("dex");for(FileRecord r:set.files)expected.add(r.path);Set<String> actual=new TreeSet<>();
-        try(var walk=Files.walk(root)){for(Iterator<Path> it=walk.iterator();it.hasNext();){Path path=it.next();if(path.equals(root))continue;String relative=root.relativize(path).toString().replace(File.separatorChar,'/');if(Files.isSymbolicLink(path))throw reject("ARTIFACT_SYMLINK");actual.add(relative);if(relative.equals("lib")||relative.equals("dex")){if(!Files.isDirectory(path,LinkOption.NOFOLLOW_LINKS))throw reject("LIB_DIRECTORY_INVALID");}else regular(path);readonly(path);}}
+        try(var walk=Files.walk(root)){for(Iterator<Path> it=walk.iterator();it.hasNext();){Path path=it.next();if(path.equals(root))continue;String relative=root.relativize(path).toString().replace(File.separatorChar,'/');if(Files.isSymbolicLink(path))throw reject("ARTIFACT_SYMLINK");if(derivedOptimization(relative))continue;actual.add(relative);if(relative.equals("lib")||relative.equals("dex")){if(!Files.isDirectory(path,LinkOption.NOFOLLOW_LINKS))throw reject("LIB_DIRECTORY_INVALID");}else regular(path);readonly(path);}}
         if(!actual.equals(expected))throw reject("ARTIFACT_FILE_SET_MISMATCH");readonly(root);
         for(FileRecord r:set.files){Path path=root.resolve(r.path);if(Files.size(path)!=r.size)throw reject("ARTIFACT_FILE_CORRUPT:"+r.path);}
         return set;
@@ -321,7 +321,7 @@ public final class ArtifactSet {
         ArtifactSet set=inspect(root,apkInputs(root,true));
         if(!set.descriptorSha.equals(descriptorSha)||!Arrays.equals(Files.readAllBytes(descriptor),set.descriptorJson.getBytes(StandardCharsets.UTF_8)))throw reject("DESCRIPTOR_CONTENT_MISMATCH");
         Set<String> expected=new TreeSet<>();expected.add(DESCRIPTOR);expected.add("lib");expected.add("dex");for(FileRecord r:set.files)expected.add(r.path);Set<String> actual=new TreeSet<>();
-        try(var walk=Files.walk(root)){for(Iterator<Path> it=walk.iterator();it.hasNext();){Path path=it.next();if(path.equals(root))continue;String relative=root.relativize(path).toString().replace(File.separatorChar,'/');if(Files.isSymbolicLink(path))throw reject("ARTIFACT_SYMLINK");actual.add(relative);if(relative.equals("lib")||relative.equals("dex")){if(!Files.isDirectory(path,LinkOption.NOFOLLOW_LINKS))throw reject("LIB_DIRECTORY_INVALID");}else regular(path);readonly(path);}}
+        try(var walk=Files.walk(root)){for(Iterator<Path> it=walk.iterator();it.hasNext();){Path path=it.next();if(path.equals(root))continue;String relative=root.relativize(path).toString().replace(File.separatorChar,'/');if(Files.isSymbolicLink(path))throw reject("ARTIFACT_SYMLINK");if(derivedOptimization(relative))continue;actual.add(relative);if(relative.equals("lib")||relative.equals("dex")){if(!Files.isDirectory(path,LinkOption.NOFOLLOW_LINKS))throw reject("LIB_DIRECTORY_INVALID");}else regular(path);readonly(path);}}
         if(!actual.equals(expected))throw reject("ARTIFACT_FILE_SET_MISMATCH");readonly(root);
         List<java.util.concurrent.CompletableFuture<String>> checks=new ArrayList<>();
         for(FileRecord r:set.files){Path path=root.resolve(r.path);checks.add(java.util.concurrent.CompletableFuture.supplyAsync(()->{try{return Files.size(path)!=r.size||!digest(path.toFile()).equals(r.sha256)?r.path:null;}catch(Exception error){throw new java.util.concurrent.CompletionException(error);}}));}
@@ -388,13 +388,23 @@ public final class ArtifactSet {
         visiting.remove(n);done.add(n);ordered.add(p);
     }
     private static List<Path> apkInputs(Path root,boolean published)throws Exception{
-        List<Path> apks=new ArrayList<>();try(DirectoryStream<Path> children=Files.newDirectoryStream(root)){for(Path path:children){if(Files.isSymbolicLink(path))throw reject("ARTIFACT_SYMLINK");String name=path.getFileName().toString();if(published&&(name.equals("lib")||name.equals("dex")||name.equals(DESCRIPTOR)))continue;if(!name.matches("[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,149}\\.apk"))throw reject("STAGE_FILE_UNSUPPORTED:"+name);regular(path);apks.add(path);}}
+        List<Path> apks=new ArrayList<>();try(DirectoryStream<Path> children=Files.newDirectoryStream(root)){for(Path path:children){if(Files.isSymbolicLink(path))throw reject("ARTIFACT_SYMLINK");String name=path.getFileName().toString();if(published&&(name.equals("lib")||name.equals("dex")||name.equals(DESCRIPTOR)||derivedOptimization(name)))continue;if(!name.matches("[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,149}\\.apk"))throw reject("STAGE_FILE_UNSUPPORTED:"+name);regular(path);apks.add(path);}}
         if(apks.isEmpty()||apks.size()>MAX_PARTS)throw reject("APK_PART_COUNT");apks.sort(Comparator.comparing(Path::toString));return apks;
     }
     private static Path root(File directory)throws IOException{if(directory==null)throw reject("ARTIFACT_DIRECTORY_INVALID");Path root=directory.toPath().toAbsolutePath().normalize();if(Files.isSymbolicLink(root)||!Files.isDirectory(root,LinkOption.NOFOLLOW_LINKS))throw reject("ARTIFACT_DIRECTORY_INVALID");return root;}
     static void regular(Path file)throws IOException{if(Files.isSymbolicLink(file)||!Files.isRegularFile(file,LinkOption.NOFOLLOW_LINKS))throw reject("ARTIFACT_NOT_REGULAR");}
     static void seal(Path path,boolean directory)throws IOException{Files.setPosixFilePermissions(path,PosixFilePermissions.fromString(directory?"r-xr-xr-x":"r--r--r--"));}
     static void readonly(Path path)throws IOException{Set<PosixFilePermission> p=Files.getPosixFilePermissions(path,LinkOption.NOFOLLOW_LINKS);if(p.contains(PosixFilePermission.OWNER_WRITE)||p.contains(PosixFilePermission.GROUP_WRITE)||p.contains(PosixFilePermission.OTHERS_WRITE))throw reject("ARTIFACT_NOT_IMMUTABLE:"+path.getFileName()+":"+PosixFilePermissions.toString(p));}
+    /** ART writes optimization sidecars — an "oat" directory of .odex/.vdex/.art, plus *.prof/*.cur_prof
+     *  profiles — next to a PathClassLoader's on-disk DEX at runtime. The guest loader is deliberately
+     *  on-disk (so hot-fix frameworks like Tinker can inspect their own loader), so these derived caches
+     *  appear inside the sealed tree after the first run. They are not part of the authenticated set —
+     *  ART validates an oat against its DEX checksum before use — so the integrity walk tolerates them
+     *  instead of bricking every relaunch with ARTIFACT_NOT_IMMUTABLE/ARTIFACT_FILE_SET_MISMATCH. */
+    static boolean derivedOptimization(String relative){
+        for(String segment:relative.split("/"))if(segment.equals("oat"))return true;
+        return relative.endsWith(".odex")||relative.endsWith(".vdex")||relative.endsWith(".art")||relative.endsWith(".oat")||relative.endsWith(".prof")||relative.endsWith(".cur_prof");
+    }
     static void syncFile(Path file)throws IOException{regular(file);try(FileChannel channel=FileChannel.open(file,StandardOpenOption.READ,LinkOption.NOFOLLOW_LINKS)){channel.force(true);}}
     static void syncDirectory(Path path)throws IOException{try(FileChannel channel=FileChannel.open(path,StandardOpenOption.READ,LinkOption.NOFOLLOW_LINKS)){channel.force(true);}}
     public static String digest(File file)throws Exception{regular(file.toPath());MessageDigest md=MessageDigest.getInstance("SHA-256");try(InputStream in=Files.newInputStream(file.toPath(),LinkOption.NOFOLLOW_LINKS)){byte[] b=new byte[65536];int n;while((n=in.read(b))!=-1)md.update(b,0,n);}return hex(md.digest());}

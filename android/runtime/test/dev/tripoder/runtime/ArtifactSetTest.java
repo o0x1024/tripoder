@@ -48,7 +48,7 @@ public final class ArtifactSetTest {
         check("base-feature-config",splits.parts.size()==3&&splits.parts.get(0).manifest.splitName.isEmpty()&&splits.parts.get(1).manifest.splitName.equals("feature"));
         check("split-process-inherited",splits.components.stream().anyMatch(c->c.name.equals("dev.tripoder.set.Feature")&&c.process.equals("dev.tripoder.set:app")));
         ArtifactSet nativeSet=ArtifactSet.materialize(stage("native").toFile());
-        check("arm64-library-hashed",nativeSet.nativeFiles.size()==1&&nativeSet.files.size()==2);
+        check("arm64-library-hashed",nativeSet.nativeFiles.size()==1&&nativeSet.files.size()==3);
         check("all-zip-files-hashed",nativeSet.parts.get(0).entries.stream().anyMatch(e->e.path.equals("AndroidManifest.xml"))&&nativeSet.parts.get(0).entries.stream().anyMatch(e->e.path.startsWith("lib/arm64-v8a/")));
         ArtifactSet mixed=ArtifactSet.materialize(stage("mixedabi").toFile());
         check("mixed-abi-selects-arm64-with-literal-dollar-name",mixed.nativeFiles.size()==1&&mixed.nativeFiles.get(0).path.equals("lib/libapp.$cso.so")&&!new File(mixed.directory,"lib/libunused.so").exists());
@@ -86,6 +86,11 @@ public final class ArtifactSetTest {
         rejects("recovery-writable-file","ARTIFACT_NOT_IMMUTABLE",()->ArtifactSet.verify(dirty.directory,dirty.descriptorSha));
         ArtifactSet changed=ArtifactSet.materialize(stage("base").toFile());Path desc=changed.directory.toPath().resolve(ArtifactSet.DESCRIPTOR);writable(desc);Files.writeString(desc,"{}");ArtifactSet.seal(desc,false);
         rejects("recovery-descriptor-corruption","DESCRIPTOR_CORRUPT",()->ArtifactSet.verify(changed.directory,changed.descriptorSha));
+        // ART drops a writable oat/odex/vdex sidecar next to the on-disk guest DEX on first run; re-verification must
+        // tolerate that derived cache instead of bricking the relaunch with ARTIFACT_NOT_IMMUTABLE/FILE_SET_MISMATCH.
+        ArtifactSet opt=ArtifactSet.materialize(stage("base").toFile());Path optRoot=opt.directory.toPath();writable(optRoot);
+        Path oat=optRoot.resolve("oat").resolve("arm64");Files.createDirectories(oat);Files.write(oat.resolve("base.odex"),new byte[]{7});Files.write(oat.resolve("base.vdex"),new byte[]{8});ArtifactSet.seal(optRoot,true);
+        check("tolerates-art-oat-sidecar",ArtifactSet.verify(opt.directory,opt.descriptorSha).descriptorSha.equals(opt.descriptorSha));
         System.out.println("{\"passed\":true,\"assertions\":"+checks+",\"checks\":[\""+String.join("\",\"",names)+"\"]}");
     }
 }

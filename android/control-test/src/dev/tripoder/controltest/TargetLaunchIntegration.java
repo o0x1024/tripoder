@@ -125,14 +125,19 @@ public final class TargetLaunchIntegration extends ControlTestBase {
             report.put("launchReceipt",json(receipt));check("target-first-activity-acknowledged","SUCCEEDED".equals(receipt.getString("state")),json(receipt));
         }finally{application.unregisterActivityLifecycleCallbacks(observer);}
         long stabilityMs=args.containsKey("stabilitySeconds")?Long.parseLong(args.getString("stabilitySeconds"))*1000L:30000L;
-        JSONArray samples=new JSONArray();report.put("stabilitySamples",samples);long started=SystemClock.elapsedRealtime(),stableUntil=started+stabilityMs,lastSample=started,maxGap=0;
+        JSONArray samples=new JSONArray();report.put("stabilitySamples",samples);long started=SystemClock.elapsedRealtime(),stableUntil=started+stabilityMs,lastSample=started,maxGap=0;int emptyStreak=0;
         while(SystemClock.elapsedRealtime()<stableUntil){
             android.util.Log.i("TripoderAcceptance","stability-query-start:"+samples.length());
-            JSONArray live=new JSONArray(execute(session,"hookProcesses","project",record.getString("project")).getString("processes"));boolean originalAlive=false;
+            JSONArray live=new JSONArray(execute(session,"hookProcesses","project",record.getString("project")).getString("processes"));boolean generationAlive=false,originalPidAlive=false;JSONArray livePids=new JSONArray();
             android.util.Log.i("TripoderAcceptance","stability-query-end:"+samples.length());
             long sampled=SystemClock.elapsedRealtime();maxGap=Math.max(maxGap,sampled-lastSample);lastSample=sampled;
-            for(int i=0;i<live.length();i++){JSONObject process=live.getJSONObject(i);if(prepared.getString("generation").equals(process.getString("processGeneration"))&&prepared.getInt("pid")==process.getInt("pid"))originalAlive=true;}
-            samples.put(new JSONObject().put("time",System.currentTimeMillis()).put("originalAlive",originalAlive).put("processes",live));if(!originalAlive){check("target-original-worker-remains-running-for-30-seconds",false,live);break;}SystemClock.sleep(1000);
+            for(int i=0;i<live.length();i++){JSONObject process=live.getJSONObject(i);if(prepared.getString("generation").equals(process.getString("processGeneration"))){generationAlive=true;livePids.put(process.getInt("pid"));if(prepared.getInt("pid")==process.getInt("pid"))originalPidAlive=true;}}
+            // A multiprocess or hot-fix (Tinker) guest recycles its initial pid during startup, so pin liveness to the launch
+            // generation's whole process set, not one pid: the guest is running while ANY process of this generation is alive,
+            // and it has died only when the generation stays absent across several samples (tolerating the brief restart gap).
+            if(generationAlive)emptyStreak=0;else emptyStreak++;
+            samples.put(new JSONObject().put("time",System.currentTimeMillis()).put("originalAlive",generationAlive).put("generationAlive",generationAlive).put("originalPidAlive",originalPidAlive).put("livePids",livePids).put("processes",live));
+            if(emptyStreak>=3){check("target-original-worker-remains-running-for-30-seconds",false,live);break;}SystemClock.sleep(1000);
         }
         maxGap=Math.max(maxGap,SystemClock.elapsedRealtime()-lastSample);
         check("target-stability-observation-is-continuous",samples.length()>=2&&maxGap<=5000,new JSONObject().put("samples",samples.length()).put("maxGapMs",maxGap).put("elapsedMs",SystemClock.elapsedRealtime()-started));
