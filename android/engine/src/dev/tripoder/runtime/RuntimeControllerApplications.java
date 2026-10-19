@@ -28,6 +28,7 @@ final class RuntimeControllerApplications {
                 RuntimeControllerService.requireLease(lease);requireInstall(broker,space,pkg,generation);
                 retired=broker.activities.retireDeadUnattached(space,pkg,generation,operation);
                 broker.services.abandonDeadCalls(space,pkg,generation);
+                broker.providers.abandonDeadCalls(space,pkg,generation);
                 broker.services.reconcile(broker.host);
                 broker.activities.releaseComponentsForUninstall(space,pkg);
                 broker.contract.succeed(operation,new JSONObject().put("stoppedProcesses",processes.size()).put("retiredUnattachedTickets",retired).toString());
@@ -101,13 +102,14 @@ final class RuntimeControllerApplications {
             for(String process:processes){stopping=true;broker.processes.close(process);stopping=false;}
             RuntimeEmptyTasks.removeApplicationTasks(broker,space,pkg,generation);
             // Deleting an application cancels its scheduled jobs through the normal fenced cancel, then retires the emptied components. Outside the broker lock, as Android is called.
-            broker.jobBroker.cancel(broker.apks.get(space,pkg),null,null,true,UUID.randomUUID().toString());
+            broker.jobBroker.cancelForUninstall(space,pkg,generation,UUID.randomUUID().toString());
             RuntimeJobRetirement.reconcile(broker);
             RuntimeControllerService.agents().requireApplicationControl(space,pkg);
             synchronized(broker){
                 RuntimeControllerService.requireLease(lease);requireInstall(broker,space,pkg,generation);
                 retired=broker.activities.retireDeadUnattached(space,pkg,generation,operation);
                 broker.services.abandonDeadCalls(space,pkg,generation);
+                broker.providers.abandonDeadCalls(space,pkg,generation);
                 broker.services.reconcile(broker.host);
                 broker.activities.releaseComponentsForUninstall(space,pkg);
                 broker.catalog.requireUnused(space,pkg);committing=true;

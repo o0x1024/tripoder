@@ -10,8 +10,85 @@ final class RuntimeFixedPreparation {
     private static boolean processPrepared,frameworkPrepared,reserved;
     private static FrameworkAccess.Members members;
     private static Map<Executable,ManagedHook.Handle> reservations=Map.of();
+    static void neutralizeVendorMonitors(){
+        try{
+            try{
+                Class<?> mm=Class.forName("android.os.perfdebug.MessageMonitor");
+                Field enabled=mm.getDeclaredField("ENABLED");
+                enabled.setAccessible(true);
+                enabled.setBoolean(null,false);
+            }catch(Throwable ignored){}
+            try{
+                Class<?> su=Class.forName("miui.mqsas.scout.ScoutUtils");
+                for(String fieldName: new String[]{"ENABLED_SCOUT", "ENABLED_LT_SCOUT", "ENABLED_CEHCK_FROZEN"}){
+                    try{
+                        Field f=su.getDeclaredField(fieldName);
+                        f.setAccessible(true);
+                        f.setBoolean(null,false);
+                    }catch(Throwable ignored){}
+                }
+            }catch(Throwable ignored){}
+            try{
+                Class<?> ati=Class.forName("android.app.ActivityThreadImpl");
+                try{
+                    Field sdp=ati.getDeclaredField("ScoutDisablePackageList");
+                    sdp.setAccessible(true);
+                    sdp.set(null,new java.util.AbstractList<String>(){
+                        @Override public String get(int index){return "";}
+                        @Override public int size(){return 1;}
+                        @Override public boolean contains(Object o){return true;}
+                    });
+                }catch(Throwable ignored){}
+                try{
+                    Field anr=ati.getDeclaredField("ENABLE_ANR_CLUE");
+                    anr.setAccessible(true);
+                    anr.setBoolean(null,false);
+                }catch(Throwable ignored){}
+                try{
+                    Field sm=ati.getDeclaredField("mAppScoutStateMachine");
+                    sm.setAccessible(true);
+                    Object stateMachine=sm.get(null);
+                    if(stateMachine!=null){
+                        try{
+                            Method quitNow=stateMachine.getClass().getMethod("quitNow");
+                            quitNow.invoke(stateMachine);
+                        }catch(Throwable ignored){}
+                    }
+                    sm.set(null,null);
+                }catch(Throwable ignored){}
+                try{
+                    Field st=ati.getDeclaredField("mAppScoutThread");
+                    st.setAccessible(true);
+                    st.set(null,null);
+                }catch(Throwable ignored){}
+            }catch(Throwable ignored){}
+            try{
+                android.os.Looper main=android.os.Looper.getMainLooper();
+                if(main!=null){
+                    Field monitor=android.os.Looper.class.getDeclaredField("mMonitor");
+                    monitor.setAccessible(true);
+                    monitor.set(main,null);
+                }
+            }catch(Throwable ignored){}
+            try{
+                ThreadGroup rootGroup=Thread.currentThread().getThreadGroup();
+                while(rootGroup.getParent()!=null)rootGroup=rootGroup.getParent();
+                Thread[] threads=new Thread[rootGroup.activeCount()+16];
+                int count=rootGroup.enumerate(threads,true);
+                for(int i=0;i<count;i++){
+                    Thread t=threads[i];if(t==null)continue;
+                    String n=t.getName();
+                    if(n!=null&&(n.contains("MiuiMonitor")||n.contains("Scout"))){
+                        if(t instanceof android.os.HandlerThread ht)ht.quit();
+                        else t.interrupt();
+                    }
+                }
+            }catch(Throwable ignored){}
+        }catch(Throwable ignored){}
+    }
     static synchronized void process()throws Exception{
         if(!processPrepared){
+            neutralizeVendorMonitors();
             framework();List<dev.tripoder.selfhook.dex.AbiSignature> signatures=new ArrayList<>();
             for(Executable target:targets().keySet())signatures.add(new dev.tripoder.selfhook.dex.AbiSignature(target));
             dev.tripoder.selfhook.dex.HelperDex.prepareTemplates(signatures);

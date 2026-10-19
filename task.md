@@ -51,7 +51,7 @@
 - 用户授权的固定性能模式实验已结束，关闭命令成功返回；**当前没有需要清理的已开启固定性能模式**。独立探针签名不一致时的归档后重装曾获授权；不能扩展为删除 Engine/Workbench/客体数据。
 - 所有 shell 前缀 `rtk`；ADB 和设备 validator 需要提权审批（已多次使用）。不使用 root/run-as，不清数据/缓存/UNKNOWN，不扩槽，不加 fallback，不放宽5%性能或10秒冷投递门槛。源冻结后构建、绑定receipt验收；一台设备串行使用。
 - 设备 `d861a4fa`，Xiaomi/madrid Android17/API37 ARM64/4KiB；workspace `/Users/like/code/tripoder`。CodeGraph工具当前不可用，`.codegraph/`存在，不需要初始化。
-- SDK `/opt/homebrew/share/android-commandlinetools`；platform `android-37.0` / build-tools `37.0.0`；Java `/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home`；NDK `android/vm-probe/build/native/tools/android-ndk-r30`。
+- SDK `/opt/homebrew/share/android-commandlinetools`；platform `android-37.0` / build-tools `37.0.0`；Java `/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home`；NDK `/opt/homebrew/share/android-commandlinetools/ndk/30.0.16248370`。
 - libc `android/runtime-probe/build/device-libc.so`；ART/linker `android/self-hook-probe/build/device-libart.so`、`device-linker64`；测试密钥 `android/runtime-probe/build/acceptance-only.p12`。主机SDK编译的 apksig jar 实际是 build-tools/37.0.0/lib/**apksigner.jar**，不是 apksig.jar。
 
 ### 已通过的证据（逐制品绑定，不跨构建追认）
@@ -101,7 +101,7 @@
 
 ~~~sh
 # Runtime构建；正式产品换成 build-workbench.py（先完成Runtime，再构建正式产品）
-rtk proxy python3 android/scripts/build-runtime-probe.py --sdk /opt/homebrew/share/android-commandlinetools --platform android-37.0 --build-tools 37.0.0 --java-home /opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home --ndk android/vm-probe/build/native/tools/android-ndk-r30 --platform-libc android/runtime-probe/build/device-libc.so --platform-art android/self-hook-probe/build/device-libart.so --platform-linker android/self-hook-probe/build/device-linker64
+rtk proxy python3 android/scripts/build-runtime-probe.py --sdk /opt/homebrew/share/android-commandlinetools --platform android-37.0 --build-tools 37.0.0 --java-home /opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home --ndk /opt/homebrew/share/android-commandlinetools/ndk/30.0.16248370 --platform-libc android/runtime-probe/build/device-libc.so --platform-art android/self-hook-probe/build/device-libart.so --platform-linker android/self-hook-probe/build/device-linker64
 # 自有WebView在pending阶段；每次新证据目录，失败不得覆盖
 rtk proxy python3 android/scripts/validate-runtime-probe.py --serial d861a4fa --install --phase pending --evidence docs/evidence/real-app-goal-2026-10-17/<fresh>
 # 正式目标；王者后续模块实际加载后才加 --native-hook
@@ -233,7 +233,7 @@ rtk proxy python3 android/scripts/build-runtime-probe.py \
   --sdk /opt/homebrew/share/android-commandlinetools \
   --platform android-37.0 --build-tools 37.0.0 \
   --java-home /opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home \
-  --ndk android/vm-probe/build/native/tools/android-ndk-r30 \
+  --ndk /opt/homebrew/share/android-commandlinetools/ndk/30.0.16248370 \
   --platform-libc android/runtime-probe/build/device-libc.so \
   --platform-art android/self-hook-probe/build/device-libart.so \
   --platform-linker android/self-hook-probe/build/device-linker64

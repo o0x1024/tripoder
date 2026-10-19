@@ -54,14 +54,19 @@ final class RuntimeReceivers {
         byte[] encoded=RuntimeBroadcastIntent.filter(filter);
         boolean legacyZeroFlags=flags==0&&engine.info!=null&&engine.info.targetSdkVersion<34;
         if(flags!=Context.RECEIVER_EXPORTED&&flags!=Context.RECEIVER_NOT_EXPORTED&&!legacyZeroFlags&&!(flags==0&&(RuntimeSystemBroadcasts.only(filter)||filter.countActions()==0)))throw new UnsupportedOperationException("RECEIVER_POLICY_UNSUPPORTED:flags=0x"+Integer.toHexString(flags)+";permission="+permission+";actions="+actions(filter));
-        Set<String> systems=new HashSet<>();for(int i=0;i<filter.countActions();i++){String action=filter.getAction(i);if(RuntimeSystemBroadcasts.ACTIONS.contains(action)){if(!RuntimeBridge.protectedBroadcast(action))throw new SecurityException("PLATFORM_BROADCAST_NOT_PROTECTED:"+action);systems.add(action);}}
+        // Any known system action is observed by subscribing to the real platform broadcast on
+        // the host. The platform is the source of truth whether or not the action is a protected
+        // broadcast; refusing to even listen to a non-protected one (e.g. CLOSE_SYSTEM_DIALOGS,
+        // which apps routinely register for) only turned listening into a crash. Guest-originated
+        // sends of system actions stay blocked on the send path, so this is listen-only.
+        Set<String> systems=new HashSet<>();for(int i=0;i<filter.countActions();i++){String action=filter.getAction(i);if(RuntimeSystemBroadcasts.ACTIONS.contains(action))systems.add(action);}
         if(receiver==null){
             if(permission!=null||filter.countActions()!=1||!RuntimeSystemBroadcasts.STICKY.contains(filter.getAction(0)))throw new UnsupportedOperationException("STICKY_QUERY_SHAPE_UNSUPPORTED");
             Bundle request=engine.auth();request.putBoolean("stickyQuery",true);request.putByteArray("filter",encoded);
             try{Bundle response=engine.brokerCall(RuntimeWire.BROADCAST_REGISTER,request);return response.containsKey("payload")?RuntimeBroadcastIntent.decode(response.getByteArray("payload")):null;}catch(Exception error){throw new IllegalStateException("STICKY_QUERY_FAILED",error);}
         }
         if(!engine.ownsReceiverLoader(receiver.getClass().getClassLoader()))throw new SecurityException("RECEIVER_LOADER_MISMATCH:"+receiver.getClass().getName()+"@"+receiver.getClass().getClassLoader()+";webview="+engine.webView.ownsProviderLoader(receiver.getClass().getClassLoader()));
-        synchronized(this){if(transitions.contains(receiver))throw new IllegalStateException("RECEIVER_REGISTRATION_IN_PROGRESS");Registration prior=receivers.get(receiver);if(prior!=null&&!prior.closed)throw new UnsupportedOperationException("RECEIVER_MULTIPLE_FILTERS_NOT_IMPLEMENTED");if(receivers.size()+retiredActions.size()>=256)throw new IllegalStateException("RECEIVER_REGISTRATION_LIMIT");transitions.add(receiver);}
+        synchronized(this){if(transitions.contains(receiver))throw new IllegalStateException("RECEIVER_REGISTRATION_IN_PROGRESS");Registration prior=receivers.get(receiver);if(prior!=null&&!prior.closed)throw new UnsupportedOperationException("RECEIVER_MULTIPLE_FILTERS_NOT_IMPLEMENTED");if(receivers.size()+retiredActions.size()>=4096)throw new IllegalStateException("RECEIVER_REGISTRATION_LIMIT");transitions.add(receiver);}
         Bundle b=engine.auth();b.putByteArray("filter",encoded);b.putBoolean("exported",flags==Context.RECEIVER_EXPORTED||(legacyZeroFlags&&!RuntimeSystemBroadcasts.only(filter)&&filter.countActions()>0));b.putString("permission",permission);
         try{
             Bundle admitted=engine.brokerCall(RuntimeWire.BROADCAST_REGISTER,b);String id=admitted.getString("registration");Registration registration=new Registration("",id,true,Set.copyOf(systems));

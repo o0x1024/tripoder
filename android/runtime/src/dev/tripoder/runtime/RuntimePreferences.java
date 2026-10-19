@@ -25,7 +25,9 @@ final class RuntimePreferences implements SharedPreferences {
     RuntimePreferences(RuntimeStorage storage,File file,ExecutorService writer){
         this.storage=storage;this.file=file;this.writer=writer;disk=new PreferencesDisk(storage,file);
         String before=stamp();
-        try{values=PreferencesWait.complete(writer.submit(()->disk.access(()->PreferencesXml.read(file))));loadedStamp=before;}
+        // A newly opened file has no queued write, so its first read goes straight to disk under this file's own lock,
+        // as the platform loads each file independently; it never waits behind other files' queued writes.
+        try{values=disk.access(()->PreferencesXml.read(file));loadedStamp=before;}
         catch(Exception error){throw new IllegalStateException("PREFERENCES_LOAD_FAILED:"+error.getMessage(),error);}
     }
     private void healthy(){if(diskFailure!=null)throw new IllegalStateException("PREFERENCES_WRITE_FAILED",diskFailure);}
@@ -47,10 +49,20 @@ final class RuntimePreferences implements SharedPreferences {
         healthy();List<String> changed=new ArrayList<>();if(clear){values.clear();changed.add(null);}
         modified.forEach((key,value)->{if(value==REMOVE){if(values.containsKey(key)){values.remove(key);changed.add(key);}}else if(!Objects.equals(values.get(key),value)||!values.containsKey(key)){values.put(key,copy(value));changed.add(key);}});
         List<OnSharedPreferenceChangeListener> observers=new ArrayList<>(listeners.keySet());
+        Map<String,Object> snapshot=copy(values);
         Future<Boolean> written=writer.submit(()->{try{healthy();return disk.access(()->{
-            Map<String,Object> latest=PreferencesXml.read(file);if(clear)latest.clear();
-            modified.forEach((key,value)->{if(value==REMOVE)latest.remove(key);else latest.put(key,copy(value));});
-            PreferencesXml.write(storage,file,latest);return true;
+            String before=stamp();
+            Map<String,Object> toWrite;
+            if(!before.equals(loadedStamp)){
+                toWrite=PreferencesXml.read(file);if(clear)toWrite.clear();
+                modified.forEach((key,value)->{if(value==REMOVE)toWrite.remove(key);else toWrite.put(key,copy(value));});
+                synchronized(RuntimePreferences.this){values=copy(toWrite);}
+            }else{
+                toWrite=snapshot;
+            }
+            PreferencesXml.write(storage,file,toWrite);
+            loadedStamp=stamp();
+            return true;
         });}catch(Exception error){diskFailure=error;android.util.Log.e("TripoderRuntime","Guest preferences commit failed",error);return false;}});
         return new Publication(written,changed,observers);
     }

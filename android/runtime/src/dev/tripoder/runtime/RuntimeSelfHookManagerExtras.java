@@ -45,6 +45,14 @@ final class RuntimeSelfHookManagerExtras {
     static Object shortcut(String key,Object[] args){
         switch(key){
             case "isRequestPinShortcutSupported()":return RuntimeBridge.shortcutPinSupported();
+            case "getDynamicShortcuts()":case "getManifestShortcuts()":case "getPinnedShortcuts()":case "getShortcuts(int)":return java.util.Collections.emptyList();
+            case "getMaxShortcutCountPerActivity()":return 5;
+            case "getIconMaxWidth()":case "getIconMaxHeight()":return 192;
+            case "isRateLimitingActive()":case "setDynamicShortcuts(java.util.List)":case "addDynamicShortcuts(java.util.List)":case "updateShortcuts(java.util.List)":
+            case "requestPinShortcut(android.content.pm.ShortcutInfo,android.content.IntentSender)":return false;
+            case "pushDynamicShortcut(android.content.pm.ShortcutInfo)":case "removeDynamicShortcuts(java.util.List)":case "removeAllDynamicShortcuts()":case "removeLongLivedShortcuts(java.util.List)":
+            case "enableShortcuts(java.util.List)":case "disableShortcuts(java.util.List)":case "disableShortcuts(java.util.List,java.lang.CharSequence)":case "reportShortcutUsed(java.lang.String)":return null;
+            case "createShortcutResultIntent(android.content.pm.ShortcutInfo)":return new android.content.Intent();
             default:throw new UnsupportedOperationException("SHORTCUT_CAPABILITY_UNSUPPORTED:"+key);
         }
     }

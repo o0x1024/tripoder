@@ -30,7 +30,7 @@ public final class RuntimePackageBridge {
     public static void requireInfrastructure(String kind,String pkg,ComponentName component,int user){world().requireInfrastructure(kind,pkg,component,user);}
     public static boolean registered(PackageManager pm){return world().registered(pm);}
     public static void infrastructureFlags(String kind,long flags){
-        long allowed=PackageManager.GET_META_DATA|PackageManager.MATCH_DISABLED_COMPONENTS|PackageManager.MATCH_DIRECT_BOOT_AWARE|PackageManager.MATCH_DIRECT_BOOT_UNAWARE;
+        long allowed=PackageManager.GET_META_DATA|PackageManager.MATCH_DISABLED_COMPONENTS|PackageManager.MATCH_DIRECT_BOOT_AWARE|PackageManager.MATCH_DIRECT_BOOT_UNAWARE|PackageManager.MATCH_DIRECT_BOOT_AUTO;
         switch(kind){
             case "package":allowed|=PackageManager.GET_SIGNATURES|PackageManager.GET_SIGNING_CERTIFICATES;break;
             case "application":allowed|=PackageManager.GET_SHARED_LIBRARY_FILES|PackageManager.MATCH_UNINSTALLED_PACKAGES;break;

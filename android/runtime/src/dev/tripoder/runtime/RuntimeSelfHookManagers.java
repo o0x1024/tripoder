@@ -150,7 +150,7 @@ final class RuntimeSelfHookManagers {
             }
         });
     }
-    private static Object activity(String key,Object[] args)throws Exception {
+    @SuppressWarnings("deprecation") private static Object activity(String key,Object[] args)throws Exception {
         switch(key) {
             case "getMemoryClass()":return RuntimeBridge.memoryClass(false);
             case "getLargeMemoryClass()":return RuntimeBridge.memoryClass(true);
@@ -161,6 +161,18 @@ final class RuntimeSelfHookManagers {
             case "getHistoricalProcessStartReasons(int)":return RuntimeSelfHookHistory.query((Integer)args[0],require().framework);
             case "setProcessStateSummary([B)":RuntimeBridge.setProcessStateSummary((byte[])args[0]);return null;
             case "getHistoricalProcessExitReasons(java.lang.String,int,int)":return RuntimeBridge.historicalExits((String)args[0],(Integer)args[1],(Integer)args[2]);
+            case "getRunningTasks(int)":case "getRecentTasks(int,int)":case "getAppTasks()":case "getRunningServices(int)":return java.util.Collections.emptyList();
+            case "getProcessesInErrorState()":return null;
+            case "getDeviceConfigurationInfo()":return RuntimeBridge.activityPlatform().getDeviceConfigurationInfo();
+            case "getLauncherLargeIconDensity()":return RuntimeBridge.activityPlatform().getLauncherLargeIconDensity();
+            case "getLauncherLargeIconSize()":return RuntimeBridge.activityPlatform().getLauncherLargeIconSize();
+            case "getLockTaskModeState()":return RuntimeBridge.activityPlatform().getLockTaskModeState();
+            case "isInLockTaskMode()":return RuntimeBridge.activityPlatform().isInLockTaskMode();
+            case "isBackgroundRestricted()":return RuntimeBridge.activityPlatform().isBackgroundRestricted();
+            case "getAppTaskThumbnailSize()":return RuntimeBridge.activityPlatform().getAppTaskThumbnailSize();
+            case "killBackgroundProcesses(java.lang.String)":case "restartPackage(java.lang.String)":case "moveTaskToFront(int,int)":case "moveTaskToFront(int,int,android.os.Bundle)":
+            case "setWatchHeapLimit(long)":case "clearWatchHeapLimit()":case "addStartInfoTimestamp(int,long)":
+            case "addApplicationStartInfoCompletionListener(java.util.concurrent.Executor,java.util.function.Consumer)":case "removeApplicationStartInfoCompletionListener(java.util.function.Consumer)":return null;
             default:throw new UnsupportedOperationException("ACTIVITY_MANAGER_CAPABILITY_UNSUPPORTED:"+key);
         }
     }

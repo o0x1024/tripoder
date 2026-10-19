@@ -57,15 +57,17 @@ final class RuntimeProviderBroker {
             if(existing&&(to==null||!broker.providers.find(to.allocation.session.processGeneration,component).getString("publication").equals("READY")))return new Bundle();
         }
         if(!existing&&!local)to=broker.processes.prepare(space,install.info.packageName,process);
+        String target;Bundle publication;
         synchronized(broker){
-            broker.contract.authenticate(source,pid,uid);String target=to.allocation.session.processGeneration;
+            broker.contract.authenticate(source,pid,uid);target=to.allocation.session.processGeneration;
             if(broker.requiredSlot(target)!=to||!to.install.generation.equals(install.generation))throw new SecurityException("PROVIDER_STALE_INSTALL");
-            Bundle publication=broker.providers.find(target,component);String cap=broker.providers.acquire(source,publication,logical,input.getBoolean("stable"));
-            publication.putString("cap",cap);publication.putString("authority",logical);publication.putBoolean("local",local);publication.putString("physical",RuntimeProviderTransport.authority(broker.host,RuntimeSlot.index(to.activityStub)));return publication;
+            publication=broker.providers.find(target,component);
         }
+        String cap=broker.providers.acquire(source,publication,logical,input.getBoolean("stable"));
+        publication.putString("cap",cap);publication.putString("authority",logical);publication.putBoolean("local",local);publication.putString("physical",RuntimeProviderTransport.authority(broker.host,RuntimeSlot.index(to.activityStub)));return publication;
     }
     Bundle handle(int code,Bundle input,String generation)throws Exception{
-        var db=broker.store.getWritableDatabase();db.beginTransaction();try{Bundle result=handleTransaction(code,input,generation);db.setTransactionSuccessful();return result;}finally{db.endTransaction();}
+        return handleTransaction(code,input,generation);
     }
     private Bundle handleTransaction(int code,Bundle input,String generation)throws Exception{
         Bundle out=new Bundle();ProviderLedger ledger=broker.providers;
@@ -86,9 +88,9 @@ final class RuntimeProviderBroker {
             if(input.getBoolean("begin")){
                 if(!source.equals(target)&&!ref.getString("publication").equals("READY")){
                     if(reaches(target,source,new HashSet<>()))throw new IllegalStateException("PROVIDER_INITIALIZATION_CYCLE");
-                    waits.computeIfAbsent(source,k->new HashMap<>()).merge(target,1,Integer::sum);out.putBoolean("edge",true);
+                    synchronized(waits){waits.computeIfAbsent(source,k->new HashMap<>()).merge(target,1,Integer::sum);}out.putBoolean("edge",true);
                 }
-            }else{Map<String,Integer> edges=waits.get(source);if(edges==null||!edges.containsKey(target))throw new IllegalStateException("PROVIDER_WAIT_NOT_FOUND");if(edges.get(target)==1)edges.remove(target);else edges.put(target,edges.get(target)-1);if(edges.isEmpty())waits.remove(source);}
+            }else{synchronized(waits){Map<String,Integer> edges=waits.get(source);if(edges==null||!edges.containsKey(target))throw new IllegalStateException("PROVIDER_WAIT_NOT_FOUND");if(edges.get(target)==1)edges.remove(target);else edges.put(target,edges.get(target)-1);if(edges.isEmpty())waits.remove(source);}}
             return out;
         }
         if(code==RuntimeWire.PROVIDER_BEGIN){
@@ -117,6 +119,13 @@ final class RuntimeProviderBroker {
         if(code==RuntimeWire.PROVIDER_FINISH){if(!call.getString("invocation").equals("RUNNING"))throw new IllegalStateException("PROVIDER_INVOCATION_NOT_RUNNING");boolean success=input.getBoolean("success");boolean readiness=call.getString("kind").equals("ready");ledger.finished(operation,success||readiness);if(success)broker.contract.succeed(operation,"PROVIDER_CALLBACK_RETURNED");else if(readiness)broker.contract.fail(operation,"PROVIDER_NOT_READY");else broker.contract.markUnknown(operation,"PROVIDER_CALLBACK_THREW_EFFECT_UNKNOWN:"+input.getString("failureClass","")+":"+input.getString("failureMessage",""));return out;}
         throw new IllegalArgumentException("PROVIDER_PROTOCOL_UNSUPPORTED");
     }
-    private boolean reaches(String from,String target,Set<String> visited){if(from.equals(target))return true;if(!visited.add(from))return false;for(String next:waits.getOrDefault(from,Map.of()).keySet())if(reaches(next,target,visited))return true;return false;}
-    void dead(String generation){waits.remove(generation);for(var edges:waits.values())edges.remove(generation);waits.values().removeIf(Map::isEmpty);}
+    private boolean reaches(String from,String target,Set<String> visited){
+        if(from.equals(target))return true;
+        if(!visited.add(from))return false;
+        Map<String,Integer> targets;
+        synchronized(waits){targets=waits.get(from)!=null?new HashMap<>(waits.get(from)):Map.of();}
+        for(String next:targets.keySet())if(reaches(next,target,visited))return true;
+        return false;
+    }
+    void dead(String generation){synchronized(waits){waits.remove(generation);for(var edges:waits.values())edges.remove(generation);waits.values().removeIf(Map::isEmpty);}}
 }

@@ -10,7 +10,7 @@ final class RuntimeBroadcastIntent {
     /** Everything about an Intent except its extras. The authority validates only this: extras may carry the sender's own Parcelables, whose classes exist only in the guest process, and are never interpreted outside it. */
     static void envelope(Intent original){
         if(original==null||original.getClipData()!=null||original.getSelector()!=null||original.getSourceBounds()!=null||original.getIdentifier()!=null||(original.getFlags()&~Intent.FLAG_RECEIVER_FOREGROUND)!=0)throw new IllegalArgumentException("BROADCAST_INTENT_UNSUPPORTED");
-        if(original.getAction()!=null&&(original.getAction().length()>512||original.getAction().startsWith("android.")))throw new UnsupportedOperationException("SYSTEM_BROADCAST_POLICY_UNSUPPORTED");
+        if(original.getAction()!=null&&(original.getAction().length()>512||RuntimeSystemBroadcasts.action(original.getAction())))throw new UnsupportedOperationException("SYSTEM_BROADCAST_POLICY_UNSUPPORTED");
         if(original.getDataString()!=null&&original.getDataString().length()>4096)throw new IllegalArgumentException("BROADCAST_URI_TOO_LONG");
     }
     static byte[] encode(Intent original){

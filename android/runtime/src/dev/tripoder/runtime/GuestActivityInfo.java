@@ -17,9 +17,10 @@ final class GuestActivityInfo {
         // endpoint query still uses the actual user unlock state, never a fixed value.
         if(direct==0&&(flags&PackageManager.MATCH_DIRECT_BOOT_AUTO)!=0)direct=PackageManager.MATCH_DIRECT_BOOT_AWARE|(engine.host.getSystemService(android.os.UserManager.class).isUserUnlocked()?PackageManager.MATCH_DIRECT_BOOT_UNAWARE:0);
         if(selected==null||(!selected.enabled||!engine.info.enabled)&&(flags&PackageManager.MATCH_DISABLED_COMPONENTS)==0||direct!=0&&(direct&(selected.directBootAware?PackageManager.MATCH_DIRECT_BOOT_AWARE:PackageManager.MATCH_DIRECT_BOOT_UNAWARE))==0)throw new PackageManager.NameNotFoundException(component.flattenToString());
-        Parcel parcel=Parcel.obtain();ActivityInfo result;try{selected.writeToParcel(parcel,0);parcel.setDataPosition(0);result=ActivityInfo.CREATOR.createFromParcel(parcel);}finally{parcel.recycle();}
+        ActivityInfo result=new ActivityInfo(selected);
         result.applicationInfo=GuestPackageManager.copyApplicationInfo(engine.info,(flags&PackageManager.GET_META_DATA)!=0);
         if((flags&PackageManager.GET_META_DATA)==0)result.metaData=null;
+        else if(selected.metaData!=null)result.metaData=selected.metaData.deepCopy();
         return result;
     }
     private GuestActivityInfo(){}

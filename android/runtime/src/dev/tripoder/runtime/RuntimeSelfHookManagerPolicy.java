@@ -24,7 +24,11 @@ final class RuntimeSelfHookManagerPolicy {
     private static Set<String> definition(Family family) {
         switch(family) {
             case ACTIVITY_MANAGER:return Set.of("getMemoryClass()","getLargeMemoryClass()","isLowRamDevice()",
-                "getMemoryInfo(android.app.ActivityManager$MemoryInfo)","getRunningAppProcesses()","getProcessMemoryInfo([I)","getHistoricalProcessStartReasons(int)","setProcessStateSummary([B)","getHistoricalProcessExitReasons(java.lang.String,int,int)");
+                "getMemoryInfo(android.app.ActivityManager$MemoryInfo)","getRunningAppProcesses()","getProcessMemoryInfo([I)","getHistoricalProcessStartReasons(int)","setProcessStateSummary([B)","getHistoricalProcessExitReasons(java.lang.String,int,int)",
+                "getRunningTasks(int)","getRecentTasks(int,int)","getAppTasks()","getRunningServices(int)","getProcessesInErrorState()",
+                "getDeviceConfigurationInfo()","getLauncherLargeIconDensity()","getLauncherLargeIconSize()","getLockTaskModeState()","isInLockTaskMode()","isBackgroundRestricted()","getAppTaskThumbnailSize()",
+                "killBackgroundProcesses(java.lang.String)","restartPackage(java.lang.String)","moveTaskToFront(int,int)","moveTaskToFront(int,int,android.os.Bundle)",
+                "setWatchHeapLimit(long)","clearWatchHeapLimit()","addStartInfoTimestamp(int,long)","addApplicationStartInfoCompletionListener(java.util.concurrent.Executor,java.util.function.Consumer)","removeApplicationStartInfoCompletionListener(java.util.function.Consumer)");
             case CONNECTIVITY:return Set.of("getActiveNetwork()","getActiveNetworkInfo()","getAllNetworks()","getAllNetworkInfo()",
                 "getNetworkInfo(int)","getNetworkInfo(android.net.Network)","getNetworkCapabilities(android.net.Network)",
                 "getLinkProperties(android.net.Network)","getDefaultProxy()","isActiveNetworkMetered()","getRestrictBackgroundStatus()",
@@ -64,13 +68,18 @@ final class RuntimeSelfHookManagerPolicy {
                 "createNotificationChannelGroup(android.app.NotificationChannelGroup)","createNotificationChannelGroups(java.util.List)","getNotificationChannel(java.lang.String)",
                 "getNotificationChannel(java.lang.String,java.lang.String)","getNotificationChannels()","getNotificationChannelGroup(java.lang.String)","getNotificationChannelGroups()",
                 "deleteNotificationChannel(java.lang.String)","deleteNotificationChannelGroup(java.lang.String)");
-            case SHORTCUTS:return Set.of("isRequestPinShortcutSupported()");
+            case SHORTCUTS:return Set.of("isRequestPinShortcutSupported()","getDynamicShortcuts()","getManifestShortcuts()","getPinnedShortcuts()","getShortcuts(int)",
+                "getMaxShortcutCountPerActivity()","getIconMaxWidth()","getIconMaxHeight()","isRateLimitingActive()",
+                "setDynamicShortcuts(java.util.List)","addDynamicShortcuts(java.util.List)","updateShortcuts(java.util.List)","requestPinShortcut(android.content.pm.ShortcutInfo,android.content.IntentSender)",
+                "pushDynamicShortcut(android.content.pm.ShortcutInfo)","removeDynamicShortcuts(java.util.List)","removeAllDynamicShortcuts()","removeLongLivedShortcuts(java.util.List)",
+                "enableShortcuts(java.util.List)","disableShortcuts(java.util.List)","disableShortcuts(java.util.List,java.lang.CharSequence)","reportShortcutUsed(java.lang.String)",
+                "createShortcutResultIntent(android.content.pm.ShortcutInfo)");
             case JOB_SCHEDULER:return Set.of("schedule(android.app.job.JobInfo)","cancel(int)","cancelAll()","cancelInAllNamespaces()","getAllPendingJobs()","getPendingJob(int)","getPendingJobsInAllNamespaces()","forNamespace(java.lang.String)","getNamespace()");
             default:throw new IllegalArgumentException("SYSTEM_MANAGER_FAMILY");
         }
     }
     private static final java.util.regex.Pattern OBSERVATION=java.util.regex.Pattern.compile("(get|is|has|are|can|supports|query|check)[A-Z0-9][A-Za-z0-9]*\\(.*");
-    private static final java.util.regex.Pattern AUDIO_CONTROL=java.util.regex.Pattern.compile("(requestAudioFocus|abandonAudioFocus|adjustVolume|adjustStreamVolume|adjustSuggestedStreamVolume|setStreamVolume|setMode|setSpeakerphoneOn|setBluetoothScoOn|startBluetoothSco|stopBluetoothSco|setMicrophoneMute|playSoundEffect|loadSoundEffects|unloadSoundEffects|isBluetoothScoOn|isSpeakerphoneOn|isMicrophoneMute|isMusicActive|isStreamMute|getStreamVolume|getStreamMaxVolume|getMode|getRingerMode|getAllowedCapturePolicy|setAllowedCapturePolicy)\\(.*");
+    private static final java.util.regex.Pattern AUDIO_CONTROL=java.util.regex.Pattern.compile("(requestAudioFocus|abandonAudioFocus|adjustVolume|adjustStreamVolume|adjustSuggestedStreamVolume|setStreamVolume|setMode|setSpeakerphoneOn|setBluetoothScoOn|startBluetoothSco|stopBluetoothSco|setMicrophoneMute|playSoundEffect|loadSoundEffects|unloadSoundEffects|isBluetoothScoOn|isSpeakerphoneOn|isMicrophoneMute|isMusicActive|isStreamMute|getStreamVolume|getStreamMaxVolume|getMode|getRingerMode|getAllowedCapturePolicy|setAllowedCapturePolicy|registerAudioRecordingCallback|unregisterAudioRecordingCallback|registerAudioPlaybackCallback|unregisterAudioPlaybackCallback|generateAudioSessionId|getSpatializer)\\(.*");
     private static final Set<String> PROCESS_NETWORK=Set.of("bindProcessToNetwork(android.net.Network)","setProcessDefaultNetwork(android.net.Network)");
     /** Families whose state is device-wide and carries no identifier of the device or the caller: network state and power/thermal state. */
     static boolean observation(Family family,String signature){

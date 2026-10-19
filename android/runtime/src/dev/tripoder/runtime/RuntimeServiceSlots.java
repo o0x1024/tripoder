@@ -9,32 +9,128 @@ public final class RuntimeServiceSlots {
     public static final class S0_1 extends Stub {}
     public static final class S0_2 extends Stub {}
     public static final class S0_3 extends Stub {}
+    public static final class S0_4 extends Stub {}
+    public static final class S0_5 extends Stub {}
+    public static final class S0_6 extends Stub {}
+    public static final class S0_7 extends Stub {}
+    public static final class S0_8 extends Stub {}
+    public static final class S0_9 extends Stub {}
+    public static final class S0_10 extends Stub {}
+    public static final class S0_11 extends Stub {}
+    public static final class S0_12 extends Stub {}
+    public static final class S0_13 extends Stub {}
+    public static final class S0_14 extends Stub {}
+    public static final class S0_15 extends Stub {}
     public static final class S1_0 extends Stub {}
     public static final class S1_1 extends Stub {}
     public static final class S1_2 extends Stub {}
     public static final class S1_3 extends Stub {}
+    public static final class S1_4 extends Stub {}
+    public static final class S1_5 extends Stub {}
+    public static final class S1_6 extends Stub {}
+    public static final class S1_7 extends Stub {}
+    public static final class S1_8 extends Stub {}
+    public static final class S1_9 extends Stub {}
+    public static final class S1_10 extends Stub {}
+    public static final class S1_11 extends Stub {}
+    public static final class S1_12 extends Stub {}
+    public static final class S1_13 extends Stub {}
+    public static final class S1_14 extends Stub {}
+    public static final class S1_15 extends Stub {}
     public static final class S2_0 extends Stub {}
     public static final class S2_1 extends Stub {}
     public static final class S2_2 extends Stub {}
     public static final class S2_3 extends Stub {}
+    public static final class S2_4 extends Stub {}
+    public static final class S2_5 extends Stub {}
+    public static final class S2_6 extends Stub {}
+    public static final class S2_7 extends Stub {}
+    public static final class S2_8 extends Stub {}
+    public static final class S2_9 extends Stub {}
+    public static final class S2_10 extends Stub {}
+    public static final class S2_11 extends Stub {}
+    public static final class S2_12 extends Stub {}
+    public static final class S2_13 extends Stub {}
+    public static final class S2_14 extends Stub {}
+    public static final class S2_15 extends Stub {}
     public static final class S3_0 extends Stub {}
     public static final class S3_1 extends Stub {}
     public static final class S3_2 extends Stub {}
     public static final class S3_3 extends Stub {}
+    public static final class S3_4 extends Stub {}
+    public static final class S3_5 extends Stub {}
+    public static final class S3_6 extends Stub {}
+    public static final class S3_7 extends Stub {}
+    public static final class S3_8 extends Stub {}
+    public static final class S3_9 extends Stub {}
+    public static final class S3_10 extends Stub {}
+    public static final class S3_11 extends Stub {}
+    public static final class S3_12 extends Stub {}
+    public static final class S3_13 extends Stub {}
+    public static final class S3_14 extends Stub {}
+    public static final class S3_15 extends Stub {}
     public static final class S4_0 extends Stub {}
     public static final class S4_1 extends Stub {}
     public static final class S4_2 extends Stub {}
     public static final class S4_3 extends Stub {}
+    public static final class S4_4 extends Stub {}
+    public static final class S4_5 extends Stub {}
+    public static final class S4_6 extends Stub {}
+    public static final class S4_7 extends Stub {}
+    public static final class S4_8 extends Stub {}
+    public static final class S4_9 extends Stub {}
+    public static final class S4_10 extends Stub {}
+    public static final class S4_11 extends Stub {}
+    public static final class S4_12 extends Stub {}
+    public static final class S4_13 extends Stub {}
+    public static final class S4_14 extends Stub {}
+    public static final class S4_15 extends Stub {}
     public static final class S5_0 extends Stub {}
     public static final class S5_1 extends Stub {}
     public static final class S5_2 extends Stub {}
     public static final class S5_3 extends Stub {}
+    public static final class S5_4 extends Stub {}
+    public static final class S5_5 extends Stub {}
+    public static final class S5_6 extends Stub {}
+    public static final class S5_7 extends Stub {}
+    public static final class S5_8 extends Stub {}
+    public static final class S5_9 extends Stub {}
+    public static final class S5_10 extends Stub {}
+    public static final class S5_11 extends Stub {}
+    public static final class S5_12 extends Stub {}
+    public static final class S5_13 extends Stub {}
+    public static final class S5_14 extends Stub {}
+    public static final class S5_15 extends Stub {}
     public static final class S6_0 extends Stub {}
     public static final class S6_1 extends Stub {}
     public static final class S6_2 extends Stub {}
     public static final class S6_3 extends Stub {}
+    public static final class S6_4 extends Stub {}
+    public static final class S6_5 extends Stub {}
+    public static final class S6_6 extends Stub {}
+    public static final class S6_7 extends Stub {}
+    public static final class S6_8 extends Stub {}
+    public static final class S6_9 extends Stub {}
+    public static final class S6_10 extends Stub {}
+    public static final class S6_11 extends Stub {}
+    public static final class S6_12 extends Stub {}
+    public static final class S6_13 extends Stub {}
+    public static final class S6_14 extends Stub {}
+    public static final class S6_15 extends Stub {}
     public static final class S7_0 extends Stub {}
     public static final class S7_1 extends Stub {}
     public static final class S7_2 extends Stub {}
     public static final class S7_3 extends Stub {}
+    public static final class S7_4 extends Stub {}
+    public static final class S7_5 extends Stub {}
+    public static final class S7_6 extends Stub {}
+    public static final class S7_7 extends Stub {}
+    public static final class S7_8 extends Stub {}
+    public static final class S7_9 extends Stub {}
+    public static final class S7_10 extends Stub {}
+    public static final class S7_11 extends Stub {}
+    public static final class S7_12 extends Stub {}
+    public static final class S7_13 extends Stub {}
+    public static final class S7_14 extends Stub {}
+    public static final class S7_15 extends Stub {}
 }

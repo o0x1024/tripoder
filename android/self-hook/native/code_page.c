@@ -104,7 +104,7 @@ int tp_code_page_claim(struct tp_code_page *page, void *address, const char *pat
     struct tp_page_identity source;
     if (!tp_code_page_identity(address, "r-xp", &source) || source.inode == 0 ||
         source.offset > INT64_MAX - 4096 || !tp_code_page_matches(address, &source, words)) return 0;
-    int fd = open(path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
+    int fd = (int)syscall(SYS_openat, AT_FDCWD, path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW, 0);
     if (fd < 0) return 0;
     struct stat info;
     int valid = fstat(fd, &info) == 0 && S_ISREG(info.st_mode) && (uint64_t)info.st_ino == source.inode
@@ -115,7 +115,7 @@ int tp_code_page_claim(struct tp_code_page *page, void *address, const char *pat
     void *saved = valid ? mmap(NULL, 4096, PROT_READ | PROT_EXEC | (source.bti ? PROT_BTI : 0),
                               MAP_PRIVATE, fd, (off_t)source.offset) : MAP_FAILED;
     int saved_errno = errno;
-    if (close(fd) != 0) tp_code_fatal();
+    if (syscall(SYS_close, fd) != 0) tp_code_fatal();
     if (saved == MAP_FAILED) { report.prepare_errno = saved_errno; return 0; }
     staged();
     if (!tp_code_page_matches(saved, &source, words)) { discard(saved); return 0; }

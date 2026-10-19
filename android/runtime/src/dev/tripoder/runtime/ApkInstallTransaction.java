@@ -55,7 +55,7 @@ final class ApkInstallTransaction {
             RuntimeFiles.sync(destination);RuntimeFiles.sync(stage.getParentFile());RuntimeFiles.sync(destination.getParentFile());fault.at("AFTER_PUBLISH");
             ArtifactSet published=apks.integrity.get(destination,prepared.descriptorSha);
             String dataId=old==null?UUID.randomUUID().toString():old.dataId;
-            ApkStore.BundleInstall result=apks.verified(space,generation,dataId,published);
+            ApkStore.BundleInstall result=apks.cacheVerified(space,generation,dataId,published);
             synchronized(apks.authority){
                 apks.catalog.requireSpace(space);apks.catalog.requireUnused(space,pkg);
                 requireGeneration(apks.row(space,pkg),expected);
@@ -71,7 +71,7 @@ final class ApkInstallTransaction {
                     apks.contract.succeed(operation,generation);InstallHistory.committed(apks.store,apks.contract,generation,old==null?null:old.generation,operation);fault.at("BEFORE_COMMIT");db.setTransactionSuccessful();
                 }finally{db.endTransaction();}
             }
-            fault.at("AFTER_COMMIT");synchronized(apks.authority){InstallHistory.resolve(apks.store,apks.contract,result);}return result;
+            fault.at("AFTER_COMMIT");apks.invalidate(space,pkg);synchronized(apks.authority){InstallHistory.resolve(apks.store,apks.contract,result);}return result;
         }catch(Exception error){
             try{synchronized(apks.authority){if(apks.contract.query(operation).state==ExecutionContract.OperationState.RUNNING){
                 if(metadataStarted)apks.contract.markUnknown(operation,"INSTALL_PERSISTENCE_UNCONFIRMED");else apks.contract.fail(operation,"INSTALL_REJECTED");

@@ -52,7 +52,13 @@ public final class ApkStore {
         synchronized(authority){InstallProviderIndex.requireAvailable(store.getReadableDatabase(),space,set.packageName,InstallProviderIndex.authorities(set));}
     }
 
+    private final java.util.Map<String,BundleInstall> installedCache=new java.util.concurrent.ConcurrentHashMap<>();
+    public void invalidate(String space,String pkg){installedCache.remove(space+'|'+pkg);}
+
     public BundleInstall get(String space,String pkg)throws Exception {
+        String cacheKey=space+'|'+pkg;
+        BundleInstall cached=installedCache.get(cacheKey);
+        if(cached!=null)return cached;
         long g0=android.os.SystemClock.elapsedRealtime();
         Row row;synchronized(authority){catalog.requireSpace(space);RuntimeFiles.id(pkg);row=row(space,pkg);}
         if(row==null)throw new ActivityNotFoundException("PACKAGE_NOT_IN_SPACE:"+pkg);
@@ -62,11 +68,19 @@ public final class ApkStore {
             if(!set.packageName.equals(pkg)||!set.signerSha.equals(row.signer)||set.versionCode!=row.version||!set.base.equals(new File(row.apk))||!set.parts.get(0).sha256.equals(row.sha))throw new SecurityException("INSTALL_METADATA_MISMATCH");
             BundleInstall install=reuse(space,row.generation,row.dataId,set);
             synchronized(authority){Row current=row(space,pkg);if(current==null||!row.generation.equals(current.generation)||!row.dataId.equals(current.dataId)||!"COMMITTED".equals(current.state))throw new IllegalStateException("STALE_INSTALL");InstallHistory.resolve(store,contract,install);}
+            installedCache.put(cacheKey,install);
             return install;
-        }catch(Exception error){synchronized(authority){ContentValues v=new ContentValues();v.put("state","CORRUPT");v.put("reason",error.getClass().getSimpleName()+":"+String.valueOf(error.getMessage()));store.getWritableDatabase().update("installs",v,"space=? AND package=? AND generation=? AND dataId=? AND state='COMMITTED'",new String[]{space,pkg,row.generation,row.dataId});}throw error;}
+        }catch(ArtifactIntegrityCache.VerificationUnstable unstable){
+            // A concurrent touch of the immutable tree, not proof the committed bytes are bad.
+            // Latching CORRUPT here would permanently brick an intact install (the read path never
+            // revisits a non-COMMITTED row), forcing the user to re-add a working app. Leave it
+            // COMMITTED and surface a retryable fault; the next resolve verifies the settled tree.
+            throw unstable;
+        }catch(Exception error){invalidate(space,pkg);synchronized(authority){ContentValues v=new ContentValues();v.put("state","CORRUPT");v.put("reason",error.getClass().getSimpleName()+":"+String.valueOf(error.getMessage()));store.getWritableDatabase().update("installs",v,"space=? AND package=? AND generation=? AND dataId=? AND state='COMMITTED'",new String[]{space,pkg,row.generation,row.dataId});}throw error;}
     }
     /** Re-runs the complete verification of one CORRUPT install. Only if every check passes is it COMMITTED again; otherwise it stays CORRUPT with its recorded reason. A verification that was wrongly rejected by an earlier build cannot otherwise be undone, because get() never reads a non-COMMITTED row. */
     public void reverify(String space,String pkg,String generation)throws Exception {
+        invalidate(space,pkg);
         Row row;synchronized(authority){catalog.requireSpace(space);RuntimeFiles.id(pkg);RuntimeFiles.id(generation);row=row(space,pkg);}
         if(row==null||!generation.equals(row.generation))throw new IllegalStateException("INSTALL_GENERATION_CONFLICT");
         if("COMMITTED".equals(row.state))return;
@@ -86,8 +100,11 @@ public final class ApkStore {
     private BundleInstall reuse(String space,String generation,String dataId,ArtifactSet set){
         String key=space+'|'+generation+'|'+dataId;
         synchronized(reusable){BundleInstall cached=reusable.get(key);if(cached!=null&&cached.artifacts==set)return cached;}
+        return cacheVerified(space,generation,dataId,set);
+    }
+    BundleInstall cacheVerified(String space,String generation,String dataId,ArtifactSet set){
         BundleInstall fresh=verified(space,generation,dataId,set);
-        synchronized(reusable){reusable.put(key,fresh);}
+        synchronized(reusable){reusable.put(space+'|'+generation+'|'+dataId,fresh);}
         return fresh;
     }
     BundleInstall verified(String space,String generation,String dataId,ArtifactSet set){
@@ -106,6 +123,7 @@ public final class ApkStore {
     }
     /** Caller owns admission and termination. Removal still requires every durable reference to be released. */
     synchronized void uninstallAccepted(String operation,String space,String pkg,String expectedGeneration,FaultPoint fault)throws Exception{
+        invalidate(space,pkg);
         catalog.requireSpace(space);RuntimeFiles.id(pkg);RuntimeFiles.id(expectedGeneration);catalog.requireUnused(space,pkg);
         if(contract.query(operation).state!=ExecutionContract.OperationState.RUNNING)throw new IllegalStateException("UNINSTALL_OPERATION_NOT_RUNNING");
         Row old=row(space,pkg);if(old==null||!old.generation.equals(expectedGeneration)){contract.fail(operation,"INSTALL_GENERATION_CONFLICT");throw new IllegalStateException("INSTALL_GENERATION_CONFLICT");}

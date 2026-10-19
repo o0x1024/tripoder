@@ -173,9 +173,6 @@ public final class TargetLaunchIntegration extends ControlTestBase {
         for(int i=0;i<live.length();i++){JSONObject process=live.getJSONObject(i);if(first.getString("generation").equals(process.getString("processGeneration"))&&first.getInt("pid")==process.getInt("pid"))same=true;}
         check("wake-keeps-the-same-guest-process",same,live);
     }
-    private String shell(String command)throws Exception{
-        try(java.io.InputStream in=new java.io.FileInputStream(getUiAutomation().executeShellCommand(command).getFileDescriptor())){return new String(in.readAllBytes(),StandardCharsets.UTF_8);}
-    }
     private String focusedWindow()throws Exception{
         StringBuilder focus=new StringBuilder();
         for(String line:shell("dumpsys window").split("\n"))if(line.contains("mCurrentFocus=")&&line.contains("Window{"))focus.append(line.trim()).append(' ');

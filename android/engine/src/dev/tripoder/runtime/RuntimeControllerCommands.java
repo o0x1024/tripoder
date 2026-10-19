@@ -64,7 +64,7 @@ final class RuntimeControllerCommands {
                     out.putString("space",space);break;
                 }
                 case "query":{
-                    fields(input,"command","operation");var operation=broker.contract.query(ControlWire.required(input,"operation"));if(operation==null)throw new IllegalStateException("OPERATION_NOT_FOUND");
+                    fields(input,"command","operation");RuntimeControllerLaunch.expireEntries(broker);var operation=broker.contract.query(ControlWire.required(input,"operation"));if(operation==null)throw new IllegalStateException("OPERATION_NOT_FOUND");
                     if(!ControllerTrust.OPERATIONS.equals(operation.callerIdentity))throw new SecurityException("OPERATION_OWNER_MISMATCH");out.putString("state",operation.state.name());out.putString("result",operation.result);out.putString("detail",operation.detail);out.putString("evidence",operation.evidence);break;
                 }
                 case "cancelNotAccepted":{

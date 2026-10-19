@@ -29,7 +29,14 @@ final class BinXmlTypedValues {
                 int[][] values=new int[count][2];
                 for(int i=0;i<count;i++){
                     int value=ext+start+i*stride+12;
-                    if(u16(b,value)!=8||b.get(value+2)!=0)throw bad();
+                    // Res_value.size is informational: ResXMLParser reads dataType/data at
+                    // fixed offsets (value+3, value+4) from the stride, never from size.
+                    // AOSP ignores the field; obfuscated manifests (抖音 writes it on ~1/6 of
+                    // its attributes) emit 0 instead of 8. Accept both — the kind whitelist
+                    // below and the chunk/stride bounds above still bound the read — rather
+                    // than reject the whole APK. res0 is reserved and 0 in every manifest seen.
+                    int valueSize=u16(b,value);
+                    if((valueSize!=8&&valueSize!=0)||b.get(value+2)!=0)throw bad();
                     int kind=b.get(value+3)&255,data=b.getInt(value+4);
                     if(!(kind<=8||kind>=0x10&&kind<=0x12||kind>=0x1c&&kind<=0x1f))throw bad();
                     values[i][0]=kind;values[i][1]=data;

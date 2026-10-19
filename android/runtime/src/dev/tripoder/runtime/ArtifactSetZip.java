@@ -60,12 +60,14 @@ final class ArtifactSetZip {
         if(size!=e.getSize()||crc.getValue()!=e.getCrc())throw fail("ZIP_CONTENT_MISMATCH");
         ArtifactSet.FileRecord record=new ArtifactSet.FileRecord(path,ArtifactSet.hex(md.digest()),size);
         boolean library=path.startsWith("lib/arm64-v8a/");
-        if(library){
-            // A selected ABI directory can also contain application-owned
-            // compressed code or metadata with a .so suffix. Keep these as
-            // authenticated opaque files; only actual ELF claims have ABI semantics.
-            try(InputStream in=zip.getInputStream(e)){byte[] header=in.readNBytes(20);boolean elf=header.length>=4&&header[0]==127&&header[1]=='E'&&header[2]=='L'&&header[3]=='F';if(elf&&(header.length<20||header[4]!=2||header[5]!=1||header[16]!=3||header[17]!=0||(header[18]&255)!=183||header[19]!=0))throw fail("NATIVE_ELF_NOT_ARM64_SHARED");}
-        }
+        // Every file in the selected ABI directory is kept as an authenticated entry,
+        // whatever its bytes. Apps routinely ship a foreign-ABI straggler (a 32-bit ARM
+        // or x86/x86_64 ".so", e.g. 今日头条's libcvt.so, 网易云's libnesec-x86.so) or a
+        // compressed payload with a ".so" suffix here. The 64-bit guest never maps those,
+        // and a mismatched System.loadLibrary fails at dlopen with the same
+        // UnsatisfiedLinkError the platform raises natively, which is the faithful result.
+        // Rejecting an ELF whose header was not arm64 ET_DYN at install turned one
+        // straggler file into a whole-application install failure, so it is no longer done.
         return new Result(path,record,bytes==null?null:bytes.toByteArray(),library);
     }
     static void extract(File apk,String zipPath,Path target,ArtifactSet.FileRecord expected)throws Exception{

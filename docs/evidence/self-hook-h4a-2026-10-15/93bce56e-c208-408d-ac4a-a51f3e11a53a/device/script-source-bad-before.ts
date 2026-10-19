@@ -1,1 +1,0 @@
-import {definePlan,param} from '@abox/hook'; export default definePlan({id:'owned-script',target,params:{delta:param.integer(2,{minimum:0,maximum:10})},setup(ctx){ctx.java.method(symbols.integer.className,'scriptIntOwned',['int']).before(()=>['bad']);}});

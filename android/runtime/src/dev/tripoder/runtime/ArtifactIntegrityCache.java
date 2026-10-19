@@ -9,6 +9,9 @@ import java.util.*;
 final class ArtifactIntegrityCache {
     private static final long MAX_BYTES=128L*1024*1024;
     private static final int MAX_SETS=64;
+    private static final int STABILITY_ATTEMPTS=4;
+    /** The committed tree moved mid-verification; nothing is proven wrong with its bytes, so the install stays usable and the read is simply retried. */
+    static final class VerificationUnstable extends IOException{VerificationUnstable(){super("ARTIFACT_CHANGED_DURING_VERIFICATION");}}
     private final LinkedHashMap<String,Entry> entries=new LinkedHashMap<>(16,.75f,true);
     private long bytes,hits,verified;
     private static final class Entry {
@@ -23,9 +26,18 @@ final class ArtifactIntegrityCache {
         }
         // Full byte verification never monopolizes the cache used by unrelated running apps.
         // Concurrent misses may verify independently; neither receives unverified shared state.
-        ArtifactSet set=ArtifactSet.verify(directory,digest);
-        Map<String,String> after=stamp(directory);if(!before.equals(after))throw new SecurityException("ARTIFACT_CHANGED_DURING_VERIFICATION");
-        synchronized(this){verified++;put(key,new Entry(set,after));}return set;
+        // The tree is immutable after commit, so a stamp change across the verification means
+        // it was touched concurrently (e.g. publication reconciliation during a cold-broker boot).
+        // The class contract is to REVALIDATE on any change, not to condemn: re-verify against the
+        // settled tree a bounded number of times. Verification always fully digests every file, so
+        // a genuinely altered byte still fails as ARTIFACT_FILE_CORRUPT regardless of the retry.
+        for(int attempt=0;;attempt++){
+            ArtifactSet set=ArtifactSet.verify(directory,digest);
+            Map<String,String> after=stamp(directory);
+            if(before.equals(after)){synchronized(this){verified++;put(key,new Entry(set,after));}return set;}
+            if(attempt>=STABILITY_ATTEMPTS)throw new VerificationUnstable();
+            before=after;
+        }
     }
     private void put(String key,Entry entry){Entry old=entries.remove(key);if(old!=null)bytes-=old.cost;if(entry.cost>MAX_BYTES)return;entries.put(key,entry);bytes+=entry.cost;
         while(entries.size()>MAX_SETS||bytes>MAX_BYTES){var oldest=entries.entrySet().iterator();var item=oldest.next();bytes-=item.getValue().cost;oldest.remove();}

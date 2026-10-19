@@ -46,7 +46,7 @@ final class ActivityLaunchLedger {
     void taskToFront(String id,ActivityLedger.Ticket root){
         Launch launch=get(id);if(!"PREPARED".equals(launch.state)||!(Integer.valueOf(2).equals(launch.startResult)||Integer.valueOf(3).equals(launch.startResult))||launch.expectsResult)throw new SecurityException("ACTIVITY_TASK_FRONT_STATE");
         var db=store.getWritableDatabase();db.beginTransaction();try{
-            if(launch.operation!=null)contract.succeed(launch.operation,"android-standard-task-reused;startResult="+launch.startResult+";task="+root.taskId+";root="+root.id);
+            if(launch.operation!=null&&contract.query(launch.operation).state==ExecutionContract.OperationState.RUNNING)contract.succeed(launch.operation,"android-standard-task-reused;startResult="+launch.startResult+";task="+root.taskId+";root="+root.id);
             ContentValues row=new ContentValues();row.put("state","SYSTEM_CONFIRMED");row.put("kind",launch.startResult==2?"TASK_TO_FRONT":"TASK_ALREADY_FRONT");row.put("receiver",root.id);row.put("instance",root.instance);update(id,row);
             ContentValues ticket=new ContentValues();ticket.put("state","FINISHED");ticket.put("taskId",root.taskId);ticket.put("resourceProof","SYSTEM_TASK_TO_FRONT;root="+root.id);db.update("activity_tickets",ticket,"ticket=?",new String[]{launch.candidate});
             db.setTransactionSuccessful();
@@ -61,7 +61,7 @@ final class ActivityLaunchLedger {
     void received(String id,String receiver,String instance){
         Launch launch=get(id);if(!launch.state.equals("ENTERED")||!receiver.equals(launch.receiver)||!instance.equals(launch.instance))throw new SecurityException("ACTIVITY_DELIVERY_ACK_MISMATCH");
         var db=store.getWritableDatabase();db.beginTransaction();try{
-            if(launch.operation!=null&&!launch.expectsResult)contract.succeed(launch.operation,"activity-"+launch.kind+"-callback-completed");
+            if(launch.operation!=null&&!launch.expectsResult&&contract.query(launch.operation).state==ExecutionContract.OperationState.RUNNING)contract.succeed(launch.operation,"activity-"+launch.kind+"-callback-completed");
             ContentValues row=new ContentValues();row.put("state","RECEIVED");update(id,row);db.setTransactionSuccessful();
         }finally{db.endTransaction();}
     }

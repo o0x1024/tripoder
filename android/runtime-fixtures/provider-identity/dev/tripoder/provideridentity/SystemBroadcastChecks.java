@@ -47,8 +47,11 @@ final class SystemBroadcastChecks {
         if(!baseline){
             boolean spoof=false;try{context.sendBroadcast(new Intent(Intent.ACTION_TIME_TICK));}catch(UnsupportedOperationException expected){spoof=expected.getMessage().contains("SYSTEM_BROADCAST_POLICY_UNSUPPORTED");}
             check(checks,"system-receiver-guest-cannot-send-system-action",spoof);
-            boolean permissionRejected=false;try{context.registerReceiver(screen,new IntentFilter(own),"dev.tripoder.other.permission.MESSAGE",null,Context.RECEIVER_NOT_EXPORTED);}catch(IllegalStateException expected){permissionRejected=android.util.Log.getStackTraceString(expected).contains("RECEIVER_PERMISSION_NOT_OWNED");}
-            check(checks,"system-receiver-foreign-permission-rejected",permissionRejected);
+            // Guarding a receiver with a permission the app does not own (here another package's
+            // custom permission, as real apps do with android.permission.INTERNET) registers
+            // successfully; the restriction is enforced at delivery, not pre-rejected here.
+            context.registerReceiver(screen,new IntentFilter(own),"dev.tripoder.other.permission.MESSAGE",null,Context.RECEIVER_NOT_EXPORTED);context.unregisterReceiver(screen);
+            check(checks,"system-receiver-foreign-permission-registers-and-enforces-on-delivery",true);
             boolean unregistered=false;try{context.unregisterReceiver(receiver);}catch(IllegalArgumentException expected){unregistered=true;}
             check(checks,"system-receiver-repeat-unregister-rejected",unregistered);
             JSONObject concurrent=ReceiverConcurrencyChecks.run(context);

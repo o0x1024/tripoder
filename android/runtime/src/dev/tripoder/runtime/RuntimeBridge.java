@@ -73,6 +73,7 @@ public final class RuntimeBridge {
     public static void networkUnregister(android.net.ConnectivityManager.NetworkCallback callback){RuntimeEngine.current.connectivity.unregister(callback);}
     public static ActivityManager createActivityManager(Context host){return RuntimeSelfHookManagers.activityManager(host);}
     public static boolean ownsActivityManager(ActivityManager manager){return RuntimeEngine.current!=null&&RuntimeEngine.current.activityManager.owns(manager);}
+    public static ActivityManager activityPlatform(){return RuntimeEngine.current.activityManager.platform();}
     public static int memoryClass(boolean large){return RuntimeEngine.current.activityManager.memoryClass(large);}
     public static boolean lowRamDevice(){return RuntimeEngine.current.activityManager.lowRam();}
     public static void memoryInfo(ActivityManager.MemoryInfo output){RuntimeEngine.current.activityManager.memoryInfo(output);}
@@ -117,9 +118,9 @@ public final class RuntimeBridge {
     public static ContentResolver resolver(){return RuntimeEngine.current.settingsResolver();}
     public static ContentProvider provider(){return RuntimeEngine.current.settingsProvider();}
     public static ContentProvider acquireProvider(String authority,boolean stable,boolean existing){return RuntimeEngine.current.providers.acquire(authority,stable,existing);}
-    public static void releaseProvider(ContentProvider provider){((RuntimeProviderFacade)provider).close();}
+    public static void releaseProvider(ContentProvider provider){if(provider instanceof RuntimeProviderFacade)((RuntimeProviderFacade)provider).close();}
     public static void settingsProviderHandle(Object handle){RuntimeEngine.current.providers.handles.settings(handle);}
-    public static void rememberProviderHandle(Object handle,ContentProvider provider){RuntimeEngine.current.providers.handles.remember(handle,(RuntimeProviderFacade)provider);}
+    public static void rememberProviderHandle(Object handle,ContentProvider provider){RuntimeEngine.current.providers.handles.remember(handle,provider);}
     public static void releaseProviderHandle(Object handle){RuntimeEngine.current.providers.handles.release(handle);}
     public static boolean providerAttachmentScoped(ContentProvider provider){return RuntimeProviderAttachments.scoped(provider);}
     public static Context providerAttachContext(ContentProvider provider,Context guest,android.content.pm.ProviderInfo info,boolean testing){return RuntimeProviderAttachments.platformContext(provider,guest,info,testing);}

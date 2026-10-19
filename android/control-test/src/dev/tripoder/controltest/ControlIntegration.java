@@ -18,6 +18,12 @@ public final class ControlIntegration extends ControlTestBase {
             // The entry was issued but never started: without proof either way the outcome is UNKNOWN, and the dead root is offered for closing.
             String interruptedId=args.getString("readyLaunchOperation");Bundle interrupted=execute(session,"query","operation",interruptedId);Bundle entries=execute(session,"launchEntries","project",args.getString("project"));
             check("issued-launch-recovered-as-unknown-closable-entry","UNKNOWN".equals(interrupted.getString("state"))&&entries.getString("entries").contains(interruptedId),json(interrupted)+" "+entries.getString("entries"));
+            // Control runs each create a space that is never launched again; its retained entries would pin a process slot for good.
+            // Deleting the space (this run's and earlier ones) retires them through the normal uninstall path.
+            JSONArray spaces=new JSONArray(execute(session,"catalog").getString("spaces"));JSONArray cleaned=new JSONArray();
+            for(int i=0;i<spaces.length();i++)if(spaces.getString(i).matches("control-[0-9a-f]{16}")){String cleanup=UUID.randomUUID().toString();execute(session,"deleteSpace","operation",cleanup,"space",spaces.getString(i));cleaned.put(new JSONObject().put("space",spaces.getString(i)).put("state",execute(session,"query","operation",cleanup).getString("state")));}
+            boolean allCleaned=true;for(int i=0;i<cleaned.length();i++)allCleaned&="SUCCEEDED".equals(cleaned.getJSONObject(i).getString("state"));
+            check("control-spaces-removed-with-their-entries",allCleaned&&!new JSONArray(execute(session,"catalog").getString("spaces")).toString().contains("\""+space+"\""),cleaned);
             report.put("status",json(execute(session,"status")));execute(session,"disconnect");return;
         }
         Bundle connection=connect(entry,life());IBinder session=connection.getBinder("session");Bundle status=execute(session,"status");report.put("status",json(status));

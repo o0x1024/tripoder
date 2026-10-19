@@ -87,7 +87,7 @@ final class SystemServiceChecks {
             for(var start:manager.getHistoricalProcessStartReasons(0))if(start.getPid()==android.os.Process.myPid()&&ownLaunch.equals(start.getStartupTimestamps().get(ApplicationStartInfo.START_TIMESTAMP_LAUNCH)))preserved=true;
             check(checks,"application-start-history-defensive-timestamp-copy",preserved);
             check(checks,"activity-manager-only-own-logical-package",scoped);
-            check(checks,"activity-manager-tasks-explicitly-rejected",rejected(()->manager.getRunningTasks(1),"ACTIVITY_MANAGER_CAPABILITY_UNSUPPORTED"));
+            check(checks,"activity-manager-tasks-empty-without-host-leakage",manager.getRunningTasks(1).isEmpty()&&manager.getAppTasks().isEmpty()&&manager.getRunningServices(1).isEmpty());
             android.os.Debug.MemoryInfo[] ownMemory=manager.getProcessMemoryInfo(new int[]{android.os.Process.myPid()});
             check(checks,"activity-manager-owned-pid-memory-is-real",ownMemory!=null&&ownMemory.length==1&&ownMemory[0]!=null&&ownMemory[0].getTotalPss()>0);
             boolean foreignMemory=false;try{manager.getProcessMemoryInfo(new int[]{1});}catch(SecurityException expected){foreignMemory=expected.getMessage().contains("PROCESS_MEMORY_PID_OUTSIDE_INSTALL");}

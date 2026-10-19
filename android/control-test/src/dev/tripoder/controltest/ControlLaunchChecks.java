@@ -32,6 +32,10 @@ final class ControlLaunchChecks {
         test.check("unstarted-entry-is-handed-back","FAILED".equals(settled.getString("state"))&&"LAUNCH_NOT_DISPATCHED".equals(settled.getString("detail"))&&entry.getStringExtra("tripoder.ticket").equals(abandoned.getString("ticket")),test.json(settled));
         test.check("entry-is-handed-back-once",test.rejected(()->test.execute(session,"abandonLaunch","operation",operation),IllegalStateException.class,"LAUNCH_ENTRY_NOT_PENDING"),true);
         test.check("abandoned-operation-cannot-be-launched-again",test.rejected(()->ControlWire.call(session,ControlWire.EXECUTE,request),IllegalStateException.class,"LAUNCH_ALREADY_ACCEPTED_QUERY_REQUIRED"),true);
+        // A start the platform drops silently leaves no error for the caller to report; the entry expires instead of holding the root.
+        String dropped=UUID.randomUUID().toString();Bundle drop=new Bundle(request);drop.putString("operation",dropped);ControlWire.call(session,ControlWire.EXECUTE,drop);
+        long until=SystemClock.elapsedRealtime()+45000;Bundle expired;do{SystemClock.sleep(500);expired=test.execute(session,"query","operation",dropped);}while("RUNNING".equals(expired.getString("state"))&&SystemClock.elapsedRealtime()<until);
+        test.check("unentered-entry-expires-and-releases-root","FAILED".equals(expired.getString("state"))&&"LAUNCH_ENTRY_NOT_ENTERED".equals(expired.getString("detail")),test.json(expired));
         String interrupted=UUID.randomUUID().toString();Bundle next=new Bundle(request);next.putString("operation",interrupted);Bundle ready=ControlWire.call(session,ControlWire.EXECUTE,next);test.report.put("readyLaunchOperation",interrupted);
         test.check("second-launch-issued-for-real-authority-death","RUNNING".equals(test.execute(session,"query","operation",interrupted).getString("state"))&&ready.getParcelable("intent",Intent.class)!=null,interrupted);
     }

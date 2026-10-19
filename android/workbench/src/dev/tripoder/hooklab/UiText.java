@@ -18,6 +18,7 @@ final class UiText {
             {"AGENT_ENDPOINT_CLOSED","外部控制入口已关闭"},
             {"LAUNCH_TARGET_REJECTED","上一次启动没有正常结束，需要先关闭旧的启动入口"},
             {"LAUNCH_NOT_DISPATCHED","应用界面没有打开，请重新启动"},
+            {"LAUNCH_ENTRY_NOT_ENTERED","系统没有打开应用界面，请回到 Tripoder 后重新启动"},
             {"LAUNCH_BINDING_STALE","项目的运行目标已失效，请重新选择运行目标"},
             {"HOOK_PROJECT_BINDING_STALE","项目的运行目标已失效，请重新选择运行目标"},
             {"PROJECT_NOT_BOUND","项目还没有运行目标，请先选择一个应用"},

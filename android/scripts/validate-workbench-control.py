@@ -152,7 +152,7 @@ def main():
                         adb('shell','am','start','-W','-a','android.intent.action.MAIN','-c','android.intent.category.LAUNCHER','-n',request['component']);break
                     if time.monotonic()>=deadline:raise RuntimeError('LAUNCH_REQUEST_TIMEOUT')
                     time.sleep(.1)
-                stdout,stderr=process.communicate(timeout=300 if runner=='TargetLaunchIntegration' else 120);output=subprocess.CompletedProcess(command,process.returncode,stdout,stderr)
+                stdout,stderr=process.communicate(timeout=300 if runner=='TargetLaunchIntegration' else 420 if runner=='AppActionsUiIntegration' else 120);output=subprocess.CompletedProcess(command,process.returncode,stdout,stderr)
                 commands.append({'command':command,'exitCode':output.returncode,'stdout':stdout,'stderr':stderr})
             except Exception:
                 progress=adb('shell','cat','/sdcard/Android/data/'+target_package+'/files/progress-'+run+'.json',check=False)

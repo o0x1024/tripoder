@@ -132,6 +132,17 @@ JNIEXPORT jobject JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_createNa
     (*env)->SetObjectField(env,declared,state.fields[9],data);
     (*env)->SetObjectField(env,construction,state.fields[9],data);
     (*env)->SetObjectField(env,construction,component_factory,NULL);
+    jfieldID primary_cpu_abi=(*env)->GetFieldID(env,state.classes[4],"primaryCpuAbi","Ljava/lang/String;");
+    if(!primary_cpu_abi){(*env)->ExceptionClear(env);}
+    else{
+        jobject abi=(*env)->GetObjectField(env,info,primary_cpu_abi);
+        if(!abi)abi=(*env)->NewStringUTF(env,"arm64-v8a");
+        if(abi){
+            (*env)->SetObjectField(env,declared,primary_cpu_abi,abi);
+            (*env)->SetObjectField(env,construction,primary_cpu_abi,abi);
+            (*env)->DeleteLocalRef(env,abi);
+        }
+    }
     jobject compatibility=(*env)->CallObjectMethod(env,apk,state.methods[3]);
     if(!compatibility||(*env)->ExceptionCheck(env))goto error;
     jobject logical=(*env)->NewObject(env,state.classes[2],state.methods[2],thread,construction,compatibility,NULL,

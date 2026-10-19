@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
@@ -18,6 +19,46 @@ import java.util.*;
 final class GuestIntentResolver {
     private GuestIntentResolver(){}
     private static final Map<RuntimeEngine,Map<String,List<IntentFilter>>> FILTERS=Collections.synchronizedMap(new WeakHashMap<>());
+    private static final Map<RuntimeEngine,Index> INDEXES=Collections.synchronizedMap(new WeakHashMap<>());
+
+    private static final class IndexedComponent {
+        final ApkManifest.Component component;final int order;final List<IntentFilter> filters;
+        IndexedComponent(ApkManifest.Component component,int order,List<IntentFilter> filters){this.component=component;this.order=order;this.filters=filters;}
+    }
+    private static final class Index {
+        final Map<String,List<IndexedComponent>> byKind=new HashMap<>();
+        final Map<String,Map<String,IndexedComponent>> explicitByKind=new HashMap<>();
+        final Map<String,Map<String,List<IndexedComponent>>> byKindAndAction=new HashMap<>();
+        final Map<String,ActivityInfo> activities=new HashMap<>(),receivers=new HashMap<>();
+        Index(RuntimeEngine engine){
+            for(String k:new String[]{"activity","receiver","service"}){
+                byKind.put(k,new ArrayList<>());explicitByKind.put(k,new HashMap<>());byKindAndAction.put(k,new HashMap<>());
+            }
+            if(engine.packageArchive!=null){
+                if(engine.packageArchive.activities!=null)for(ActivityInfo a:engine.packageArchive.activities)if(a!=null&&a.name!=null)activities.putIfAbsent(a.name,a);
+                if(engine.packageArchive.receivers!=null)for(ActivityInfo a:engine.packageArchive.receivers)if(a!=null&&a.name!=null)receivers.putIfAbsent(a.name,a);
+            }
+            int order=0;
+            for(ApkManifest.Component component:engine.manifestDeclarations){
+                String kind=component.type.equals("activity-alias")?"activity":component.type;
+                List<IndexedComponent> list=byKind.get(kind);if(list==null)continue;
+                order++;
+                List<IntentFilter> compFilters=filters(engine,component);
+                IndexedComponent indexed=new IndexedComponent(component,order,compFilters);
+                list.add(indexed);
+                explicitByKind.get(kind).putIfAbsent(component.name,indexed);
+                Map<String,List<IndexedComponent>> actionMap=byKindAndAction.get(kind);
+                Set<String> seenActions=new HashSet<>();
+                for(IntentFilter f:compFilters){
+                    for(int i=0;i<f.countActions();i++){
+                        String act=f.getAction(i);
+                        if(seenActions.add(act))actionMap.computeIfAbsent(act,k->new ArrayList<>()).add(indexed);
+                    }
+                }
+            }
+        }
+    }
+    private static Index index(RuntimeEngine engine){return INDEXES.computeIfAbsent(engine,Index::new);}
 
     /** The filters one declared component carries. A malformed or resource-referenced attribute simply contributes nothing, as the platform parser would skip it. */
     static List<IntentFilter> filters(RuntimeEngine engine,ApkManifest.Component component){
@@ -58,31 +99,46 @@ final class GuestIntentResolver {
         if(pkg!=null&&!engine.packageName.equals(pkg))return out;
         boolean defaultOnly=(flags&PackageManager.MATCH_DEFAULT_ONLY)!=0,disabled=(flags&PackageManager.MATCH_DISABLED_COMPONENTS)!=0;
         class Candidate{final ApkManifest.Component component;final IntentFilter filter;final int match,order;Candidate(ApkManifest.Component c,IntentFilter f,int m,int o){component=c;filter=f;match=m;order=o;}}
-        List<Candidate> found=new ArrayList<>();int order=0;
-        for(ApkManifest.Component component:engine.manifestDeclarations){
-            // An <activity-alias> is an activity under its own name and filters.
-            if(!(component.type.equals(kind)||kind.equals("activity")&&component.type.equals("activity-alias")))continue;order++;
-            if(explicit!=null){
-                if(!explicit.getClassName().equals(component.name))continue;
-                if(!disabled&&Boolean.FALSE.equals(component.enabled))continue;
-                found.add(new Candidate(component,null,IntentFilter.MATCH_CATEGORY_EMPTY,order));continue;
+        List<Candidate> found=new ArrayList<>();
+        Index idx=index(engine);
+        if(explicit!=null){
+            Map<String,IndexedComponent> explicitMap=idx.explicitByKind.get(kind);
+            IndexedComponent indexed=explicitMap==null?null:explicitMap.get(explicit.getClassName());
+            if(indexed!=null&&(disabled||!Boolean.FALSE.equals(indexed.component.enabled))){
+                found.add(new Candidate(indexed.component,null,IntentFilter.MATCH_CATEGORY_EMPTY,indexed.order));
             }
-            if(!disabled&&Boolean.FALSE.equals(component.enabled))continue;
-            for(IntentFilter filter:filters(engine,component)){
-                if(defaultOnly&&!filter.hasCategory(Intent.CATEGORY_DEFAULT))continue;
-                int match=filter.match(intent.getAction(),intent.getType(),intent.getScheme(),intent.getData(),intent.getCategories(),"TripoderResolve");
-                if(match>=0){found.add(new Candidate(component,filter,match,order));break;}
+        }else{
+            String action=intent.getAction();
+            List<IndexedComponent> pool;
+            if(action!=null){
+                Map<String,List<IndexedComponent>> actionMap=idx.byKindAndAction.get(kind);
+                pool=actionMap==null?List.of():actionMap.getOrDefault(action,List.of());
+            }else{
+                pool=idx.byKind.getOrDefault(kind,List.of());
+            }
+            String type=intent.getType(),scheme=intent.getScheme();
+            android.net.Uri dataUri=intent.getData();
+            Set<String> categories=intent.getCategories();
+            for(IndexedComponent indexed:pool){
+                ApkManifest.Component component=indexed.component;
+                if(!disabled&&Boolean.FALSE.equals(component.enabled))continue;
+                for(IntentFilter filter:indexed.filters){
+                    if(defaultOnly&&!filter.hasCategory(Intent.CATEGORY_DEFAULT))continue;
+                    int match=filter.match(action,type,scheme,dataUri,categories,"TripoderResolve");
+                    if(match>=0){found.add(new Candidate(component,filter,match,indexed.order));break;}
+                }
             }
         }
-        found.sort((a,b)->{int p=Integer.compare(b.filter==null?0:b.filter.getPriority(),a.filter==null?0:a.filter.getPriority());return p!=0?p:Integer.compare(a.order,b.order);});
+        if(found.size()>1)found.sort((a,b)->{int p=Integer.compare(b.filter==null?0:b.filter.getPriority(),a.filter==null?0:a.filter.getPriority());return p!=0?p:Integer.compare(a.order,b.order);});
+        ApplicationInfo sharedAppInfo=found.isEmpty()?null:GuestPackageManager.copyApplicationInfo(engine.info,false);
         for(Candidate candidate:found){
             ResolveInfo info=new ResolveInfo();
             info.priority=candidate.filter==null?0:candidate.filter.getPriority();info.match=candidate.match;info.filter=candidate.filter;
             info.isDefault=candidate.filter!=null&&candidate.filter.hasCategory(Intent.CATEGORY_DEFAULT);
             switch(kind){
-                case "activity":info.activityInfo=copyActivity(engine.packageArchive.activities,candidate.component.name,engine);break;
-                case "receiver":info.activityInfo=copyActivity(engine.packageArchive.receivers,candidate.component.name,engine);break;
-                case "service":info.serviceInfo=copyService(engine,candidate.component.name);break;
+                case "activity":info.activityInfo=copyActivity(idx.activities.get(candidate.component.name),sharedAppInfo);break;
+                case "receiver":info.activityInfo=copyActivity(idx.receivers.get(candidate.component.name),sharedAppInfo);break;
+                case "service":info.serviceInfo=copyService(engine,candidate.component.name,sharedAppInfo);break;
                 default:break;
             }
             if(info.activityInfo!=null||info.serviceInfo!=null)out.add(info);
@@ -97,13 +153,12 @@ final class GuestIntentResolver {
         ActivityInfo chosen=matches.get(0).activityInfo;
         return new ComponentName(chosen.packageName,chosen.name);
     }
-    private static ActivityInfo copyActivity(ActivityInfo[] declared,String name,RuntimeEngine engine){
+    private static ActivityInfo copyActivity(ActivityInfo declared,ApplicationInfo appInfo){
         if(declared==null)return null;
-        for(ActivityInfo info:declared)if(info.name.equals(name)){ActivityInfo copy=new ActivityInfo(info);copy.applicationInfo=GuestPackageManager.copyApplicationInfo(engine.info,false);return copy;}
-        return null;
+        ActivityInfo copy=new ActivityInfo(declared);copy.applicationInfo=appInfo;return copy;
     }
-    private static ServiceInfo copyService(RuntimeEngine engine,String name){
+    private static ServiceInfo copyService(RuntimeEngine engine,String name,ApplicationInfo appInfo){
         ServiceInfo raw=engine.serviceIndex.get(name);if(raw==null)return null;
-        ServiceInfo copy=new ServiceInfo(raw);copy.applicationInfo=GuestPackageManager.copyApplicationInfo(engine.info,false);return copy;
+        ServiceInfo copy=new ServiceInfo(raw);copy.applicationInfo=appInfo;return copy;
     }
 }

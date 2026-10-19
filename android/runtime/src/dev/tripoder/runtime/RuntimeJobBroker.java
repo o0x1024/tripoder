@@ -98,7 +98,31 @@ final class RuntimeJobBroker {
             current(install);ledger.requireIdle(install.generation);
             for(var version:ledger.versions(install.generation))if(!version.fenced&&!version.state.equals("REJECTED")&&(allNamespaces||version.namespace.equals(namespace))&&(id==null||version.jobId==id))selected.add(version);
             atomic(()->{
-                begin(operation,install,digest,"CANCEL");
+                begin(operation,install.generation,digest,"CANCEL");
+                for(var version:selected){ledger.target(operation,version.version);ledger.fence(version.version);}
+            });
+        }
+        try{
+            Set<String> cancelled=new HashSet<>();
+            for(var version:selected)if(cancelled.add(version.physicalNamespace+":"+version.jobId))platform.cancel(version.physicalNamespace,version.jobId);
+            synchronized(broker){atomic(()->{
+                for(var version:selected)ledger.state(version.version,"CANCEL_RPC_RETURNED");
+                broker.contract.succeed(operation,"CANCEL_RPC_RETURNED");ledger.close(operation);
+            });}
+        }catch(Exception error){unknown(operation,error);throw error;}
+    }
+
+    /** Cancels all scheduled jobs of an installation being removed, without requiring CORRUPT or schema-migrated artifacts to re-verify. */
+    void cancelForUninstall(String space,String pkg,String generation,String operation)throws Exception{
+        outsideLock();
+        String digest=ApkStore.textDigest("job-cancel-v1"+RuntimeJobNamespace.part(generation)+RuntimeJobNamespace.part("")+":null:true");
+        List<JobLedger.Version> selected=new ArrayList<>();
+        synchronized(broker){
+            var row=broker.apks.row(space,pkg);if(row==null||!generation.equals(row.generation))throw new SecurityException("JOB_INSTALL_STALE");
+            ledger.requireIdle(generation);
+            for(var version:ledger.versions(generation))if(!version.fenced&&!version.state.equals("REJECTED"))selected.add(version);
+            atomic(()->{
+                begin(operation,generation,digest,"CANCEL");
                 for(var version:selected){ledger.target(operation,version.version);ledger.fence(version.version);}
             });
         }
@@ -174,9 +198,10 @@ final class RuntimeJobBroker {
         if((found.flags&(ServiceInfo.FLAG_ISOLATED_PROCESS|ServiceInfo.FLAG_EXTERNAL_SERVICE))!=0||!Set.of("false","0").contains(declared.attributes.getOrDefault("android:isolatedProcess","false"))||!Set.of("false","0").contains(declared.attributes.getOrDefault("android:externalService","false")))throw new UnsupportedOperationException("JOB_SERVICE_PROCESS_KIND_UNSUPPORTED");
         return found;
     }
-    private void begin(String operation,ApkStore.BundleInstall install,String digest,String kind){
-        if(!broker.contract.accept(operation,"job-install:"+install.generation,digest).created)throw new IllegalStateException("JOB_ALREADY_ACCEPTED_QUERY_REQUIRED");
-        broker.contract.start(operation);ledger.mutation(operation,install.generation,kind);
+    private void begin(String operation,ApkStore.BundleInstall install,String digest,String kind){begin(operation,install.generation,digest,kind);}
+    private void begin(String operation,String generation,String digest,String kind){
+        if(!broker.contract.accept(operation,"job-install:"+generation,digest).created)throw new IllegalStateException("JOB_ALREADY_ACCEPTED_QUERY_REQUIRED");
+        broker.contract.start(operation);ledger.mutation(operation,generation,kind);
     }
     private void unknown(String operation,Exception error){synchronized(broker){
         if(broker.contract.query(operation).state==ExecutionContract.OperationState.RUNNING)atomic(()->{

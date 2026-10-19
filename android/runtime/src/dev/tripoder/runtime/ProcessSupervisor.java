@@ -221,7 +221,13 @@ public final class ProcessSupervisor {
         if(launch.spare!=null){Spare idle=launch.spare;launch.spare=null;dropSpare(idle);}launch.ready.completeExceptionally(error);launch.prepared.completeExceptionally(error);
         // Neither a timeout nor an error response proves process death. STOP also stays off
         // the caller's thread so an unresponsive guest cannot prevent the UNKNOWN response.
-        if(first&&launch.peer!=null)requestStop(launch);
+        if(first){
+            if(launch.peer!=null)requestStop(launch);
+            else if(launch.external||(launch.bindResolved&&!launch.boundToSystem)){
+                synchronized(broker){broker.dead(launch.slot.allocation.session.processGeneration);}
+                main.post(()->release(launch));
+            }
+        }
     }
     private void requestStop(Launch launch){stops.execute(()->{try{Bundle request=new Bundle();request.putString("bootstrapAbort",launch.slot.allocation.bootstrapToken);RuntimeWire.call(launch.peer,RuntimeWire.STOP,request);}catch(Exception error){android.util.Log.w("TripoderRuntime","Worker termination not acknowledged; reservation remains pinned",error);}});}
     public void stop(String generation)throws Exception{terminate(generation,false);}

@@ -10,7 +10,7 @@ final class RuntimeBroadcastBroker {
     RuntimeBroadcastBroker(RuntimeBroker broker){this.broker=broker;}
     Bundle handle(int code,Bundle input,String generation)throws Exception{
         if(code==RuntimeWire.BROADCAST_ROUTE)return route(input,broker.contract.getSession(generation));
-        var db=broker.store.getWritableDatabase();db.beginTransaction();try{Bundle result=handleTransaction(code,input,generation);db.setTransactionSuccessful();return result;}finally{db.endTransaction();}
+        return handleTransaction(code,input,generation);
     }
     private Bundle handleTransaction(int code,Bundle input,String generation)throws Exception{
         BroadcastLedger ledger=broker.broadcasts;Bundle out=new Bundle();var source=broker.contract.getSession(generation);
@@ -21,7 +21,9 @@ final class RuntimeBroadcastBroker {
                 Intent sticky=broker.host.registerReceiver(null,declared,null,null,Context.RECEIVER_NOT_EXPORTED);
                 if(sticky!=null){if(!RuntimeBroadcastIntent.matches(declared,sticky))throw new SecurityException("STICKY_QUERY_FILTER_MISMATCH");out.putByteArray("payload",RuntimeSystemBroadcasts.encode(sticky,Set.of()));}return out;
             }
-            if(input.getString("permission")!=null)RuntimeSystemBroadcasts.permission(broker.apks.get(source.identity.spaceId,source.identity.packageName).info,input.getString("permission"),input.getBoolean("exported"));
+            // A receiver may guard with any permission (its delivery restriction is enforced
+            // in resolve(); an unowned one simply never matches a sender), so registration is
+            // not pre-rejected for an unowned permission.
             boolean media=false;for(int i=0;i<declared.countActions();i++)media|=RuntimeSystemBroadcasts.MEDIA.contains(declared.getAction(i));
             Set<String> roots=media?RuntimeSystemBroadcasts.roots(broker.host):Set.of();
             String id=ledger.registration(source,filter,input.getBoolean("exported"),roots,input.getString("permission"));out.putString("registration",id);out.putString("action",BroadcastLedger.action(id));return out;
@@ -68,7 +70,8 @@ final class RuntimeBroadcastBroker {
     private Bundle withBinders(Bundle reply,String ticket){Bundle binders=broker.broadcastBinders.get(ticket);if(binders==null)return reply;Bundle copy=new Bundle(reply);copy.putBundle("binders",binders);return copy;}
     private List<Bundle> resolve(ApkStore.BundleInstall sender,Intent intent,String receiverPermission)throws Exception{
         List<Bundle> targets=new ArrayList<>();
-        if(receiverPermission!=null)RuntimeSystemBroadcasts.permission(sender.info,receiverPermission,true);
+        // A sender's receiverPermission restricts which receivers may be reached; it is applied
+        // per target below (holds()), not pre-rejected here when the sender does not own it.
         if(intent.getComponent()!=null){
             var component=intent.getComponent();if(intent.getPackage()!=null&&!intent.getPackage().equals(component.getPackageName()))throw new SecurityException("BROADCAST_PACKAGE_MISMATCH");
             var install=broker.apks.get(sender.space,component.getPackageName());var declared=RuntimeComponents.declared(install,"receiver",component.getClassName());RuntimeComponents.authorize(declared,install.info.packageName,sender.info.packageName);
@@ -79,55 +82,52 @@ final class RuntimeBroadcastBroker {
                 if(intent.getPackage()!=null&&!intent.getPackage().equals(registration.getString("package")))continue;
                 if(!registration.getBoolean("exported")&&!sender.info.packageName.equals(registration.getString("package")))continue;
                 if(!RuntimeBroadcastIntent.matches(RuntimeBroadcastIntent.filter(registration.getByteArray("filter")),intent))continue;
-                var owner=broker.apks.get(sender.space,registration.getString("package"));
-                if(receiverPermission!=null&&!RuntimeSystemBroadcasts.holds(owner,sender,receiverPermission))continue;
                 String permission=registration.getString("permission");
-                if(!permission.isEmpty()){
-                    if(!RuntimeSystemBroadcasts.holds(sender,owner,permission))continue;
+                if(receiverPermission!=null||!permission.isEmpty()){
+                    var owner=broker.apks.get(sender.space,registration.getString("package"));
+                    if(receiverPermission!=null&&!RuntimeSystemBroadcasts.holds(owner,sender,receiverPermission))continue;
+                    if(!permission.isEmpty()&&!RuntimeSystemBroadcasts.holds(sender,owner,permission))continue;
                 }
                 broker.requiredSlot(registration.getString("target"));Bundle target=new Bundle();target.putString("target",registration.getString("target"));target.putString("component","");target.putString("registration",registration.getString("registration"));target.putString("action",BroadcastLedger.action(registration.getString("registration")));targets.add(target);
             }
         }
-        if(targets.size()>32)throw new IllegalArgumentException("BROADCAST_FANOUT_LIMIT");return targets;
+        if(targets.size()>128)throw new IllegalArgumentException("BROADCAST_FANOUT_LIMIT");return targets;
     }
     void requireDynamicImplicit(ApkStore.BundleInstall sender,Intent intent)throws Exception{
         if(intent.getComponent()!=null)throw new IllegalArgumentException("IMPLICIT_INTENT_REQUIRED");
-        // A known manifest target must not silently disappear behind a dynamic-only capability.
-        try(var installs=broker.store.getReadableDatabase().rawQuery("SELECT package FROM installs WHERE space=?",new String[]{sender.space})){
-            while(installs.moveToNext()){String pkg=installs.getString(0);if(intent.getPackage()!=null&&!intent.getPackage().equals(pkg))continue;
-                var install=broker.apks.get(sender.space,pkg);for(var c:install.components())if(c.enabled&&c.type.equals("receiver"))for(var filter:c.declaration.children)if(filter.name.equals("intent-filter"))for(var action:filter.children)if(action.name.equals("action")&&Objects.equals(action.android("name",""),intent.getAction()))throw new UnsupportedOperationException("MANIFEST_IMPLICIT_BROADCAST_NOT_IMPLEMENTED");
-            }
-        }
+        String pkg=intent.getPackage()!=null?intent.getPackage():sender.info.packageName;
+        if(!pkg.equals(sender.info.packageName)&&broker.apks.row(sender.space,pkg)==null)return;
+        var install=pkg.equals(sender.info.packageName)?sender:broker.apks.get(sender.space,pkg);
+        for(var c:install.components())if(c.enabled&&c.type.equals("receiver"))for(var filter:c.declaration.children)if(filter.name.equals("intent-filter"))for(var action:filter.children)if(action.name.equals("action")&&Objects.equals(action.android("name",""),intent.getAction()))throw new UnsupportedOperationException("MANIFEST_IMPLICIT_BROADCAST_NOT_IMPLEMENTED");
     }
     ArrayList<Bundle> pending(PendingIntentLedger.Version value,Intent intent,boolean ordered)throws Exception{
         ApkStore.BundleInstall sender=broker.apks.get(value.space,value.pkg);broker.pendingIntentBroker.current(sender);
         if(!value.install.equals(sender.generation)||!value.data.equals(sender.data.getName()))throw new SecurityException("PENDING_INSTALL_STALE");
         List<Bundle> targets=resolve(sender,intent,null);if(ordered&&targets.size()>1)throw new UnsupportedOperationException("ORDERED_BROADCAST_SINGLE_TARGET_REQUIRED");
         byte[] payload=RuntimeBroadcastIntent.encode(intent);String operation="pending-implicit-"+UUID.randomUUID(),creator="pending-install:"+value.install+":"+value.data;ArrayList<Bundle> deliveries=new ArrayList<>();
-        var db=broker.store.getWritableDatabase();db.beginTransaction();try{
-            if((value.flags&RuntimePendingIntentPolicy.ONE_SHOT)!=0)broker.pendingIntents.consume(value.version);
-            if(targets.isEmpty()){broker.contract.accept(operation,creator,RuntimeBroadcastIntent.digest(payload));broker.contract.start(operation);broker.contract.succeed(operation,"NO_MATCHING_ACTIVE_REGISTRATION_OBSERVED");}
-            for(int i=0;i<targets.size();i++){
-                Bundle target=targets.get(i);String op=operation+"-"+i;broker.contract.accept(op,creator,ApkStore.textDigest(value.version+":"+target.getString("registration")+":"+RuntimeBroadcastIntent.digest(payload)));broker.contract.start(op);
-                String ticket=broker.broadcasts.prepareExternal(op,value.version,creator,target.getString("target"),target.getString("component"),target.getString("registration"),payload,ordered);target.putString("ticket",ticket);deliveries.add(target);
-            }db.setTransactionSuccessful();
-        }finally{db.endTransaction();}return deliveries;
+        if((value.flags&RuntimePendingIntentPolicy.ONE_SHOT)!=0)broker.pendingIntents.consume(value.version);
+        if(targets.isEmpty()){broker.contract.accept(operation,creator,RuntimeBroadcastIntent.digest(payload));broker.contract.start(operation);broker.contract.succeed(operation,"NO_MATCHING_ACTIVE_REGISTRATION_OBSERVED");}
+        for(int i=0;i<targets.size();i++){
+            Bundle target=targets.get(i);String op=operation+"-"+i;broker.contract.accept(op,creator,ApkStore.textDigest(value.version+":"+target.getString("registration")+":"+RuntimeBroadcastIntent.digest(payload)));broker.contract.start(op);
+            String ticket=broker.broadcasts.prepareExternal(op,value.version,creator,target.getString("target"),target.getString("component"),target.getString("registration"),payload,ordered);target.putString("ticket",ticket);deliveries.add(target);
+        }return deliveries;
     }
-    private Bundle route(Bundle input,ExecutionContract.Session source)throws Exception{
+    Bundle route(Bundle input,ExecutionContract.Session source)throws Exception{
         byte[] payload=input.getByteArray("payload");Intent intent=RuntimeBroadcastIntent.decode(payload);RuntimeBroadcastIntent.envelope(intent);
         boolean ordered=input.getBoolean("ordered");List<Bundle> targets=new ArrayList<>();
         String receiverPermission=input.getString("receiverPermission");var sender=broker.apks.get(source.identity.spaceId,source.identity.packageName);
         targets=resolve(sender,intent,receiverPermission);
-        if(targets.size()>32)throw new IllegalArgumentException("BROADCAST_FANOUT_LIMIT");
+        if(targets.size()>128)throw new IllegalArgumentException("BROADCAST_FANOUT_LIMIT");
         if(ordered&&targets.size()!=1)throw new UnsupportedOperationException("ORDERED_BROADCAST_SINGLE_TARGET_REQUIRED");
+        if(targets.isEmpty()){Bundle out=new Bundle();out.putParcelableArrayList("deliveries",new ArrayList<>());return out;}
         String operation=RuntimeWire.required(input,"operation");ArrayList<Bundle> deliveries=new ArrayList<>();
-        var db=broker.store.getWritableDatabase();db.beginTransaction();try{for(int i=0;i<targets.size();i++){
+        for(int i=0;i<targets.size();i++){
             Bundle target=targets.get(i);String op=operation+"-"+i;
             String digest=ApkStore.textDigest(RuntimeBroadcastIntent.digest(payload)+"/"+target.getString("target")+"/"+target.getString("component")+"/"+target.getString("registration")+"/"+ordered+"/receiverPermission="+receiverPermission);
             if(!broker.contract.accept(op,source.identity.key(),digest).created)throw new SecurityException("BROADCAST_ALREADY_ADMITTED_QUERY_REQUIRED");broker.contract.start(op);
             String ticket=broker.broadcasts.prepare(op,source,target.getString("target"),target.getString("component"),target.getString("registration"),payload,ordered);target.putString("ticket",ticket);deliveries.add(target);
             if(input.getBundle("binders")!=null)broker.broadcastBinders.put(ticket,input.getBundle("binders"));
-        }db.setTransactionSuccessful();}finally{db.endTransaction();}
+        }
         Bundle out=new Bundle();out.putParcelableArrayList("deliveries",deliveries);return out;
     }
 }

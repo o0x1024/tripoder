@@ -14,38 +14,50 @@ final class RuntimeStorage {
     final String space,packageName,installGeneration,dataId,processGeneration;
     final File root;
     private final File anchor,canonicalRoot;
+    private final Path basePath,rootPath;
     private final Map<String,RuntimePreferences> preferences=new HashMap<>();
     private final java.util.concurrent.ExecutorService preferenceWriter=java.util.concurrent.Executors.newSingleThreadExecutor(r->new Thread(r,"guest-preferences"));
     private boolean finisherRegistered;
+    private final Set<Path> verifiedDirectories=Collections.synchronizedSet(new HashSet<>());
     RuntimeStorage(Context host,Bundle input)throws Exception{
         space=RuntimeFiles.id(RuntimeWire.required(input,"space"));packageName=RuntimeFiles.id(RuntimeWire.required(input,"package"));
         installGeneration=RuntimeFiles.id(RuntimeWire.required(input,"installGeneration"));dataId=RuntimeFiles.id(RuntimeWire.required(input,"dataId"));processGeneration=RuntimeWire.required(input,"generation");
         anchor=host.getFilesDir();root=new File(anchor,"runtime/data/"+space+"/"+packageName+"/"+dataId);
+        basePath=anchor.toPath();rootPath=root.toPath();
         if(!root.equals(new File(RuntimeWire.required(input,"data"))))throw new SecurityException("STORAGE_IDENTITY_MISMATCH");
         directory(root);canonicalRoot=root.getCanonicalFile();
     }
     /** A namespace view over the same guest data incarnation (device-protected storage); never leaves the guest data root. */
     private RuntimeStorage(RuntimeStorage parent,String subdirectory)throws Exception{
         space=parent.space;packageName=parent.packageName;installGeneration=parent.installGeneration;dataId=parent.dataId;processGeneration=parent.processGeneration;
-        anchor=parent.anchor;root=new File(parent.root,name(subdirectory));directory(root);canonicalRoot=root.getCanonicalFile();
+        anchor=parent.anchor;root=new File(parent.root,name(subdirectory));
+        basePath=parent.basePath;rootPath=root.toPath();
+        directory(root);canonicalRoot=root.getCanonicalFile();
     }
     RuntimeStorage view(String subdirectory)throws Exception{return new RuntimeStorage(this,subdirectory);}
     static String name(String name){if(name==null||name.isEmpty()||name.equals(".")||name.equals("..")||name.indexOf('/')>=0||name.indexOf('\0')>=0||name.getBytes(java.nio.charset.StandardCharsets.UTF_8).length>200)throw new IllegalArgumentException("INVALID_FILE_NAME");return name;}
     private void directory(File file){
-        Path base=anchor.toPath(),target=file.toPath();if(!target.startsWith(base)||!target.normalize().equals(target))throw new SecurityException("STORAGE_PATH_OUTSIDE_ROOT");
+        Path target=file.toPath();if(verifiedDirectories.contains(target))return;
+        if(!target.startsWith(basePath)||!target.normalize().equals(target))throw new SecurityException("STORAGE_PATH_OUTSIDE_ROOT");
         File current=anchor;
-        for(Path part:base.relativize(target)){current=new File(current,part.toString());try{
-            if(Files.isSymbolicLink(current.toPath()))throw new SecurityException("STORAGE_SYMLINK_REJECTED");
+        for(Path part:basePath.relativize(target)){current=new File(current,part.toString());try{
+            Path currentPath=current.toPath();
+            if(verifiedDirectories.contains(currentPath))continue;
+            if(Files.isSymbolicLink(currentPath))throw new SecurityException("STORAGE_SYMLINK_REJECTED");
             if(!current.exists()){try{Os.mkdir(current.toString(),0700);}catch(ErrnoException raced){if(raced.errno!=OsConstants.EEXIST)throw raced;}}
             var stat=Os.lstat(current.toString());if(!OsConstants.S_ISDIR(stat.st_mode))throw new IllegalStateException("STORAGE_DIRECTORY_REQUIRED");
+            verifiedDirectories.add(currentPath);
         }catch(ErrnoException error){throw new IllegalStateException("STORAGE_DIRECTORY_FAILED",error);}}
     }
-    File dir(String name){directory(root);File path=new File(root,name(name));directory(path);return path;}
+    File dir(String name){File path=new File(root,name(name));directory(path);return path;}
     File file(String directory,String name){File path=new File(dir(directory),name(name));check(path);return path;}
     void check(File path){
-        if(!path.toPath().startsWith(root.toPath())||!path.toPath().normalize().equals(path.toPath()))throw new SecurityException("STORAGE_PATH_OUTSIDE_ROOT");
-        directory(path.getParentFile());if(Files.isSymbolicLink(path.toPath()))throw new SecurityException("STORAGE_SYMLINK_REJECTED");
-        if(Files.exists(path.toPath(),LinkOption.NOFOLLOW_LINKS)&&!Files.isRegularFile(path.toPath(),LinkOption.NOFOLLOW_LINKS))throw new IllegalStateException("STORAGE_REGULAR_FILE_REQUIRED");
+        Path p=path.toPath();
+        if(!p.startsWith(rootPath)||!p.normalize().equals(p))throw new SecurityException("STORAGE_PATH_OUTSIDE_ROOT");
+        Path parent=p.getParent();
+        if(parent!=null&&!verifiedDirectories.contains(parent))directory(path.getParentFile());
+        if(Files.isSymbolicLink(p))throw new SecurityException("STORAGE_SYMLINK_REJECTED");
+        if(Files.exists(p,LinkOption.NOFOLLOW_LINKS)&&!Files.isRegularFile(p,LinkOption.NOFOLLOW_LINKS))throw new IllegalStateException("STORAGE_REGULAR_FILE_REQUIRED");
     }
     FileOutputStream output(String name,int mode)throws FileNotFoundException{
         if(mode!=Context.MODE_PRIVATE&&mode!=Context.MODE_APPEND)throw new IllegalArgumentException("FILE_MODE_UNSUPPORTED");File path=file("files",name);
@@ -57,13 +69,26 @@ final class RuntimeStorage {
         catch(ErrnoException error){FileNotFoundException out=new FileNotFoundException(error.getMessage());out.initCause(error);throw out;}
     }
     String[] list(String directory){String[] names=dir(directory).list();if(names==null)throw new IllegalStateException("STORAGE_LIST_FAILED");return names;}
-    synchronized SharedPreferences preferences(String name,int mode){
+    SharedPreferences preferences(String name,int mode){
         if(mode!=Context.MODE_PRIVATE&&mode!=Context.MODE_MULTI_PROCESS)throw new IllegalArgumentException("PREFERENCES_MODE_UNSUPPORTED:0x"+Integer.toHexString(mode));name(name);
-        RuntimePreferences found=preferences.get(name);if(found!=null){if(mode==Context.MODE_MULTI_PROCESS)found.reload();return found;}
-        if(!finisherRegistered){RuntimeBridge.storageFinisher(this::flush);finisherRegistered=true;}
-        RuntimePreferences created=new RuntimePreferences(this,file("shared_prefs",name+".xml"),preferenceWriter);preferences.put(name,created);return created;
+        RuntimePreferences found;
+        synchronized(this){
+            found=preferences.get(name);
+        }
+        if(found!=null){
+            if(mode==Context.MODE_MULTI_PROCESS)found.reload();
+            return found;
+        }
+        RuntimePreferences created=new RuntimePreferences(this,file("shared_prefs",name+".xml"),preferenceWriter);
+        synchronized(this){
+            if(!finisherRegistered){RuntimeBridge.storageFinisher(this::flush);finisherRegistered=true;}
+            found=preferences.get(name);
+            if(found!=null)return found;
+            preferences.put(name,created);
+            return created;
+        }
     }
-    synchronized boolean deletePreferences(String name){
+    boolean deletePreferences(String name){
         name(name);RuntimePreferences p=(RuntimePreferences)preferences(name,Context.MODE_PRIVATE);return p.delete();
     }
     /** Same data incarnation only (e.g. credential-protected to device-protected view): bytes move, and no stale in-memory view keeps serving the old file. */

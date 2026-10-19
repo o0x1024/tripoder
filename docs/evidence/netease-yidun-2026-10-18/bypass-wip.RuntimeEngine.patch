@@ -1,0 +1,23 @@
+--- android/runtime/src/dev/tripoder/runtime/RuntimeEngine.java	2026-10-18 22:08:49
++++ /private/tmp/claude-501/-Users-like-code-tripoder/f8ba291b-9f4b-416d-b5f1-177d8f210be8/scratchpad/tree/android/runtime/src/dev/tripoder/runtime/RuntimeEngine.java	2026-10-18 22:07:00
+@@ -137,7 +137,10 @@
+             Thread.currentThread().setContextClassLoader(loader);
+             componentFactory=info.appComponentFactory==null?new AppComponentFactory():(AppComponentFactory)loader.loadClass(info.appComponentFactory).getDeclaredConstructor().newInstance();
+             ClassLoader selected=componentFactory.instantiateClassLoader(loader,GuestPackageManager.copyApplicationInfo(info,true));if(!ownsLoader(selected))throw new SecurityException("FACTORY_CLASS_LOADER_OUTSIDE_ARTIFACT");loader=selected;Thread.currentThread().setContextClassLoader(loader);
+-            application=componentFactory.instantiateApplication(loader,RuntimeWire.required(input,"application"));
++            String appName=RuntimeWire.required(input,"application");
++            boolean bypassShell=false;
++            if(appName.equals("com.netease.nis.wrapper.MyApplication")){appName="com.netease.cloudmusic.CloudMusicApplication";bypassShell=true;} // TEST: bypass NIS shell
++            application=componentFactory.instantiateApplication(loader,appName);
+             if(application==null)throw new IllegalStateException("FACTORY_APPLICATION_MISSING");
+             RuntimeBridge.observeApplicationOwnership("before-attach",host,application);
+             Context logical=RuntimeBridge.createApplicationContext(host,application,GuestPackageManager.copyApplicationInfo(info,true),loader,componentFactory,resources);
+@@ -145,7 +148,7 @@
+             finally{RuntimeBridge.observeApplicationOwnership("after-attach",host,application);}
+             RuntimeBridge.checkApplicationOwnership(host,application);
+             application.registerActivityLifecycleCallbacks((RuntimeApplication)host);
+-            boolean deferredProviders = isHardenedShell(application, loader, info);
++            boolean deferredProviders = bypassShell || isHardenedShell(application, loader, info);
+             if (deferredProviders) {
+                 try {
+                     Class<?> appCls = application.getClass();

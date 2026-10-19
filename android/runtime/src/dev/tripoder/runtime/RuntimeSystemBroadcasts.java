@@ -59,18 +59,28 @@ final class RuntimeSystemBroadcasts {
         if(!PACKAGE.contains(intent.getAction()))return true;
         android.net.Uri data=intent.getData();return data!=null&&packageName.equals(data.getSchemeSpecificPart());
     }
-    static void permission(PackageInfo info,String permission,boolean exported){
-        if(permission==null)return;
-        // Registering a sender restriction does not itself require the receiver to hold it.
-        if(info.permissions!=null)for(PermissionInfo declared:info.permissions)if(permission.equals(declared.name)&&info.packageName.equals(declared.packageName)){
+    /** True only for a custom permission the owner app itself declares at signature level;
+     * such a permission couples delivery to a shared signer. A platform or normal permission
+     * (e.g. android.permission.INTERNET, which apps routinely guard receivers with) is not
+     * owned this way and imposes no signer coupling in the same-UID model. */
+    static boolean ownsSignaturePermission(PackageInfo info,String permission){
+        if(permission==null||info.permissions==null)return false;
+        for(PermissionInfo declared:info.permissions)if(permission.equals(declared.name)&&info.packageName.equals(declared.packageName)){
             int base=declared.protectionLevel&PermissionInfo.PROTECTION_MASK_BASE;
-            if(base==PermissionInfo.PROTECTION_SIGNATURE||base==PermissionInfo.PROTECTION_SIGNATURE_OR_SYSTEM)return;
+            if(base==PermissionInfo.PROTECTION_SIGNATURE||base==PermissionInfo.PROTECTION_SIGNATURE_OR_SYSTEM)return true;
         }
-        throw new SecurityException("RECEIVER_PERMISSION_NOT_OWNED:"+permission);
+        return false;
     }
+    /** Delivery is the single enforcement point for a broadcast permission: registration and
+     * send no longer pre-reject a permission the app does not own. A custom signature permission
+     * is held only by a same-signer app that requests it; any other permission is a best-effort
+     * sender restriction with no signer coupling, held when the manifest requests it. Rejecting
+     * an unowned permission at registration (real apps guard with INTERNET) only turned a benign
+     * restriction into a crash, and same-UID guests are not a trust boundary to defend here. */
     static boolean holds(ApkStore.BundleInstall subject,ApkStore.BundleInstall owner,String permission){
-        permission(owner.info,permission,true);
-        return subject.info.requestedPermissions!=null&&Arrays.asList(subject.info.requestedPermissions).contains(permission)&&subject.artifacts.signerDigests.equals(owner.artifacts.signerDigests);
+        boolean requested=subject.info.requestedPermissions!=null&&Arrays.asList(subject.info.requestedPermissions).contains(permission);
+        if(ownsSignaturePermission(owner.info,permission))return requested&&subject.artifacts.signerDigests.equals(owner.artifacts.signerDigests);
+        return requested;
     }
     static Set<String> roots(Context host){
         android.os.storage.StorageManager manager=host.getSystemService(android.os.storage.StorageManager.class);if(manager==null)throw new IllegalStateException("PLATFORM_STORAGE_OBSERVATION_UNAVAILABLE");

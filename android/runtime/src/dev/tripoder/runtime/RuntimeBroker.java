@@ -31,7 +31,7 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
     private final ApplicationStartLedger applicationStarts;
     public ExecutionContract contract;
     final RuntimeHookClaims hookClaims=new RuntimeHookClaims(this);
-    private final Map<String,Slot> slots=new HashMap<>();
+    private final Map<String,Slot> slots=new java.util.concurrent.ConcurrentHashMap<>();
     private final Map<String,Delivery> deliveries=new HashMap<>();
     private static final class Delivery {final String source,target,sourceTicket;boolean authorized;String receivingInstance;Delivery(String s,String t,String ticket){source=s;target=t;sourceTicket=ticket;}}
     public final JSONArray events=new JSONArray();
@@ -92,20 +92,20 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
     synchronized List<Slot> processSlots(){return new ArrayList<>(slots.values());}
     synchronized Bundle processEvidence(Slot slot){var s=contract.getSession(slot.allocation.session.processGeneration);Bundle b=new Bundle();b.putString("generation",s.processGeneration);b.putString("installGeneration",s.identity.installGeneration);b.putString("processName",s.identity.processName);b.putString("state",s.state.name());b.putInt("pid",s.pid);b.putInt("uid",s.uid);return b;}
     public synchronized void dead(String generation){jobAttempts.dead(generation);hookClaims.dead(generation);contract.markDead(generation);store.deadSession(generation);activities.launches.dead(generation);providers.dead(generation,contract);providerBroker.dead(generation);broadcasts.dead(generation,contract);slots.remove(generation);for(var e:deliveries.entrySet())if(e.getValue().source.equals(generation)||e.getValue().target.equals(generation)){var operation=contract.query(e.getKey());if(operation.state==ExecutionContract.OperationState.RUNNING){contract.markUnknown(e.getKey(),"PROCESS_DIED_BEFORE_DELIVERY_ACK");trace("delivery-unknown",e.getKey());}}}
-    private void trace(String stage,String op){try{events.put(new JSONObject().put("stage",stage).put("operation",op).put("operationState",contract.query(op).state.name()).put("time",System.currentTimeMillis()));}catch(JSONException e){throw new IllegalStateException(e);}}
+    private void trace(String stage,String op){try{synchronized(events){events.put(new JSONObject().put("stage",stage).put("operation",op).put("operationState",contract.query(op).state.name()).put("time",System.currentTimeMillis()));}}catch(JSONException e){throw new IllegalStateException(e);}}
     public synchronized void remove(String space,String pkg){for(Slot s:slots.values())if(s.install.space.equals(space)&&s.install.info.packageName.equals(pkg))throw new IllegalStateException("INSTALL_IN_USE");apks.removeRecord(space,pkg);}
     public synchronized String generation(String space,String pkg){for(var e:slots.entrySet())if(e.getValue().install.space.equals(space)&&e.getValue().install.info.packageName.equals(pkg))return e.getKey();throw new IllegalStateException("PROCESS_NOT_REGISTERED");}
     public synchronized Intent launch(String generation){Slot s=requiredSlot(generation);return launch(generation,s.install.info.activities[0].name);}
     public synchronized void completeActivity(String ticket){activities.controllerResultDelivered(ticket);}
     public synchronized Intent launch(String generation,String component){Slot s=requiredSlot(generation);var activity=RuntimeComponents.activity(s.install,component);if(!activity.processName.equals(s.allocation.session.identity.processName))throw new IllegalArgumentException("COMPONENT_PROCESS_MISMATCH");String ticket=activities.prepare(s,component,null,null,host.getPackageName(),null,null);return new Intent().setComponent(new ComponentName(host,activities.get(ticket).stub)).putExtra("tripoder.component",component).putExtra("tripoder.generation",generation).putExtra("tripoder.ticket",ticket).putExtra("tripoder.delivery",activities.launches.forTicket(ticket));}
-    synchronized Slot requiredSlot(String gen){store.requireOpen(gen);Slot slot=slots.get(gen);if(slot==null)throw new IllegalStateException("STALE_SESSION");if(slot.closing)throw new IllegalStateException("PROCESS_CLOSING");return slot;}
+    Slot requiredSlot(String gen){Slot slot=slots.get(gen);if(slot==null)throw new IllegalStateException("STALE_SESSION");if(slot.closing)throw new IllegalStateException("PROCESS_CLOSING");store.requireOpen(gen);return slot;}
     /** Completion is not admission. Callers still authenticate, and each ledger checks its exact resource. */
-    synchronized Slot slotForReceipt(String generation){
+    Slot slotForReceipt(String generation){
         var session=contract.getSession(generation);
         if(session.state!=ExecutionContract.ProcessState.ATTACHED&&session.state!=ExecutionContract.ProcessState.RUNNING)throw new SecurityException("RECEIPT_SESSION_INACTIVE");
         Slot slot=slots.get(generation);if(slot==null)throw new IllegalStateException("STALE_SESSION");return slot;
     }
-    synchronized Slot slotForTermination(String gen){Slot slot=slots.get(gen);if(slot==null)throw new IllegalStateException("STALE_SESSION");return slot;}
+    Slot slotForTermination(String gen){Slot slot=slots.get(gen);if(slot==null)throw new IllegalStateException("STALE_SESSION");return slot;}
     @Override protected Bundle handle(int code,Bundle input,int pid,int uid)throws Exception {
         if(code==RuntimeWire.PENDING_INTENT)return pendingIntentBroker.route(input,pid,uid);
         if(code==RuntimeWire.EXIT_HISTORY)return RuntimeExitHistory.query(this,input,pid,uid);
@@ -115,7 +115,51 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
         if(code==RuntimeWire.ROUTE)return routeActivity(input,pid,uid);
         if(code==RuntimeWire.SERVICE_ROUTE)return serviceBroker.route(input,pid,uid);
         if(code==RuntimeWire.PROVIDER_ACQUIRE)return providerBroker.acquire(input,pid,uid);
+        if(code>=RuntimeWire.BROADCAST_REGISTER&&code<=RuntimeWire.BROADCAST_EVENT||code==RuntimeWire.BROADCAST_SYSTEM_CLAIM||code==RuntimeWire.BROADCAST_STICKY_VIEW)return routeBroadcastOperation(code,input,pid,uid);
+        if(code>=RuntimeWire.PROVIDER_PUBLICATION&&code<=RuntimeWire.PROVIDER_WAIT||code==RuntimeWire.PROVIDER_CURSOR_ACCESS||code==RuntimeWire.PROVIDER_RECEIVED)return routeProvider(code,input,pid,uid);
+        if(code==RuntimeWire.EVENT)return routeProcessEvent(input,pid,uid);
+        if(code==RuntimeWire.APPLICATION_START_EVENT||code==RuntimeWire.APPLICATION_START_HISTORY)return routeApplicationStart(code,input,pid,uid);
         synchronized(this){return handleLocked(code,input,pid,uid);}
+    }
+    private Bundle routeBroadcast(Bundle input,int pid,int uid)throws Exception{
+        if(uid!=android.os.Process.myUid())throw new SecurityException("CALLER_UID_MISMATCH");
+        String generation=RuntimeWire.required(input,"generation");
+        var session=contract.authenticate(generation,pid,uid);
+        return broadcastBroker.route(input,session);
+    }
+    private Bundle routeBroadcastOperation(int code,Bundle input,int pid,int uid)throws Exception{
+        if(uid!=android.os.Process.myUid())throw new SecurityException("CALLER_UID_MISMATCH");
+        if(code==RuntimeWire.BROADCAST_ROUTE)return routeBroadcast(input,pid,uid);
+        String generation=RuntimeWire.required(input,"generation");
+        contract.authenticate(generation,pid,uid);
+        return broadcastBroker.handle(code,input,generation);
+    }
+    private Bundle routeProvider(int code,Bundle input,int pid,int uid)throws Exception{
+        if(uid!=android.os.Process.myUid())throw new SecurityException("CALLER_UID_MISMATCH");
+        String generation=RuntimeWire.required(input,"generation");
+        contract.authenticate(generation,pid,uid);
+        return providerBroker.handle(code,input,generation);
+    }
+    private Bundle routeProcessEvent(Bundle input,int pid,int uid)throws Exception{
+        if(uid!=android.os.Process.myUid())throw new SecurityException("CALLER_UID_MISMATCH");
+        String generation=RuntimeWire.required(input,"generation");
+        var session=contract.authenticate(generation,pid,uid);
+        String stage=RuntimeWire.required(input,"stage");
+        if(!Set.of("adapter-ready","application-ready").contains(stage))throw new SecurityException("PROCESS_EVENT_UNSUPPORTED");
+        if(stage.equals("application-ready"))store.session(contract.markRunning(generation,pid,uid));
+        processes.event(generation,stage);
+        synchronized(events){events.put(new JSONObject().put("stage",stage).put("session",generation).put("space",session.identity.spaceId).put("package",session.identity.packageName).put("pid",pid).put("uid",uid).put("time",System.currentTimeMillis()));}
+        return new Bundle();
+    }
+    private Bundle routeApplicationStart(int code,Bundle input,int pid,int uid)throws Exception{
+        if(uid!=android.os.Process.myUid())throw new SecurityException("CALLER_UID_MISMATCH");
+        String generation=RuntimeWire.required(input,"generation");
+        var session=contract.authenticate(generation,pid,uid);
+        if(code==RuntimeWire.APPLICATION_START_EVENT){
+            applicationStarts.event(session,input);
+            return new Bundle();
+        }
+        return applicationStarts.query(session,input);
     }
     private Bundle handleLocked(int code,Bundle input,int pid,int uid)throws Exception {
         if(uid!=android.os.Process.myUid())throw new SecurityException("CALLER_UID_MISMATCH");
@@ -123,14 +167,10 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
         if(code==RuntimeWire.REGISTER){String gen=RuntimeWire.required(input,"generation"),token=RuntimeWire.required(input,"bootstrap");if(!requiredSlot(gen).allocation.bootstrapToken.equals(token))throw new SecurityException("BOOTSTRAP_SESSION_MISMATCH");var s=contract.attach(token,pid,uid);store.session(s);result.putString("generation",s.processGeneration);return result;}
         String generation=RuntimeWire.required(input,"generation");var session=contract.authenticate(generation,pid,uid);
         Slot from=RuntimeCompletion.isReceipt(code,input)?slotForReceipt(generation):requiredSlot(generation);
-        if(code>=RuntimeWire.PROVIDER_PUBLICATION&&code<=RuntimeWire.PROVIDER_WAIT||code==RuntimeWire.PROVIDER_CURSOR_ACCESS||code==RuntimeWire.PROVIDER_RECEIVED)return providerBroker.handle(code,input,generation);
-        if(code>=RuntimeWire.BROADCAST_REGISTER&&code<=RuntimeWire.BROADCAST_EVENT||code==RuntimeWire.BROADCAST_SYSTEM_CLAIM||code==RuntimeWire.BROADCAST_STICKY_VIEW)return broadcastBroker.handle(code,input,generation);
         if(code==RuntimeWire.JOB_BEGIN)return jobBroker.beginAttempt(input,from);
         if(code==RuntimeWire.JOB_EVENT)return jobBroker.attemptEvent(input,from);
         switch(code){
             case RuntimeWire.ACTIVITY_ENTRY_STATUS:{String candidate=RuntimeWire.required(input,"candidate"),kind=input.getString("kind","new-intent");if(!Set.of("factory","new-intent").contains(kind))throw new SecurityException("ACTIVITY_ENTRY_KIND_INVALID");boolean closed=activities.closedEntry(candidate,RuntimeWire.required(input,"stub"),from);if(closed)ActivityEntryFences.rejected(this,candidate,kind);result.putBoolean("closed",closed);return result;}
-            case RuntimeWire.APPLICATION_START_EVENT:applicationStarts.event(session,input);break;
-            case RuntimeWire.APPLICATION_START_HISTORY:return applicationStarts.query(session,input);
             case RuntimeWire.SERVICE_ACK:return serviceBroker.acknowledge(input,generation);
             case RuntimeWire.SERVICE_CLAIM:return services.claim(RuntimeWire.required(input,"stub"),from,RuntimeWire.required(input,"instance"));
             case RuntimeWire.SERVICE_EVENT:services.lifecycle(RuntimeWire.required(input,"lease"),generation,RuntimeWire.required(input,"instance"),RuntimeWire.required(input,"event"));break;
@@ -148,8 +188,7 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
             case RuntimeWire.ACTIVITY_DESTROYED:activities.destroyed(RuntimeWire.required(input,"ticket"),generation,RuntimeWire.required(input,"instance"),input.getBoolean("finishing"),input.getInt("taskId",-1));break;
             case RuntimeWire.ACTIVITY_NEW_INTENT:if(activities.closedEntry(RuntimeWire.required(input,"candidate"),RuntimeWire.required(input,"stub"),from)){result.putBoolean("closed",true);return result;}activities.newIntent(RuntimeWire.required(input,"ticket"),RuntimeWire.required(input,"instance"),from,RuntimeWire.required(input,"candidate"),RuntimeWire.required(input,"delivery"),RuntimeWire.required(input,"stub"),RuntimeWire.required(input,"payloadDigest"));activities.caller(input.getString("delivery"),result);break;
             case RuntimeWire.ACTIVITY_NEW_INTENT_ACK:activities.newIntentReceived(RuntimeWire.required(input,"ticket"),RuntimeWire.required(input,"instance"),generation,RuntimeWire.required(input,"delivery"),input.getBoolean("success"));break;
-            case RuntimeWire.EVENT:{String stage=RuntimeWire.required(input,"stage");if(!Set.of("adapter-ready","application-ready").contains(stage))throw new SecurityException("PROCESS_EVENT_UNSUPPORTED");if(stage.equals("application-ready"))store.session(contract.markRunning(generation,pid,uid));processes.event(generation,stage);events.put(new JSONObject().put("stage",stage).put("session",generation).put("space",session.identity.spaceId).put("package",session.identity.packageName).put("pid",pid).put("uid",uid).put("time",System.currentTimeMillis()));break;}
-            case RuntimeWire.RESULT:{String op=RuntimeWire.required(input,"operation");var source=contract.consumeCallback(RuntimeWire.required(input,"callback"),generation,pid,uid,op);Delivery delivery=deliveries.get(op);if(delivery==null||!delivery.target.equals(generation))throw new SecurityException("DELIVERY_TARGET_MISMATCH");delivery.authorized=true;trace("return-authorized",op);result.putString("source",source.processGeneration);break;}
+            case RuntimeWire.RESULT:{String op=RuntimeWire.required(input,"operation");var source=contract.consumeCallback(RuntimeWire.required(input,"callback"),generation,pid,uid,op);Delivery delivery=deliveries.get(op);if(delivery==null){if(contract.query(op).state!=ExecutionContract.OperationState.RUNNING){result.putString("source",source.processGeneration);break;}throw new SecurityException("DELIVERY_TARGET_MISMATCH");}if(!delivery.target.equals(generation))throw new SecurityException("DELIVERY_TARGET_MISMATCH");delivery.authorized=true;trace("return-authorized",op);result.putString("source",source.processGeneration);break;}
             case RuntimeWire.ACTIVITY_RESULT_ENTER:{
                 String op=RuntimeWire.required(input,"operation");Delivery delivery=deliveries.get(op);
                 var receiver=activities.source(RuntimeWire.required(input,"ticket"),RuntimeWire.required(input,"instance"),from,input.getInt("taskId",-1));
@@ -184,9 +223,7 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
         synchronized(this){
             source=contract.authenticate(generation,pid,uid);if(!fromContext)activities.source(sourceTicket,sourceInstance,requiredSlot(generation),input.getInt("taskId",-1));target=apks.get(source.identity.spaceId,pkg);
             var declared=RuntimeComponents.activity(target,component);RuntimeComponents.authorize(declared,source.identity.packageName);targetProcess=declared.processName;
-            RuntimeActivityIntent.requireFlags(input.getInt("flags",0));if(wantsResult&&(input.getInt("flags",0)&Intent.FLAG_ACTIVITY_NEW_TASK)!=0)throw new UnsupportedOperationException("ACTIVITY_RESULT_NEW_TASK_UNSUPPORTED");
-            if(wantsResult&&(input.getInt("flags",0)&Intent.FLAG_ACTIVITY_SINGLE_TOP)!=0)throw new UnsupportedOperationException("ACTIVITY_RESULT_SINGLE_TOP_UNSUPPORTED");
-            if(wantsResult&&declared.launchMode!=android.content.pm.ActivityInfo.LAUNCH_MULTIPLE)throw new UnsupportedOperationException("ACTIVITY_RESULT_LAUNCH_MODE_UNSUPPORTED");
+            RuntimeActivityIntent.requireFlags(input.getInt("flags",0));
             var accepted=contract.accept(op,source.identity.key(),ApkStore.textDigest(generation+"\n"+sourceTicket+"\n"+sourceInstance+"\n"+pkg+"\n"+component+"\n"+wantsResult+"\n"+payloadDigest));
             if(!accepted.created)throw new IllegalStateException("ROUTE_ALREADY_ACCEPTED_QUERY_REQUIRED");contract.start(op);
         }

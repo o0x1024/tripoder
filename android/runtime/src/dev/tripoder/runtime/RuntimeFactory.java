@@ -12,7 +12,7 @@ public final class RuntimeFactory extends AppComponentFactory {
             String rejected=bootstrap(name,"restoreReceiver",RuntimeBroadcastIntent.ticket(intent));
             if(rejected!=null)return new RuntimeRejectedReceiver(rejected);
             return RuntimeEngine.current.receivers.instantiate(intent);
-        }catch(Exception error){throw new IllegalStateException("GUEST_RECEIVER_FAILED",error);}
+        }catch(Exception error){if("PROCESS_CLOSING".equals(error.getMessage()))return new RuntimeRejectedReceiver("PROCESS_CLOSING");throw new IllegalStateException("GUEST_RECEIVER_FAILED",error);}
         return super.instantiateReceiver(cl,name,intent);
     }
     @Override public Service instantiateService(ClassLoader cl,String name,Intent intent)throws InstantiationException,IllegalAccessException,ClassNotFoundException{

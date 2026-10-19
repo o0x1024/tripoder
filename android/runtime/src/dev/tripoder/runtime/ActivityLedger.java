@@ -57,6 +57,29 @@ final class ActivityLedger {
         db.update("activity_launches",launch,"state IN ('PREPARED','ENTERED','UNKNOWN') AND candidate IN (SELECT t.ticket FROM activity_tickets t JOIN sessions s ON s.generation=t.generation WHERE t.space=? AND t.package=? AND t.installGeneration=? AND t.state IN ('FINISHED','REVOKED','RETIRED') AND s.state='DEAD')",new String[]{space,pkg,install});
         return retired;
     }
+    int retireDeadTasks(String space,String pkg,String install,String operation,java.util.List<android.app.ActivityManager.AppTask> appTasks){
+        SQLiteDatabase db=store.getWritableDatabase();int retired=0;
+        try(Cursor c=db.rawQuery("SELECT t.ticket,t.generation,t.taskId FROM activity_tickets t JOIN sessions s ON s.generation=t.generation WHERE t.space=? AND t.package=? AND t.installGeneration=? AND s.state='DEAD' AND t.state NOT IN ('FINISHED','REVOKED','RETIRED')",new String[]{space,pkg,install})){
+            while(c.moveToNext()){
+                String ticket=c.getString(0);
+                String gen=c.getString(1);
+                int taskId=c.getInt(2);
+                if(appTasks!=null){
+                    for(var task:appTasks){
+                        try{
+                            var info=task.getTaskInfo();
+                            if(info!=null&&info.taskId==taskId)task.finishAndRemoveTask();
+                        }catch(Throwable ignored){}
+                    }
+                }
+                ContentValues row=new ContentValues();row.put("state","RETIRED");row.put("resourceProof","DEAD_SESSION_TASK_RETIRED;operation="+operation+";generation-dead="+gen);
+                if(db.update("activity_tickets",row,"ticket=? AND state NOT IN ('FINISHED','REVOKED','RETIRED')",new String[]{ticket})==1)retired++;
+            }
+        }
+        ContentValues launch=new ContentValues();launch.put("state","RETIRED");
+        db.update("activity_launches",launch,"state IN ('PREPARED','ENTERED','UNKNOWN') AND candidate IN (SELECT t.ticket FROM activity_tickets t JOIN sessions s ON s.generation=t.generation WHERE t.space=? AND t.package=? AND t.installGeneration=? AND t.state IN ('FINISHED','REVOKED','RETIRED') AND s.state='DEAD')",new String[]{space,pkg,install});
+        return retired;
+    }
     Ticket get(String id){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT * FROM activity_tickets WHERE ticket=?",new String[]{id})){if(!c.moveToFirst())throw new SecurityException("ACTIVITY_TICKET_MISSING");return new Ticket(c);}}
     void caller(String delivery,android.os.Bundle out){var launch=launches.get(delivery);launch.caller(out);if("ACTIVITY".equals(launch.callerKind))out.putString("callerPhysical",get(launch.sourceTicket).stub);}
     Ticket source(String id,String instance,RuntimeBroker.Slot slot,int taskId){
@@ -86,7 +109,7 @@ final class ActivityLedger {
     }
     void newIntent(String receiver,String instance,RuntimeBroker.Slot slot,String candidate,String delivery,String stub,String payloadDigest){
         Ticket current=instance(receiver,slot.allocation.session.processGeneration,instance),incoming=get(candidate);requireOwner(current,slot);requireOwner(incoming,slot);
-        if(!current.state.equals("LIVE")||!incoming.state.equals("PREPARED")||!incoming.stub.equals(stub)||!current.componentLease.equals(incoming.componentLease)||!incoming.generation.equals(current.generation)||incoming.resultOperation!=null)throw new SecurityException("ACTIVITY_NEW_INTENT_MISMATCH");
+        if(!current.state.equals("LIVE")||!incoming.state.equals("PREPARED")||!incoming.stub.equals(stub)||!current.componentLease.equals(incoming.componentLease)||!incoming.generation.equals(current.generation))throw new SecurityException("ACTIVITY_NEW_INTENT_MISMATCH");
         var db=store.getWritableDatabase();db.beginTransaction();try{launches.enter(delivery,incoming,current,instance,"NEW_INTENT",payloadDigest);ContentValues row=new ContentValues();row.put("state","DELIVERING");update(candidate,row);db.setTransactionSuccessful();}finally{db.endTransaction();}
     }
     void newIntentReceived(String receiver,String instance,String generation,String delivery,boolean success){
@@ -109,7 +132,13 @@ final class ActivityLedger {
         return ticket;
     }
     void rebind(Ticket ticket,RuntimeBroker.Slot slot){requireOwner(ticket,slot);ContentValues row=new ContentValues();row.put("generation",slot.allocation.session.processGeneration);row.put("state","RECREATING");row.putNull("instance");update(ticket.id,row);}
-    void resultDelivered(String operation){ContentValues row=new ContentValues();row.put("state","FINISHED");store.getWritableDatabase().update("activity_tickets",row,"resultOperation=?",new String[]{operation});}
+    void resultDelivered(String operation){
+        var db=store.getWritableDatabase();db.beginTransaction();try{
+            db.execSQL("UPDATE activity_tickets SET state=CASE WHEN state='PREPARED' THEN 'PREPARED' ELSE 'FINISHED' END, resultOperation=CASE WHEN state='PREPARED' THEN NULL ELSE resultOperation END WHERE resultOperation=?",new Object[]{operation});
+            db.execSQL("UPDATE activity_launches SET expectsResult=0 WHERE operation=? AND state IN ('PREPARED','ENTERED')",new Object[]{operation});
+            db.setTransactionSuccessful();
+        }finally{db.endTransaction();}
+    }
     void controllerResultDelivered(String id){Ticket ticket=get(id);if(ticket.resultOperation!=null)throw new SecurityException("ACTIVITY_RESULT_OWNER_MISMATCH");if(ticket.state.equals("REVOKED")||ticket.state.equals("RETIRED"))throw new SecurityException("ACTIVITY_TICKET_RETIRED");ContentValues row=new ContentValues();row.put("state","FINISHED");update(id,row);}
     /** An unresolved ticket pins this immutable install/process to its original Android stub. */
     String retainedStub(String space,String pkg,String install,String process){

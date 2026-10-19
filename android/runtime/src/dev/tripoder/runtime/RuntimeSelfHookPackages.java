@@ -96,13 +96,26 @@ final class RuntimeSelfHookPackages {
             case "buildRequestPermissionsIntent":case "getPermissionControllerPackageName":case "getPackageArchiveInfo":case "getSystemSharedLibraryNames":case "getSharedLibraries":case "getAllPermissionGroups":case "getPermissionGroupInfo":
             case "queryPermissionsByGroup":case "getPermissionInfo":case "isSafeMode":case "getInstantAppCookieMaxBytes":case "getInstantAppCookie":
                 return original.call(args);
+            case "getUserId":return user;
             case "canRequestPackageInstalls":return false;
             case "isPermissionRevokedByPolicy":return false;
+            case "shouldShowRequestPermissionRationale":return false;
             case "getChangedPackages":return null;
             case "canonicalToCurrentPackageNames":case "currentToCanonicalPackageNames":return args[0];
             case "getPreferredActivities":return 0;
             case "getPreferredPackages":case "queryInstrumentation":case "queryContentProviders":return new ArrayList<>();
             case "getInstrumentationInfo":throw new PackageManager.NameNotFoundException(String.valueOf(args[0]));
+            case "getProperty":{
+                String pkg=args[1] instanceof ComponentName?((ComponentName)args[1]).getPackageName():(String)args[1];
+                if(engine.host.getPackageName().equals(pkg))return original.call(args);
+                throw new PackageManager.NameNotFoundException(String.valueOf(args[0]));
+            }
+            case "getPropertyAsUser":{
+                String pkg=(String)args[1];
+                if(engine.host.getPackageName().equals(pkg))return original.call(args);
+                return null;
+            }
+            case "queryApplicationProperty":case "queryActivityProperty":case "queryProviderProperty":case "queryReceiverProperty":case "queryServiceProperty":return Collections.emptyList();
             case "getInstalledPackages":{Object value=PackageFrameworkAccess.query(manager,"getPackageInfo",own,flags(args[0]),user);ArrayList<Object> list=new ArrayList<>();if(value!=null)list.add(value);return list;}
             case "getInstalledApplications":{Object value=PackageFrameworkAccess.query(manager,"getApplicationInfo",own,flags(args[0]),user);ArrayList<Object> list=new ArrayList<>();if(value!=null)list.add(value);return list;}
             case "getPackagesHoldingPermissions":{

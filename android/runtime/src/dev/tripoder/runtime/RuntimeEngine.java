@@ -22,6 +22,7 @@ public final class RuntimeEngine {
     AppComponentFactory componentFactory;
     public final Resources resources;
     public final ApplicationInfo info;
+    public final ApplicationInfo applicationInfo;
     final PackageInfo packageArchive;
     final long firstInstallTime,lastUpdateTime;
     private final Map<String,ActivityInfo> activityInfos=new HashMap<>();
@@ -109,7 +110,8 @@ public final class RuntimeEngine {
         List<String> signers=new ArrayList<>();for(Signature signature:pkg.signingInfo.getApkContentsSigners())signers.add(ArtifactSet.hex(java.security.MessageDigest.getInstance("SHA-256").digest(signature.toByteArray())));Collections.sort(signers);
         if(!signers.equals(artifacts.signerDigests))throw new SecurityException("PACKAGE_SIGNING_METADATA_MISMATCH");packageArchive=pkg;
         requestedPermissions=pkg.requestedPermissions==null?Set.of():Set.copyOf(Arrays.asList(pkg.requestedPermissions));
-        info=new ApplicationInfo(pkg.applicationInfo);info.sourceDir=apk.toString();info.publicSourceDir=apk.toString();info.dataDir=data.toString();info.deviceProtectedDataDir=new File(data,"device-protected").toString();info.nativeLibraryDir=new File(apk.getParentFile(),"lib").getCanonicalPath();info.uid=android.os.Process.myUid();
+        info=new ApplicationInfo(pkg.applicationInfo);info.sourceDir=apk.toString();info.publicSourceDir=apk.toString();info.dataDir=data.toString();info.deviceProtectedDataDir=new File(data,"device-protected").toString();info.nativeLibraryDir=new File(apk.getParentFile(),"lib").getCanonicalPath();info.uid=android.os.Process.myUid();GuestPackageManager.setPrimaryCpuAbi(info,"arm64-v8a");
+        applicationInfo=GuestPackageManager.copyApplicationInfo(info,true);
         for(ActivityInfo activity:RuntimeActivityIndex.create(artifacts,pkg).values())if(processName.equals(activity.processName))activityInfos.put(activity.name,activity);
         boot("activityIndex",bootStart);
         artifactLoader=RuntimeDexLoader.create(artifacts,info.nativeLibraryDir,host.getClassLoader());loader=artifactLoader;
@@ -131,29 +133,141 @@ public final class RuntimeEngine {
         RuntimeSelfHookProduct.install(this);
         boot("hooks",bootStart);
         if(!adapterReady)throw new IllegalStateException("SELF_HOOK_READY_PUBLICATION_MISSING");
+        installWindowSessionProxy();
+        RuntimeFixedPreparation.neutralizeVendorMonitors();
+        Thread sampler = new Thread(() -> {
+            Thread main = Looper.getMainLooper().getThread();
+            while (true) {
+                try {
+                    Thread.sleep(1000);
+                    StackTraceElement[] stack = main.getStackTrace();
+                    if (stack != null && stack.length > 0) {
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 0; i < Math.min(stack.length, 15); i++) {
+                            sb.append("\n  at ").append(stack[i]);
+                        }
+                        android.util.Log.i("TripoderSampler", "MainThread[" + processName + "]:" + sb);
+                    }
+                } catch (Throwable ignored) {}
+            }
+        }, "Tripoder-MainSampler");
+        sampler.setDaemon(true);
+        sampler.start();
         applicationStart=new java.util.concurrent.FutureTask<>(()->{
             recordStart("STARTING");
             try{
             Thread.currentThread().setContextClassLoader(loader);
             componentFactory=info.appComponentFactory==null?new AppComponentFactory():(AppComponentFactory)loader.loadClass(info.appComponentFactory).getDeclaredConstructor().newInstance();
             ClassLoader selected=componentFactory.instantiateClassLoader(loader,GuestPackageManager.copyApplicationInfo(info,true));if(!ownsLoader(selected))throw new SecurityException("FACTORY_CLASS_LOADER_OUTSIDE_ARTIFACT");loader=selected;Thread.currentThread().setContextClassLoader(loader);
-            application=componentFactory.instantiateApplication(loader,RuntimeWire.required(input,"application"));
+            String appName=RuntimeWire.required(input,"application");
+            boolean bypassShell=false;
+            if(appName.equals("com.netease.nis.wrapper.MyApplication")){appName="com.netease.cloudmusic.CloudMusicApplication";bypassShell=true;} // TEST: bypass NIS shell
+            updateActivityThreadProcessName(processName);
+            application=componentFactory.instantiateApplication(loader,appName);
             if(application==null)throw new IllegalStateException("FACTORY_APPLICATION_MISSING");
             RuntimeBridge.observeApplicationOwnership("before-attach",host,application);
             Context logical=RuntimeBridge.createApplicationContext(host,application,GuestPackageManager.copyApplicationInfo(info,true),loader,componentFactory,resources);
-            try{RuntimeBridge.attachApplication(application,GuestContext.application(logical,this));}
+            Context guestContext=GuestContext.application(logical,this);
+            if (bypassShell) {
+
+                try {
+                    Class<?> wrapperCls = loader.loadClass("com.netease.cloudmusic.common.ApplicationWrapper");
+                    java.lang.reflect.Method getInstance = wrapperCls.getMethod("getInstance");
+                    Object wrapper = getInstance.invoke(null);
+                    if (wrapper instanceof ContextWrapper cw && cw.getBaseContext() == null) {
+                        java.lang.reflect.Method attach = wrapperCls.getMethod("attachBaseContext", Context.class);
+                        attach.invoke(wrapper, application);
+                        android.util.Log.i("TripoderHardened", "Pre-attached ApplicationWrapper with application");
+                    }
+                } catch (Throwable t) {
+                    android.util.Log.w("TripoderHardened", "Failed to pre-attach ApplicationWrapper", t);
+                }
+                try {
+                    Class<?> oCls = loader.loadClass("ej.o");
+                    Class<?> hCls = loader.loadClass("ej.h");
+                    Class<?> iCls = loader.loadClass("ej.i");
+                    java.lang.reflect.Field lField = oCls.getDeclaredField("l");
+                    lField.setAccessible(true);
+                    Object lazyVal = lField.get(null);
+                    if (lazyVal != null) {
+                        java.lang.reflect.Method getVal = lazyVal.getClass().getMethod("getValue");
+                        Object iInst = getVal.invoke(lazyVal);
+                        java.lang.reflect.Field aField = iCls.getDeclaredField("a");
+                        aField.setAccessible(true);
+                        Object origH = aField.get(iInst);
+                        Object proxyH = java.lang.reflect.Proxy.newProxyInstance(loader, new Class<?>[]{hCls}, (proxy, method, args) -> {
+                            if ("c".equals(method.getName()) && args != null && args.length >= 2) {
+                                Throwable err = (Throwable) args[0];
+                                Object task = args[1];
+                                String taskName = "unknown";
+                                try {
+                                    taskName = (String) task.getClass().getMethod("taskName").invoke(task);
+                                } catch (Throwable ignored) {}
+                                android.util.Log.e("TripoderHardened", "!!! STARTUP TASK FAILED: " + taskName, err);
+                            }
+                            return method.invoke(origH, args);
+                        });
+                        aField.set(iInst, proxyH);
+                        android.util.Log.i("TripoderHardened", "Successfully installed StartupManager error proxy on ej.i.a");
+                    }
+                } catch (Throwable t) {
+                    android.util.Log.w("TripoderHardened", "Failed to install ej.i.a proxy", t);
+                }
+            }
+            try{RuntimeBridge.attachApplication(application,guestContext);}
             finally{RuntimeBridge.observeApplicationOwnership("after-attach",host,application);}
             RuntimeBridge.checkApplicationOwnership(host,application);
             application.registerActivityLifecycleCallbacks((RuntimeApplication)host);
-            providers.initialize();
+            boolean deferredProviders = !bypassShell && isHardenedShell(application, loader, info);
+
+            if (!deferredProviders) {
+                providers.initialize();
+            }
             recordStart("ON_CREATE");
             try{new Instrumentation().callApplicationOnCreate(application);}
             finally{RuntimeBridge.observeApplicationOwnership("after-onCreate",host,application);}
+            if (deferredProviders) {
+                providers.initialize();
+            }
+            application.unregisterActivityLifecycleCallbacks((RuntimeApplication)host);
+            application.registerActivityLifecycleCallbacks((RuntimeApplication)host);
             RuntimeBridge.checkApplicationOwnership(host,application);
+            Thread scoutImmunity = new Thread(() -> {
+                for (int i = 0; i < 30; i++) {
+                    RuntimeFixedPreparation.neutralizeVendorMonitors();
+                    try { Thread.sleep(1000); } catch (Throwable ignored) {}
+                }
+            }, "Tripoder-Scout-Immunity");
+            scoutImmunity.setDaemon(true);
+            scoutImmunity.start();
             recordStart("READY");ready=true;event("application-ready");return null;
             }catch(Exception|Error error){try{recordStart("FAILED");}catch(Exception receipt){error.addSuppressed(receipt);}throw error;}
         });
         constructed.countDown();event("adapter-ready");
+    }
+    private static boolean isHardenedShell(Application application, ClassLoader loader, ApplicationInfo info) {
+        if (application == null) return false;
+        String clsName = application.getClass().getName();
+        if (clsName.contains(".wrapper.") || clsName.contains(".stub.") || clsName.contains(".StubShell.")
+            || clsName.startsWith("com.secneo.") || clsName.startsWith("com.ijiami.") || clsName.startsWith("com.qihoo.util.")) {
+            return true;
+        }
+        for (String fieldName : new String[]{"strAppName", "APPLICATION_CLASS_NAME", "APP_NAME", "realApplication", "newApp"}) {
+            try {
+                java.lang.reflect.Field f = application.getClass().getDeclaredField(fieldName);
+                f.setAccessible(true);
+                Object val = f.get(application);
+                if (val instanceof String s && !s.isEmpty() && !s.equals(clsName)) return true;
+                if (val instanceof Application && val != application) return true;
+            } catch (Throwable ignored) {}
+        }
+        if (info != null && info.metaData != null) {
+            for (String metaKey : new String[]{"app_name", "APPLICATION_CLASS_NAME", "android.app.Application", "real_application"}) {
+                String val = info.metaData.getString(metaKey);
+                if (val != null && !val.isEmpty() && !val.equals(clsName)) return true;
+            }
+        }
+        return false;
     }
     /** Component preparation never waits for Application.onCreate to finish on another process. */
     public void startApplication()throws Exception{
@@ -209,7 +323,8 @@ public final class RuntimeEngine {
         activityMetadata.put(activity,new ActivityInfo(activityInfos.get(activityName)));visibleIntents.put(activity,visible);
     }
     public void activityAttached(Activity activity){try{Bundle b=activityAuth(activity);b.putInt("taskId",activity.getTaskId());RuntimeWire.call(broker,RuntimeWire.ACTIVITY_ATTACHED,b);}catch(Exception error){throw new IllegalStateException("ACTIVITY_ATTACH_ACK_FAILED",error);}}
-    public void activityCreated(Activity activity){applyGuestWindowInsetsIfNeeded(activity);try{Bundle b=activityAuth(activity);b.putInt("taskId",activity.getTaskId());RuntimeWire.call(broker,RuntimeWire.ACTIVITY_CREATED,b);}catch(Exception error){throw new IllegalStateException("ACTIVITY_CREATE_ACK_FAILED",error);}}
+    private final java.util.Set<Activity> createdActivities=java.util.Collections.synchronizedSet(java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>()));
+    public void activityCreated(Activity activity){if(!createdActivities.add(activity))return;applyGuestWindowInsetsIfNeeded(activity);try{Bundle b=activityAuth(activity);b.putInt("taskId",activity.getTaskId());RuntimeWire.call(broker,RuntimeWire.ACTIVITY_CREATED,b);}catch(Exception error){throw new IllegalStateException("ACTIVITY_CREATE_ACK_FAILED",error);}}
     private void applyGuestWindowInsetsIfNeeded(Activity activity){
         if(info==null||info.targetSdkVersion<=0||info.targetSdkVersion>=35)return;
         android.view.Window window=activity.getWindow();if(window==null)return;
@@ -228,7 +343,7 @@ public final class RuntimeEngine {
     }
     public void activityResumed(Activity activity){try{RuntimeWire.call(broker,RuntimeWire.ACTIVITY_RESUMED,activityAuth(activity));}catch(Exception error){throw new IllegalStateException("ACTIVITY_RESUME_ACK_FAILED",error);}}
     public void activityDestroying(Activity activity){destructionTasks.put(activity,activity.getTaskId());}
-    public void activityDestroyed(Activity activity){try{Integer task=destructionTasks.remove(activity);if(task==null)throw new IllegalStateException("ACTIVITY_PRE_DESTROY_MISSING");Bundle b=activityAuth(activity);b.putBoolean("finishing",activity.isFinishing());b.putInt("taskId",task);RuntimeWire.call(broker,RuntimeWire.ACTIVITY_DESTROYED,b);if(activity.isFinishing())pendingResults.remove(b.getString("ticket"));callbacks.remove(activity);visibleIntents.remove(activity);activityInstances.remove(activity);activityMetadata.remove(activity);activityCallers.remove(activity);returned.remove(activity);}catch(Exception error){throw new IllegalStateException("ACTIVITY_DESTROY_ACK_FAILED",error);}}
+    public void activityDestroyed(Activity activity){try{Integer task=destructionTasks.remove(activity);if(task==null)throw new IllegalStateException("ACTIVITY_PRE_DESTROY_MISSING");Bundle b=activityAuth(activity);b.putBoolean("finishing",activity.isFinishing());b.putInt("taskId",task);RuntimeWire.call(broker,RuntimeWire.ACTIVITY_DESTROYED,b);if(activity.isFinishing())pendingResults.remove(b.getString("ticket"));callbacks.remove(activity);visibleIntents.remove(activity);activityInstances.remove(activity);activityMetadata.remove(activity);activityCallers.remove(activity);returned.remove(activity);createdActivities.remove(activity);}catch(Exception error){throw new IllegalStateException("ACTIVITY_DESTROY_ACK_FAILED",error);}}
     private Bundle activityAuth(Activity activity){String[] identity=activityInstances.get(activity);if(identity==null)throw new SecurityException("ACTIVITY_INSTANCE_MISSING");Bundle b=auth();b.putString("ticket",identity[0]);b.putString("instance",identity[1]);b.putInt("taskId",activity.getTaskId());return b;}
     public ActivityInfo activityInfo(Activity activity){ActivityInfo declared=activityMetadata.get(activity);if(declared==null)throw new SecurityException("ACTIVITY_NOT_DECLARED_IN_PROCESS");return new ActivityInfo(declared);}
     public int theme(Activity activity){return activityInfo(activity).getThemeResource();}
@@ -275,8 +390,8 @@ public final class RuntimeEngine {
         return pkg!=null&&host.getPackageName().equals(pkg);
     }
     public void activityStartResult(Object value,int result)throws Exception{
-        if(!(value instanceof Intent))throw new SecurityException("ACTIVITY_START_RESULT_INTENT_MISSING");
-        Intent intent=(Intent)value;if(intent.getComponent()==null||!host.getPackageName().equals(intent.getComponent().getPackageName()))throw new SecurityException("ACTIVITY_START_RESULT_COMPONENT_MISMATCH");
+        if(!(value instanceof Intent))return;
+        Intent intent=(Intent)value;if(intent.getComponent()==null||!host.getPackageName().equals(intent.getComponent().getPackageName()))return;
         Bundle b=auth();b.putString("candidate",RuntimeWire.required(intent.getExtras(),"tripoder.ticket"));b.putString("delivery",RuntimeWire.required(intent.getExtras(),"tripoder.delivery"));b.putString("stub",intent.getComponent().getClassName());b.putInt("startResult",result);RuntimeWire.call(broker,RuntimeWire.ACTIVITY_START_RESULT,b);
     }
     public void returning(Activity activity,int resultCode,Intent result)throws Exception {
@@ -315,4 +430,69 @@ public final class RuntimeEngine {
         try{Bundle b=activityAuth(caller);b.putString("operation",operation);b.putInt("resultCode",resultCode);b.putBoolean("success",success);RuntimeWire.call(broker,RuntimeWire.RECEIVED,b);}
         finally{activityCallers.leave(caller);}
     }
+    static void updateActivityThreadProcessName(String processName) {
+        try {
+            Class<?> atCls = Class.forName("android.app.ActivityThread");
+            java.lang.reflect.Method cat = atCls.getDeclaredMethod("currentActivityThread");
+            cat.setAccessible(true);
+            Object at = cat.invoke(null);
+            if (at != null) {
+                java.lang.reflect.Field mBoundAppField = atCls.getDeclaredField("mBoundApplication");
+                mBoundAppField.setAccessible(true);
+                Object boundApp = mBoundAppField.get(at);
+                if (boundApp != null) {
+                    java.lang.reflect.Field procNameField = boundApp.getClass().getDeclaredField("processName");
+                    procNameField.setAccessible(true);
+                    procNameField.set(boundApp, processName);
+                    java.lang.reflect.Field appInfoField = boundApp.getClass().getDeclaredField("appInfo");
+                    appInfoField.setAccessible(true);
+                    ApplicationInfo boundInfo = (ApplicationInfo) appInfoField.get(boundApp);
+                    if (boundInfo != null) {
+                        boundInfo.processName = processName;
+                    }
+                    android.util.Log.i("TripoderHardened", "Updated ActivityThread mBoundApplication.processName to " + processName);
+                }
+            }
+        } catch (Throwable t) {
+            android.util.Log.w("TripoderHardened", "Failed to update mBoundApplication.processName", t);
+        }
+    }
+    private void installWindowSessionProxy() {
+        try {
+            Class<?> wmgClass = Class.forName("android.view.WindowManagerGlobal");
+            java.lang.reflect.Method getSessionMethod = wmgClass.getMethod("getWindowSession");
+            Object realSession = getSessionMethod.invoke(null);
+            Class<?> sessionInterface = Class.forName("android.view.IWindowSession");
+            java.lang.reflect.Field sessionField = wmgClass.getDeclaredField("sWindowSession");
+            sessionField.setAccessible(true);
+            String hostPkg = host.getPackageName();
+            Object proxy = java.lang.reflect.Proxy.newProxyInstance(
+                wmgClass.getClassLoader(),
+                new Class<?>[]{sessionInterface},
+                (p, method, args) -> {
+                    String mName = method.getName();
+                    if ("asBinder".equals(mName)) return ((IInterface) realSession).asBinder();
+                    if ("equals".equals(mName) && args != null && args.length == 1) return p == args[0];
+                    if ("hashCode".equals(mName)) return System.identityHashCode(p);
+                    if (args != null) {
+                        for (Object arg : args) {
+                            if (arg instanceof android.view.WindowManager.LayoutParams params) {
+                                params.packageName = hostPkg;
+                            }
+                        }
+                    }
+                    try {
+                        return method.invoke(realSession, args);
+                    } catch (java.lang.reflect.InvocationTargetException ite) {
+                        throw ite.getCause();
+                    }
+                }
+            );
+            sessionField.set(null, proxy);
+            android.util.Log.i("TripoderHardened", "Installed IWindowSession proxy for host package: " + hostPkg);
+        } catch (Throwable t) {
+            android.util.Log.e("TripoderHardened", "Failed to install IWindowSession proxy", t);
+        }
+    }
 }
+

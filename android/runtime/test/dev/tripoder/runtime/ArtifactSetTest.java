@@ -65,7 +65,8 @@ public final class ArtifactSetTest {
         rejects("split-cycle","SPLIT_DEPENDENCY_CYCLE",()->ArtifactSet.materialize(stage("base","cyclea","cycleb").toFile()));
         rejects("required-split","REQUIRED_SPLIT_MISSING",()->ArtifactSet.materialize(stage("required").toFile()));
         rejects("wrong-abi","ABI_OR_LIBRARY_UNSUPPORTED",()->ArtifactSet.materialize(stage("wrongabi").toFile()));
-        rejects("fake-elf","NATIVE_ELF_NOT_ARM64_SHARED",()->ArtifactSet.materialize(stage("fakeelf").toFile()));
+        ArtifactSet foreignElf=ArtifactSet.materialize(stage("fakeelf").toFile());
+        check("foreign-abi-native-straggler-preserved",Files.size(foreignElf.directory.toPath().resolve("lib/libbad.so"))==20);
         rejects("unsigned-apk","APK_SIGNATURE_INVALID",()->ArtifactSet.materialize(stage("unsigned").toFile()));
         rejects("tampered-signature","APK_SIGNATURE_INVALID",()->ArtifactSet.materialize(stage("tampered").toFile()));
         rejects("zip-traversal","UNSAFE_ZIP_PATH",()->ArtifactSet.materialize(stage("ziptraversal").toFile()));

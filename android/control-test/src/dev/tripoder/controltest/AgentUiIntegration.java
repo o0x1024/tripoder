@@ -46,10 +46,12 @@ public final class AgentUiIntegration extends ControlTestBase {
             await(()->{JSONObject state=inspect();if(!state.getString("state").equals("OPEN"))throw new IllegalStateException("AGENT_CLOSED_BEFORE_PREPARE:"+state.getString("reason"));return state.has("preparedSourceSha256");},"sentinel".equals(args.getString("phase"))?420000:180000,"EXTERNAL_PREPARE");JSONObject review=inspect();check("only-owned-counter-source-approved",SOURCE.equals(review.getString("draftSource")),review.getString("preparedSourceSha256"));
             SystemClock.sleep(2200);scrollTo("审阅外部脚本");click("审阅外部脚本");click("批准此版本部署");signal("reviewed",new JSONObject().put("sourceSha256",review.getString("preparedSourceSha256")));
             await(()->inspect().getString("hookState").equals("ACTIVE"),180000,"EXTERNAL_ACTIVATE");check("external-activation-confirmed-by-engine",true,inspect());capture("agent-active");
-            // The issued entry has no expiry: it stays the application's root until it is started or handed back.
-            Bundle launchQuery=execute(controller,"query","operation",launchOperation);
-            if(!"RUNNING".equals(launchQuery.getString("state")))throw new IllegalStateException("INITIAL_LAUNCH_OUTCOME_REQUIRES_RECONCILIATION:"+launchQuery.getString("state"));
-            final Bundle activeLaunch=prepared;
+            // Pairing and human/model review may outlive the issued entry's validity; the query expires it,
+            // and a new foreground launch is then issued explicitly.
+            Bundle launchQuery=execute(controller,"query","operation",launchOperation);final Bundle activeLaunch;
+            if("RUNNING".equals(launchQuery.getString("state")))activeLaunch=prepared;
+            else if("FAILED".equals(launchQuery.getString("state"))&&"LAUNCH_ENTRY_NOT_ENTERED".equals(launchQuery.getString("detail")))activeLaunch=execute(controller,"prepareLaunch","operation",id(),"project",project,"bindingOperation",binding,"generation",install,"component","dev.tripoder.previewguest.CounterActivity");
+            else throw new IllegalStateException("INITIAL_LAUNCH_OUTCOME_REQUIRES_RECONCILIATION:"+launchQuery.getString("state"));
             check("post-review-launch-keeps-exact-process",process.equals(activeLaunch.getString("generation")),activeLaunch.getString("generation"));
             Activity page=visible.get();if(page==null)throw new IllegalStateException("PROJECT_PAGE_NOT_OBSERVED");runOnMainSync(()->page.startActivity(activeLaunch.getParcelable("intent",Intent.class)));
             waitNode("Hook 0",false,10000);click("＋  计数一次");waitNode("Hook 1",false,10000);check("actual-counter-calls-hook-twice",true,"Hook 0 -> Hook 1");capture("counter-hooked");signal("hits",new JSONObject().put("expectedHits",2));

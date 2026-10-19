@@ -86,10 +86,11 @@ final class RuntimeSelfHookApplication {
         mainThread();RuntimeSelfHookApplication value=require();
         if(value.creationAttempted)throw new IllegalStateException("SELF_APPLICATION_CREATE_ALREADY_ATTEMPTED");
         value.creationAttempted=true;
+        ApplicationInfo expected=GuestPackageManager.copyApplicationInfo(value.engine.info,true);
         if(physical!=value.host||guest==null||guest==value.host||guest.getBaseContext()!=null||guest!=value.engine.application||loader!=value.engine.loader||
             factory!=value.engine.componentFactory||resources!=value.engine.resources||info==null||
-            !value.engine.packageName.equals(info.packageName)||!value.engine.info.sourceDir.equals(info.sourceDir)||
-            !value.engine.info.dataDir.equals(info.dataDir)||info.uid!=value.engine.info.uid)
+            !value.engine.packageName.equals(info.packageName)||!expected.sourceDir.equals(info.sourceDir)||
+            !expected.dataDir.equals(info.dataDir)||info.uid!=value.engine.info.uid)
             throw new SecurityException("SELF_APPLICATION_ENGINE_IDENTITY_MISMATCH");
         // The verified manifest may select Android's exact default Application.
         // Its instance belongs to this guest, while its defining Class is boot.

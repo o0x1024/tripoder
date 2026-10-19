@@ -13,6 +13,7 @@ public final class RuntimeProviderFacade extends RuntimeProviderBase implements 
     private final Bundle reference;
     private final ContentProviderClient client;
     private boolean closed,released;private int uses;
+    public boolean isClosed(){synchronized(this){return closed||released;}}
     RuntimeProviderFacade(RuntimeEngine engine,Bundle reference,ContentProviderClient client){this.engine=engine;this.reference=reference;this.client=client;ProviderInfo info=new ProviderInfo();info.authority=reference.getString("authority");info.exported=false;attachInfo(engine.host,info);}
     private Bundle request(){Bundle b=engine.auth();b.putString("cap",reference.getString("cap"));return b;}
     void awaitReady()throws Exception{
@@ -23,7 +24,7 @@ public final class RuntimeProviderFacade extends RuntimeProviderBase implements 
     static Bundle primitive(Bundle input){
         Bundle copy=primitive(input,0);
         if(copy==null)return null;
-        Parcel p=Parcel.obtain();try{p.writeBundle(copy);if(p.hasFileDescriptors())throw new IllegalArgumentException("PROVIDER_EXTRA_DESCRIPTOR_UNSUPPORTED");if(p.dataSize()>32768)throw new IllegalArgumentException("PROVIDER_BUNDLE_TOO_LARGE");}finally{p.recycle();}return copy;
+        Parcel p=Parcel.obtain();try{p.writeBundle(copy);if(p.dataSize()>524288)throw new IllegalArgumentException("PROVIDER_BUNDLE_TOO_LARGE");}finally{p.recycle();}return copy;
     }
     /** Platform classes exist, by name, in every process; the sender's own classes exist in the processes of its own package. Both are carried as opaque data the authority never unparcels. */
     private static boolean platformClass(Class<?> type){ClassLoader loader=type.getClassLoader();return loader==null||"java.lang.BootClassLoader".equals(loader.getClass().getName());}
@@ -41,21 +42,21 @@ public final class RuntimeProviderFacade extends RuntimeProviderBase implements 
     private static boolean guestOwned(Class<?> type){RuntimeEngine engine=RuntimeEngine.current;return engine!=null&&type.getClassLoader()!=null&&engine.ownsLoader(type.getClassLoader());}
     /** Finite data only: scalars, bounded text, bounded primitive arrays and nested Bundles. Nothing here carries authority or descriptors. */
     private static Bundle primitive(Bundle input,int depth){
-        if(input==null)return null;if(depth>3||input.size()>64)throw new IllegalArgumentException("PROVIDER_BUNDLE_TOO_LARGE");Bundle copy=new Bundle();
-        for(String key:input.keySet()){if(key.length()>200)throw new IllegalArgumentException("PROVIDER_KEY_TOO_LONG");Object v=input.get(key);
+        if(input==null)return null;if(depth>3||input.size()>512)throw new IllegalArgumentException("PROVIDER_BUNDLE_TOO_LARGE");Bundle copy=new Bundle();
+        for(String key:input.keySet()){if(key.length()>512)throw new IllegalArgumentException("PROVIDER_KEY_TOO_LONG");Object v=input.get(key);
             if(v==null)copy.putString(key,null);
-            else if(v instanceof String){if(((String)v).length()>8192)throw new IllegalArgumentException("PROVIDER_STRING_TOO_LONG");copy.putString(key,(String)v);}
+            else if(v instanceof String){if(((String)v).length()>524288)throw new IllegalArgumentException("PROVIDER_STRING_TOO_LONG");copy.putString(key,(String)v);}
             else if(v instanceof Integer)copy.putInt(key,(Integer)v);else if(v instanceof Long)copy.putLong(key,(Long)v);else if(v instanceof Boolean)copy.putBoolean(key,(Boolean)v);
             else if(v instanceof Double)copy.putDouble(key,(Double)v);else if(v instanceof Float)copy.putFloat(key,(Float)v);else if(v instanceof Short)copy.putShort(key,(Short)v);else if(v instanceof Byte)copy.putByte(key,(Byte)v);else if(v instanceof Character)copy.putChar(key,(Character)v);
             else if(v instanceof Bundle)copy.putBundle(key,primitive((Bundle)v,depth+1));
-            else if(v instanceof byte[]){if(((byte[])v).length>16384)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");copy.putByteArray(key,((byte[])v).clone());}
-            else if(v instanceof int[]){if(((int[])v).length>4096)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");copy.putIntArray(key,((int[])v).clone());}
-            else if(v instanceof long[]){if(((long[])v).length>4096)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");copy.putLongArray(key,((long[])v).clone());}
-            else if(v instanceof boolean[]){if(((boolean[])v).length>4096)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");copy.putBooleanArray(key,((boolean[])v).clone());}
-            else if(v instanceof float[]){if(((float[])v).length>4096)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");copy.putFloatArray(key,((float[])v).clone());}
-            else if(v instanceof double[]){if(((double[])v).length>4096)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");copy.putDoubleArray(key,((double[])v).clone());}
-            else if(v instanceof String[]){String[] array=(String[])v;if(array.length>64)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");for(String value:array)if(value!=null&&value.length()>8192)throw new IllegalArgumentException("PROVIDER_STRING_TOO_LONG");copy.putStringArray(key,array.clone());}
-            else if(v instanceof CharSequence){if(((CharSequence)v).length()>8192)throw new IllegalArgumentException("PROVIDER_STRING_TOO_LONG");copy.putCharSequence(key,(CharSequence)v);}
+            else if(v instanceof byte[]){if(((byte[])v).length>524288)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");copy.putByteArray(key,((byte[])v).clone());}
+            else if(v instanceof int[]){if(((int[])v).length>16384)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");copy.putIntArray(key,((int[])v).clone());}
+            else if(v instanceof long[]){if(((long[])v).length>16384)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");copy.putLongArray(key,((long[])v).clone());}
+            else if(v instanceof boolean[]){if(((boolean[])v).length>16384)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");copy.putBooleanArray(key,((boolean[])v).clone());}
+            else if(v instanceof float[]){if(((float[])v).length>16384)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");copy.putFloatArray(key,((float[])v).clone());}
+            else if(v instanceof double[]){if(((double[])v).length>16384)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");copy.putDoubleArray(key,((double[])v).clone());}
+            else if(v instanceof String[]){String[] array=(String[])v;if(array.length>512)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");for(String value:array)if(value!=null&&value.length()>524288)throw new IllegalArgumentException("PROVIDER_STRING_TOO_LONG");copy.putStringArray(key,array.clone());}
+            else if(v instanceof CharSequence){if(((CharSequence)v).length()>524288)throw new IllegalArgumentException("PROVIDER_STRING_TOO_LONG");copy.putCharSequence(key,(CharSequence)v);}
             else if(v instanceof android.os.IBinder){requireBinder(v);copy.putBinder(key,(android.os.IBinder)v);}
             else if(v instanceof android.os.Parcelable&&admits(v.getClass()))copy.putParcelable(key,(android.os.Parcelable)v);
             else if(v instanceof android.os.Parcelable[]&&admitsElements(java.util.Arrays.asList((Object[])v))){if(((Object[])v).length>256)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");copy.putParcelableArray(key,(android.os.Parcelable[])((android.os.Parcelable[])v).clone());}
@@ -124,9 +125,15 @@ public final class RuntimeProviderFacade extends RuntimeProviderBase implements 
         };
     }
     private void endUse(){synchronized(this){if(uses<=0)throw new IllegalStateException("PROVIDER_USE_UNBALANCED");uses--;}releaseIfIdle();}
+    private static final java.util.concurrent.ExecutorService RELEASE_EXECUTOR=java.util.concurrent.Executors.newSingleThreadExecutor(r->{Thread t=new Thread(r,"Tripoder-ProviderRelease");t.setDaemon(true);return t;});
     private void releaseIfIdle(){
         synchronized(this){if(!closed||uses!=0||released)return;released=true;}
-        client.close();try{engine.brokerCall(RuntimeWire.PROVIDER_RELEASE,request());}catch(RuntimeException e){throw e;}catch(Exception e){throw new IllegalStateException("PROVIDER_RELEASE_UNCONFIRMED",e);}
+        client.close();
+        Bundle req=request();
+        RELEASE_EXECUTOR.execute(()->{
+            try{engine.brokerCall(RuntimeWire.PROVIDER_RELEASE,req);}
+            catch(Throwable e){android.util.Log.w("Tripoder","PROVIDER_RELEASE failed",e);}
+        });
     }
     @Override public void close(){synchronized(this){closed=true;}releaseIfIdle();}
 }

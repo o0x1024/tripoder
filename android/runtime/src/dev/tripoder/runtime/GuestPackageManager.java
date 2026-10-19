@@ -49,7 +49,7 @@ final class GuestPackageManager extends DeniedPackageManager {
 
     private ApplicationInfo applicationInfo(String packageName, long flags) throws NameNotFoundException {
         requireSelf(packageName);
-        long supported = GET_META_DATA | GET_SHARED_LIBRARY_FILES | GET_ACTIVITIES | GET_RECEIVERS | GET_SERVICES | GET_PROVIDERS | MATCH_DISABLED_COMPONENTS | MATCH_DIRECT_BOOT_AWARE | MATCH_DIRECT_BOOT_UNAWARE | MATCH_UNINSTALLED_PACKAGES | MATCH_DEFAULT_ONLY;
+        long supported = GET_META_DATA | GET_SHARED_LIBRARY_FILES | GET_ACTIVITIES | GET_RECEIVERS | GET_SERVICES | GET_PROVIDERS | MATCH_DISABLED_COMPONENTS | MATCH_DIRECT_BOOT_AWARE | MATCH_DIRECT_BOOT_UNAWARE | MATCH_UNINSTALLED_PACKAGES | MATCH_DEFAULT_ONLY | MATCH_DIRECT_BOOT_AUTO;
         if ((flags & ~supported) != 0)
             throw new UnsupportedOperationException("APPLICATION_INFO_FLAGS_UNSUPPORTED:0x" + Long.toHexString(flags));
         return copyApplicationInfo(engine.info, (flags & GET_META_DATA) != 0);
@@ -61,7 +61,33 @@ final class GuestPackageManager extends DeniedPackageManager {
         if (source.splitSourceDirs != null) copy.splitSourceDirs = source.splitSourceDirs.clone();
         if (source.splitPublicSourceDirs != null) copy.splitPublicSourceDirs = source.splitPublicSourceDirs.clone();
         copy.metaData = includeMetadata && source.metaData != null ? source.metaData.deepCopy() : null;
+        if (source.packageName != null) {
+            copy.dataDir = "/data/user/0/" + source.packageName;
+            copy.deviceProtectedDataDir = "/data/user_de/0/" + source.packageName;
+            copy.sourceDir = "/data/app/~~tripoder/" + source.packageName + "/base.apk";
+            copy.publicSourceDir = "/data/app/~~tripoder/" + source.packageName + "/base.apk";
+            copy.nativeLibraryDir = "/data/app/~~tripoder/" + source.packageName + "/lib";
+            setPrimaryCpuAbi(copy, "arm64-v8a");
+        }
         return copy;
+    }
+
+    private static volatile java.lang.reflect.Field primaryCpuAbiField;
+    static void setPrimaryCpuAbi(ApplicationInfo info, String abi) {
+        if (info == null) return;
+        try {
+            java.lang.reflect.Field field = primaryCpuAbiField;
+            if (field == null) {
+                try {
+                    field = ApplicationInfo.class.getField("primaryCpuAbi");
+                } catch (Throwable ignored) {
+                    field = ApplicationInfo.class.getDeclaredField("primaryCpuAbi");
+                    field.setAccessible(true);
+                }
+                primaryCpuAbiField = field;
+            }
+            field.set(info, abi);
+        } catch (Throwable ignored) {}
     }
 
     @Override public XmlResourceParser getXml(String packageName, int resourceId, ApplicationInfo application) {
@@ -89,16 +115,17 @@ final class GuestPackageManager extends DeniedPackageManager {
     @Override public android.content.pm.ActivityInfo getActivityInfo(ComponentName component,ComponentInfoFlags flags)throws NameNotFoundException{if(flags==null)throw new IllegalArgumentException("ACTIVITY_INFO_FLAGS_REQUIRED");return GuestActivityInfo.get(engine,component,flags.getValue());}
     @Override public ServiceInfo getServiceInfo(ComponentName component,ComponentInfoFlags flags)throws NameNotFoundException{
         if(component==null||flags==null)throw new IllegalArgumentException("SERVICE_COMPONENT_REQUIRED");requireSelf(component.getPackageName());
-        long value=flags.getValue();if((value&~(long)(GET_META_DATA|MATCH_DISABLED_COMPONENTS|MATCH_DIRECT_BOOT_AWARE|MATCH_DIRECT_BOOT_UNAWARE))!=0)throw new UnsupportedOperationException("SERVICE_INFO_FLAGS_UNSUPPORTED:0x"+Long.toHexString(value));
+        long value=flags.getValue();if((value&~(long)(GET_META_DATA|MATCH_DISABLED_COMPONENTS|MATCH_DIRECT_BOOT_AWARE|MATCH_DIRECT_BOOT_UNAWARE|MATCH_DIRECT_BOOT_AUTO))!=0)throw new UnsupportedOperationException("SERVICE_INFO_FLAGS_UNSUPPORTED:0x"+Long.toHexString(value));
         ServiceInfo raw=engine.serviceIndex.get(component.getClassName());
         long directBoot=value&(MATCH_DIRECT_BOOT_AWARE|MATCH_DIRECT_BOOT_UNAWARE);
+        if(directBoot==0&&(value&MATCH_DIRECT_BOOT_AUTO)!=0)directBoot=MATCH_DIRECT_BOOT_AWARE|(engine.host.getSystemService(android.os.UserManager.class).isUserUnlocked()?MATCH_DIRECT_BOOT_UNAWARE:0);
         if(raw==null||!raw.enabled&&(value&MATCH_DISABLED_COMPONENTS)==0||directBoot!=0&&(value&(raw.directBootAware?MATCH_DIRECT_BOOT_AWARE:MATCH_DIRECT_BOOT_UNAWARE))==0)throw new NameNotFoundException(component.flattenToString());
         ServiceInfo copy=new ServiceInfo(raw);copy.applicationInfo=copyApplicationInfo(engine.info,(value&GET_META_DATA)!=0);
         copy.metaData=(value&GET_META_DATA)==0||raw.metaData==null?null:raw.metaData.deepCopy();return copy;
     }
 
     private ProviderInfo providerInfo(ProviderInfo info,long flags){
-        long supported=GET_META_DATA|MATCH_DISABLED_COMPONENTS|GET_URI_PERMISSION_PATTERNS;
+        long supported=GET_META_DATA|MATCH_DISABLED_COMPONENTS|GET_URI_PERMISSION_PATTERNS|MATCH_DIRECT_BOOT_AWARE|MATCH_DIRECT_BOOT_UNAWARE|MATCH_DIRECT_BOOT_AUTO;
         if((flags&~supported)!=0)throw new UnsupportedOperationException("PROVIDER_INFO_FLAGS_UNSUPPORTED");
         if(info==null||!info.enabled&&(flags&MATCH_DISABLED_COMPONENTS)==0)return null;
         ProviderInfo result=new ProviderInfo(info);result.applicationInfo=copyApplicationInfo(engine.info,(flags&GET_META_DATA)!=0);

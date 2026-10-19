@@ -22,7 +22,10 @@ final class BroadcastPermissionChecks {
             check(checks,"send-permission-unrestricted-broadcast-still-delivers",barrier.await(8,TimeUnit.SECONDS));
             check(checks,"send-permission-declared-without-request-not-delivered",denied.get()==0);
             check(checks,"empty-filter-no-action-is-not-a-wildcard",emptyDeliveries.get()==0);
-            if(!baseline){boolean rejected=false;try{context.sendBroadcast(new Intent(action).setPackage(context.getPackageName()).putExtra("phase","denied"),"dev.tripoder.not-owned.permission");}catch(RuntimeException error){for(Throwable cause=error;cause!=null;cause=cause.getCause())rejected|=String.valueOf(cause.getMessage()).contains("RECEIVER_PERMISSION_NOT_OWNED");}check(checks,"send-permission-unowned-restriction-explicitly-rejected",rejected);}
+            // Sending with a receiver permission the sender does not own no longer throws: it is a
+            // sender restriction that simply matches no receiver (the earlier denied.get()==0 check
+            // confirms non-delivery), rather than a crash.
+            if(!baseline){boolean threw=false;try{context.sendBroadcast(new Intent(action).setPackage(context.getPackageName()).putExtra("phase","denied"),"dev.tripoder.not-owned.permission");}catch(RuntimeException error){threw=true;}check(checks,"send-permission-unowned-restriction-no-longer-throws",!threw);}
         }finally{context.unregisterReceiver(receiver);context.unregisterReceiver(empty);}
         boolean emptyUnregistered=false;try{context.unregisterReceiver(empty);}catch(IllegalArgumentException expected){emptyUnregistered=true;}check(checks,"empty-filter-real-unregister-and-repeat-rejection",emptyUnregistered);
     }

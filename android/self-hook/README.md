@@ -25,12 +25,12 @@
 
 ```sh
 rtk proxy python3 android/self-hook/tests/check_host.py \
-  --toolchain android/vm-probe/build/native/tools/android-ndk-r30/toolchains/llvm/prebuilt/darwin-x86_64/bin
+  --toolchain /opt/homebrew/share/android-commandlinetools/ndk/30.0.16248370/toolchains/llvm/prebuilt/darwin-x86_64/bin
 
 rtk proxy python3 android/scripts/build-self-hook-probe.py \
   --sdk /opt/homebrew/share/android-commandlinetools \
   --java-home /opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home \
-  --ndk android/vm-probe/build/native/tools/android-ndk-r30 \
+  --ndk /opt/homebrew/share/android-commandlinetools/ndk/30.0.16248370 \
   --key android/runtime-probe/build/acceptance-only.p12 \
   --platform-libc android/runtime-probe/build/device-libc.so \
   --platform-art android/self-hook-probe/build/device-libart.so

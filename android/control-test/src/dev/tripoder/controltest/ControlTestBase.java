@@ -60,6 +60,10 @@ abstract class ControlTestBase extends Instrumentation {
     IBinder engine()throws Exception{return bind("dev.tripoder.engine","dev.tripoder.runtime.RuntimeControllerService");}
     Bundle connect(IBinder entry,IBinder life)throws Exception{Bundle input=new Bundle();input.putBinder("owner",life);return ControlWire.call(entry,ControlWire.CONNECT,input);}
     ControlWire.Owner life(){return new ControlWire.Owner();}
+    /** Runs as the shell user, e.g. to bring an app back the way the user would from the launcher. */
+    protected String shell(String command)throws Exception{
+        try(java.io.InputStream in=new java.io.FileInputStream(getUiAutomation().executeShellCommand(command).getFileDescriptor())){return new String(in.readAllBytes(),java.nio.charset.StandardCharsets.UTF_8);}
+    }
     /** A launch returns once the guest Application is ready and its root entry issued; tests that need the worker evidence read it here. */
     Bundle awaitWorker(IBinder peer,String project,Bundle prepared)throws Exception{
         String generation=prepared.getString("generation");long end=SystemClock.elapsedRealtime()+40000;

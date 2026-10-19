@@ -17,11 +17,10 @@ final class ProviderLedger {
         db.execSQL("CREATE INDEX provider_refs ON provider_acquisitions(lease,state)");
     }
     void reserve(RuntimeBroker.Slot slot){
-        SQLiteDatabase db=store.getWritableDatabase();db.beginTransaction();try{
-            for(var component:new RuntimeProviderIndex(slot.install.info.providers,slot.install.components()).publications(slot.allocation.session.identity.processName)){
-                ContentValues v=new ContentValues();v.put("id",UUID.randomUUID().toString());v.put("generation",slot.allocation.session.processGeneration);v.put("component",component.name);v.put("state","DECLARED");db.insertOrThrow("provider_leases",null,v);
-            }db.setTransactionSuccessful();
-        }finally{db.endTransaction();}
+        SQLiteDatabase db=store.getWritableDatabase();
+        for(var component:new RuntimeProviderIndex(slot.install.info.providers,slot.install.components()).publications(slot.allocation.session.identity.processName)){
+            ContentValues v=new ContentValues();v.put("id",UUID.randomUUID().toString());v.put("generation",slot.allocation.session.processGeneration);v.put("component",component.name);v.put("state","DECLARED");db.insertOrThrow("provider_leases",null,v);
+        }
     }
     Bundle publications(String generation){Bundle out=new Bundle();try(Cursor c=store.getReadableDatabase().rawQuery("SELECT component,id FROM provider_leases WHERE generation=?",new String[]{generation})){while(c.moveToNext())out.putString(c.getString(0),c.getString(1));}return out;}
     Bundle local(RuntimeBroker.Slot slot,String component,boolean existing){
@@ -67,9 +66,16 @@ final class ProviderLedger {
                 else if(!dispatched&&contract.query(operation).state==ExecutionContract.OperationState.UNKNOWN)contract.reconcile(operation,ExecutionContract.OperationState.FAILED,"PROVIDER_DIED_WITHOUT_GUEST_CALLBACK","provider-call="+operation+";observed-state="+c.getString(1)+";kind="+c.getString(2)+";dead-generation="+generation);
             }
         }
-        ContentValues v=new ContentValues();v.put("state","CLOSED");store.getWritableDatabase().update("provider_acquisitions",v,"source=?",new String[]{generation});
-        v.clear();v.put("delivery","UNKNOWN");store.getWritableDatabase().update("provider_calls",v,"delivery='PENDING' AND cap IN (SELECT cap FROM provider_acquisitions WHERE source=?)",new String[]{generation});
+        ContentValues v=new ContentValues();v.put("state","CLOSED");store.getWritableDatabase().update("provider_acquisitions",v,"source=? OR lease IN (SELECT id FROM provider_leases WHERE generation=?)",new String[]{generation,generation});
+        v.clear();v.put("delivery","UNKNOWN");store.getWritableDatabase().update("provider_calls",v,"delivery='PENDING' AND cap IN (SELECT cap FROM provider_acquisitions WHERE source=? OR lease IN (SELECT id FROM provider_leases WHERE generation=?))",new String[]{generation,generation});
         db.setTransactionSuccessful();}finally{db.endTransaction();}
+    }
+    void abandonDeadCalls(String space,String pkg,String install){
+        SQLiteDatabase db=store.getWritableDatabase();ContentValues row=new ContentValues();
+        row.put("state","CLOSED");
+        db.update("provider_acquisitions",row,"state='OPEN' AND (source IN (SELECT generation FROM sessions WHERE state IN ('DEAD','FAILED')) OR lease IN (SELECT pl.id FROM provider_leases pl JOIN sessions s ON pl.generation=s.generation WHERE s.space=? AND s.package=? AND s.installGeneration=? AND s.state IN ('DEAD','FAILED')))",new String[]{space,pkg,install});
+        row.clear();row.put("state","ABANDONED");
+        db.update("provider_calls",row,"state IN ('PREPARED','RUNNING','UNKNOWN') AND cap IN (SELECT pa.cap FROM provider_acquisitions pa JOIN provider_leases pl ON pa.lease=pl.id JOIN sessions s ON pl.generation=s.generation WHERE s.space=? AND s.package=? AND s.installGeneration=? AND s.state IN ('DEAD','FAILED'))",new String[]{space,pkg,install});
     }
     void recover(ExecutionContract contract){List<String> generations=new ArrayList<>();try(Cursor c=store.getReadableDatabase().rawQuery("SELECT DISTINCT generation FROM provider_leases UNION SELECT DISTINCT source FROM provider_acquisitions",null)){while(c.moveToNext())generations.add(c.getString(0));}for(String generation:generations)dead(generation,contract);}
     // UNKNOWN business effects retain installation/data, not a physical process whose death is confirmed.

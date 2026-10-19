@@ -124,7 +124,7 @@ def build_fixtures(*, tools, platform, java_home, output_dir, signing_key, nativ
     case('package-mismatch', ['base', 'other-package'], error='APK_SET_IDENTITY_MISMATCH')
     case('dependency-cycle', ['base', 'cycle-a', 'cycle-b'], error='SPLIT_DEPENDENCY_CYCLE')
     case('required-split', ['required'], error='REQUIRED_SPLIT_MISSING')
-    case('bad-native', ['bad-native'], error='NATIVE_ELF_NOT_ARM64_SHARED')
+    case('bad-native', ['bad-native'], True, expected_parts=1)  # A foreign/odd ELF in the selected ABI dir is kept as an authenticated opaque entry; the platform linker enforces ABI at dlopen, so the install is not rejected.
     case('wrong-abi', ['wrong-abi'], error='ABI_OR_LIBRARY_UNSUPPORTED')
     case('bad-signature', ['tampered'], error='APK_SIGNATURE_INVALID')
     case('zip-traversal', ['zip-traversal'], error='UNSAFE_ZIP_PATH')

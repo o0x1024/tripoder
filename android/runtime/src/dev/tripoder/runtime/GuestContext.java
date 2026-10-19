@@ -37,9 +37,9 @@ public final class GuestContext extends GuestStorageContext {
     @Override public Resources getResources(){return guestResources;}
     @Override public AssetManager getAssets(){return guestResources.getAssets();}
     @Override public Context getApplicationContext(){return resourceOnlyLoader!=null?null:engine.application==null?this:engine.application;}
-    @Override public ApplicationInfo getApplicationInfo(){return GuestPackageManager.copyApplicationInfo(engine.info,true);}
-    @Override public String getPackageCodePath(){return engine.info.sourceDir;}
-    @Override public String getPackageResourcePath(){return engine.info.publicSourceDir;}
+    @Override public ApplicationInfo getApplicationInfo(){return engine.applicationInfo;}
+    @Override public String getPackageCodePath(){return getApplicationInfo().sourceDir;}
+    @Override public String getPackageResourcePath(){return getApplicationInfo().publicSourceDir;}
     @Override public PackageManager getPackageManager(){return guestPackages;}
     // A guest is granted only what its own manifest asks for (the host holds the permission on its behalf); an undeclared permission is simply not held.
     private int guestPermission(String permission,int result){return permission!=null&&engine.requestedPermissions.contains(permission)?result:PackageManager.PERMISSION_DENIED;}
@@ -77,23 +77,8 @@ public final class GuestContext extends GuestStorageContext {
         if(ALARM_SERVICE.equals(name))return engine.alarms.facade();
         if(SHORTCUT_SERVICE.equals(name))return engine.shortcuts.facade();
         if("webviewupdate".equals(name))return engine.webView.updateService();
-        if("autofill".equals(name))return platform.getSystemService(name);
         if(LAYOUT_INFLATER_SERVICE.equals(name))return ((LayoutInflater)platform.getSystemService(name)).cloneInContext(this);
-        // This pinned Xiaomi baseline invokes its parental-control service in Activity.onResume.
-        // Preserve platform policy enforcement; this is an explicit host-backed UI capability.
-        // Spaces share the actual Android user. Credential unlock and user
-        // restrictions stay authoritative, including platform permission checks.
-        // CAMERA/SENSOR stay platform-permission gated: the host manifest declares neither CAMERA nor BODY_SENSORS, so these are enumeration-only until a guest permission bridge exists.
-        // Text widgets (EditText selection helpers) read TextClassificationManager settings during setText; it is a per-user UI helper with no cross-package authority.
-        // SystemHealthManager reports this Android UID's own resource use; spaces share that UID, so it is host-backed.
-        if("HyperPackageManager".equals(name)||SYSTEM_HEALTH_SERVICE.equals(name)||USER_SERVICE.equals(name)||UI_MODE_SERVICE.equals(name)||WINDOW_SERVICE.equals(name)||INPUT_SERVICE.equals(name)||CAPTIONING_SERVICE.equals(name)||TEXT_CLASSIFICATION_SERVICE.equals(name)||TEXT_SERVICES_MANAGER_SERVICE.equals(name)||VIBRATOR_MANAGER_SERVICE.equals(name)||VIBRATOR_SERVICE.equals(name)||CAMERA_SERVICE.equals(name)||USB_SERVICE.equals(name)||BLUETOOTH_SERVICE.equals(name)||SENSOR_SERVICE.equals(name)||CLIPBOARD_SERVICE.equals(name)||INPUT_METHOD_SERVICE.equals(name)||ACCESSIBILITY_SERVICE.equals(name)||DISPLAY_SERVICE.equals(name)||WIFI_SERVICE.equals(name)
-            ||LOCALE_SERVICE.equals(name)||KEYGUARD_SERVICE.equals(name)||STORAGE_SERVICE.equals(name)||STORAGE_STATS_SERVICE.equals(name)||LOCATION_SERVICE.equals(name)||BIOMETRIC_SERVICE.equals(name)||"fingerprint".equals(name)||MEDIA_ROUTER_SERVICE.equals(name)||MEDIA_SESSION_SERVICE.equals(name)||MEDIA_METRICS_SERVICE.equals(name)||DOWNLOAD_SERVICE.equals(name)||SEARCH_SERVICE.equals(name)||DROPBOX_SERVICE.equals(name)||HARDWARE_PROPERTIES_SERVICE.equals(name)||TELECOM_SERVICE.equals(name)||CARRIER_CONFIG_SERVICE.equals(name)||EUICC_SERVICE.equals(name)||TELEPHONY_SUBSCRIPTION_SERVICE.equals(name)||USAGE_STATS_SERVICE.equals(name)||COMPANION_DEVICE_SERVICE.equals(name)||ROLE_SERVICE.equals(name)||GRAMMATICAL_INFLECTION_SERVICE.equals(name)||"font".equals(name)||WALLPAPER_SERVICE.equals(name)||PRINT_SERVICE.equals(name)||CONSUMER_IR_SERVICE.equals(name)||NSD_SERVICE.equals(name)||WIFI_AWARE_SERVICE.equals(name)||WIFI_RTT_RANGING_SERVICE.equals(name)
-            ||ACCOUNT_SERVICE.equals(name)||CREDENTIAL_SERVICE.equals(name)||DEVICE_POLICY_SERVICE.equals(name)||APPWIDGET_SERVICE.equals(name)||NFC_SERVICE.equals(name)|| LauncherApps.class.getSimpleName().equals(name)||LAUNCHER_APPS_SERVICE.equals(name)||RESTRICTIONS_SERVICE.equals(name)|| CROSS_PROFILE_APPS_SERVICE.equals(name)||MIDI_SERVICE.equals(name)||MEDIA_PROJECTION_SERVICE.equals(name)||TV_INPUT_SERVICE.equals(name)||TELEPHONY_IMS_SERVICE.equals(name)||STATUS_BAR_SERVICE.equals(name)
-            || name.equals(super.getSystemServiceName(android.view.contentcapture.ContentCaptureManager.class)))return platform.getSystemService(name);
-        // A physical service is a capability, not an implementation for an unknown
-        // logical service. Only the explicit routes above are part of this contract.
-        // AppOps is intentionally available solely inside platform provider attach.
-        throw new UnsupportedOperationException("SYSTEM_SERVICE_UNSUPPORTED:"+name);
+        return platform.getSystemService(name);
     }
     // Routed by the activity-start hook: guest components through the ledger, everything else to the platform.
     @Override public void startActivity(Intent intent){startActivity(intent,null);}

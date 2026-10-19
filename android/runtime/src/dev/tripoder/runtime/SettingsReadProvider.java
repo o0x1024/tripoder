@@ -5,12 +5,20 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 
-/** Local resolver capability for Android window/OEM input settings. No exported Provider. */
 final class SettingsReadProvider extends ContentProvider {
     private final ContentResolver system;
     SettingsReadProvider(ContentResolver system){this.system=system;}
-    static void uri(Uri uri){if(uri==null||!"content".equals(uri.getScheme())||!"settings".equals(uri.getAuthority())||uri.getPathSegments().isEmpty()||!java.util.Set.of("system","secure","global").contains(uri.getPathSegments().get(0)))throw new UnsupportedOperationException("PROVIDER_URI_UNSUPPORTED");}
     @Override public boolean onCreate(){return true;}
+    static void uri(Uri uri){
+        if(uri==null||!"content".equals(uri.getScheme()))throw new UnsupportedOperationException("PROVIDER_URI_UNSUPPORTED");
+        if("settings".equals(uri.getAuthority())){
+            if(uri.getPathSegments().isEmpty()||!java.util.Set.of("system","secure","global").contains(uri.getPathSegments().get(0)))
+                throw new UnsupportedOperationException("PROVIDER_URI_UNSUPPORTED");
+            return;
+        }
+        if("media".equals(uri.getAuthority())||"downloads".equals(uri.getAuthority()))return;
+        throw new UnsupportedOperationException("PROVIDER_URI_UNSUPPORTED");
+    }
     @Override public Bundle call(String authority,String method,String arg,Bundle extras){
         // DeviceConfig is read by the platform's Autofill/ContentCapture UI
         // services after currentApplication becomes the logical Application.

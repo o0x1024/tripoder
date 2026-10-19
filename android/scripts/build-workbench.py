@@ -44,6 +44,7 @@ def main():
     before={str(p.relative_to(repo)):sha(p) for p in files}
     builder=ApkBuilder(repo,build,args.sdk,args.platform,args.build_tools,args.java_home,android/'runtime-probe/build/acceptance-only.p12')
     fixture_launcher=builder.apk('launcher-guest',[launcher_source],android/'control-test/launcher-fixture/AndroidManifest.xml')
+    fixture_singletask=builder.apk('launcher-singletask',[launcher_source],android/'control-test/launcher-singletask/AndroidManifest.xml')
     fixture_info['launcherSha256']=sha(fixture_launcher)
     generated=build/'generated';generated.mkdir(exist_ok=True)
     common=sorted((android/'control/src').rglob('*.java'))
@@ -55,7 +56,7 @@ def main():
     entries=[]
     for slot,letter in enumerate('ABCDEFGH'):
         entries.append(f'<service android:name="dev.tripoder.runtime.RuntimeSlot$Worker{letter}" android:exported="false" android:process=":slot{slot}"/>')
-        for service in range(4):entries.append(f'<service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S{slot}_{service}" android:exported="false" android:process=":slot{slot}"/>')
+        for service in range(16):entries.append(f'<service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S{slot}_{service}" android:exported="false" android:process=":slot{slot}"/>')
         entries.append(f'<provider android:name="dev.tripoder.runtime.RuntimeProviderTransport$P{slot}" android:authorities="dev.tripoder.engine.runtime.provider.{slot}" android:exported="false" android:process=":slot{slot}"/>')
         entries.append(f'<receiver android:name="dev.tripoder.runtime.RuntimeReceiverSlots$R{slot}" android:exported="false" android:process=":slot{slot}"/>')
     manifest=generated/'EngineManifest.xml';text=(android/'engine/AndroidManifest.xml').read_text()
@@ -73,6 +74,7 @@ def main():
     test_assets=build/'test-assets';test_assets.mkdir(exist_ok=True)
     shutil.copyfile(fixture_base,test_assets/'a.apk');shutil.copyfile(fixture_upgrade,test_assets/'a-upgrade.apk');shutil.copyfile(fixture_preview,test_assets/'preview-guest.apk');(test_assets/'install-fixtures.json').write_text(json.dumps(fixture_info))
     shutil.copyfile(fixture_launcher,test_assets/'launcher-guest.apk')
+    shutil.copyfile(fixture_singletask,test_assets/'launcher-singletask.apk')
     control_test=builder.apk('tripoder-control-test',common+sorted((android/'control-test/src').rglob('*.java')),android/'control-test/AndroidManifest.xml',assets=test_assets)
     after={str(p.relative_to(repo)):sha(p) for p in files}
     if before!=after:raise RuntimeError('SOURCES_CHANGED_DURING_BUILD')

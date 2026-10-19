@@ -41,6 +41,16 @@ final class ServiceLedger {
         int process=RuntimeSlot.index(processStub);Set<String> occupied=new HashSet<>();
         try(Cursor c=store.getReadableDatabase().rawQuery("SELECT stub FROM service_leases WHERE state!='RELEASED'",null)){while(c.moveToNext())occupied.add(c.getString(0));}
         String stub=null;for(int lane=0;lane<RuntimeServices.PER_PROCESS;lane++){String candidate=RuntimeServices.stub(process,lane);if(!occupied.contains(candidate)){stub=candidate;break;}}
+        if(stub==null){
+            try(Cursor c=store.getReadableDatabase().rawQuery("SELECT id,stub FROM service_leases WHERE processStub=? AND state='DORMANT' ORDER BY id ASC LIMIT 1",new String[]{processStub})){
+                if(c.moveToFirst()){
+                    String dormantId=c.getString(0);
+                    stub=c.getString(1);
+                    ContentValues rel=new ContentValues();rel.put("state","RELEASED");
+                    store.getWritableDatabase().update("service_leases",rel,"id=?",new String[]{dormantId});
+                }
+            }
+        }
         if(stub==null)throw new IllegalStateException("SERVICE_CAPACITY_EXHAUSTED");
         ContentValues row=new ContentValues();String id=UUID.randomUUID().toString();row.put("id",id);row.put("space",space);row.put("package",pkg);row.put("installGeneration",install);row.put("processName",processName);row.put("processStub",processStub);row.put("stub",stub);row.put("component",component);row.put("generation",generation);row.put("state",state);store.getWritableDatabase().insertOrThrow("service_leases",null,row);return get(id);
     }

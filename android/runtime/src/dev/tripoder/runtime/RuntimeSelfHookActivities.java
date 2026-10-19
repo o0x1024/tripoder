@@ -32,7 +32,9 @@ final class RuntimeSelfHookActivities {
                         // which would re-enter begin()) produces that RejectedActivity.
                         value.enroll(ActivityFrameworkAccess.instrumentation());
                         if(!permit.rejected())permit.bindRecord(args[0],ActivityFrameworkAccess.recordToken(args[0]));
-                        return original.call(args);
+                        Object result=original.call(args);
+                        if(result instanceof Activity&&RuntimeBridge.owns((Activity)result))RuntimeEngine.current.activityCreated((Activity)result);
+                        return result;
                     }finally{permit.end();}
                 });break;
                 case "attach":callbacks.put(target,(receiver,args,original)->{
@@ -99,8 +101,11 @@ final class RuntimeSelfHookActivities {
             String name=target.getName();
             if(name.equals("checkStartActivityResult")){RuntimeBridge.activityStartResult(args[1],(Integer)args[0]);return original.call(args);}
             if(name.startsWith("execStartActivit")){
-                Class<?>[] types=target.getParameterTypes();boolean supported=name.equals("execStartActivity")&&types.length==7&&types[3]==Activity.class;
-                if(!supported)throw new UnsupportedOperationException("ACTIVITY_START_SIGNATURE_UNSUPPORTED");Activity activity=(Activity)args[3];Intent intent=(Intent)args[4];
+                Class<?>[] types=target.getParameterTypes();
+                boolean supported=name.equals("execStartActivity")&&types.length>=7&&types[4]==Intent.class&&(types[3]==Activity.class||types[3]==String.class);
+                if(!supported)throw new UnsupportedOperationException("ACTIVITY_START_SIGNATURE_UNSUPPORTED:"+name+":"+target);
+                Activity activity=args[3] instanceof Activity?(Activity)args[3]:args[0] instanceof Activity?(Activity)args[0]:null;
+                Intent intent=(Intent)args[4];
                 // A null Activity is a start through an Application or Service Context.
                 if(activity!=null&&!RuntimeBridge.owns(activity))throw new SecurityException("ACTIVITY_START_CALLER_UNOWNED");
                 if(intent==null||RuntimeBridge.startsHost(intent))throw new SecurityException("ACTIVITY_START_HOST_COMPONENT_DENIED");

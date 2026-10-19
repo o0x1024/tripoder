@@ -155,6 +155,8 @@ final class RuntimePackages implements InvocationHandler {
             case "notifyPackagesReplacedReceived[class [Ljava.lang.String;]":RuntimePackageBridge.notifyPackagesReplacedReceived((String[])a[0]);return null;
             case "getComponentEnabledSetting[class android.content.ComponentName, int]":user(a[1]);return componentEnabled((ComponentName)a[0],(Integer)a[1]);
             case "isInstantApp[class java.lang.String, int]":user(a[1]);infrastructure((String)a[0]);return false;
+            case "getPropertyAsUser[class java.lang.String, class java.lang.String, class java.lang.String, int]":user(a[3]);return null;
+            case "queryProperty[class java.lang.String, int]":return null;
             case "getPackagesForUid[int]":
                 if(((Integer)a[0])!=android.os.Process.myUid())throw new UnsupportedOperationException("PACKAGE_UID_UNSUPPORTED");
                 return new String[]{engine.packageName,engine.host.getPackageName()};

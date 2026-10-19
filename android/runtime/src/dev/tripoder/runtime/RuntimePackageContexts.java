@@ -28,7 +28,7 @@ final class RuntimePackageContexts {
         private int themeResource;
         ThemedBase(RuntimeEngine engine){super(engine.host);this.engine=engine;}
         @Override public Resources getResources(){return engine.resources;}
-        @Override public ApplicationInfo getApplicationInfo(){return GuestPackageManager.copyApplicationInfo(engine.info,true);}
+        @Override public ApplicationInfo getApplicationInfo(){return engine.applicationInfo;}
         @Override public synchronized Resources.Theme getTheme(){
             if(theme==null){if(themeResource==0){int sdk=engine.info.targetSdkVersion;themeResource=sdk<11?android.R.style.Theme:sdk<14?android.R.style.Theme_Holo:sdk<24?android.R.style.Theme_DeviceDefault:android.R.style.Theme_DeviceDefault_Light_DarkActionBar;}theme=engine.resources.newTheme();theme.applyStyle(themeResource,true);}return theme;
         }

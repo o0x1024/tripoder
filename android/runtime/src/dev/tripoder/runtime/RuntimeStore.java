@@ -19,9 +19,13 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
     private static final java.util.Set<String> LOCAL_AUTHORITIES=new java.util.HashSet<>();
     private String authorityKey;
     public final String authorityGeneration=java.util.UUID.randomUUID().toString();
+    private final java.util.Set<String> openGenerations=java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private final java.util.Set<String> closingGenerations=java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private final java.util.Set<String> deadGenerations=java.util.concurrent.ConcurrentHashMap.newKeySet();
     public RuntimeStore(Context context) {
         // P0's experimental database is retained as historical data, never implicitly promoted.
         super(context, "tripoder-runtime-v2.db", null, 33);
+        setWriteAheadLoggingEnabled(true);
         synchronized(RuntimeStore.class){try {
             File directory=new File(context.getFilesDir(),"runtime");
             if(!directory.isDirectory()&&!directory.mkdirs())throw new java.io.IOException("AUTHORITY_DIRECTORY_FAILED");
@@ -44,7 +48,7 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
         db.execSQL("CREATE TABLE project_refs(id TEXT PRIMARY KEY, space TEXT NOT NULL, package TEXT NOT NULL, generation TEXT NOT NULL, sourceSha TEXT NOT NULL, snapshot TEXT NOT NULL, state TEXT NOT NULL, operation TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'MIGRATED')");
         ActivityLedger.create(db);ActivityComponentLedger.create(db);ActivityAffinityLedger.create(db);ActivityEntryLedger.create(db);ActivityLaunchLedger.create(db);ServiceLedger.create(db);ProviderLedger.create(db);BroadcastLedger.create(db);ApplicationStartLedger.create(db);InstallHistory.create(db);JobLedger.create(db);JobAttemptLedger.create(db);PendingIntentLedger.create(db);
     }
-    @Override public void onConfigure(SQLiteDatabase db) { db.execSQL("PRAGMA synchronous=FULL");db.setForeignKeyConstraintsEnabled(true); }
+    @Override public void onConfigure(SQLiteDatabase db) { db.enableWriteAheadLogging();db.execSQL("PRAGMA synchronous=NORMAL");db.setForeignKeyConstraintsEnabled(true); }
     @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if(oldVersion<1||oldVersion>32||newVersion!=33)throw new IllegalStateException("SCHEMA_VERSION_UNSUPPORTED");
         // Explicit, transactional schema migration. Historical sessions never regain authority.
@@ -101,8 +105,8 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
         if(oldVersion<33)db.execSQL("DROP TABLE IF EXISTS controller_launches");
     }
     private void requireAuthority(){if(closed||authorityLock==null||!authorityLock.isValid())throw new IllegalStateException("AUTHORITY_CLOSED");}
-    @Override public synchronized SQLiteDatabase getReadableDatabase(){requireAuthority();return super.getReadableDatabase();}
-    @Override public synchronized SQLiteDatabase getWritableDatabase(){requireAuthority();return super.getWritableDatabase();}
+    @Override public SQLiteDatabase getReadableDatabase(){requireAuthority();return super.getReadableDatabase();}
+    @Override public SQLiteDatabase getWritableDatabase(){requireAuthority();return super.getWritableDatabase();}
     @Override public ExecutionContract.Operation read(String id) {
         try (Cursor c=getReadableDatabase().rawQuery("SELECT * FROM operations WHERE id=?",new String[]{id})) { return c.moveToFirst()?decode(c):null; }
     }
@@ -118,21 +122,22 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
     private static ExecutionContract.Operation decode(Cursor c) {
         return new ExecutionContract.Operation(c.getString(0),c.getString(1),c.getString(2),ExecutionContract.OperationState.valueOf(c.getString(3)),c.getString(4),c.getString(5),c.getLong(6),c.getLong(7),c.getString(8));
     }
-    synchronized void reserve(ExecutionContract.Session session,String stub){
+    void reserve(ExecutionContract.Session session,String stub){
         ContentValues row=new ContentValues();row.put("generation",session.processGeneration);row.put("space",session.identity.spaceId);row.put("package",session.identity.packageName);row.put("installGeneration",session.identity.installGeneration);row.put("pid",session.pid);row.put("state",session.state.name());
         row.put("processName",session.identity.processName);row.put("activityStub",stub);row.put("authorityGeneration",authorityGeneration);
         if(getWritableDatabase().insertOrThrow("sessions",null,row)==-1)throw new IllegalStateException("SESSION_RESERVE_FAILED");
+        openGenerations.add(session.processGeneration);closingGenerations.remove(session.processGeneration);deadGenerations.remove(session.processGeneration);
     }
-    synchronized void session(ExecutionContract.Session session){
+    void session(ExecutionContract.Session session){
         ContentValues row=new ContentValues();row.put("pid",session.pid);row.put("state",session.state.name());
         if(getWritableDatabase().update("sessions",row,"generation=? AND authorityGeneration=?",new String[]{session.processGeneration,authorityGeneration})!=1)throw new IllegalStateException("SESSION_PERSIST_FAILED");
     }
-    synchronized void deadSession(String generation){ContentValues row=new ContentValues();row.put("state","DEAD");getWritableDatabase().update("sessions",row,"generation=?",new String[]{generation});}
-    synchronized void requestClose(String generation){getWritableDatabase().execSQL("UPDATE sessions SET closeRequested=1 WHERE generation=?",new Object[]{generation});requireClosed(generation);}
+    void deadSession(String generation){ContentValues row=new ContentValues();row.put("state","DEAD");getWritableDatabase().update("sessions",row,"generation=?",new String[]{generation});openGenerations.remove(generation);deadGenerations.add(generation);}
+    void requestClose(String generation){getWritableDatabase().execSQL("UPDATE sessions SET closeRequested=1 WHERE generation=?",new Object[]{generation});openGenerations.remove(generation);closingGenerations.add(generation);requireClosed(generation);}
     private void requireClosed(String generation){if(!closeRequested(generation))throw new IllegalStateException("PROCESS_CLOSE_NOT_PERSISTED");}
-    synchronized boolean closeRequested(String generation){try(Cursor c=getReadableDatabase().rawQuery("SELECT closeRequested FROM sessions WHERE generation=?",new String[]{generation})){if(!c.moveToFirst())throw new SecurityException("SESSION_MISSING");return c.getInt(0)!=0;}}
-    synchronized boolean isDead(String generation){try(Cursor c=getReadableDatabase().rawQuery("SELECT state FROM sessions WHERE generation=?",new String[]{generation})){if(!c.moveToFirst())throw new SecurityException("SESSION_MISSING");return "DEAD".equals(c.getString(0));}}
-    synchronized void requireOpen(String generation){if(closeRequested(generation))throw new IllegalStateException("PROCESS_CLOSING");}
+    boolean closeRequested(String generation){if(closingGenerations.contains(generation))return true;try(Cursor c=getReadableDatabase().rawQuery("SELECT closeRequested FROM sessions WHERE generation=?",new String[]{generation})){if(!c.moveToFirst())throw new SecurityException("SESSION_MISSING");boolean closing=c.getInt(0)!=0;if(closing){closingGenerations.add(generation);openGenerations.remove(generation);}return closing;}}
+    boolean isDead(String generation){if(deadGenerations.contains(generation))return true;try(Cursor c=getReadableDatabase().rawQuery("SELECT state FROM sessions WHERE generation=?",new String[]{generation})){if(!c.moveToFirst())throw new SecurityException("SESSION_MISSING");boolean dead="DEAD".equals(c.getString(0));if(dead){deadGenerations.add(generation);openGenerations.remove(generation);}return dead;}}
+    void requireOpen(String generation){if(closingGenerations.contains(generation))throw new IllegalStateException("PROCESS_CLOSING");if(openGenerations.contains(generation))return;if(closeRequested(generation))throw new IllegalStateException("PROCESS_CLOSING");}
     synchronized void requireExplicitHookRecovery(String generation,String operation){
         var db=getWritableDatabase();db.beginTransaction();try{
             db.execSQL("UPDATE sessions SET hookOperation=COALESCE(hookOperation,?) WHERE generation=?",new Object[]{operation,generation});
@@ -144,6 +149,7 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
     synchronized boolean hookRecoveryBlocked(String generation){try(Cursor c=getReadableDatabase().rawQuery("SELECT hookOperation FROM sessions WHERE generation=?",new String[]{generation})){if(!c.moveToFirst())throw new SecurityException("RECOVERY_SESSION_MISSING");return !c.isNull(0);}}
     /** Recovery never kills a recorded PID: PID reuse is not identity evidence. */
     synchronized void recoverSessions(Context context){
+        openGenerations.clear();closingGenerations.clear();deadGenerations.clear();
         var running=((android.app.ActivityManager)context.getSystemService(Context.ACTIVITY_SERVICE)).getRunningAppProcesses();
         if(running==null)throw new IllegalStateException("PROCESS_OBSERVATION_UNAVAILABLE");
         try(Cursor c=getReadableDatabase().rawQuery("SELECT generation,pid FROM sessions WHERE state NOT IN ('DEAD','FAILED')",null)){

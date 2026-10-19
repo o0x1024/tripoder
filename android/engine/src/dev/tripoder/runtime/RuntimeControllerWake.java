@@ -13,8 +13,9 @@ final class RuntimeControllerWake {
         Set<Integer> liveTasks=new LinkedHashSet<>();
         synchronized(broker){
             Set<String> processes=new HashSet<>();int open=0;
-            try(var c=broker.store.getReadableDatabase().rawQuery("SELECT state,taskId,generation FROM activity_tickets WHERE space=? AND package=? AND installGeneration=? AND entryFenceOperation IS NULL AND state NOT IN ('FINISHED','REVOKED','RETIRED') LIMIT 65",new String[]{space,pkg,generation})){
+            try(var c=broker.store.getReadableDatabase().rawQuery("SELECT state,taskId,generation,ticket FROM activity_tickets WHERE space=? AND package=? AND installGeneration=? AND entryFenceOperation IS NULL AND state NOT IN ('FINISHED','REVOKED','RETIRED') LIMIT 65",new String[]{space,pkg,generation})){
                 while(c.moveToNext()){
+                    android.util.Log.i("TripoderWake", "TICKET state=" + c.getString(0) + " task=" + c.getInt(1) + " gen=" + c.getString(2) + " ticket=" + c.getString(3));
                     if(++open>64)throw new IllegalStateException("APPLICATION_ACTIVITY_ALREADY_OPEN_OR_UNCONFIRMED");
                     int task=c.getInt(1);
                     if(task<0)throw new IllegalStateException("APPLICATION_ACTIVITY_ALREADY_OPEN_OR_UNCONFIRMED");
@@ -23,8 +24,10 @@ final class RuntimeControllerWake {
                 }
             }
             if(open==0)return null;
-            if(liveTasks.isEmpty())throw new IllegalStateException("APPLICATION_ACTIVITY_ALREADY_OPEN_OR_UNCONFIRMED");
+            if(liveTasks.isEmpty()){android.util.Log.w("TripoderWake", "liveTasks is empty! open=" + open); throw new IllegalStateException("APPLICATION_ACTIVITY_ALREADY_OPEN_OR_UNCONFIRMED");}
             for(String process:processes)try(var c=broker.store.getReadableDatabase().rawQuery("SELECT state FROM sessions WHERE generation=?",new String[]{process})){
+                String sessState = c.moveToFirst() ? c.getString(0) : "MISSING";
+                android.util.Log.i("TripoderWake", "PROCESS gen=" + process + " state=" + sessState);
                 if(!c.moveToFirst()||"DEAD".equals(c.getString(0))||"FAILED".equals(c.getString(0)))throw new IllegalStateException("APPLICATION_ACTIVITY_ALREADY_OPEN_OR_UNCONFIRMED");
             }
         }

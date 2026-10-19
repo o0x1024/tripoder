@@ -86,12 +86,10 @@ final class RuntimeSelfHookPlatformCallbacks {
             resolver,"URI_PERSISTABLE_GRANT_NOT_IMPLEMENTED",arguments,original);
     }
     static Object notifyChange(ContentResolver resolver,Object[] arguments,RuntimeSelfHookLifecycle.Original original)throws Throwable {
-        RuntimeSelfHookComponents.requireActive();return RuntimeSelfHookBoundaries.denyOwned(value->RuntimeBridge.ownsResolver((ContentResolver)value),
-            resolver,"PROVIDER_OBSERVER_NOT_IMPLEMENTED",arguments,original);
+        RuntimeSelfHookComponents.requireActive();return original.call(arguments);
     }
     static Object peekService(BroadcastReceiver receiver,Object[] arguments,RuntimeSelfHookLifecycle.Original original)throws Throwable {
-        RuntimeSelfHookComponents.requireActive();return RuntimeSelfHookBoundaries.denyOwned(value->RuntimeBridge.ownsReceiver((BroadcastReceiver)value),
-            receiver,"RECEIVER_PEEK_SERVICE_NOT_IMPLEMENTED",arguments,original);
+        RuntimeSelfHookComponents.requireActive();return original.call(arguments);
     }
     private RuntimeSelfHookPlatformCallbacks(){}
 }

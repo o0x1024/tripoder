@@ -65,13 +65,35 @@ JNIEXPORT jint JNICALL Java_dev_tripoder_selfhook_ManagedHook_nativeOriginalRema
 JNIEXPORT jint JNICALL Java_dev_tripoder_selfhook_ManagedHook_capacityNative(JNIEnv *env,jclass cls){
     (void)env;(void)cls;return TP_MANAGED_ENTRY_LIMIT;
 }
+static bool unhooked_managed_entry(uintptr_t quick){
+    uintptr_t base=art.managed.access.base;
+    return quick==art.managed.interpreter_bridge||quick==base+0x728040||quick==base+0x2bc5d0;
+}
+static bool claim_and_enable_nterp_locked(void){
+    bool already=atomic_load_explicit(&interpreter.claimed,memory_order_acquire);
+    volatile uint32_t *level=(volatile uint32_t *)((uintptr_t)interpreter.instrumentation+4);
+    if(already)*level=2;
+    bool accepted=tp_art_interpreter_claim_locked(&interpreter);
+    if(already)*level=0;
+    else if(accepted){
+        uintptr_t runtime=*(uintptr_t *)(art.managed.access.base+0xe19200);
+        uintptr_t jit_ptr=runtime?*(uintptr_t *)(runtime+0x298):0;
+        uintptr_t jit_opt=jit_ptr?*(uintptr_t *)(jit_ptr+0x10):0;
+        if(jit_opt)*(uint8_t *)jit_opt=0;
+        if(runtime){*(uint8_t *)(runtime+0x362)=0;*(uint32_t *)(runtime+0x3f0)=1;}
+        ((void (*)(void *,const char *,int,bool))(art.managed.access.base+0x8df864))(
+            interpreter.instrumentation,tp_art_interpreter_client,0,false);
+        for(unsigned i=0;i<TP_MANAGED_ENTRY_LIMIT;i++)if(entries[i].helper)entries[i].helper->quick=art.managed.interpreter_bridge;
+    }
+    return accepted;
+}
 JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_initializeProcessNative(JNIEnv *env,jclass cls){
     (void)cls;
     if(atomic_load_explicit(&explicitly_initialized,memory_order_acquire)||!bind_process(env))return JNI_FALSE;
     if(!tp_art_entry_writer_activate())return JNI_FALSE;
     char jit=0,mutators=0;art.managed.jit_suspend(&jit);
     art.managed.access.suspend(&mutators,"tripoder-managed-process-start",false);
-    bool accepted=tp_art_interpreter_claim_locked(&interpreter);
+    bool accepted=claim_and_enable_nterp_locked();
     art.managed.access.resume(&mutators);art.managed.jit_resume(&jit);
     if(!accepted)fatal("TP_MANAGED_PROCESS_POLICY");
     atomic_store_explicit(&explicitly_initialized,true,memory_order_release);return JNI_TRUE;
@@ -240,7 +262,7 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNat
     }
     if(enabled&&!tp_art_entry_writer_activate())return JNI_FALSE;
     char jit=0,mutators=0;art.managed.jit_suspend(&jit);art.managed.access.suspend(&mutators,"tripoder-managed-batch-toggle",false);
-    bool accepted=tp_art_interpreter_claim_locked(&interpreter)&&tp_art_entry_writer_installed();
+    bool accepted=claim_and_enable_nterp_locked()&&tp_art_entry_writer_installed();
     unsigned failure=accepted?0:1;int failed_index=-1;uintptr_t observed_quick=0,expected_quick=0;uint32_t observed_flags=0;
     struct identity_snapshot identity={0};uintptr_t prepared_quick=0;uint32_t expected_flags=0,expected_dex=0,expected_index=0;
     // Validate EVERY preimage and GC root before registering or changing any entry.
@@ -248,11 +270,12 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNat
         int slot=indices[i];
         struct entry *e=&entries[slot];
         uintptr_t expected=e->transitions&&atomic_load(&e->active)?e->relay:(e->native?art.managed.jni_bridge:art.managed.interpreter_bridge);
+        bool quick_ok=e->transitions==0&&!e->native?unhooked_managed_entry(e->target->quick):e->target->quick==expected;
         failure=!valid_snapshot(e,&identity)?2:!tp_art_backup_rooted_slot_locked((unsigned)slot,e->target,e->backup)?3:
-            e->target->quick!=expected?4:(e->target->flags&UINT32_C(0x02000000))?5:0;
+            !quick_ok?4:(e->target->flags&UINT32_C(0x02000000))?5:0;
         accepted=failure==0;
         if(e->transitions==0)for(unsigned n=0;n<e->caller_count;n++)if(
-            ((struct tp_art_method_view *)e->callers[n])->quick!=art.managed.interpreter_bridge){accepted=false;failure=6;}
+            !unhooked_managed_entry(((struct tp_art_method_view *)e->callers[n])->quick)){accepted=false;failure=6;}
         if(!accepted){failed_index=slot;observed_quick=e->target->quick;expected_quick=expected;observed_flags=e->target->flags;
             prepared_quick=e->prepared_quick;expected_flags=e->semantic_flags;expected_dex=e->dex_index;expected_index=e->method_index;}
     }

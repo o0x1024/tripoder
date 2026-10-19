@@ -23,6 +23,9 @@ static bool prefix(const char *path,const char *root) {
 static int fail(int value){errno=value;return -1;}
 static int copy(char *out,const char *in){if(in==NULL)return fail(EFAULT);size_t n=strnlen(in,PATH_MAX);if(n>=PATH_MAX)return fail(ENAMETOOLONG);memcpy(out,in,n+1);return 0;}
 static void set_comm(const char *name){
+    // The kernel truncates a thread's comm to 15 chars; for a process name longer than that ART
+    // seeds comm from the tail (e.g. "com.netease.cloudmusic" -> "ease.cloudmusic"), and that is
+    // what a real device exposes through comm, /proc/self/stat and status Name. Present the same.
     size_t n=strlen(name);const char *tail=n>15?name+(n-15):name;
     size_t copy_len=n>15?15:n;memcpy(guest_comm,tail,copy_len);guest_comm[copy_len]='\0';
 }
@@ -79,15 +82,32 @@ static int anchored(int anchor,const char *relative,struct tp_path *out){
 error:
     for(int i=0;i<=depth;i++)syscall(SYS_close,fds[i]);return fail(saved);
 }
+static bool is_linker_exec(const char *path){
+    if(!path)return false;
+    size_t len=strlen(path);
+    if(len>=13&&!strcmp(path+len-13,"/bin/linker64"))return true;
+    if(len>=11&&!strcmp(path+len-11,"/bin/linker"))return true;
+    if(!strcmp(path,"linker")||!strcmp(path,"linker64"))return true;
+    return false;
+}
 static bool platform_read(const char *path){
+    if(is_linker_exec(path))return false;
     const char *roots[]={"/system","/system_ext","/apex","/vendor","/product","/odm","/proc","/sys","/data/app","/dev/__properties__"};
     for(size_t i=0;i<sizeof(roots)/sizeof(roots[0]);i++)if(prefix(path,roots[i]))return true;return false;
+}
+static bool is_ashmem_node(const char *path){
+    if(strncmp(path,"/dev/ashmem",11)!=0)return false;
+    for(const char *p=path+11;*p;p++){
+        char c=*p;
+        if(!((c>='a'&&c<='z')||(c>='0'&&c<='9')||c=='-'||c=='_'))return false;
+    }
+    return true;
 }
 static bool device_node(const char *path){
     // A real accelerated Android window needs the GPU character device. This is
     // an explicit platform capability; Android UID/SELinux checks still apply.
     // Never grant the /dev subtree or substitute a software renderer on denial.
-    return !strcmp(path,"/dev/null")||!strcmp(path,"/dev/zero")||!strcmp(path,"/dev/urandom")||!strcmp(path,"/dev/random")||!strcmp(path,"/dev/kgsl-3d0");
+    return !strcmp(path,"/dev/null")||!strcmp(path,"/dev/zero")||!strcmp(path,"/dev/urandom")||!strcmp(path,"/dev/random")||!strcmp(path,"/dev/kgsl-3d0")||is_ashmem_node(path);
 }
 static bool metadata_ancestor(const char *path){
     if(!strcmp(path,"/"))return true;
@@ -96,12 +116,50 @@ static bool metadata_ancestor(const char *path){
 static bool dot_component(const char *path){
     const char *p=path;while(*p){while(*p=='/')p++;const char *end=p;while(*end&&*end!='/')end++;size_t n=(size_t)(end-p);if((n==1&&p[0]=='.')||(n==2&&p[0]=='.'&&p[1]=='.'))return true;p=end;}return false;
 }
+static int fast_anchor(int anchor,const char *relative,struct tp_path *out){
+    while(*relative=='/')relative++;
+    if(!*relative){
+        out->parent=anchor;strcpy(out->leaf,".");out->close_parent=false;out->owned=true;out->trailing_slash=false;return 0;
+    }
+    size_t len=strlen(relative);
+    if(len>=sizeof(out->leaf))return fail(ENAMETOOLONG);
+    bool trailing=(relative[len-1]=='/');
+    memcpy(out->leaf,relative,len+1);
+    if(trailing&&len>1){
+        while(len>0&&out->leaf[len-1]=='/'){out->leaf[--len]='\0';}
+    }
+    out->parent=anchor;out->close_parent=false;out->owned=true;out->trailing_slash=trailing;return 0;
+}
 int tp_resolve(int dirfd,const char *path,enum tp_access access,struct tp_path *out){
     memset(out,0,sizeof(*out));out->parent=AT_FDCWD;
     if(!configured)return fail(ENOSYS);if(!path)return fail(EFAULT);size_t size=strnlen(path,PATH_MAX);if(size>=PATH_MAX)return fail(ENAMETOOLONG);if(size==0)return fail(ENOENT);
+    if(is_linker_exec(path))return fail(EACCES);
     if(path[0]=='/'){
-        for(int i=0;i<4;i++)if(prefix(path,data_paths[i]))return anchored(data_fd,path+strlen(data_paths[i]),out);
-        for(int i=0;i<3;i++)if(prefix(path,artifact_paths[i])){if(access==TP_WRITE)return fail(EROFS);return anchored(artifact_fd,path+strlen(artifact_paths[i]),out);}
+        for(int i=0;i<4;i++)if(prefix(path,data_paths[i])){
+            const char *rel=path+strlen(data_paths[i]);
+            if(!dot_component(rel))return fast_anchor(data_fd,rel,out);
+            return anchored(data_fd,rel,out);
+        }
+        for(int i=0;i<3;i++)if(prefix(path,artifact_paths[i])){
+            if(access==TP_WRITE)return fail(EROFS);
+            const char *rel=path+strlen(artifact_paths[i]);
+            if(prefix(rel,"/lib/arm64/")){
+                char alias[PATH_MAX];
+                int n=snprintf(alias,sizeof(alias),"/lib/%s",rel+11);
+                if(n<=0||(size_t)n>=sizeof(alias))return fail(ENAMETOOLONG);
+                if(!dot_component(alias))return fast_anchor(artifact_fd,alias,out);
+                return anchored(artifact_fd,alias,out);
+            }
+            if(prefix(rel,"/lib/arm64-v8a/")){
+                char alias[PATH_MAX];
+                int n=snprintf(alias,sizeof(alias),"/lib/%s",rel+15);
+                if(n<=0||(size_t)n>=sizeof(alias))return fail(ENAMETOOLONG);
+                if(!dot_component(alias))return fast_anchor(artifact_fd,alias,out);
+                return anchored(artifact_fd,alias,out);
+            }
+            if(!dot_component(rel))return fast_anchor(artifact_fd,rel,out);
+            return anchored(artifact_fd,rel,out);
+        }
         // Platform paths are explicit read-only capabilities, not a general host passthrough.
         if(dot_component(path))return fail(EACCES);
         // /proc is also a namespace of magic links. Content opens through a process
@@ -110,19 +168,29 @@ int tp_resolve(int dirfd,const char *path,enum tp_access access,struct tp_path *
         if(device_node(path)||(access!=TP_WRITE&&platform_read(path))||(access==TP_METADATA&&metadata_ancestor(path))){if(copy(out->leaf,path)<0)return -1;return 0;}
         return fail(EACCES);
     }
+    if(dirfd==AT_FDCWD&&!dot_component(path))return fast_anchor(data_fd,path,out);
     char directory[PATH_MAX];if(fd_path(dirfd,directory)<0)return -1;
     for(int i=0;i<2;i++)if(prefix(directory,data_paths[i])){
+        if(dirfd!=AT_FDCWD&&!dot_component(path))return fast_anchor(dirfd,path,out);
         int anchor=dirfd==AT_FDCWD?(int)syscall(SYS_openat,AT_FDCWD,".",O_PATH|O_DIRECTORY|O_CLOEXEC,0):dirfd;if(anchor<0)return -1;
         int result=anchored(anchor,path,out),saved=errno;if(dirfd==AT_FDCWD)syscall(SYS_close,anchor);errno=saved;return result;
     }
     for(int i=0;i<2;i++)if(prefix(directory,artifact_paths[i])){
-        if(access==TP_WRITE)return fail(EROFS);if(dirfd==AT_FDCWD)return fail(EACCES);return anchored(dirfd,path,out);
+        if(access==TP_WRITE)return fail(EROFS);if(dirfd==AT_FDCWD)return fail(EACCES);
+        if(!dot_component(path))return fast_anchor(dirfd,path,out);
+        return anchored(dirfd,path,out);
     }
     if(access==TP_WRITE||dot_component(path)||!platform_read(directory))return fail(EACCES);
+    if(prefix(directory,"/proc")){
+        char combined[PATH_MAX];
+        int n=snprintf(combined,sizeof(combined),"%s/%s",directory,path);
+        if(n<=0||(size_t)n>=sizeof(combined))return fail(ENAMETOOLONG);
+        out->parent=AT_FDCWD;return copy(out->leaf,combined);
+    }
     out->parent=dirfd;return copy(out->leaf,path);
 }
 
-enum tp_proc_kind { TP_PROC_NONE, TP_PROC_CMDLINE, TP_PROC_COMM, TP_PROC_STATUS, TP_PROC_MAPS, TP_PROC_MOUNTS };
+enum tp_proc_kind { TP_PROC_NONE, TP_PROC_CMDLINE, TP_PROC_COMM, TP_PROC_STATUS, TP_PROC_MAPS, TP_PROC_MOUNTS, TP_PROC_STAT };
 static enum tp_proc_kind classify_proc(const char *path){
     if(!strcmp(path,"/proc/mounts"))return TP_PROC_MOUNTS;
     if(strncmp(path,"/proc/",6)!=0)return TP_PROC_NONE;
@@ -142,6 +210,7 @@ static enum tp_proc_kind classify_proc(const char *path){
     if(!strcmp(rest,"cmdline"))return TP_PROC_CMDLINE;
     if(!strcmp(rest,"comm"))return TP_PROC_COMM;
     if(!strcmp(rest,"status"))return TP_PROC_STATUS;
+    if(!strcmp(rest,"stat"))return TP_PROC_STAT;
     if(!strcmp(rest,"maps")||!strcmp(rest,"smaps"))return TP_PROC_MAPS;
     if(!strcmp(rest,"mountinfo")||!strcmp(rest,"mounts"))return TP_PROC_MOUNTS;
     return TP_PROC_NONE;
@@ -169,6 +238,14 @@ static bool is_vma_header(const char *line,size_t len){
     return i>j&&i<len&&line[i]==' ';
 }
 static bool transform_proc_line(enum tp_proc_kind kind,const char *line,size_t len,bool *skip_vma,int out_fd){
+    if(kind==TP_PROC_STAT){
+        const char *lparen=strchr(line,'(');const char *rparen=lparen?strrchr(lparen,')'):NULL;
+        if(lparen&&rparen&&rparen>lparen){
+            size_t prefix_len=(size_t)(lparen-line+1);
+            return write_all(out_fd,line,prefix_len)&&write_all(out_fd,guest_comm,strlen(guest_comm))&&write_all(out_fd,rparen,len-(size_t)(rparen-line));
+        }
+        return write_all(out_fd,line,len);
+    }
     if(kind==TP_PROC_STATUS){
         if(len>=6&&!memcmp(line,"Name:\t",6)){
             char buf[32];int n=snprintf(buf,sizeof(buf),"Name:\t%s\n",guest_comm);
@@ -183,6 +260,12 @@ static bool transform_proc_line(enum tp_proc_kind kind,const char *line,size_t l
             for(int i=0;i<2;i++)if(strstr(line,data_paths[i])){*skip_vma=false;return write_replaced(out_fd,line,len,data_paths[i],data_paths[3]);}
             const char *dex=strstr(line,"/memfd:tripoder-dex");
             if(dex){*skip_vma=false;return write_all(out_fd,line,(size_t)(dex-line))&&write_all(out_fd,"[anon:dalvik-classes.dex]\n",26);}
+            // The runtime's own executable memfds (near-address trampolines, linker/ART notifiers) are
+            // named with an identifying token that the dynamic linker echoes into maps. A real device's
+            // in-memory executable code shows up as an anonymous JIT memfd, so present them that way.
+            const char *mf=strstr(line,"/memfd:tripoder");
+            if(mf){const char *name=mf+7;const char *end=name;while(end<line+len&&*end!=' '&&*end!='\n')end++;*skip_vma=false;
+                return write_all(out_fd,line,(size_t)(name-line))&&write_all(out_fd,"jit-cache",9)&&write_all(out_fd,end,len-(size_t)(end-line));}
             if(strstr(line,"libtripoderselfhook.so")||strstr(line,"libtripoderio.so")||strstr(line,"frida")||strstr(line,"gadget")||strstr(line,"dev.tripoder.engine")||strstr(line,"dev.tripoder.runtimeprobe")){*skip_vma=true;return true;}
             *skip_vma=false;return write_all(out_fd,line,len);
         }
@@ -253,8 +336,8 @@ ssize_t tp_unresolve(const char *physical,size_t physical_len,char *out,size_t s
                 }
             }
             for(int i=0;i<2;i++)if(prefix(raw,artifact_paths[i])){
-                const char *rel=raw+strlen(artifact_paths[i]);size_t rlen=strlen(rel);
-                if(rlen>4&&!strcmp(rel+rlen-4,".apk")&&rel[0]=='/'&&!strchr(rel+1,'/')){
+                const char *rel=raw+strlen(artifact_paths[i]);
+                if(rel[0]=='/'||rel[0]=='\0'){
                     char rewritten[PATH_MAX];
                     int n=snprintf(rewritten,sizeof(rewritten),"%s%s",artifact_paths[2],rel);
                     if(n>0&&(size_t)n<sizeof(rewritten)){
@@ -263,6 +346,13 @@ ssize_t tp_unresolve(const char *physical,size_t physical_len,char *out,size_t s
                         return (ssize_t)copied;
                     }
                 }
+            }
+            // ART keeps the engine's own install APK open; a guest that locates "its own" package by
+            // scanning /proc/self/fd and reading the link finds the host install path. Present the
+            // guest's logical APK instead, so the readback carries no host-package identity.
+            if(!strncmp(raw,"/data/app/",10)&&strstr(raw,"dev.tripoder.engine")&&physical_len>=9&&!strcmp(raw+physical_len-9,"/base.apk")){
+                char rewritten[PATH_MAX];int n=snprintf(rewritten,sizeof(rewritten),"%s/base.apk",artifact_paths[2]);
+                if(n>0&&(size_t)n<sizeof(rewritten)){size_t copied=(size_t)n<size?(size_t)n:size;if(copied>0)memcpy(out,rewritten,copied);return (ssize_t)copied;}
             }
         }
     }

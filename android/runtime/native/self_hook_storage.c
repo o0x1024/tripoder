@@ -3,6 +3,7 @@
 #include "tripoder_thread_park.h"
 #include "path_policy.h"
 #include "io_adapter.h"
+#include "elf_plt_hook.h"
 #include <fcntl.h>
 #include <jni.h>
 #include <stdatomic.h>
@@ -12,6 +13,121 @@
 #include <sys/syscall.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <link.h>
+#include <dlfcn.h>
+#include <signal.h>
+#include <ucontext.h>
+
+static struct sigaction s_old_segv, s_old_bus;
+static void tp_crash_handler(int sig, siginfo_t *info, void *uctx_ptr) {
+    ucontext_t *uc = (ucontext_t *)uctx_ptr;
+    uintptr_t pc = 0, sp = 0, lr = 0;
+#if defined(__aarch64__)
+    if (uc) {
+        pc = (uintptr_t)uc->uc_mcontext.pc;
+        sp = (uintptr_t)uc->uc_mcontext.sp;
+        lr = (uintptr_t)uc->uc_mcontext.regs[30];
+    }
+#endif
+    Dl_info pc_info = {0}, lr_info = {0};
+    if (pc) dladdr((void *)pc, &pc_info);
+    if (lr) dladdr((void *)lr, &lr_info);
+
+    char msg[1024];
+    int n = snprintf(msg, sizeof(msg),
+        "[TripoderCrash] sig=%d code=%d addr=%p pc=%p (%s + 0x%lx %s) lr=%p (%s + 0x%lx %s) sp=%p\n",
+        sig, info ? info->si_code : 0, info ? info->si_addr : 0,
+        (void *)pc, pc_info.dli_fname ? pc_info.dli_fname : "?", (unsigned long)(pc ? pc - (uintptr_t)pc_info.dli_fbase : 0), pc_info.dli_sname ? pc_info.dli_sname : "?",
+        (void *)lr, lr_info.dli_fname ? lr_info.dli_fname : "?", (unsigned long)(lr ? lr - (uintptr_t)lr_info.dli_fbase : 0), lr_info.dli_sname ? lr_info.dli_sname : "?",
+        (void *)sp);
+    if (n > 0) {
+        syscall(SYS_write, 2, msg, (size_t)n);
+        int (*log_print)(int, const char*, const char*, ...) = (int (*)(int, const char*, const char*, ...))dlsym(RTLD_DEFAULT, "__android_log_print");
+        if (log_print) log_print(6, "TripoderCrash", "%s", msg);
+    }
+    struct sigaction *old_sa = (sig == SIGSEGV) ? &s_old_segv : &s_old_bus;
+    if ((old_sa->sa_flags & SA_SIGINFO) && old_sa->sa_sigaction) {
+        old_sa->sa_sigaction(sig, info, uctx_ptr);
+    } else if (old_sa->sa_handler != SIG_DFL && old_sa->sa_handler != SIG_IGN && old_sa->sa_handler) {
+        old_sa->sa_handler(sig);
+    } else {
+        signal(sig, SIG_DFL);
+        raise(sig);
+    }
+}
+static void tp_install_crash_handler(void) {
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_sigaction = tp_crash_handler;
+    sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
+    sigaction(SIGSEGV, &sa, &s_old_segv);
+    sigaction(SIGBUS, &sa, &s_old_bus);
+}
+
+static int (*s_real_loader_dladdr)(const void *, Dl_info *);
+static _Thread_local char s_dladdr_buf[PATH_MAX];
+
+static int tp_wrapped_dladdr(const void *addr, Dl_info *info) {
+    if (!s_real_loader_dladdr) return 0;
+    int ret = s_real_loader_dladdr(addr, info);
+    if (ret && info && info->dli_fname) {
+        ssize_t n = tp_unresolve(info->dli_fname, strlen(info->dli_fname), s_dladdr_buf, sizeof(s_dladdr_buf)-1);
+        if (n > 0) {
+            s_dladdr_buf[n] = '\0';
+            info->dli_fname = s_dladdr_buf;
+        }
+    }
+    return ret;
+}
+
+typedef int (*dl_iterate_cb)(struct dl_phdr_info *info, size_t size, void *data);
+struct wrapped_iter_ctx {
+    dl_iterate_cb original_cb;
+    void *original_data;
+};
+static _Thread_local char s_iter_buf[PATH_MAX];
+
+static int tp_iter_callback_wrapper(struct dl_phdr_info *info, size_t size, void *data) {
+    struct wrapped_iter_ctx *ctx = (struct wrapped_iter_ctx *)data;
+    if (info && info->dlpi_name) {
+        ssize_t n = tp_unresolve(info->dlpi_name, strlen(info->dlpi_name), s_iter_buf, sizeof(s_iter_buf)-1);
+        if (n > 0) {
+            s_iter_buf[n] = '\0';
+            struct dl_phdr_info copy = *info;
+            copy.dlpi_name = s_iter_buf;
+            return ctx->original_cb(&copy, size, ctx->original_data);
+        }
+    }
+    return ctx->original_cb(info, size, ctx->original_data);
+}
+
+static int (*s_real_loader_dl_iterate_phdr)(dl_iterate_cb, void *);
+static int tp_wrapped_dl_iterate_phdr(dl_iterate_cb cb, void *data) {
+    if (!s_real_loader_dl_iterate_phdr) return -1;
+    struct wrapped_iter_ctx ctx = {cb, data};
+    return s_real_loader_dl_iterate_phdr(tp_iter_callback_wrapper, &ctx);
+}
+
+static int hook_libdl_cb(struct dl_phdr_info *info, size_t size, void *data) {
+    (void)size; (void)data;
+    if (info->dlpi_name && strstr(info->dlpi_name, "libdl.so")) {
+        uintptr_t slot_dladdr = 0, slot_iter = 0;
+        if (tp_elf_plt_find_slot(info->dlpi_addr, info->dlpi_phdr, info->dlpi_phnum, "__loader_dladdr", &slot_dladdr) == 0 && slot_dladdr) {
+            uintptr_t old = 0;
+            if (tp_elf_plt_patch_slot(slot_dladdr, (uintptr_t)tp_wrapped_dladdr, &old) == 0 && old) {
+                s_real_loader_dladdr = (int (*)(const void *, Dl_info *))old;
+            }
+        }
+        if (tp_elf_plt_find_slot(info->dlpi_addr, info->dlpi_phdr, info->dlpi_phnum, "__loader_dl_iterate_phdr", &slot_iter) == 0 && slot_iter) {
+            uintptr_t old = 0;
+            if (tp_elf_plt_patch_slot(slot_iter, (uintptr_t)tp_wrapped_dl_iterate_phdr, &old) == 0 && old) {
+                s_real_loader_dl_iterate_phdr = (int (*)(dl_iterate_cb, void *))old;
+            }
+        }
+        return 1;
+    }
+    return 0;
+}
 
 static _Atomic bool attempted;
 static void fail(JNIEnv *env,const char *reason){
@@ -78,6 +194,8 @@ JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_installN
     if(!report.ready||!report.enabled||report.validated_entries!=10||report.changed_words!=40||report.absolute_entries!=10||report.publications!=2||
        report.restorations||!report.source_bti||!report.lease_held)
         fail(env,"NATIVE_STORAGE_PUBLICATION_UNCONFIRMED");
+    dl_iterate_phdr(hook_libdl_cb, NULL);
+    tp_install_crash_handler();
 }
 JNIEXPORT jbyteArray JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_readPhysicalProc(JNIEnv *env,jclass unused,jstring path,jint limit){
     (void)unused;

@@ -29,7 +29,11 @@ int tp_openat(int dirfd,const char *name,int flags,unsigned mode){
 int tp_fstatat(int dirfd,const char *name,struct stat *out,int flags){
     if(name&&name[0]=='\0'&&(flags&AT_EMPTY_PATH))return (int)syscall(SYS_newfstatat,dirfd,name,out,flags);
     struct tp_path path;if(tp_resolve(dirfd,name,TP_METADATA,&path)<0)return -1;int result=-1;
-    if(inspect_leaf(&path,(flags&AT_SYMLINK_NOFOLLOW)!=0,false)==0)result=(int)syscall(SYS_newfstatat,path.parent,path.leaf,out,flags|(path.owned?AT_SYMLINK_NOFOLLOW:0));
+    result=(int)syscall(SYS_newfstatat,path.parent,path.leaf,out,flags|(path.owned?AT_SYMLINK_NOFOLLOW:0));
+    if(result==0&&path.owned){
+        if(!(flags&AT_SYMLINK_NOFOLLOW)&&S_ISLNK(out->st_mode)){errno=ELOOP;result=-1;}
+        else if(path.trailing_slash&&!S_ISDIR(out->st_mode)){errno=ENOTDIR;result=-1;}
+    }
     tp_release(&path);return result;
 }
 int tp_unlinkat(int dirfd,const char *name,int flags){

@@ -50,10 +50,14 @@ final class RuntimeControllerLaunch {
             if(!hasLiveSession)RuntimeEmptyTasks.removeApplicationTasks(broker,install.space,install.info.packageName,generation);
             // A dead process's unattached entry is retired on proof; a live attached root is woken, not rejected.
             RuntimeControllerStaleEntries.retire(broker,install.space,install.info.packageName,generation);
+            var appTasks=broker.host.getSystemService(android.app.ActivityManager.class).getAppTasks();
             synchronized(broker){
                 broker.activities.releaseUnused();
                 if(!hasLiveSession)broker.activities.retireDeadUnattached(install.space,install.info.packageName,generation,operation);
+                int retiredDead=broker.activities.retireDeadTasks(install.space,install.info.packageName,generation,operation,appTasks);
+                android.util.Log.i("TripoderLaunch", "hasLiveSession=" + hasLiveSession + " retiredDead=" + retiredDead);
             }
+            expireEntries(broker);
             Bundle woken=RuntimeControllerWake.wake(broker,install.space,install.info.packageName,generation,operation);
             if(woken!=null)return woken;
             synchronized(broker){ActivityEntryFences.requireNoOpenRoot(broker.store,install.space,install.info.packageName,generation);}
@@ -68,11 +72,15 @@ final class RuntimeControllerLaunch {
                 // Checked again in the transaction that creates the root, so concurrent launches of one installation open one root.
                 ActivityEntryFences.requireNoOpenRoot(broker.store,install.space,install.info.packageName,generation);
                 String ticket=broker.activities.prepare(slot,component,null,operation,ControllerTrust.WORKBENCH_CALLER,null,null);
-                Intent intent=broker.activities.controllerEntry(broker.host,ticket,launcher(install,component));
+                Intent intent=broker.activities.controllerEntry(broker.host,ticket,launcher(install,component));issued.put(operation,android.os.SystemClock.elapsedRealtime());
                 Bundle out=broker.processEvidence(slot);out.putString("operation",operation);out.putString("component",component);out.putParcelable("intent",intent);return out;
             }
         }catch(Exception error){android.util.Log.e("TripoderLaunch","PREPARE_LAUNCH_FAILED started="+started,error);synchronized(broker){if(broker.contract.query(operation).state==ExecutionContract.OperationState.RUNNING){if(started)broker.contract.markUnknown(operation,"LAUNCH_PREPARATION_UNCONFIRMED");else broker.contract.fail(operation,"LAUNCH_TARGET_REJECTED");}}throw error;}
     }
+    /** Entries issued by this authority, by launch operation, with their issue time. An authority restart kills every worker, after which the stale-entry path applies. */
+    private static final java.util.Map<String,Long> issued=new java.util.concurrent.ConcurrentHashMap<>();
+    /** An issued entry the guest has not entered by then never will: the platform can drop a start silently (a background start aborted), with no error for the workbench to report. */
+    static final long ENTRY_VALIDITY_MS=30000;
     /** The workbench received the entry but did not start it (it was no longer visible, or the start threw).
      *  Its word is enough: the root is revoked, so even a late start of that Intent only meets a rejected ticket. */
     static Bundle abandon(RuntimeBroker broker,Bundle input,String lease)throws Exception{
@@ -80,17 +88,27 @@ final class RuntimeControllerLaunch {
         synchronized(broker){
             RuntimeControllerService.requireLease(lease);
             var admitted=broker.contract.query(operation);if(admitted==null||!ControllerTrust.OPERATIONS.equals(admitted.callerIdentity))throw new SecurityException("OPERATION_OWNER_MISMATCH");
-            String ticket;try(Cursor c=broker.store.getReadableDatabase().rawQuery("SELECT candidate FROM activity_launches WHERE operation=? AND callerKind='CONTROLLER'",new String[]{operation})){if(!c.moveToFirst())throw new IllegalStateException("LAUNCH_ENTRY_NOT_ISSUED");ticket=c.getString(0);}
-            var db=broker.store.getWritableDatabase();db.beginTransaction();try{
-                android.content.ContentValues revoked=new android.content.ContentValues();revoked.put("state","REVOKED");revoked.put("resourceProof","CONTROLLER_ENTRY_NOT_DISPATCHED;operation="+operation);
-                if(db.update("activity_tickets",revoked,"ticket=? AND state='PREPARED' AND taskId<0 AND instance IS NULL",new String[]{ticket})!=1)throw new IllegalStateException("LAUNCH_ENTRY_NOT_PENDING");
-                android.content.ContentValues retired=new android.content.ContentValues();retired.put("state","RETIRED");db.update("activity_launches",retired,"candidate=? AND state='PREPARED'",new String[]{ticket});
-                if(broker.contract.query(operation).state==ExecutionContract.OperationState.RUNNING)broker.contract.fail(operation,"LAUNCH_NOT_DISPATCHED");
-                db.setTransactionSuccessful();
-            }finally{db.endTransaction();}
-            broker.activities.releaseUnused();
+            String ticket=revokeUnentered(broker,operation,"LAUNCH_NOT_DISPATCHED");if(ticket==null)throw new IllegalStateException("LAUNCH_ENTRY_NOT_PENDING");
             Bundle out=new Bundle();out.putString("operation",operation);out.putString("ticket",ticket);out.putString("state",broker.contract.query(operation).state.name());return out;
         }
+    }
+    /** Revokes issued entries that were never entered within their validity; called before every launch and every operation query. */
+    static void expireEntries(RuntimeBroker broker)throws Exception{
+        long now=android.os.SystemClock.elapsedRealtime();
+        for(var entry:issued.entrySet())if(now-entry.getValue()>ENTRY_VALIDITY_MS)synchronized(broker){revokeUnentered(broker,entry.getKey(),"LAUNCH_ENTRY_NOT_ENTERED");}
+    }
+    /** Revokes the root of a controller launch only while nothing has entered it. Returns the ticket, or null when it was already entered or ended. Caller holds broker. */
+    private static String revokeUnentered(RuntimeBroker broker,String operation,String detail){
+        issued.remove(operation);
+        String ticket;try(Cursor c=broker.store.getReadableDatabase().rawQuery("SELECT candidate FROM activity_launches WHERE operation=? AND callerKind='CONTROLLER'",new String[]{operation})){if(!c.moveToFirst())throw new IllegalStateException("LAUNCH_ENTRY_NOT_ISSUED");ticket=c.getString(0);}
+        var db=broker.store.getWritableDatabase();db.beginTransaction();try{
+            android.content.ContentValues revoked=new android.content.ContentValues();revoked.put("state","REVOKED");revoked.put("resourceProof","CONTROLLER_ENTRY_NOT_ENTERED;operation="+operation+";reason="+detail);
+            if(db.update("activity_tickets",revoked,"ticket=? AND state='PREPARED' AND taskId<0 AND instance IS NULL",new String[]{ticket})!=1)return null;
+            android.content.ContentValues retired=new android.content.ContentValues();retired.put("state","RETIRED");db.update("activity_launches",retired,"candidate=? AND state='PREPARED'",new String[]{ticket});
+            if(broker.contract.query(operation).state==ExecutionContract.OperationState.RUNNING)broker.contract.fail(operation,detail);
+            db.setTransactionSuccessful();
+        }finally{db.endTransaction();}
+        broker.activities.releaseUnused();return ticket;
     }
     private static String launcherComponent(ApkStore.BundleInstall install){
         String selected=null;

@@ -49,7 +49,7 @@ final class PreferencesXml {
             }
             xml.endTag(null,"map");xml.endDocument();xml.flush();if(stream.getChannel().size()>MAX_BYTES)throw new IOException("PREFERENCES_SIZE_LIMIT");stream.getFD().sync();
         }
-        Os.rename(stage.toString(),file.toString());RuntimeFiles.sync(file.getParentFile());
+        Os.rename(stage.toString(),file.toString());
     }
     private PreferencesXml(){}
 }

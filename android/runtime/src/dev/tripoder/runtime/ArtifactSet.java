@@ -54,31 +54,34 @@ public final class ArtifactSet {
         Part(File file,String path,String sha256,long size,ApkManifest manifest,List<FileRecord> entries,List<String> signers){this.file=file;this.path=path;this.sha256=sha256;this.size=size;this.scan=null;this.manifest=manifest;this.signers=signers;this.entries=Collections.unmodifiableList(entries);}
         Map<String,Object> json(){Map<String,Object> o=new TreeMap<>();o.put("path",path);o.put("sha256",sha256);o.put("size",size);o.put("manifest",manifest.json());List<Object> es=new ArrayList<>();for(FileRecord e:entries)es.add(e.json());o.put("entries",es);return o;}
     }
-    private ArtifactSet(File directory,List<Part> parts,List<FileRecord> nativeFiles,List<ApkManifest.Component> components,List<String> processes)throws Exception{
+    private ArtifactSet(File directory,List<Part> parts,List<FileRecord> nativeFiles,List<FileRecord> dexFiles,List<ApkManifest.Component> components,List<String> processes)throws Exception{
         this.directory=directory;this.parts=Collections.unmodifiableList(parts);this.base=parts.get(0).file;baseManifest=parts.get(0).manifest;packageName=baseManifest.packageName;versionCode=baseManifest.versionCode;
         signerDigests=Collections.unmodifiableList(parts.get(0).signers);signerSha=signerDigests.size()==1?signerDigests.get(0):hash(String.join("\n",signerDigests).getBytes(StandardCharsets.UTF_8));
         this.nativeFiles=Collections.unmodifiableList(nativeFiles);this.components=Collections.unmodifiableList(components);this.processes=Collections.unmodifiableList(processes);
-        List<FileRecord> all=new ArrayList<>();for(Part p:parts)all.add(new FileRecord(p.path,p.sha256,p.size));all.addAll(nativeFiles);all.sort(Comparator.comparing(r->r.path));files=Collections.unmodifiableList(all);
+        List<FileRecord> all=new ArrayList<>();for(Part p:parts)all.add(new FileRecord(p.path,p.sha256,p.size));all.addAll(nativeFiles);all.addAll(dexFiles);all.sort(Comparator.comparing(r->r.path));files=Collections.unmodifiableList(all);
         Map<String,Object> o=new TreeMap<>();o.put("schema",1);o.put("platform",PLATFORM);o.put("abi","arm64-v8a");o.put("packageName",packageName);o.put("versionCode",versionCode);o.put("signerSha",signerSha);o.put("signerDigests",signerDigests);
         List<Object> ps=new ArrayList<>();for(Part p:parts)ps.add(p.json());o.put("parts",ps);List<Object> fs=new ArrayList<>();for(FileRecord f:files)fs.add(f.json());o.put("files",fs);List<Object> cs=new ArrayList<>();for(ApkManifest.Component c:components)cs.add(c.json());o.put("components",cs);o.put("processes",processes);
         descriptorJson=json(o);if(descriptorJson.getBytes(StandardCharsets.UTF_8).length>16*1024*1024)throw reject("DESCRIPTOR_LIMIT");descriptorSha=hash(descriptorJson.getBytes(StandardCharsets.UTF_8));
     }
-    private ArtifactSet(File directory,String descriptorJson,String descriptorSha,List<Part> parts,List<FileRecord> nativeFiles,List<ApkManifest.Component> components,List<String> processes){
+    private ArtifactSet(File directory,String descriptorJson,String descriptorSha,List<Part> parts,List<FileRecord> nativeFiles,List<FileRecord> dexFiles,List<ApkManifest.Component> components,List<String> processes){
         this.directory=directory;this.descriptorJson=descriptorJson;this.descriptorSha=descriptorSha;this.parts=Collections.unmodifiableList(parts);this.base=parts.get(0).file;baseManifest=parts.get(0).manifest;packageName=baseManifest.packageName;versionCode=baseManifest.versionCode;
         signerDigests=Collections.unmodifiableList(parts.get(0).signers);signerSha=signerDigests.size()==1?signerDigests.get(0):hashUnchecked(String.join("\n",signerDigests).getBytes(StandardCharsets.UTF_8));
         this.nativeFiles=Collections.unmodifiableList(nativeFiles);this.components=Collections.unmodifiableList(components);this.processes=Collections.unmodifiableList(processes);
-        List<FileRecord> all=new ArrayList<>();for(Part p:parts)all.add(new FileRecord(p.path,p.sha256,p.size));all.addAll(nativeFiles);all.sort(Comparator.comparing(r->r.path));files=Collections.unmodifiableList(all);
+        List<FileRecord> all=new ArrayList<>();for(Part p:parts)all.add(new FileRecord(p.path,p.sha256,p.size));all.addAll(nativeFiles);all.addAll(dexFiles);all.sort(Comparator.comparing(r->r.path));files=Collections.unmodifiableList(all);
     }
     private static String hashUnchecked(byte[] bytes){try{return hash(bytes);}catch(Exception error){throw new IllegalStateException(error);}}
+    static String dexExtractedPath(int partIndex,String entryPath){return "dex/"+partIndex+"-"+entryPath;}
     /** Input: a private directory containing only regular root-level APKs. Output is sealed in place. */
     public static ArtifactSet materialize(File staged)throws Exception{
         Path root=root(staged);List<Path> apks=apkInputs(root,false);ArtifactSet set=inspect(root,apks);
-        long extracted=0;for(FileRecord file:set.nativeFiles)extracted+=file.size;
+        long extracted=0;for(FileRecord file:set.files)if(file.path.startsWith("lib/")||file.path.startsWith("dex/"))extracted+=file.size;
         requireSpace(staged,extracted+64L*1024*1024);
         Path lib=root.resolve("lib");Files.createDirectory(lib);
         for(Part p:set.parts)for(Map.Entry<String,FileRecord> e:p.scan.libraries.entrySet())ArtifactSetZip.extract(p.file,e.getValue().path,lib.resolve(e.getKey()),e.getValue());
+        Path dexDir=root.resolve("dex");Files.createDirectory(dexDir);
+        for(int p=0;p<set.parts.size();p++){Part part=set.parts.get(p);for(FileRecord entry:part.entries)if(entry.path.indexOf('/')<0&&entry.path.endsWith(".dex"))ArtifactSetZip.extract(part.file,entry.path,root.resolve(dexExtractedPath(p,entry.path)),entry);}
         Path descriptor=root.resolve(DESCRIPTOR);try(OutputStream out=Files.newOutputStream(descriptor,StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE,LinkOption.NOFOLLOW_LINKS)){out.write(set.descriptorJson.getBytes(StandardCharsets.UTF_8));}
-        for(FileRecord f:set.files){Path path=root.resolve(f.path);syncFile(path);seal(path,false);}syncFile(descriptor);seal(descriptor,false);seal(lib,true);syncDirectory(lib);seal(root,true);syncDirectory(root);
+        for(FileRecord f:set.files){Path path=root.resolve(f.path);syncFile(path);seal(path,false);}syncFile(descriptor);seal(descriptor,false);seal(lib,true);syncDirectory(lib);seal(dexDir,true);syncDirectory(dexDir);seal(root,true);syncDirectory(root);
         // Every written file was hashed during extraction. The publication owner
         // performs a full independent verification after the atomic directory move.
         return set;
@@ -199,7 +202,7 @@ public final class ArtifactSet {
     private static ArtifactSet parse(Path root,String rawJson,String descriptorSha)throws Exception{
         Map<String,List<FilterSpec>> filters=Map.of();
         int schema=-1,platform=-1;String abi=null,topPkg=null,topSignerSha=null;long topVersion=-1;
-        List<String> signers=new ArrayList<>();List<Part> parts=new ArrayList<>();List<FileRecord> nativeFiles=new ArrayList<>();List<ApkManifest.Component> components=new ArrayList<>();List<String> processes=new ArrayList<>();
+        List<String> signers=new ArrayList<>();List<Part> parts=new ArrayList<>();List<FileRecord> nativeFiles=new ArrayList<>(),dexFiles=new ArrayList<>();List<ApkManifest.Component> components=new ArrayList<>();List<String> processes=new ArrayList<>();
         try(android.util.JsonReader r=new android.util.JsonReader(new StringReader(rawJson))){
             r.beginObject();
             while(r.hasNext()){
@@ -264,6 +267,7 @@ public final class ArtifactSet {
                             }
                             r.endObject();
                             if(fp!=null&&fp.startsWith("lib/"))nativeFiles.add(new FileRecord(fp,fs,fz));
+                            else if(fp!=null&&fp.startsWith("dex/"))dexFiles.add(new FileRecord(fp,fs,fz));
                         }
                         r.endArray();
                     }
@@ -299,13 +303,13 @@ public final class ArtifactSet {
         }
         if(schema!=1||platform!=PLATFORM||!"arm64-v8a".equals(abi)||parts.isEmpty())throw reject("DESCRIPTOR_CONTENT_MISMATCH");
         for(int i=0;i<parts.size();i++){Part p=parts.get(i);parts.set(i,new Part(p.file,p.path,p.sha256,p.size,p.manifest,p.entries,signers));}
-        ArtifactSet set=new ArtifactSet(root.toFile(),rawJson,descriptorSha,parts,nativeFiles,components,processes);set.filterSpecs=filters;
+        ArtifactSet set=new ArtifactSet(root.toFile(),rawJson,descriptorSha,parts,nativeFiles,dexFiles,components,processes);set.filterSpecs=filters;
         if(!set.packageName.equals(topPkg)||set.versionCode!=topVersion||!set.signerSha.equals(topSignerSha))throw reject("DESCRIPTOR_CONTENT_MISMATCH");
         return set;
     }
     private static ArtifactSet finishLoad(Path root,ArtifactSet set)throws Exception{
-        Set<String> expected=new TreeSet<>();expected.add(DESCRIPTOR);expected.add("lib");for(FileRecord r:set.files)expected.add(r.path);Set<String> actual=new TreeSet<>();
-        try(var walk=Files.walk(root)){for(Iterator<Path> it=walk.iterator();it.hasNext();){Path path=it.next();if(path.equals(root))continue;String relative=root.relativize(path).toString().replace(File.separatorChar,'/');if(Files.isSymbolicLink(path))throw reject("ARTIFACT_SYMLINK");actual.add(relative);if(relative.equals("lib")){if(!Files.isDirectory(path,LinkOption.NOFOLLOW_LINKS))throw reject("LIB_DIRECTORY_INVALID");}else regular(path);readonly(path);}}
+        Set<String> expected=new TreeSet<>();expected.add(DESCRIPTOR);expected.add("lib");if(set.files.stream().anyMatch(f->f.path.startsWith("dex/")))expected.add("dex");for(FileRecord r:set.files)expected.add(r.path);Set<String> actual=new TreeSet<>();
+        try(var walk=Files.walk(root)){for(Iterator<Path> it=walk.iterator();it.hasNext();){Path path=it.next();if(path.equals(root))continue;String relative=root.relativize(path).toString().replace(File.separatorChar,'/');if(Files.isSymbolicLink(path))throw reject("ARTIFACT_SYMLINK");actual.add(relative);if(relative.equals("lib")||relative.equals("dex")){if(!Files.isDirectory(path,LinkOption.NOFOLLOW_LINKS))throw reject("LIB_DIRECTORY_INVALID");}else regular(path);readonly(path);}}
         if(!actual.equals(expected))throw reject("ARTIFACT_FILE_SET_MISMATCH");readonly(root);
         for(FileRecord r:set.files){Path path=root.resolve(r.path);if(Files.size(path)!=r.size)throw reject("ARTIFACT_FILE_CORRUPT:"+r.path);}
         return set;
@@ -316,8 +320,8 @@ public final class ArtifactSet {
         Path root=root(published);Path descriptor=root.resolve(DESCRIPTOR);regular(descriptor);if(Files.size(descriptor)>16*1024*1024||!digest(descriptor.toFile()).equals(descriptorSha))throw reject("DESCRIPTOR_CORRUPT");
         ArtifactSet set=inspect(root,apkInputs(root,true));
         if(!set.descriptorSha.equals(descriptorSha)||!Arrays.equals(Files.readAllBytes(descriptor),set.descriptorJson.getBytes(StandardCharsets.UTF_8)))throw reject("DESCRIPTOR_CONTENT_MISMATCH");
-        Set<String> expected=new TreeSet<>();expected.add(DESCRIPTOR);expected.add("lib");for(FileRecord r:set.files)expected.add(r.path);Set<String> actual=new TreeSet<>();
-        try(var walk=Files.walk(root)){for(Iterator<Path> it=walk.iterator();it.hasNext();){Path path=it.next();if(path.equals(root))continue;String relative=root.relativize(path).toString().replace(File.separatorChar,'/');if(Files.isSymbolicLink(path))throw reject("ARTIFACT_SYMLINK");actual.add(relative);if(relative.equals("lib")){if(!Files.isDirectory(path,LinkOption.NOFOLLOW_LINKS))throw reject("LIB_DIRECTORY_INVALID");}else regular(path);readonly(path);}}
+        Set<String> expected=new TreeSet<>();expected.add(DESCRIPTOR);expected.add("lib");expected.add("dex");for(FileRecord r:set.files)expected.add(r.path);Set<String> actual=new TreeSet<>();
+        try(var walk=Files.walk(root)){for(Iterator<Path> it=walk.iterator();it.hasNext();){Path path=it.next();if(path.equals(root))continue;String relative=root.relativize(path).toString().replace(File.separatorChar,'/');if(Files.isSymbolicLink(path))throw reject("ARTIFACT_SYMLINK");actual.add(relative);if(relative.equals("lib")||relative.equals("dex")){if(!Files.isDirectory(path,LinkOption.NOFOLLOW_LINKS))throw reject("LIB_DIRECTORY_INVALID");}else regular(path);readonly(path);}}
         if(!actual.equals(expected))throw reject("ARTIFACT_FILE_SET_MISMATCH");readonly(root);
         List<java.util.concurrent.CompletableFuture<String>> checks=new ArrayList<>();
         for(FileRecord r:set.files){Path path=root.resolve(r.path);checks.add(java.util.concurrent.CompletableFuture.supplyAsync(()->{try{return Files.size(path)!=r.size||!digest(path.toFile()).equals(r.sha256)?r.path:null;}catch(Exception error){throw new java.util.concurrent.CompletionException(error);}}));}
@@ -355,8 +359,9 @@ public final class ArtifactSet {
             if(p!=base&&!p.manifest.configForSplit.isEmpty()&&p.manifest.featureSplit)throw reject("FEATURE_CONFIG_CONFLICT");
             visit(p,bySplit,done,visiting,ordered);
         }
-        List<FileRecord> libs=new ArrayList<>();Set<String> names=new HashSet<>();Map<String,ApkManifest.Component> componentNames=new LinkedHashMap<>();List<ApkManifest.Component> components=new ArrayList<>();TreeSet<String> processes=new TreeSet<>();processes.add(base.manifest.applicationProcess);
-        for(Part p:ordered){for(Map.Entry<String,FileRecord> entry:p.scan.libraries.entrySet()){if(!names.add(entry.getKey()))throw reject("NATIVE_LIBRARY_COLLISION");FileRecord r=entry.getValue();libs.add(new FileRecord("lib/"+entry.getKey(),r.sha256,r.size));}
+        List<FileRecord> libs=new ArrayList<>(),dexFiles=new ArrayList<>();Set<String> names=new HashSet<>();Map<String,ApkManifest.Component> componentNames=new LinkedHashMap<>();List<ApkManifest.Component> components=new ArrayList<>();TreeSet<String> processes=new TreeSet<>();processes.add(base.manifest.applicationProcess);
+        for(int pIndex=0;pIndex<ordered.size();pIndex++){Part p=ordered.get(pIndex);for(Map.Entry<String,FileRecord> entry:p.scan.libraries.entrySet()){if(!names.add(entry.getKey()))throw reject("NATIVE_LIBRARY_COLLISION");FileRecord r=entry.getValue();libs.add(new FileRecord("lib/"+entry.getKey(),r.sha256,r.size));}
+            for(FileRecord entry:p.entries)if(entry.path.indexOf('/')<0&&entry.path.endsWith(".dex"))dexFiles.add(new FileRecord(dexExtractedPath(pIndex,entry.path),entry.sha256,entry.size));
             Map<String,String> attrs=new TreeMap<>(base.manifest.application.attributes);attrs.putAll(p.manifest.application.attributes);
             ApkManifest.Element effectiveApp=new ApkManifest.Element("application","",attrs,List.of());
             for(ApkManifest.Component declared:p.manifest.components){
@@ -374,7 +379,7 @@ public final class ArtifactSet {
         for(ApkManifest.Component c:components)if(c.type.equals("activity-alias")&&!activities.contains(c.targetActivity))throw reject("ALIAS_TARGET_MISSING");
         for(Part p:ordered)for(ApkManifest.Element group:p.manifest.application.children)if(group.name.equals("processes"))for(ApkManifest.Element process:group.children)if(process.name.equals("process"))processes.add(ApkManifest.processName(base.manifest.packageName,ApkManifest.text(process.android("name",null),"PROCESS")));
         if(libs.isEmpty()&&ordered.stream().anyMatch(p->p.scan.containsNative))throw reject("ABI_OR_LIBRARY_UNSUPPORTED");
-        libs.sort(Comparator.comparing(r->r.path));return new ArtifactSet(root.toFile(),ordered,libs,components,new ArrayList<>(processes));
+        libs.sort(Comparator.comparing(r->r.path));dexFiles.sort(Comparator.comparing(r->r.path));return new ArtifactSet(root.toFile(),ordered,libs,dexFiles,components,new ArrayList<>(processes));
     }
     private static void visit(Part p,Map<String,Part> all,Set<String> done,Set<String> visiting,List<Part> ordered)throws IOException{
         String n=p.manifest.splitName;if(done.contains(n))return;if(!visiting.add(n))throw reject("SPLIT_DEPENDENCY_CYCLE");
@@ -383,7 +388,7 @@ public final class ArtifactSet {
         visiting.remove(n);done.add(n);ordered.add(p);
     }
     private static List<Path> apkInputs(Path root,boolean published)throws Exception{
-        List<Path> apks=new ArrayList<>();try(DirectoryStream<Path> children=Files.newDirectoryStream(root)){for(Path path:children){if(Files.isSymbolicLink(path))throw reject("ARTIFACT_SYMLINK");String name=path.getFileName().toString();if(published&&(name.equals("lib")||name.equals(DESCRIPTOR)))continue;if(!name.matches("[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,149}\\.apk"))throw reject("STAGE_FILE_UNSUPPORTED:"+name);regular(path);apks.add(path);}}
+        List<Path> apks=new ArrayList<>();try(DirectoryStream<Path> children=Files.newDirectoryStream(root)){for(Path path:children){if(Files.isSymbolicLink(path))throw reject("ARTIFACT_SYMLINK");String name=path.getFileName().toString();if(published&&(name.equals("lib")||name.equals("dex")||name.equals(DESCRIPTOR)))continue;if(!name.matches("[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,149}\\.apk"))throw reject("STAGE_FILE_UNSUPPORTED:"+name);regular(path);apks.add(path);}}
         if(apks.isEmpty()||apks.size()>MAX_PARTS)throw reject("APK_PART_COUNT");apks.sort(Comparator.comparing(Path::toString));return apks;
     }
     private static Path root(File directory)throws IOException{if(directory==null)throw reject("ARTIFACT_DIRECTORY_INVALID");Path root=directory.toPath().toAbsolutePath().normalize();if(Files.isSymbolicLink(root)||!Files.isDirectory(root,LinkOption.NOFOLLOW_LINKS))throw reject("ARTIFACT_DIRECTORY_INVALID");return root;}

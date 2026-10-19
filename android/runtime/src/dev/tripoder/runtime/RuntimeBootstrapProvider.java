@@ -29,7 +29,9 @@ public final class RuntimeBootstrapProvider extends ContentProvider {
             Bundle bootstrap;
             if(receiver){
                 if(broker.broadcasts.rejectRetiredEntry(RuntimeWire.required(request,"ticket"),index)){Bundle rejected=new Bundle();rejected.putString("rejectedReceiver","BROADCAST_RESOURCE_RETIRED");return rejected;}
-                Bundle delivery=broker.broadcasts.get(RuntimeWire.required(request,"ticket"));var slot=broker.requiredSlot(delivery.getString("target"));
+                Bundle delivery=broker.broadcasts.get(RuntimeWire.required(request,"ticket"));String target=delivery.getString("target");
+                if(broker.store.closeRequested(target)){Bundle rejected=new Bundle();rejected.putString("rejectedReceiver","PROCESS_CLOSING");return rejected;}
+                var slot=broker.requiredSlot(target);
                 if(!delivery.getString("state").equals("PREPARED")||!slot.activityStub.equals(RuntimeSlot.activity(index).getName())||delivery.getString("component").isEmpty())throw new SecurityException("BROADCAST_BOOTSTRAP_MISMATCH");
                 bootstrap=broker.processes.claimComponent(slot,peer);
             }else if(activity){

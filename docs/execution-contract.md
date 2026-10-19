@@ -1,70 +1,102 @@
-# 执行契约 v1
+# 执行契约与状态机规范 (Execution Contract)
 
-此契约是新 runtime 的约束，旧工作台尚未整体迁移。实现范围和设备结果必须在验收报告中逐项列出。
+本文档定义 Tripoder 控制面（`:authority`）与执行面（`:slot0..7`）之间的核心状态机、租约（Lease）生命周期、幂等操作语义以及进程退出围栏（Shutdown Fence）。
 
-## 状态与身份
+---
 
-安装：`staging → published → committed`；只有 committed 且制品摘要再次校验正确才可运行。丢失/损坏拒绝，不读取宿主已安装包作为替代。P1 安装层在设备上对完整 base/split 集合进行密码学验签；执行层仍只允许已验收的单 base 组件切片，未知组件和未声明能力拒绝。
+## 1. 应用安装状态机 (Install State Machine)
 
-进程：`allocated → attached → running → dead/failed`。身份包含 space、package、installGeneration、processName、processGeneration；attach 时绑定真实 PID/UID 与 Binder 连接。进程不能切换身份。死亡使所有相关 callback 失效，PID 复用不能恢复旧代次。
+安装记录在 `RuntimeControllerDatabase`（Schema 33+）中维护，`installGeneration` 单调递增，任何时刻每个 `(spaceId, packageName)` 最多只有一个活跃可见生成（Generation）。
 
-控制：同一运行实例同一时刻一个 owner + ownerGeneration。接管需明确终止旧租约；旧部署状态未知时拒绝新部署，不能将 UI 切换当成撤销确认。
+### 状态流转
 
-## 操作
+```
+staging ──► published ──► committed
+   │            │             │
+   ▼            ▼             ▼
+aborted      aborted     removing ──► removed
+```
 
-请求键为 `(operationId, callerIdentity, payloadDigest)`。同 ID 同完整身份/摘要返回已有操作；同 ID 不同内容冲突拒绝。`accepted → running → succeeded/failed`；链路超时可记录 `unknown`，unknown 不等于失败或未执行，只允许状态查询/有证据的协调，不能自动重放。
+| 状态 | 含义与可见性 |
+| --- | --- |
+| `staging` | 正在解压 APK、提取 native 库（`lib/<abi>`）、解析 `AndroidManifest.xml` 并写入 `InstallProviderIndex`。对运行时查询不可见。 |
+| `published` | 文件落盘与组件元数据索引完成，等待事务提交。 |
+| `committed` | 唯一对 `resolveIntent`、`resolveContentProvider`、`prepareApplicationLaunch` 可见的活跃状态。 |
+| `removing` | 卸载或覆盖更新进行中：拒绝新的组件调度与进程绑定，向已绑定的 `:slotN` 发送驱逐（Evict）通知并等待进程排空。 |
+| `removed` / `aborted` | 终态，对应生成号下的虚拟应用代码缓存与组件索引已清理。 |
 
-持久化日志先写 accepted 再做外部副作用；记录 terminal 后返回结果。Broker 重启时，未完成副作用进入 unknown。持久化失败不得执行后续副作用。数据库状态与 Activity 系统启动之间无跨系统原子事务，不能承诺 exactly-once；契约保证不因传输重试而盲目重放。
+---
 
-取消是独立操作，确认终止之前不能显示 canceled。查询不触发启动、部署或再次调用原函数。结果必须区分“Activity 已请求”和“客体 onResume 已报告”。
+## 2. 进程会话与控制租约 (ProcessSession & ControlLease)
 
-## 组件与回调
+### 2.1 槽位分配不变量
 
-虚拟包解析仅查当前 space 的已提交安装。系统宿主包管理器可以用于解析 APK 制品，不能作为缺失虚拟目标的解析后备。
+- 8 个预声明槽位（`slot0` .. `slot7`）由 `:authority` 统一管理。
+- 每个槽位在同一时刻最多绑定一个三元组：`(spaceId, packageName, targetProcessName, installGeneration)`。
+- 分配优先级：
+  1. 已绑定相同 `(spaceId, packageName, targetProcessName, installGeneration)` 的活跃槽位直接复用。
+  2. 空闲（`unbound`）槽位直接分配。
+  3. 若 8 个槽位全部占用，仅回收**无活跃前台 Activity 租约、无活跃 Service 租约、无未决 Provider 事务**的后台槽位；若全部处于活跃占用状态，则显式返回 `SLOT_EXHAUSTED` 错误，绝不静默混跑两个不同进程身份。
 
-一次性 callback 随机能力绑定双方安装/进程代次、同一 space、原操作、到期时间；Broker 决定返回接收者，客体不能凭自报 `returnPackage` 指定任意应用。能力过期、重复使用、错误调用者、升级或任一进程死亡均拒绝。Intent 数据大小与类型限制；不得无约束转发 URI grants、ClipData、Binder 或反序列化对象。
+### 2.2 ProcessSession 状态机
 
-`setResult` 只授权一次返回，不能宣告操作成功；必须等来源 Activity 的实际 `onActivityResult` 完成并由绑定来源确认。目标死亡后，尚未消费的能力作废；如果之前已授权并完成交付，操作先进入 UNKNOWN，再用已认证来源的收件证据协调到 SUCCEEDED/FAILED。这个协调不恢复旧能力、不重新启动组件、不重放副作用。
+```
+allocated ──► bound ──► draining ──► terminated
+    │           │
+    ▼           ▼
+ expired      evicted
+```
 
-P0 仅验证显式标准 Activity 的 `startActivityForResult` 路由；不把本地 fixture 方法调用当作组件往返。Provider 启动顺序、Task/launchMode、Service、Receiver、PendingIntent、通知及账户必须另验收。任何未实现能力应带稳定错误码拒绝。
+- **`allocated`**：`:authority` 为启动请求预留槽位并签发 `sessionId` 与 `leaseToken`。
+- **`bound`**：`:slotN` 进程启动后调用 `bindProcessSession` 完成握手，上报真实 Linux `pid` 并校验 `installGeneration`。
+- **`draining` / `evicted` / `terminated`**：当进程死亡（`Binder.linkToDeath` 或 `pid` 变更）、应用卸载或槽位回收时，原子吊销该 `sessionId` 下挂载的所有 Activity / Service / Provider / Receiver 租约。
 
-## Hook
+### 2.3 组件级租约 (Component Leases)
 
-| 阶段 | 成功 | 失败 |
-|---|---|---|
-| before | 校验新参数，再调用原函数一次 | 记录阶段并抛错，原函数零次 |
-| replace | 校验并返回替代结果，原函数零次 | 记录阶段并抛错，原函数零次 |
-| original | 调用一次 | 原异常传播，不重试，不调用 after |
-| after | 校验并返回新结果 | 记录并抛错，原函数已发生一次，不返回原结果掩盖失败 |
+所有四大组件调度均以 `:authority` 签发的显式租约票据（Lease Ticket）为准：
 
-Native 回调错误不能抛跨 C ABI：受控设备代理终止当前进程并记录原因，不返回默认值。显式 disable/rollback 是用户操作，不是错误 fallback。准备失败保持已提交版本，因为没有发生新版本提交；不可称为新部署成功。
+1. **ActivityLease**：记录 `leaseId`、`slotId`、`taskId`、`intent`、目标 `ActivityInfo` 与状态（`issued -> active -> paused -> destroyed`）。宿主 `RuntimeSlotNActivity` 必须凭有效 `leaseId` 实例化真实 Guest Activity。
+2. **ServiceLease**：区分主动生命周期（`startService` / `bindService`）与系统被动唤醒（`JobService` / `NotificationListenerService` 被动租约）。支持 `stopSelfResult(startId)` 精确匹配最后一次 `startId`。
+3. **ProviderLease**：跨进程 ContentProvider 访问时，若目标 Provider 位于其他 Guest 进程，由 `:authority` 协调目标槽位拉起并维护引用计数。
+4. **ReceiverLease**：有序广播（Ordered Broadcast）与静态 Receiver 派发时签发短期租约，跟踪 `finishReceiver` 完成状态。
 
-一次调用捕获同版代码与参数；跨进程部署记录每个 session 的 prepare/activate/ack，任一未确认即不能显示整体成功。当前模拟器只证明单线程同步语义。
+---
 
-## 安全与可观测性
+## 3. 控制面异步操作状态机 (Operation Contract)
 
-真实 UID 相同不构成恶意代码隔离。nonce/PID/代次防止路由混淆与迟到重放，不保护同 UID 进程中的秘密。Native 直读宿主私有文件的测试应如实记录可见性，不能把“读到了”转换为隔离通过。
+针对耗时控制面指令（如 APK 安装、卸载、大型 Project 编译下发、Agent 批量控制命令），统一采用幂等 `operationId` 状态机：
 
-所有失败带稳定分类、操作/进程代次和有界错误信息。证据来源标签本身不认证发送方；控制端验证连接绑定。过期证据不能驱动新部署。生产日志不包含秘密，验收只使用自有合成数据。
+```
+accepted ──► running ──► succeeded
+                │
+                ├──► failed (附带确定性错误码与阶段信息)
+                └──► unknown (跨进程超时或宿主异常重启后的显式待对账态)
+```
 
-## 本轮实现和验证范围
+- 相同 `operationId` 的重复请求返回当前状态快照，不重复产生副作用。
+- 禁止伪造成功状态：若底层执行超时或连接中断，状态必须标记为 `failed` 或 `unknown`。
 
-纯 Java 契约 103 项主机检查通过；共享 runtime 将 PID/UID、安装查询、一次性回调、实际收件和 SQLite 操作状态接入真实组件路径，57 项真机断言通过。P1 已增加真实控制进程死亡与 SQLite 重开、文件锁跨进程验证、关闭 Store 门禁，以及安装/升级/卸载/迁移事务和终态回执的联合提交。详细结果见 [P1 验收](evidence/runtime-p1-2026-10-14/README.md)。租约尚未接入旧工作台；全量 Binder 类型面、日志预算与整机断电仍是未覆盖门槛，不能据此声称所有契约在产品中已生效。原始结果和限制见 [P0 验收](evidence/runtime-p0-2026-10-13/README.md)。
-# 2026-10-15 关闭与完成回执
+---
 
-关闭首先撤销新工作的准入，并不撤销一个仍存活进程报告既有工作完成的资格。Broker 必须先按真实 Binder PID/UID 和不可变 generation 认证，再按消息类别分流：启动、claim、新 Provider 调用和进程启动事件继续拒绝；Activity 实例生命周期、已有结果交付、Service ACK、Provider release/finish、广播完成和注销仅能消费各账本中已经存在的精确资源。
+## 4. 一次性回调能力票据 (One-Time CallbackCapability)
 
-完成通道不接纳 DEAD generation，不创建新组件或新的业务操作，不清除关闭标记，不恢复进程可调度状态。永久关闭的持久标记也不阻断既有 Activity 的销毁回执。通用事件只承担 adapter/application 初始化；生命周期由带 ticket/instance 的回执唯一记录，不再追加无资源身份的重复通知。
+当 `:authority` 将异步任务委派给 `:slotN` 执行并等待完成回调（如 Receiver `goAsync().finish()`、JobService `jobFinished()`、Service `onDestroy` 确认）时，使用一次性 `CallbackCapability` 令牌：
 
-验收增加真实 Activity 关闭屏障：Activity 创建后由自研测试 authority 分别设置瞬时和持久关闭，客体尝试新启动必须被拒绝，随后真实 finish/result/onDestroy 必须完成，同一 PID 仍活到测试显式 stop。故障注入只在验收 APK；产品控制协议不提供该操作。所有 runtime 真机验收同时检查本轮自有 UID 的 Java 致命异常，业务断言通过但进程崩溃不能算通过。
+- 每个回调令牌绑定唯一的 `(capabilityId, sessionId, leaseId, expectedAction)`。
+- **单次消费语义（Consume-Once）**：首次合法回调将状态推进至 `completed`；后续重复回调、过期会话回调或伪造令牌一律被 `:authority` 拒绝并记录协议违规，防止旧进程残余回调污染新会话状态。
 
+---
 
-## 启动入口 capability 的先后（2026-10-18，P1-1）
+## 5. 并发与退出围栏 (Concurrency & Shutdown Fence)
 
-`prepareLaunch` / `prepareApplicationLaunch` 在**槽位预留与 capability 签发后即返回**，不再等待客体 `application-ready`。返回值中的进程证据只证明槽位已预留，不证明 worker 已运行。
+### 5.1 控制面数据库并发规约
 
-- capability 有效期自该次启动的共享启动截止时间起算再加 `ControllerLaunchLedger.VALIDITY_MS`（原为自签发时起 30 s），否则慢启动会在被消费前过期。
-- `RuntimeGuestGateway` 先显示启动页，再在后台线程调用 `ProcessSupervisor.awaitReady`（沿用同一启动截止时间，不另起计时），确认 `application-ready` 后才在主线程 `consume` 并派发 stub Activity。`consume` 仍要求会话为 RUNNING，一次性语义不变。
-- 等待失败、超时，或 Gateway 在派发前被销毁：`ControllerLaunchLedger.abandon` 将操作记为 UNKNOWN（`LAUNCH_PREPARATION_UNCONFIRMED` / `LAUNCH_GATEWAY_CLOSED_BEFORE_DISPATCH`）并使 capability 失效。进程可能已在启动，因此不记为 FAILED，也不自动重放。
-- 启动超时的错误码带阶段：`PROCESS_START_TIMEOUT_UNKNOWN:phase=BIND|LOAD|APPLICATION`；总预算仍为 30 s。
-- 空闲预热（P1-2）：authority 维持至多一个**无身份**的预热 worker（`ProcessSupervisor.Spare`），占用 `CAPACITY=8` 中的一个 index，`capacity()` 以 `spare` 标出且不计入 `available`。启动选中同 index 后补发 `ABORT_CONFIGURE`（`RuntimeWire` 码 50），中止凭证语义不变。预热 worker 被系统回收只会退化为冷 fork；其他分配无空槽时先淘汰它。
+- `RuntimeControllerDatabase` 启用 SQLite WAL 模式，所有跨表状态变迁（如“分配槽位 + 签发 Activity 租约”）必须在同一个数据库写事务内完成。
+- 高频只读热路径（如 `resolveContentProvider`、`getInstalledPackage`）使用内存索引（如 `InstallProviderIndex`）直接命中，避免在启动关键路径上进行全表扫描或重复反序列化 `AndroidManifest.xml`。
+
+### 5.2 Guest 进程与 Hook 引擎退出围栏 (`ShutdownFence`)
+
+在 `:slotN` 进程卸载 Hook、重置会话或退出时，必须通过双阶段排空围栏，杜绝 Use-After-Free：
+
+1. **停止接纳新调用（Stop Admission）**：原子推进代数（Generation），使后续进入 Java/Native Hook 跳板的调用直接直通原函数（Bypass），不再进入动态脚本分发器。
+2. **等待在途调用排空（In-Flight Drain）**：统计当前正在执行的 Hook 帧引用计数（`in_flight_count`），等待所有在途调用退出后再释放 AST 解释器上下文、JNI 全局引用与跳板内存。

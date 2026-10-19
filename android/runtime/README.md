@@ -24,7 +24,7 @@ rtk proxy python3 android/scripts/build-runtime-probe.py \
   --sdk /opt/homebrew/share/android-commandlinetools \
   --platform android-37.0 --build-tools 37.0.0 \
   --java-home /opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home \
-  --ndk android/vm-probe/build/native/tools/android-ndk-r30 \
+  --ndk /opt/homebrew/share/android-commandlinetools/ndk/30.0.16248370 \
   --platform-libc android/runtime-probe/build/device-libc.so \
   --platform-art android/self-hook-probe/build/device-libart.so \
   --platform-linker android/self-hook-probe/build/device-linker64
