@@ -29,7 +29,7 @@ final class RuntimeProviders {
     }
     RuntimeProviders(RuntimeEngine engine,ProviderInfo[] infos,Bundle publications,List<ApkManifest.Component> declarations){
         this.engine=engine;this.settingsObservers=new RuntimeSettingsObservers(engine.host.getContentResolver(),engine.providerIndex);
-        for(ProviderInfo info:new RuntimeProviderIndex(infos,declarations).publications(engine.processName)){
+        for(ProviderInfo info:engine.providerIndex.publications(engine.processName)){
             info.applicationInfo=new ApplicationInfo(engine.info);
             // Android startup attaches ProviderInfo without GET_META_DATA; explicit PM queries own it.
             info.metaData=null;

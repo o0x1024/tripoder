@@ -7,9 +7,12 @@ import java.util.*;
 final class RuntimeServiceIndex {
     private final Map<String,ServiceInfo> components=new LinkedHashMap<>();
     RuntimeServiceIndex(ServiceInfo[] infos,List<ApkManifest.Component> declarations){
+        Map<String,List<ServiceInfo>> byName=new HashMap<>();
+        if(infos!=null)for(ServiceInfo candidate:infos)byName.computeIfAbsent(candidate.name,k->new ArrayList<>(1)).add(candidate);
         for(var declared:declarations)if(declared.type.equals("service")){
             ServiceInfo selected=null;
-            if(infos!=null)for(ServiceInfo candidate:infos)if(candidate.name.equals(declared.name)){
+            List<ServiceInfo> candidates=byName.get(declared.name);
+            if(candidates!=null)for(ServiceInfo candidate:candidates){
                 if(selected!=null&&(selected.enabled!=candidate.enabled||selected.exported!=candidate.exported||!Objects.equals(selected.processName,candidate.processName)))throw new SecurityException("SERVICE_METADATA_AMBIGUOUS:"+declared.name);
                 selected=candidate;
             }

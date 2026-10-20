@@ -43,7 +43,17 @@ public final class WorkbenchActivity extends Activity implements EngineConnectio
         if(complete)refresh();else if(redraw)render();
     }
     private void refresh(){if(refreshing||!engine.ready())return;refreshing=true;String current=engine.lease;engine.execute(ControlWire.request("catalog"),(value,error)->{refreshing=false;if(destroyed||!current.equals(engine.lease))return;if(error!=null){show(error);return;}try{catalog=new WorkbenchCatalog(value);if(!spaceFilter.isEmpty()&&!catalog.spaces.contains(spaceFilter))spaceFilter="";Set<String> active=new HashSet<>();for(JSONObject install:catalog.installs)active.add(install.optString("generation"));app.presentations.prune(active);app.spaces.ensureDefault(catalog,app.operations,engine);render();}catch(Exception invalid){show(invalid);}});}
-    private void more(){new AlertDialog.Builder(this).setItems(new String[]{"刷新","新建空间"},(dialog,index)->{if(index==0){app.operations.query();refresh();}else createSpace();}).show();}
+    private void more(){
+        List<String> items=new ArrayList<>();items.add("刷新");items.add("新建空间");
+        boolean hasApps=catalog!=null&&!catalog.applications(spaceFilter).isEmpty();
+        if(tab==0&&application==null&&hasApps)items.add("批量管理应用");
+        new AlertDialog.Builder(this).setItems(items.toArray(String[]::new),(dialog,index)->{
+            String choice=items.get(index);
+            if("刷新".equals(choice)){app.operations.query();refresh();}
+            else if("新建空间".equals(choice))createSpace();
+            else if("批量管理应用".equals(choice))appActions.batchManage(catalog,spaceFilter,this::refresh);
+        }).show();
+    }
     private void selectSpace(){
         if(catalog==null||catalog.spaces.isEmpty()){createSpace();return;}
         List<String> items=new ArrayList<>();items.add("全部空间");for(String space:catalog.spaces)items.add(app.spaces.name(space));items.add("＋ 新建空间");
@@ -75,7 +85,7 @@ public final class WorkbenchActivity extends Activity implements EngineConnectio
         var all=app.projects.all();var visibleApps=catalog.applications(spaceFilter);
         LinearLayout header=ProductUi.row(this);header.setPadding(d(20),d(10),d(20),d(6));
         header.addView(ProductUi.text(this,visibleApps.isEmpty()?"":visibleApps.size()+" 个应用 · 轻点运行，长按管理",13,ProductUi.MUTED,false),new LinearLayout.LayoutParams(0,-2,1));
-        if(app.agents.listening)header.addView(ProductUi.chip(this,app.agents.session.isEmpty()?"AI 入口已开启":"AI 会话进行中",ProductUi.GREEN,ProductUi.TINT));
+        if(app.agents.listening)header.addView(ProductUi.chip(this,"AI 入口已开启",ProductUi.GREEN,ProductUi.TINT));
         ProductUi.add(body,header,0);
         if(visibleApps.isEmpty()){
             if(spaceFilter.isEmpty())body.addView(ProductUi.empty(this,"grid","还没有应用","点下方「添加应用」，从手机里已安装的应用或 APK 文件中选择。应用会在 Tripoder 的独立空间中运行，不影响手机上的原应用。",null,null));

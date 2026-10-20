@@ -22,11 +22,15 @@ final class ControlLaunchChecks {
         Bundle thinPrepared=ControlWire.call(session,ControlWire.EXECUTE,ControlWire.request("prepareLaunch","operation",thinLaunch,"project",project,"bindingOperation",binding,"generation",generation,"component","dev.tripoder.p0.a.AActivity"));
         JSONArray thinProcesses=new JSONArray(test.execute(session,"hookProcesses","project",project).getString("processes"));
         test.check("thin-mode-launch-prepares-slot-in-thin-mode","RUNNING".equals(thinPrepared.getString("state"))&&"thin".equals(thinPrepared.getString("mode"))&&thinProcesses.length()==1&&"thin".equals(thinProcesses.getJSONObject(0).getString("mode")),test.json(thinPrepared));
+        JSONObject thinPolicy=executionPolicy(project,binding,generation,thinPrepared.getString("generation"));
+        test.check("thin-preserves-art-compilation-without-global-deoptimization",thinPolicy.getBoolean("preserveCompilation")&&!thinPolicy.getBoolean("owned")&&thinPolicy.getInt("claims")==0&&"method-entry-only".equals(thinPolicy.getString("policy")),thinPolicy);
         test.execute(session,"abandonLaunch","operation",thinLaunch);
         test.execute(session,"stopApplication","operation",UUID.randomUUID().toString(),"space",test.report.getString("space"),"package","dev.tripoder.p0.a","generation",generation);
         test.execute(session,"setProjectMode","operation",UUID.randomUUID().toString(),"project",project,"mode","thick");
         String operation=UUID.randomUUID().toString();Bundle request=ControlWire.request("prepareLaunch","operation",operation,"project",project,"bindingOperation",binding,"generation",generation,"component","dev.tripoder.p0.a.AActivity");
         Bundle prepared=ControlWire.call(session,ControlWire.EXECUTE,request);Intent entry=prepared.getParcelable("intent",Intent.class);Bundle facts=new Bundle(prepared);facts.remove("intent");
+        JSONObject thickPolicy=executionPolicy(project,binding,generation,prepared.getString("generation"));
+        test.check("thick-retains-process-interpreter-policy",!thickPolicy.getBoolean("preserveCompilation")&&thickPolicy.getBoolean("owned")&&thickPolicy.getInt("claims")==1,thickPolicy);
         // One call waits for the guest Application and returns the root entry; nothing is started until the caller starts that Intent.
         test.check("launch-waits-for-guest-application",generation.equals(prepared.getString("installGeneration"))&&prepared.getString("generation")!=null&&"RUNNING".equals(prepared.getString("state"))&&"thick".equals(prepared.getString("mode"))&&prepared.getString("processName")!=null,test.json(facts));
         test.check("launch-entry-is-own-stub-with-ticket",entry!=null&&entry.getComponent()!=null&&test.enginePackage().equals(entry.getComponent().getPackageName())&&entry.getStringExtra("tripoder.ticket")!=null&&prepared.getString("generation").equals(entry.getStringExtra("tripoder.generation"))&&(entry.getFlags()&(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_MULTIPLE_TASK))==(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_MULTIPLE_TASK),entry==null?"null":entry.toString());
@@ -46,5 +50,10 @@ final class ControlLaunchChecks {
         test.check("unentered-entry-expires-and-releases-root","FAILED".equals(expired.getString("state"))&&"LAUNCH_ENTRY_NOT_ENTERED".equals(expired.getString("detail")),test.json(expired));
         String interrupted=UUID.randomUUID().toString();Bundle next=new Bundle(request);next.putString("operation",interrupted);Bundle ready=ControlWire.call(session,ControlWire.EXECUTE,next);test.report.put("readyLaunchOperation",interrupted);
         test.check("second-launch-issued-for-real-authority-death","RUNNING".equals(test.execute(session,"query","operation",interrupted).getString("state"))&&ready.getParcelable("intent",Intent.class)!=null,interrupted);
+    }
+    private JSONObject executionPolicy(String project,String binding,String install,String process)throws Exception{
+        JSONObject raw=new JSONObject().put("command","status").put("processGeneration",process);
+        Bundle result=test.execute(session,"hook","operation",UUID.randomUUID().toString(),"project",project,"bindingOperation",binding,"generation",install,"processGeneration",process,"request",raw.toString());
+        return new JSONObject(result.getString("result")).getJSONObject("result").getJSONObject("executionPolicy");
     }
 }

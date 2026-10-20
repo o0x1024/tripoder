@@ -157,7 +157,7 @@ JNIEXPORT jstring JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_physi
     if(size<=0||size>=(ssize_t)sizeof(actual)-1){fail_io(env,"ARTIFACT_PHYSICAL_IDENTITY_FAILED");return NULL;}
     actual[size]=0;return (*env)->NewStringUTF(env,actual);
 }
-JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_installNative(JNIEnv *env,jclass unused,jobjectArray input){
+JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_installNative(JNIEnv *env,jclass unused,jobjectArray input,jboolean thin){
     (void)unused;bool expected=false;
     if(!atomic_compare_exchange_strong(&attempted,&expected,true)){fail(env,"NATIVE_STORAGE_ALREADY_ATTEMPTED");return;}
     jsize count=input?(*env)->GetArrayLength(env,input):0;
@@ -175,6 +175,7 @@ JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_installN
     }
     if(tp_configure(paths[0],paths[1],paths[2],paths[3],paths[4])!=0){fail(env,"NATIVE_STORAGE_CONFIGURATION_FAILED");return;}
     if(tp_configure_process(count==6?paths[5]:paths[4])!=0){fail(env,"NATIVE_STORAGE_PROCESS_CONFIGURATION_FAILED");return;}
+    tp_configure_thin(thin);
     if(tp_park_prepare_process()!=TP_PARK_OK){fail(env,"NATIVE_STORAGE_THREAD_RESERVATION_FAILED");return;}
     const struct tp_fixed_libc_replacements replacements={tp_openat,tp_fstatat,tp_unlinkat,tp_mkdirat,tp_renameat2,
         tp_faccessat,tp_readlinkat,tp_chdir,tp_symlinkat,tp_linkat};
@@ -194,8 +195,10 @@ JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_installN
     if(!report.ready||!report.enabled||report.validated_entries!=10||report.changed_words!=40||report.absolute_entries!=10||report.publications!=2||
        report.restorations||!report.source_bti||!report.lease_held)
         fail(env,"NATIVE_STORAGE_PUBLICATION_UNCONFIRMED");
-    dl_iterate_phdr(hook_libdl_cb, NULL);
-    tp_install_crash_handler();
+    if(!thin){
+        dl_iterate_phdr(hook_libdl_cb, NULL);
+        tp_install_crash_handler();
+    }
 }
 JNIEXPORT jbyteArray JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_readPhysicalProc(JNIEnv *env,jclass unused,jstring path,jint limit){
     (void)unused;

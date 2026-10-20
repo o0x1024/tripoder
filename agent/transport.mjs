@@ -1,81 +1,77 @@
-import { createPrivateKey, createPublicKey, createHash, sign, verify } from 'node:crypto';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, access } from 'node:fs/promises';
+import { constants } from 'node:fs';
+import { homedir } from 'node:os';
+import { join, delimiter } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import net from 'node:net';
-
-const exec = promisify(execFile);
-export const DEVICE_PORT = 29731;
-export function exact(value, fields) {
-  if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).sort().join('\0') !== [...fields].sort().join('\0')) throw Error('FIELDS_UNSUPPORTED');
+import { randomUUID } from 'node:crypto';
+const exec=promisify(execFile);
+export const DEVICE_PORT=29731;
+export const DEVICE_PROTOCOL=2;
+async function resolveAdb(command){
+  if(command!=='adb')return command;
+  const name=process.platform==='win32'?'adb.exe':'adb';
+  const candidates=[process.env.ADB,...(process.env.PATH||'').split(delimiter).filter(Boolean).map(p=>join(p,name)),
+    ...[process.env.ANDROID_HOME,process.env.ANDROID_SDK_ROOT].filter(Boolean).map(p=>join(p,'platform-tools',name)),
+    join(homedir(),'Library/Android/sdk/platform-tools',name),join(homedir(),'Android/Sdk/platform-tools',name),
+    ...(process.env.LOCALAPPDATA?[join(process.env.LOCALAPPDATA,'Android/Sdk/platform-tools',name)]:[]),'/opt/homebrew/bin/adb','/usr/local/bin/adb'];
+  for(const path of candidates.filter(Boolean))try{await access(path,constants.X_OK);return path;}catch{}
+  return command;
 }
-export function id(value) { if (typeof value !== 'string' || !/^[A-Za-z0-9_-]{1,80}$/.test(value)) throw Error('ID_INVALID'); return value; }
-export function publicKey(encoded) {
-  if (typeof encoded !== 'string' || encoded.length > 256) throw Error('KEY_INVALID');
-  const key=createPublicKey({key:Buffer.from(encoded,'base64'),format:'der',type:'spki'});
-  if (key.asymmetricKeyType !== 'ec' || key.asymmetricKeyDetails.namedCurve !== 'prime256v1') throw Error('KEY_CURVE_UNSUPPORTED');
-  if (key.export({format:'der',type:'spki'}).toString('base64') !== encoded) throw Error('KEY_ENCODING_INVALID');
-  return key;
+export function exact(value,fields){if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).sort().join('\0')!==[...fields].sort().join('\0'))throw Error('FIELDS_UNSUPPORTED');}
+export function id(value){if(typeof value!=='string'||!/^[-A-Za-z0-9_]{1,80}$/.test(value))throw Error('ID_INVALID');return value;}
+export function decode(request,response){
+  if(!response||response.protocol!==DEVICE_PROTOCOL||typeof response.ok!=='boolean')throw Error('PROTOCOL_UNSUPPORTED');
+  if(response.requestId!==request.requestId)throw Error('RESPONSE_CORRELATION_MISMATCH');return response;
 }
-export function fingerprint(encoded) { return createHash('sha256').update(publicKey(encoded).export({format:'der',type:'spki'})).digest('hex'); }
-export function message(direction, session, payload) { return Buffer.from(`tripoder-agent-v1\n${direction}\n${session}\n${payload}`); }
-export function envelope(config, kind, session, payload) {
-  const key=createPrivateKey(config.privateKey);
-  if(key.asymmetricKeyType!=='ec'||key.asymmetricKeyDetails.namedCurve!=='prime256v1')throw Error('PRIVATE_KEY_CURVE_UNSUPPORTED');
-  return {kind,id:id(session),payload,signature:sign('sha256',message(kind==='pair'?'pair':'request',session,payload),key).toString('base64')};
-}
-export function decode(config, request, response) {
-  exact(response,['id','publicKey','payload','signature']);
-  if(response.id!==request.id||response.publicKey!==config.devicePublicKey)throw Error('DEVICE_IDENTITY_MISMATCH');
-  if(typeof response.payload!=='string'||typeof response.signature!=='string'||response.signature.length>256)throw Error('RESPONSE_INVALID');
-  if(!verify('sha256',message('response',response.id,response.payload),publicKey(config.devicePublicKey),Buffer.from(response.signature,'base64')))throw Error('DEVICE_SIGNATURE_REJECTED');
-  const result=JSON.parse(response.payload);
-  if(result.protocol!==1||typeof result.ok!=='boolean')throw Error('PROTOCOL_UNSUPPORTED');
-  const input=JSON.parse(request.payload);
-  if(request.kind==='call'&&(result.requestId!==input.requestId||(result.ok&&result.session!==request.id)))throw Error('RESPONSE_CORRELATION_MISMATCH');
-  if(request.kind==='pair'&&result.ok&&result.nonce!==request.id)throw Error('PAIR_CORRELATION_MISMATCH');
-  return result;
-}
-export async function loadConfig(file, paired=true) {
-  const info=await stat(file);if(!info.isFile()||(info.mode&0o077)!==0)throw Error('PRIVATE_CONFIG_REQUIRES_MODE_0600');
-  const config=JSON.parse(await readFile(file,'utf8'));
-  exact(config,['protocol','serial','name','privateKey','publicKey','devicePublicKey','session']);
-  if(config.protocol!==1||!/^[-A-Za-z0-9_.:]{1,100}$/.test(config.serial)||!/^[-A-Za-z0-9 _.]{1,60}$/.test(config.name))throw Error('CONFIG_INVALID');
-  publicKey(config.publicKey);publicKey(config.devicePublicKey);
-  const derived=createPublicKey(createPrivateKey(config.privateKey)).export({format:'der',type:'spki'}).toString('base64');
-  if(derived!==config.publicKey)throw Error('CLIENT_KEY_MISMATCH');
-  if(paired)id(config.session);
-  return config;
+// Old MCP configurations may still contain --config. Only the optional serial
+// is migrated; keys, permissions and pairing sessions have no role anymore.
+export async function loadConfig(file){
+  if(!file)return {};
+  try{const value=JSON.parse(await readFile(file,'utf8'));return typeof value.serial==='string'?{serial:value.serial}:{};}
+  catch(error){if(error.code==='ENOENT')return {};throw Error('LEGACY_CONFIG_INVALID_USE_SERIAL');}
 }
 export class Transport {
-  constructor(config,{adb='adb'}={}) {this.config=config;this.adb=adb;this.port=null;this.queue=Promise.resolve();this.closed=false;}
+  constructor(config={}, {adb='adb'}={}){this.config=config;this.adb=adb;this.port=null;this.session=null;this.queue=Promise.resolve();this.closed=false;this.opening=null;}
   async open(){
-    if(this.port!==null||this.closed)throw Error('TRANSPORT_ALREADY_USED');
-    const result=await exec(this.adb,['-s',this.config.serial,'forward','tcp:0',`tcp:${DEVICE_PORT}`],{timeout:10000,maxBuffer:4096});
-    const value=result.stdout.trim();if(!/^\d+$/.test(value)||+value<1||+value>65535)throw Error('ADB_FORWARD_PORT_INVALID');this.port=+value;
+    if(this.closed)throw Error('TRANSPORT_CLOSED');if(this.port!==null)return;
+    if(this.opening)return this.opening;
+    this.opening=this.connect();try{await this.opening;}finally{this.opening=null;}
   }
-  send(request) {
-    const job=this.queue.then(()=>this.exchange(request));this.queue=job.catch(()=>{});return job;
+  async connect(){
+    this.adb=await resolveAdb(this.adb);
+    let serial=this.config.serial||process.env.ANDROID_SERIAL;
+    if(!serial){const result=await exec(this.adb,['devices'],{timeout:10000,maxBuffer:8192});const devices=result.stdout.split('\n').map(s=>s.trim().match(/^([^\s]+)\s+device$/)?.[1]).filter(Boolean);if(devices.length!==1)throw Error(devices.length?'MULTIPLE_ADB_DEVICES_USE_SERIAL':'NO_ADB_DEVICE_CONNECT_PHONE');serial=devices[0];}
+    if(!/^[-A-Za-z0-9_.:]{1,100}$/.test(serial))throw Error('DEVICE_SERIAL_INVALID');
+    const result=await exec(this.adb,['-s',serial,'forward','tcp:0',`tcp:${DEVICE_PORT}`],{timeout:10000,maxBuffer:4096});
+    const value=result.stdout.trim();if(!/^\d+$/.test(value)||+value<1||+value>65535)throw Error('ADB_FORWARD_PORT_INVALID');this.serial=serial;this.port=+value;
   }
-  async exchange(request) {
-    if(!this.port||this.closed)throw Error('TRANSPORT_CLOSED');
-    const body=Buffer.from(JSON.stringify(request));if(body.length>65536)throw Error('FRAME_TOO_LARGE');
-    const header=Buffer.alloc(4);header.writeUInt32BE(body.length);
+  async exchange(request){
+    await this.open();const body=Buffer.from(JSON.stringify(request));if(body.length>65536)throw Error('FRAME_TOO_LARGE');const header=Buffer.alloc(4);header.writeUInt32BE(body.length);
     const frame=await new Promise((resolve,reject)=>{
       const socket=net.connect({host:'127.0.0.1',port:this.port});let chunks=Buffer.alloc(0),size=null,done=false;
       const finish=(error,data)=>{if(done)return;done=true;socket.destroy();error?reject(error):resolve(data);};
       socket.setTimeout(22000,()=>finish(Error('TRANSPORT_TIMEOUT_OUTCOME_UNKNOWN')));
       socket.on('connect',()=>socket.write(Buffer.concat([header,body])));
-      socket.on('error',()=>finish(Error('TRANSPORT_ERROR_OUTCOME_UNKNOWN')));
+      socket.on('error',()=>finish(Error('TRIPODER_ENDPOINT_UNAVAILABLE_OPEN_APP')));
       socket.on('end',()=>{if(!done)finish(Error('TRANSPORT_EOF_OUTCOME_UNKNOWN'));});
-      socket.on('data',chunk=>{
-        chunks=Buffer.concat([chunks,chunk]);if(chunks.length>131076)return finish(Error('RESPONSE_FRAME_TOO_LARGE'));
-        if(size===null&&chunks.length>=4){size=chunks.readUInt32BE(0);if(size<2||size>131072)return finish(Error('RESPONSE_FRAME_SIZE'));}
-        if(size!==null&&chunks.length>=size+4){if(chunks.length!==size+4)return finish(Error('RESPONSE_TRAILING_DATA'));finish(null,chunks.subarray(4));}
-      });
-    });
-    return decode(this.config,request,JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(frame)));
+      socket.on('data',chunk=>{chunks=Buffer.concat([chunks,chunk]);if(chunks.length>131076)return finish(Error('RESPONSE_FRAME_TOO_LARGE'));if(size===null&&chunks.length>=4){size=chunks.readUInt32BE(0);if(size<2||size>131072)return finish(Error('RESPONSE_FRAME_SIZE'));}if(size!==null&&chunks.length>=size+4){if(chunks.length!==size+4)return finish(Error('RESPONSE_TRAILING_DATA'));finish(null,chunks.subarray(4));}});
+    });return decode(request,JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(frame)));
   }
-  async call(method,params,requestId){const payload=JSON.stringify({protocol:1,requestId:id(requestId),method,params});if(Buffer.byteLength(payload)>32000)throw Error('REQUEST_TOO_LARGE');return this.send(envelope(this.config,'call',this.config.session,payload));}
-  async close(){if(this.closed)return;this.closed=true;if(this.port!==null)await exec(this.adb,['-s',this.config.serial,'forward','--remove',`tcp:${this.port}`],{timeout:5000,maxBuffer:4096});}
+  request(method,params,requestId,session){const request={protocol:DEVICE_PROTOCOL,requestId:id(requestId),method,params};if(session)request.session=session;return this.exchange(request);}
+  call(method,params,requestId){const job=this.queue.then(()=>this.perform(method,params,requestId));this.queue=job.catch(()=>{});return job;}
+  async perform(method,params,requestId){
+    if(['runtime.capabilities','projects.list','probes.configure','probes.get','process.start','application.stop','operation.get','artifact.list','artifact.read'].includes(method))return this.request(method,params,requestId);
+    if(method==='targets.list')return this.request(method,params,requestId);
+    if(method==='target.select'){const result=await this.request(method,params,requestId);if(result.ok)this.session=result.result.session;return result;}
+    if(!this.session){
+      const list=await this.request('targets.list',{},randomUUID());if(!list.ok)return {...list,requestId};
+      const targets=list.result.targets||[];const main=targets.filter(t=>t.processName===t.package);const eligible=main.length?main:targets;
+      if(eligible.length!==1)return {protocol:DEVICE_PROTOCOL,requestId,ok:false,error:targets.length?'TARGET_SELECTION_REQUIRED_CALL_TARGETS_LIST_AND_TARGET_SELECT':'NO_RUNNING_TARGET_START_APP_IN_TRIPODER',result:{targets}};
+      const chosen=eligible[0];const selected=await this.request('target.select',{project:chosen.project,processGeneration:chosen.processGeneration},randomUUID());if(!selected.ok)return {...selected,requestId};this.session=selected.result.session;
+    }
+    return this.request(method,params,requestId,this.session);
+  }
+  async close(){if(this.closed)return;this.closed=true;if(this.opening)await this.opening.catch(()=>{});if(this.port!==null)await exec(this.adb,['-s',this.serial,'forward','--remove',`tcp:${this.port}`],{timeout:5000,maxBuffer:4096});}
 }

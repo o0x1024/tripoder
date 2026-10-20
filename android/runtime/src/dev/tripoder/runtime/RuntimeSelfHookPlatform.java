@@ -29,6 +29,9 @@ final class RuntimeSelfHookPlatform implements SelfHookControl.Platform {
     public Map<String,Object> listNetworkTraffic(long sinceSeq,int limit){try{return RuntimeSecurityAudit.listNetworkTraffic(sinceSeq,limit);}catch(Exception error){throw new IllegalStateException(error);}}
     public Map<String,Object> sendHttpRequest(Map<String,Object> request){try{return RuntimeSecurityAudit.sendHttpRequest(request);}catch(Exception error){throw new IllegalStateException(error);}}
     public Map<String,Object> invokeGuestMethod(Map<String,Object> target){try{return RuntimeSecurityAudit.invokeGuestMethod(target);}catch(Exception error){throw new IllegalStateException(error);}}
+    public Map<String,Object> codeCommand(String command,Map<String,Object> params){try{return RuntimeEngine.current.codeProbes().command(command,params);}catch(Exception error){throw new IllegalStateException(error);}}
+    public Map<String,Object> requestCodeSnapshot(String dexId){try{return dev.tripoder.runtime.script.HookWire.request(RuntimeEngine.current.codeProbes().capture(dexId).toString());}catch(Exception error){throw new IllegalStateException(error);}}
+    public Map<String,Object> invocationContext(){RuntimeEngine engine=RuntimeEngine.current;RuntimeCodeProbes probes=engine.existingCodeProbes();return Map.of("runtimePhase",probes==null?(engine.ready?"APPLICATION_CREATED":"BEFORE_APPLICATION"):probes.currentStage(),"elapsedRealtimeNanos",Long.toString(android.os.SystemClock.elapsedRealtimeNanos()));}
     public SelfHookControl.Observation observe(List<Map<String,Object>> selectors){
         discardObservation();List<Map<String,Object>> java=new ArrayList<>(),nativeSymbols=new ArrayList<>();
         try {

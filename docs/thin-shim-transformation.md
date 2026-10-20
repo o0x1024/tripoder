@@ -184,6 +184,7 @@
 | S8 | THIN：Broadcast 真注册 | **完成** | 仅 THIN |
 | S9 | THIN：Storage 用真 SharedPreferences + 路径重定向 | **完成** | 仅 THIN |
 | S10 | census 对比两种模式，达标后把默认值切到 THIN | **完成** | 是（切默认） |
+| S11 | 保留编译、裁剪系统服务 Hook、标准 ClassLoader 与 native 隐藏层减法 | **进行中：首轮已验证，整体原生性能未达标** | 仅 THIN；见 [实施与证据](thin-native-performance.md) |
 
 ### 8.2 接手须知（环境、命令、已知的坑）
 

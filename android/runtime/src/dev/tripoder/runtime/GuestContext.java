@@ -63,15 +63,7 @@ public final class GuestContext extends GuestStorageContext {
     @Override public ApplicationInfo getApplicationInfo(){return engine.applicationInfo;}
     @Override public String getPackageCodePath(){return getApplicationInfo().sourceDir;}
     @Override public String getPackageResourcePath(){return getApplicationInfo().publicSourceDir;}
-    @Override public PackageManager getPackageManager(){tracePackageManagerCaller();return guestPackages;}
-    /** Diagnostic: records the exact guest stack that resolves its package world through this context (bounded). */
-    private static final java.util.concurrent.atomic.AtomicInteger PACKAGE_MANAGER_TRACES=new java.util.concurrent.atomic.AtomicInteger();
-    private void tracePackageManagerCaller(){
-        if(PACKAGE_MANAGER_TRACES.incrementAndGet()>6)return;
-        StringBuilder out=new StringBuilder("GUEST_GET_PM pkg="+engine.packageName+" managerNull="+(guestPackages==null));
-        for(StackTraceElement frame:new Throwable().getStackTrace())out.append("\n    ").append(frame);
-        android.util.Log.i("TripoderPackages",out.toString());
-    }
+    @Override public PackageManager getPackageManager(){return guestPackages;}
     // A guest is granted only what its own manifest asks for (the host holds the permission on its behalf); an undeclared permission is simply not held.
     private int guestPermission(String permission,int result){return permission!=null&&engine.requestedPermissions.contains(permission)?result:PackageManager.PERMISSION_DENIED;}
     @Override public int checkSelfPermission(String permission){return guestPermission(permission,super.checkSelfPermission(permission));}
@@ -95,6 +87,7 @@ public final class GuestContext extends GuestStorageContext {
     @Override public Context createContext(ContextParams params){return windowDerived(platform.createContext(params));}
     @Override public Context createDeviceContext(int deviceId){return windowDerived(platform.createDeviceContext(deviceId));}
     @Override public Object getSystemService(String name){
+        if(engine.mode==RuntimeMode.THIN&&RuntimeThinPolicy.platformService(name))return engine.host.getSystemService(name);
         if(ACTIVITY_SERVICE.equals(name))return engine.activityManager.facade();
         if(CONNECTIVITY_SERVICE.equals(name))return engine.connectivity.facade();
         if(TELEPHONY_SERVICE.equals(name))return engine.telephony.facade();

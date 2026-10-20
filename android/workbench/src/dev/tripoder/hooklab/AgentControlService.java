@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.*;
 import org.json.JSONObject;
 
-/** Only loopback, length-prefixed signed frames; no HTTP, shell, or arbitrary Binder proxy. */
+/** Loopback desktop endpoint. No pairing, credentials or script approval. */
 public final class AgentControlService extends Service {
     private ServerSocket socket;
     private final ExecutorService acceptor=Executors.newSingleThreadExecutor();
@@ -20,14 +20,14 @@ public final class AgentControlService extends Service {
     private final java.util.Set<Socket> connections=ConcurrentHashMap.newKeySet();
     @Override public void onCreate(){super.onCreate();control=((WorkbenchApplication)getApplication()).agents;NotificationManager manager=getSystemService(NotificationManager.class);manager.createNotificationChannel(new NotificationChannel("agent-control","外部 Agent 调试",NotificationManager.IMPORTANCE_LOW));}
     @Override public int onStartCommand(Intent intent,int flags,int startId){
-        if(intent!=null&&"stop".equals(intent.getAction())){control.revoke((reply,error)->stopSelf());return START_NOT_STICKY;}
+        if(intent!=null&&"stop".equals(intent.getAction())){getSharedPreferences("agent-control",MODE_PRIVATE).edit().putBoolean("enabled",false).apply();control.revoke((reply,error)->stopSelf());return START_NOT_STICKY;}
         PendingIntent stop=PendingIntent.getService(this,1,new Intent(this,AgentControlService.class).setAction("stop"),PendingIntent.FLAG_IMMUTABLE);
-        Notification notification=new Notification.Builder(this,"agent-control").setSmallIcon(android.R.drawable.ic_menu_manage).setContentTitle("Tripoder 外部调试入口已开启").setContentText("仅接受配对客户端；点击停止可撤销会话").addAction(new Notification.Action.Builder(null,"停止外部控制",stop).build()).setOngoing(true).build();startForeground(2,notification);
+        Notification notification=new Notification.Builder(this,"agent-control").setSmallIcon(android.R.drawable.ic_menu_manage).setContentTitle("Tripoder 电脑 Agent 已就绪").setContentText("MCP 可直接连接，无需配对；点击停止可关闭入口").addAction(new Notification.Action.Builder(null,"停止电脑连接",stop).build()).setOngoing(true).build();startForeground(2,notification);
         if(socket==null)try{
             if(!((WorkbenchApplication)getApplication()).engine.ready())throw new IllegalStateException("ENGINE_NOT_CONNECTED");
             // Allow rebinding after closed connections enter TIME_WAIT. SO_REUSEPORT is not enabled;
-            // a second live listener must still fail instead of sharing the authorization endpoint.
-            control.deviceKey();socket=new ServerSocket();socket.setReuseAddress(true);socket.bind(new InetSocketAddress(InetAddress.getByName("127.0.0.1"),AgentCrypto.DEVICE_PORT),4);control.listening=true;control.message="等待桌面客户端请求配对";
+            // a second live listener must still fail instead of sharing the endpoint.
+            socket=new ServerSocket();socket.setReuseAddress(true);socket.bind(new InetSocketAddress(InetAddress.getByName("127.0.0.1"),AgentCrypto.DEVICE_PORT),4);control.listening=true;control.message="电脑 Agent 可直接通过 MCP 连接，无需配对";
             acceptor.execute(()->{while(!socket.isClosed())try{Socket client=socket.accept();connections.add(client);try{clients.execute(()->serve(client));}catch(RejectedExecutionException busy){connections.remove(client);client.close();}}catch(IOException ended){if(!socket.isClosed())control.message="连接监听失败："+ended.getClass().getSimpleName();break;}});
         }catch(Exception error){startupFailure="外部控制入口没有开启："+UiText.error(error);control.message=startupFailure;android.util.Log.w("TripoderAgent",startupFailure,error);stopSelf();}
         return START_NOT_STICKY;

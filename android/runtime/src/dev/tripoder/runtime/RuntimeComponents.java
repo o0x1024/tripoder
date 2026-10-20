@@ -5,8 +5,11 @@ import android.content.pm.*;
 /** Declaration-driven resolution. Platform PackageManager is used only to decode this immutable APK. */
 final class RuntimeComponents {
     static ApkManifest.Component declared(ApkStore.BundleInstall install,String type,String name){
+        return declared(install,type,name,false);
+    }
+    static ApkManifest.Component declared(ApkStore.BundleInstall install,String type,String name,boolean allowDisabled){
         for(var component:install.components())if(component.type.equals(type)&&component.name.equals(name)){
-            if(!component.enabled)throw new IllegalStateException("COMPONENT_DISABLED");return component;
+            if(!allowDisabled&&!component.enabled)throw new IllegalStateException("COMPONENT_DISABLED");return component;
         }
         throw new IllegalArgumentException("COMPONENT_NOT_DECLARED:"+type+":"+name);
     }

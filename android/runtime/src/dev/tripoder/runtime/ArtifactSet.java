@@ -113,6 +113,20 @@ public final class ArtifactSet {
                 org.json.JSONObject part=ps.getJSONObject(i);org.json.JSONArray all=part.getJSONArray("entries"),kept=new org.json.JSONArray();
                 for(int j=0;j<all.length();j++){String path=all.getJSONObject(j).getString("path");if(path.indexOf('/')<0&&path.endsWith(".dex"))kept.put(all.getJSONObject(j));}
                 part.put("entries",kept);
+                if(i==0&&part.has("manifest")){
+                    org.json.JSONObject m=part.getJSONObject("manifest");
+                    if(m.has("children")){
+                        org.json.JSONArray mChildren=m.getJSONArray("children");
+                        for(int j=0;j<mChildren.length();j++){
+                            org.json.JSONObject child=mChildren.getJSONObject(j);
+                            if("application".equals(child.optString("name")))child.put("children",new org.json.JSONArray());
+                        }
+                    }
+                }
+            }
+            if(o.has("components")){
+                org.json.JSONArray comps=o.getJSONArray("components");
+                for(int i=0;i<comps.length();i++)comps.getJSONObject(i).remove("declaration");
             }
             o.put("filters",filtersJson());
             lite=o.toString();

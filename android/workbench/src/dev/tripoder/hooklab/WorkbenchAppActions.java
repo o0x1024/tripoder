@@ -2,7 +2,13 @@ package dev.tripoder.hooklab;
 
 import android.app.*;
 import android.content.*;
+import android.content.res.ColorStateList;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.RippleDrawable;
 import android.os.Bundle;
+import android.view.Gravity;
+import android.view.View;
+import android.widget.*;
 import dev.tripoder.control.ControlWire;
 import java.util.*;
 import java.util.function.Consumer;
@@ -138,5 +144,168 @@ final class WorkbenchAppActions {
         try{
             app.operations.submit(ControlWire.request("deleteApplication","operation",UUID.randomUUID().toString(),"package",pkg),"删除应用「"+name+"」",null);
         }catch(Exception error){ProductUi.notice(page,"没有删除",UiText.error(error));}
+    }
+    void batchManage(WorkbenchCatalog catalog,String spaceFilter,Runnable onDone){
+        if(!ready())return;
+        List<String> pkgs=new ArrayList<>(catalog.applications(spaceFilter));
+        if(pkgs.isEmpty()){ProductUi.notice(page,"没有可管理的应用","当前空间或筛选条件下没有应用。");return;}
+        Set<String> selected=new LinkedHashSet<>();
+        LinearLayout form=ProductUi.column(page);
+        form.setPadding(ProductUi.dp(page,20),ProductUi.dp(page,12),ProductUi.dp(page,20),ProductUi.dp(page,16));
+
+        LinearLayout subBar=ProductUi.row(page);subBar.setGravity(Gravity.CENTER_VERTICAL);
+        TextView countText=ProductUi.text(page,"已选择 0 / "+pkgs.size()+" 个应用",13,ProductUi.MUTED,false);
+        subBar.addView(countText,new LinearLayout.LayoutParams(0,-2,1));
+        TextView toggleAll=ProductUi.text(page,"全选",13,ProductUi.ACCENT,true);
+        toggleAll.setPadding(ProductUi.dp(page,8),ProductUi.dp(page,4),ProductUi.dp(page,8),ProductUi.dp(page,4));
+        toggleAll.setBackground(new RippleDrawable(ColorStateList.valueOf(ProductUi.TINT),ProductUi.shape(ProductUi.TINT,8,page),null));
+        subBar.addView(toggleAll);ProductUi.add(form,subBar,0);
+        ProductUi.divider(form);
+
+        ScrollView scroll=new ScrollView(page);scroll.setFillViewport(true);
+        LinearLayout.LayoutParams slp=new LinearLayout.LayoutParams(-1,ProductUi.dp(page,Math.min(320,Math.max(120,pkgs.size()*56))));
+        slp.topMargin=ProductUi.dp(page,8);slp.bottomMargin=ProductUi.dp(page,8);scroll.setLayoutParams(slp);
+        LinearLayout list=ProductUi.column(page);scroll.addView(list);
+
+        Map<String,CheckBox> checkBoxes=new LinkedHashMap<>();
+        List<Button> actionButtons=new ArrayList<>();
+        Runnable updateState=()->{
+            countText.setText("已选择 "+selected.size()+" / "+pkgs.size()+" 个应用");
+            toggleAll.setText(selected.size()==pkgs.size()?"全不选":"全选");
+            boolean hasSelected=!selected.isEmpty();
+            for(Button b:actionButtons)b.setEnabled(hasSelected);
+        };
+
+        for(String pkg:pkgs){
+            List<JSONObject> installs=catalog.installations(pkg);
+            Bundle cached=installs.isEmpty()?null:app.presentations.get(installs.get(0).optString("generation"));
+            Drawable icon=app.presentations.iconDrawable(page,cached);
+            String name=catalog.appName(app,pkg);
+            LinearLayout row=ProductUi.row(page);row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setPadding(0,ProductUi.dp(page,6),0,ProductUi.dp(page,6));
+
+            CheckBox cb=new CheckBox(page);cb.setClickable(false);cb.setFocusable(false);
+            checkBoxes.put(pkg,cb);row.addView(cb);
+
+            ImageView iconView=new ImageView(page);
+            iconView.setImageDrawable(icon==null?new ProductUi.Icon("grid",ProductUi.MUTED):icon);
+            iconView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            LinearLayout.LayoutParams ilp=new LinearLayout.LayoutParams(ProductUi.dp(page,32),ProductUi.dp(page,32));
+            ilp.leftMargin=ProductUi.dp(page,4);ilp.rightMargin=ProductUi.dp(page,10);
+            row.addView(iconView,ilp);
+
+            LinearLayout copy=ProductUi.column(page);
+            ProductUi.add(copy,ProductUi.text(page,name,14,ProductUi.INK,true),0);
+            String detail;
+            if(spaceFilter==null||spaceFilter.isEmpty()){
+                int spaces=installs.size(),bound=boundProjects(catalog,pkg,null);
+                detail=spaces+" 个空间"+(bound>0?" · "+bound+" 个项目":"");
+            }else{
+                int bound=boundProjects(catalog,pkg,spaceFilter);
+                detail=app.spaces.name(spaceFilter)+(bound>0?" · "+bound+" 个项目":"");
+            }
+            ProductUi.add(copy,ProductUi.text(page,detail,11,ProductUi.MUTED,false),2);
+            row.addView(copy,new LinearLayout.LayoutParams(0,-2,1));
+
+            row.setBackground(new RippleDrawable(ColorStateList.valueOf(ProductUi.TINT),null,null));
+            row.setFocusable(true);
+            row.setOnClickListener(v->{
+                if(selected.contains(pkg)){selected.remove(pkg);cb.setChecked(false);}
+                else{selected.add(pkg);cb.setChecked(true);}
+                updateState.run();
+            });
+            list.addView(row);
+        }
+
+        toggleAll.setOnClickListener(v->{
+            if(selected.size()==pkgs.size()){selected.clear();for(CheckBox cb:checkBoxes.values())cb.setChecked(false);}
+            else{selected.addAll(pkgs);for(CheckBox cb:checkBoxes.values())cb.setChecked(true);}
+            updateState.run();
+        });
+
+        ProductUi.add(form,scroll,0);
+        ProductUi.divider(form);
+
+        AlertDialog dialog=new AlertDialog.Builder(page)
+            .setTitle("批量管理应用"+(spaceFilter!=null&&!spaceFilter.isEmpty()?" · "+app.spaces.name(spaceFilter):""))
+            .setView(form).setNegativeButton("取消",null).create();
+
+        LinearLayout buttonBox=ProductUi.column(page);buttonBox.setPadding(0,ProductUi.dp(page,10),0,0);
+        LinearLayout rowActions=ProductUi.row(page);
+
+        Button stopBtn=ProductUi.button(page,"批量停止",false,()->{
+            if(selected.isEmpty())return;dialog.dismiss();
+            List<JSONObject> installsToStop=new ArrayList<>();
+            for(String p:selected)for(JSONObject inst:catalog.installations(p))if(spaceFilter==null||spaceFilter.isEmpty()||spaceFilter.equals(inst.optString("space")))installsToStop.add(inst);
+            String msg="将强行停止选中的 "+selected.size()+" 个应用在"+(spaceFilter==null||spaceFilter.isEmpty()?"所有空间":"「"+app.spaces.name(spaceFilter)+"」")+"中的运行进程。未保存内容可能丢失。";
+            ProductUi.confirm(page,"批量强行停止？",msg,"强行停止",true,()->batchStopStep(catalog,installsToStop,0,onDone));
+        });
+        actionButtons.add(stopBtn);rowActions.addView(stopBtn,new LinearLayout.LayoutParams(0,-2,1));
+
+        if(spaceFilter!=null&&!spaceFilter.isEmpty()){
+            Button uninstallBtn=ProductUi.button(page,"从空间移除",false,()->{
+                if(selected.isEmpty())return;dialog.dismiss();
+                List<JSONObject> installsToRemove=new ArrayList<>();int bound=0;
+                for(String p:selected)for(JSONObject inst:catalog.installations(p))if(spaceFilter.equals(inst.optString("space"))){installsToRemove.add(inst);bound+=boundProjects(catalog,p,spaceFilter);}
+                String msg="将从「"+app.spaces.name(spaceFilter)+"」移除选中的 "+selected.size()+" 个应用及其数据。"+(bound>0?"绑定的 "+bound+" 个项目会保留，但需重新选择运行目标。":"");
+                ProductUi.confirm(page,"从「"+app.spaces.name(spaceFilter)+"」批量移除？",msg,"移除",true,()->batchUninstallStep(catalog,installsToRemove,0,onDone));
+            });
+            LinearLayout.LayoutParams ulp=new LinearLayout.LayoutParams(0,-2,1);ulp.leftMargin=ProductUi.dp(page,8);
+            rowActions.addView(uninstallBtn,ulp);actionButtons.add(uninstallBtn);
+        }
+        ProductUi.add(buttonBox,rowActions,0);
+
+        Button deleteBtn=ProductUi.danger(page,"批量删除应用（彻底删除）",()->{
+            if(selected.isEmpty())return;dialog.dismiss();
+            int totalProjects=0;for(String p:selected)totalProjects+=boundProjects(catalog,p,null);
+            String msg="将从所有空间删除选中的 "+selected.size()+" 个应用及其全部数据"+(totalProjects>0?"，并删除绑定的 "+totalProjects+" 个项目（包括脚本）":"")+"。无法恢复。";
+            ProductUi.confirm(page,"批量删除 "+selected.size()+" 个应用？",msg,"删除",true,()->batchDeleteStep(catalog,new ArrayList<>(selected),0,onDone));
+        });
+        actionButtons.add(deleteBtn);ProductUi.add(buttonBox,deleteBtn,8);
+        ProductUi.add(form,buttonBox,0);
+
+        updateState.run();
+        dialog.show();
+    }
+    private void batchDeleteStep(WorkbenchCatalog catalog,List<String> pkgs,int index,Runnable onDone){
+        if(index>=pkgs.size()){app.operations.inform("批量删除完成，已删除 "+pkgs.size()+" 个应用");if(onDone!=null)onDone.run();return;}
+        String pkg=pkgs.get(index),name=catalog.appName(app,pkg);
+        app.operations.inform("正在删除 ("+(index+1)+"/"+pkgs.size()+")「"+name+"」…");
+        try{
+            app.operations.submit(ControlWire.request("deleteApplication","operation",UUID.randomUUID().toString(),"package",pkg),"删除应用「"+name+"」",null,(res,err)->{
+                batchDeleteStep(catalog,pkgs,index+1,onDone);
+            });
+        }catch(Exception error){
+            app.operations.inform("删除「"+name+"」失败："+UiText.error(error));
+            batchDeleteStep(catalog,pkgs,index+1,onDone);
+        }
+    }
+    private void batchStopStep(WorkbenchCatalog catalog,List<JSONObject> installs,int index,Runnable onDone){
+        if(index>=installs.size()){app.operations.inform("批量停止完成，共停止 "+installs.size()+" 个应用实例");if(onDone!=null)onDone.run();return;}
+        JSONObject install=installs.get(index);String pkg=install.optString("package"),space=install.optString("space");
+        String name=catalog.appName(app,pkg),spaceName=app.spaces.name(space);
+        app.operations.inform("正在停止 ("+(index+1)+"/"+installs.size()+")「"+name+"」("+spaceName+")…");
+        try{
+            app.operations.submit(request("stopApplication",install),"停止「"+name+"」",null,(res,err)->{
+                batchStopStep(catalog,installs,index+1,onDone);
+            });
+        }catch(Exception error){
+            app.operations.inform("停止「"+name+"」失败："+UiText.error(error));
+            batchStopStep(catalog,installs,index+1,onDone);
+        }
+    }
+    private void batchUninstallStep(WorkbenchCatalog catalog,List<JSONObject> installs,int index,Runnable onDone){
+        if(index>=installs.size()){app.operations.inform("批量移除完成，已从空间移除 "+installs.size()+" 个应用");if(onDone!=null)onDone.run();return;}
+        JSONObject install=installs.get(index);String pkg=install.optString("package"),space=install.optString("space");
+        String name=catalog.appName(app,pkg),spaceName=app.spaces.name(space);
+        app.operations.inform("正在移除 ("+(index+1)+"/"+installs.size()+")「"+name+"」…");
+        try{
+            app.operations.submit(request("uninstallApplication",install),"从「"+spaceName+"」移除「"+name+"」",null,(res,err)->{
+                batchUninstallStep(catalog,installs,index+1,onDone);
+            });
+        }catch(Exception error){
+            app.operations.inform("移除「"+name+"」失败："+UiText.error(error));
+            batchUninstallStep(catalog,installs,index+1,onDone);
+        }
     }
 }

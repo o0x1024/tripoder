@@ -17,6 +17,8 @@ static size_t data_path_lens[4], artifact_path_lens[3];
 static char guest_process[256], guest_comm[16];
 static int data_fd=-1, artifact_fd=-1;
 static bool configured;
+static bool thin_mode;
+void tp_configure_thin(bool thin){thin_mode=thin;}
 
 static bool prefix_len(const char *path,const char *root,size_t n) {
     return strncmp(path,root,n)==0&&(path[n]=='/'||path[n]=='\0');
@@ -289,6 +291,9 @@ static bool transform_proc_line(enum tp_proc_kind kind,const char *line,size_t l
 int tp_open_proc(const char *path,int flags){
     if(!configured)return fail(ENOSYS);
     enum tp_proc_kind kind=classify_proc(path);
+    // The kernel already serves these files efficiently. Thin needs no full
+    // maps/mounts read, filtering, memfd allocation and rewritten copy.
+    if(thin_mode&&(kind==TP_PROC_MAPS||kind==TP_PROC_MOUNTS))return fail(ENOSYS);
     if(kind==TP_PROC_NONE)return fail(ENOSYS);
     int mfd=(int)syscall(SYS_memfd_create,"procfs",MFD_CLOEXEC);
     if(mfd<0)return -1;

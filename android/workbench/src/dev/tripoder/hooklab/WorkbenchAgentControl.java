@@ -1,72 +1,58 @@
 package dev.tripoder.hooklab;
 
-import android.os.*;
+import android.os.Bundle;
 import dev.tripoder.control.*;
 import org.json.*;
-import java.util.*;
 
-/** UI authorizes; the transport only verifies identity and forwards signed bounded commands. */
+/** Bounded, unsigned desktop requests over the device loopback endpoint. */
 final class WorkbenchAgentControl {
-    static final class Pairing {
-        final String id,name,key,fingerprint;final long expires=SystemClock.elapsedRealtime()+120_000;
-        String session="",project="",failure="";boolean approving;
-        Pairing(String id,String name,String key)throws Exception{this.id=id;this.name=name;this.key=key;fingerprint=AgentCrypto.fingerprint(key);}
-    }
     private final WorkbenchApplication app;
-    private AgentDeviceKey key;
-    private Pairing pending;
-    volatile String message="外部控制已关闭",session="",project="";
+    volatile String message="电脑 Agent 入口尚未启动";
     volatile boolean listening;
     WorkbenchAgentControl(WorkbenchApplication app){this.app=app;}
-    synchronized AgentDeviceKey deviceKey()throws Exception{if(key==null)key=new AgentDeviceKey();return key;}
-    synchronized Pairing pending(){return pending;}
-    JSONObject wire(JSONObject envelope)throws Exception{
-        AgentCrypto.fields(envelope,"kind","id","payload","signature");
-        String kind=AgentCrypto.text(envelope,"kind"),id=AgentCrypto.id(AgentCrypto.text(envelope,"id")),payload=AgentCrypto.text(envelope,"payload"),signature=AgentCrypto.text(envelope,"signature");
-        JSONObject result;
+    JSONObject wire(JSONObject request)throws Exception{
+        String id=request.optString("requestId","");
         try{
             if(!listening)throw new IllegalStateException("AGENT_ENDPOINT_CLOSED");
-            if(kind.equals("pair"))result=pair(id,payload,signature);
-            else if(kind.equals("call")){
-                if(!id.equals(session))throw new SecurityException("AGENT_SESSION_NOT_PAIRED");
-                Bundle output=app.engine.executeBlocking(ControlWire.request("agentCall","session",id,"payload",payload,"signature",signature));result=new JSONObject(output.getString("result"));
-            }else throw new IllegalArgumentException("AGENT_ENVELOPE_KIND_UNSUPPORTED");
+            AgentCrypto.id(id);if(request.getInt("protocol")!=AgentCrypto.PROTOCOL)throw new IllegalArgumentException("AGENT_PROTOCOL_UNSUPPORTED");
+            String method=request.getString("method");JSONObject params=request.getJSONObject("params");Bundle output;
+            if(java.util.Set.of("runtime.capabilities","projects.list","probes.configure","probes.get","process.start","application.stop","operation.get","artifact.list","artifact.read").contains(method)){
+                AgentCrypto.fields(request,"protocol","requestId","method","params");
+                switch(method){
+                    case "runtime.capabilities":case "projects.list":AgentCrypto.fields(params);output=app.engine.executeBlocking(ControlWire.request(method.equals("projects.list")?"agentProjects":"agentCapabilities"));break;
+                    case "probes.get":AgentCrypto.fields(params,"project");output=app.engine.executeBlocking(ControlWire.request("agentProbeGet","project",params.getString("project")));break;
+                    case "probes.configure":AgentCrypto.fields(params,"project","expectedRevision","configuration");output=app.engine.executeBlocking(ControlWire.request("agentProbeConfigure","operation",id,"project",params.getString("project"),"expectedRevision",params.getString("expectedRevision"),"configuration",params.getJSONObject("configuration").toString()));break;
+                    case "operation.get":AgentCrypto.fields(params,"operationId");output=app.engine.executeBlocking(ControlWire.request("agentOperation","operation",params.getString("operationId")));break;
+                    case "application.stop":AgentCrypto.fields(params,"project","installGeneration");output=app.engine.executeBlocking(ControlWire.request("agentStopApplication","operation",id,"project",params.getString("project"),"installGeneration",params.getString("installGeneration")));break;
+                    case "artifact.list":AgentCrypto.fields(params,"processGeneration");return new JSONObject().put("protocol",AgentCrypto.PROTOCOL).put("requestId",id).put("ok",true).put("result",dev.tripoder.runtime.RuntimeCodeArtifacts.list(app,params.getString("processGeneration")));
+                    case "artifact.read":AgentCrypto.fields(params,"processGeneration","artifactId","offset","length");return new JSONObject().put("protocol",AgentCrypto.PROTOCOL).put("requestId",id).put("ok",true).put("result",dev.tripoder.runtime.RuntimeCodeArtifacts.read(app,params.getString("processGeneration"),params.getString("artifactId"),params.getInt("offset"),params.getInt("length")));
+                    default:{
+                        AgentCrypto.fields(params,"project","component","probeRevision");
+                        output=app.engine.executeBlocking(ControlWire.request("agentPrepareLaunch","operation",id,"project",params.getString("project"),"component",params.getString("component"),"probeRevision",params.getString("probeRevision")));
+                        android.content.Intent intent=output.getParcelable("intent",android.content.Intent.class);if(intent==null)throw new IllegalStateException("PROCESS_ENTRY_MISSING");
+                        try{app.startActivity(intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK));}catch(Exception failure){throw new IllegalStateException("PROCESS_ENTRY_DISPATCH_UNKNOWN_QUERY_OPERATION",failure);}
+                        JSONObject result=new JSONObject().put("project",output.getString("project")).put("processGeneration",output.getString("generation")).put("pid",output.getInt("pid")).put("probeRevision",output.getString("probeRevision")).put("entryDispatchRequested",true).put("operationId",id);
+                        return new JSONObject().put("protocol",AgentCrypto.PROTOCOL).put("requestId",id).put("ok",true).put("result",result);
+                    }
+                }
+            }else if(method.equals("targets.list")){
+                AgentCrypto.fields(request,"protocol","requestId","method","params");AgentCrypto.fields(params);
+                output=app.engine.executeBlocking(ControlWire.request("agentTargets"));
+            }else if(method.equals("target.select")){
+                AgentCrypto.fields(request,"protocol","requestId","method","params");AgentCrypto.fields(params,"project","processGeneration");
+                output=app.engine.executeBlocking(ControlWire.request("agentSelect","project",params.getString("project"),"processGeneration",params.getString("processGeneration")));
+            }else{
+                AgentCrypto.fields(request,"protocol","requestId","method","params","session");
+                JSONObject payload=new JSONObject(request.toString());payload.remove("session");
+                return new JSONObject(app.engine.executeBlocking(ControlWire.request("agentCall","session",request.getString("session"),"payload",payload.toString())).getString("result"));
+            }
+            return new JSONObject().put("protocol",AgentCrypto.PROTOCOL).put("requestId",id).put("ok",true).put("result",new JSONObject(output.getString("result")));
         }catch(Exception error){
-            String requestId="";try{requestId=AgentCrypto.id(new JSONObject(payload).getString("requestId"));}catch(Exception invalid){/* No valid correlation id was supplied. */}
-            result=new JSONObject().put("protocol",1).put("requestId",requestId).put("ok",false).put("error",error.getClass().getSimpleName()+":"+String.valueOf(error.getMessage()));
+            JSONObject failure=new JSONObject().put("protocol",AgentCrypto.PROTOCOL).put("requestId",id).put("ok",false).put("error",error.getClass().getSimpleName()+":"+String.valueOf(error.getMessage()));
+            if(java.util.Set.of("process.start","application.stop","probes.configure").contains(request.optString("method"))){failure.put("operationId",id);try{JSONObject row=new JSONObject(app.engine.executeBlocking(ControlWire.request("agentOperation","operation",id)).getString("result"));failure.put("state",row.getString("state"));}catch(Exception notAccepted){failure.put("state","REJECTED");}}
+            return failure;
         }
-        String response=result.toString();AgentDeviceKey identity=deviceKey();return new JSONObject().put("id",id).put("publicKey",identity.publicKey).put("payload",response).put("signature",identity.sign(id,response));
     }
-    private synchronized JSONObject pair(String id,String payload,String signature)throws Exception{
-        if(payload.length()>1024)throw new IllegalArgumentException("AGENT_PAIR_SIZE");JSONObject value=new JSONObject(payload);AgentCrypto.fields(value,"protocol","nonce","name","publicKey");
-        if(value.getInt("protocol")!=1||!id.equals(AgentCrypto.text(value,"nonce")))throw new SecurityException("AGENT_PAIR_PROTOCOL_OR_NONCE");
-        String publicKey=AgentCrypto.text(value,"publicKey"),name=AgentCrypto.text(value,"name");
-        if(!name.matches("[A-Za-z0-9 _.-]{1,60}"))throw new IllegalArgumentException("AGENT_NAME_INVALID");
-        AgentCrypto.verify(AgentCrypto.publicKey(publicKey),"pair",id,payload,signature);
-        if(pending!=null&&pending.id.equals(id)){
-            if(!pending.key.equals(publicKey)||!pending.name.equals(name))throw new SecurityException("AGENT_PAIR_REQUEST_CHANGED");
-        }else{
-            if(!session.isEmpty())throw new IllegalStateException("AGENT_SESSION_ALREADY_PAIRED");
-            if(pending!=null&&SystemClock.elapsedRealtime()<pending.expires)throw new IllegalStateException("AGENT_PAIR_REQUEST_PENDING");
-            pending=new Pairing(id,name,publicKey);
-        }
-        if(pending.session.isEmpty()&&SystemClock.elapsedRealtime()>pending.expires)throw new SecurityException("AGENT_PAIR_REQUEST_EXPIRED");
-        return new JSONObject().put("protocol",1).put("nonce",id).put("ok",pending.failure.isEmpty()).put("state",pending.session.isEmpty()?"PENDING_PHONE_APPROVAL":"PAIRED").put("session",pending.session).put("project",pending.project).put("error",pending.failure);
-    }
-    void approve(Pairing request,String project,Bundle target,JSONObject process,EngineConnection.Result callback)throws Exception{
-        approve(request,project,target,process,false,callback);
-    }
-    void approve(Pairing request,String project,Bundle target,JSONObject process,boolean autoApprove,EngineConnection.Result callback)throws Exception{
-        synchronized(this){if(pending!=request||request.approving||!request.session.isEmpty()||SystemClock.elapsedRealtime()>request.expires)throw new IllegalStateException("AGENT_PAIR_REQUEST_STALE");request.approving=true;}
-        Bundle input=ControlWire.request("agentGrant","operation",UUID.randomUUID().toString(),"session",request.id,"publicKey",request.key,"project",project,"bindingOperation",target.getString("bindingOperation"),"generation",target.getString("generation"),"processGeneration",process.getString("processGeneration"),"autoApprove",String.valueOf(autoApprove));
-        app.engine.execute(input,(reply,error)->{
-            synchronized(this){request.approving=false;if(error==null){session=request.session=request.id;this.project=request.project=project;message=autoApprove?"外部会话已授权（会话内自动部署）":"外部会话已授权 · 部署仍需审阅脚本";}else{request.failure=error.getMessage();message="授权没有完成："+UiText.error(error);}}
-            callback.complete(reply,error);
-        });
-    }
-    void revoke(EngineConnection.Result callback){
-        String id=session;if(id.isEmpty()){callback.complete(new Bundle(),null);return;}
-        app.engine.execute(ControlWire.request("agentRevoke","session",id),(reply,error)->{message=error==null?"已撤销会话，正在确认应用停止":"撤销结果待确认："+UiText.error(error);callback.complete(reply,error);});
-    }
-    synchronized void closed(){listening=false;pending=null;session="";project="";message="外部控制已关闭；引擎独立处理授权撤销与到期";}
+    void revoke(EngineConnection.Result callback){app.engine.execute(ControlWire.request("agentShutdown"),callback);}
+    synchronized void closed(){listening=false;message="电脑 Agent 入口已关闭，应用继续运行";}
 }

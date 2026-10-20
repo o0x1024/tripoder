@@ -1,54 +1,55 @@
 # Tripoder MCP
 
-Tripoder 不连接模型。此目录提供 Node.js stdio MCP 服务，使用显式 ADB serial 将签名帧转发至手机的 `127.0.0.1:29731`。所有命令经工作台同一 Binder 控制连接，在引擎中校验配对主体、项目、绑定代次、安装代次、进程代次和源码审批，再进入现有 Hook 管线。
+Tripoder 提供 Node.js stdio MCP 服务。任何支持 MCP stdio 的电脑 Agent 都可以连接，无需设备身份、公私钥、配对文件、手机授权或脚本人工审批。打开 Tripoder 后入口默认自动启动；手机可在“电脑 Agent”卡片或通知中停止连接入口。
 
-目前提供 11 个工具：`session_get`、`process_get`、`operation_get`、`hook_observe`、`hook_prepare`、`hook_activate`、`hook_status`、`hook_modules`、`hook_disable`、`hook_discard`、`session_close`。没有安装、任意 shell、任意 JavaScript eval、堆读取、文件导出或模型调用工具。客体输出只作为不可信数据。
+## 连接
 
-## 启动
+先通过 ADB 连接手机、打开 Tripoder 并启动要操作的客体，然后在 Sentinel 等 Agent 客户端添加：
 
-1. 工作台打开已绑定项目并启动客体。在“外部 Agent”卡片开启入口，查看设备配对公钥，将完整公钥保存到电脑文本文件。该公钥通过手机界面核对；不能信任连接端返回的首个未知公钥。
-2. 为本次会话使用新的私有配置路径。运行：
+```json
+{
+  "mcpServers": {
+    "tripoder": {
+      "type": "stdio",
+      "command": "/absolute/path/to/node",
+      "args": ["/absolute/path/to/tripoder/agent/server.mjs", "--serial", "DEVICE_SERIAL"],
+      "env": {"PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"}
+    }
+  }
+}
+```
 
-   ```sh
-   node /absolute/tripoder/agent/pair.mjs --serial DEVICE_SERIAL --device-public-key-file /absolute/device-public-key.txt --config /absolute/tripoder/.tripoder-local/session-name.json
-   ```
+只有一台 ADB 设备时可以省略 `--serial`，也可以使用 `ANDROID_SERIAL`。手机无需额外点击配对或批准。多台设备时须指定 serial；多个客体时用 `targets_list` 和 `target_select` 明确选择项目与实际进程代次。只有一个主进程目标时，首次工具调用会自动选择。
 
-3. 手机核对客户端指纹，选择实际进程并批准观察与准备。私钥只存在权限为 `0600` 的本地配置文件；不要复制私钥到 MCP JSON、聊天、环境变量、源码或证据目录。手机私钥由 Android Keystore 持有。
-4. 在 Sentinel 工具管理导入以下配置，将所有路径换为真实绝对路径，然后连接：
+旧配置里的 `--config` 暂时兼容：只读取可选 serial，不读取身份、私钥或会话授权；文件不存在也不影响 MCP 初始化。`pair.mjs` 只提示无需配对，不再生成密钥。新配置直接使用 `--serial`。
 
-   ```json
-   {"mcpServers":{"tripoder":{"type":"stdio","command":"/absolute/node","args":["/absolute/tripoder/agent/server.mjs","--config","/absolute/tripoder/.tripoder-local/session-name.json"]}}}
-   ```
+MCP 初始化和工具发现不依赖手机在线或 ADB 存在；执行工具时才建立设备连接。支持协商 `2024-11-05`、`2025-03-26`、`2025-06-18`、`2025-11-25`。stdio 只输出 JSON-RPC，诊断写 stderr。手机传输为 ADB 转发到 `127.0.0.1:29731` 的无签名长度帧，不是 HTTP MCP 入口。
 
-5. `session_get` 确认实际目标；`hook_observe` 提交有界 selector；将返回的 `evidence.id` 与源码交给 `hook_prepare`。手机审阅准确源码及 SHA 后，才能用准备 token 和同一 SHA 调用 `hook_activate`。
-6. 实际操作客体，使用 `hook_status` 检查命中、错误与在途调用；使用当前 revision 调用 `hook_disable`，再实际验证后续方法恢复原行为。最后 `session_close` 并查询到 `CLOSED`。停用不能回滚既有业务副作用。
+## 工具与操作
 
-MCP 协议固定为 `2025-03-26`，与当前 Sentinel 的 rmcp 客户端一致；其他版本明确拒绝，没有降级。stdio 只写 JSON-RPC，诊断写 stderr。工具业务结果在 `content[].text` 中保存完整 JSON，必须读取 `ok` 与状态；Sentinel 外层工具返回或“测试完成”提示不等于业务成功。
+提供 42 个工具，覆盖目标选择、会话/进程、操作回执、Hook 观察/准备/激活/停用/参数、事件、DEX/Native 查询、UI、存储、网络流量、HTTP 和客体方法调用。完整参数以 `tools/list` 为准。
 
-## 授权和失败语义
+典型 Hook 顺序：`targets_list` → `target_select` → `hook_observe` → `hook_prepare` → `hook_activate` → 实际操作客体 → `hook_status` → `hook_disable`。准备返回的 token 和 sourceSha256 用来保证激活准确的已编译脚本，直接传给激活即可，无需手机审批。外部草稿不会覆盖手机项目编辑器的源码。`hook_discard` 用于丢弃未激活的准备；停用后无需额外丢弃。
 
-每次会话最长 10 分钟、256 个已接纳请求。批准后最多等待 8 分钟建立首次认证连接；连接后 45 秒未收到有效签名请求即撤销。请求接纳与 watchdog 都检查单调时钟截止时间，迟到请求不能续活，总期限不能延长。MCP 运行中每 10 秒发一次会话查询，计入设备预算。一个活跃修改会话排他控制一个实际进程。每次脚本激活需要手机批准对应源码摘要；外部草稿不会写入人工编辑器。
+工具结果的 `content[].text` 是 JSON，检查 `ok`、`state`、实际命中和错误数。每个修改明确提供唯一 `operationId`；重复的同 ID、同内容返回原回执，改内容会拒绝。结果不明时使用原 ID 的 `operation_get` 对账，不能更换 ID 重放修改。
 
-签名采用 P-256 / SHA256withECDSA，输入是 UTF-8 的 `tripoder-agent-v1\n方向\n会话ID\n准确payload字符串`。设备公钥与请求关联都必须匹配。设备和桌面分别验证对方签名，引擎再次验证客户端签名；localhost、USB、ADB 和 APK 签名本身均不赋予外部调试权。
+会话只是目标上下文，不代表已认证身份，不设十分钟授权期限或 256 次总调用上限。响应缓存仍有内存上限，底层修改日志保留幂等约束。项目绑定、安装代次和进程代次检查仍会阻止操作过期目标。手机 UI 和电脑可同时使用同一控制管线；正在执行的操作仍串行处理。
 
-修改工具必须显式提供 operationId。同 ID、同内容返回已保存回执；改变内容拒绝。连接中断不自动重放、不重新配对、不换进程或后端。结果不明返回 `UNKNOWN` 及原操作 ID，使用 `operation_get` 对账。引擎重启不恢复活跃授权。
+关闭 MCP、调用 `session_close` 或停止电脑入口，都不会自动结束客体或停用已激活 Hook；需要停用时显式调用 `hook_disable`。停止入口后可在手机卡片重新开启。引擎重启后重新列出和选择目标。
 
-撤销立即拒绝新的修改。已有 Hook、观察/准备状态或在途操作时，引擎保守地终止准确的客体进程并记录关闭操作。`session_close` 本身作为在途请求，也会触发该策略。`CLOSING` 不是完成，`CLOSE_UNKNOWN` 不能显示成功；只读会话/操作查询在原控制租约有效时仍可用于对账。
-
-## 验收
+## 验证
 
 ```sh
-node --test agent/agent.test.mjs
+node --test agent/agent.test.mjs agent/audit.test.mjs
 python3 android/scripts/validate-agent-control.py --serial DEVICE_SERIAL --install --evidence docs/evidence/NEW_DIRECTORY
 ```
 
-2026-10-14 `external-agent-03`：独立 MCP 验收客户端 18 项、手机真实 UI 10 项通过。自研未修改计数器在同一 Activity/进程中从 Hook 输出恢复为原始输出，两个 UID 分离，未观察到 Java/Native fatal。手机审批由自研测试 Instrumentation 操作，不能称为人工审批验收。该结果不证明 Sentinel 桌面/模型实际调用，也不证明微信、王者或完整 P2–P6 通过。
+当前真机验收使用独立 stdio MCP 客户端和自研计数器：无配对/审批激活返回值 Hook、真实 UI 命中、同操作去重、停用后原始行为恢复、多个独立 Agent 接入、断开和关闭上下文后客体保持运行。验收同时核对 APK 与源码回执、进程和 Native 映射。结果见对应证据目录；此流程不代表 Sentinel 桌面或模型已经实际调用。
 
-失败记录保留：01 暴露拒绝账本错误码格式错误，已修正；02 重新启动 UI 未出现预期值，03 改为直接验证停用后的同一真实调用，重新启动另做回归，不能用 03 覆盖 02 的问题。
+`sentinel-acceptance.mjs SERIAL FIXTURE_JSON EVIDENCE_DIRECTORY` 可为当前运行目标生成 Sentinel 导入配置和只读验证提示。可选 `server.mjs --audit /absolute/metadata.jsonl` 保存白名单调用元数据和摘要。
 
+历史证据保留在 `docs/evidence/external-agent-*`、`sentinel-agent-*`。其中签名、手机审批、授权期限与断联终止等结论属于旧实现，不适用于当前入口。
 
-2026-10-15 `sentinel-agent-02`：真实 Sentinel AI 助手 8 次 MCP 调用、手机 12 项检查通过。观察→准确源码准备→手机自研 Instrumentation 审批→激活→2 次命中且 0 错误→停用→同一 Activity 原始计数恢复→手机撤销入口。`sentinel-ai-verdict.json` 将助手持久化工具记录与 MCP 原始回执 SHA-256 逐字节匹配，并确认同一执行的模型请求记录；没有读取其他会话或修改 Sentinel 数据库。该结论仍不覆盖人工源码审批、完整 P5 或两款真实应用。
+## 通用启动探针与代码快照
 
-第一轮 `sentinel-agent-01` 因首次连接前就开始断联计时而失败，保留 `failure-analysis.json`。修复后真实手机先等待 55 秒再提供 Sentinel 配置，验证首次连接等待语义。7 项单调期限测试、5 项 AI 证据校验器测试另行通过。
-
-真实 Sentinel 验收入口：`validate-agent-control.py --phase sentinel`，会生成本次配置与提示；用户在 Sentinel 导入/连接并执行提示。验收结束后使用只读命令 `python3 agent/verify-sentinel-ai.py --database /absolute/database.db --evidence /absolute/evidence-directory` 生成 AI 调用证据。可选 `server.mjs --audit /absolute/metadata.jsonl` 只保存白名单元数据和摘要，不记录私钥、准备 token 或脚本正文。
+见 [运行时观察与代码快照](../docs/runtime-observation.md)。新增工具覆盖能力查询、未运行项目、启动前配置、ClassLoader/DEX、事件、内存 DEX 快照和分块产物读取。配置默认关闭；没有新增配对或人工审批。

@@ -98,6 +98,7 @@ final class RuntimeBroadcastBroker {
         String pkg=intent.getPackage()!=null?intent.getPackage():sender.info.packageName;
         if(!pkg.equals(sender.info.packageName)&&broker.apks.row(sender.space,pkg)==null)return;
         var install=pkg.equals(sender.info.packageName)?sender:broker.apks.get(sender.space,pkg);
+        if(broker.resolveMode(install.space,install.info.packageName,install.generation)==RuntimeMode.THIN)return;
         for(var c:install.components())if(c.enabled&&c.type.equals("receiver"))for(var filter:c.declaration.children)if(filter.name.equals("intent-filter"))for(var action:filter.children)if(action.name.equals("action")&&Objects.equals(action.android("name",""),intent.getAction()))throw new UnsupportedOperationException("MANIFEST_IMPLICIT_BROADCAST_NOT_IMPLEMENTED");
     }
     ArrayList<Bundle> pending(PendingIntentLedger.Version value,Intent intent,boolean ordered)throws Exception{

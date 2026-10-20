@@ -1,68 +1,59 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generateKeyPairSync, sign } from 'node:crypto';
-import { decode, envelope, message, publicKey } from './transport.mjs';
-import { command, tools } from './tools.mjs';
-import { McpServer, MCP_VERSION } from './server.mjs';
-function key(){const pair=generateKeyPairSync('ec',{namedCurve:'prime256v1'});return {...pair,encoded:pair.publicKey.export({format:'der',type:'spki'}).toString('base64')};}
-test('pinned device signature, direction and request correlation cannot be substituted',()=>{
-  const device=key(),client=key();const config={privateKey:client.privateKey.export({format:'pem',type:'pkcs8'}),devicePublicKey:device.encoded};
-  const request=envelope(config,'call','session-1',JSON.stringify({requestId:'op-1'}));
-  const payload=JSON.stringify({protocol:1,ok:true,session:'session-1',requestId:'op-1',result:{state:'ACTIVE'}});
-  const response={id:'session-1',publicKey:device.encoded,payload,signature:sign('sha256',message('response','session-1',payload),device.privateKey).toString('base64')};
-  assert.equal(decode(config,request,response).result.state,'ACTIVE');
-  assert.throws(()=>decode(config,request,{...response,payload:payload.replace('ACTIVE','IDLE')}),/SIGNATURE/);
-  assert.throws(()=>decode(config,request,{...response,publicKey:client.encoded}),/IDENTITY/);
-  assert.throws(()=>decode(config,{...request,id:'session-2'},response),/IDENTITY/);
-  const unrelated=payload.replace('op-1','op-2');assert.throws(()=>decode(config,request,{...response,payload:unrelated,signature:sign('sha256',message('response','session-1',unrelated),device.privateKey).toString('base64')}),/CORRELATION/);
+import { spawn } from 'node:child_process';
+import net from 'node:net';
+import { once } from 'node:events';
+import { loadConfig,Transport,decode } from './transport.mjs';
+import { tools,command } from './tools.mjs';
+import { McpServer,MCP_VERSION,MCP_VERSIONS } from './server.mjs';
+
+async function initialize(server,version){const response=await server.handle({jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:version}});await server.handle({jsonrpc:'2.0',method:'notifications/initialized'});return response;}
+test('published versions negotiate without connecting to a phone',async()=>{
+ for(const version of MCP_VERSIONS){const server=new McpServer({call(){throw Error('must remain lazy');}});assert.equal((await initialize(server,version)).result.protocolVersion,version);const list=await server.handle({jsonrpc:'2.0',id:2,method:'tools/list'});assert.equal(list.result.tools.length,42);assert.ok(list.result.tools.some(t=>t.name==='target_select'));}
+ const server=new McpServer({});assert.equal((await initialize(server,'2099-01-01')).result.protocolVersion,MCP_VERSION);
 });
-test('other EC curves are rejected',()=>{const other=generateKeyPairSync('ec',{namedCurve:'secp256k1'});assert.throws(()=>publicKey(other.publicKey.export({format:'der',type:'spki'}).toString('base64')),/CURVE/);});
-test('typed tools preserve persistent operation identity and reject scope injection',()=>{
-  const args={operationId:'same-op',revision:'rev-123'};assert.deepEqual(command('hook_disable',args),{method:'hook.disable',params:{revision:'rev-123'},requestId:'same-op'});
-  const updateArgs={operationId:'upd-op',revision:'rev-123',parameterVersion:1,parameters:{delta:5}};
-  assert.deepEqual(command('hook_update_params',updateArgs),{method:'hook.updateParameters',params:{revision:'rev-123',parameterVersion:1,parameters:{delta:5}},requestId:'upd-op'});
-  const eventsCmd=command('hook_events',{sinceSeq:0});
-  assert.equal(eventsCmd.method,'hook.events');assert.deepEqual(eventsCmd.params,{sinceSeq:0});
-  assert.throws(()=>command('hook_events',{sinceSeq:-1}),/TYPE/);
-  const dexSearchCmd=command('dex_search_classes',{packagePrefix:'dev.tripoder',limit:50});
-  assert.equal(dexSearchCmd.method,'hook.dexSearch');assert.deepEqual(dexSearchCmd.params,{packagePrefix:'dev.tripoder',limit:50});
-  const dexInspectCmd=command('dex_inspect_class',{className:'dev.tripoder.previewguest.CounterActivity'});
-  assert.equal(dexInspectCmd.method,'hook.dexInspect');assert.deepEqual(dexInspectCmd.params,{className:'dev.tripoder.previewguest.CounterActivity'});
-  const nativeExpCmd=command('native_exports_search',{moduleName:'libguest.so',symbolPrefix:'Java_',limit:20});
-  assert.equal(nativeExpCmd.method,'hook.nativeExports');assert.deepEqual(nativeExpCmd.params,{moduleName:'libguest.so',symbolPrefix:'Java_',limit:20});
-  const uiDumpCmd=command('ui_dump_hierarchy',{includeInvisible:false});
-  assert.equal(uiDumpCmd.method,'hook.uiDump');assert.deepEqual(uiDumpCmd.params,{includeInvisible:false});
-  const uiActCmd=command('ui_dispatch_action',{operationId:'act-1',action:{type:'clickText',text:'+1'}});
-  assert.deepEqual(uiActCmd,{method:'hook.uiAction',params:{action:{type:'clickText',text:'+1'}},requestId:'act-1'});
-  const diagCmd=command('crash_diagnostics_get',{});
-  assert.equal(diagCmd.method,'hook.diagnostics');assert.deepEqual(diagCmd.params,{});
-  const manifestCmd=command('manifest_inspect',{});
-  assert.equal(manifestCmd.method,'hook.manifestInspect');assert.deepEqual(manifestCmd.params,{});
-  const storageCmd=command('storage_inspect',{category:'shared_prefs',limit:50});
-  assert.equal(storageCmd.method,'hook.storageInspect');assert.deepEqual(storageCmd.params,{category:'shared_prefs',limit:50});
-  assert.throws(()=>command('storage_inspect',{category:'invalid',limit:50}),/TYPE/);
-  const trafficCmd=command('network_traffic_get',{sinceSeq:0,limit:20});
-  assert.equal(trafficCmd.method,'hook.networkTraffic');assert.deepEqual(trafficCmd.params,{sinceSeq:0,limit:20});
-  const httpCmd=command('http_send_request',{operationId:'http-1',request:{method:'POST',url:'https://api.example.com/v1/user',headers:{Authorization:'Bearer tok'},body:'{"id":1}',timeoutMs:5000}});
-  assert.deepEqual(httpCmd,{method:'hook.httpRequest',params:{request:{method:'POST',url:'https://api.example.com/v1/user',headers:{Authorization:'Bearer tok'},body:'{"id":1}',timeoutMs:5000}},requestId:'http-1'});
-  const invokeCmd=command('guest_invoke',{operationId:'inv-1',target:{className:'com.example.Crypto',methodName:'sign',argumentTypes:['java.lang.String','[B'],args:['payload','deadbeef']}});
-  assert.deepEqual(invokeCmd,{method:'hook.guestInvoke',params:{target:{className:'com.example.Crypto',methodName:'sign',argumentTypes:['java.lang.String','[B'],args:['payload','deadbeef']}},requestId:'inv-1'});
-  assert.throws(()=>command('hook_disable',{...args,project:'other'}),/FIELDS/);
-  assert.throws(()=>command('hook_disable',{...args,revision:1}),/TYPE/);
-  assert.throws(()=>command('hook_activate',{operationId:'x',sourceSha256:'bad',token:'t'}),/TYPE/);
+test('initialize and discovery accept legacy missing config and require neither adb nor keys',async()=>{
+ assert.deepEqual(await loadConfig('/does-not-exist/tripoder-session.json'),{});
+ const child=spawn(process.execPath,[new URL('./server.mjs',import.meta.url).pathname,'--config','/does-not-exist/tripoder-session.json'],{env:{PATH:'/does-not-exist'},stdio:['pipe','pipe','pipe']});let output='',errors='';child.stdout.on('data',b=>output+=b);child.stderr.on('data',b=>errors+=b);
+ child.stdin.end(JSON.stringify({jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2025-03-26'}})+'\n'+JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})+'\n'+JSON.stringify({jsonrpc:'2.0',id:2,method:'tools/list'})+'\n');
+ const [code]=await once(child,'close');assert.equal(code,0,errors);const messages=output.trim().split('\n').map(JSON.parse);assert.equal(messages[0].result.protocolVersion,'2025-03-26');assert.equal(messages[1].result.tools.length,42);assert.equal(errors,'');
 });
-test('MCP version, initialization, receipt and unknown outcome remain explicit',async()=>{
-  const calls=[];const server=new McpServer({async call(method,params,id){calls.push({method,params,id});if(method==='hook.disable')throw Error('TEST_LINK_LOSS');return {protocol:1,ok:false,state:'FAILED',error:'PHONE_REVIEW_REQUIRED'};}});
-  const rpc=(id,method,params)=>server.handle({jsonrpc:'2.0',id,method,params});
-  assert.equal((await rpc(1,'initialize',{protocolVersion:'2025-11-25'})).error.code,-32602);
-  assert.equal((await rpc(2,'initialize',{protocolVersion:MCP_VERSION})).result.protocolVersion,MCP_VERSION);
-  assert.ok((await rpc(3,'tools/list')).error);
-  await server.handle({jsonrpc:'2.0',method:'notifications/initialized'});
-  assert.equal((await rpc(4,'tools/list')).result.tools.length,tools.length);
-  const denied=await rpc(5,'tools/call',{name:'hook_status',arguments:{}});assert.equal(denied.result.isError,true);assert.equal(JSON.parse(denied.result.content[0].text).state,'FAILED');
-  const unknown=await rpc(6,'tools/call',{name:'hook_disable',arguments:{operationId:'exact-id',revision:'rev-1'}});assert.equal(JSON.parse(unknown.result.content[0].text).state,'UNKNOWN');assert.equal(JSON.parse(unknown.result.content[0].text).operationId,'exact-id');assert.equal(calls.length,2);
+test('wire accepts unsigned replies but rejects unrelated responses',async()=>{
+ const server=net.createServer(socket=>{let buffer=Buffer.alloc(0);socket.on('data',chunk=>{buffer=Buffer.concat([buffer,chunk]);if(buffer.length<4||buffer.length<4+buffer.readUInt32BE(0))return;const request=JSON.parse(buffer.subarray(4).toString());assert.deepEqual(Object.keys(request).sort(),['method','params','protocol','requestId']);const body=Buffer.from(JSON.stringify({protocol:2,requestId:request.requestId,ok:true,result:{targets:[]}}));const header=Buffer.alloc(4);header.writeUInt32BE(body.length);socket.end(Buffer.concat([header,body]));});});
+ server.listen(0,'127.0.0.1');await once(server,'listening');const transport=new Transport();transport.port=server.address().port;
+ try{assert.deepEqual((await transport.call('targets.list',{},'read-1')).result.targets,[]);}finally{transport.port=null;await transport.close();server.close();}
+ assert.throws(()=>decode({requestId:'right'},{protocol:2,requestId:'wrong',ok:true}),/CORRELATION/);
 });
-test('MCP bounded batches preserve ids and omit notification responses',async()=>{
-  const server=new McpServer({});const replies=await server.handle([{jsonrpc:'2.0',id:41,method:'ping'},{jsonrpc:'2.0',method:'notifications/cancelled'},{jsonrpc:'2.0',id:42,method:'ping'}]);
-  assert.deepEqual(replies.map(row=>row.id),[41,42]);assert.equal((await server.handle([])).error.code,-32600);assert.equal((await server.handle(Array(9).fill({jsonrpc:'2.0',id:1,method:'ping'}))).error.code,-32600);
+test('ambiguous targets never silently dispatch a mutation to another app',async()=>{
+ const transport=new Transport();const calls=[];transport.exchange=async request=>{calls.push(request);return {protocol:2,requestId:request.requestId,ok:true,result:{targets:[{project:'a',package:'a',processName:'a',processGeneration:'a1'},{project:'b',package:'b',processName:'b',processGeneration:'b1'}]}};};
+ const result=await transport.call('hook.activate',{token:'t',sourceSha256:'a'.repeat(64)},'mut-1');assert.equal(result.ok,false);assert.match(result.error,/TARGET_SELECTION_REQUIRED/);assert.equal(calls.length,1);assert.equal(calls[0].method,'targets.list');
+});
+test('single main process is selected automatically without phone approval',async()=>{
+ const transport=new Transport();const methods=[];transport.exchange=async r=>{methods.push(r.method);return {protocol:2,requestId:r.requestId,ok:true,result:r.method==='targets.list'?{targets:[{project:'p',package:'app',processName:'app',processGeneration:'g'},{project:'p',package:'app',processName:'app:worker',processGeneration:'w'}]}:r.method==='target.select'?{session:'scope-1'}:{state:'OPEN'}};};
+ assert.equal((await transport.call('session.get',{},'get-1')).result.state,'OPEN');assert.deepEqual(methods,['targets.list','target.select','session.get']);assert.equal(transport.session,'scope-1');
+});
+test('tool schemas retain exact operation identity and target generation',()=>{
+ assert.deepEqual(command('target_select',{project:'p',processGeneration:'g'}).params,{project:'p',processGeneration:'g'});
+ assert.equal(command('hook_disable',{operationId:'op-1',revision:'rev-1'}).requestId,'op-1');
+ assert.throws(()=>command('hook_disable',{operationId:'op-1',revision:'rev-1',project:'other'}),/FIELDS/);
+ assert.throws(()=>command('target_select',{project:'p',processGeneration:''}),/TYPE/);assert.equal(tools.length,42);
+});
+test('unknown mutation outcomes are returned once without replay',async()=>{
+ let calls=0;const server=new McpServer({async call(){calls++;throw Error('TEST_LINK_LOSS');}});await initialize(server,MCP_VERSION);
+ const response=await server.handle({jsonrpc:'2.0',id:2,method:'tools/call',params:{name:'hook_disable',arguments:{operationId:'exact-id',revision:'rev-1'}}});const result=JSON.parse(response.result.content[0].text);assert.equal(result.state,'UNKNOWN');assert.equal(result.operationId,'exact-id');assert.equal(calls,1);
+});
+test('MCP batches preserve ids, omit notification replies and reject excess messages',async()=>{
+ const server=new McpServer({});const replies=await server.handle([{jsonrpc:'2.0',id:41,method:'ping'},{jsonrpc:'2.0',method:'notifications/cancelled'},{jsonrpc:'2.0',id:42,method:'ping'}]);assert.deepEqual(replies.map(r=>r.id),[41,42]);assert.equal((await server.handle([])).error.code,-32600);assert.equal((await server.handle(Array(9).fill({jsonrpc:'2.0',id:1,method:'ping'}))).error.code,-32600);
+});
+test('startup controls and artifact reads work without a live selected process',async()=>{
+ const transport=new Transport(),methods=[];transport.exchange=async request=>{methods.push(request.method);assert.equal(request.session,undefined);return {protocol:2,requestId:request.requestId,ok:true,result:{}};};
+ for(const method of ['runtime.capabilities','projects.list','probes.configure','probes.get','process.start','operation.get','artifact.read'])await transport.call(method,{},'startup-'+methods.length);
+ assert.deepEqual(methods,['runtime.capabilities','projects.list','probes.configure','probes.get','process.start','operation.get','artifact.read']);
+});
+test('probe schema rejects accidental fields and limits before any device call',()=>{
+ const args={operationId:'configure-1',project:'p',expectedRevision:'',configuration:{enabled:true,maxDexBytes:1048576,startupHook:{selectors:[{kind:'java'}],source:'source'}}};
+ assert.equal(command('probes_configure',args).requestId,'configure-1');
+ assert.throws(()=>command('probes_configure',{...args,configuration:{enabled:true,maxDexBytes:67108865}}),/TYPE/);
+ assert.throws(()=>command('probes_configure',{...args,configuration:{enabled:true,unpack:true}}),/TYPE/);
+ assert.throws(()=>command('artifact_read',{processGeneration:'g',artifactId:'a',offset:0,length:16385}),/TYPE/);
 });

@@ -33,6 +33,7 @@ static struct tp_art_deopt_access art;
 static struct tp_art_interpreter_policy interpreter;
 static _Atomic bool bound;
 static _Atomic bool explicitly_initialized;
+static bool native_compilation;
 static void fatal(const char *reason){android_set_abort_message(reason);abort();}
 static bool keep(JNIEnv *env,struct entry *e,jobject value){
     if(!value||e->root_count==67)return false;
@@ -70,6 +71,9 @@ static bool unhooked_managed_entry(uintptr_t quick){
     return quick==art.managed.interpreter_bridge||quick==base+0x728040||quick==base+0x2bc5d0;
 }
 static bool claim_and_enable_nterp_locked(void){
+    // Thin hosting leaves JIT, AOT, debuggability and instrumentation untouched.
+    // Entry ownership below is per method, never a process-wide interpreter lease.
+    if(native_compilation)return interpreter.level(interpreter.instrumentation)==0;
     bool already=atomic_load_explicit(&interpreter.claimed,memory_order_acquire);
     volatile uint32_t *level=(volatile uint32_t *)((uintptr_t)interpreter.instrumentation+4);
     if(already)*level=2;
@@ -87,9 +91,10 @@ static bool claim_and_enable_nterp_locked(void){
     }
     return accepted;
 }
-JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_initializeProcessNative(JNIEnv *env,jclass cls){
+JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_initializeProcessNative(JNIEnv *env,jclass cls,jboolean preserve_compilation){
     (void)cls;
     if(atomic_load_explicit(&explicitly_initialized,memory_order_acquire)||!bind_process(env))return JNI_FALSE;
+    native_compilation=preserve_compilation;
     if(!tp_art_entry_writer_activate())return JNI_FALSE;
     char jit=0,mutators=0;art.managed.jit_suspend(&jit);
     art.managed.access.suspend(&mutators,"tripoder-managed-process-start",false);
@@ -270,11 +275,13 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNat
         int slot=indices[i];
         struct entry *e=&entries[slot];
         uintptr_t expected=e->transitions&&atomic_load(&e->active)?e->relay:(e->native?art.managed.jni_bridge:art.managed.interpreter_bridge);
-        bool quick_ok=e->transitions==0&&!e->native?unhooked_managed_entry(e->target->quick):e->target->quick==expected;
+        bool quick_ok=e->target->quick==expected;
+        if(e->transitions==0)quick_ok=quick_ok||(!e->native&&unhooked_managed_entry(e->target->quick))
+            ||(native_compilation&&e->target->quick==e->prepared_quick);
         failure=!valid_snapshot(e,&identity)?2:!tp_art_backup_rooted_slot_locked((unsigned)slot,e->target,e->backup)?3:
-            !quick_ok?4:(e->target->flags&UINT32_C(0x02000000))?5:0;
+            !quick_ok?4:(!native_compilation&&(e->target->flags&UINT32_C(0x02000000)))?5:0;
         accepted=failure==0;
-        if(e->transitions==0)for(unsigned n=0;n<e->caller_count;n++)if(
+        if(!native_compilation&&e->transitions==0)for(unsigned n=0;n<e->caller_count;n++)if(
             !unhooked_managed_entry(((struct tp_art_method_view *)e->callers[n])->quick)){accepted=false;failure=6;}
         if(!accepted){failed_index=slot;observed_quick=e->target->quick;expected_quick=expected;observed_flags=e->target->flags;
             prepared_quick=e->prepared_quick;expected_flags=e->semantic_flags;expected_dex=e->dex_index;expected_index=e->method_index;}
@@ -286,6 +293,14 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNat
     }
     for(jsize i=0;accepted&&i<count;i++){
         struct entry *e=&entries[indices[i]];if(!e->native)e->target->flags&=~UINT32_C(0x00100000);
+        if(native_compilation&&!e->native){
+            // kAccCompileDontBother also prevents the ART inliner from consuming
+            // the original bytecode. Ordinary guest/framework methods stay compilable.
+            e->target->flags|=UINT32_C(0x02000000);
+        }
+        // A saved JIT code pointer is not a lifetime lease: ART may collect its
+        // code cache after the target entry changes. Backups and disabled
+        // targets therefore keep stable bridges; only these methods interpret.
         uintptr_t desired=enabled?e->relay:(e->native?art.managed.jni_bridge:art.managed.interpreter_bridge);
         atomic_store_explicit(&e->desired_entry,desired,memory_order_release);e->target->quick=desired;
         accepted=valid(e)&&e->target->quick==atomic_load_explicit(&e->desired_entry,memory_order_acquire);
@@ -312,22 +327,23 @@ JNIEXPORT jstring JNICALL Java_dev_tripoder_selfhook_ManagedHook_reportNative(JN
         "\"retainedRoots\":%u,\"retainedRelayPages\":%u,\"knownCallers\":%u,\"backupRooted\":%s,\"shorty\":\"%s\","
         "\"instance\":%s,\"relay\":\"%lx\",\"helperMethod\":\"%lx\",\"interpreterBridge\":\"%lx\","
         "\"targetFlags\":%u,\"backupFlags\":%u,\"targetQuick\":\"%lx\",\"desiredEntry\":\"%lx\",\"writerOwnerRegistered\":%s,"
-        "\"writerInterpositionInstalled\":%s,\"completeEntryWriterClosure\":false,\"compilationOwnership\":\"process-interpreter-lease\","
+        "\"writerInterpositionInstalled\":%s,\"completeEntryWriterClosure\":false,\"compilationOwnership\":\"%s\","
         "\"processInterpreterOwned\":%s,\"observedInstrumentationLevel\":%d,\"processPolicyClaims\":%u,\"fullCallerCoverage\":false}",e->stage?e->stage:"NOT_STARTED",atomic_load(&e->ready)?"true":"false",
         atomic_load(&e->active)?"true":"false",e->transitions,(unsigned long long)atomic_load(&e->originals),e->root_count,e->relay?1:0,
         e->caller_count,rooted?"true":"false",e->shorty,e->instance?"true":"false",(unsigned long)e->relay,(unsigned long)e->helper,
         (unsigned long)art.managed.interpreter_bridge,target.flags,backup.flags,(unsigned long)target.quick,
-        (unsigned long)atomic_load(&e->desired_entry),e->transitions?"true":"false",tp_art_entry_writer_installed()?"true":"false",
+        (unsigned long)atomic_load(&e->desired_entry),e->transitions?"true":"false",tp_art_entry_writer_installed()?"true":"false",native_compilation?"method-entry-only":"process-interpreter-lease",
         atomic_load_explicit(&interpreter.claimed,memory_order_acquire)?"true":"false",
         atomic_load(&interpreter.observed_level),atomic_load(&interpreter.claims));return (*env)->NewStringUTF(env,text);
 }
 JNIEXPORT jstring JNICALL Java_dev_tripoder_selfhook_ManagedHook_processPolicyNative(JNIEnv *env,jclass cls){
     (void)cls;char text[640];
     snprintf(text,sizeof(text),"{\"bound\":%s,\"owned\":%s,\"observedLevel\":%d,\"claims\":%u,"
-        "\"client\":\"%s\",\"processLifetimeLease\":true,\"policy\":\"process-interpreter-lease\","
+        "\"client\":\"%s\",\"processLifetimeLease\":%s,\"policy\":\"%s\",\"preserveCompilation\":%s,"
         "\"explicitInitialization\":%s,\"preexistingCompiledFramesCovered\":false,\"fullCallerCoverage\":false}",
         bound?"true":"false",atomic_load_explicit(&interpreter.claimed,memory_order_acquire)?"true":"false",
-        bound?atomic_load(&interpreter.observed_level):-1,atomic_load(&interpreter.claims),tp_art_interpreter_client,
+        bound?(native_compilation?0:atomic_load(&interpreter.observed_level)):-1,atomic_load(&interpreter.claims),tp_art_interpreter_client,
+        native_compilation?"false":"true",native_compilation?"method-entry-only":"process-interpreter-lease",native_compilation?"true":"false",
         atomic_load_explicit(&explicitly_initialized,memory_order_acquire)?"true":"false");
     return (*env)->NewStringUTF(env,text);
 }

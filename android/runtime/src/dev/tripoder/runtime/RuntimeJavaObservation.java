@@ -23,6 +23,7 @@ final class RuntimeJavaObservation {
     private final BooleanSupplier ownerLive;
     private final Map<String,Object> identity;
     private final Map<String,Method> methods=new HashMap<>();
+    private final IdentityHashMap<ClassLoader,String> stableLoaders=new IdentityHashMap<>();
     private List<Map<String,Object>> metadata=List.of();
     @SuppressWarnings("unchecked") RuntimeJavaObservation(Supplier<ClassLoader> selectedLoader,Predicate<ClassLoader> ownsLoader,
         BooleanSupplier ownerLive,Map<String,Object> identity){
@@ -45,16 +46,18 @@ final class RuntimeJavaObservation {
     synchronized JSONArray inspect(JSONArray selectors)throws Exception {
         if(!ownerLive.getAsBoolean())throw new IllegalStateException("HOOK_PROCESS_STALE");
         if(selectors.length()>32)throw new IllegalArgumentException("HOOK_SELECTOR_COUNT");
-        Map<String,Method> selected=new HashMap<>();IdentityHashMap<ClassLoader,String> loaders=new IdentityHashMap<>();
+        Map<String,Method> selected=new HashMap<>();
         List<Map<String,Object>> symbols=new ArrayList<>();JSONArray out=new JSONArray();
         ClassLoader resolution=selectedLoader.get();
         for(int i=0;i<selectors.length();i++) {
             JSONObject selector=selectors.getJSONObject(i);
-            if(selector.length()!=5||!"java".equals(selector.getString("kind"))||!selector.has("id")||!selector.has("className")||!selector.has("methodName")||!selector.has("argumentTypes"))throw new IllegalArgumentException("HOOK_SELECTOR_FIELDS");
+            if(selector.length()!=(selector.has("classLoaderId")?6:5)||!"java".equals(selector.getString("kind"))||!selector.has("id")||!selector.has("className")||!selector.has("methodName")||!selector.has("argumentTypes"))throw new IllegalArgumentException("HOOK_SELECTOR_FIELDS");
             String id=selector.getString("id"),name=selector.getString("className"),methodName=selector.getString("methodName");
             if(!id.matches("[a-zA-Z][a-zA-Z0-9_-]{0,63}")||selected.containsKey(id))throw new IllegalArgumentException("HOOK_SYMBOL_ID");
             if(name.length()>512||methodName.length()>128||methodName.startsWith("<"))throw new IllegalArgumentException("HOOK_METHOD_NAME");
-            Class<?> owner=Class.forName(name,false,resolution);ClassLoader loader=owner.getClassLoader();
+            RuntimeEngine engine=RuntimeEngine.current;
+            ClassLoader lookup=selector.has("classLoaderId")?engine.codeProbes().loader(selector.getString("classLoaderId")):resolution;
+            Class<?> owner=Class.forName(name,false,lookup);ClassLoader loader=owner.getClassLoader();
             if(!ownsLoader.test(loader))throw new SecurityException("HOOK_CLASS_OUTSIDE_GUEST");
             JSONArray args=selector.getJSONArray("argumentTypes");if(args.length()>16)throw new IllegalArgumentException("HOOK_ARGUMENT_COUNT");
             Method found=null;
@@ -71,7 +74,7 @@ final class RuntimeJavaObservation {
             if(Modifier.isAbstract(found.getModifiers()))throw new IllegalArgumentException("HOOK_ABSTRACT_METHOD");
             List<String> types=new ArrayList<>();for(Class<?> type:found.getParameterTypes())types.add(type.getName());
             Map<String,Object> symbol=Map.of("id",id,"kind","java","loaded",true,"className",name,"methodName",methodName,
-                "classLoaderId",loaders.computeIfAbsent(loader,key->UUID.randomUUID().toString()),"argumentTypes",List.copyOf(types),"returnType",found.getReturnType().getName());
+                "classLoaderId",engine!=null?engine.loaderReference(loader):stableLoaders.computeIfAbsent(loader,key->UUID.randomUUID().toString()),"argumentTypes",List.copyOf(types),"returnType",found.getReturnType().getName());
             selected.put(id,found);symbols.add(symbol);out.put(new JSONObject(symbol));
         }
         if(!ownerLive.getAsBoolean()||resolution!=selectedLoader.get())throw new IllegalStateException("HOOK_PROCESS_STALE");
@@ -85,6 +88,7 @@ final class RuntimeJavaObservation {
             if(cls.startsWith(packagePrefix))found.add(cls);
         }
         RuntimeEngine engine=RuntimeEngine.current;
+        if(engine!=null&&engine.existingCodeProbes()!=null)found.addAll(engine.codeProbes().classes(packagePrefix,limit));
         if(engine!=null&&engine.info!=null&&engine.info.sourceDir!=null){
             java.io.File apk=new java.io.File(engine.info.sourceDir);
             if(apk.isFile()){
@@ -125,24 +129,29 @@ final class RuntimeJavaObservation {
         }
     }
     synchronized Map<String,Object> inspectClass(String className)throws Exception {
+        return inspectClass(className,null);
+    }
+    synchronized Map<String,Object> inspectClass(String className,String loaderId)throws Exception {
         if(!ownerLive.getAsBoolean())throw new IllegalStateException("HOOK_PROCESS_STALE");
         if(className==null||className.isEmpty()||className.length()>512)throw new IllegalArgumentException("HOOK_CLASS_NAME");
-        ClassLoader resolution=selectedLoader.get();
+        ClassLoader resolution=loaderId==null?selectedLoader.get():RuntimeEngine.current.codeProbes().loader(loaderId);
         Class<?> owner=Class.forName(className,false,resolution);
         if(!ownsLoader.test(owner.getClassLoader()))throw new SecurityException("HOOK_CLASS_OUTSIDE_GUEST");
         List<Map<String,Object>> methodList=new ArrayList<>();
         Method[] declaredMethods=owner.getDeclaredMethods();
-        for(int i=0;i<Math.min(128,declaredMethods.length);i++){
+        for(int i=0;i<Math.min(64,declaredMethods.length);i++){
             Method m=declaredMethods[i];
             List<String> params=new ArrayList<>();for(Class<?> p:m.getParameterTypes())params.add(p.getName());
             methodList.add(Map.of("methodName",m.getName(),"argumentTypes",List.copyOf(params),"returnType",m.getReturnType().getName(),"static",Modifier.isStatic(m.getModifiers()),"native",Modifier.isNative(m.getModifiers())));
         }
         List<Map<String,Object>> fieldList=new ArrayList<>();
         java.lang.reflect.Field[] declaredFields=owner.getDeclaredFields();
-        for(int i=0;i<Math.min(128,declaredFields.length);i++){
+        for(int i=0;i<Math.min(64,declaredFields.length);i++){
             java.lang.reflect.Field f=declaredFields[i];
             fieldList.add(Map.of("fieldName",f.getName(),"type",f.getType().getName(),"static",Modifier.isStatic(f.getModifiers())));
         }
-        return (Map<String,Object>)ScriptValues.freeze(Map.of("className",owner.getName(),"methods",List.copyOf(methodList),"fields",List.copyOf(fieldList)));
+        Class<?> superclass=owner.getSuperclass();Class<?>[] implemented=owner.getInterfaces();List<String> interfaces=new ArrayList<>();for(int i=0;i<Math.min(16,implemented.length);i++)interfaces.add(implemented[i].getName());
+        RuntimeEngine engine=RuntimeEngine.current;String definingLoader=engine==null?stableLoaders.computeIfAbsent(owner.getClassLoader(),key->UUID.randomUUID().toString()):engine.loaderReference(owner.getClassLoader());
+        return (Map<String,Object>)ScriptValues.freeze(Map.of("className",owner.getName(),"classLoaderId",definingLoader,"superClass",superclass==null?"":superclass.getName(),"interfaces",List.copyOf(interfaces),"interfacesTruncated",implemented.length>16,"methods",List.copyOf(methodList),"fields",List.copyOf(fieldList),"methodsTruncated",declaredMethods.length>64,"fieldsTruncated",declaredFields.length>64));
     }
 }

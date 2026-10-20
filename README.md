@@ -16,7 +16,7 @@ Tripoder 是一个面向 Android 的**无需 Root 的免重打包应用虚拟化
    - **ART Java Hook (`ManagedHook`)**：采用 `ExecuteNterpImpl` ARM64 汇编解释器策略（替代慢速 C++ Switch 解释器，提速 10–30 倍），兼顾 100% 防内联拦截、GC Root 读屏障安全与 Caller-Sensitive 栈归属隐藏。
    - **ARM64 Native Hook (`NativeHook` & `fixed_libc`)**：内置 ARM64 指令重定位规划器、信号线程安全停顿、基于 `mremap` 的 W^X 匿名页原子发布，以及接管 `libc.so` 10 个核心路径入口的双页导出包装器（支撑虚拟路径重定向与 `/proc/self/*` 隐身）。
 3. **AI Agent 原生控制面 (MCP Server)**
-   - 基于 ECDSA P-256 签名会话租约（`AgentSession`），对外暴露 **24 个标准 MCP 工具原语**，覆盖沙箱应用生命周期、运行时类/方法内省、热更新 Hook 规则（支持 `byte[]` 载荷）、主动调用 Java 方法（RPC）、沙箱文件/SQLite 审计、网络明文抓包与 UI 自动化驱动。
+   - 电脑通过 stdio MCP 和 ADB 直接连接，无需身份认证、配对或手机脚本审批。提供 **42 个 MCP 工具**，覆盖运行目标选择、运行时类/方法内省、Hook 管线、主动调用 Java 方法、存储/网络审计与 UI 自动化；断开连接不会结束客体应用。
 
 ---
 
@@ -31,7 +31,7 @@ Tripoder 是一个面向 Android 的**无需 Root 的免重打包应用虚拟化
 - **[Self-Hook 与脚本引擎设计 (`docs/self-hook-design.md`)](docs/self-hook-design.md)**：ART Nterp Java Hook、ARM64 Native Hook、`fixed_libc` 双页事务与 `RestrictedAst` 编译器。
 - **[Guest 兼容性分层与基线 (`docs/guest-compatibility.md`)](docs/guest-compatibility.md)**：L1–L13 兼容性矩阵、真机实测基线与已知边界。
 - **[启动性能架构 (`docs/launch-performance.md`)](docs/launch-performance.md)**：启动关键路径与六大核心性能优化细节。
-- **[AI Agent 控制面与 MCP 规范 (`docs/agent-mcp-design.md`)](docs/agent-mcp-design.md)**：P-256 会话认证、24 个 MCP 工具定义与自动化安全测试 OODA 闭环。
+- **[AI Agent 控制面与 MCP 规范 (`docs/agent-mcp-design.md`)](docs/agent-mcp-design.md)**：免配对接入、42 个 MCP 工具与实际操作闭环。
 
 ---
 

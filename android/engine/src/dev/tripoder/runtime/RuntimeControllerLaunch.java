@@ -23,12 +23,14 @@ final class RuntimeControllerLaunch {
     static Bundle prepare(RuntimeBroker broker,Bundle input,String lease)throws Exception{
         boolean application="prepareApplicationLaunch".equals(input.getString("command"));
         if(application)RuntimeControllerCommands.fields(input,"command","operation","space","package","generation");
+        else if(input.containsKey("codeProbeRevision"))RuntimeControllerCommands.fields(input,"command","operation","project","bindingOperation","generation","component","codeProbeRevision");
         else RuntimeControllerCommands.fields(input,"command","operation","project","bindingOperation","generation","component");
         String operation=ControlWire.required(input,"operation"),generation=ControlWire.required(input,"generation");
         String project=application?"":ControlWire.required(input,"project"),binding=application?"":ControlWire.required(input,"bindingOperation");
         JSONObject identity=new JSONObject().put("kind",application?"controller-application-v1":"controller-activity-v1").put("generation",generation);
         if(application)identity.put("space",ControlWire.required(input,"space")).put("package",ControlWire.required(input,"package"));
         else identity.put("project",project).put("binding",binding).put("component",ControlWire.required(input,"component"));
+        if(input.containsKey("codeProbeRevision"))identity.put("probeRevision",input.getString("codeProbeRevision"));
         String digest=ApkStore.textDigest(identity.toString());
         synchronized(broker){var accepted=broker.contract.accept(operation,ControllerTrust.OPERATIONS,digest);if(!accepted.created)throw new IllegalStateException("LAUNCH_ALREADY_ACCEPTED_QUERY_REQUIRED");broker.contract.start(operation);}
         boolean started=false;

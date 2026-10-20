@@ -77,11 +77,11 @@ final class RuntimeFixedPreparation {
     }
     static synchronized void process()throws Exception{
         if(!processPrepared){
-            neutralizeVendorMonitors();
+            if(!RuntimeThinPolicy.active())neutralizeVendorMonitors();
             framework();List<dev.tripoder.selfhook.dex.AbiSignature> signatures=new ArrayList<>();
             for(Executable target:targets().keySet())signatures.add(new dev.tripoder.selfhook.dex.AbiSignature(target));
             dev.tripoder.selfhook.dex.HelperDex.prepareTemplates(signatures);
-            ManagedHook.initializeProcess();processPrepared=true;
+            ManagedHook.initializeProcess(RuntimeEngine.current!=null&&RuntimeEngine.current.mode==RuntimeMode.THIN);processPrepared=true;
         }else ManagedHook.requireProcessInitialization();
     }
     static synchronized FrameworkAccess.Members framework()throws Exception{
@@ -94,13 +94,17 @@ final class RuntimeFixedPreparation {
     static synchronized void prewarm()throws Exception{
         if(reserved||RuntimeEngine.current!=null)return;
         RuntimePhysicalManifest.capture(java.util.Objects.requireNonNull(RuntimeApplication.host,"JOB_PHYSICAL_HOST_REQUIRED"));
-        process();reservations=ManagedHook.prepareBatch(targets());reserved=true;
+        // An idle slot has no guest mode yet. Preparing ART here used to put
+        // every future thin guest under the thick process interpreter policy.
+        framework();List<dev.tripoder.selfhook.dex.AbiSignature> signatures=new ArrayList<>();
+        for(Executable target:targets().keySet())signatures.add(new dev.tripoder.selfhook.dex.AbiSignature(target));
+        dev.tripoder.selfhook.dex.HelperDex.prepareTemplates(signatures);
     }
     private static Map<Executable,Executable[]> targets()throws Exception{
         Map<Executable,Executable[]> targets=new LinkedHashMap<>();
-        for(var family:RuntimeSelfHookManagerPolicy.Family.values())for(Method method:FixedManagerInventory.methods(family.ordinal()))targets.put(method,new Executable[0]);
+        for(var family:RuntimeSelfHookManagerPolicy.Family.values())if(!RuntimeThinPolicy.active()||!RuntimeThinPolicy.platformManager(family))for(Method method:FixedManagerInventory.methods(family.ordinal()))targets.put(method,new Executable[0]);
         for(var group:FixedComponentHooks.Group.values())for(Method method:FixedComponentHooks.methods(group))targets.put(method,new Executable[0]);
-        for(var group:FixedRuntimeHooks.Group.values())for(Executable method:FixedRuntimeHooks.methods(group))targets.put(method,new Executable[0]);
+        for(var group:FixedRuntimeHooks.Group.values())if(!RuntimeThinPolicy.active()||!RuntimeThinPolicy.platformHooks(group))for(Executable method:FixedRuntimeHooks.methods(group))targets.put(method,new Executable[0]);
         for(Method method:JobFrameworkAccess.hooks())targets.put(method,new Executable[0]);
         for(Method method:PendingIntentFrameworkAccess.hooks())targets.put(method,new Executable[0]);
         targets.put((Method)members.methods[1],new Executable[0]);

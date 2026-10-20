@@ -17,10 +17,13 @@ final class RuntimeDexLoader {
     static ClassLoader create(ArtifactSet set,String libraries,ClassLoader parent)throws Exception{
         return createInternal(set,libraries,parent,true);
     }
-    static ClassLoader createForGuest(ArtifactSet set,String libraries,ClassLoader parent)throws Exception{
-        return createInternal(set,libraries,parent,false);
+    static ClassLoader createForGuest(ArtifactSet set,String libraries,ClassLoader parent,boolean thin)throws Exception{
+        return createInternal(set,libraries,parent,false,thin);
     }
     private static ClassLoader createInternal(ArtifactSet set,String libraries,ClassLoader parent,boolean retainMemfdMappings)throws Exception{
+        return createInternal(set,libraries,parent,retainMemfdMappings,false);
+    }
+    private static ClassLoader createInternal(ArtifactSet set,String libraries,ClassLoader parent,boolean retainMemfdMappings,boolean thin)throws Exception{
         if(set.parts.isEmpty())throw new IllegalStateException("RUNTIME_SPLIT_EXECUTION_NOT_YET_SUPPORTED");
         // The exact same physical name must reach ART, linker notifications and
         // Native observation. Resolve the platform's data-directory alias once,
@@ -85,6 +88,10 @@ final class RuntimeDexLoader {
         // inspect their own loader (App Bundle runtimes, hot-fix frameworks, quinox).
         StringBuilder dexPath=new StringBuilder();
         for(File apk:apkFiles)dexPath.append(dexPath.length()==0?"":File.pathSeparator).append(apk.getAbsolutePath());
+        // Android's own loader already serves resources from each APK. A custom
+        // resource-only parent and an empty wrapper add lookup work and make ART
+        // reject the class-loader context used by secondary-DEX optimization.
+        if(thin)return new dalvik.system.PathClassLoader(dexPath.toString(),libraries,parent);
         return new RuntimeGuestLoader(dexPath.toString(),libraries,new RuntimeResourceLoader(parent,apkFiles));
     }
 

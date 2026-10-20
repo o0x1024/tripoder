@@ -33,6 +33,9 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
         default Map<String,Object> listNetworkTraffic(long sinceSeq,int limit){return Map.of("exchanges",List.of(),"nextCursor",(double)sinceSeq);}
         default Map<String,Object> sendHttpRequest(Map<String,Object> request){return Map.of("statusCode",0d);}
         default Map<String,Object> invokeGuestMethod(Map<String,Object> target){return Map.of("result",null);}
+        default Map<String,Object> codeCommand(String command,Map<String,Object> params){throw new UnsupportedOperationException("CODE_OBSERVATION_UNSUPPORTED");}
+        default Map<String,Object> requestCodeSnapshot(String dexId){throw new UnsupportedOperationException("CODE_SNAPSHOT_UNSUPPORTED");}
+        default Map<String,Object> invocationContext(){return Map.of();}
     }
     private record Prepared(String token,DraftCompiler.Plan plan,long deadline,long evidenceEpoch) {}
     private static final Map<String,Set<String>> FIELDS=Map.ofEntries(
@@ -45,7 +48,7 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
         Map.entry("uiAction",Set.of("action")),Map.entry("diagnostics",Set.of()),
         Map.entry("manifestInspect",Set.of()),Map.entry("storageInspect",Set.of("category","limit")),
         Map.entry("networkTraffic",Set.of("sinceSeq","limit")),Map.entry("httpRequest",Set.of("request")),
-        Map.entry("guestInvoke",Set.of("target")));
+        Map.entry("guestInvoke",Set.of("target")),Map.entry("probeStatus",Set.of()),Map.entry("probeStop",Set.of()),Map.entry("classLoaders",Set.of()),Map.entry("classLoaderCreate",Set.of("dexId","parentClassLoaderId")),Map.entry("dexList",Set.of("classLoaderId","cursor","limit")),Map.entry("dexSnapshot",Set.of("dexId")),Map.entry("codeArtifacts",Set.of()),Map.entry("runtimeEvents",Set.of("sinceSeq","limit")),Map.entry("classInspect",Set.of("classLoaderId","className")));
     private final Map<String,Object> identity;
     private final String generation;
     private final Platform platform;
@@ -84,6 +87,15 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
         if(prepared!=null&&(now>prepared.deadline||prepared.evidenceEpoch!=invalidation.get()))prepared=null;
         if(evidence!=null&&observedEpoch!=invalidation.get())evidence=null;
         switch(name){
+            case "probeStatus":case "probeStop":case "classLoaders":case "classLoaderCreate":case "dexList":case "dexSnapshot":case "codeArtifacts":case "runtimeEvents":case "classInspect":{
+                Map<String,Object> params=new LinkedHashMap<>(input);params.remove("command");params.remove("processGeneration");
+                if(name.equals("dexList")){require(params.get("classLoaderId") instanceof String&&((String)params.get("classLoaderId")).length()<=80&&params.get("cursor") instanceof String&&((String)params.get("cursor")).length()<=80,"CLASS_LOADER_REFERENCE");Object limit=params.get("limit");require(limit instanceof Double&&(Double)limit>=1&&(Double)limit<=128&&(Double)limit==Math.rint((Double)limit),"DEX_PAGE_LIMIT");}
+                if(name.equals("dexSnapshot"))require(text(params,"dexId").matches("[A-Za-z0-9_-]{1,80}"),"DEX_REFERENCE");
+                if(name.equals("classInspect")){text(params,"classLoaderId");text(params,"className");}
+                if(name.equals("classLoaderCreate")){require(text(params,"dexId").matches("[A-Za-z0-9_-]{1,80}")&&text(params,"parentClassLoaderId").matches("[A-Za-z0-9_-]{1,80}"),"CODE_LOADER_REFERENCE");}
+                if(name.equals("runtimeEvents")){Object since=params.get("sinceSeq"),limit=params.get("limit");require(since instanceof Double&&(Double)since>=0&&(Double)since==Math.rint((Double)since)&&limit instanceof Double&&(Double)limit>=1&&(Double)limit<=64&&(Double)limit==Math.rint((Double)limit),"RUNTIME_EVENT_RANGE");}
+                return withIdentity(platform.codeCommand(name,params));
+            }
             case "modules":return map("modules",platform.modules(),"identity",identity);
             case "observe":{
                 require(active==null&&prepared==null,"HOOK_CONTEXT_IN_USE");evidence=null;platform.discardObservation();
@@ -95,7 +107,7 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
             }
             case "prepare":{
                 require(active==null&&prepared==null,"HOOK_CONTEXT_IN_USE");require(evidence!=null&&evidence.id.equals(input.get("evidenceId"))&&platform.evidenceLive(evidence),"HOOK_EVIDENCE_STALE");
-                require(activations<32,"HOOK_ACTIVATION_BUDGET");String source=text(input,"source");long epoch=invalidation.get();DraftCompiler.Plan plan=DraftCompiler.compile(source,evidence);
+                require(activations<32,"HOOK_ACTIVATION_BUDGET");String source=text(input,"source");long epoch=invalidation.get();DraftCompiler.Plan plan=DraftCompiler.compile(source,evidence,platform::requestCodeSnapshot);
                 require(epoch==invalidation.get()&&platform.evidenceLive(evidence),"HOOK_EVIDENCE_STALE");prepared=new Prepared(newToken(),plan,now+60000,epoch);
                 return map("state","PREPARED","token",prepared.token,"sourceSha256",plan.sourceSha256(),"evidenceId",evidence.id,"rules",plan.rules().size(),"identity",identity);
             }
@@ -104,7 +116,7 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
                 Prepared candidate=prepared;prepared=null;require(platform.evidenceLive(candidate.plan.evidence())&&candidate.evidenceEpoch==invalidation.get(),"HOOK_EVIDENCE_STALE");
                 HookInvocationSession.PreparedBackend backend=platform.prepare(candidate.plan);
                 require(candidate.evidenceEpoch==invalidation.get()&&platform.evidenceLive(candidate.plan.evidence()),"HOOK_EVIDENCE_STALE");
-                activePlan=candidate.plan;active=new HookInvocationSession(generation,newToken(),candidate.plan.rules(),candidate.plan.specs(),candidate.plan.parameters(),backend);activations++;
+                activePlan=candidate.plan;active=new HookInvocationSession(generation,newToken(),candidate.plan.rules(),candidate.plan.specs(),candidate.plan.parameters(),backend,platform::invocationContext);activations++;
                 try{active.activate(generation,active.status().revision());}
                 catch(IllegalStateException failure){
                     if(failure.getCause() instanceof HookPublicationRejected){
@@ -188,9 +200,9 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
             prepared=null;evidence=null;platform.discardObservation();
         }
         if(active!=null){HookInvocationSession.Snapshot snapshot=active.status();
-            if(snapshot.state()==HookInvocationSession.State.DISABLED){Map<String,Object> result=map("state","DISABLED","revision",snapshot.revision(),"hits",snapshot.hits(),"errors",snapshot.errors());retired.add(active);active=null;activePlan=null;evidence=null;platform.discardObservation();return result;}
+            if(snapshot.state()==HookInvocationSession.State.DISABLED){Map<String,Object> result=map("state","DISABLED","revision",snapshot.revision(),"hits",snapshot.hits(),"errors",snapshot.errors(),"firstInvocation",active.firstInvocation());retired.add(active);active=null;activePlan=null;evidence=null;platform.discardObservation();return result;}
             require(snapshot.state()!=HookInvocationSession.State.FAILED,"HOOK_PROCESS_INVALIDATED");
-            return map("state",snapshot.state().name(),"revision",snapshot.revision(),"sourceSha256",activePlan.sourceSha256(),"parameterVersion",snapshot.parameterVersion(),"parameters",snapshot.parameters(),"hits",snapshot.hits(),"errors",snapshot.errors(),"inFlight",snapshot.inFlight());
+            return map("state",snapshot.state().name(),"revision",snapshot.revision(),"sourceSha256",activePlan.sourceSha256(),"parameterVersion",snapshot.parameterVersion(),"parameters",snapshot.parameters(),"hits",snapshot.hits(),"errors",snapshot.errors(),"inFlight",snapshot.inFlight(),"firstInvocation",active.firstInvocation());
         }
         if(prepared!=null)return map("state","PREPARED","sourceSha256",prepared.plan.sourceSha256(),"deadlineElapsedMs",prepared.deadline);
         if(evidence!=null)return map("state","OBSERVED","evidenceId",evidence.id);return map("state","IDLE");
@@ -199,6 +211,7 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
         List<?> array=array(value);require(!array.isEmpty()&&array.size()<=32,"HOOK_SELECTOR_COUNT_OR_KIND");List<Map<String,Object>> selected=new ArrayList<>();Set<String> ids=new HashSet<>();
         for(Object entry:array){Map<String,Object> selector=object(entry);String kind=text(selector,"kind"),id=text(selector,"id");require(id.matches("[a-zA-Z][a-zA-Z0-9_-]{0,63}")&&ids.add(id),"HOOK_SYMBOL_ID");
             Set<String> keys=kind.equals("java")?Set.of("id","kind","className","methodName","argumentTypes"):Set.of("id","kind","moduleName","symbol","argumentTypes","returnType","buildId","signatureSource");
+            if(kind.equals("java")&&selector.containsKey("classLoaderId")){keys=new HashSet<>(keys);keys.add("classLoaderId");require(text(selector,"classLoaderId").matches("[A-Za-z0-9_-]{1,80}"),"CLASS_LOADER_REFERENCE");}
             require(Set.of("java","native").contains(kind)&&selector.keySet().equals(keys),"HOOK_SELECTOR_FIELDS");require(strings(selector.get("argumentTypes")).size()<=16,"HOOK_ARGUMENT_COUNT");
             if(kind.equals("java")){require(text(selector,"className").length()<=512&&text(selector,"methodName").length()<=128&&!text(selector,"methodName").startsWith("<"),"HOOK_METHOD_NAME");}
             else require(text(selector,"moduleName").matches("lib[a-zA-Z0-9_+.$-]+\\.so")&&text(selector,"symbol").length()<=256&&"confirmed".equals(selector.get("signatureSource")),"HOOK_NATIVE_SELECTOR_FIELDS");

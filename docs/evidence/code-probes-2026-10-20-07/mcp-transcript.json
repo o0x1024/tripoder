@@ -1,0 +1,1530 @@
+[
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "method": "initialize",
+      "params": {
+        "protocolVersion": "2025-03-26",
+        "capabilities": {},
+        "clientInfo": {
+          "name": "generic-code-probe-acceptance",
+          "version": "1"
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": {
+        "protocolVersion": "2025-03-26",
+        "capabilities": {
+          "tools": {
+            "listChanged": false
+          }
+        },
+        "serverInfo": {
+          "name": "tripoder",
+          "version": "0.1.0"
+        },
+        "instructions": "Tripoder requires no authentication or pairing. Use targets_list and target_select to choose a running process. Read content JSON ok and state; unknown mutations require operation_get, never automatic replay. Closing MCP does not stop the guest or disable Hooks."
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 2,
+      "method": "tools/call",
+      "params": {
+        "name": "runtime_capabilities",
+        "arguments": {}
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 2,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"83862da6-5d3f-4822-9ac1-78a68cae8158\",\"ok\":true,\"result\":{\"startupProbes\":true,\"loaderDiscovery\":true,\"dexMemorySnapshots\":true,\"dexVersions\":[35,36,37,38,39,40],\"compactDex\":false,\"methodBodyReconstruction\":false,\"atomicMemorySnapshot\":false,\"defaultProbeHooks\":0,\"maxArtifactChunkBytes\":16384,\"discoveryScope\":\"OWNED_BASE_DEX_CLASS_LOADERS\",\"probePlansSurviveAuthorityRestart\":false}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 3,
+      "method": "tools/call",
+      "params": {
+        "name": "projects_list",
+        "arguments": {}
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 3,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"49d11eb2-2a35-4a9f-8a6f-7e229fce0dc5\",\"ok\":true,\"result\":{\"projects\":[{\"project\":\"168f0b11-b1cc-46f7-806b-fdf1d65084a3\",\"space\":\"control-932751ead2354d12-ui\",\"package\":\"dev.tripoder.previewguest\",\"installGeneration\":\"a7d27be1-0aac-4185-85b0-ca168721d9b9\",\"bindingOperation\":\"296415b1-a77d-4e4c-a726-6981a8d09249\",\"mode\":\"thin\"},{\"project\":\"5236b5c8-0a07-4a28-b892-17cccd128605\",\"space\":\"control-204fe61afc4b4dd3-ui\",\"package\":\"dev.tripoder.previewguest\",\"installGeneration\":\"6d071d15-f0ba-4809-94ba-426b4161b976\",\"bindingOperation\":\"457ad80e-2f9c-4dc4-8d91-e1115fddebd4\",\"mode\":\"thin\"},{\"project\":\"5d4fa4c7-c743-4622-bb0c-305085fb1385\",\"space\":\"control-39fdd703718e434a-ui\",\"package\":\"dev.tripoder.previewguest\",\"installGeneration\":\"b7809902-2bc4-4e2a-b9ee-56e34f7e1dbc\",\"bindingOperation\":\"f586a000-3fc2-4ee9-aa85-8522a1b4b5d1\",\"mode\":\"thin\"},{\"project\":\"62bc52dc-ce9b-448c-a3a7-b85118076761\",\"space\":\"default\",\"package\":\"com.netease.cloudmusic\",\"installGeneration\":\"472827fa-8129-49a1-bad4-80311850a7ff\",\"bindingOperation\":\"7d151879-0bd5-44de-8c10-888eedfa3cfe\",\"mode\":\"thin\"},{\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"space\":\"control-bdf9e0e1d3c04240-code\",\"package\":\"dev.tripoder.probefixture\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"bindingOperation\":\"38c8e5af-7401-4f15-bd90-7eb4dfd18d5a\",\"mode\":\"thin\"},{\"project\":\"be5379a3-8144-4c29-8204-bf1f65289229\",\"space\":\"default\",\"package\":\"com.xiaomi.scanner\",\"installGeneration\":\"5cddabce-38ac-4e66-8f5f-0de6021f79d8\",\"bindingOperation\":\"7bdeacb3-5f30-40da-84a1-d5a5648f4fa3\",\"mode\":\"thin\"},{\"project\":\"f7ab86e8-ed58-4829-ba2a-4244fd2af523\",\"space\":\"control-17318d1f25554ba8-ui\",\"package\":\"dev.tripoder.previewguest\",\"installGeneration\":\"d8a1045c-3592-4ca6-b288-065fd3f0e63f\",\"bindingOperation\":\"782f55e0-8c10-472b-9948-3fa2053fd4b8\",\"mode\":\"thin\"}]}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 4,
+      "method": "tools/call",
+      "params": {
+        "name": "target_select",
+        "arguments": {
+          "project": "64488a8c-657d-4a7d-9adc-3316c8d92da0",
+          "processGeneration": "de72bb21c169d68a7534035181f73f1a8aa99eaccd85fb69b807c508d69ca368"
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 4,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"af9d7bb7-3802-432f-a05f-2bbb93bf3b4c\",\"ok\":true,\"result\":{\"protocol\":2,\"session\":\"bad73da6-19f2-42fc-b04f-b5338def3fe2\",\"state\":\"OPEN\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"space\":\"control-bdf9e0e1d3c04240-code\",\"package\":\"dev.tripoder.probefixture\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"bindingOperation\":\"38c8e5af-7401-4f15-bd90-7eb4dfd18d5a\",\"processGeneration\":\"de72bb21c169d68a7534035181f73f1a8aa99eaccd85fb69b807c508d69ca368\",\"mode\":\"thin\",\"hookState\":\"IDLE\",\"authenticationRequired\":false,\"reviewRequired\":false,\"autoApprove\":true,\"expires\":null,\"processClose\":\"NOT_REQUESTED\",\"strongIsolation\":false}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 5,
+      "method": "tools/call",
+      "params": {
+        "name": "probe_status",
+        "arguments": {}
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 5,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"0f5f3a7b-9923-4a5d-a911-414a437c3aca\",\"session\":\"bad73da6-19f2-42fc-b04f-b5338def3fe2\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"de72bb21c169d68a7534035181f73f1a8aa99eaccd85fb69b807c508d69ca368\",\"ok\":true,\"result\":{\"enabled\":false,\"revision\":\"\",\"stage\":\"APPLICATION_CREATED\",\"installedHooks\":0,\"loaderCount\":0,\"dexCount\":0,\"scans\":0,\"reservedBytes\":0,\"artifactCount\":0,\"pendingCaptures\":0,\"droppedEvents\":0,\"fullCallerCoverage\":false,\"atomicMemorySnapshot\":false,\"discovery\":\"BASE_DEX_CLASS_LOADER_CONSTRUCTION_AND_ADD_DEX_PATH\",\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"de72bb21c169d68a7534035181f73f1a8aa99eaccd85fb69b807c508d69ca368\",\"pid\":29798,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"operationId\":\"0f5f3a7b-9923-4a5d-a911-414a437c3aca\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 6,
+      "method": "tools/call",
+      "params": {
+        "name": "hook_status",
+        "arguments": {}
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 6,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"db7beb86-1681-4d3c-9777-aaf9bfd018b4\",\"session\":\"bad73da6-19f2-42fc-b04f-b5338def3fe2\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"de72bb21c169d68a7534035181f73f1a8aa99eaccd85fb69b807c508d69ca368\",\"ok\":true,\"result\":{\"state\":\"IDLE\",\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"de72bb21c169d68a7534035181f73f1a8aa99eaccd85fb69b807c508d69ca368\",\"pid\":29798,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"moduleEvents\":[],\"runtimeNativeMappings\":{\"corePath\":\"/data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\",\"coreInode\":\"484361\",\"coreRows\":[\"6e41a17000-6e41a2f000 r--p 00000000 fe:45 484361                         /data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\",\"6e41a32000-6e41a5c000 r-xp 00017000 fe:45 484361                         /data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\",\"6e41a5f000-6e41a61000 r--p 00040000 fe:45 484361                         /data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\",\"6e41a64000-6e41a66000 rw-p 00041000 fe:45 484361                         /data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\"],\"nativePaths\":\"/vendor/lib64/libllvm-qgl.so\\n/system_ext/lib64/libboost.so\\n/system_ext/lib64/libperf_ctl.so\\n/system/lib64/libgppextension.so\\n/data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\\n/apex/com.android.tethering/lib64/libhttpengine.so\\n/system_ext/lib64/libpenguin_impl.so\\n/system/lib64/libwebviewchromium_loader.so\\n/apex/com.android.tethering/lib64/libcrypto_httpengine.so\\n/system_ext/lib64/libmiinput.so\\n/system_ext/lib64/libmigui.so\\n/system_ext/lib64/libforcedarkimpl.so\\n/system_ext/lib64/libqti_performance.so\\n/system_ext/lib64/vendor.qti.hardware.iop@2.0.so\\n/system/lib64/libcompiler_rt.so\\n/vendor/lib64/egl/eglSubDriverAndroid.so\\n/vendor/lib64/egl/libGLESv2_adreno.so\\n/vendor/lib64/libllvm-glnext.so\\n/vendor/lib64/egl/libGLESv1_CM_adreno.so\\n/vendor/lib64/hw/vulkan.adreno.so\\n/vendor/lib64/egl/libEGL_adreno.so\\n/vendor/lib64/vendor.qti.hardware.display.mapper@2.0.so\\n/vendor/lib64/vendor.qti.hardware.hexlp-V2-ndk.so\\n/vendor/lib64/libgsl.so\\n/vendor/lib64/libadreno_utils.so\\n/vendor/lib64/libmapperutils.so\\n/vendor/lib64/vendor.qti.hardware.display.mapper@3.0.so\\n/vendor/lib64/libion.so\\n/vendor/lib64/android.hardware.graphics.common@1.1.so\\n/vendor/lib64/android.hardware.graphics.mapper@2.1.so\\n/vendor/lib64/android.hardware.graphics.allocator-V2-ndk.so\\n/vendor/lib64/libhidlbase.so\\n/vendor/lib64/libc++.so\\n/vendor/lib64/vendor.qti.hardware.display.mapperextensions@1.0.so\\n/vendor/lib64/vendor.qti.hardware.display.mapperextensions@1.3.so\\n/vendor/lib64/libbase.so\\n/vendor/lib64/android.hardware.graphics.mapper@4.0.so\\n/vendor/lib64/libgrallocutils.so\\n/vendor/lib64/android.hardware.graphics.mapper@2.0.so\\n/vendor/lib64/android.hardware.graphics.common@1.2.so\\n/vendor/lib64/libcutils.so\\n/vendor/lib64/libutilscallstack.so\\n/vendor/lib64/libunwindstack.so\\n/vendor/lib64/libutils.so\\n/vendor/lib64/android.hardware.common-V2-ndk.so\\n/vendor/lib64/libz.so\\n/vendor/lib64/android.hardware.graphics.mapper@3.0.so\\n/vendor/lib64/libgralloc.qti.so\\n/vendor/lib64/android.hardware.graphics.common-V7-ndk.so\\n/vendor/lib64/libvmmem.so\\n/vendor/lib64/libgralloccore.so\\n/vendor/lib64/vendor.qti.hardware.display.mapperextensions@1.1.so\\n/vendor/lib64/libdmabufheap.so\\n/vendor/lib64/libgralloctypes.so\\n/vendor/lib64/hw/android.hardware.graphics.mapper@4.0-impl-qti-display.so\\n/vendor/lib64/liblzma.so\\n/vendor/lib64/vendor.qti.hardware.display.mapper@4.0.so\\n/vendor/lib64/vendor.qti.hardware.display.mapperextensions@1.2.so\\n/vendor/lib64/android.hardware.graphics.common@1.0.so\\n/vendor/lib64/libhardware.so\\n/system/lib64/libsonivox.so\\n/system/lib64/libprotobuf-cpp-full-6.33.5.so\\n/system/lib64/libvintf.so\\n/apex/com.android.conscrypt/lib64/libssl.so\\n/apex/com.android.tethering/lib64/libframework-connectivity-jni.so\\n/system/lib64/librs_jni.so\\n/apex/com.android.conscrypt/lib64/libc++.so\\n/apex/com.android.conscrypt/lib64/libcrypto.so\\n/system/lib64/libvintf_jni.so\\n/system/lib64/libstagefright_amrnb_common.so\\n/system/lib64/librtp_jni.so\\n/system/lib64/libaudioeffect_jni.so\\n/system/lib64/libsoundpool.so\\n/system/lib64/android.hardware.tv.tuner-V3-ndk.so\\n/system/lib64/libmediadrmmetrics_full.so\\n/system/lib64/libmediadrmmetrics_consumer.so\\n/system/lib64/libasyncio.so\\n/system/lib64/libmedia_jni.so\\n/system/lib64/libmtp.so\\n/system/lib64/android.hardware.usb.flags-aconfig-cc-lib.so\\n/system/lib64/libdrmframework_jni.so\\n/system/lib64/libdrmframeworkcommon.so\\n/system/lib64/libdrmframework.so\\n/system_ext/lib64/libmiui_runtime.so\\n/apex/com.android.conscrypt/lib64/libjavacrypto.so\\n/apex/com.android.os.statsd/lib64/libstats_jni.so\\n/system_ext/lib64/libqti-at.so\\n/system_ext/lib64/librtanimator.so\\n/system_ext/lib64/libpenguin.so\\n/vendor/lib64/hw/gralloc.default.so\\n/vendor/lib64/libcamxexternalformatutils.so\\n/vendor/lib64/libadreno_app_profiles.so\\n/vendor/lib64/vendor.qti.hardware.display.snapalloc-impl.so\\n/vendor/lib64/libjsoncpp.so\\n/vendor/lib64/hw/mapper.qti.so\\n/system_ext/lib64/libframeestimationVK.so\\n/vendor/lib64/vendor.qti.qspmhal-V1-ndk.so\\n/vendor/lib64/vendor.qti.snapdragonServices-V2-ndk.so\\n/system_ext/lib64/libqti-perfd-client_system.so\\n/system_ext/lib64/vendor.qti.hardware.perf@2.1.so\\n/system_ext/lib64/vendor.qti.hardware.perf@2.3.so\\n/system_ext/lib64/vendor.qti.hardware.perf@2.0.so\\n/system_ext/lib64/vendor.qti.hardware.perf@2.2.so\\n/system/lib64/vendor.qti.hardware.perf2-V1-ndk.so\\n/system_ext/lib64/libstackdump.so\\n/apex/com.android.tethering/lib64/libframework-connectivity-tiramisu-jni.so\\n/system_ext/lib64/libskewknob_system.so\\n/apex/com.android.art/lib64/libopenjdk.so\\n/apex/com.android.art/lib64/libopenjdkjvm.so\\n/apex/com.android.art/lib64/libexpat.so\\n/apex/com.android.art/lib64/libjavacore.so\\n/apex/com.android.art/lib64/libandroidio.so\\n/apex/com.android.i18n/lib64/libicu_jni.so\\n/system/lib64/libwebviewchromium_plat_support.so\\n/system/lib64/libstdc++.so\\n/system/lib64/android.hardware.renderscript@1.0.so\\n/system/lib64/libRS.so\\n/system/lib64/libOpenSLES.so\\n/system/lib64/libOpenMAXAL.so\\n/system/lib64/libjnigraphics.so\\n/system/lib64/libcamera2ndk.so\\n/system/lib64/libamidi.so\\n/system/lib64/libaaudio_internal_builder.so\\n/system/lib64/android.media.audio-aconfig-cc.so\\n/system/lib64/libaaudio_internal_legacy.so\\n/system/lib64/libaaudio.so\\n/system/lib64/libxml2.so\\n/system/lib64/dynamic_instrumentation_manager_aidl-cpp.so\\n/apex/com.android.tethering/lib64/libcom.android.tethering.connectivity_native.so\\n/system/lib64/libpowermanager.so\\n/system/lib64/libandroid.so\\n/system/lib64/android.hardware.power@1.3.so\\n/system/lib64/android.hardware.power@1.2.so\\n/system/lib64/android.os.flags-aconfig-cc.so\\n/apex/com.android.tethering/lib64/libc++.so\\n/system/lib64/android.hardware.power-V7-ndk.so\\n/system/lib64/android.hardware.power@1.1.so\\n/apex/com.android.art/lib64/libperfetto_hprof.so\\n/system/lib64/android.hardware.power@1.0.so\\n/apex/com.android.adbd/lib64/libadbconnection_client.so\\n/apex/com.android.adbd/lib64/libprocessgroup.so\\n/apex/com.android.adbd/lib64/libc++.so\\n/apex/com.android.art/lib64/libadbconnection.so\\n/apex/com.android.adbd/lib64/libbase.so\\n/vendor/lib64/libqspm-mem-utils-vendor.so\\n/system_ext/lib64/libmirim_jni.so\\n/apex/com.android.art/lib64/libart.so\\n/system_ext/lib64/libhwuiinsptrdl.so\\n/apex/com.android.art/lib64/libc++.so\\n/system/lib64/android.hidl.memory.token@1.0.so\\n/system/lib64/libmedia_helper.so\\n/apex/com.android.i18n/lib64/libicui18n.so\\n/apex/com.android.art/lib64/libnativebridge.so\\n/system/lib64/libstagefright_aidl_bufferpool2.so\\n/system/lib64/android.hardware.graphics.allocator@3.0.so\\n/system/lib64/shared-file-region-aidl-cpp.so\\n/system_ext/lib64/libmisight.so\\n/system/lib64/libgralloctypes.so\\n/system/lib64/libcore_jni_flags_c.so\\n/apex/com.android.runtime/lib64/bionic/libdl_android.so\\n/system/lib64/libmedia.so\\n/system/lib64/aconfig_view_accessibility_flags_c_lib.so\\n/system/lib64/libmediadrmmetrics_lite.so\\n/system/lib64/libtimeinstate.so\\n/apex/com.android.i18n/lib64/libandroidicu.so\\n/system/lib64/libbattery.so\\n/system/lib64/capture_state_listener-aidl-cpp.so\\n/system/lib64/android.hardware.media.c2@1.0.so\\n/system/lib64/libstagefright_surface_utils.so\\n/system/lib64/audioflinger-aidl-cpp.so\\n/system/lib64/libcamera_client.so\\n/system/lib64/libprocessgroup.so\\n/system/lib64/android.hardware.camera.common@1.0.so\\n/system/lib64/libunwindstack.so\\n/system/lib64/android.system.suspend-V1-ndk.so\\n/apex/com.android.art/lib64/libunwindstack.so\\n/system/lib64/android.hardware.graphics.mapper@2.1.so\\n/system/lib64/libhardware_legacy.so\\n/system/lib64/libutilscallstack.so\\n/system_ext/lib64/libdynamicaudiolog.so\\n/system_ext/lib64/libjpeg-hyper.so\\n/system/lib64/android.hardware.common-V2-cpp.so\\n/system/lib64/libstagefright_omx_utils.so\\n/system/lib64/android.hardware.media.omx@1.0.so\\n/system/lib64/com.android.media.audio-aconfig-cc.so\\n/system/lib64/libfmq.so\\n/system/lib64/libspeexresampler.so\\n/system/lib64/libprotobuf-cpp-lite-6.33.5.so\\n/system/lib64/libcutils.so\\n/system/lib64/libnativeloader_lazy.so\\n/system/lib64/libselinux.so\\n/system/lib64/server_configurable_flags.so\\n/system/lib64/android.hardware.graphics.common@1.0.so\\n/system/lib64/audioclient-types-aidl-cpp.so\\n/system/lib64/libcodec2_hidl_client@1.0.so\\n/system/lib64/libprocessgroup_platform.so\\n/system/lib64/libmediandk.so\\n/system/lib64/libz.so\\n/system/lib64/volumegroupcallback-aidl-cpp.so\\n/system/lib64/android.hardware.cas@1.0.so\\n/system/lib64/libsensor.so\\n/system/lib64/libhidlmemory.so\\n/system/lib64/android.hardware.cas.native@1.0.so\\n/system/lib64/libutils.so\\n/system/lib64/libincfs.so\\n/system/lib64/android.hardware.drm-V2-ndk.so\\n/system/lib64/libdolbyui.so\\n/system/lib64/android.hardware.drm@1.1.so\\n/system/lib64/libimage_io.so\\n/system/lib64/libjpegencoder.so\\n/system/lib64/media_quality_aidl_interface-cpp.so\\n/system/lib64/android.hardware.graphics.allocator@4.0.so\\n/system/lib64/libdng_sdk.so\\n/system/lib64/android.hardware.media.bufferpool@2.0.so\\n/system/lib64/libprocessgroup_flags_c.so\\n/system/lib64/libstagefright_codecbase.so\\n/system/lib64/liblog_rust.dylib.so\\n/system/lib64/camera_platform_flags_c_lib.so\\n/system/lib64/libcamera_metadata.so\\n/system/lib64/libhidlallocatorutils.so\\n/system/lib64/android.hardware.graphics.mapper@3.0.so\\n/system/lib64/com.android.media.audioclient-aconfig-cc.so\\n/system/lib64/libmedia_jni_utils.so\\n/system/lib64/packagemanager_aidl-cpp.so\\n/system/lib64/libstagefright_bufferqueue_helper.so\\n/system/lib64/libappfuse.so\\n/system/lib64/effect-aidl-cpp.so\\n/system/lib64/android.database.sqlite-aconfig-cc.so\\n/system/lib64/android.hardware.common.fmq-V1-ndk.so\\n/system/lib64/libstagefright_xmlparser.so\\n/system/lib64/chre_flags_c_lib.so\\n/system/lib64/libaaudio_internal_core.so\\n/system/lib64/libGLESv3.so\\n/system/lib64/libwilhelm.so\\n/system/lib64/libaconfig_storage_read_api_cc.so\\n/system/lib64/libmediandk_utils.so\\n/system/lib64/android.hardware.common-V2-ndk.so\\n/system/lib64/libnativedisplay.so\\n/system/lib64/libnativebridge_lazy.so\\n/system/lib64/graphicbuffersource-aidl-ndk.so\\n/system/lib64/libegl_flags.so\\n/system/lib64/libaudioutils.so\\n/system/lib64/libpiex.so\\n/system/lib64/libperfetto_framework_jni.so\\n/system/lib64/libpackagelistparser.so\\n/system/lib64/libaudio_aidl_conversion_common_cpp.so\\n/system/lib64/libcodec2_aidl_client.so\\n/system/lib64/libperfetto_c.so\\n/system/lib64/android.hardware.drm@1.4.so\\n/system/lib64/libshmemutil.so\\n/apex/com.android.art/lib64/liblzma.so\\n/system/lib64/libminikin.so\\n/apex/com.android.i18n/lib64/libicuuc.so\\n/system/lib64/libsqlite.so\\n/apex/com.android.art/lib64/libnativeloader.so\\n/system/lib64/android.media.audiopolicy-aconfig-cc.so\\n/system/lib64/libjpegdecoder.so\\n/system/lib64/libaaudio_internal_mmap.so\\n/system/lib64/libapexsupport.so\\n/system/lib64/libvulkan.so\\n/system/lib64/libaudiopolicy.so\\n/system/lib64/libcodec2_hidl_client@1.1.so\\n/system/lib64/libdebugstore_cxx.so\\n/system/lib64/libaudiofoundation.so\\n/system/lib64/android.hardware.graphics.common@1.2.so\\n/system/lib64/libcodec2_client.so\\n/system/lib64/process_info_service_aidl-cpp.so\\n/system/lib64/libmedia_omx.so\\n/system/lib64/libnetd_client.so\\n/system/lib64/libhidlbase.so\\n/system/lib64/libSurfaceFlingerProp.so\\n/apex/com.android.runtime/lib64/bionic/libc.so\\n/system/lib64/spatializer-aidl-cpp.so\\n/system/lib64/libhwui.so\\n/system/lib64/android.hardware.drm@1.3.so\\n/system/lib64/libbpf_bcc.so\\n/system/lib64/android.hardware.camera.device@3.2.so\\n/system/lib64/libpng.so\\n/system_ext/lib64/libmediastub.so\\n/system/lib64/com.android.window.flags.window-aconfig_flags_c_lib.so\\n/system/lib64/android.hardware.common.fmq-V1-cpp.so\\n/system/lib64/libft2.so\\n/system/lib64/libultrahdr.so\\n/system/lib64/libactivitymanager_aidl.so\\n/system/lib64/libheif.so\\n/system/lib64/libcodec2_hidl_client@1.2.so\\n/system/lib64/android.media.audio.common.types-V5-cpp.so\\n/system/lib64/libnetdutils.so\\n/system/lib64/libaaudio_internal_utils.so\\n/system/lib64/libdataloader.so\\n/system/lib64/libGLESv2.so\\n/system/lib64/libprocinfo.so\\n/system/lib64/libclang_rt.ubsan_standalone-aarch64-android.so\\n/system/lib64/libstagefright_bufferpool@2.0.1.so\\n/system/lib64/android.hardware.drm@1.0.so\\n/system/lib64/av-types-aidl-cpp.so\\n/system/lib64/audiopolicy-types-aidl-cpp.so\\n/system_ext/lib64/libaudiocloudctrl.so\\n/system/lib64/android.hardware.graphics.allocator-V2-ndk.so\\n/system/lib64/audio-permission-aidl-cpp.so\\n/system/lib64/media_permission-aidl-cpp.so\\n/system/lib64/android.hardware.graphics.mapper@2.0.so\\n/system/lib64/libbase.so\\n/system/lib64/libpcre2.so\\n/system/lib64/libimg_utils.so\\n/system/lib64/libstagefright_framecapture_utils.so\\n/system/lib64/liblog.so\\n/system/lib64/liblzma.so\\n/system/lib64/com.android.media.audioserver-aconfig-cc.so\\n/system/lib64/android.hidl.token@1.0-utils.so\\n/system/lib64/libinput.so\\n/system/lib64/libmemtrack.so\\n/system/lib64/libsync.so\\n/apex/com.android.i18n/lib64/libicu.so\\n/system/lib64/android.hardware.media.c2@1.1.so\\n/system/lib64/libvndksupport.so\\n/system/lib64/libmeminfo.so\\n/system/lib64/libprotolog.so\\n/system/lib64/android.hardware.media.c2@1.2.so\\n/system/lib64/libmemunreachable.so\\n/system/lib64/android.hidl.memory@1.0.so\\n/system/lib64/libjsoncpp.so\\n/system/lib64/com.android.media.aaudio-aconfig-cc.so\\n/system/lib64/libmedia_quality_include.so\\n/system/lib64/libpermission.so\\n/system/lib64/android.hardware.graphics.composer3-V5-ndk.so\\n/system/lib64/libmediametrics.so\\n/system/lib64/libshmemcompat.so\\n/system/lib64/libexpat.so\\n/system/lib64/contexthub_data_flow.so\\n/system/lib64/soc_flags_lib_cc.so\\n/system/lib64/libbinderdebug.so\\n/system/lib64/libskuparser_ffi.so\\n/system/lib64/lib-camera-compatibility-info-api.so\\n/system/lib64/libbinder.so\\n/system/lib64/libcodec2.so\\n/system/lib64/libmedia_omx_client.so\\n/system/lib64/libtinyxml2.so\\n/system/lib64/aconfig_mediacodec_flags_c_lib.so\\n/system/lib64/framework-permission-aidl-cpp.so\\n/system/lib64/libcodec2_vndk.so\\n/system/lib64/libdebuggerd_client.so\\n/system/lib64/libharfbuzz_subset.so\\n/system/lib64/audiopolicy-aidl-cpp.so\\n/system/lib64/libstagefright_http_support.so\\n/system/lib64/android.hidl.allocator@1.0.so\\n/system/lib64/libcesu8.dylib.so\\n/system/lib64/libharfbuzz_ng.so\\n/system/lib64/pw_allocator.so\\n/system/lib64/libstagefright_graphicbuffersource_aidl.so\\n/system/lib64/android.hardware.graphics.allocator@2.0.so\\n/system/lib64/android.hardware.graphics.bufferqueue@2.0.so\\n/system/lib64/libpdfium.so\\n/apex/com.android.art/lib64/libsigchain.so\\n/system/lib64/libmediadrm.so\\n/system/lib64/aconfig_text_flags_c_lib.so\\n/system/lib64/libxml_rust.dylib.so\\n/system/lib64/libssl.so\\n/system/lib64/android.hardware.graphics.bufferqueue@1.0.so\\n/system/lib64/libstagefright_foundation.so\\n/system/lib64/android.hardware.media@1.0.so\\n/system/lib64/libaudiobase.so\\n/system/lib64/libbpf_minimal.so\\n/apex/com.android.runtime/lib64/bionic/libm.so\\n/system/lib64/libmedia_codeclist.so\\n/system/lib64/libcrypto.so\\n/system/lib64/libc++.so\\n/system/lib64/libskuparser_cpp.so\\n/system/lib64/android.hardware.media.bufferpool2-V2-ndk.so\\n/system/lib64/libETC1.so\\n/system/lib64/libaudiomanager.so\\n/system/lib64/libnativewindow.so\\n/system/lib64/libtracing_perfetto.so\\n/system/lib64/android.hardware.graphics.mapper@4.0.so\\n/system/lib64/mediametricsservice-aidl-V1-cpp.so\\n/system/lib64/libstd.dylib.so\\n/system/lib64/libusbhost.so\\n/system/lib64/libcodec2_hal_common.so\\n/apex/com.android.runtime/lib64/bionic/libdl.so\\n/system/lib64/libcameracompatbilityinfo.so\\n/system/lib64/aaudio-aidl-cpp.so\\n/system/lib64/libaaudio_internal_fifo.so\\n/system/lib64/libsfplugin_ccodec_utils.so\\n/system/lib64/libcxx.dylib.so\\n/system/lib64/libguiflags.so\\n/system/lib64/libandroidfw.so\\n/system/lib64/libdatasource.so\\n/system/lib64/android.hardware.media.c2-V2-ndk.so\\n/system/lib64/libjxl.so\\n/system/lib64/libbinder_ndk.so\\n/system/lib64/libandroid_runtime_lazy.so\\n/system/lib64/android.hidl.token@1.0.so\\n/system/lib64/libEGL.so\\n/system/lib64/lib-platform-compat-native-api.so\\n/system/lib64/libgraphicsenv.so\\n/system/lib64/libcurl.so\\n/system/lib64/libgui.so\\n/system/lib64/libstagefright.so\\n/apex/com.android.art/lib64/libbase.so\\n/system_ext/lib64/libMiVideoFilter.so\\n/system/lib64/libxqos.so\\n/system/lib64/android.hardware.graphics.common@1.1.so\\n/system/lib64/libpipelineinfosuploader.so\\n/system/lib64/libdmabufheap.so\\n/system/lib64/android.hardware.memtrack-V1-ndk.so\\n/system/lib64/android.companion.virtual.virtualdevice_aidl-cpp.so\\n/system/lib64/libziparchive.so\\n/system/lib64/libGLESv1_CM.so\\n/system/lib64/android.hardware.contexthub-V5-ndk.so\\n/system/lib64/android.hardware.drm@1.2.so\\n/system/lib64/libandroid_runtime.so\\n/system/lib64/android.hidl.safe_union@1.0.so\\n/system/lib64/libaudioclient.so\\n/system/lib64/libjni.dylib.so\\n/system/lib64/libaudioclient_aidl_conversion.so\\n/system/lib64/libui.so\\n/system/lib64/libmediautils.so\\n/system/lib64/libhardware.so\\n/system_ext/lib64/libdolbyeffect.so\\n/system/lib64/android.hardware.graphics.common-V7-ndk.so\\n/system/lib64/android.hardware.drm.common-V1-ndk.so\\n/system/lib64/libjpeg.so\\n/system/lib64/libmedia_codeclist_capabilities.so\\n/system/lib64/libsfplugin_ccodec.so\\n/system/lib64/libtombstoned_client.so\\n/system/lib64/libartpalette-system.so\\n/system/lib64/heapprofd_client_api.so\\n/apex/com.android.art/lib64/libart-disassembler.so\\n/apex/com.android.art/lib64/libdexfile.so\\n/apex/com.android.art/lib64/libprofile.so\\n/apex/com.android.art/lib64/libartbase.so\\n/apex/com.android.art/lib64/liblz4.so\\n/apex/com.android.art/lib64/libartpalette.so\\n/apex/com.android.os.statsd/lib64/libstatspull.so\\n/apex/com.android.os.statsd/lib64/libstatssocket.so\\n/apex/com.android.art/lib64/libnativehelper.so\",\"nativeRowsSha256\":\"ef7f9a07a47f8a1d0dd6ba6165cd0431af303516493082b4f1f7e8de78c6986f\",\"foreignBackendRows\":[],\"mapsSha256\":\"da21bf1325048a2d7810bf0f5fceebdbf37dfe65d3b843047415ea640cb9e8a4\",\"mapsBytes\":423978,\"mapsRowCount\":4376,\"schema\":1,\"pid\":29798,\"uid\":10431,\"processGeneration\":\"de72bb21c169d68a7534035181f73f1a8aa99eaccd85fb69b807c508d69ca368\",\"coreSha256\":\"64a702be0fbb721b7455125946b0aa3727f0ea57c273f36248f313a8e0f2f98f\",\"coreSize\":1191656,\"physicalProcess\":\"dev.tripoder.engine:slot0\"},\"executionPolicy\":{\"bound\":true,\"owned\":false,\"observedLevel\":0,\"claims\":0,\"client\":\"tripoder-managed-process-interpreter\",\"processLifetimeLease\":false,\"policy\":\"method-entry-only\",\"preserveCompilation\":true,\"explicitInitialization\":true,\"preexistingCompiledFramesCovered\":false,\"fullCallerCoverage\":false,\"fixedBindings\":1021},\"nativeCoreResources\":{\"issued\":0,\"prepared\":0,\"active\":0,\"retired\":0,\"failed\":0,\"inFlight\":0,\"inboundUsed\":1,\"retainedImages\":0,\"jniGlobalRoots\":0,\"jniOwnedThreadLeases\":0,\"jniThreadAttachments\":0,\"jniThreadDetachments\":0,\"publishedResourcesRetained\":true},\"operationId\":\"db7beb86-1681-4d3c-9777-aaf9bfd018b4\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 7,
+      "method": "tools/call",
+      "params": {
+        "name": "probes_configure",
+        "arguments": {
+          "operationId": "932e205f-bcf1-462f-8ba5-9fc4b5a26738",
+          "project": "64488a8c-657d-4a7d-9adc-3316c8d92da0",
+          "expectedRevision": "",
+          "configuration": {
+            "enabled": true,
+            "discoverLoaders": true,
+            "captureDexOnLoad": true,
+            "maxDexBytes": 1048576,
+            "maxTotalBytes": 8388608,
+            "maxArtifacts": 16,
+            "processName": "dev.tripoder.probefixture",
+            "startupHook": {
+              "selectors": [
+                {
+                  "id": "startup",
+                  "kind": "java",
+                  "className": "dev.tripoder.probefixture.ProbeApplication",
+                  "methodName": "startupValue",
+                  "argumentTypes": []
+                }
+              ],
+              "source": "import { definePlan } from '@abox/hook';\nexport default definePlan({id:'startup-probe',target,params:{},setup(ctx){ctx.java.method('dev.tripoder.probefixture.ProbeApplication','startupValue',[]).replace(()=>'hooked-before-application');}});\n"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 7,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"932e205f-bcf1-462f-8ba5-9fc4b5a26738\",\"ok\":true,\"result\":{\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"bindingOperation\":\"38c8e5af-7401-4f15-bd90-7eb4dfd18d5a\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"revision\":\"f70b88d1-679d-46f4-9b35-5139a8666fca\",\"configuration\":{\"enabled\":true,\"discoverLoaders\":true,\"captureDexOnLoad\":true,\"maxDexBytes\":1048576,\"maxTotalBytes\":8388608,\"maxArtifacts\":16,\"processName\":\"dev.tripoder.probefixture\",\"startupHook\":{\"selectors\":[{\"id\":\"startup\",\"kind\":\"java\",\"className\":\"dev.tripoder.probefixture.ProbeApplication\",\"methodName\":\"startupValue\",\"argumentTypes\":[]}],\"source\":\"import { definePlan } from '@abox/hook';\\nexport default definePlan({id:'startup-probe',target,params:{},setup(ctx){ctx.java.method('dev.tripoder.probefixture.ProbeApplication','startupValue',[]).replace(()=>'hooked-before-application');}});\\n\"}},\"appliesTo\":\"NEW_PROCESSES\",\"survivesAuthorityRestart\":false}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 8,
+      "method": "tools/call",
+      "params": {
+        "name": "operation_get",
+        "arguments": {
+          "operationId": "932e205f-bcf1-462f-8ba5-9fc4b5a26738"
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 8,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"fa7ca027-a2bc-452b-8f1f-cb0c6b12927e\",\"ok\":true,\"result\":{\"operationId\":\"932e205f-bcf1-462f-8ba5-9fc4b5a26738\",\"state\":\"SUCCEEDED\",\"detail\":\"\",\"result\":\"{\\\"project\\\":\\\"64488a8c-657d-4a7d-9adc-3316c8d92da0\\\",\\\"bindingOperation\\\":\\\"38c8e5af-7401-4f15-bd90-7eb4dfd18d5a\\\",\\\"installGeneration\\\":\\\"3f6d628f-fc44-4a52-8711-4f77705108ba\\\",\\\"revision\\\":\\\"f70b88d1-679d-46f4-9b35-5139a8666fca\\\",\\\"configuration\\\":{\\\"enabled\\\":true,\\\"discoverLoaders\\\":true,\\\"captureDexOnLoad\\\":true,\\\"maxDexBytes\\\":1048576,\\\"maxTotalBytes\\\":8388608,\\\"maxArtifacts\\\":16,\\\"processName\\\":\\\"dev.tripoder.probefixture\\\",\\\"startupHook\\\":{\\\"selectors\\\":[{\\\"id\\\":\\\"startup\\\",\\\"kind\\\":\\\"java\\\",\\\"className\\\":\\\"dev.tripoder.probefixture.ProbeApplication\\\",\\\"methodName\\\":\\\"startupValue\\\",\\\"argumentTypes\\\":[]}],\\\"source\\\":\\\"import { definePlan } from '@abox\\\\/hook';\\\\nexport default definePlan({id:'startup-probe',target,params:{},setup(ctx){ctx.java.method('dev.tripoder.probefixture.ProbeApplication','startupValue',[]).replace(()=>'hooked-before-application');}});\\\\n\\\"}},\\\"appliesTo\\\":\\\"NEW_PROCESSES\\\",\\\"survivesAuthorityRestart\\\":false}\",\"evidence\":\"\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 9,
+      "method": "tools/call",
+      "params": {
+        "name": "probes_configure",
+        "arguments": {
+          "operationId": "932e205f-bcf1-462f-8ba5-9fc4b5a26738",
+          "project": "64488a8c-657d-4a7d-9adc-3316c8d92da0",
+          "expectedRevision": "",
+          "configuration": {
+            "enabled": true,
+            "discoverLoaders": true,
+            "captureDexOnLoad": true,
+            "maxDexBytes": 1048576,
+            "maxTotalBytes": 8388608,
+            "maxArtifacts": 16,
+            "processName": "dev.tripoder.probefixture",
+            "startupHook": {
+              "selectors": [
+                {
+                  "id": "startup",
+                  "kind": "java",
+                  "className": "dev.tripoder.probefixture.ProbeApplication",
+                  "methodName": "startupValue",
+                  "argumentTypes": []
+                }
+              ],
+              "source": "import { definePlan } from '@abox/hook';\nexport default definePlan({id:'startup-probe',target,params:{},setup(ctx){ctx.java.method('dev.tripoder.probefixture.ProbeApplication','startupValue',[]).replace(()=>'hooked-before-application');}});\n"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 9,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"932e205f-bcf1-462f-8ba5-9fc4b5a26738\",\"ok\":true,\"result\":{\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"bindingOperation\":\"38c8e5af-7401-4f15-bd90-7eb4dfd18d5a\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"revision\":\"f70b88d1-679d-46f4-9b35-5139a8666fca\",\"configuration\":{\"enabled\":true,\"discoverLoaders\":true,\"captureDexOnLoad\":true,\"maxDexBytes\":1048576,\"maxTotalBytes\":8388608,\"maxArtifacts\":16,\"processName\":\"dev.tripoder.probefixture\",\"startupHook\":{\"selectors\":[{\"id\":\"startup\",\"kind\":\"java\",\"className\":\"dev.tripoder.probefixture.ProbeApplication\",\"methodName\":\"startupValue\",\"argumentTypes\":[]}],\"source\":\"import { definePlan } from '@abox/hook';\\nexport default definePlan({id:'startup-probe',target,params:{},setup(ctx){ctx.java.method('dev.tripoder.probefixture.ProbeApplication','startupValue',[]).replace(()=>'hooked-before-application');}});\\n\"}},\"appliesTo\":\"NEW_PROCESSES\",\"survivesAuthorityRestart\":false}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 10,
+      "method": "tools/call",
+      "params": {
+        "name": "probes_configure",
+        "arguments": {
+          "operationId": "4b1b1afd-b723-43c8-877a-14803f52189a",
+          "project": "64488a8c-657d-4a7d-9adc-3316c8d92da0",
+          "expectedRevision": "wrong",
+          "configuration": {
+            "enabled": true,
+            "discoverLoaders": true,
+            "captureDexOnLoad": true,
+            "maxDexBytes": 1048576,
+            "maxTotalBytes": 8388608,
+            "maxArtifacts": 16,
+            "processName": "dev.tripoder.probefixture",
+            "startupHook": {
+              "selectors": [
+                {
+                  "id": "startup",
+                  "kind": "java",
+                  "className": "dev.tripoder.probefixture.ProbeApplication",
+                  "methodName": "startupValue",
+                  "argumentTypes": []
+                }
+              ],
+              "source": "import { definePlan } from '@abox/hook';\nexport default definePlan({id:'startup-probe',target,params:{},setup(ctx){ctx.java.method('dev.tripoder.probefixture.ProbeApplication','startupValue',[]).replace(()=>'hooked-before-application');}});\n"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 10,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"4b1b1afd-b723-43c8-877a-14803f52189a\",\"ok\":false,\"error\":\"IllegalStateException:PROBE_REVISION_STALE\"}"
+          }
+        ],
+        "isError": true
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 11,
+      "method": "tools/call",
+      "params": {
+        "name": "process_start",
+        "arguments": {
+          "operationId": "b4b4a97e-4037-4ca1-b0c5-56f9a23a8e1d",
+          "project": "64488a8c-657d-4a7d-9adc-3316c8d92da0",
+          "component": "",
+          "probeRevision": "f70b88d1-679d-46f4-9b35-5139a8666fca"
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 11,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"b4b4a97e-4037-4ca1-b0c5-56f9a23a8e1d\",\"ok\":true,\"result\":{\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"pid\":29931,\"probeRevision\":\"f70b88d1-679d-46f4-9b35-5139a8666fca\",\"entryDispatchRequested\":true,\"operationId\":\"b4b4a97e-4037-4ca1-b0c5-56f9a23a8e1d\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 12,
+      "method": "tools/call",
+      "params": {
+        "name": "target_select",
+        "arguments": {
+          "project": "64488a8c-657d-4a7d-9adc-3316c8d92da0",
+          "processGeneration": "d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7"
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 12,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"350a3eec-f667-48b2-9138-f2377e24edd7\",\"ok\":true,\"result\":{\"protocol\":2,\"session\":\"fb450116-c435-4002-96d1-4fa0018c2b4d\",\"state\":\"OPEN\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"space\":\"control-bdf9e0e1d3c04240-code\",\"package\":\"dev.tripoder.probefixture\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"bindingOperation\":\"38c8e5af-7401-4f15-bd90-7eb4dfd18d5a\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"mode\":\"thin\",\"hookState\":\"IDLE\",\"authenticationRequired\":false,\"reviewRequired\":false,\"autoApprove\":true,\"expires\":null,\"processClose\":\"NOT_REQUESTED\",\"strongIsolation\":false}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 13,
+      "method": "tools/call",
+      "params": {
+        "name": "probe_status",
+        "arguments": {}
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 13,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"ae04d648-2d4b-4f3e-af2c-e9f35cf79fb9\",\"session\":\"fb450116-c435-4002-96d1-4fa0018c2b4d\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"ok\":true,\"result\":{\"enabled\":true,\"revision\":\"f70b88d1-679d-46f4-9b35-5139a8666fca\",\"stage\":\"APPLICATION_CREATED\",\"installedHooks\":10,\"loaderCount\":3,\"dexCount\":3,\"scans\":6,\"reservedBytes\":6424,\"artifactCount\":3,\"pendingCaptures\":0,\"droppedEvents\":0,\"fullCallerCoverage\":false,\"atomicMemorySnapshot\":false,\"discovery\":\"BASE_DEX_CLASS_LOADER_CONSTRUCTION_AND_ADD_DEX_PATH\",\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"pid\":29931,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"operationId\":\"ae04d648-2d4b-4f3e-af2c-e9f35cf79fb9\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 14,
+      "method": "tools/call",
+      "params": {
+        "name": "hook_status",
+        "arguments": {}
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 14,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"d5c7dce9-be1b-47d6-9839-4cc0eab145a8\",\"session\":\"fb450116-c435-4002-96d1-4fa0018c2b4d\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"ok\":true,\"result\":{\"state\":\"ACTIVE\",\"revision\":\"aa560235a278132c48888d08610febee2ca783d5a78c558c6bd981b69c20a0f3\",\"sourceSha256\":\"0bbc96d818af6d89da875b77650ee2bcb0d7eb264053c50dbc39441e2065b822\",\"parameterVersion\":1,\"parameters\":{},\"hits\":1,\"errors\":0,\"inFlight\":0,\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"pid\":29931,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"moduleEvents\":[],\"runtimeNativeMappings\":{\"corePath\":\"/data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\",\"coreInode\":\"484361\",\"coreRows\":[\"6e3ee22000-6e3ee3a000 r--p 00000000 fe:45 484361                         /data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\",\"6e3ee3d000-6e3ee67000 r-xp 00017000 fe:45 484361                         /data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\",\"6e3ee6a000-6e3ee6c000 r--p 00040000 fe:45 484361                         /data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\",\"6e3ee6f000-6e3ee71000 rw-p 00041000 fe:45 484361                         /data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\"],\"nativePaths\":\"/vendor/lib64/libllvm-qgl.so\\n/system_ext/lib64/libboost.so\\n/system_ext/lib64/libperf_ctl.so\\n/system/lib64/libgppextension.so\\n/data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\\n/apex/com.android.tethering/lib64/libhttpengine.so\\n/system_ext/lib64/libpenguin_impl.so\\n/system/lib64/libwebviewchromium_loader.so\\n/apex/com.android.tethering/lib64/libcrypto_httpengine.so\\n/system_ext/lib64/libmiinput.so\\n/system_ext/lib64/libmigui.so\\n/system_ext/lib64/libforcedarkimpl.so\\n/system_ext/lib64/libqti_performance.so\\n/system_ext/lib64/vendor.qti.hardware.iop@2.0.so\\n/system/lib64/libcompiler_rt.so\\n/vendor/lib64/egl/eglSubDriverAndroid.so\\n/vendor/lib64/egl/libGLESv2_adreno.so\\n/vendor/lib64/libllvm-glnext.so\\n/vendor/lib64/egl/libGLESv1_CM_adreno.so\\n/vendor/lib64/hw/vulkan.adreno.so\\n/vendor/lib64/egl/libEGL_adreno.so\\n/vendor/lib64/vendor.qti.hardware.display.mapper@2.0.so\\n/vendor/lib64/vendor.qti.hardware.hexlp-V2-ndk.so\\n/vendor/lib64/libgsl.so\\n/vendor/lib64/libadreno_utils.so\\n/vendor/lib64/libmapperutils.so\\n/vendor/lib64/vendor.qti.hardware.display.mapper@3.0.so\\n/vendor/lib64/libion.so\\n/vendor/lib64/android.hardware.graphics.common@1.1.so\\n/vendor/lib64/android.hardware.graphics.mapper@2.1.so\\n/vendor/lib64/android.hardware.graphics.allocator-V2-ndk.so\\n/vendor/lib64/libhidlbase.so\\n/vendor/lib64/libc++.so\\n/vendor/lib64/vendor.qti.hardware.display.mapperextensions@1.0.so\\n/vendor/lib64/vendor.qti.hardware.display.mapperextensions@1.3.so\\n/vendor/lib64/libbase.so\\n/vendor/lib64/android.hardware.graphics.mapper@4.0.so\\n/vendor/lib64/libgrallocutils.so\\n/vendor/lib64/android.hardware.graphics.mapper@2.0.so\\n/vendor/lib64/android.hardware.graphics.common@1.2.so\\n/vendor/lib64/libcutils.so\\n/vendor/lib64/libutilscallstack.so\\n/vendor/lib64/libunwindstack.so\\n/vendor/lib64/libutils.so\\n/vendor/lib64/android.hardware.common-V2-ndk.so\\n/vendor/lib64/libz.so\\n/vendor/lib64/android.hardware.graphics.mapper@3.0.so\\n/vendor/lib64/libgralloc.qti.so\\n/vendor/lib64/android.hardware.graphics.common-V7-ndk.so\\n/vendor/lib64/libvmmem.so\\n/vendor/lib64/libgralloccore.so\\n/vendor/lib64/vendor.qti.hardware.display.mapperextensions@1.1.so\\n/vendor/lib64/libdmabufheap.so\\n/vendor/lib64/libgralloctypes.so\\n/vendor/lib64/hw/android.hardware.graphics.mapper@4.0-impl-qti-display.so\\n/vendor/lib64/liblzma.so\\n/vendor/lib64/vendor.qti.hardware.display.mapper@4.0.so\\n/vendor/lib64/vendor.qti.hardware.display.mapperextensions@1.2.so\\n/vendor/lib64/android.hardware.graphics.common@1.0.so\\n/vendor/lib64/libhardware.so\\n/system/lib64/libsonivox.so\\n/system/lib64/libprotobuf-cpp-full-6.33.5.so\\n/system/lib64/libvintf.so\\n/apex/com.android.conscrypt/lib64/libssl.so\\n/apex/com.android.tethering/lib64/libframework-connectivity-jni.so\\n/system/lib64/librs_jni.so\\n/apex/com.android.conscrypt/lib64/libc++.so\\n/apex/com.android.conscrypt/lib64/libcrypto.so\\n/system/lib64/libvintf_jni.so\\n/system/lib64/libstagefright_amrnb_common.so\\n/system/lib64/librtp_jni.so\\n/system/lib64/libaudioeffect_jni.so\\n/system/lib64/libsoundpool.so\\n/system/lib64/android.hardware.tv.tuner-V3-ndk.so\\n/system/lib64/libmediadrmmetrics_full.so\\n/system/lib64/libmediadrmmetrics_consumer.so\\n/system/lib64/libasyncio.so\\n/system/lib64/libmedia_jni.so\\n/system/lib64/libmtp.so\\n/system/lib64/android.hardware.usb.flags-aconfig-cc-lib.so\\n/system/lib64/libdrmframework_jni.so\\n/system/lib64/libdrmframeworkcommon.so\\n/system/lib64/libdrmframework.so\\n/system_ext/lib64/libmiui_runtime.so\\n/apex/com.android.conscrypt/lib64/libjavacrypto.so\\n/apex/com.android.os.statsd/lib64/libstats_jni.so\\n/system_ext/lib64/libqti-at.so\\n/system_ext/lib64/librtanimator.so\\n/vendor/lib64/libjsoncpp.so\\n/vendor/lib64/vendor.qti.hardware.display.snapalloc-impl.so\\n/vendor/lib64/libadreno_app_profiles.so\\n/system_ext/lib64/libpenguin.so\\n/vendor/lib64/hw/gralloc.default.so\\n/vendor/lib64/libcamxexternalformatutils.so\\n/vendor/lib64/hw/mapper.qti.so\\n/vendor/lib64/vendor.qti.qspmhal-V1-ndk.so\\n/vendor/lib64/vendor.qti.snapdragonServices-V2-ndk.so\\n/vendor/lib64/libqspm-mem-utils-vendor.so\\n/system_ext/lib64/libframeestimationVK.so\\n/system_ext/lib64/libqti-perfd-client_system.so\\n/system_ext/lib64/vendor.qti.hardware.perf@2.1.so\\n/system_ext/lib64/vendor.qti.hardware.perf@2.3.so\\n/system_ext/lib64/vendor.qti.hardware.perf@2.0.so\\n/system_ext/lib64/vendor.qti.hardware.perf@2.2.so\\n/system/lib64/vendor.qti.hardware.perf2-V1-ndk.so\\n/system_ext/lib64/libstackdump.so\\n/apex/com.android.tethering/lib64/libframework-connectivity-tiramisu-jni.so\\n/system_ext/lib64/libskewknob_system.so\\n/apex/com.android.art/lib64/libopenjdk.so\\n/apex/com.android.art/lib64/libopenjdkjvm.so\\n/apex/com.android.art/lib64/libexpat.so\\n/apex/com.android.art/lib64/libjavacore.so\\n/apex/com.android.art/lib64/libandroidio.so\\n/apex/com.android.i18n/lib64/libicu_jni.so\\n/system/lib64/libwebviewchromium_plat_support.so\\n/system/lib64/libstdc++.so\\n/system/lib64/android.hardware.renderscript@1.0.so\\n/system/lib64/libRS.so\\n/system/lib64/libOpenSLES.so\\n/system/lib64/libOpenMAXAL.so\\n/system/lib64/libjnigraphics.so\\n/system/lib64/libcamera2ndk.so\\n/system/lib64/libamidi.so\\n/system/lib64/libaaudio_internal_builder.so\\n/system/lib64/android.media.audio-aconfig-cc.so\\n/system/lib64/libaaudio_internal_legacy.so\\n/system/lib64/libaaudio.so\\n/system/lib64/libxml2.so\\n/system/lib64/dynamic_instrumentation_manager_aidl-cpp.so\\n/apex/com.android.tethering/lib64/libcom.android.tethering.connectivity_native.so\\n/system/lib64/libpowermanager.so\\n/system/lib64/libandroid.so\\n/system/lib64/android.hardware.power@1.3.so\\n/system/lib64/android.hardware.power@1.2.so\\n/system/lib64/android.os.flags-aconfig-cc.so\\n/apex/com.android.tethering/lib64/libc++.so\\n/system/lib64/android.hardware.power-V7-ndk.so\\n/system/lib64/android.hardware.power@1.1.so\\n/apex/com.android.art/lib64/libperfetto_hprof.so\\n/system/lib64/android.hardware.power@1.0.so\\n/apex/com.android.adbd/lib64/libadbconnection_client.so\\n/apex/com.android.adbd/lib64/libprocessgroup.so\\n/apex/com.android.adbd/lib64/libc++.so\\n/apex/com.android.art/lib64/libadbconnection.so\\n/apex/com.android.adbd/lib64/libbase.so\\n/system_ext/lib64/libmirim_jni.so\\n/apex/com.android.art/lib64/libart.so\\n/system_ext/lib64/libhwuiinsptrdl.so\\n/apex/com.android.art/lib64/libc++.so\\n/system/lib64/android.hidl.memory.token@1.0.so\\n/system/lib64/libmedia_helper.so\\n/apex/com.android.i18n/lib64/libicui18n.so\\n/apex/com.android.art/lib64/libnativebridge.so\\n/system/lib64/libstagefright_aidl_bufferpool2.so\\n/system/lib64/android.hardware.graphics.allocator@3.0.so\\n/system/lib64/shared-file-region-aidl-cpp.so\\n/system_ext/lib64/libmisight.so\\n/system/lib64/libgralloctypes.so\\n/system/lib64/libcore_jni_flags_c.so\\n/apex/com.android.runtime/lib64/bionic/libdl_android.so\\n/system/lib64/libmedia.so\\n/system/lib64/aconfig_view_accessibility_flags_c_lib.so\\n/system/lib64/libmediadrmmetrics_lite.so\\n/system/lib64/libtimeinstate.so\\n/apex/com.android.i18n/lib64/libandroidicu.so\\n/system/lib64/libbattery.so\\n/system/lib64/capture_state_listener-aidl-cpp.so\\n/system/lib64/android.hardware.media.c2@1.0.so\\n/system/lib64/libstagefright_surface_utils.so\\n/system/lib64/audioflinger-aidl-cpp.so\\n/system/lib64/libcamera_client.so\\n/system/lib64/libprocessgroup.so\\n/system/lib64/android.hardware.camera.common@1.0.so\\n/system/lib64/libunwindstack.so\\n/system/lib64/android.system.suspend-V1-ndk.so\\n/apex/com.android.art/lib64/libunwindstack.so\\n/system/lib64/android.hardware.graphics.mapper@2.1.so\\n/system/lib64/libhardware_legacy.so\\n/system/lib64/libutilscallstack.so\\n/system_ext/lib64/libdynamicaudiolog.so\\n/system_ext/lib64/libjpeg-hyper.so\\n/system/lib64/android.hardware.common-V2-cpp.so\\n/system/lib64/libstagefright_omx_utils.so\\n/system/lib64/android.hardware.media.omx@1.0.so\\n/system/lib64/com.android.media.audio-aconfig-cc.so\\n/system/lib64/libfmq.so\\n/system/lib64/libspeexresampler.so\\n/system/lib64/libprotobuf-cpp-lite-6.33.5.so\\n/system/lib64/libcutils.so\\n/system/lib64/libnativeloader_lazy.so\\n/system/lib64/libselinux.so\\n/system/lib64/server_configurable_flags.so\\n/system/lib64/android.hardware.graphics.common@1.0.so\\n/system/lib64/audioclient-types-aidl-cpp.so\\n/system/lib64/libcodec2_hidl_client@1.0.so\\n/system/lib64/libprocessgroup_platform.so\\n/system/lib64/libmediandk.so\\n/system/lib64/libz.so\\n/system/lib64/volumegroupcallback-aidl-cpp.so\\n/system/lib64/android.hardware.cas@1.0.so\\n/system/lib64/libsensor.so\\n/system/lib64/libhidlmemory.so\\n/system/lib64/android.hardware.cas.native@1.0.so\\n/system/lib64/libutils.so\\n/system/lib64/libincfs.so\\n/system/lib64/android.hardware.drm-V2-ndk.so\\n/system/lib64/libdolbyui.so\\n/system/lib64/android.hardware.drm@1.1.so\\n/system/lib64/libimage_io.so\\n/system/lib64/libjpegencoder.so\\n/system/lib64/media_quality_aidl_interface-cpp.so\\n/system/lib64/android.hardware.graphics.allocator@4.0.so\\n/system/lib64/libdng_sdk.so\\n/system/lib64/android.hardware.media.bufferpool@2.0.so\\n/system/lib64/libprocessgroup_flags_c.so\\n/system/lib64/libstagefright_codecbase.so\\n/system/lib64/liblog_rust.dylib.so\\n/system/lib64/camera_platform_flags_c_lib.so\\n/system/lib64/libcamera_metadata.so\\n/system/lib64/libhidlallocatorutils.so\\n/system/lib64/android.hardware.graphics.mapper@3.0.so\\n/system/lib64/com.android.media.audioclient-aconfig-cc.so\\n/system/lib64/libmedia_jni_utils.so\\n/system/lib64/packagemanager_aidl-cpp.so\\n/system/lib64/libstagefright_bufferqueue_helper.so\\n/system/lib64/libappfuse.so\\n/system/lib64/effect-aidl-cpp.so\\n/system/lib64/android.database.sqlite-aconfig-cc.so\\n/system/lib64/android.hardware.common.fmq-V1-ndk.so\\n/system/lib64/libstagefright_xmlparser.so\\n/system/lib64/chre_flags_c_lib.so\\n/system/lib64/libaaudio_internal_core.so\\n/system/lib64/libGLESv3.so\\n/system/lib64/libwilhelm.so\\n/system/lib64/libaconfig_storage_read_api_cc.so\\n/system/lib64/libmediandk_utils.so\\n/system/lib64/android.hardware.common-V2-ndk.so\\n/system/lib64/libnativedisplay.so\\n/system/lib64/libnativebridge_lazy.so\\n/system/lib64/graphicbuffersource-aidl-ndk.so\\n/system/lib64/libegl_flags.so\\n/system/lib64/libaudioutils.so\\n/system/lib64/libpiex.so\\n/system/lib64/libperfetto_framework_jni.so\\n/system/lib64/libpackagelistparser.so\\n/system/lib64/libaudio_aidl_conversion_common_cpp.so\\n/system/lib64/libcodec2_aidl_client.so\\n/system/lib64/libperfetto_c.so\\n/system/lib64/android.hardware.drm@1.4.so\\n/system/lib64/libshmemutil.so\\n/apex/com.android.art/lib64/liblzma.so\\n/system/lib64/libminikin.so\\n/apex/com.android.i18n/lib64/libicuuc.so\\n/system/lib64/libsqlite.so\\n/apex/com.android.art/lib64/libnativeloader.so\\n/system/lib64/android.media.audiopolicy-aconfig-cc.so\\n/system/lib64/libjpegdecoder.so\\n/system/lib64/libaaudio_internal_mmap.so\\n/system/lib64/libapexsupport.so\\n/system/lib64/libvulkan.so\\n/system/lib64/libaudiopolicy.so\\n/system/lib64/libcodec2_hidl_client@1.1.so\\n/system/lib64/libdebugstore_cxx.so\\n/system/lib64/libaudiofoundation.so\\n/system/lib64/android.hardware.graphics.common@1.2.so\\n/system/lib64/libcodec2_client.so\\n/system/lib64/process_info_service_aidl-cpp.so\\n/system/lib64/libmedia_omx.so\\n/system/lib64/libnetd_client.so\\n/system/lib64/libhidlbase.so\\n/system/lib64/libSurfaceFlingerProp.so\\n/system/lib64/spatializer-aidl-cpp.so\\n/apex/com.android.runtime/lib64/bionic/libc.so\\n/system/lib64/libhwui.so\\n/system/lib64/android.hardware.drm@1.3.so\\n/system/lib64/libbpf_bcc.so\\n/system/lib64/android.hardware.camera.device@3.2.so\\n/system/lib64/libpng.so\\n/system_ext/lib64/libmediastub.so\\n/system/lib64/com.android.window.flags.window-aconfig_flags_c_lib.so\\n/system/lib64/android.hardware.common.fmq-V1-cpp.so\\n/system/lib64/libft2.so\\n/system/lib64/libultrahdr.so\\n/system/lib64/libactivitymanager_aidl.so\\n/system/lib64/libheif.so\\n/system/lib64/libcodec2_hidl_client@1.2.so\\n/system/lib64/android.media.audio.common.types-V5-cpp.so\\n/system/lib64/libnetdutils.so\\n/system/lib64/libaaudio_internal_utils.so\\n/system/lib64/libdataloader.so\\n/system/lib64/libGLESv2.so\\n/system/lib64/libprocinfo.so\\n/system/lib64/libclang_rt.ubsan_standalone-aarch64-android.so\\n/system/lib64/libstagefright_bufferpool@2.0.1.so\\n/system/lib64/android.hardware.drm@1.0.so\\n/system/lib64/av-types-aidl-cpp.so\\n/system/lib64/audiopolicy-types-aidl-cpp.so\\n/system_ext/lib64/libaudiocloudctrl.so\\n/system/lib64/android.hardware.graphics.allocator-V2-ndk.so\\n/system/lib64/audio-permission-aidl-cpp.so\\n/system/lib64/media_permission-aidl-cpp.so\\n/system/lib64/android.hardware.graphics.mapper@2.0.so\\n/system/lib64/libbase.so\\n/system/lib64/libpcre2.so\\n/system/lib64/libimg_utils.so\\n/system/lib64/libstagefright_framecapture_utils.so\\n/system/lib64/liblog.so\\n/system/lib64/liblzma.so\\n/system/lib64/com.android.media.audioserver-aconfig-cc.so\\n/system/lib64/android.hidl.token@1.0-utils.so\\n/system/lib64/libinput.so\\n/system/lib64/libmemtrack.so\\n/system/lib64/libsync.so\\n/apex/com.android.i18n/lib64/libicu.so\\n/system/lib64/android.hardware.media.c2@1.1.so\\n/system/lib64/libvndksupport.so\\n/system/lib64/libmeminfo.so\\n/system/lib64/libprotolog.so\\n/system/lib64/android.hardware.media.c2@1.2.so\\n/system/lib64/libmemunreachable.so\\n/system/lib64/android.hidl.memory@1.0.so\\n/system/lib64/libjsoncpp.so\\n/system/lib64/com.android.media.aaudio-aconfig-cc.so\\n/system/lib64/libmedia_quality_include.so\\n/system/lib64/libpermission.so\\n/system/lib64/android.hardware.graphics.composer3-V5-ndk.so\\n/system/lib64/libmediametrics.so\\n/system/lib64/libshmemcompat.so\\n/system/lib64/libexpat.so\\n/system/lib64/contexthub_data_flow.so\\n/system/lib64/soc_flags_lib_cc.so\\n/system/lib64/libbinderdebug.so\\n/system/lib64/libskuparser_ffi.so\\n/system/lib64/lib-camera-compatibility-info-api.so\\n/system/lib64/libbinder.so\\n/system/lib64/libcodec2.so\\n/system/lib64/libmedia_omx_client.so\\n/system/lib64/libtinyxml2.so\\n/system/lib64/aconfig_mediacodec_flags_c_lib.so\\n/system/lib64/framework-permission-aidl-cpp.so\\n/system/lib64/libcodec2_vndk.so\\n/system/lib64/libdebuggerd_client.so\\n/system/lib64/libharfbuzz_subset.so\\n/system/lib64/audiopolicy-aidl-cpp.so\\n/system/lib64/libstagefright_http_support.so\\n/system/lib64/android.hidl.allocator@1.0.so\\n/system/lib64/libcesu8.dylib.so\\n/system/lib64/libharfbuzz_ng.so\\n/system/lib64/pw_allocator.so\\n/system/lib64/libstagefright_graphicbuffersource_aidl.so\\n/system/lib64/android.hardware.graphics.allocator@2.0.so\\n/system/lib64/android.hardware.graphics.bufferqueue@2.0.so\\n/system/lib64/libpdfium.so\\n/apex/com.android.art/lib64/libsigchain.so\\n/system/lib64/libmediadrm.so\\n/system/lib64/aconfig_text_flags_c_lib.so\\n/system/lib64/libxml_rust.dylib.so\\n/system/lib64/libssl.so\\n/system/lib64/android.hardware.graphics.bufferqueue@1.0.so\\n/system/lib64/libstagefright_foundation.so\\n/system/lib64/android.hardware.media@1.0.so\\n/system/lib64/libaudiobase.so\\n/system/lib64/libbpf_minimal.so\\n/apex/com.android.runtime/lib64/bionic/libm.so\\n/system/lib64/libmedia_codeclist.so\\n/system/lib64/libcrypto.so\\n/system/lib64/libc++.so\\n/system/lib64/libskuparser_cpp.so\\n/system/lib64/android.hardware.media.bufferpool2-V2-ndk.so\\n/system/lib64/libETC1.so\\n/system/lib64/libaudiomanager.so\\n/system/lib64/libnativewindow.so\\n/system/lib64/libtracing_perfetto.so\\n/system/lib64/android.hardware.graphics.mapper@4.0.so\\n/system/lib64/mediametricsservice-aidl-V1-cpp.so\\n/system/lib64/libstd.dylib.so\\n/system/lib64/libusbhost.so\\n/system/lib64/libcodec2_hal_common.so\\n/apex/com.android.runtime/lib64/bionic/libdl.so\\n/system/lib64/libcameracompatbilityinfo.so\\n/system/lib64/aaudio-aidl-cpp.so\\n/system/lib64/libaaudio_internal_fifo.so\\n/system/lib64/libsfplugin_ccodec_utils.so\\n/system/lib64/libcxx.dylib.so\\n/system/lib64/libguiflags.so\\n/system/lib64/libandroidfw.so\\n/system/lib64/libdatasource.so\\n/system/lib64/android.hardware.media.c2-V2-ndk.so\\n/system/lib64/libjxl.so\\n/system/lib64/libbinder_ndk.so\\n/system/lib64/libandroid_runtime_lazy.so\\n/system/lib64/android.hidl.token@1.0.so\\n/system/lib64/libEGL.so\\n/system/lib64/lib-platform-compat-native-api.so\\n/system/lib64/libgraphicsenv.so\\n/system/lib64/libcurl.so\\n/system/lib64/libgui.so\\n/system/lib64/libstagefright.so\\n/apex/com.android.art/lib64/libbase.so\\n/system_ext/lib64/libMiVideoFilter.so\\n/system/lib64/libxqos.so\\n/system/lib64/android.hardware.graphics.common@1.1.so\\n/system/lib64/libpipelineinfosuploader.so\\n/system/lib64/libdmabufheap.so\\n/system/lib64/android.hardware.memtrack-V1-ndk.so\\n/system/lib64/android.companion.virtual.virtualdevice_aidl-cpp.so\\n/system/lib64/libziparchive.so\\n/system/lib64/libGLESv1_CM.so\\n/system/lib64/android.hardware.contexthub-V5-ndk.so\\n/system/lib64/android.hardware.drm@1.2.so\\n/system/lib64/libandroid_runtime.so\\n/system/lib64/android.hidl.safe_union@1.0.so\\n/system/lib64/libaudioclient.so\\n/system/lib64/libjni.dylib.so\\n/system/lib64/libaudioclient_aidl_conversion.so\\n/system/lib64/libui.so\\n/system/lib64/libmediautils.so\\n/system/lib64/libhardware.so\\n/system_ext/lib64/libdolbyeffect.so\\n/system/lib64/android.hardware.graphics.common-V7-ndk.so\\n/system/lib64/android.hardware.drm.common-V1-ndk.so\\n/system/lib64/libjpeg.so\\n/system/lib64/libmedia_codeclist_capabilities.so\\n/system/lib64/libsfplugin_ccodec.so\\n/system/lib64/libtombstoned_client.so\\n/system/lib64/libartpalette-system.so\\n/system/lib64/heapprofd_client_api.so\\n/apex/com.android.art/lib64/libart-disassembler.so\\n/apex/com.android.art/lib64/libdexfile.so\\n/apex/com.android.art/lib64/libprofile.so\\n/apex/com.android.art/lib64/libartbase.so\\n/apex/com.android.art/lib64/liblz4.so\\n/apex/com.android.art/lib64/libartpalette.so\\n/apex/com.android.os.statsd/lib64/libstatspull.so\\n/apex/com.android.os.statsd/lib64/libstatssocket.so\\n/apex/com.android.art/lib64/libnativehelper.so\",\"nativeRowsSha256\":\"675c0f69083065a90033003886c796de222771268070b443f3c8bd510c207bc6\",\"foreignBackendRows\":[],\"mapsSha256\":\"f87772bfd6c5b92bbf725be31e728db675610a2d9ce094995175a88ddf549e8e\",\"mapsBytes\":425106,\"mapsRowCount\":4389,\"schema\":1,\"pid\":29931,\"uid\":10431,\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"coreSha256\":\"64a702be0fbb721b7455125946b0aa3727f0ea57c273f36248f313a8e0f2f98f\",\"coreSize\":1191656,\"physicalProcess\":\"dev.tripoder.engine:slot0\"},\"executionPolicy\":{\"bound\":true,\"owned\":false,\"observedLevel\":0,\"claims\":0,\"client\":\"tripoder-managed-process-interpreter\",\"processLifetimeLease\":false,\"policy\":\"method-entry-only\",\"preserveCompilation\":true,\"explicitInitialization\":true,\"preexistingCompiledFramesCovered\":false,\"fullCallerCoverage\":false,\"fixedBindings\":1021},\"nativeCoreResources\":{\"issued\":0,\"prepared\":0,\"active\":0,\"retired\":0,\"failed\":0,\"inFlight\":0,\"inboundUsed\":1,\"retainedImages\":0,\"jniGlobalRoots\":0,\"jniOwnedThreadLeases\":0,\"jniThreadAttachments\":0,\"jniThreadDetachments\":0,\"publishedResourcesRetained\":true},\"operationId\":\"d5c7dce9-be1b-47d6-9839-4cc0eab145a8\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 15,
+      "method": "tools/call",
+      "params": {
+        "name": "classloaders_list",
+        "arguments": {}
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 15,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"7b1855d2-6abe-44f5-9ae5-3299cec673fa\",\"session\":\"fb450116-c435-4002-96d1-4fa0018c2b4d\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"ok\":true,\"result\":{\"classLoaders\":[{\"classLoaderId\":\"0b5fd497-c347-4386-be9c-0ada212dbebf\",\"type\":\"dalvik.system.DexClassLoader\",\"parentId\":\"bfd6418e-5ae6-4f9f-ac19-7d07816e2f5d\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\"},{\"classLoaderId\":\"23171f21-8bef-4a84-86e6-514aeb6fdd04\",\"type\":\"dalvik.system.InMemoryDexClassLoader\",\"parentId\":\"bfd6418e-5ae6-4f9f-ac19-7d07816e2f5d\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\"},{\"classLoaderId\":\"bfd6418e-5ae6-4f9f-ac19-7d07816e2f5d\",\"type\":\"dalvik.system.PathClassLoader\",\"parentId\":null,\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\"}],\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"pid\":29931,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"operationId\":\"7b1855d2-6abe-44f5-9ae5-3299cec673fa\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 16,
+      "method": "tools/call",
+      "params": {
+        "name": "classloaders_list",
+        "arguments": {}
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 16,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"efd29361-5e88-49c9-aad9-76098eb85897\",\"session\":\"fb450116-c435-4002-96d1-4fa0018c2b4d\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"ok\":true,\"result\":{\"classLoaders\":[{\"classLoaderId\":\"0b5fd497-c347-4386-be9c-0ada212dbebf\",\"type\":\"dalvik.system.DexClassLoader\",\"parentId\":\"bfd6418e-5ae6-4f9f-ac19-7d07816e2f5d\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\"},{\"classLoaderId\":\"23171f21-8bef-4a84-86e6-514aeb6fdd04\",\"type\":\"dalvik.system.InMemoryDexClassLoader\",\"parentId\":\"bfd6418e-5ae6-4f9f-ac19-7d07816e2f5d\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\"},{\"classLoaderId\":\"bfd6418e-5ae6-4f9f-ac19-7d07816e2f5d\",\"type\":\"dalvik.system.PathClassLoader\",\"parentId\":null,\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\"}],\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"pid\":29931,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"operationId\":\"efd29361-5e88-49c9-aad9-76098eb85897\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 17,
+      "method": "tools/call",
+      "params": {
+        "name": "class_inspect",
+        "arguments": {
+          "classLoaderId": "23171f21-8bef-4a84-86e6-514aeb6fdd04",
+          "className": "dev.tripoder.dynamic.Payload"
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 17,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"876d2c1b-0fc7-4707-8e2e-3fde377586ea\",\"session\":\"fb450116-c435-4002-96d1-4fa0018c2b4d\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"ok\":true,\"result\":{\"fields\":[],\"methods\":[{\"methodName\":\"value\",\"argumentTypes\":[],\"returnType\":\"java.lang.String\",\"static\":true,\"native\":false}],\"className\":\"dev.tripoder.dynamic.Payload\",\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"pid\":29931,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"operationId\":\"876d2c1b-0fc7-4707-8e2e-3fde377586ea\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 18,
+      "method": "tools/call",
+      "params": {
+        "name": "dex_search_classes",
+        "arguments": {
+          "packagePrefix": "dev.tripoder.dynamic",
+          "limit": 10
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 18,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"f8ee7000-12ef-4e79-a295-4be6048a52ce\",\"session\":\"fb450116-c435-4002-96d1-4fa0018c2b4d\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"ok\":true,\"result\":{\"classes\":[\"dev.tripoder.dynamic.Payload\"],\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"pid\":29931,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"operationId\":\"f8ee7000-12ef-4e79-a295-4be6048a52ce\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 19,
+      "method": "tools/call",
+      "params": {
+        "name": "dex_list",
+        "arguments": {
+          "classLoaderId": "23171f21-8bef-4a84-86e6-514aeb6fdd04"
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 19,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"0c39511f-78fc-42c1-b23e-e4e8de4177c6\",\"session\":\"fb450116-c435-4002-96d1-4fa0018c2b4d\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"ok\":true,\"result\":{\"dexFiles\":[{\"dexId\":\"7c0fe612-8ea8-453b-8a95-59270cc63715\",\"classLoaderId\":\"23171f21-8bef-4a84-86e6-514aeb6fdd04\",\"size\":732,\"version\":39,\"source\":\"ART_DEX_MEMORY\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\"}],\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"pid\":29931,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"operationId\":\"0c39511f-78fc-42c1-b23e-e4e8de4177c6\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 20,
+      "method": "tools/call",
+      "params": {
+        "name": "dex_list",
+        "arguments": {
+          "classLoaderId": "0b5fd497-c347-4386-be9c-0ada212dbebf"
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 20,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"e21f7462-4ae3-4aed-b117-fefa5fbbc867\",\"session\":\"fb450116-c435-4002-96d1-4fa0018c2b4d\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"ok\":true,\"result\":{\"dexFiles\":[{\"dexId\":\"33112f40-23d7-4009-8b4c-0d141b60edfa\",\"classLoaderId\":\"0b5fd497-c347-4386-be9c-0ada212dbebf\",\"size\":732,\"version\":39,\"source\":\"ART_DEX_MEMORY\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\"}],\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"pid\":29931,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"operationId\":\"e21f7462-4ae3-4aed-b117-fefa5fbbc867\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 21,
+      "method": "tools/call",
+      "params": {
+        "name": "runtime_events",
+        "arguments": {
+          "sinceSeq": 0,
+          "limit": 64
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 21,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"094a5cf2-ec8b-4f38-a7cd-4861df562071\",\"session\":\"fb450116-c435-4002-96d1-4fa0018c2b4d\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"ok\":true,\"result\":{\"events\":[{\"seq\":1,\"kind\":\"classloader.created\",\"timeNanos\":98493472225063,\"stage\":\"BEFORE_APPLICATION\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"detail\":{\"classLoaderId\":\"bfd6418e-5ae6-4f9f-ac19-7d07816e2f5d\",\"type\":\"dalvik.system.PathClassLoader\"}},{\"seq\":2,\"kind\":\"dex.loaded\",\"timeNanos\":98493472302355,\"stage\":\"BEFORE_APPLICATION\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"detail\":{\"dexId\":\"2ab5e1e3-3225-4486-881a-fa7b87bc91aa\",\"classLoaderId\":\"bfd6418e-5ae6-4f9f-ac19-7d07816e2f5d\",\"size\":4960,\"version\":39,\"source\":\"ART_DEX_MEMORY\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\"}},{\"seq\":3,\"kind\":\"probe.ready\",\"timeNanos\":98493472439646,\"stage\":\"BEFORE_APPLICATION\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"detail\":{\"revision\":\"f70b88d1-679d-46f4-9b35-5139a8666fca\",\"installedHooks\":10}},{\"seq\":4,\"kind\":\"artifact.complete\",\"timeNanos\":98493486433396,\"stage\":\"BEFORE_APPLICATION\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"detail\":{\"artifactId\":\"386121d0-39f1-4f12-bb74-f3a6258fe549\",\"kind\":\"dex\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"dexId\":\"2ab5e1e3-3225-4486-881a-fa7b87bc91aa\",\"classLoaderId\":\"bfd6418e-5ae6-4f9f-ac19-7d07816e2f5d\",\"size\":4960,\"state\":\"COMPLETE\",\"requestedAtNanos\":98493472336365,\"triggerStage\":\"BEFORE_APPLICATION\",\"source\":\"ART_DEX_MEMORY\",\"consistency\":\"BEST_EFFORT_HEADER_STABLE\",\"sha256\":\"a22c7ce5f80e4c36239862505b482ac41f21a7eb314d5eaf2206c8960a97ea0a\",\"capturedAtNanos\":98493484055324}},{\"seq\":5,\"kind\":\"process.stage\",\"timeNanos\":98493486993032,\"stage\":\"APPLICATION_CONSTRUCTION\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"detail\":{\"stage\":\"APPLICATION_CONSTRUCTION\"}},{\"seq\":6,\"kind\":\"classloader.created\",\"timeNanos\":98493490899542,\"stage\":\"APPLICATION_CONSTRUCTION\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"detail\":{\"classLoaderId\":\"23171f21-8bef-4a84-86e6-514aeb6fdd04\",\"type\":\"dalvik.system.InMemoryDexClassLoader\"}},{\"seq\":7,\"kind\":\"dex.loaded\",\"timeNanos\":98493491044074,\"stage\":\"APPLICATION_CONSTRUCTION\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"detail\":{\"dexId\":\"7c0fe612-8ea8-453b-8a95-59270cc63715\",\"classLoaderId\":\"23171f21-8bef-4a84-86e6-514aeb6fdd04\",\"size\":732,\"version\":39,\"source\":\"ART_DEX_MEMORY\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\"}},{\"seq\":8,\"kind\":\"classloader.created\",\"timeNanos\":98493495080115,\"stage\":\"APPLICATION_CONSTRUCTION\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"detail\":{\"classLoaderId\":\"0b5fd497-c347-4386-be9c-0ada212dbebf\",\"type\":\"dalvik.system.DexClassLoader\"}},{\"seq\":9,\"kind\":\"dex.loaded\",\"timeNanos\":98493495202928,\"stage\":\"APPLICATION_CONSTRUCTION\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"detail\":{\"dexId\":\"33112f40-23d7-4009-8b4c-0d141b60edfa\",\"classLoaderId\":\"0b5fd497-c347-4386-be9c-0ada212dbebf\",\"size\":732,\"version\":39,\"source\":\"ART_DEX_MEMORY\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\"}},{\"seq\":10,\"kind\":\"process.stage\",\"timeNanos\":98493495835949,\"stage\":\"APPLICATION_ATTACHED\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"detail\":{\"stage\":\"APPLICATION_ATTACHED\"}},{\"seq\":11,\"kind\":\"artifact.complete\",\"timeNanos\":98493498810428,\"stage\":\"APPLICATION_CREATED\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"detail\":{\"artifactId\":\"1314adef-3302-45bd-8a52-868f8be25b25\",\"kind\":\"dex\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"dexId\":\"7c0fe612-8ea8-453b-8a95-59270cc63715\",\"classLoaderId\":\"23171f21-8bef-4a84-86e6-514aeb6fdd04\",\"size\":732,\"state\":\"COMPLETE\",\"requestedAtNanos\":98493491072771,\"triggerStage\":\"APPLICATION_CONSTRUCTION\",\"source\":\"ART_DEX_MEMORY\",\"consistency\":\"BEST_EFFORT_HEADER_STABLE\",\"sha256\":\"58930f70a89af4f9f5eba1e055bc2c54c508007b3583126a0ba61f84857795ba\",\"capturedAtNanos\":98493496589178}},{\"seq\":12,\"kind\":\"process.stage\",\"timeNanos\":98493498914699,\"stage\":\"APPLICATION_CREATED\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"detail\":{\"stage\":\"APPLICATION_CREATED\"}},{\"seq\":13,\"kind\":\"artifact.complete\",\"timeNanos\":98493503231886,\"stage\":\"APPLICATION_CREATED\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"detail\":{\"artifactId\":\"49852a05-bdd3-41dd-8564-e45f75686646\",\"kind\":\"dex\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"dexId\":\"33112f40-23d7-4009-8b4c-0d141b60edfa\",\"classLoaderId\":\"0b5fd497-c347-4386-be9c-0ada212dbebf\",\"size\":732,\"state\":\"COMPLETE\",\"requestedAtNanos\":98493495243605,\"triggerStage\":\"APPLICATION_CONSTRUCTION\",\"source\":\"ART_DEX_MEMORY\",\"consistency\":\"BEST_EFFORT_HEADER_STABLE\",\"sha256\":\"58930f70a89af4f9f5eba1e055bc2c54c508007b3583126a0ba61f84857795ba\",\"capturedAtNanos\":98493501918449}}],\"nextCursor\":13,\"latestSeq\":13,\"droppedEvents\":0,\"gap\":false,\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"pid\":29931,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"operationId\":\"094a5cf2-ec8b-4f38-a7cd-4861df562071\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 22,
+      "method": "tools/call",
+      "params": {
+        "name": "artifacts_list",
+        "arguments": {
+          "processGeneration": "d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7"
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 22,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"e66cd5cb-2f1e-4b41-a475-972c3cf47ce0\",\"ok\":true,\"result\":{\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"artifacts\":[{\"artifactId\":\"386121d0-39f1-4f12-bb74-f3a6258fe549\",\"kind\":\"dex\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"dexId\":\"2ab5e1e3-3225-4486-881a-fa7b87bc91aa\",\"classLoaderId\":\"bfd6418e-5ae6-4f9f-ac19-7d07816e2f5d\",\"size\":4960,\"state\":\"COMPLETE\",\"requestedAtNanos\":98493472336365,\"triggerStage\":\"BEFORE_APPLICATION\",\"source\":\"ART_DEX_MEMORY\",\"consistency\":\"BEST_EFFORT_HEADER_STABLE\",\"sha256\":\"a22c7ce5f80e4c36239862505b482ac41f21a7eb314d5eaf2206c8960a97ea0a\",\"capturedAtNanos\":98493484055324},{\"artifactId\":\"1314adef-3302-45bd-8a52-868f8be25b25\",\"kind\":\"dex\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"dexId\":\"7c0fe612-8ea8-453b-8a95-59270cc63715\",\"classLoaderId\":\"23171f21-8bef-4a84-86e6-514aeb6fdd04\",\"size\":732,\"state\":\"COMPLETE\",\"requestedAtNanos\":98493491072771,\"triggerStage\":\"APPLICATION_CONSTRUCTION\",\"source\":\"ART_DEX_MEMORY\",\"consistency\":\"BEST_EFFORT_HEADER_STABLE\",\"sha256\":\"58930f70a89af4f9f5eba1e055bc2c54c508007b3583126a0ba61f84857795ba\",\"capturedAtNanos\":98493496589178},{\"artifactId\":\"49852a05-bdd3-41dd-8564-e45f75686646\",\"kind\":\"dex\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"dexId\":\"33112f40-23d7-4009-8b4c-0d141b60edfa\",\"classLoaderId\":\"0b5fd497-c347-4386-be9c-0ada212dbebf\",\"size\":732,\"state\":\"COMPLETE\",\"requestedAtNanos\":98493495243605,\"triggerStage\":\"APPLICATION_CONSTRUCTION\",\"source\":\"ART_DEX_MEMORY\",\"consistency\":\"BEST_EFFORT_HEADER_STABLE\",\"sha256\":\"58930f70a89af4f9f5eba1e055bc2c54c508007b3583126a0ba61f84857795ba\",\"capturedAtNanos\":98493501918449}],\"source\":\"PERSISTED_CAPTURE_RECEIPTS\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 23,
+      "method": "tools/call",
+      "params": {
+        "name": "artifact_read",
+        "arguments": {
+          "processGeneration": "d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7",
+          "artifactId": "1314adef-3302-45bd-8a52-868f8be25b25",
+          "offset": 0,
+          "length": 257
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 23,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"48664fff-7402-480a-930b-e8a29323a14e\",\"ok\":true,\"result\":{\"artifactId\":\"1314adef-3302-45bd-8a52-868f8be25b25\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"offset\":0,\"size\":732,\"sha256\":\"58930f70a89af4f9f5eba1e055bc2c54c508007b3583126a0ba61f84857795ba\",\"encoding\":\"base64\",\"data\":\"ZGV4CjAzOQDUdp8ZyVrXq0wiJcZIEmdC0Jpkenz6Ib7cAgAAcAAAAHhWNBIAAAAAAAAAAFQCAAAKAAAAcAAAAAQAAACYAAAAAgAAAKgAAAAAAAAAAAAAAAMAAADAAAAAAQAAANgAAADkAQAA+AAAACwBAAA0AQAANwEAAFcBAABrAQAAfwEAAI0BAACQAQAAnAEAAKMBAAACAAAAAwAAAAQAAAAGAAAAAQAAAAIAAAAAAAAABgAAAAMAAAAAAAAAAAABAAAAAAAAAAAACAAAAAEAAQAAAAAAAAAAABEAAAABAAAAAAAAAAUAAAAAAAAARAIAAAAAAAABAAAAAAAAACg=\",\"nextOffset\":257,\"eof\":false}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 24,
+      "method": "tools/call",
+      "params": {
+        "name": "artifact_read",
+        "arguments": {
+          "processGeneration": "d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7",
+          "artifactId": "1314adef-3302-45bd-8a52-868f8be25b25",
+          "offset": 257,
+          "length": 257
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 24,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"c4ca7312-5b27-4aee-90d9-2e65b72796d1\",\"ok\":true,\"result\":{\"artifactId\":\"1314adef-3302-45bd-8a52-868f8be25b25\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"offset\":257,\"size\":732,\"sha256\":\"58930f70a89af4f9f5eba1e055bc2c54c508007b3583126a0ba61f84857795ba\",\"encoding\":\"base64\",\"data\":\"AQAAAwAAABoABwARAAAAAQABAAEAAAAoAQAABAAAAHAQAgAAAA4AAgAOAAY8aW5pdD4AAUwAHkxkZXYvdHJpcG9kZXIvZHluYW1pYy9QYXlsb2FkOwASTGphdmEvbGFuZy9PYmplY3Q7ABJMamF2YS9sYW5nL1N0cmluZzsADFBheWxvYWQuamF2YQABVgAKZHluYW1pYy12MQAFdmFsdWUAngF+fkQ4eyJiYWNrZW5kIjoiZGV4IiwiY29tcGlsYXRpb24tbW9kZSI6InJlbGVhc2UiLCJoYXMtY2hlY2tzdW1zIjpmYWxzZSwibWluLWFwaSI6MzYsInNoYS0xIjo=\",\"nextOffset\":514,\"eof\":false}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 25,
+      "method": "tools/call",
+      "params": {
+        "name": "artifact_read",
+        "arguments": {
+          "processGeneration": "d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7",
+          "artifactId": "1314adef-3302-45bd-8a52-868f8be25b25",
+          "offset": 514,
+          "length": 257
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 25,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"84ba1660-29a2-4dc8-87aa-7d528fbf67ed\",\"ok\":true,\"result\":{\"artifactId\":\"1314adef-3302-45bd-8a52-868f8be25b25\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"offset\":514,\"size\":732,\"sha256\":\"58930f70a89af4f9f5eba1e055bc2c54c508007b3583126a0ba61f84857795ba\",\"encoding\":\"base64\",\"data\":\"IjA4NGE4OTEyNmFlMDU5NmM1OTkxNDNkZjU3YTY1NDY0NmFmMjgzMTMiLCJ2ZXJzaW9uIjoiOS4yLjQtZGV2In0AAAACAACBgASQAgEJ+AEAAAsAAAAAAAAAAQAAAAAAAAABAAAACgAAAHAAAAACAAAABAAAAJgAAAADAAAAAgAAAKgAAAAFAAAAAwAAAMAAAAAGAAAAAQAAANgAAAABIAAAAgAAAPgAAAADIAAAAQAAACgBAAACIAAACgAAACwBAAAAIAAAAQAAAEQCAAAAEAAAAQAAAFQCAAA=\",\"nextOffset\":732,\"eof\":true}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 26,
+      "method": "tools/call",
+      "params": {
+        "name": "artifact_read",
+        "arguments": {
+          "processGeneration": "d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7",
+          "artifactId": "49852a05-bdd3-41dd-8564-e45f75686646",
+          "offset": 0,
+          "length": 257
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 26,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"abde8c99-8b3d-4b63-acf6-5f403294f956\",\"ok\":true,\"result\":{\"artifactId\":\"49852a05-bdd3-41dd-8564-e45f75686646\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"offset\":0,\"size\":732,\"sha256\":\"58930f70a89af4f9f5eba1e055bc2c54c508007b3583126a0ba61f84857795ba\",\"encoding\":\"base64\",\"data\":\"ZGV4CjAzOQDUdp8ZyVrXq0wiJcZIEmdC0Jpkenz6Ib7cAgAAcAAAAHhWNBIAAAAAAAAAAFQCAAAKAAAAcAAAAAQAAACYAAAAAgAAAKgAAAAAAAAAAAAAAAMAAADAAAAAAQAAANgAAADkAQAA+AAAACwBAAA0AQAANwEAAFcBAABrAQAAfwEAAI0BAACQAQAAnAEAAKMBAAACAAAAAwAAAAQAAAAGAAAAAQAAAAIAAAAAAAAABgAAAAMAAAAAAAAAAAABAAAAAAAAAAAACAAAAAEAAQAAAAAAAAAAABEAAAABAAAAAAAAAAUAAAAAAAAARAIAAAAAAAABAAAAAAAAACg=\",\"nextOffset\":257,\"eof\":false}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 27,
+      "method": "tools/call",
+      "params": {
+        "name": "artifact_read",
+        "arguments": {
+          "processGeneration": "d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7",
+          "artifactId": "49852a05-bdd3-41dd-8564-e45f75686646",
+          "offset": 257,
+          "length": 257
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 27,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"70114aa1-682c-4015-9dd0-c17cf188ceb5\",\"ok\":true,\"result\":{\"artifactId\":\"49852a05-bdd3-41dd-8564-e45f75686646\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"offset\":257,\"size\":732,\"sha256\":\"58930f70a89af4f9f5eba1e055bc2c54c508007b3583126a0ba61f84857795ba\",\"encoding\":\"base64\",\"data\":\"AQAAAwAAABoABwARAAAAAQABAAEAAAAoAQAABAAAAHAQAgAAAA4AAgAOAAY8aW5pdD4AAUwAHkxkZXYvdHJpcG9kZXIvZHluYW1pYy9QYXlsb2FkOwASTGphdmEvbGFuZy9PYmplY3Q7ABJMamF2YS9sYW5nL1N0cmluZzsADFBheWxvYWQuamF2YQABVgAKZHluYW1pYy12MQAFdmFsdWUAngF+fkQ4eyJiYWNrZW5kIjoiZGV4IiwiY29tcGlsYXRpb24tbW9kZSI6InJlbGVhc2UiLCJoYXMtY2hlY2tzdW1zIjpmYWxzZSwibWluLWFwaSI6MzYsInNoYS0xIjo=\",\"nextOffset\":514,\"eof\":false}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 28,
+      "method": "tools/call",
+      "params": {
+        "name": "artifact_read",
+        "arguments": {
+          "processGeneration": "d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7",
+          "artifactId": "49852a05-bdd3-41dd-8564-e45f75686646",
+          "offset": 514,
+          "length": 257
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 28,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"90e3a3fe-9345-4ea8-b677-c4d2c1c8dd6a\",\"ok\":true,\"result\":{\"artifactId\":\"49852a05-bdd3-41dd-8564-e45f75686646\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"offset\":514,\"size\":732,\"sha256\":\"58930f70a89af4f9f5eba1e055bc2c54c508007b3583126a0ba61f84857795ba\",\"encoding\":\"base64\",\"data\":\"IjA4NGE4OTEyNmFlMDU5NmM1OTkxNDNkZjU3YTY1NDY0NmFmMjgzMTMiLCJ2ZXJzaW9uIjoiOS4yLjQtZGV2In0AAAACAACBgASQAgEJ+AEAAAsAAAAAAAAAAQAAAAAAAAABAAAACgAAAHAAAAACAAAABAAAAJgAAAADAAAAAgAAAKgAAAAFAAAAAwAAAMAAAAAGAAAAAQAAANgAAAABIAAAAgAAAPgAAAADIAAAAQAAACgBAAACIAAACgAAACwBAAAAIAAAAQAAAEQCAAAAEAAAAQAAAFQCAAA=\",\"nextOffset\":732,\"eof\":true}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 29,
+      "method": "tools/call",
+      "params": {
+        "name": "hook_disable",
+        "arguments": {
+          "operationId": "911b3fbe-4f2e-4c36-8a09-03e565682927",
+          "revision": "aa560235a278132c48888d08610febee2ca783d5a78c558c6bd981b69c20a0f3"
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 29,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"911b3fbe-4f2e-4c36-8a09-03e565682927\",\"session\":\"fb450116-c435-4002-96d1-4fa0018c2b4d\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"ok\":true,\"result\":{\"state\":\"DISABLED\",\"revision\":\"aa560235a278132c48888d08610febee2ca783d5a78c558c6bd981b69c20a0f3\",\"hits\":1,\"errors\":0,\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"pid\":29931,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"operationId\":\"911b3fbe-4f2e-4c36-8a09-03e565682927\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 30,
+      "method": "tools/call",
+      "params": {
+        "name": "hook_observe",
+        "arguments": {
+          "operationId": "8093826c-7096-49db-9a41-9a9cb217603e",
+          "selectors": [
+            {
+              "id": "dynamic",
+              "kind": "java",
+              "className": "dev.tripoder.dynamic.Payload",
+              "methodName": "value",
+              "argumentTypes": [],
+              "classLoaderId": "23171f21-8bef-4a84-86e6-514aeb6fdd04"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 30,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"8093826c-7096-49db-9a41-9a9cb217603e\",\"session\":\"fb450116-c435-4002-96d1-4fa0018c2b4d\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"ok\":true,\"result\":{\"evidence\":{\"id\":\"ee42d95737be93c291c312b246bffbfec90f7209592ec654c60051067bbbfb64\",\"source\":\"guest-agent\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"},\"processInstanceId\":\"29931:d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"abi\":\"arm64-v8a\",\"capabilities\":[\"native-hook\",\"java-hook\"],\"symbols\":[{\"returnType\":\"java.lang.String\",\"id\":\"dynamic\",\"methodName\":\"value\",\"argumentTypes\":[],\"className\":\"dev.tripoder.dynamic.Payload\",\"kind\":\"java\",\"loaded\":true,\"classLoaderId\":\"23171f21-8bef-4a84-86e6-514aeb6fdd04\"}]},\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"pid\":29931,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"nativeModules\":[],\"operationId\":\"8093826c-7096-49db-9a41-9a9cb217603e\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 31,
+      "method": "tools/call",
+      "params": {
+        "name": "hook_prepare",
+        "arguments": {
+          "operationId": "8414d2f9-abb8-4d0c-a658-cb04db3367b8",
+          "evidenceId": "ee42d95737be93c291c312b246bffbfec90f7209592ec654c60051067bbbfb64",
+          "source": "import { definePlan } from '@abox/hook';\nexport default definePlan({id:'dynamic-capture',target,params:{},setup(ctx){ctx.java.method('dev.tripoder.dynamic.Payload','value',[],{classLoaderId:'23171f21-8bef-4a84-86e6-514aeb6fdd04'}).replace(()=>{const capture=ctx.code.snapshotDex('7c0fe612-8ea8-453b-8a95-59270cc63715');ctx.debug.emitEvent('code.capture',capture.artifactId);return 'hooked';});}});\n"
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 31,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"8414d2f9-abb8-4d0c-a658-cb04db3367b8\",\"session\":\"fb450116-c435-4002-96d1-4fa0018c2b4d\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"ok\":true,\"result\":{\"state\":\"PREPARED\",\"token\":\"18823f3c62bda61e66da856d01f7dce0289a68b12a290107eae43dfa8151c56f\",\"sourceSha256\":\"449857d25866eff93cea1003e96a3fca7fd6013fd3f172a72542d819534f76dd\",\"evidenceId\":\"ee42d95737be93c291c312b246bffbfec90f7209592ec654c60051067bbbfb64\",\"rules\":1,\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"pid\":29931,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"operationId\":\"8414d2f9-abb8-4d0c-a658-cb04db3367b8\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 32,
+      "method": "tools/call",
+      "params": {
+        "name": "hook_activate",
+        "arguments": {
+          "operationId": "9986df61-eee6-4262-bcef-9bedbbd091dd",
+          "token": "18823f3c62bda61e66da856d01f7dce0289a68b12a290107eae43dfa8151c56f",
+          "sourceSha256": "449857d25866eff93cea1003e96a3fca7fd6013fd3f172a72542d819534f76dd"
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 32,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"9986df61-eee6-4262-bcef-9bedbbd091dd\",\"session\":\"fb450116-c435-4002-96d1-4fa0018c2b4d\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"ok\":true,\"result\":{\"state\":\"ACTIVE\",\"revision\":\"ae0299650e7ba706eadb5718664eb6f8dbbdf2112cd25140b8f478e9d0f89dbd\",\"sourceSha256\":\"449857d25866eff93cea1003e96a3fca7fd6013fd3f172a72542d819534f76dd\",\"parameterVersion\":1,\"parameters\":{},\"hits\":0,\"errors\":0,\"inFlight\":0,\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"pid\":29931,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"operationId\":\"9986df61-eee6-4262-bcef-9bedbbd091dd\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 33,
+      "method": "tools/call",
+      "params": {
+        "name": "ui_dispatch_action",
+        "arguments": {
+          "operationId": "238adb5f-2989-413a-9bde-fb369292a409",
+          "action": {
+            "type": "clickText",
+            "text": "Invoke payload"
+          }
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 33,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"238adb5f-2989-413a-9bde-fb369292a409\",\"session\":\"fb450116-c435-4002-96d1-4fa0018c2b4d\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"ok\":true,\"result\":{\"dispatched\":true,\"activity\":\"dev.tripoder.probefixture.ProbeActivity\",\"matchedClass\":\"android.widget.Button\",\"kind\":\"clickText\",\"clicked\":true,\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"pid\":29931,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"operationId\":\"238adb5f-2989-413a-9bde-fb369292a409\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 34,
+      "method": "tools/call",
+      "params": {
+        "name": "hook_events",
+        "arguments": {
+          "sinceSeq": 0
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 34,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"d6e0d0e7-137c-4d0c-8338-872e2b710fc0\",\"session\":\"fb450116-c435-4002-96d1-4fa0018c2b4d\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"ok\":true,\"result\":{\"events\":[{\"seq\":1,\"revision\":\"ae0299650e7ba706eadb5718664eb6f8dbbdf2112cd25140b8f478e9d0f89dbd\",\"symbol\":\"dynamic\",\"tag\":\"code.capture\",\"payload\":\"0831f1cc-4e0b-48db-9b59-1eda13343267\"}],\"droppedEvents\":0,\"nextCursor\":1,\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"pid\":29931,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"operationId\":\"d6e0d0e7-137c-4d0c-8338-872e2b710fc0\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 35,
+      "method": "tools/call",
+      "params": {
+        "name": "artifacts_list",
+        "arguments": {
+          "processGeneration": "d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7"
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 35,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"35e3b97b-81db-4e24-be32-9bc91aaee433\",\"ok\":true,\"result\":{\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"artifacts\":[{\"artifactId\":\"386121d0-39f1-4f12-bb74-f3a6258fe549\",\"kind\":\"dex\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"dexId\":\"2ab5e1e3-3225-4486-881a-fa7b87bc91aa\",\"classLoaderId\":\"bfd6418e-5ae6-4f9f-ac19-7d07816e2f5d\",\"size\":4960,\"state\":\"COMPLETE\",\"requestedAtNanos\":98493472336365,\"triggerStage\":\"BEFORE_APPLICATION\",\"source\":\"ART_DEX_MEMORY\",\"consistency\":\"BEST_EFFORT_HEADER_STABLE\",\"sha256\":\"a22c7ce5f80e4c36239862505b482ac41f21a7eb314d5eaf2206c8960a97ea0a\",\"capturedAtNanos\":98493484055324},{\"artifactId\":\"1314adef-3302-45bd-8a52-868f8be25b25\",\"kind\":\"dex\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"dexId\":\"7c0fe612-8ea8-453b-8a95-59270cc63715\",\"classLoaderId\":\"23171f21-8bef-4a84-86e6-514aeb6fdd04\",\"size\":732,\"state\":\"COMPLETE\",\"requestedAtNanos\":98493491072771,\"triggerStage\":\"APPLICATION_CONSTRUCTION\",\"source\":\"ART_DEX_MEMORY\",\"consistency\":\"BEST_EFFORT_HEADER_STABLE\",\"sha256\":\"58930f70a89af4f9f5eba1e055bc2c54c508007b3583126a0ba61f84857795ba\",\"capturedAtNanos\":98493496589178},{\"artifactId\":\"49852a05-bdd3-41dd-8564-e45f75686646\",\"kind\":\"dex\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"dexId\":\"33112f40-23d7-4009-8b4c-0d141b60edfa\",\"classLoaderId\":\"0b5fd497-c347-4386-be9c-0ada212dbebf\",\"size\":732,\"state\":\"COMPLETE\",\"requestedAtNanos\":98493495243605,\"triggerStage\":\"APPLICATION_CONSTRUCTION\",\"source\":\"ART_DEX_MEMORY\",\"consistency\":\"BEST_EFFORT_HEADER_STABLE\",\"sha256\":\"58930f70a89af4f9f5eba1e055bc2c54c508007b3583126a0ba61f84857795ba\",\"capturedAtNanos\":98493501918449},{\"artifactId\":\"0831f1cc-4e0b-48db-9b59-1eda13343267\",\"kind\":\"dex\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"dexId\":\"7c0fe612-8ea8-453b-8a95-59270cc63715\",\"classLoaderId\":\"23171f21-8bef-4a84-86e6-514aeb6fdd04\",\"size\":732,\"state\":\"COMPLETE\",\"requestedAtNanos\":98494010174750,\"triggerStage\":\"APPLICATION_CREATED\",\"source\":\"ART_DEX_MEMORY\",\"consistency\":\"BEST_EFFORT_HEADER_STABLE\",\"sha256\":\"58930f70a89af4f9f5eba1e055bc2c54c508007b3583126a0ba61f84857795ba\",\"capturedAtNanos\":98494014371625}],\"source\":\"PERSISTED_CAPTURE_RECEIPTS\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 36,
+      "method": "tools/call",
+      "params": {
+        "name": "hook_status",
+        "arguments": {}
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 36,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"0b4fa87d-afd4-46b2-97a2-248b25bc39ea\",\"session\":\"fb450116-c435-4002-96d1-4fa0018c2b4d\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"ok\":true,\"result\":{\"state\":\"ACTIVE\",\"revision\":\"ae0299650e7ba706eadb5718664eb6f8dbbdf2112cd25140b8f478e9d0f89dbd\",\"sourceSha256\":\"449857d25866eff93cea1003e96a3fca7fd6013fd3f172a72542d819534f76dd\",\"parameterVersion\":1,\"parameters\":{},\"hits\":1,\"errors\":0,\"inFlight\":0,\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"pid\":29931,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"moduleEvents\":[],\"runtimeNativeMappings\":{\"corePath\":\"/data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\",\"coreInode\":\"484361\",\"coreRows\":[\"6e3ee22000-6e3ee3a000 r--p 00000000 fe:45 484361                         /data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\",\"6e3ee3d000-6e3ee67000 r-xp 00017000 fe:45 484361                         /data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\",\"6e3ee6a000-6e3ee6c000 r--p 00040000 fe:45 484361                         /data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\",\"6e3ee6f000-6e3ee71000 rw-p 00041000 fe:45 484361                         /data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\"],\"nativePaths\":\"/vendor/lib64/libllvm-qgl.so\\n/system_ext/lib64/libboost.so\\n/system_ext/lib64/libperf_ctl.so\\n/system/lib64/libgppextension.so\\n/data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\\n/apex/com.android.tethering/lib64/libhttpengine.so\\n/system_ext/lib64/libpenguin_impl.so\\n/system/lib64/libwebviewchromium_loader.so\\n/apex/com.android.tethering/lib64/libcrypto_httpengine.so\\n/system_ext/lib64/libmiinput.so\\n/system_ext/lib64/libmigui.so\\n/system_ext/lib64/libforcedarkimpl.so\\n/system_ext/lib64/libqti_performance.so\\n/system_ext/lib64/vendor.qti.hardware.iop@2.0.so\\n/system/lib64/libcompiler_rt.so\\n/vendor/lib64/egl/eglSubDriverAndroid.so\\n/vendor/lib64/egl/libGLESv2_adreno.so\\n/vendor/lib64/libllvm-glnext.so\\n/vendor/lib64/egl/libGLESv1_CM_adreno.so\\n/vendor/lib64/hw/vulkan.adreno.so\\n/vendor/lib64/egl/libEGL_adreno.so\\n/vendor/lib64/vendor.qti.hardware.display.mapper@2.0.so\\n/vendor/lib64/vendor.qti.hardware.hexlp-V2-ndk.so\\n/vendor/lib64/libgsl.so\\n/vendor/lib64/libadreno_utils.so\\n/vendor/lib64/libmapperutils.so\\n/vendor/lib64/vendor.qti.hardware.display.mapper@3.0.so\\n/vendor/lib64/libion.so\\n/vendor/lib64/android.hardware.graphics.common@1.1.so\\n/vendor/lib64/android.hardware.graphics.mapper@2.1.so\\n/vendor/lib64/android.hardware.graphics.allocator-V2-ndk.so\\n/vendor/lib64/libhidlbase.so\\n/vendor/lib64/libc++.so\\n/vendor/lib64/vendor.qti.hardware.display.mapperextensions@1.0.so\\n/vendor/lib64/vendor.qti.hardware.display.mapperextensions@1.3.so\\n/vendor/lib64/libbase.so\\n/vendor/lib64/android.hardware.graphics.mapper@4.0.so\\n/vendor/lib64/libgrallocutils.so\\n/vendor/lib64/android.hardware.graphics.mapper@2.0.so\\n/vendor/lib64/android.hardware.graphics.common@1.2.so\\n/vendor/lib64/libcutils.so\\n/vendor/lib64/libutilscallstack.so\\n/vendor/lib64/libunwindstack.so\\n/vendor/lib64/libutils.so\\n/vendor/lib64/android.hardware.common-V2-ndk.so\\n/vendor/lib64/libz.so\\n/vendor/lib64/android.hardware.graphics.mapper@3.0.so\\n/vendor/lib64/libgralloc.qti.so\\n/vendor/lib64/android.hardware.graphics.common-V7-ndk.so\\n/vendor/lib64/libvmmem.so\\n/vendor/lib64/libgralloccore.so\\n/vendor/lib64/vendor.qti.hardware.display.mapperextensions@1.1.so\\n/vendor/lib64/libdmabufheap.so\\n/vendor/lib64/libgralloctypes.so\\n/vendor/lib64/hw/android.hardware.graphics.mapper@4.0-impl-qti-display.so\\n/vendor/lib64/liblzma.so\\n/vendor/lib64/vendor.qti.hardware.display.mapper@4.0.so\\n/vendor/lib64/vendor.qti.hardware.display.mapperextensions@1.2.so\\n/vendor/lib64/android.hardware.graphics.common@1.0.so\\n/vendor/lib64/libhardware.so\\n/system/lib64/libsonivox.so\\n/system/lib64/libprotobuf-cpp-full-6.33.5.so\\n/system/lib64/libvintf.so\\n/apex/com.android.conscrypt/lib64/libssl.so\\n/apex/com.android.tethering/lib64/libframework-connectivity-jni.so\\n/system/lib64/librs_jni.so\\n/apex/com.android.conscrypt/lib64/libc++.so\\n/apex/com.android.conscrypt/lib64/libcrypto.so\\n/system/lib64/libvintf_jni.so\\n/system/lib64/libstagefright_amrnb_common.so\\n/system/lib64/librtp_jni.so\\n/system/lib64/libaudioeffect_jni.so\\n/system/lib64/libsoundpool.so\\n/system/lib64/android.hardware.tv.tuner-V3-ndk.so\\n/system/lib64/libmediadrmmetrics_full.so\\n/system/lib64/libmediadrmmetrics_consumer.so\\n/system/lib64/libasyncio.so\\n/system/lib64/libmedia_jni.so\\n/system/lib64/libmtp.so\\n/system/lib64/android.hardware.usb.flags-aconfig-cc-lib.so\\n/system/lib64/libdrmframework_jni.so\\n/system/lib64/libdrmframeworkcommon.so\\n/system/lib64/libdrmframework.so\\n/system_ext/lib64/libmiui_runtime.so\\n/apex/com.android.conscrypt/lib64/libjavacrypto.so\\n/apex/com.android.os.statsd/lib64/libstats_jni.so\\n/system_ext/lib64/libqti-at.so\\n/system_ext/lib64/librtanimator.so\\n/vendor/lib64/libjsoncpp.so\\n/vendor/lib64/vendor.qti.hardware.display.snapalloc-impl.so\\n/vendor/lib64/libadreno_app_profiles.so\\n/system_ext/lib64/libpenguin.so\\n/vendor/lib64/hw/gralloc.default.so\\n/vendor/lib64/libcamxexternalformatutils.so\\n/vendor/lib64/hw/mapper.qti.so\\n/vendor/lib64/vendor.qti.qspmhal-V1-ndk.so\\n/vendor/lib64/vendor.qti.snapdragonServices-V2-ndk.so\\n/vendor/lib64/libqspm-mem-utils-vendor.so\\n/system_ext/lib64/libframeestimationVK.so\\n/system_ext/lib64/libqti-perfd-client_system.so\\n/system_ext/lib64/vendor.qti.hardware.perf@2.1.so\\n/system_ext/lib64/vendor.qti.hardware.perf@2.3.so\\n/system_ext/lib64/vendor.qti.hardware.perf@2.0.so\\n/system_ext/lib64/vendor.qti.hardware.perf@2.2.so\\n/system/lib64/vendor.qti.hardware.perf2-V1-ndk.so\\n/system_ext/lib64/libstackdump.so\\n/apex/com.android.tethering/lib64/libframework-connectivity-tiramisu-jni.so\\n/system_ext/lib64/libskewknob_system.so\\n/apex/com.android.art/lib64/libopenjdk.so\\n/apex/com.android.art/lib64/libopenjdkjvm.so\\n/apex/com.android.art/lib64/libexpat.so\\n/apex/com.android.art/lib64/libjavacore.so\\n/apex/com.android.art/lib64/libandroidio.so\\n/apex/com.android.i18n/lib64/libicu_jni.so\\n/system/lib64/libwebviewchromium_plat_support.so\\n/system/lib64/libstdc++.so\\n/system/lib64/android.hardware.renderscript@1.0.so\\n/system/lib64/libRS.so\\n/system/lib64/libOpenSLES.so\\n/system/lib64/libOpenMAXAL.so\\n/system/lib64/libjnigraphics.so\\n/system/lib64/libcamera2ndk.so\\n/system/lib64/libamidi.so\\n/system/lib64/libaaudio_internal_builder.so\\n/system/lib64/android.media.audio-aconfig-cc.so\\n/system/lib64/libaaudio_internal_legacy.so\\n/system/lib64/libaaudio.so\\n/system/lib64/libxml2.so\\n/system/lib64/dynamic_instrumentation_manager_aidl-cpp.so\\n/apex/com.android.tethering/lib64/libcom.android.tethering.connectivity_native.so\\n/system/lib64/libpowermanager.so\\n/system/lib64/libandroid.so\\n/system/lib64/android.hardware.power@1.3.so\\n/system/lib64/android.hardware.power@1.2.so\\n/system/lib64/android.os.flags-aconfig-cc.so\\n/apex/com.android.tethering/lib64/libc++.so\\n/system/lib64/android.hardware.power-V7-ndk.so\\n/system/lib64/android.hardware.power@1.1.so\\n/apex/com.android.art/lib64/libperfetto_hprof.so\\n/system/lib64/android.hardware.power@1.0.so\\n/apex/com.android.adbd/lib64/libadbconnection_client.so\\n/apex/com.android.adbd/lib64/libprocessgroup.so\\n/apex/com.android.adbd/lib64/libc++.so\\n/apex/com.android.art/lib64/libadbconnection.so\\n/apex/com.android.adbd/lib64/libbase.so\\n/system_ext/lib64/libmirim_jni.so\\n/apex/com.android.art/lib64/libart.so\\n/system_ext/lib64/libhwuiinsptrdl.so\\n/apex/com.android.art/lib64/libc++.so\\n/system/lib64/android.hidl.memory.token@1.0.so\\n/system/lib64/libmedia_helper.so\\n/apex/com.android.i18n/lib64/libicui18n.so\\n/apex/com.android.art/lib64/libnativebridge.so\\n/system/lib64/libstagefright_aidl_bufferpool2.so\\n/system/lib64/android.hardware.graphics.allocator@3.0.so\\n/system/lib64/shared-file-region-aidl-cpp.so\\n/system_ext/lib64/libmisight.so\\n/system/lib64/libgralloctypes.so\\n/system/lib64/libcore_jni_flags_c.so\\n/apex/com.android.runtime/lib64/bionic/libdl_android.so\\n/system/lib64/libmedia.so\\n/system/lib64/aconfig_view_accessibility_flags_c_lib.so\\n/system/lib64/libmediadrmmetrics_lite.so\\n/system/lib64/libtimeinstate.so\\n/apex/com.android.i18n/lib64/libandroidicu.so\\n/system/lib64/libbattery.so\\n/system/lib64/capture_state_listener-aidl-cpp.so\\n/system/lib64/android.hardware.media.c2@1.0.so\\n/system/lib64/libstagefright_surface_utils.so\\n/system/lib64/audioflinger-aidl-cpp.so\\n/system/lib64/libcamera_client.so\\n/system/lib64/libprocessgroup.so\\n/system/lib64/android.hardware.camera.common@1.0.so\\n/system/lib64/libunwindstack.so\\n/system/lib64/android.system.suspend-V1-ndk.so\\n/apex/com.android.art/lib64/libunwindstack.so\\n/system/lib64/android.hardware.graphics.mapper@2.1.so\\n/system/lib64/libhardware_legacy.so\\n/system/lib64/libutilscallstack.so\\n/system_ext/lib64/libdynamicaudiolog.so\\n/system_ext/lib64/libjpeg-hyper.so\\n/system/lib64/android.hardware.common-V2-cpp.so\\n/system/lib64/libstagefright_omx_utils.so\\n/system/lib64/android.hardware.media.omx@1.0.so\\n/system/lib64/com.android.media.audio-aconfig-cc.so\\n/system/lib64/libfmq.so\\n/system/lib64/libspeexresampler.so\\n/system/lib64/libprotobuf-cpp-lite-6.33.5.so\\n/system/lib64/libcutils.so\\n/system/lib64/libnativeloader_lazy.so\\n/system/lib64/libselinux.so\\n/system/lib64/server_configurable_flags.so\\n/system/lib64/android.hardware.graphics.common@1.0.so\\n/system/lib64/audioclient-types-aidl-cpp.so\\n/system/lib64/libcodec2_hidl_client@1.0.so\\n/system/lib64/libprocessgroup_platform.so\\n/system/lib64/libmediandk.so\\n/system/lib64/libz.so\\n/system/lib64/volumegroupcallback-aidl-cpp.so\\n/system/lib64/android.hardware.cas@1.0.so\\n/system/lib64/libsensor.so\\n/system/lib64/libhidlmemory.so\\n/system/lib64/android.hardware.cas.native@1.0.so\\n/system/lib64/libutils.so\\n/system/lib64/libincfs.so\\n/system/lib64/android.hardware.drm-V2-ndk.so\\n/system/lib64/libdolbyui.so\\n/system/lib64/android.hardware.drm@1.1.so\\n/system/lib64/libimage_io.so\\n/system/lib64/libjpegencoder.so\\n/system/lib64/media_quality_aidl_interface-cpp.so\\n/system/lib64/android.hardware.graphics.allocator@4.0.so\\n/system/lib64/libdng_sdk.so\\n/system/lib64/android.hardware.media.bufferpool@2.0.so\\n/system/lib64/libprocessgroup_flags_c.so\\n/system/lib64/libstagefright_codecbase.so\\n/system/lib64/liblog_rust.dylib.so\\n/system/lib64/camera_platform_flags_c_lib.so\\n/system/lib64/libcamera_metadata.so\\n/system/lib64/libhidlallocatorutils.so\\n/system/lib64/android.hardware.graphics.mapper@3.0.so\\n/system/lib64/com.android.media.audioclient-aconfig-cc.so\\n/system/lib64/libmedia_jni_utils.so\\n/system/lib64/packagemanager_aidl-cpp.so\\n/system/lib64/libstagefright_bufferqueue_helper.so\\n/system/lib64/libappfuse.so\\n/system/lib64/effect-aidl-cpp.so\\n/system/lib64/android.database.sqlite-aconfig-cc.so\\n/system/lib64/android.hardware.common.fmq-V1-ndk.so\\n/system/lib64/libstagefright_xmlparser.so\\n/system/lib64/chre_flags_c_lib.so\\n/system/lib64/libaaudio_internal_core.so\\n/system/lib64/libGLESv3.so\\n/system/lib64/libwilhelm.so\\n/system/lib64/libaconfig_storage_read_api_cc.so\\n/system/lib64/libmediandk_utils.so\\n/system/lib64/android.hardware.common-V2-ndk.so\\n/system/lib64/libnativedisplay.so\\n/system/lib64/libnativebridge_lazy.so\\n/system/lib64/graphicbuffersource-aidl-ndk.so\\n/system/lib64/libegl_flags.so\\n/system/lib64/libaudioutils.so\\n/system/lib64/libpiex.so\\n/system/lib64/libperfetto_framework_jni.so\\n/system/lib64/libpackagelistparser.so\\n/system/lib64/libaudio_aidl_conversion_common_cpp.so\\n/system/lib64/libcodec2_aidl_client.so\\n/system/lib64/libperfetto_c.so\\n/system/lib64/android.hardware.drm@1.4.so\\n/system/lib64/libshmemutil.so\\n/apex/com.android.art/lib64/liblzma.so\\n/system/lib64/libminikin.so\\n/apex/com.android.i18n/lib64/libicuuc.so\\n/system/lib64/libsqlite.so\\n/apex/com.android.art/lib64/libnativeloader.so\\n/system/lib64/android.media.audiopolicy-aconfig-cc.so\\n/system/lib64/libjpegdecoder.so\\n/system/lib64/libaaudio_internal_mmap.so\\n/system/lib64/libapexsupport.so\\n/system/lib64/libvulkan.so\\n/system/lib64/libaudiopolicy.so\\n/system/lib64/libcodec2_hidl_client@1.1.so\\n/system/lib64/libdebugstore_cxx.so\\n/system/lib64/libaudiofoundation.so\\n/system/lib64/android.hardware.graphics.common@1.2.so\\n/system/lib64/libcodec2_client.so\\n/system/lib64/process_info_service_aidl-cpp.so\\n/system/lib64/libmedia_omx.so\\n/system/lib64/libnetd_client.so\\n/system/lib64/libhidlbase.so\\n/system/lib64/libSurfaceFlingerProp.so\\n/system/lib64/spatializer-aidl-cpp.so\\n/apex/com.android.runtime/lib64/bionic/libc.so\\n/system/lib64/libhwui.so\\n/system/lib64/android.hardware.drm@1.3.so\\n/system/lib64/libbpf_bcc.so\\n/system/lib64/android.hardware.camera.device@3.2.so\\n/system/lib64/libpng.so\\n/system_ext/lib64/libmediastub.so\\n/system/lib64/com.android.window.flags.window-aconfig_flags_c_lib.so\\n/system/lib64/android.hardware.common.fmq-V1-cpp.so\\n/system/lib64/libft2.so\\n/system/lib64/libultrahdr.so\\n/system/lib64/libactivitymanager_aidl.so\\n/system/lib64/libheif.so\\n/system/lib64/libcodec2_hidl_client@1.2.so\\n/system/lib64/android.media.audio.common.types-V5-cpp.so\\n/system/lib64/libnetdutils.so\\n/system/lib64/libaaudio_internal_utils.so\\n/system/lib64/libdataloader.so\\n/system/lib64/libGLESv2.so\\n/system/lib64/libprocinfo.so\\n/system/lib64/libclang_rt.ubsan_standalone-aarch64-android.so\\n/system/lib64/libstagefright_bufferpool@2.0.1.so\\n/system/lib64/android.hardware.drm@1.0.so\\n/system/lib64/av-types-aidl-cpp.so\\n/system/lib64/audiopolicy-types-aidl-cpp.so\\n/system_ext/lib64/libaudiocloudctrl.so\\n/system/lib64/android.hardware.graphics.allocator-V2-ndk.so\\n/system/lib64/audio-permission-aidl-cpp.so\\n/system/lib64/media_permission-aidl-cpp.so\\n/system/lib64/android.hardware.graphics.mapper@2.0.so\\n/system/lib64/libbase.so\\n/system/lib64/libpcre2.so\\n/system/lib64/libimg_utils.so\\n/system/lib64/libstagefright_framecapture_utils.so\\n/system/lib64/liblog.so\\n/system/lib64/liblzma.so\\n/system/lib64/com.android.media.audioserver-aconfig-cc.so\\n/system/lib64/android.hidl.token@1.0-utils.so\\n/system/lib64/libinput.so\\n/system/lib64/libmemtrack.so\\n/system/lib64/libsync.so\\n/apex/com.android.i18n/lib64/libicu.so\\n/system/lib64/android.hardware.media.c2@1.1.so\\n/system/lib64/libvndksupport.so\\n/system/lib64/libmeminfo.so\\n/system/lib64/libprotolog.so\\n/system/lib64/android.hardware.media.c2@1.2.so\\n/system/lib64/libmemunreachable.so\\n/system/lib64/android.hidl.memory@1.0.so\\n/system/lib64/libjsoncpp.so\\n/system/lib64/com.android.media.aaudio-aconfig-cc.so\\n/system/lib64/libmedia_quality_include.so\\n/system/lib64/libpermission.so\\n/system/lib64/android.hardware.graphics.composer3-V5-ndk.so\\n/system/lib64/libmediametrics.so\\n/system/lib64/libshmemcompat.so\\n/system/lib64/libexpat.so\\n/system/lib64/contexthub_data_flow.so\\n/system/lib64/soc_flags_lib_cc.so\\n/system/lib64/libbinderdebug.so\\n/system/lib64/libskuparser_ffi.so\\n/system/lib64/lib-camera-compatibility-info-api.so\\n/system/lib64/libbinder.so\\n/system/lib64/libcodec2.so\\n/system/lib64/libmedia_omx_client.so\\n/system/lib64/libtinyxml2.so\\n/system/lib64/aconfig_mediacodec_flags_c_lib.so\\n/system/lib64/framework-permission-aidl-cpp.so\\n/system/lib64/libcodec2_vndk.so\\n/system/lib64/libdebuggerd_client.so\\n/system/lib64/libharfbuzz_subset.so\\n/system/lib64/audiopolicy-aidl-cpp.so\\n/system/lib64/libstagefright_http_support.so\\n/system/lib64/android.hidl.allocator@1.0.so\\n/system/lib64/libcesu8.dylib.so\\n/system/lib64/libharfbuzz_ng.so\\n/system/lib64/pw_allocator.so\\n/system/lib64/libstagefright_graphicbuffersource_aidl.so\\n/system/lib64/android.hardware.graphics.allocator@2.0.so\\n/system/lib64/android.hardware.graphics.bufferqueue@2.0.so\\n/system/lib64/libpdfium.so\\n/apex/com.android.art/lib64/libsigchain.so\\n/system/lib64/libmediadrm.so\\n/system/lib64/aconfig_text_flags_c_lib.so\\n/system/lib64/libxml_rust.dylib.so\\n/system/lib64/libssl.so\\n/system/lib64/android.hardware.graphics.bufferqueue@1.0.so\\n/system/lib64/libstagefright_foundation.so\\n/system/lib64/android.hardware.media@1.0.so\\n/system/lib64/libaudiobase.so\\n/system/lib64/libbpf_minimal.so\\n/apex/com.android.runtime/lib64/bionic/libm.so\\n/system/lib64/libmedia_codeclist.so\\n/system/lib64/libcrypto.so\\n/system/lib64/libc++.so\\n/system/lib64/libskuparser_cpp.so\\n/system/lib64/android.hardware.media.bufferpool2-V2-ndk.so\\n/system/lib64/libETC1.so\\n/system/lib64/libaudiomanager.so\\n/system/lib64/libnativewindow.so\\n/system/lib64/libtracing_perfetto.so\\n/system/lib64/android.hardware.graphics.mapper@4.0.so\\n/system/lib64/mediametricsservice-aidl-V1-cpp.so\\n/system/lib64/libstd.dylib.so\\n/system/lib64/libusbhost.so\\n/system/lib64/libcodec2_hal_common.so\\n/apex/com.android.runtime/lib64/bionic/libdl.so\\n/system/lib64/libcameracompatbilityinfo.so\\n/system/lib64/aaudio-aidl-cpp.so\\n/system/lib64/libaaudio_internal_fifo.so\\n/system/lib64/libsfplugin_ccodec_utils.so\\n/system/lib64/libcxx.dylib.so\\n/system/lib64/libguiflags.so\\n/system/lib64/libandroidfw.so\\n/system/lib64/libdatasource.so\\n/system/lib64/android.hardware.media.c2-V2-ndk.so\\n/system/lib64/libjxl.so\\n/system/lib64/libbinder_ndk.so\\n/system/lib64/libandroid_runtime_lazy.so\\n/system/lib64/android.hidl.token@1.0.so\\n/system/lib64/libEGL.so\\n/system/lib64/lib-platform-compat-native-api.so\\n/system/lib64/libgraphicsenv.so\\n/system/lib64/libcurl.so\\n/system/lib64/libgui.so\\n/system/lib64/libstagefright.so\\n/apex/com.android.art/lib64/libbase.so\\n/system_ext/lib64/libMiVideoFilter.so\\n/system/lib64/libxqos.so\\n/system/lib64/android.hardware.graphics.common@1.1.so\\n/system/lib64/libpipelineinfosuploader.so\\n/system/lib64/libdmabufheap.so\\n/system/lib64/android.hardware.memtrack-V1-ndk.so\\n/system/lib64/android.companion.virtual.virtualdevice_aidl-cpp.so\\n/system/lib64/libziparchive.so\\n/system/lib64/libGLESv1_CM.so\\n/system/lib64/android.hardware.contexthub-V5-ndk.so\\n/system/lib64/android.hardware.drm@1.2.so\\n/system/lib64/libandroid_runtime.so\\n/system/lib64/android.hidl.safe_union@1.0.so\\n/system/lib64/libaudioclient.so\\n/system/lib64/libjni.dylib.so\\n/system/lib64/libaudioclient_aidl_conversion.so\\n/system/lib64/libui.so\\n/system/lib64/libmediautils.so\\n/system/lib64/libhardware.so\\n/system_ext/lib64/libdolbyeffect.so\\n/system/lib64/android.hardware.graphics.common-V7-ndk.so\\n/system/lib64/android.hardware.drm.common-V1-ndk.so\\n/system/lib64/libjpeg.so\\n/system/lib64/libmedia_codeclist_capabilities.so\\n/system/lib64/libsfplugin_ccodec.so\\n/system/lib64/libtombstoned_client.so\\n/system/lib64/libartpalette-system.so\\n/system/lib64/heapprofd_client_api.so\\n/apex/com.android.art/lib64/libart-disassembler.so\\n/apex/com.android.art/lib64/libdexfile.so\\n/apex/com.android.art/lib64/libprofile.so\\n/apex/com.android.art/lib64/libartbase.so\\n/apex/com.android.art/lib64/liblz4.so\\n/apex/com.android.art/lib64/libartpalette.so\\n/apex/com.android.os.statsd/lib64/libstatspull.so\\n/apex/com.android.os.statsd/lib64/libstatssocket.so\\n/apex/com.android.art/lib64/libnativehelper.so\",\"nativeRowsSha256\":\"675c0f69083065a90033003886c796de222771268070b443f3c8bd510c207bc6\",\"foreignBackendRows\":[],\"mapsSha256\":\"595a420515e86eadb756551af091b41f552acc495a53c2fa5209599aa8cf1ca9\",\"mapsBytes\":425722,\"mapsRowCount\":4396,\"schema\":1,\"pid\":29931,\"uid\":10431,\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"coreSha256\":\"64a702be0fbb721b7455125946b0aa3727f0ea57c273f36248f313a8e0f2f98f\",\"coreSize\":1191656,\"physicalProcess\":\"dev.tripoder.engine:slot0\"},\"executionPolicy\":{\"bound\":true,\"owned\":false,\"observedLevel\":0,\"claims\":0,\"client\":\"tripoder-managed-process-interpreter\",\"processLifetimeLease\":false,\"policy\":\"method-entry-only\",\"preserveCompilation\":true,\"explicitInitialization\":true,\"preexistingCompiledFramesCovered\":false,\"fullCallerCoverage\":false,\"fixedBindings\":1021},\"nativeCoreResources\":{\"issued\":0,\"prepared\":0,\"active\":0,\"retired\":0,\"failed\":0,\"inFlight\":0,\"inboundUsed\":1,\"retainedImages\":0,\"jniGlobalRoots\":0,\"jniOwnedThreadLeases\":0,\"jniThreadAttachments\":0,\"jniThreadDetachments\":0,\"publishedResourcesRetained\":true},\"operationId\":\"0b4fa87d-afd4-46b2-97a2-248b25bc39ea\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 37,
+      "method": "tools/call",
+      "params": {
+        "name": "hook_disable",
+        "arguments": {
+          "operationId": "7a23cab1-a56e-4e1b-9c45-6ff867ae5209",
+          "revision": "ae0299650e7ba706eadb5718664eb6f8dbbdf2112cd25140b8f478e9d0f89dbd"
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 37,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"7a23cab1-a56e-4e1b-9c45-6ff867ae5209\",\"session\":\"fb450116-c435-4002-96d1-4fa0018c2b4d\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"ok\":true,\"result\":{\"state\":\"DISABLED\",\"revision\":\"ae0299650e7ba706eadb5718664eb6f8dbbdf2112cd25140b8f478e9d0f89dbd\",\"hits\":1,\"errors\":0,\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"pid\":29931,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"operationId\":\"7a23cab1-a56e-4e1b-9c45-6ff867ae5209\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 38,
+      "method": "tools/call",
+      "params": {
+        "name": "probes_stop",
+        "arguments": {
+          "operationId": "88b5b364-9201-40a0-be91-3defd44083f2"
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 38,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"88b5b364-9201-40a0-be91-3defd44083f2\",\"session\":\"fb450116-c435-4002-96d1-4fa0018c2b4d\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"ok\":true,\"result\":{\"enabled\":false,\"revision\":\"f70b88d1-679d-46f4-9b35-5139a8666fca\",\"stage\":\"APPLICATION_CREATED\",\"installedHooks\":0,\"loaderCount\":3,\"dexCount\":3,\"scans\":20,\"reservedBytes\":7156,\"artifactCount\":4,\"pendingCaptures\":0,\"droppedEvents\":0,\"fullCallerCoverage\":false,\"atomicMemorySnapshot\":false,\"discovery\":\"BASE_DEX_CLASS_LOADER_CONSTRUCTION_AND_ADD_DEX_PATH\",\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"pid\":29931,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"operationId\":\"88b5b364-9201-40a0-be91-3defd44083f2\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 39,
+      "method": "tools/call",
+      "params": {
+        "name": "artifact_read",
+        "arguments": {
+          "processGeneration": "d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7",
+          "artifactId": "1314adef-3302-45bd-8a52-868f8be25b25",
+          "offset": 0,
+          "length": 257
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 39,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"4b1d0390-e8fd-4ec7-9e09-cce18f032e21\",\"ok\":true,\"result\":{\"artifactId\":\"1314adef-3302-45bd-8a52-868f8be25b25\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"offset\":0,\"size\":732,\"sha256\":\"58930f70a89af4f9f5eba1e055bc2c54c508007b3583126a0ba61f84857795ba\",\"encoding\":\"base64\",\"data\":\"ZGV4CjAzOQDUdp8ZyVrXq0wiJcZIEmdC0Jpkenz6Ib7cAgAAcAAAAHhWNBIAAAAAAAAAAFQCAAAKAAAAcAAAAAQAAACYAAAAAgAAAKgAAAAAAAAAAAAAAAMAAADAAAAAAQAAANgAAADkAQAA+AAAACwBAAA0AQAANwEAAFcBAABrAQAAfwEAAI0BAACQAQAAnAEAAKMBAAACAAAAAwAAAAQAAAAGAAAAAQAAAAIAAAAAAAAABgAAAAMAAAAAAAAAAAABAAAAAAAAAAAACAAAAAEAAQAAAAAAAAAAABEAAAABAAAAAAAAAAUAAAAAAAAARAIAAAAAAAABAAAAAAAAACg=\",\"nextOffset\":257,\"eof\":false}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 40,
+      "method": "tools/call",
+      "params": {
+        "name": "artifact_read",
+        "arguments": {
+          "processGeneration": "d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7",
+          "artifactId": "1314adef-3302-45bd-8a52-868f8be25b25",
+          "offset": 257,
+          "length": 257
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 40,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"9d187537-54b1-4790-a4a8-58c9ca013950\",\"ok\":true,\"result\":{\"artifactId\":\"1314adef-3302-45bd-8a52-868f8be25b25\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"offset\":257,\"size\":732,\"sha256\":\"58930f70a89af4f9f5eba1e055bc2c54c508007b3583126a0ba61f84857795ba\",\"encoding\":\"base64\",\"data\":\"AQAAAwAAABoABwARAAAAAQABAAEAAAAoAQAABAAAAHAQAgAAAA4AAgAOAAY8aW5pdD4AAUwAHkxkZXYvdHJpcG9kZXIvZHluYW1pYy9QYXlsb2FkOwASTGphdmEvbGFuZy9PYmplY3Q7ABJMamF2YS9sYW5nL1N0cmluZzsADFBheWxvYWQuamF2YQABVgAKZHluYW1pYy12MQAFdmFsdWUAngF+fkQ4eyJiYWNrZW5kIjoiZGV4IiwiY29tcGlsYXRpb24tbW9kZSI6InJlbGVhc2UiLCJoYXMtY2hlY2tzdW1zIjpmYWxzZSwibWluLWFwaSI6MzYsInNoYS0xIjo=\",\"nextOffset\":514,\"eof\":false}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 41,
+      "method": "tools/call",
+      "params": {
+        "name": "artifact_read",
+        "arguments": {
+          "processGeneration": "d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7",
+          "artifactId": "1314adef-3302-45bd-8a52-868f8be25b25",
+          "offset": 514,
+          "length": 257
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 41,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"a3860669-24e8-4617-bfcc-892dfac85e21\",\"ok\":true,\"result\":{\"artifactId\":\"1314adef-3302-45bd-8a52-868f8be25b25\",\"processGeneration\":\"d5f30c92914eef720cc213eebd93ecbcdfa01ecb0e93fe747fee127231e883e7\",\"offset\":514,\"size\":732,\"sha256\":\"58930f70a89af4f9f5eba1e055bc2c54c508007b3583126a0ba61f84857795ba\",\"encoding\":\"base64\",\"data\":\"IjA4NGE4OTEyNmFlMDU5NmM1OTkxNDNkZjU3YTY1NDY0NmFmMjgzMTMiLCJ2ZXJzaW9uIjoiOS4yLjQtZGV2In0AAAACAACBgASQAgEJ+AEAAAsAAAAAAAAAAQAAAAAAAAABAAAACgAAAHAAAAACAAAABAAAAJgAAAADAAAAAgAAAKgAAAAFAAAAAwAAAMAAAAAGAAAAAQAAANgAAAABIAAAAgAAAPgAAAADIAAAAQAAACgBAAACIAAACgAAACwBAAAAIAAAAQAAAEQCAAAAEAAAAQAAAFQCAAA=\",\"nextOffset\":732,\"eof\":true}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 42,
+      "method": "tools/call",
+      "params": {
+        "name": "probes_configure",
+        "arguments": {
+          "operationId": "07a3faf4-7b56-44da-9a8c-e87d6156a574",
+          "project": "64488a8c-657d-4a7d-9adc-3316c8d92da0",
+          "expectedRevision": "f70b88d1-679d-46f4-9b35-5139a8666fca",
+          "configuration": {
+            "enabled": false
+          }
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 42,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"07a3faf4-7b56-44da-9a8c-e87d6156a574\",\"ok\":true,\"result\":{\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"bindingOperation\":\"38c8e5af-7401-4f15-bd90-7eb4dfd18d5a\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"revision\":\"61112b96-8efc-43b4-8367-afa04edbafd7\",\"configuration\":{\"enabled\":false,\"discoverLoaders\":true,\"captureDexOnLoad\":false,\"maxDexBytes\":16777216,\"maxTotalBytes\":67108864,\"maxArtifacts\":32,\"processName\":\"\"},\"appliesTo\":\"NEW_PROCESSES\",\"survivesAuthorityRestart\":false}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 43,
+      "method": "tools/call",
+      "params": {
+        "name": "process_start",
+        "arguments": {
+          "operationId": "5d9c3c64-0148-4669-884d-c30fa4798646",
+          "project": "64488a8c-657d-4a7d-9adc-3316c8d92da0",
+          "component": "",
+          "probeRevision": "61112b96-8efc-43b4-8367-afa04edbafd7"
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 43,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"5d9c3c64-0148-4669-884d-c30fa4798646\",\"ok\":true,\"result\":{\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"f9f09c3becf785dba5dccd6adf7da4d4b51ecd0a057f45627848bb5033696139\",\"pid\":30022,\"probeRevision\":\"61112b96-8efc-43b4-8367-afa04edbafd7\",\"entryDispatchRequested\":true,\"operationId\":\"5d9c3c64-0148-4669-884d-c30fa4798646\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 44,
+      "method": "tools/call",
+      "params": {
+        "name": "target_select",
+        "arguments": {
+          "project": "64488a8c-657d-4a7d-9adc-3316c8d92da0",
+          "processGeneration": "f9f09c3becf785dba5dccd6adf7da4d4b51ecd0a057f45627848bb5033696139"
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 44,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"ac12941b-7484-4d59-bbc4-4c13a3c2ad44\",\"ok\":true,\"result\":{\"protocol\":2,\"session\":\"d588f566-36b8-41e6-8cf0-f23cab40b0dc\",\"state\":\"OPEN\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"space\":\"control-bdf9e0e1d3c04240-code\",\"package\":\"dev.tripoder.probefixture\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"bindingOperation\":\"38c8e5af-7401-4f15-bd90-7eb4dfd18d5a\",\"processGeneration\":\"f9f09c3becf785dba5dccd6adf7da4d4b51ecd0a057f45627848bb5033696139\",\"mode\":\"thin\",\"hookState\":\"IDLE\",\"authenticationRequired\":false,\"reviewRequired\":false,\"autoApprove\":true,\"expires\":null,\"processClose\":\"NOT_REQUESTED\",\"strongIsolation\":false}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 45,
+      "method": "tools/call",
+      "params": {
+        "name": "hook_status",
+        "arguments": {}
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 45,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"dc6ff36c-5f02-4cfb-8ca7-07f18370e412\",\"session\":\"d588f566-36b8-41e6-8cf0-f23cab40b0dc\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"f9f09c3becf785dba5dccd6adf7da4d4b51ecd0a057f45627848bb5033696139\",\"ok\":true,\"result\":{\"state\":\"IDLE\",\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"f9f09c3becf785dba5dccd6adf7da4d4b51ecd0a057f45627848bb5033696139\",\"pid\":30022,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"moduleEvents\":[],\"runtimeNativeMappings\":{\"corePath\":\"/data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\",\"coreInode\":\"484361\",\"coreRows\":[\"6e3ea12000-6e3ea2a000 r--p 00000000 fe:45 484361                         /data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\",\"6e3ea2d000-6e3ea57000 r-xp 00017000 fe:45 484361                         /data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\",\"6e3ea5a000-6e3ea5c000 r--p 00040000 fe:45 484361                         /data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\",\"6e3ea5f000-6e3ea61000 rw-p 00041000 fe:45 484361                         /data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\"],\"nativePaths\":\"/vendor/lib64/libllvm-qgl.so\\n/system_ext/lib64/libboost.so\\n/system_ext/lib64/libperf_ctl.so\\n/data/app/~~siBldAf2aj2Yq6Ocni0tNA==/dev.tripoder.engine-zTnzTOXd6mnHszKREWQKLw==/lib/arm64/libtripoderselfhook.so\\n/apex/com.android.tethering/lib64/libhttpengine.so\\n/system/lib64/libwebviewchromium_loader.so\\n/apex/com.android.tethering/lib64/libcrypto_httpengine.so\\n/system_ext/lib64/libmiinput.so\\n/system_ext/lib64/libmigui.so\\n/system_ext/lib64/libforcedarkimpl.so\\n/system_ext/lib64/libqti_performance.so\\n/system_ext/lib64/vendor.qti.hardware.iop@2.0.so\\n/system/lib64/libcompiler_rt.so\\n/vendor/lib64/egl/eglSubDriverAndroid.so\\n/vendor/lib64/egl/libGLESv2_adreno.so\\n/vendor/lib64/libllvm-glnext.so\\n/vendor/lib64/egl/libGLESv1_CM_adreno.so\\n/vendor/lib64/hw/vulkan.adreno.so\\n/vendor/lib64/egl/libEGL_adreno.so\\n/vendor/lib64/vendor.qti.hardware.display.mapper@2.0.so\\n/vendor/lib64/vendor.qti.hardware.hexlp-V2-ndk.so\\n/vendor/lib64/libgsl.so\\n/vendor/lib64/libadreno_utils.so\\n/vendor/lib64/libmapperutils.so\\n/vendor/lib64/vendor.qti.hardware.display.mapper@3.0.so\\n/vendor/lib64/libion.so\\n/vendor/lib64/android.hardware.graphics.common@1.1.so\\n/vendor/lib64/android.hardware.graphics.mapper@2.1.so\\n/vendor/lib64/android.hardware.graphics.allocator-V2-ndk.so\\n/vendor/lib64/libhidlbase.so\\n/vendor/lib64/libc++.so\\n/vendor/lib64/vendor.qti.hardware.display.mapperextensions@1.0.so\\n/vendor/lib64/vendor.qti.hardware.display.mapperextensions@1.3.so\\n/vendor/lib64/libbase.so\\n/vendor/lib64/android.hardware.graphics.mapper@4.0.so\\n/vendor/lib64/libgrallocutils.so\\n/vendor/lib64/android.hardware.graphics.mapper@2.0.so\\n/vendor/lib64/android.hardware.graphics.common@1.2.so\\n/vendor/lib64/libcutils.so\\n/vendor/lib64/libutilscallstack.so\\n/vendor/lib64/libunwindstack.so\\n/vendor/lib64/libutils.so\\n/vendor/lib64/android.hardware.common-V2-ndk.so\\n/vendor/lib64/libz.so\\n/vendor/lib64/android.hardware.graphics.mapper@3.0.so\\n/vendor/lib64/libgralloc.qti.so\\n/vendor/lib64/android.hardware.graphics.common-V7-ndk.so\\n/vendor/lib64/libvmmem.so\\n/vendor/lib64/libgralloccore.so\\n/vendor/lib64/vendor.qti.hardware.display.mapperextensions@1.1.so\\n/vendor/lib64/libdmabufheap.so\\n/vendor/lib64/libgralloctypes.so\\n/vendor/lib64/hw/android.hardware.graphics.mapper@4.0-impl-qti-display.so\\n/vendor/lib64/liblzma.so\\n/vendor/lib64/vendor.qti.hardware.display.mapper@4.0.so\\n/vendor/lib64/vendor.qti.hardware.display.mapperextensions@1.2.so\\n/vendor/lib64/android.hardware.graphics.common@1.0.so\\n/vendor/lib64/libhardware.so\\n/system/lib64/libsonivox.so\\n/system/lib64/libprotobuf-cpp-full-6.33.5.so\\n/system/lib64/libvintf.so\\n/apex/com.android.conscrypt/lib64/libssl.so\\n/apex/com.android.tethering/lib64/libframework-connectivity-jni.so\\n/system/lib64/librs_jni.so\\n/apex/com.android.conscrypt/lib64/libc++.so\\n/apex/com.android.conscrypt/lib64/libcrypto.so\\n/system/lib64/libvintf_jni.so\\n/system/lib64/libstagefright_amrnb_common.so\\n/system/lib64/librtp_jni.so\\n/system/lib64/libaudioeffect_jni.so\\n/system/lib64/libsoundpool.so\\n/system/lib64/android.hardware.tv.tuner-V3-ndk.so\\n/system/lib64/libmediadrmmetrics_full.so\\n/system/lib64/libmediadrmmetrics_consumer.so\\n/system/lib64/libasyncio.so\\n/system/lib64/libmedia_jni.so\\n/system/lib64/libmtp.so\\n/system/lib64/android.hardware.usb.flags-aconfig-cc-lib.so\\n/system/lib64/libdrmframework_jni.so\\n/system/lib64/libdrmframeworkcommon.so\\n/system/lib64/libdrmframework.so\\n/system_ext/lib64/libmiui_runtime.so\\n/apex/com.android.conscrypt/lib64/libjavacrypto.so\\n/apex/com.android.os.statsd/lib64/libstats_jni.so\\n/system_ext/lib64/libqti-at.so\\n/system_ext/lib64/librtanimator.so\\n/system/lib64/libgppextension.so\\n/system_ext/lib64/libpenguin_impl.so\\n/vendor/lib64/libadreno_app_profiles.so\\n/system_ext/lib64/libpenguin.so\\n/vendor/lib64/hw/gralloc.default.so\\n/vendor/lib64/libcamxexternalformatutils.so\\n/vendor/lib64/libjsoncpp.so\\n/vendor/lib64/vendor.qti.hardware.display.snapalloc-impl.so\\n/vendor/lib64/hw/mapper.qti.so\\n/system_ext/lib64/libframeestimationVK.so\\n/vendor/lib64/vendor.qti.snapdragonServices-V2-ndk.so\\n/vendor/lib64/vendor.qti.qspmhal-V1-ndk.so\\n/system_ext/lib64/libqti-perfd-client_system.so\\n/system_ext/lib64/vendor.qti.hardware.perf@2.1.so\\n/system_ext/lib64/vendor.qti.hardware.perf@2.3.so\\n/system_ext/lib64/vendor.qti.hardware.perf@2.0.so\\n/system_ext/lib64/vendor.qti.hardware.perf@2.2.so\\n/system/lib64/vendor.qti.hardware.perf2-V1-ndk.so\\n/system_ext/lib64/libstackdump.so\\n/apex/com.android.tethering/lib64/libframework-connectivity-tiramisu-jni.so\\n/system_ext/lib64/libskewknob_system.so\\n/apex/com.android.art/lib64/libopenjdk.so\\n/apex/com.android.art/lib64/libopenjdkjvm.so\\n/apex/com.android.art/lib64/libexpat.so\\n/apex/com.android.art/lib64/libjavacore.so\\n/apex/com.android.art/lib64/libandroidio.so\\n/apex/com.android.i18n/lib64/libicu_jni.so\\n/system/lib64/libwebviewchromium_plat_support.so\\n/system/lib64/libstdc++.so\\n/system/lib64/android.hardware.renderscript@1.0.so\\n/system/lib64/libRS.so\\n/system/lib64/libOpenSLES.so\\n/system/lib64/libOpenMAXAL.so\\n/system/lib64/libjnigraphics.so\\n/system/lib64/libcamera2ndk.so\\n/system/lib64/libamidi.so\\n/system/lib64/libaaudio_internal_builder.so\\n/system/lib64/android.media.audio-aconfig-cc.so\\n/system/lib64/libaaudio_internal_legacy.so\\n/system/lib64/libaaudio.so\\n/system/lib64/libxml2.so\\n/system/lib64/dynamic_instrumentation_manager_aidl-cpp.so\\n/apex/com.android.tethering/lib64/libcom.android.tethering.connectivity_native.so\\n/system/lib64/libpowermanager.so\\n/system/lib64/libandroid.so\\n/system/lib64/android.hardware.power@1.3.so\\n/system/lib64/android.hardware.power@1.2.so\\n/system/lib64/android.os.flags-aconfig-cc.so\\n/apex/com.android.tethering/lib64/libc++.so\\n/system/lib64/android.hardware.power-V7-ndk.so\\n/system/lib64/android.hardware.power@1.1.so\\n/apex/com.android.art/lib64/libperfetto_hprof.so\\n/system/lib64/android.hardware.power@1.0.so\\n/apex/com.android.adbd/lib64/libadbconnection_client.so\\n/apex/com.android.adbd/lib64/libprocessgroup.so\\n/apex/com.android.adbd/lib64/libc++.so\\n/apex/com.android.art/lib64/libadbconnection.so\\n/apex/com.android.adbd/lib64/libbase.so\\n/vendor/lib64/libqspm-mem-utils-vendor.so\\n/system_ext/lib64/libmirim_jni.so\\n/apex/com.android.art/lib64/libart.so\\n/system_ext/lib64/libhwuiinsptrdl.so\\n/apex/com.android.art/lib64/libc++.so\\n/system/lib64/android.hidl.memory.token@1.0.so\\n/system/lib64/libmedia_helper.so\\n/apex/com.android.i18n/lib64/libicui18n.so\\n/apex/com.android.art/lib64/libnativebridge.so\\n/system/lib64/libstagefright_aidl_bufferpool2.so\\n/system/lib64/android.hardware.graphics.allocator@3.0.so\\n/system/lib64/shared-file-region-aidl-cpp.so\\n/system_ext/lib64/libmisight.so\\n/system/lib64/libgralloctypes.so\\n/system/lib64/libcore_jni_flags_c.so\\n/apex/com.android.runtime/lib64/bionic/libdl_android.so\\n/system/lib64/libmedia.so\\n/system/lib64/aconfig_view_accessibility_flags_c_lib.so\\n/system/lib64/libmediadrmmetrics_lite.so\\n/system/lib64/libtimeinstate.so\\n/apex/com.android.i18n/lib64/libandroidicu.so\\n/system/lib64/libbattery.so\\n/system/lib64/capture_state_listener-aidl-cpp.so\\n/system/lib64/android.hardware.media.c2@1.0.so\\n/system/lib64/libstagefright_surface_utils.so\\n/system/lib64/audioflinger-aidl-cpp.so\\n/system/lib64/libcamera_client.so\\n/system/lib64/libprocessgroup.so\\n/system/lib64/android.hardware.camera.common@1.0.so\\n/system/lib64/libunwindstack.so\\n/system/lib64/android.system.suspend-V1-ndk.so\\n/apex/com.android.art/lib64/libunwindstack.so\\n/system/lib64/android.hardware.graphics.mapper@2.1.so\\n/system/lib64/libhardware_legacy.so\\n/system/lib64/libutilscallstack.so\\n/system_ext/lib64/libdynamicaudiolog.so\\n/system_ext/lib64/libjpeg-hyper.so\\n/system/lib64/android.hardware.common-V2-cpp.so\\n/system/lib64/libstagefright_omx_utils.so\\n/system/lib64/android.hardware.media.omx@1.0.so\\n/system/lib64/com.android.media.audio-aconfig-cc.so\\n/system/lib64/libfmq.so\\n/system/lib64/libspeexresampler.so\\n/system/lib64/libprotobuf-cpp-lite-6.33.5.so\\n/system/lib64/libcutils.so\\n/system/lib64/libnativeloader_lazy.so\\n/system/lib64/libselinux.so\\n/system/lib64/server_configurable_flags.so\\n/system/lib64/android.hardware.graphics.common@1.0.so\\n/system/lib64/audioclient-types-aidl-cpp.so\\n/system/lib64/libcodec2_hidl_client@1.0.so\\n/system/lib64/libprocessgroup_platform.so\\n/system/lib64/libmediandk.so\\n/system/lib64/libz.so\\n/system/lib64/volumegroupcallback-aidl-cpp.so\\n/system/lib64/android.hardware.cas@1.0.so\\n/system/lib64/libsensor.so\\n/system/lib64/libhidlmemory.so\\n/system/lib64/android.hardware.cas.native@1.0.so\\n/system/lib64/libutils.so\\n/system/lib64/libincfs.so\\n/system/lib64/android.hardware.drm-V2-ndk.so\\n/system/lib64/libdolbyui.so\\n/system/lib64/android.hardware.drm@1.1.so\\n/system/lib64/libimage_io.so\\n/system/lib64/libjpegencoder.so\\n/system/lib64/media_quality_aidl_interface-cpp.so\\n/system/lib64/android.hardware.graphics.allocator@4.0.so\\n/system/lib64/libdng_sdk.so\\n/system/lib64/android.hardware.media.bufferpool@2.0.so\\n/system/lib64/libprocessgroup_flags_c.so\\n/system/lib64/libstagefright_codecbase.so\\n/system/lib64/liblog_rust.dylib.so\\n/system/lib64/camera_platform_flags_c_lib.so\\n/system/lib64/libcamera_metadata.so\\n/system/lib64/libhidlallocatorutils.so\\n/system/lib64/android.hardware.graphics.mapper@3.0.so\\n/system/lib64/com.android.media.audioclient-aconfig-cc.so\\n/system/lib64/libmedia_jni_utils.so\\n/system/lib64/packagemanager_aidl-cpp.so\\n/system/lib64/libstagefright_bufferqueue_helper.so\\n/system/lib64/libappfuse.so\\n/system/lib64/effect-aidl-cpp.so\\n/system/lib64/android.database.sqlite-aconfig-cc.so\\n/system/lib64/android.hardware.common.fmq-V1-ndk.so\\n/system/lib64/libstagefright_xmlparser.so\\n/system/lib64/chre_flags_c_lib.so\\n/system/lib64/libaaudio_internal_core.so\\n/system/lib64/libGLESv3.so\\n/system/lib64/libwilhelm.so\\n/system/lib64/libaconfig_storage_read_api_cc.so\\n/system/lib64/libmediandk_utils.so\\n/system/lib64/android.hardware.common-V2-ndk.so\\n/system/lib64/libnativedisplay.so\\n/system/lib64/libnativebridge_lazy.so\\n/system/lib64/graphicbuffersource-aidl-ndk.so\\n/system/lib64/libegl_flags.so\\n/system/lib64/libaudioutils.so\\n/system/lib64/libpiex.so\\n/system/lib64/libperfetto_framework_jni.so\\n/system/lib64/libpackagelistparser.so\\n/system/lib64/libaudio_aidl_conversion_common_cpp.so\\n/system/lib64/libcodec2_aidl_client.so\\n/system/lib64/libperfetto_c.so\\n/system/lib64/android.hardware.drm@1.4.so\\n/system/lib64/libshmemutil.so\\n/apex/com.android.art/lib64/liblzma.so\\n/system/lib64/libminikin.so\\n/apex/com.android.i18n/lib64/libicuuc.so\\n/system/lib64/libsqlite.so\\n/apex/com.android.art/lib64/libnativeloader.so\\n/system/lib64/android.media.audiopolicy-aconfig-cc.so\\n/system/lib64/libjpegdecoder.so\\n/system/lib64/libaaudio_internal_mmap.so\\n/system/lib64/libapexsupport.so\\n/system/lib64/libvulkan.so\\n/system/lib64/libaudiopolicy.so\\n/system/lib64/libcodec2_hidl_client@1.1.so\\n/system/lib64/libdebugstore_cxx.so\\n/system/lib64/libaudiofoundation.so\\n/system/lib64/android.hardware.graphics.common@1.2.so\\n/system/lib64/libcodec2_client.so\\n/system/lib64/process_info_service_aidl-cpp.so\\n/system/lib64/libmedia_omx.so\\n/system/lib64/libnetd_client.so\\n/system/lib64/libhidlbase.so\\n/system/lib64/libSurfaceFlingerProp.so\\n/system/lib64/spatializer-aidl-cpp.so\\n/apex/com.android.runtime/lib64/bionic/libc.so\\n/system/lib64/libhwui.so\\n/system/lib64/android.hardware.drm@1.3.so\\n/system/lib64/libbpf_bcc.so\\n/system/lib64/android.hardware.camera.device@3.2.so\\n/system/lib64/libpng.so\\n/system_ext/lib64/libmediastub.so\\n/system/lib64/com.android.window.flags.window-aconfig_flags_c_lib.so\\n/system/lib64/android.hardware.common.fmq-V1-cpp.so\\n/system/lib64/libft2.so\\n/system/lib64/libultrahdr.so\\n/system/lib64/libactivitymanager_aidl.so\\n/system/lib64/libheif.so\\n/system/lib64/libcodec2_hidl_client@1.2.so\\n/system/lib64/android.media.audio.common.types-V5-cpp.so\\n/system/lib64/libnetdutils.so\\n/system/lib64/libaaudio_internal_utils.so\\n/system/lib64/libdataloader.so\\n/system/lib64/libGLESv2.so\\n/system/lib64/libprocinfo.so\\n/system/lib64/libclang_rt.ubsan_standalone-aarch64-android.so\\n/system/lib64/libstagefright_bufferpool@2.0.1.so\\n/system/lib64/android.hardware.drm@1.0.so\\n/system/lib64/av-types-aidl-cpp.so\\n/system/lib64/audiopolicy-types-aidl-cpp.so\\n/system_ext/lib64/libaudiocloudctrl.so\\n/system/lib64/android.hardware.graphics.allocator-V2-ndk.so\\n/system/lib64/audio-permission-aidl-cpp.so\\n/system/lib64/media_permission-aidl-cpp.so\\n/system/lib64/android.hardware.graphics.mapper@2.0.so\\n/system/lib64/libbase.so\\n/system/lib64/libpcre2.so\\n/system/lib64/libimg_utils.so\\n/system/lib64/libstagefright_framecapture_utils.so\\n/system/lib64/liblog.so\\n/system/lib64/liblzma.so\\n/system/lib64/com.android.media.audioserver-aconfig-cc.so\\n/system/lib64/android.hidl.token@1.0-utils.so\\n/system/lib64/libinput.so\\n/system/lib64/libmemtrack.so\\n/system/lib64/libsync.so\\n/apex/com.android.i18n/lib64/libicu.so\\n/system/lib64/android.hardware.media.c2@1.1.so\\n/system/lib64/libvndksupport.so\\n/system/lib64/libmeminfo.so\\n/system/lib64/libprotolog.so\\n/system/lib64/android.hardware.media.c2@1.2.so\\n/system/lib64/libmemunreachable.so\\n/system/lib64/android.hidl.memory@1.0.so\\n/system/lib64/libjsoncpp.so\\n/system/lib64/com.android.media.aaudio-aconfig-cc.so\\n/system/lib64/libmedia_quality_include.so\\n/system/lib64/libpermission.so\\n/system/lib64/android.hardware.graphics.composer3-V5-ndk.so\\n/system/lib64/libmediametrics.so\\n/system/lib64/libshmemcompat.so\\n/system/lib64/libexpat.so\\n/system/lib64/contexthub_data_flow.so\\n/system/lib64/soc_flags_lib_cc.so\\n/system/lib64/libbinderdebug.so\\n/system/lib64/libskuparser_ffi.so\\n/system/lib64/lib-camera-compatibility-info-api.so\\n/system/lib64/libbinder.so\\n/system/lib64/libcodec2.so\\n/system/lib64/libmedia_omx_client.so\\n/system/lib64/libtinyxml2.so\\n/system/lib64/aconfig_mediacodec_flags_c_lib.so\\n/system/lib64/framework-permission-aidl-cpp.so\\n/system/lib64/libcodec2_vndk.so\\n/system/lib64/libdebuggerd_client.so\\n/system/lib64/libharfbuzz_subset.so\\n/system/lib64/audiopolicy-aidl-cpp.so\\n/system/lib64/libstagefright_http_support.so\\n/system/lib64/android.hidl.allocator@1.0.so\\n/system/lib64/libcesu8.dylib.so\\n/system/lib64/libharfbuzz_ng.so\\n/system/lib64/pw_allocator.so\\n/system/lib64/libstagefright_graphicbuffersource_aidl.so\\n/system/lib64/android.hardware.graphics.allocator@2.0.so\\n/system/lib64/android.hardware.graphics.bufferqueue@2.0.so\\n/system/lib64/libpdfium.so\\n/apex/com.android.art/lib64/libsigchain.so\\n/system/lib64/libmediadrm.so\\n/system/lib64/aconfig_text_flags_c_lib.so\\n/system/lib64/libxml_rust.dylib.so\\n/system/lib64/libssl.so\\n/system/lib64/android.hardware.graphics.bufferqueue@1.0.so\\n/system/lib64/libstagefright_foundation.so\\n/system/lib64/android.hardware.media@1.0.so\\n/system/lib64/libaudiobase.so\\n/system/lib64/libbpf_minimal.so\\n/apex/com.android.runtime/lib64/bionic/libm.so\\n/system/lib64/libmedia_codeclist.so\\n/system/lib64/libcrypto.so\\n/system/lib64/libc++.so\\n/system/lib64/libskuparser_cpp.so\\n/system/lib64/android.hardware.media.bufferpool2-V2-ndk.so\\n/system/lib64/libETC1.so\\n/system/lib64/libaudiomanager.so\\n/system/lib64/libnativewindow.so\\n/system/lib64/libtracing_perfetto.so\\n/system/lib64/android.hardware.graphics.mapper@4.0.so\\n/system/lib64/mediametricsservice-aidl-V1-cpp.so\\n/system/lib64/libstd.dylib.so\\n/system/lib64/libusbhost.so\\n/system/lib64/libcodec2_hal_common.so\\n/apex/com.android.runtime/lib64/bionic/libdl.so\\n/system/lib64/libcameracompatbilityinfo.so\\n/system/lib64/aaudio-aidl-cpp.so\\n/system/lib64/libaaudio_internal_fifo.so\\n/system/lib64/libsfplugin_ccodec_utils.so\\n/system/lib64/libcxx.dylib.so\\n/system/lib64/libguiflags.so\\n/system/lib64/libandroidfw.so\\n/system/lib64/libdatasource.so\\n/system/lib64/android.hardware.media.c2-V2-ndk.so\\n/system/lib64/libjxl.so\\n/system/lib64/libbinder_ndk.so\\n/system/lib64/libandroid_runtime_lazy.so\\n/system/lib64/android.hidl.token@1.0.so\\n/system/lib64/libEGL.so\\n/system/lib64/lib-platform-compat-native-api.so\\n/system/lib64/libgraphicsenv.so\\n/system/lib64/libcurl.so\\n/system/lib64/libgui.so\\n/system/lib64/libstagefright.so\\n/apex/com.android.art/lib64/libbase.so\\n/system_ext/lib64/libMiVideoFilter.so\\n/system/lib64/libxqos.so\\n/system/lib64/android.hardware.graphics.common@1.1.so\\n/system/lib64/libpipelineinfosuploader.so\\n/system/lib64/libdmabufheap.so\\n/system/lib64/android.hardware.memtrack-V1-ndk.so\\n/system/lib64/android.companion.virtual.virtualdevice_aidl-cpp.so\\n/system/lib64/libziparchive.so\\n/system/lib64/libGLESv1_CM.so\\n/system/lib64/android.hardware.contexthub-V5-ndk.so\\n/system/lib64/android.hardware.drm@1.2.so\\n/system/lib64/libandroid_runtime.so\\n/system/lib64/android.hidl.safe_union@1.0.so\\n/system/lib64/libaudioclient.so\\n/system/lib64/libjni.dylib.so\\n/system/lib64/libaudioclient_aidl_conversion.so\\n/system/lib64/libui.so\\n/system/lib64/libmediautils.so\\n/system/lib64/libhardware.so\\n/system_ext/lib64/libdolbyeffect.so\\n/system/lib64/android.hardware.graphics.common-V7-ndk.so\\n/system/lib64/android.hardware.drm.common-V1-ndk.so\\n/system/lib64/libjpeg.so\\n/system/lib64/libmedia_codeclist_capabilities.so\\n/system/lib64/libsfplugin_ccodec.so\\n/system/lib64/libtombstoned_client.so\\n/system/lib64/libartpalette-system.so\\n/system/lib64/heapprofd_client_api.so\\n/apex/com.android.art/lib64/libart-disassembler.so\\n/apex/com.android.art/lib64/libdexfile.so\\n/apex/com.android.art/lib64/libprofile.so\\n/apex/com.android.art/lib64/libartbase.so\\n/apex/com.android.art/lib64/liblz4.so\\n/apex/com.android.art/lib64/libartpalette.so\\n/apex/com.android.os.statsd/lib64/libstatspull.so\\n/apex/com.android.os.statsd/lib64/libstatssocket.so\\n/apex/com.android.art/lib64/libnativehelper.so\",\"nativeRowsSha256\":\"87277bfeb9cfde9bbde0f160a49c90c596ab616bbccdd4472b33589aea84fc98\",\"foreignBackendRows\":[],\"mapsSha256\":\"d3dc274e50ccf36035f03ac9e44e269b8d7f6c8f47dadc8b8f8a7981cfa36b0c\",\"mapsBytes\":424065,\"mapsRowCount\":4375,\"schema\":1,\"pid\":30022,\"uid\":10431,\"processGeneration\":\"f9f09c3becf785dba5dccd6adf7da4d4b51ecd0a057f45627848bb5033696139\",\"coreSha256\":\"64a702be0fbb721b7455125946b0aa3727f0ea57c273f36248f313a8e0f2f98f\",\"coreSize\":1191656,\"physicalProcess\":\"dev.tripoder.engine:slot7\"},\"executionPolicy\":{\"bound\":true,\"owned\":false,\"observedLevel\":0,\"claims\":0,\"client\":\"tripoder-managed-process-interpreter\",\"processLifetimeLease\":false,\"policy\":\"method-entry-only\",\"preserveCompilation\":true,\"explicitInitialization\":true,\"preexistingCompiledFramesCovered\":false,\"fullCallerCoverage\":false,\"fixedBindings\":1021},\"nativeCoreResources\":{\"issued\":0,\"prepared\":0,\"active\":0,\"retired\":0,\"failed\":0,\"inFlight\":0,\"inboundUsed\":1,\"retainedImages\":0,\"jniGlobalRoots\":0,\"jniOwnedThreadLeases\":0,\"jniThreadAttachments\":0,\"jniThreadDetachments\":0,\"publishedResourcesRetained\":true},\"operationId\":\"dc6ff36c-5f02-4cfb-8ca7-07f18370e412\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 46,
+      "method": "tools/call",
+      "params": {
+        "name": "probe_status",
+        "arguments": {}
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 46,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"f7999717-0518-40ad-be30-fe9ba3fa9273\",\"session\":\"d588f566-36b8-41e6-8cf0-f23cab40b0dc\",\"project\":\"64488a8c-657d-4a7d-9adc-3316c8d92da0\",\"processGeneration\":\"f9f09c3becf785dba5dccd6adf7da4d4b51ecd0a057f45627848bb5033696139\",\"ok\":true,\"result\":{\"enabled\":false,\"revision\":\"\",\"stage\":\"APPLICATION_CREATED\",\"installedHooks\":0,\"loaderCount\":0,\"dexCount\":0,\"scans\":0,\"reservedBytes\":0,\"artifactCount\":0,\"pendingCaptures\":0,\"droppedEvents\":0,\"fullCallerCoverage\":false,\"atomicMemorySnapshot\":false,\"discovery\":\"BASE_DEX_CLASS_LOADER_CONSTRUCTION_AND_ADD_DEX_PATH\",\"identity\":{\"space\":\"control-bdf9e0e1d3c04240-code\",\"installGeneration\":\"3f6d628f-fc44-4a52-8711-4f77705108ba\",\"descriptorSha256\":\"7ed4be26e9809491b3e2aa83fddbb7d643ce2efa160e79aa47898ab25937a7ce\",\"processGeneration\":\"f9f09c3becf785dba5dccd6adf7da4d4b51ecd0a057f45627848bb5033696139\",\"pid\":30022,\"mode\":\"thin\",\"target\":{\"packageName\":\"dev.tripoder.probefixture\",\"versionCode\":\"1\",\"apkSha256\":\"a64ee9e54cd2685bd3132a6edb30e7af2110316ddfa833858f414d7f2c982c7b\"}},\"operationId\":\"f7999717-0518-40ad-be30-fe9ba3fa9273\"}}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "direction": "request",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 47,
+      "method": "tools/call",
+      "params": {
+        "name": "class_inspect",
+        "arguments": {
+          "classLoaderId": "23171f21-8bef-4a84-86e6-514aeb6fdd04",
+          "className": "dev.tripoder.dynamic.Payload"
+        }
+      }
+    }
+  },
+  {
+    "direction": "response",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 47,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"protocol\":2,\"requestId\":\"0d3d872c-a980-4b52-9964-80278ca02bfb\",\"session\":\"d588f566-36b8-41e6-8cf0-f23cab40b0dc\",\"ok\":false,\"operationId\":\"0d3d872c-a980-4b52-9964-80278ca02bfb\",\"state\":\"FAILED\",\"error\":\"IllegalArgumentException:java.lang.IllegalStateException: java.lang.IllegalArgumentException: CLASS_LOADER_REFERENCE_STALE\"}"
+          }
+        ],
+        "isError": true
+      }
+    }
+  }
+]

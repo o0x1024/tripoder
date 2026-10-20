@@ -14,7 +14,7 @@ public final class SourceControlTest {
     static final Map<String,Object> SELECTOR=m("id","owned","kind","java","className","owned.Fixture","methodName","value","argumentTypes",l("int"));
     static HookEvidence evidence(){return new HookEvidence(m("id","observed-1","source","fixture","target",TARGET,"processInstanceId","123:process-1","abi","arm64-v8a","capabilities",l("java-hook","native-hook"),"symbols",l(SYMBOL)));}
     static final class Platform implements SelfHookControl.Platform {
-        final Map<String,Object> identity=new LinkedHashMap<>(IDENTITY);final Backend backend=new Backend();boolean live=true;int prepares,observations;DraftCompiler.Plan prepared;
+        final Map<String,Object> identity=new LinkedHashMap<>(IDENTITY);final Backend backend=new Backend();boolean live=true;int prepares,observations,contextCalls;String phase="BEFORE_APPLICATION";DraftCompiler.Plan prepared;
         public Map<String,Object> identity(){return identity;}
         public List<Map<String,Object>> modules(){return List.of();}
         public List<Map<String,Object>> moduleEvents(){return List.of();}
@@ -23,6 +23,7 @@ public final class SourceControlTest {
         public boolean evidenceLive(HookEvidence e){return live;}
         public HookInvocationSession.PreparedBackend prepare(DraftCompiler.Plan p){prepares++;prepared=p;return backend;}
         public void discardObservation(){}
+        public Map<String,Object> invocationContext(){contextCalls++;return m("runtimePhase",phase);}
     }
     static Map<String,Object> command(SelfHookControl control,String name,Object... fields){Map<String,Object> request=m("command",name,"processGeneration","process-1");for(int i=0;i<fields.length;i+=2)request.put((String)fields[i],fields[i+1]);return HookWire.request(control.handle(HookWire.encode(request)));}
     static Map<String,Object> result(Map<String,Object> response){check(Boolean.TRUE.equals(response.get("ok")),"command success "+response);return HookEvidence.object(response.get("result"));}
@@ -30,9 +31,13 @@ public final class SourceControlTest {
     static String observe(SelfHookControl control){return (String)HookEvidence.object(result(command(control,"observe","selectors",l(SELECTOR))).get("evidence")).get("id");}
     static SelfHookControl control(Platform p,AtomicLong clock){AtomicInteger tokens=new AtomicInteger();return new SelfHookControl(IDENTITY,p,clock::get,()->String.format("%064x",tokens.incrementAndGet()));}
     public static void run()throws Throwable {
-        compilation();protocol();expiryAndFailures();wire();
+        compilation();protocol();firstInvocationRetention();expiryAndFailures();wire();
     }
     static void compilation()throws Throwable {
+        String captureSource="import {definePlan} from '@abox/hook';export default definePlan({id:'code',target,params:{},setup(ctx){ctx.java.method('owned.Fixture','value',['int']).replace(({args})=>{const capture=ctx.code.snapshotDex('dex-1');return args[0];});}});";
+        AtomicInteger captures=new AtomicInteger();DraftCompiler.Plan capturePlan=DraftCompiler.compile(captureSource,evidence(),dex->{check(dex.equals("dex-1"),"code snapshot exact reference");captures.incrementAndGet();return m("artifactId","artifact-1","state","QUEUED");});
+        check(captures.get()==0,"code snapshot not executed while compiling");check(capturePlan.rules().get(0).execute(Map.of(),l(7d),args->0d).equals(7d)&&captures.get()==1,"compiled callback delegates one code snapshot");
+        rejects(()->DraftCompiler.compile(captureSource.replace("setup(ctx){","setup(ctx){ctx.code.snapshotDex('dex-1');"),evidence()),"CODE_CAPTURE_OUTSIDE_INVOCATION");
         DraftCompiler.Plan plan=DraftCompiler.compile(SOURCE,evidence());check(plan.rules().size()==1&&plan.parameters().get("delta").equals(2d),"source plan params");
         check(plan.rules().get(0).execute(plan.parameters(),l(3d),args->(Double)args.get(0)*2).equals(10d),"compiled before original after");
         check(plan.sourceSha256().equals(DraftCompiler.digest(SOURCE)),"hash actual source");
@@ -122,6 +127,18 @@ public final class SourceControlTest {
         failed(command(bad,"status"),"HOOK_PROCESS_INVALIDATED");check(uncertain.backend.published==1,"unknown status no replay");
         Platform lost=new Platform();SelfHookControl active=control(lost,new AtomicLong(0));String lostEvidence=observe(active);Map<String,Object> owned=result(command(active,"prepare","evidenceId",lostEvidence,"source",SOURCE));result(command(active,"activate","token",owned.get("token"),"sourceSha256",owned.get("sourceSha256")));
         try{active.invalidateActiveTarget(new IllegalStateException("OWNED_MODULE_UNLOADED"));throw new AssertionError("active module loss ignored");}catch(HookBackendUncertain expected){check(lost.backend.fatal==1,"active target identity loss failstop");}
+    }
+    static void firstInvocationRetention()throws Throwable{
+        Platform platform=new Platform();SelfHookControl control=control(platform,new AtomicLong(1));String observed=observe(control);
+        String source="import {definePlan} from '@abox/hook';export default definePlan({id:'first',target,params:{},setup(ctx){ctx.java.method('owned.Fixture','value',['int']).after(({result})=>{ctx.debug.emitEvent('hit',result);return result;});}});";
+        Map<String,Object> prepared=result(command(control,"prepare","evidenceId",observed,"source",source));result(command(control,"activate","token",prepared.get("token"),"sourceSha256",prepared.get("sourceSha256")));
+        check(platform.contextCalls==0,"first invocation context is lazy");platform.backend.call(l(1d),args->1d);platform.phase="APPLICATION_CREATED";
+        for(int i=0;i<300;i++)platform.backend.call(l(1d),args->1d);
+        Map<String,Object> status=result(command(control,"status")),first=HookEvidence.object(status.get("firstInvocation"));
+        check(first.get("runtimePhase").equals("BEFORE_APPLICATION")&&first.get("symbol").equals("owned"),"first phase survives later callbacks");
+        check(platform.contextCalls==1&&((Double)status.get("hits")).intValue()==301,"no repeated context sampling on hot callbacks");
+        check(((Double)result(command(control,"events","sinceSeq",0d)).get("droppedEvents"))>0,"first invocation test overflows telemetry ring");
+        Map<String,Object> disabled=result(command(control,"disable","revision",status.get("revision")));check(HookEvidence.object(disabled.get("firstInvocation")).equals(first),"disable receipt retains first invocation");
     }
     static void wire()throws Throwable {
         rejects(()->HookWire.request("{\"command\":\"status\",\"command\":\"activate\"}"),"HOOK_JSON_DUPLICATE_KEY");

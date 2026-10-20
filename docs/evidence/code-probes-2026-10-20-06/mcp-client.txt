@@ -1,0 +1,9 @@
+file:///Users/len/code/tripoder/agent/code-probe-acceptance.mjs:22
+async function waitArtifacts(count){const end=Date.now()+20000;while(Date.now()<end){const rows=(await tool('artifacts_list',{processGeneration:captureGeneration})).artifacts;if(rows.some(a=>a.state==='FAILED'))throw Error(JSON.stringify(rows));if(rows.filter(a=>a.state==='COMPLETE').length>=count)return rows;await new Promise(r=>setTimeout(r,100));}throw Error('ARTIFACT_CAPTURE_TIMEOUT');}
+                                                                                                                                                                                                                                                                                                                                                                      ^
+
+Error: ARTIFACT_CAPTURE_TIMEOUT
+    at waitArtifacts (file:///Users/len/code/tripoder/agent/code-probe-acceptance.mjs:22:359)
+    at async file:///Users/len/code/tripoder/agent/code-probe-acceptance.mjs:47:18
+
+Node.js v24.18.0

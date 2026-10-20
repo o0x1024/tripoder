@@ -62,12 +62,19 @@ final class RuntimeManifestIndex {
         if(set.parts.isEmpty())throw new IllegalStateException("RUNTIME_SPLIT_EXECUTION_NOT_YET_SUPPORTED");
         if(!set.packageName.equals(pkg.packageName)||pkg.applicationInfo==null)throw new SecurityException("MANIFEST_PACKAGE_MISMATCH");
         includeSplits(set,pkg);
-        List<ApkManifest.Component> out=new ArrayList<>();
+        Map<String,List<ActivityInfo>> activityByName=new HashMap<>();
+        if(pkg.activities!=null)for(ActivityInfo a:pkg.activities)activityByName.computeIfAbsent(a.name,k->new ArrayList<>(1)).add(a);
+        Map<String,List<ActivityInfo>> receiverByName=new HashMap<>();
+        if(pkg.receivers!=null)for(ActivityInfo r:pkg.receivers)receiverByName.computeIfAbsent(r.name,k->new ArrayList<>(1)).add(r);
+        Map<String,List<ServiceInfo>> serviceByName=new HashMap<>();
+        if(pkg.services!=null)for(ServiceInfo s:pkg.services)serviceByName.computeIfAbsent(s.name,k->new ArrayList<>(1)).add(s);
+        Map<String,List<ProviderInfo>> providerByName=new HashMap<>();
+        if(pkg.providers!=null)for(ProviderInfo p:pkg.providers)providerByName.computeIfAbsent(p.name,k->new ArrayList<>(1)).add(p);
+        List<ApkManifest.Component> out=new ArrayList<>(set.components.size());
         for(var declared:set.components){
-            ComponentInfo[] infos=switch(declared.type){case "activity","activity-alias"->pkg.activities;case "receiver"->pkg.receivers;case "service"->pkg.services;case "provider"->pkg.providers;default->throw new IllegalStateException("RUNTIME_COMPONENT_SET_NOT_SUPPORTED");};
+            List<? extends ComponentInfo> candidates=switch(declared.type){case "activity","activity-alias"->activityByName.get(declared.name);case "receiver"->receiverByName.get(declared.name);case "service"->serviceByName.get(declared.name);case "provider"->providerByName.get(declared.name);default->throw new IllegalStateException("RUNTIME_COMPONENT_SET_NOT_SUPPORTED");};
             ComponentInfo found=null;
-            if(infos!=null)for(ComponentInfo info:infos){
-                if(!declared.name.equals(info.name))continue;
+            if(candidates!=null)for(ComponentInfo info:candidates){
                 if(info instanceof ProviderInfo&&!declared.authorities.equals(((ProviderInfo)info).authority))continue;
                 if(info instanceof ActivityInfo&&!Objects.equals(declared.targetActivity.isEmpty()?null:declared.targetActivity,((ActivityInfo)info).targetActivity))continue;
                 if(!pkg.packageName.equals(info.packageName))throw new SecurityException("MANIFEST_COMPONENT_PACKAGE_MISMATCH");

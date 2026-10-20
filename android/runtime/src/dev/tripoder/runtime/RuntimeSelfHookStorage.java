@@ -7,7 +7,7 @@ import org.json.JSONObject;
 /** The fixed libc path and IO policy share one native process owner. */
 final class RuntimeSelfHookStorage {
     private RuntimeSelfHookStorage(){}
-    private static native void installNative(byte[][] paths);
+    private static native void installNative(byte[][] paths,boolean thin);
     static native byte[] readPhysicalProc(String path,int limit)throws java.io.IOException;
     static native String physicalArtifactPath(String path)throws java.io.IOException;
     static void install()throws Exception{
@@ -25,6 +25,6 @@ final class RuntimeSelfHookStorage {
         String process=RuntimeEngine.current!=null&&RuntimeEngine.current.processName!=null?RuntimeEngine.current.processName:spec.getString("package");
         if(process.isEmpty()||process.indexOf('\0')>=0)throw new IllegalArgumentException("NATIVE_STORAGE_PROCESS_VALUE");
         values[keys.length]=process.getBytes(StandardCharsets.UTF_8);
-        installNative(values);
+        installNative(values,RuntimeThinPolicy.active());
     }
 }

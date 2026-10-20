@@ -8,10 +8,11 @@ import org.json.JSONObject;
 
 /** Application-level lifecycle never manufactures or selects a project; only the user's explicit application deletion removes the projects bound to it. */
 final class RuntimeControllerApplications {
+    static String stopDigest(String space,String pkg,String generation)throws Exception{return ApkStore.textDigest(new JSONObject().put("kind","controller-stop-v1").put("space",space).put("package",pkg).put("generation",generation).toString());}
     static Bundle stop(RuntimeBroker broker,Bundle input,String lease)throws Exception{
         RuntimeControllerCommands.fields(input,"command","operation","space","package","generation");
         String operation=ControlWire.required(input,"operation"),space=ControlWire.required(input,"space"),pkg=ControlWire.required(input,"package"),generation=ControlWire.required(input,"generation");
-        String digest=ApkStore.textDigest(new JSONObject().put("kind","controller-stop-v1").put("space",space).put("package",pkg).put("generation",generation).toString());
+        String digest=stopDigest(space,pkg,generation);
         synchronized(broker){if(!broker.contract.accept(operation,ControllerTrust.OPERATIONS,digest).created)throw new IllegalStateException("STOP_ALREADY_ACCEPTED_QUERY_REQUIRED");broker.contract.start(operation);}
         boolean stopping=false;int retired=0;
         try{

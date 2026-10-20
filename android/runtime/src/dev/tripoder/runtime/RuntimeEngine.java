@@ -7,6 +7,7 @@ import android.content.res.*;
 import android.os.*;
 import java.io.*;
 import java.util.*;
+import org.json.JSONObject;
 
 /** One immutable application identity per process. Not a hostile-code security sandbox. */
 public final class RuntimeEngine {
@@ -69,7 +70,7 @@ public final class RuntimeEngine {
     final RuntimeActivityCallers activityCallers=new RuntimeActivityCallers();
     private final Set<Activity> returned=Collections.newSetFromMap(new java.util.IdentityHashMap<>());
     private final Map<String,Map<Integer,String>> pendingResults=new HashMap<>();
-    private boolean ready;
+    volatile boolean ready;
     boolean ownsWindow(android.view.View root){
         if(root==null||!root.isAttachedToWindow()||root.getRootView()!=root)return false;
         if(!(root.getLayoutParams() instanceof android.view.WindowManager.LayoutParams candidate))return false;
@@ -96,6 +97,12 @@ public final class RuntimeEngine {
     final long startupDeadlineElapsed;
     /** Fixed for this process by the broker's load bundle; subsystems that have a thin implementation route on it (docs/thin-shim-transformation.md). */
     final RuntimeMode mode;
+    private volatile RuntimeCodeProbes codeProbes;
+    private final IdentityHashMap<ClassLoader,String> loaderReferences=new IdentityHashMap<>();
+    String loaderReference(ClassLoader loader){synchronized(loaderReferences){String id=loaderReferences.get(loader);if(id==null){if(loaderReferences.size()>=128)throw new IllegalStateException("CLASS_LOADER_CAPACITY");id=UUID.randomUUID().toString();loaderReferences.put(loader,id);}return id;}}
+    synchronized RuntimeCodeProbes codeProbes()throws Exception{if(codeProbes==null)codeProbes=new RuntimeCodeProbes(this,null);return codeProbes;}
+    RuntimeCodeProbes existingCodeProbes(){return codeProbes;}
+    android.os.ParcelFileDescriptor artifactDirectory()throws Exception{return RuntimeWire.call(broker,RuntimeWire.CODE_ARTIFACT_DIRECTORY,auth()).getParcelable("directory",android.os.ParcelFileDescriptor.class);}
     final boolean platformDefaultApplication;
     public RuntimeEngine(Context host,Bundle input)throws Exception {
         if(current!=null)throw new IllegalStateException("PROCESS_IDENTITY_IMMUTABLE");
@@ -108,18 +115,23 @@ public final class RuntimeEngine {
         long bootStart=SystemClock.elapsedRealtime();
         File apk=new File(RuntimeWire.required(input,"apk"));
         String liteFile=input.getString("descriptorLiteFile"),liteSha=input.getString("descriptorLiteSha"),stampDigest=input.getString("artifactStamp");
-        ArtifactSet artifacts=liteFile!=null&&liteSha!=null&&stampDigest!=null?ArtifactSet.loadTrusted(apk.getParentFile(),RuntimeWire.required(input,"descriptorSha"),liteFile,liteSha,stampDigest):ArtifactSet.loadVerified(apk.getParentFile(),RuntimeWire.required(input,"descriptorSha"));
+        boolean trustedLoad=liteFile!=null&&liteSha!=null&&stampDigest!=null;
+        ArtifactSet artifacts=trustedLoad?ArtifactSet.loadTrusted(apk.getParentFile(),RuntimeWire.required(input,"descriptorSha"),liteFile,liteSha,stampDigest):ArtifactSet.loadVerified(apk.getParentFile(),RuntimeWire.required(input,"descriptorSha"));
         if(!artifacts.base.equals(apk)||!artifacts.parts.get(0).sha256.equals(RuntimeWire.required(input,"sha256")))throw new SecurityException("LOAD_DIGEST_MISMATCH");
         boot("verify",bootStart);
         platformDefaultApplication=artifacts.baseManifest.applicationName.isEmpty()||artifacts.baseManifest.applicationName.equals(Application.class.getName());
         if(artifacts.parts.isEmpty())throw new IllegalStateException("RUNTIME_SPLIT_EXECUTION_NOT_YET_SUPPORTED");
         storage=new RuntimeStorage(host,input);data=storage.root;
-        PackageInfo pkg=host.getPackageManager().getPackageArchiveInfo(apk.toString(),PackageManager.GET_CONFIGURATIONS|PackageManager.GET_ACTIVITIES|PackageManager.GET_SERVICES|PackageManager.GET_RECEIVERS|PackageManager.GET_PROVIDERS|PackageManager.GET_META_DATA|PackageManager.GET_PERMISSIONS|PackageManager.GET_SIGNING_CERTIFICATES|PackageManager.GET_SIGNATURES|PackageManager.GET_URI_PERMISSION_PATTERNS|PackageManager.MATCH_DISABLED_COMPONENTS);if(pkg==null||!pkg.packageName.equals(packageName))throw new SecurityException("LOAD_PACKAGE_MISMATCH");
+        int archiveFlags=PackageManager.GET_CONFIGURATIONS|PackageManager.GET_ACTIVITIES|PackageManager.GET_SERVICES|PackageManager.GET_RECEIVERS|PackageManager.GET_PROVIDERS|PackageManager.GET_META_DATA|PackageManager.GET_PERMISSIONS|PackageManager.GET_SIGNING_CERTIFICATES|PackageManager.GET_SIGNATURES|PackageManager.GET_URI_PERMISSION_PATTERNS|PackageManager.MATCH_DISABLED_COMPONENTS;
+        PackageInfo pkg=host.getPackageManager().getPackageArchiveInfo(apk.toString(),archiveFlags);if(pkg==null||!pkg.packageName.equals(packageName))throw new SecurityException("LOAD_PACKAGE_MISMATCH");
         RuntimeManifestIndex.includeSplits(artifacts,pkg);
         boot("archiveInfo",bootStart);
-        if(pkg.signingInfo==null)throw new SecurityException("PACKAGE_SIGNING_METADATA_MISSING");
-        List<String> signers=new ArrayList<>();for(Signature signature:pkg.signingInfo.getApkContentsSigners())signers.add(ArtifactSet.hex(java.security.MessageDigest.getInstance("SHA-256").digest(signature.toByteArray())));Collections.sort(signers);
-        if(!signers.equals(artifacts.signerDigests))throw new SecurityException("PACKAGE_SIGNING_METADATA_MISMATCH");packageArchive=pkg;
+        if(!trustedLoad){
+            if(pkg.signingInfo==null)throw new SecurityException("PACKAGE_SIGNING_METADATA_MISSING");
+            List<String> signers=new ArrayList<>();for(Signature signature:pkg.signingInfo.getApkContentsSigners())signers.add(ArtifactSet.hex(java.security.MessageDigest.getInstance("SHA-256").digest(signature.toByteArray())));Collections.sort(signers);
+            if(!signers.equals(artifacts.signerDigests))throw new SecurityException("PACKAGE_SIGNING_METADATA_MISMATCH");
+        }
+        packageArchive=pkg;
         requestedPermissions=pkg.requestedPermissions==null?Set.of():Set.copyOf(Arrays.asList(pkg.requestedPermissions));
         // ApplicationInfo's copy constructor copies its own fields but not PackageItemInfo.metaData. The archive
         // metadata is part of the verified manifest an installed application receives from PackageManager, so carry it
@@ -128,8 +140,8 @@ public final class RuntimeEngine {
         applicationInfo=GuestPackageManager.copyApplicationInfo(info,true);
         for(ActivityInfo activity:RuntimeActivityIndex.create(artifacts,pkg).values())if(processName.equals(activity.processName))activityInfos.put(activity.name,activity);
         boot("activityIndex",bootStart);
-        ClassLoader defining=RuntimeDexLoader.createForGuest(artifacts,info.nativeLibraryDir,host.getClassLoader());
-        artifactLoader=defining;loader=new RuntimeGuestLoader(defining,info.nativeLibraryDir);
+        ClassLoader defining=RuntimeDexLoader.createForGuest(artifacts,info.nativeLibraryDir,host.getClassLoader(),mode==RuntimeMode.THIN);
+        artifactLoader=defining;loader=mode==RuntimeMode.THIN?defining:new RuntimeGuestLoader(defining,info.nativeLibraryDir);
         boot("dexLoader",bootStart);
         resources=host.getPackageManager().getResourcesForApplication(info);
         boot("resources",bootStart);
@@ -146,11 +158,13 @@ public final class RuntimeEngine {
         boot("register",bootStart);
         System.loadLibrary("tripoderselfhook");
         RuntimeSelfHookProduct.install(this);
+        String probeConfiguration=input.getString("codeProbeConfiguration");
+        if(probeConfiguration!=null){codeProbes=new RuntimeCodeProbes(this,probeConfiguration);codeProbes.start();JSONObject startup=new JSONObject(probeConfiguration).getJSONObject("configuration");if(startup.has("startupHook"))hooks.activateStartup(startup.getJSONObject("startupHook"));}
         boot("hooks",bootStart);
         if(!adapterReady)throw new IllegalStateException("SELF_HOOK_READY_PUBLICATION_MISSING");
         installWindowSessionProxy();
         installAppWidgetBoundary();
-        RuntimeFixedPreparation.neutralizeVendorMonitors();
+        if(mode!=RuntimeMode.THIN)RuntimeFixedPreparation.neutralizeVendorMonitors();
         if (Boolean.getBoolean("tripoder.debug.mainSampler")) {
             Thread sampler = new Thread(() -> {
                 Thread main = Looper.getMainLooper().getThread();
@@ -186,6 +200,7 @@ public final class RuntimeEngine {
                 Object current=at.getMethod("getApplication").invoke(null);
                 android.util.Log.i("TripoderIdentity","instantiate app="+appName+" currentOpPackage="+op
                     +" application="+(current==null?"null":current.getClass().getName()));}catch(Throwable ignored){}
+            if(codeProbes!=null)codeProbes.stage("APPLICATION_CONSTRUCTION");
             application=componentFactory.instantiateApplication(loader,appName);
             if(application==null)throw new IllegalStateException("FACTORY_APPLICATION_MISSING");
             RuntimeBridge.observeApplicationOwnership("before-attach",host,application);
@@ -238,7 +253,7 @@ public final class RuntimeEngine {
                 }
             }
             try{RuntimeBridge.attachApplication(application,guestContext);}
-            finally{RuntimeBridge.observeApplicationOwnership("after-attach",host,application);}
+            finally{RuntimeBridge.observeApplicationOwnership("after-attach",host,application);if(codeProbes!=null)codeProbes.stage("APPLICATION_ATTACHED");}
             android.util.Log.i("TripoderBoot","APPLICATION_ATTACH base="+(application.getBaseContext()==null?"null":application.getBaseContext().getClass().getName()));
             RuntimeBridge.checkApplicationOwnership(host,application);
             // attachBaseContext is where hot-fix/plugin runtimes publish the loader that can see their DEX. Anything
@@ -256,6 +271,7 @@ public final class RuntimeEngine {
                 Application installed=RuntimeSelfHookApplication.installedApplication();
                 if(installed!=null&&installed!=application)published=installed;
                 RuntimeBridge.observeApplicationOwnership("after-onCreate",host,application);
+                if(codeProbes!=null)codeProbes.stage("APPLICATION_CREATED");
             }
             loader=RuntimeSelfHookApplication.adoptLoader(loader);Thread.currentThread().setContextClassLoader(loader);
             if (deferredProviders) {
@@ -268,7 +284,7 @@ public final class RuntimeEngine {
                 published.registerActivityLifecycleCallbacks((RuntimeApplication)host);
             }
             RuntimeBridge.checkApplicationOwnership(host,application);
-            RuntimeFixedPreparation.neutralizeVendorMonitors();
+            if(mode!=RuntimeMode.THIN)RuntimeFixedPreparation.neutralizeVendorMonitors();
             recordStart("READY");ready=true;event("application-ready");return null;
             }catch(Exception|Error error){try{recordStart("FAILED");}catch(Exception receipt){error.addSuppressed(receipt);}throw error;}
         });
@@ -412,18 +428,30 @@ public final class RuntimeEngine {
     private void applyGuestWindowInsetsIfNeeded(Activity activity){
         if(info==null||info.targetSdkVersion<=0||info.targetSdkVersion>=35)return;
         android.view.Window window=activity.getWindow();if(window==null)return;
+        // Legacy apps can already draw behind the system bars and handle their
+        // own insets without hiding either bar. Do not install a second listener
+        // on their content root (or replace one supplied by the application).
+        if(guestOwnsWindowInsets(window))return;
         android.view.View content=window.findViewById(android.R.id.content);if(content==null)return;
+        int left=content.getPaddingLeft(),top=content.getPaddingTop(),right=content.getPaddingRight(),bottom=content.getPaddingBottom();
         content.setOnApplyWindowInsetsListener((view,windowInsets)->{
             android.view.Window win=activity.getWindow();
-            boolean fullscreen=win!=null&&(win.getAttributes().flags&android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN)!=0;
-            if(fullscreen)view.setPadding(0,0,0,0);
+            // A window can switch to immersive layout after onCreate. Undo only
+            // our compatibility padding, retaining the application's own padding.
+            if(win!=null&&guestOwnsWindowInsets(win))view.setPadding(left,top,right,bottom);
             else{
                 android.graphics.Insets bars=windowInsets.getInsets(android.view.WindowInsets.Type.systemBars()|android.view.WindowInsets.Type.displayCutout());
-                view.setPadding(bars.left,bars.top,bars.right,bars.bottom);
+                view.setPadding(left+bars.left,top+bars.top,right+bars.right,bottom+bars.bottom);
             }
             return windowInsets;
         });
         content.requestApplyInsets();
+    }
+    private static boolean guestOwnsWindowInsets(android.view.Window window){
+        android.view.WindowManager.LayoutParams attrs=window.getAttributes();
+        int visibility=attrs.systemUiVisibility|window.getDecorView().getSystemUiVisibility();
+        return (attrs.flags&android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN)!=0
+            ||(visibility&(android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN|android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION))!=0;
     }
     public void activityResumed(Activity activity){if(mode==RuntimeMode.THIN)return;try{RuntimeWire.call(broker,RuntimeWire.ACTIVITY_RESUMED,activityAuth(activity));}catch(Exception error){throw new IllegalStateException("ACTIVITY_RESUME_ACK_FAILED",error);}}
     public void activityDestroying(Activity activity){destructionTasks.put(activity,activity.getTaskId());}

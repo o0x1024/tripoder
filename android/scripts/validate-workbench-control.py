@@ -28,9 +28,9 @@ def crash_status(log):
 
 
 def self_hook_samples(log):
-    return [{'pid': int(pid), 'bindings': int(bindings), 'durationNs': int(duration)}
-            for pid, bindings, duration in re.findall(
-                r'^\S+\s+\S+\s+(\d+)\s+\d+\s+I\s+TripoderSelfHook\s*:\s+READY:READY:27/27:bindings=(\d+):ns=(\d+)$',
+    return [{'pid': int(m['pid']), 'bindings': int(m['bindings']), 'durationNs': int(m['duration'])}
+            for m in re.finditer(
+                r'^\S+\s+\S+\s+(?P<pid>\d+)\s+\d+\s+I\s+TripoderSelfHook\s*:\s+READY:READY:(?P<done>[1-9]\d*)/(?P=done):bindings=(?P<bindings>[1-9]\d*):ns=(?P<duration>\d+)$',
                 log, re.MULTILINE)]
 
 
@@ -157,7 +157,7 @@ def main():
             except Exception:
                 progress=adb('shell','cat','/sdcard/Android/data/'+target_package+'/files/progress-'+run+'.json',check=False)
                 (evidence/(label+'-progress.json')).write_text(progress.stdout if progress.returncode==0 else json.dumps({'runId':run,'progressUnavailable':progress.stderr}))
-                if runner=='TargetLaunchIntegration':
+                if runner in ('TargetLaunchIntegration','ControlIntegration'):
                     try:
                         threads=adb('shell','cat','/sdcard/Android/data/'+target_package+'/files/'+run+'-thread-stall.txt',check=False)
                         (evidence/(label+'-thread-stall.txt')).write_text(threads.stdout if threads.returncode==0 else threads.stderr)
@@ -244,6 +244,7 @@ def main():
                 if len(selected)!=2 or {item['name'] for item in selected}!=required:raise RuntimeError('RUNTIME_MAPPING_UI_STATUS_MISSING')
                 statuses=[item.get('observed') for item in selected]
             summaries=[verify_runtime_status(status,pid=first['workerPid'],uid=owned_uid,generation=first['processGeneration'],core_path=engine_core_path,native_sha256=native_sha256,native_size=native_size) for status in statuses]
+            report['expectedWorkerBindings']=statuses[0]['executionPolicy']['fixedBindings']
             report['runtimeNativeMappingVerification']=summaries
             (evidence/'runtime-native-mapping-verification.json').write_text(json.dumps(summaries,ensure_ascii=False,indent=2))
         report['phase']=args.phase;report['checks']=sum(len(item['checks']) for item in results);report['controllerUid']=first['uid'];report['engineUid']=engine_uid;report['passed']=True
@@ -275,7 +276,7 @@ def main():
                     if logs.returncode:report['passed']=False;report['logCollectionFailed']=True
                 except Exception as error:
                     report['passed']=False;report['logCollectionFailed']=True;report['logCollectionError']=str(error)
-        if args.phase=='hook-ui' and report.get('passed') and not any(item['pid']==report.get('workerPid') and item['bindings'] in (2270,2271) for item in report.get('selfHookInstallationSamples',[])):
+        if args.phase=='hook-ui' and report.get('passed') and not any(item['pid']==report.get('workerPid') and item['bindings']==report.get('expectedWorkerBindings') for item in report.get('selfHookInstallationSamples',[])):
             report['passed']=False;report['workerBootstrapEvidenceMissing']=True
         report['finishedAtUtc']=datetime.datetime.now(datetime.timezone.utc).isoformat();(evidence/'device-observation.json').write_text(json.dumps(report,ensure_ascii=False,indent=2));(evidence/'build-receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
     if report.get('nativeFatalSignalObserved') or report.get('javaFatalExceptionObserved') or report.get('ownedFatalObserved') or report.get('logCollectionFailed') or report.get('workerBootstrapEvidenceMissing'):raise RuntimeError('OWNED_LOG_EVIDENCE_FAILED')

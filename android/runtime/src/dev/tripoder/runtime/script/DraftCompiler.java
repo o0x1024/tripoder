@@ -21,12 +21,16 @@ public final class DraftCompiler {
     private final LinkedHashMap<String,RuleBuilder> rules=new LinkedHashMap<>();
     private final IdentityHashMap<Object,ParameterSpec> schemas=new IdentityHashMap<>();
     private boolean collecting;
-    private DraftCompiler(HookEvidence evidence){this.evidence=evidence;}
+    private final java.util.function.Function<String,Map<String,Object>> codeSnapshot;
+    private DraftCompiler(HookEvidence evidence,java.util.function.Function<String,Map<String,Object>> codeSnapshot){this.evidence=evidence;this.codeSnapshot=codeSnapshot;}
     public static Plan compile(String source,HookEvidence evidence){
+        return compile(source,evidence,id->{throw new UnsupportedOperationException("CODE_SNAPSHOT_UNSUPPORTED");});
+    }
+    public static Plan compile(String source,HookEvidence evidence,java.util.function.Function<String,Map<String,Object>> codeSnapshot){
         require(source!=null&&source.length()<=24000,"HOOK_SOURCE_SIZE");
         for(int i=0;i<source.length();i++){char c=source.charAt(i);if(Character.isHighSurrogate(c)){require(i+1<source.length()&&Character.isLowSurrogate(source.charAt(++i)),"DRAFT_SOURCE_SURROGATE");}else require(!Character.isLowSurrogate(c),"DRAFT_SOURCE_SURROGATE");}
         String snapshot=source;String sha=digest(snapshot);
-        return new DraftCompiler(Objects.requireNonNull(evidence)).prepare(snapshot,sha);
+        return new DraftCompiler(Objects.requireNonNull(evidence),Objects.requireNonNull(codeSnapshot)).prepare(snapshot,sha);
     }
     private Plan prepare(String source,String sha){
         List<Map<String,Object>> program=new DraftParser(source).program();DraftSyntax.check(program);
@@ -67,7 +71,7 @@ public final class DraftCompiler {
             Map<String,Object> holder=Collections.singletonMap("schema",Collections.unmodifiableMap(schema));schemas.put(holder,spec);return holder;
         }));return Collections.unmodifiableMap(out);
     }
-    private Map<String,Object> context(){return Map.of("java",Map.of("method",RestrictedAst.capability(this::javaMethod)),"native",Map.of("function",RestrictedAst.capability(this::nativeFunction)),"debug",Map.of("emitEvent",RestrictedAst.capability(this::emitEvent),"captureJavaStack",RestrictedAst.capability(this::captureJavaStack),"callerModuleOffset",RestrictedAst.capability(this::callerModuleOffset)));}
+    private Map<String,Object> context(){return Map.of("java",Map.of("method",RestrictedAst.capability(this::javaMethod)),"native",Map.of("function",RestrictedAst.capability(this::nativeFunction)),"code",Map.of("snapshotDex",RestrictedAst.capability(args->{require(!collecting,"CODE_CAPTURE_OUTSIDE_INVOCATION");arity(args,1,1);String id=string(args.get(0));require(id.matches("[A-Za-z0-9_-]{1,80}"),"DEX_REFERENCE");return ScriptValues.freeze(codeSnapshot.apply(id));})),"debug",Map.of("emitEvent",RestrictedAst.capability(this::emitEvent),"captureJavaStack",RestrictedAst.capability(this::captureJavaStack),"callerModuleOffset",RestrictedAst.capability(this::callerModuleOffset)));}
     private Object emitEvent(List<Object> args){
         require(!collecting,"HOOK_EMIT_OUTSIDE_INVOCATION");arity(args,1,2);
         String tag=string(args.get(0));require(tag.matches("[a-zA-Z0-9_.:-]{1,64}"),"HOOK_EVENT_TAG");

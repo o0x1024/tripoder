@@ -20,6 +20,10 @@ export interface HookBuilder<P> {
   after(handler: NonNullable<HookHandlers<P>["after"]>): HookBuilder<P>;
 }
 export interface PlanContext<P> {
+  readonly code: {
+    /** Queue a runtime-owned snapshot; bytes are written off the callback thread. */
+    snapshotDex(dexId: string): Readonly<{ artifactId: string; state: string }>;
+  };
   readonly java: {
     method(className: string, methodName: string, argumentTypes: readonly JavaType[], options?: { classLoaderId?: string; returnType?: JavaType }): HookBuilder<P>;
   };
@@ -52,6 +56,7 @@ export interface PreparedPlan<S extends Parameters> {
   readonly parameters: ParameterValues<S>;
   readonly rules: readonly PreparedRule<ParameterValues<S>>[];
   readonly emitSink?: {
+    snapshotDex?: ((dexId: string) => Readonly<{ artifactId: string; state: string }>) | undefined;
     fn?: ((tag: string, payload: unknown) => void) | undefined;
     stack?: ((maxDepth: number) => readonly string[]) | undefined;
     caller?: (() => string) | undefined;
@@ -73,6 +78,7 @@ export function preparePlan<S extends Parameters>(plan: HookPlan<S>, observed: E
   const values = resolveParameters(specs, parameters);
   const rules = new Map<string, { symbol: HookSymbol; handlers: HookHandlers<ParameterValues<S>> }>();
   const emitSink: {
+    snapshotDex?: ((dexId: string) => Readonly<{ artifactId: string; state: string }>) | undefined;
     fn?: ((tag: string, payload: unknown) => void) | undefined;
     stack?: ((maxDepth: number) => readonly string[]) | undefined;
     caller?: (() => string) | undefined;
@@ -101,6 +107,14 @@ export function preparePlan<S extends Parameters>(plan: HookPlan<S>, observed: E
     return result;
   }
   const context: PlanContext<ParameterValues<S>> = {
+    code: {
+      snapshotDex(dexId) {
+        requireThat(!collecting, "CODE_CAPTURE_OUTSIDE_INVOCATION", "Code capture is available inside hook callbacks");
+        requireThat(typeof dexId === "string" && /^[A-Za-z0-9_-]{1,80}$/.test(dexId), "DEX_REFERENCE", "Invalid DEX reference");
+        requireThat(emitSink.snapshotDex !== undefined, "CODE_SNAPSHOT_UNSUPPORTED", "A runtime code capture backend is required");
+        return Object.freeze({ ...emitSink.snapshotDex(dexId) });
+      },
+    },
     java: {
       method(className, methodName, argumentTypes, options = {}) {
         requireThat(evidence.capabilities.includes("java-hook"), "CAPABILITY_MISSING", "java-hook capability is unavailable");

@@ -83,7 +83,7 @@ public final class ManagedHook {
     private static native String reportNative(int slot);
     private static native byte[] relayNative(int slot);
     private static native String processPolicyNative();
-    private static native boolean initializeProcessNative();
+    private static native boolean initializeProcessNative(boolean preserveCompilation);
     private static native int capacityNative();
     private static native int nativeOriginalRemainingNative();
     private static void requireCapacity(){
@@ -134,10 +134,15 @@ public final class ManagedHook {
      * This is a one-shot policy mutation, not a proof that old AOT frames migrated.
      * The owner of the guest lifecycle must enforce the execution boundary. */
     public static synchronized void initializeProcess(){
+        initializeProcess(false);
+    }
+    /** Thin hosting preserves ordinary ART compilation. Only hooked entries are
+     * excluded from compilation/inlining; old compiled callers are not covered. */
+    public static synchronized void initializeProcess(boolean preserveCompilation){
         requireCapacity();
         if(processInitializationAttempted||used!=0)throw new IllegalStateException("PROCESS_POLICY_INITIALIZATION_ORDER");
         processInitializationAttempted=true;
-        if(!initializeProcessNative())throw new IllegalStateException("PROCESS_POLICY_INITIALIZATION_FAILED");
+        if(!initializeProcessNative(preserveCompilation))throw new IllegalStateException("PROCESS_POLICY_INITIALIZATION_FAILED");
         processInitialized=true;
     }
 

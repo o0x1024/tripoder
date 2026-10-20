@@ -161,6 +161,7 @@ public final class FrameworkAccess {
         if(FixedRuntimeHooks.permitsHook(target))return;
         if(JobFrameworkAccess.permitsHook(target))return;
         if(PendingIntentFrameworkAccess.permitsHook(target))return;
+        if(CodeSnapshots.permitsLoaderProbe(target))return;
         if(owner==android.app.Application.class&&name.equals("getProcessName")&&descriptor.equals("()Ljava/lang/String;")
             &&Modifier.isStatic(target.getModifiers()))return;
         if(owner.getName().equals("android.app.ActivityThread")&&name.equals("getApplication")&&descriptor.equals("()Landroid/app/Application;")

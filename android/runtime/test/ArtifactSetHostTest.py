@@ -124,10 +124,11 @@ def main():
     classes = root / 'classes'
     classes.mkdir()
     source = repo / 'android/runtime/src/dev/tripoder/runtime'
-    run(java / 'javac', '--release', '17', '-Xlint:all', '-classpath', str(tools / 'lib/apksigner.jar') + os.pathsep + ANDROID_JAR, '-d', classes,
+    android_jar = platform if platform.exists() else Path(ANDROID_JAR)
+    run(java / 'javac', '--release', '17', '-Xlint:all', '-classpath', str(tools / 'lib/apksigner.jar') + os.pathsep + str(android_jar), '-d', classes,
         source / 'ArtifactSet.java', source / 'ArtifactSetZip.java', source / 'ApkManifest.java', source / 'BinXmlTypedValues.java', source / 'ArscValues.java', source / 'ArtifactIntegrityCache.java',
         repo / 'android/runtime/test/dev/tripoder/runtime/ArtifactSetTest.java')
-    completed = run(java / 'java', '-cp', str(classes) + os.pathsep + str(tools / 'lib/apksigner.jar') + os.pathsep + ANDROID_JAR,
+    completed = run(java / 'java', '-cp', str(classes) + os.pathsep + str(tools / 'lib/apksigner.jar') + os.pathsep + str(android_jar),
                     'dev.tripoder.runtime.ArtifactSetTest', fixtures, root / 'work', capture=True)
     print(completed.stdout, end='')
     print('Evidence directory: ' + str(root))

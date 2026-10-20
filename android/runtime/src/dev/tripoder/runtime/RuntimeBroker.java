@@ -31,6 +31,7 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
     private final ApplicationStartLedger applicationStarts;
     public ExecutionContract contract;
     final RuntimeHookClaims hookClaims=new RuntimeHookClaims(this);
+    final RuntimeProbePlans probePlans=new RuntimeProbePlans();
     private final Map<String,Slot> slots=new java.util.concurrent.ConcurrentHashMap<>();
     private final Map<String,Delivery> deliveries=new HashMap<>();
     private static final class Delivery {final String source,target,sourceTicket;boolean authorized;String receivingInstance;Delivery(String s,String t,String ticket){source=s;target=t;sourceTicket=ticket;}}
@@ -51,6 +52,7 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
     public static final class Slot {
         public final ApkStore.BundleInstall install;public final ExecutionContract.Allocation allocation;public final String activityStub;public final RuntimeMode mode;public IBinder peer;boolean closing;
         final long startupDeadlineElapsed=RuntimeStartupDeadline.after(SystemClock.elapsedRealtime());
+        String probeConfiguration;
         Slot(ApkStore.BundleInstall i,ExecutionContract.Allocation a,String stub,RuntimeMode m){install=i;allocation=a;activityStub=stub;mode=m;}
     }
     public synchronized Bundle allocate(ApkStore.BundleInstall install,String processName,String stub,IBinder peer)throws Exception {
@@ -71,10 +73,10 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
         }
         RuntimeMode mode=resolveMode(install.space,install.info.packageName,install.generation);
         ExecutionContract.Allocation a=contract.allocate(install.space,install.info.packageName,install.generation,processName,android.os.Process.myUid());
-        Slot slot=new Slot(install,a,stub,mode);var db=store.getWritableDatabase();db.beginTransaction();try{store.reserve(a.session,stub);providers.reserve(slot);db.setTransactionSuccessful();}finally{db.endTransaction();}
+        Slot slot=new Slot(install,a,stub,mode);slot.probeConfiguration=probePlans.forProcess(this,install.space,install.info.packageName,install.generation,processName);var db=store.getWritableDatabase();db.beginTransaction();try{store.reserve(a.session,stub);providers.reserve(slot);db.setTransactionSuccessful();}finally{db.endTransaction();}
         slots.put(a.session.processGeneration,slot);return slot;
     }
-    private RuntimeMode resolveMode(String space,String pkg,String generation){
+    RuntimeMode resolveMode(String space,String pkg,String generation){
         List<String> modes=new ArrayList<>();
         try(android.database.Cursor c=store.getReadableDatabase().rawQuery("SELECT mode FROM project_refs WHERE space=? AND package=? AND generation=? AND kind='DIRECT' AND state='COMMITTED' ORDER BY id",new String[]{space,pkg,generation})){while(c.moveToNext())modes.add(c.getString(0));}
         return RuntimeMode.resolve(modes);
@@ -85,7 +87,7 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
         // ProcessSupervisor owns the sole death observation and its drain ACK.
         // A second listener here can write after that ACK let authority close.
         slot.peer=peer;
-        Bundle input=slot.install.wire();input.putString(RuntimeMode.KEY,slot.mode.wire);input.putLong("startupDeadlineElapsed",slot.startupDeadlineElapsed);input.putBundle("providers",providers.publications(generation));input.putString("generation",generation);input.putString("processName",slot.allocation.session.identity.processName);input.putString("bootstrap",slot.allocation.bootstrapToken);input.putBinder("broker",this);return input;
+        Bundle input=slot.install.wire();input.putString(RuntimeMode.KEY,slot.mode.wire);if(slot.probeConfiguration!=null)input.putString("codeProbeConfiguration",slot.probeConfiguration);input.putLong("startupDeadlineElapsed",slot.startupDeadlineElapsed);input.putBundle("providers",providers.publications(generation));input.putString("generation",generation);input.putString("processName",slot.allocation.session.identity.processName);input.putString("bootstrap",slot.allocation.bootstrapToken);input.putBinder("broker",this);return input;
     }
     String retainedStub(ApkStore.BundleInstall install,String process){
         String retained=null;
@@ -172,6 +174,13 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
         Bundle result=new Bundle();
         if(code==RuntimeWire.REGISTER){String gen=RuntimeWire.required(input,"generation"),token=RuntimeWire.required(input,"bootstrap");if(!requiredSlot(gen).allocation.bootstrapToken.equals(token))throw new SecurityException("BOOTSTRAP_SESSION_MISMATCH");var s=contract.attach(token,pid,uid);store.session(s);result.putString("generation",s.processGeneration);return result;}
         String generation=RuntimeWire.required(input,"generation");var session=contract.authenticate(generation,pid,uid);
+        if(code==RuntimeWire.CODE_ARTIFACT_DIRECTORY){
+            if(input.size()!=1)throw new IllegalArgumentException("ARTIFACT_DIRECTORY_REQUEST_FIELDS");
+            java.io.File root=new java.io.File(host.getFilesDir(),"code-artifacts"),directory=new java.io.File(root,RuntimeFiles.id(generation));
+            if(java.nio.file.Files.isSymbolicLink(root.toPath())||java.nio.file.Files.isSymbolicLink(directory.toPath()))throw new SecurityException("ARTIFACT_DIRECTORY_SYMLINK");
+            if(!directory.isDirectory()&&!directory.mkdirs())throw new java.io.IOException("ARTIFACT_DIRECTORY_CREATE");
+            result.putParcelable("directory",android.os.ParcelFileDescriptor.open(directory,android.os.ParcelFileDescriptor.MODE_READ_ONLY));return result;
+        }
         Slot from=RuntimeCompletion.isReceipt(code,input)?slotForReceipt(generation):requiredSlot(generation);
         if(code==RuntimeWire.JOB_BEGIN)return jobBroker.beginAttempt(input,from);
         if(code==RuntimeWire.JOB_EVENT)return jobBroker.attemptEvent(input,from);

@@ -23,7 +23,7 @@ final class RuntimeNativeObservation {
         for(int i=0;i<names.size();i++){
             String name=names.get(i);if(!name.matches("lib[a-zA-Z0-9_+.$-]+\\.so"))throw new IllegalArgumentException("HOOK_MODULE_NAME");
             String path=inventory.path(name);
-            if(path==null||!path.startsWith("/")||!new File(path).getName().equals(name)||!path.equals(RuntimeSelfHookStorage.physicalArtifactPath(path)))throw new SecurityException("HOOK_MODULE_ARTIFACT_PATH");
+            if(path==null||!path.startsWith("/")||!new File(path).getName().equals(name))throw new SecurityException("HOOK_MODULE_ARTIFACT_PATH");
             artifacts.put(name,new Artifact(i,name,path));paths[i]=path;
         }
         if(!ownerLive.getAsBoolean())throw new IllegalStateException("HOOK_PROCESS_STALE");NativeModules.initialize(paths);

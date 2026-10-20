@@ -29,18 +29,21 @@ public final class RuntimeWire {
     public static final int DISPATCH_PENDING=52;
     /** Worker to authority: resolve a launch lease to the physical component this process owns for it. */
     public static final int ACTIVITY_RECORD=53;
+    /** Worker obtains only its own generation's runtime-artifact directory. */
+    public static final int CODE_ARTIFACT_DIRECTORY=54;
     public abstract static class Endpoint extends Binder {
         @Override protected final boolean onTransact(int code, Parcel data, Parcel reply, int flags) throws RemoteException {
             if(code==INTERFACE_TRANSACTION){reply.writeString(DESCRIPTOR);return true;}
-            if(code<FIRST_CALL_TRANSACTION||code>ACTIVITY_RECORD)return super.onTransact(code,data,reply,flags);
+            if(code<FIRST_CALL_TRANSACTION||code>CODE_ARTIFACT_DIRECTORY)return super.onTransact(code,data,reply,flags);
             data.enforceInterface(DESCRIPTOR);
             final int pid=Binder.getCallingPid(),uid=Binder.getCallingUid();
             if(data.dataAvail()>64*1024)throw new SecurityException("REQUEST_TOO_LARGE");
             boolean descriptors=data.hasFileDescriptors();if(descriptors&&!acceptsFileDescriptors(code,pid,uid))throw new SecurityException("CONTROL_FILE_DESCRIPTOR_UNSUPPORTED");
             Bundle input=data.readBundle(RuntimeWire.class.getClassLoader());data.enforceNoDataAvail();
-            try {if(descriptors)validateFileDescriptors(input);Bundle output=handle(code,input,pid,uid);reply.writeNoException();reply.writeBundle(output);}
+            Bundle output=null;
+            try {if(descriptors)validateFileDescriptors(input);output=handle(code,input,pid,uid);reply.writeNoException();reply.writeBundle(output);}
             catch(Exception error){reply.writeException(wireException(error));}
-            finally{if(descriptors)closeFileDescriptors(input);}
+            finally{if(descriptors)closeFileDescriptors(input);if(code==CODE_ARTIFACT_DIRECTORY&&output!=null){ParcelFileDescriptor directory=output.getParcelable("directory",ParcelFileDescriptor.class);if(directory!=null)try{directory.close();}catch(java.io.IOException failure){android.util.Log.w("TripoderCode","Directory descriptor close failed",failure);}}}
             return true;
         }
         protected abstract Bundle handle(int code,Bundle input,int pid,int uid) throws Exception;
@@ -57,8 +60,9 @@ public final class RuntimeWire {
         Parcel data=Parcel.obtain(),reply=Parcel.obtain();
         try {data.writeInterfaceToken(DESCRIPTOR);data.writeBundle(input);if(data.hasFileDescriptors()){if(code!=CONTROL)throw new SecurityException("CONTROL_FILE_DESCRIPTOR_UNSUPPORTED");RuntimeInstallRequest.validate(input);}
             if(!target.transact(code,data,reply,0))throw new RemoteException("UNSUPPORTED_OPERATION");
-            if(reply.hasFileDescriptors())throw new SecurityException("CONTROL_FILE_DESCRIPTOR_UNSUPPORTED");
-            reply.readException();return reply.readBundle(RuntimeWire.class.getClassLoader());
+            if(reply.hasFileDescriptors()&&code!=CODE_ARTIFACT_DIRECTORY)throw new SecurityException("CONTROL_FILE_DESCRIPTOR_UNSUPPORTED");
+            reply.readException();Bundle output=reply.readBundle(RuntimeWire.class.getClassLoader());
+            if(code==CODE_ARTIFACT_DIRECTORY&&(output==null||output.size()!=1||output.getParcelable("directory",ParcelFileDescriptor.class)==null))throw new SecurityException("ARTIFACT_DIRECTORY_RESPONSE_INVALID");return output;
         } finally {data.recycle();reply.recycle();}
     }
     public static String required(Bundle b,String key){String value=b.getString(key);if(value==null||value.isEmpty()||value.length()>4096)throw new IllegalArgumentException("INVALID_"+key);return value;}

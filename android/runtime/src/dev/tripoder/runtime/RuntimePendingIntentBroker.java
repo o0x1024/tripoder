@@ -48,10 +48,27 @@ final class RuntimePendingIntentBroker {
         RuntimePendingIntentPolicy.validateDestination(install.info.applicationInfo.targetSdkVersion,flags,logical.getComponent()!=null,logical.getPackage()!=null);
         String digest=ApkStore.textDigest("GET:"+key+":"+flags+":"+Base64.getEncoder().encodeToString(RuntimeBroadcastIntent.encodeFor(tokenKind,logical)));
         PendingIntentLedger.Version prior;ApkManifest.Component receiver;
+        // In thin mode Android owns token lookup. A read-only get/NO_CREATE
+        // needs no operation row, SQLite transaction, fsync or mutation lease.
+        // UPDATE/CANCEL still use the mutation path below so payload changes and
+        // token replacement retain their actual system semantics.
+        boolean thinLookup;PendingIntentLedger.Version lookupPrior;
         synchronized(broker){
             current(install);
-            if(tokenKind.equals("broadcast")){receiver=logical.getComponent()==null?null:receiver(install,logical);if(receiver==null)broker.broadcastBroker.requireDynamicImplicit(install,logical);}
-            else receiver=component(install,logical,tokenKind);
+            thinLookup=broker.resolveMode(install.space,install.info.packageName,install.generation)==RuntimeMode.THIN
+                &&(flags&(RuntimePendingIntentPolicy.UPDATE_CURRENT|RuntimePendingIntentPolicy.CANCEL_CURRENT))==0;
+            lookupPrior=thinLookup?ledger.current(key):null;
+        }
+        if(thinLookup){
+            PendingIntent observed=lookupPrior==null?null:lookup(lookupPrior);
+            if(observed!=null)return token(lookupPrior,observed);
+            if((flags&RuntimePendingIntentPolicy.NO_CREATE)!=0)return new Bundle();
+        }
+        synchronized(broker){
+            current(install);
+            boolean allowDisabled=broker.resolveMode(install.space,install.info.packageName,install.generation)==RuntimeMode.THIN;
+            if(tokenKind.equals("broadcast")){receiver=logical.getComponent()==null?null:receiver(install,logical,allowDisabled);if(receiver==null)broker.broadcastBroker.requireDynamicImplicit(install,logical);}
+            else receiver=component(install,logical,tokenKind,allowDisabled);
             ledger.requireIdle(install.generation);prior=ledger.current(key);
             atomic(()->begin(operation,install,prior==null?"":prior.version,"GET",digest));
         }
@@ -99,12 +116,12 @@ final class RuntimePendingIntentBroker {
             default:return PendingIntent.getBroadcast(broker.host,requestCode,intent,flags);
         }
     }
-    private static ApkManifest.Component component(ApkStore.BundleInstall install,Intent intent,String kind){
+    private static ApkManifest.Component component(ApkStore.BundleInstall install,Intent intent,String kind,boolean allowDisabled){
         ComponentName component=intent.getComponent();if(component==null)throw new UnsupportedOperationException("PENDING_KIND_COMPONENT_REQUIRED");
         if(!install.info.packageName.equals(component.getPackageName()))throw new SecurityException("PENDING_TARGET_OUTSIDE_INSTALL");
         // A launcher entry is often an <activity-alias>, which is an activity under its own name.
-        if(kind.equals("activity"))try{return RuntimeComponents.declared(install,"activity",component.getClassName());}catch(IllegalArgumentException notActivity){return RuntimeComponents.declared(install,"activity-alias",component.getClassName());}
-        return RuntimeComponents.declared(install,kind,component.getClassName());
+        if(kind.equals("activity"))try{return RuntimeComponents.declared(install,"activity",component.getClassName(),allowDisabled);}catch(IllegalArgumentException notActivity){return RuntimeComponents.declared(install,"activity-alias",component.getClassName(),allowDisabled);}
+        return RuntimeComponents.declared(install,kind,component.getClassName(),allowDisabled);
     }
     private PendingIntent absent(ApkStore.BundleInstall install,String key,int requestCode,int flags,Intent logical,String kind){
         // A disjoint URI namespace is queried on Android even when no logical row
@@ -127,9 +144,9 @@ final class RuntimePendingIntentBroker {
         if(!value.space.equals(install.space)||!value.pkg.equals(install.info.packageName)||!value.install.equals(install.generation)||!value.data.equals(install.data.getName()))throw new SecurityException("PENDING_CREATOR_MISMATCH");
         return value;
     }
-    private static ApkManifest.Component receiver(ApkStore.BundleInstall install,Intent intent){
+    private static ApkManifest.Component receiver(ApkStore.BundleInstall install,Intent intent,boolean allowDisabled){
         ComponentName component=intent.getComponent();if(!install.info.packageName.equals(component.getPackageName())||intent.getPackage()!=null&&!install.info.packageName.equals(intent.getPackage()))throw new SecurityException("PENDING_RECEIVER_OUTSIDE_INSTALL");
-        return RuntimeComponents.declared(install,"receiver",component.getClassName());
+        return RuntimeComponents.declared(install,"receiver",component.getClassName(),allowDisabled);
     }
     private static Bundle view(PendingIntentLedger.Version value){Bundle result=new Bundle();result.putString("tokenKind",value.kind());result.putString("version",value.version);result.putString("package",value.pkg);result.putInt("flags",value.flags);result.putByteArray("payload",value.payload);result.putBoolean("fenced",value.fenced);return result;}
     private static Bundle token(PendingIntentLedger.Version value,PendingIntent token){Bundle result=view(value);result.putParcelable("token",token);return result;}

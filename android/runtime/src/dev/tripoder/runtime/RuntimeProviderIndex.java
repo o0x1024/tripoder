@@ -7,10 +7,12 @@ import java.util.*;
 final class RuntimeProviderIndex {
     private final Map<String,ProviderInfo> components=new LinkedHashMap<>(),authorities=new LinkedHashMap<>();
     RuntimeProviderIndex(ProviderInfo[] infos,List<ApkManifest.Component> declarations){
-        if(infos==null)infos=new ProviderInfo[0];
+        Map<String,List<ProviderInfo>> byName=new HashMap<>();
+        if(infos!=null)for(ProviderInfo candidate:infos)byName.computeIfAbsent(candidate.name,k->new ArrayList<>(1)).add(candidate);
         for(var declared:declarations)if(declared.type.equals("provider")){
             ProviderInfo selected=null;
-            for(ProviderInfo candidate:infos)if(candidate.name.equals(declared.name)&&Objects.equals(candidate.authority,declared.authorities)){selected=candidate;break;}
+            List<ProviderInfo> candidates=byName.get(declared.name);
+            if(candidates!=null)for(ProviderInfo candidate:candidates)if(Objects.equals(candidate.authority,declared.authorities)){selected=candidate;break;}
             if(selected==null)throw new IllegalStateException("PROVIDER_METADATA_MISSING:"+declared.name);
             ProviderInfo info=new ProviderInfo(selected);info.enabled=declared.enabled;info.exported=declared.exported;
             ProviderInfo prior=components.putIfAbsent(info.name,info);

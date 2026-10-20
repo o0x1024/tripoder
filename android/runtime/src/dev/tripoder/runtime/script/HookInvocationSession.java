@@ -28,6 +28,8 @@ public final class HookInvocationSession {
     private final Map<String,HookRule> rules;
     private final Map<String,ParameterSpec> specs;
     private final PreparedBackend backend;
+    private final java.util.function.Supplier<Map<String,Object>> invocationContext;
+    private Map<String,Object> firstInvocation=Map.of();
     private State state=State.PREPARED;
     private Map<String,Object> parameters;
     private int parameterVersion=1,inFlight;
@@ -38,13 +40,20 @@ public final class HookInvocationSession {
 
     public HookInvocationSession(String generation,String revision,List<HookRule> ruleList,
                                  Map<String,ParameterSpec> specs,Map<String,Object> input,PreparedBackend backend) {
+        this(generation,revision,ruleList,specs,input,backend,Map::of);
+    }
+    public HookInvocationSession(String generation,String revision,List<HookRule> ruleList,
+                                 Map<String,ParameterSpec> specs,Map<String,Object> input,PreparedBackend backend,
+                                 java.util.function.Supplier<Map<String,Object>> invocationContext) {
         require(generation!=null&&!generation.isBlank()&&revision!=null&&!revision.isBlank(),"HOOK_IDENTITY");
         require(!ruleList.isEmpty()&&ruleList.size()<=32&&backend!=null,"HOOK_RULE_BUDGET");
         Map<String,HookRule> selected=new LinkedHashMap<>();
         for(HookRule rule:ruleList)require(selected.put(rule.symbol,rule)==null,"HOOK_CONFLICT");
         this.generation=generation;this.revision=revision;this.rules=Collections.unmodifiableMap(selected);
         this.specs=Map.copyOf(specs);this.parameters=ParameterSpec.resolve(this.specs,input);this.backend=backend;
+        this.invocationContext=Objects.requireNonNull(invocationContext);
     }
+    public synchronized Map<String,Object> firstInvocation(){return firstInvocation;}
     static void recordEvent(String tag,Object payload) {
         ActiveContext current=ACTIVE_CONTEXT.get().peek();
         if(current==null)return;
@@ -136,7 +145,13 @@ public final class HookInvocationSession {
         boolean enabled,withinBudget;Map<String,Object> captured;int nesting=depth.get();
         synchronized(this) {
             require(state==State.INSTALLING||state==State.ACTIVE||state==State.DRAINING||state==State.DISABLED,"HOOK_CALLBACK_STATE");
-            enabled=state==State.INSTALLING||state==State.ACTIVE;captured=parameters;inFlight++;withinBudget=inFlight<=64;if(enabled)hits++;
+            enabled=state==State.INSTALLING||state==State.ACTIVE;captured=parameters;inFlight++;withinBudget=inFlight<=64;
+            if(enabled&&++hits==1){
+                Map<String,Object> first=new LinkedHashMap<>();
+                try{first.putAll(invocationContext.get());}catch(RuntimeException unavailable){first.put("contextUnavailable",true);}
+                first.put("symbol",symbol);first.put("thread",Thread.currentThread().getName());first.put("processGeneration",generation);first.put("monotonicNanos",Long.toString(System.nanoTime()));
+                firstInvocation=Collections.unmodifiableMap(first);
+            }
         }
         depth.set(nesting+1);
         Deque<ActiveContext> stack=ACTIVE_CONTEXT.get();

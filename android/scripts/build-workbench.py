@@ -52,6 +52,12 @@ def main():
     fixture_launcher=builder.apk('launcher-guest',[launcher_source],android/'control-test/launcher-fixture/AndroidManifest.xml')
     fixture_singletask=builder.apk('launcher-singletask',[launcher_source],android/'control-test/launcher-singletask/AndroidManifest.xml')
     fixture_info['launcherSha256']=sha(fixture_launcher)
+    probe_fixture=android/'control-test/code-fixture'
+    payload=builder.apk('code-payload',[probe_fixture/'payload/Payload.java'],probe_fixture/'payload/AndroidManifest.xml')
+    payload_assets=build/'code-payload-assets';payload_assets.mkdir(exist_ok=True)
+    with zipfile.ZipFile(payload) as archive:(payload_assets/'payload.dex').write_bytes(archive.read('classes.dex'))
+    fixture_probe=builder.apk('code-probe-guest',[probe_fixture/'ProbeApplication.java',probe_fixture/'ProbeActivity.java'],probe_fixture/'AndroidManifest.xml',assets=payload_assets)
+    fixture_info['probeSha256']=sha(fixture_probe);fixture_info['payloadSha256']=sha(payload_assets/'payload.dex')
     generated=build/'generated';generated.mkdir(exist_ok=True)
     common=sorted((android/'control/src').rglob('*.java'))
     native=build/'native';native.mkdir(exist_ok=True)
@@ -92,6 +98,7 @@ def main():
     shutil.copyfile(fixture_base,test_assets/'a.apk');shutil.copyfile(fixture_upgrade,test_assets/'a-upgrade.apk');shutil.copyfile(fixture_preview,test_assets/'preview-guest.apk');(test_assets/'install-fixtures.json').write_text(json.dumps(fixture_info))
     shutil.copyfile(fixture_launcher,test_assets/'launcher-guest.apk')
     shutil.copyfile(fixture_singletask,test_assets/'launcher-singletask.apk')
+    shutil.copyfile(fixture_probe,test_assets/'code-probe-guest.apk')
     control_test=builder.apk('tripoder-control-test',common+sorted((android/'control-test/src').rglob('*.java')),control_manifest,assets=test_assets)
     after={str(p.relative_to(repo)):sha(p) for p in files}
     if before!=after:raise RuntimeError('SOURCES_CHANGED_DURING_BUILD')

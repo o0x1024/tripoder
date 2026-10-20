@@ -119,7 +119,8 @@ final class RuntimeServices {
         }
         Bundle route;try{route=route("bind",intent,binding.connection,flags);}catch(Exception error){synchronized(bindings){bindings.remove(original);}throw error;}
         binding.physical=component(route);binding.base=base;
-        boolean bound=executor==null?base.bindService(physical(intent,route),binding,flags):base.bindService(physical(intent,route),flags,executor,binding);
+        Intent phys=physical(intent,route);
+        boolean bound=executor==null?base.bindService(phys,binding,flags):base.bindService(phys,flags,executor,binding);
         ack(route,bound);if(!bound)synchronized(bindings){bindings.remove(original);}return bound;
     }
     void unbind(ServiceConnection original)throws Exception{
