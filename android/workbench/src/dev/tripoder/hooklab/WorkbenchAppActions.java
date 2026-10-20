@@ -55,7 +55,7 @@ final class WorkbenchAppActions {
     static void launchFailed(Activity page,WorkbenchApplication app,String project,Exception error){
         if(page.isDestroyed()||page.isFinishing())return;
         String message=error.getMessage()==null?"":error.getMessage();
-        if(project!=null&&message.startsWith("LAUNCH_TARGET_REJECTED"))new AlertDialog.Builder(page).setTitle("应用没有启动").setMessage(UiText.error(error)+"。关闭旧入口不会影响应用数据。").setNegativeButton("取消",null).setPositiveButton("处理旧入口",(d,w)->WorkbenchEntryClosure.show(page,app,project)).show();
+        if(project!=null&&message.equals("LAUNCH_TARGET_REJECTED"))new AlertDialog.Builder(page).setTitle("应用没有启动").setMessage(UiText.error(error)+"。关闭旧入口不会影响应用数据。").setNegativeButton("取消",null).setPositiveButton("处理旧入口",(d,w)->WorkbenchEntryClosure.show(page,app,project)).show();
         else ProductUi.notice(page,"应用没有启动",UiText.error(error));
     }
     private void startProject(String id,Bundle target,JSONObject component){

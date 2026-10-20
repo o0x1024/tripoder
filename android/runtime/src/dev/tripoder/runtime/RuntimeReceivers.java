@@ -11,13 +11,15 @@ final class RuntimeReceivers {
     private final Map<Object,Invocation> pending=new IdentityHashMap<>();
     private final Map<String,FinalDelivery> finals=new HashMap<>();
     private final ThreadLocal<Deque<Invocation>> current=ThreadLocal.withInitial(ArrayDeque::new);
+    private final Set<BroadcastReceiver> thinReceivers=Collections.newSetFromMap(new IdentityHashMap<>());
     private static final class Registration {final String component,id;final boolean dynamic;final Set<String> systems;final java.util.concurrent.CountDownLatch activated=new java.util.concurrent.CountDownLatch(1);boolean closed;Registration(String component,String id,boolean dynamic){this(component,id,dynamic,Set.of());}Registration(String component,String id,boolean dynamic,Set<String> systems){this.component=component;this.id=id;this.dynamic=dynamic;this.systems=systems;if(!dynamic)activated.countDown();}}
     private final Set<String> retiredActions=new HashSet<>();
     private final Set<BroadcastReceiver> transitions=Collections.newSetFromMap(new IdentityHashMap<>());
-    private static final class Invocation {final BroadcastReceiver receiver;final String ticket,instance;final Object pending;boolean returned,finished,finalResult;Invocation(BroadcastReceiver r,String t,String i,Object p){receiver=r;ticket=t;instance=i;pending=p;}}
+    private static final class Invocation {final BroadcastReceiver receiver;final String ticket,instance;final Object pending;final boolean thin;boolean returned,finished,finalResult;Invocation(BroadcastReceiver r,String t,String i,Object p){this(r,t,i,p,false);}Invocation(BroadcastReceiver r,String t,String i,Object p,boolean thin){receiver=r;ticket=t;instance=i;pending=p;this.thin=thin;}}
     private static final class FinalDelivery {final BroadcastReceiver receiver;final Intent logical;FinalDelivery(BroadcastReceiver r,Intent i){receiver=r;logical=i;}}
     RuntimeReceivers(RuntimeEngine engine){this.engine=engine;}
-    synchronized boolean owns(BroadcastReceiver receiver){if(receivers.containsKey(receiver))return true;for(FinalDelivery result:finals.values())if(result.receiver==receiver)return true;return false;}
+    private boolean isThin(){return engine.mode==RuntimeMode.THIN;}
+    synchronized boolean owns(BroadcastReceiver receiver){if(thinReceivers.contains(receiver)||receivers.containsKey(receiver))return true;for(FinalDelivery result:finals.values())if(result.receiver==receiver)return true;return false;}
     BroadcastReceiver instantiate(Intent physical)throws Exception{
         String ticket=RuntimeBroadcastIntent.ticket(physical);Bundle b=engine.auth();b.putString("ticket",ticket);b.putBoolean("prepare",true);
         Bundle declaration=engine.brokerCall(RuntimeWire.BROADCAST_CLAIM,b);Intent logical=RuntimeBroadcastIntent.attachBinders(RuntimeBroadcastIntent.decode(declaration.getByteArray("payload")),declaration);String component=declaration.getString("component");
@@ -45,9 +47,34 @@ final class RuntimeReceivers {
         return null;
     }
     Intent register(BroadcastReceiver receiver,IntentFilter filter,String permission,Handler scheduler,int flags){
+        if(isThin())return registerThin(receiver,filter,permission,scheduler,flags);
         Intent heldSticky=appStickyFor(filter);
         if(receiver==null&&heldSticky!=null)return heldSticky;
         Intent platformSticky=registerRegistered(receiver,filter,permission,scheduler,flags);
+        return platformSticky!=null?platformSticky:heldSticky;
+    }
+    private static int thinFlags(int flags){
+        int masked=flags&(Context.RECEIVER_EXPORTED|Context.RECEIVER_NOT_EXPORTED|Context.RECEIVER_VISIBLE_TO_INSTANT_APPS);
+        if((masked&(Context.RECEIVER_EXPORTED|Context.RECEIVER_NOT_EXPORTED))==0)masked|=Context.RECEIVER_NOT_EXPORTED;
+        return masked;
+    }
+    private Intent registerThin(BroadcastReceiver receiver,IntentFilter filter,String permission,Handler scheduler,int flags){
+        if(filter==null)throw new IllegalArgumentException("RECEIVER_FILTER_REQUIRED");
+        Intent heldSticky=appStickyFor(filter);
+        int physicalFlags=thinFlags(flags);
+        if(receiver==null){
+            if(heldSticky!=null)return heldSticky;
+            try{
+                Intent sticky=engine.host.registerReceiver(null,filter,null,scheduler,physicalFlags);
+                if(sticky!=null&&engine.loader!=null)sticky.setExtrasClassLoader(engine.loader);
+                return sticky;
+            }catch(Exception ignored){return null;}
+        }
+        if(!engine.ownsReceiverLoader(receiver.getClass().getClassLoader()))throw new SecurityException("RECEIVER_LOADER_MISMATCH:"+receiver.getClass().getName()+"@"+receiver.getClass().getClassLoader()+";webview="+engine.webView.ownsProviderLoader(receiver.getClass().getClassLoader()));
+        RuntimeBridge.installReceiverAdapter(receiver);
+        synchronized(this){thinReceivers.add(receiver);}
+        Intent platformSticky=engine.host.registerReceiver(receiver,filter,null,scheduler,physicalFlags);
+        if(platformSticky!=null&&engine.loader!=null)platformSticky.setExtrasClassLoader(engine.loader);
         return platformSticky!=null?platformSticky:heldSticky;
     }
     private Intent registerRegistered(BroadcastReceiver receiver,IntentFilter filter,String permission,Handler scheduler,int flags){
@@ -93,12 +120,40 @@ final class RuntimeReceivers {
         }catch(Exception error){throw new IllegalStateException("RECEIVER_REGISTER_FAILED",error);}
         finally{synchronized(this){transitions.remove(receiver);}}
     }
-    void unregister(BroadcastReceiver receiver){Registration registration;synchronized(this){if(transitions.contains(receiver))throw new IllegalStateException("RECEIVER_REGISTRATION_IN_PROGRESS");registration=receivers.get(receiver);if(registration==null||!registration.dynamic||registration.closed)throw new IllegalArgumentException("RECEIVER_NOT_REGISTERED");transitions.add(receiver);registration.closed=true;retiredActions.add(BroadcastLedger.action(registration.id));}
+    void unregister(BroadcastReceiver receiver){
+        if(isThin()){
+            synchronized(this){thinReceivers.remove(receiver);}
+            engine.host.unregisterReceiver(receiver);
+            return;
+        }
+        Registration registration;synchronized(this){if(transitions.contains(receiver))throw new IllegalStateException("RECEIVER_REGISTRATION_IN_PROGRESS");registration=receivers.get(receiver);if(registration==null||!registration.dynamic||registration.closed)throw new IllegalArgumentException("RECEIVER_NOT_REGISTERED");transitions.add(receiver);registration.closed=true;retiredActions.add(BroadcastLedger.action(registration.id));}
         try{engine.host.unregisterReceiver(receiver);Bundle b=engine.auth();b.putString("registration",registration.id);b.putString("state","CLOSED");engine.brokerCall(RuntimeWire.BROADCAST_REGISTRATION,b);}
         catch(Exception error){throw new IllegalStateException("RECEIVER_UNREGISTER_UNCONFIRMED",error);}
         finally{synchronized(this){transitions.remove(receiver);}}
     }
+    private void sendThin(Intent logical,String permission,Bundle options,boolean ordered,BroadcastReceiver result,Handler scheduler,int initialCode,String initialData,Bundle initialExtras){
+        if(logical==null)return;
+        if(logical.getAction()!=null&&RuntimeSystemBroadcasts.action(logical.getAction()))throw new UnsupportedOperationException("SYSTEM_BROADCAST_POLICY_UNSUPPORTED");
+        Intent physical=new Intent(logical);
+        if(physical.getPackage()==null||engine.packageName.equals(physical.getPackage()))physical.setPackage(engine.host.getPackageName());
+        if(!ordered){
+            if(options!=null)engine.host.sendBroadcast(physical,null,options);
+            else engine.host.sendBroadcast(physical);
+            return;
+        }
+        if(result!=null){
+            if(!engine.ownsReceiverLoader(result.getClass().getClassLoader()))throw new SecurityException("RECEIVER_LOADER_MISMATCH");
+            RuntimeBridge.installReceiverAdapter(result);
+            synchronized(this){thinReceivers.add(result);}
+        }
+        if(options!=null)engine.host.sendOrderedBroadcast(physical,null,options,result,scheduler,initialCode,initialData,initialExtras);
+        else engine.host.sendOrderedBroadcast(physical,null,result,scheduler,initialCode,initialData,initialExtras);
+    }
     void send(Intent logical,String permission,Bundle options,boolean ordered,BroadcastReceiver result,Handler scheduler,int initialCode,String initialData,Bundle initialExtras){
+        if(isThin()&&(logical==null||logical.getComponent()==null)){
+            sendThin(logical,permission,options,ordered,result,scheduler,initialCode,initialData,initialExtras);
+            return;
+        }
         if(options!=null)throw new UnsupportedOperationException("BROADCAST_OPTIONS_UNSUPPORTED");
         Bundle extras=RuntimeProviderFacade.primitive(initialExtras);byte[] payload;
         Intent bytesOnly=new Intent(logical);Bundle binders=RuntimeBroadcastIntent.detachBinders(bytesOnly);
@@ -122,6 +177,19 @@ final class RuntimeReceivers {
     }
     Intent before(BroadcastReceiver receiver,Intent physical,Object token){
         if(token==null)throw new SecurityException("ANDROID_PENDING_RESULT_REQUIRED");
+        if(isThin()){
+            boolean thinOwned;synchronized(this){thinOwned=thinReceivers.contains(receiver);}
+            if(thinOwned){
+                if(RuntimeSystemBroadcasts.PACKAGE.contains(physical.getAction())&&!RuntimeSystemBroadcasts.ownPackageEvent(physical,engine.packageName))return null;
+                Intent logical=new Intent(physical);
+                if(engine.loader!=null)logical.setExtrasClassLoader(engine.loader);
+                if(engine.host.getPackageName().equals(logical.getPackage()))logical.setPackage(engine.packageName);
+                Invocation invocation=new Invocation(receiver,"","",token,true);
+                synchronized(this){pending.put(token,invocation);}
+                current.get().push(invocation);
+                return logical;
+            }
+        }
         String ticket=RuntimeSystemBroadcasts.action(physical.getAction())?null:RuntimeBroadcastIntent.ticket(physical);
         FinalDelivery finalDelivery;synchronized(this){finalDelivery=ticket==null?null:finals.get(ticket);}
         if(finalDelivery!=null){
@@ -149,10 +217,11 @@ final class RuntimeReceivers {
         catch(Exception error){throw new IllegalStateException("RECEIVER_CLAIM_FAILED",error);}
     }
     void after(BroadcastReceiver receiver,boolean success){Invocation invocation=current.get().poll();if(invocation==null||invocation.receiver!=receiver)throw new SecurityException("RECEIVER_CALLBACK_STACK_MISMATCH");if(current.get().isEmpty())current.remove();if(invocation.finalResult)return;
+        if(invocation.thin){synchronized(this){invocation.returned=true;cleanup(invocation);}return;}
         event(invocation.ticket,invocation.instance,success?"returned":"failed");synchronized(this){invocation.returned=true;cleanup(invocation);}
     }
-    void asynchronous(BroadcastReceiver receiver,Object token){Invocation invocation=current.get().peek();if(invocation==null||invocation.receiver!=receiver)throw new SecurityException("RECEIVER_ASYNC_OUTSIDE_CALLBACK");if(invocation.finalResult)return;if(invocation.pending!=token)throw new SecurityException("PENDING_RESULT_IDENTITY_MISMATCH");event(invocation.ticket,invocation.instance,"asynchronous");}
-    void finished(Object token){Invocation invocation;synchronized(this){invocation=pending.get(token);}if(invocation==null)return;event(invocation.ticket,invocation.instance,"finished");synchronized(this){invocation.finished=true;pending.remove(token);cleanup(invocation);}}
+    void asynchronous(BroadcastReceiver receiver,Object token){Invocation invocation=current.get().peek();if(invocation==null||invocation.receiver!=receiver)throw new SecurityException("RECEIVER_ASYNC_OUTSIDE_CALLBACK");if(invocation.finalResult||invocation.thin)return;if(invocation.pending!=token)throw new SecurityException("PENDING_RESULT_IDENTITY_MISMATCH");event(invocation.ticket,invocation.instance,"asynchronous");}
+    void finished(Object token){Invocation invocation;synchronized(this){invocation=pending.get(token);}if(invocation==null)return;if(invocation.thin){synchronized(this){invocation.finished=true;pending.remove(token);cleanup(invocation);}return;}event(invocation.ticket,invocation.instance,"finished");synchronized(this){invocation.finished=true;pending.remove(token);cleanup(invocation);}}
     private void cleanup(Invocation invocation){Registration registration=receivers.get(invocation.receiver);if(invocation.returned&&invocation.finished&&registration!=null&&!registration.dynamic)receivers.remove(invocation.receiver);}
     private void event(String ticket,String instance,String event){Bundle b=engine.auth();b.putString("ticket",ticket);b.putString("instance",instance);b.putString("event",event);try{engine.brokerCall(RuntimeWire.BROADCAST_EVENT,b);}catch(Exception error){throw new IllegalStateException("RECEIVER_EVENT_UNCONFIRMED:"+event,error);}}
     private static String actions(IntentFilter filter){if(filter==null)return "null";StringBuilder result=new StringBuilder();for(int i=0;i<Math.min(filter.countActions(),8);i++){if(i>0)result.append(',');String action=filter.getAction(i);result.append(action.substring(0,Math.min(action.length(),256)));}return result.toString();}

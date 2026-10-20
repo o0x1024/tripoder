@@ -54,17 +54,25 @@ public final class ApkStore {
 
     private final java.util.Map<String,BundleInstall> installedCache=new java.util.concurrent.ConcurrentHashMap<>();
     public void invalidate(String space,String pkg){installedCache.remove(space+'|'+pkg);}
+    public void evict(String space,String pkg)throws Exception{
+        invalidate(space,pkg);
+        Row row;synchronized(authority){row=row(space,pkg);}
+        if(row!=null){
+            synchronized(reusable){reusable.keySet().removeIf(k->k.startsWith(space+'|'+row.generation+'|'));}
+            integrity.evict(new File(root,"artifacts/"+RuntimeFiles.id(row.generation)),row.descriptorSha);
+        }
+    }
 
     public BundleInstall get(String space,String pkg)throws Exception {
         String cacheKey=space+'|'+pkg;
         BundleInstall cached=installedCache.get(cacheKey);
         if(cached!=null)return cached;
         long g0=android.os.SystemClock.elapsedRealtime();
-        Row row;synchronized(authority){catalog.requireSpace(space);RuntimeFiles.id(pkg);row=row(space,pkg);}
+        Row row;RuntimeMode mode;synchronized(authority){catalog.requireSpace(space);RuntimeFiles.id(pkg);row=row(space,pkg);mode=resolveMode(space,pkg);}
         if(row==null)throw new ActivityNotFoundException("PACKAGE_NOT_IN_SPACE:"+pkg);
         if(!"COMMITTED".equals(row.state))throw new SecurityException("INSTALL_CORRUPT:"+row.reason);
         try{
-            File directory=new File(root,"artifacts/"+RuntimeFiles.id(row.generation));long g1=android.os.SystemClock.elapsedRealtime();ArtifactSet set=integrity.get(directory,row.descriptorSha);long g2=android.os.SystemClock.elapsedRealtime();if(g2-g1>500||g1-g0>500)android.util.Log.w("TripoderBoot","ApkStore.get slow row="+(g1-g0)+"ms integrity="+(g2-g1)+"ms thread="+Thread.currentThread().getName()+" pkg="+pkg);
+            File directory=new File(root,"artifacts/"+RuntimeFiles.id(row.generation));long g1=android.os.SystemClock.elapsedRealtime();ArtifactSet set=integrity.get(directory,row.descriptorSha,mode==RuntimeMode.THIN);long g2=android.os.SystemClock.elapsedRealtime();if(g2-g1>500||g1-g0>500)android.util.Log.w("TripoderBoot","ApkStore.get slow row="+(g1-g0)+"ms integrity="+(g2-g1)+"ms mode="+mode.wire+" thread="+Thread.currentThread().getName()+" pkg="+pkg);
             if(!set.packageName.equals(pkg)||!set.signerSha.equals(row.signer)||set.versionCode!=row.version||!set.base.equals(new File(row.apk))||!set.parts.get(0).sha256.equals(row.sha))throw new SecurityException("INSTALL_METADATA_MISMATCH");
             BundleInstall install=reuse(space,row.generation,row.dataId,set);
             synchronized(authority){Row current=row(space,pkg);if(current==null||!row.generation.equals(current.generation)||!row.dataId.equals(current.dataId)||!"COMMITTED".equals(current.state))throw new IllegalStateException("STALE_INSTALL");InstallHistory.resolve(store,contract,install);}
@@ -147,6 +155,11 @@ public final class ApkStore {
         Set<String> data=new HashSet<>();try(Cursor c=store.getReadableDatabase().rawQuery("SELECT space,package,dataId FROM installs",null)){while(c.moveToNext())data.add(c.getString(0)+"/"+c.getString(1)+"/"+c.getString(2));}
         File dataRoot=new File(root,"data");for(File space:RuntimeFiles.children(dataRoot))for(File pkg:RuntimeFiles.children(space))for(File incarnation:RuntimeFiles.children(pkg))if(!data.contains(space.getName()+"/"+pkg.getName()+"/"+incarnation.getName()))RuntimeFiles.deleteTree(incarnation);
         Set<String> incarnations=new HashSet<>();for(String owner:data)incarnations.add(owner.substring(owner.lastIndexOf('/')+1));RuntimeNotificationNamespace.recover(host,incarnations);
+    }
+    RuntimeMode resolveMode(String space,String pkg){
+        List<String> modes=new ArrayList<>();
+        try(Cursor c=store.getReadableDatabase().rawQuery("SELECT mode FROM project_refs WHERE space=? AND package=? AND state='COMMITTED' ORDER BY id",new String[]{space,pkg})){while(c.moveToNext())modes.add(c.getString(0));}
+        return RuntimeMode.resolve(modes);
     }
     Row row(String space,String pkg){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT generation,apk,sha256,descriptorSha,state,reason,version,signer,dataId FROM installs WHERE space=? AND package=?",new String[]{space,pkg})){return c.moveToFirst()?new Row(c):null;}}
     static final class Row {

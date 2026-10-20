@@ -13,10 +13,12 @@ public final class RuntimeProviderFacade extends RuntimeProviderBase implements 
     private final Bundle reference;
     private final ContentProviderClient client;
     private boolean closed,released;private int uses;
+    private final boolean thin;
     public boolean isClosed(){synchronized(this){return closed||released;}}
-    RuntimeProviderFacade(RuntimeEngine engine,Bundle reference,ContentProviderClient client){this.engine=engine;this.reference=reference;this.client=client;ProviderInfo info=new ProviderInfo();info.authority=reference.getString("authority");info.exported=false;attachInfo(engine.host,info);}
+    RuntimeProviderFacade(RuntimeEngine engine,Bundle reference,ContentProviderClient client){this.engine=engine;this.reference=reference;this.client=client;this.thin=reference.getBoolean("thin");ProviderInfo info=new ProviderInfo();info.authority=reference.getString("authority");info.exported=false;attachInfo(engine.host,info);}
     private Bundle request(){Bundle b=engine.auth();b.putString("cap",reference.getString("cap"));return b;}
     void awaitReady()throws Exception{
+        if(thin){invoke("ready",Uri.parse("content://"+reference.getString("authority")),new Bundle(),null);return;}
         Bundle wait=request();wait.putBoolean("begin",true);boolean edge=engine.brokerCall(RuntimeWire.PROVIDER_WAIT,wait).getBoolean("edge");
         try{invoke("ready",Uri.parse("content://"+reference.getString("authority")),new Bundle(),null);}
         finally{if(edge){wait.putBoolean("begin",false);engine.brokerCall(RuntimeWire.PROVIDER_WAIT,wait);}}
@@ -90,7 +92,26 @@ public final class RuntimeProviderFacade extends RuntimeProviderBase implements 
     private static String kinds(Bundle input){StringBuilder text=new StringBuilder();for(String key:new java.util.TreeSet<>(input.keySet())){Object value=input.get(key);text.append(key).append('=').append(value==null?"null":value instanceof Bundle?"{"+kinds((Bundle)value)+"}":value.getClass().getName()).append(';');}return text.toString();}
     private Object invoke(String kind,Uri uri,Bundle payload,String[] projection)throws Exception{
         synchronized(this){if(closed)throw new IllegalStateException("PROVIDER_CLIENT_CLOSED");uses++;}
-        try{return invokeHeld(kind,uri,payload,projection);}finally{endUse();}
+        try{return thin?invokeThin(kind,uri,payload,projection):invokeHeld(kind,uri,payload,projection);}finally{endUse();}
+    }
+    private Object invokeThin(String kind,Uri uri,Bundle payload,String[] projection)throws Exception{
+        if(uri==null||!"content".equals(uri.getScheme())||!reference.getString("authority").equals(uri.getAuthority()))throw new SecurityException("PROVIDER_URI_MISMATCH");
+        long identity=Binder.clearCallingIdentity();try{
+            if(kind.equals("query")){
+                Uri wire=new Uri.Builder().scheme("content").authority(reference.getString("physical")).appendPath("v1-thin").appendPath(reference.getString("lease")).appendQueryParameter("uri",uri.toString()).appendQueryParameter("callerPackage",engine.packageName).build();
+                return retain(client.query(wire,projection,payload,null));
+            }
+            Bundle envelope=new Bundle();
+            envelope.putString("lease",reference.getString("lease"));
+            envelope.putString("authority",reference.getString("authority"));
+            envelope.putString("kind",kind);
+            envelope.putString("uri",uri.toString());
+            envelope.putString("callerPackage",engine.packageName);
+            envelope.putBundle("payload",payload);
+            envelope.putStringArray("projection",projection);
+            Bundle response=client.call("tripoder.thin",null,envelope);
+            return kind.equals("getType")?response.getString("type"):response;
+        }finally{Binder.restoreCallingIdentity(identity);}
     }
     private Object invokeHeld(String kind,Uri uri,Bundle payload,String[] projection)throws Exception{
         if(uri==null||!"content".equals(uri.getScheme())||!reference.getString("authority").equals(uri.getAuthority()))throw new SecurityException("PROVIDER_URI_MISMATCH");
@@ -129,6 +150,7 @@ public final class RuntimeProviderFacade extends RuntimeProviderBase implements 
     private void releaseIfIdle(){
         synchronized(this){if(!closed||uses!=0||released)return;released=true;}
         client.close();
+        if(thin)return;
         Bundle req=request();
         RELEASE_EXECUTOR.execute(()->{
             try{engine.brokerCall(RuntimeWire.PROVIDER_RELEASE,req);}

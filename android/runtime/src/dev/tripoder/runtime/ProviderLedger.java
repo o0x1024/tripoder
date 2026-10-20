@@ -18,8 +18,9 @@ final class ProviderLedger {
     }
     void reserve(RuntimeBroker.Slot slot){
         SQLiteDatabase db=store.getWritableDatabase();
+        String initialState=slot.mode==RuntimeMode.THIN?"READY":"DECLARED";
         for(var component:new RuntimeProviderIndex(slot.install.info.providers,slot.install.components()).publications(slot.allocation.session.identity.processName)){
-            ContentValues v=new ContentValues();v.put("id",UUID.randomUUID().toString());v.put("generation",slot.allocation.session.processGeneration);v.put("component",component.name);v.put("state","DECLARED");db.insertOrThrow("provider_leases",null,v);
+            ContentValues v=new ContentValues();v.put("id",UUID.randomUUID().toString());v.put("generation",slot.allocation.session.processGeneration);v.put("component",component.name);v.put("state",initialState);db.insertOrThrow("provider_leases",null,v);
         }
     }
     Bundle publications(String generation){Bundle out=new Bundle();try(Cursor c=store.getReadableDatabase().rawQuery("SELECT component,id FROM provider_leases WHERE generation=?",new String[]{generation})){while(c.moveToNext())out.putString(c.getString(0),c.getString(1));}return out;}
@@ -29,7 +30,7 @@ final class ProviderLedger {
         if(existing)return null;
         var info=new RuntimeProviderIndex(slot.install.info.providers,slot.install.components()).component(component);
         if(!info.enabled||!info.multiprocess||!info.packageName.equals(slot.install.info.packageName))throw new SecurityException("LOCAL_PROVIDER_DECLARATION_INVALID");
-        String id=UUID.randomUUID().toString();ContentValues row=new ContentValues();row.put("id",id);row.put("generation",generation);row.put("component",component);row.put("state","DECLARED");store.getWritableDatabase().insertOrThrow("provider_leases",null,row);return lease(id);
+        String id=UUID.randomUUID().toString();ContentValues row=new ContentValues();row.put("id",id);row.put("generation",generation);row.put("component",component);row.put("state",slot.mode==RuntimeMode.THIN?"READY":"DECLARED");store.getWritableDatabase().insertOrThrow("provider_leases",null,row);return lease(id);
     }
     Bundle lease(String id){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT generation,component,state FROM provider_leases WHERE id=?",new String[]{id})){
         if(!c.moveToFirst())throw new SecurityException("PROVIDER_LEASE_UNKNOWN");Bundle b=new Bundle();b.putString("lease",id);b.putString("target",c.getString(0));b.putString("component",c.getString(1));b.putString("publication",c.getString(2));return b;

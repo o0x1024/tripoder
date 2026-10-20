@@ -79,7 +79,7 @@ final class RuntimeProviders {
         }
         if(owner)initialize(entry);else if(entry.initializing==Thread.currentThread())throw new IllegalStateException("PROVIDER_INITIALIZATION_CYCLE");
     }
-    private void publish(Entry entry,String state)throws Exception{Bundle b=engine.auth();b.putString("lease",entry.lease);b.putString("state",state);engine.brokerCall(RuntimeWire.PROVIDER_PUBLICATION,b);}
+    private void publish(Entry entry,String state)throws Exception{if(engine.mode==RuntimeMode.THIN)return;Bundle b=engine.auth();b.putString("lease",entry.lease);b.putString("state",state);engine.brokerCall(RuntimeWire.PROVIDER_PUBLICATION,b);}
     boolean owns(ContentProvider provider){synchronized(instances){return instances.contains(provider);}}
     ContentProvider ready(String lease)throws Exception{
         Entry entry;synchronized(entries){entry=entries.get(lease);}if(entry==null)throw new SecurityException("PROVIDER_LEASE_NOT_IN_PROCESS");
@@ -134,14 +134,18 @@ final class RuntimeProviders {
                 facade=new RuntimeProviderFacade(engine,ref,client);
                 if(!"READY".equals(ref.getString("publication")))facade.awaitReady();
                 return facade;
-            }catch(Throwable error){if(facade!=null)facade.close();else{if(client!=null)client.close();Bundle release=engine.auth();release.putString("cap",ref.getString("cap"));engine.brokerCall(RuntimeWire.PROVIDER_RELEASE,release);}throw error;}
+            }catch(Throwable error){if(facade!=null)facade.close();else{if(client!=null)client.close();if(!ref.getBoolean("thin")){Bundle release=engine.auth();release.putString("cap",ref.getString("cap"));engine.brokerCall(RuntimeWire.PROVIDER_RELEASE,release);}}throw error;}
         }catch(RuntimeException error){throw error;}catch(Exception error){throw new IllegalStateException("PROVIDER_ACQUIRE_FAILED:"+authority,error);}
     }
     ContentProvider router(){return new Router();}
     private final class Router extends RuntimeProviderBase {
         private final Map<String,RuntimeProviderFacade> cachedFacades=new ConcurrentHashMap<>();
+        private final Set<String> externalAuthorities=Collections.newSetFromMap(new ConcurrentHashMap<>());
         private boolean settings(Uri uri){return uri!=null&&"content".equals(uri.getScheme())&&"settings".equals(uri.getAuthority());}
         private String logical(Uri uri){if(uri==null||!"content".equals(uri.getScheme()))throw new IllegalArgumentException("PROVIDER_URI_INVALID");return RuntimeProviderBroker.authority(uri.getAuthority());}
+        private boolean allowExternalPassthrough(String authority){
+            return engine.mode==RuntimeMode.THIN&&authority!=null&&!authority.startsWith(engine.host.getPackageName())&&!authority.startsWith("dev.tripoder.");
+        }
         private Bundle localCaller(){
             Bundle caller=new Bundle();
             caller.putString("callerPackage",engine.packageName);
@@ -152,11 +156,16 @@ final class RuntimeProviders {
         private RuntimeProviderFacade getFacade(String authority,String missing){
             RuntimeProviderFacade facade=cachedFacades.get(authority);
             if(facade!=null&&!facade.isClosed())return facade;
+            if(externalAuthorities.contains(authority)){if(missing!=null)throw new IllegalArgumentException(missing);return null;}
             synchronized(cachedFacades){
                 facade=cachedFacades.get(authority);
                 if(facade!=null&&!facade.isClosed())return facade;
                 ContentProvider acquired=acquire(authority,true,false);
-                if(acquired==null){if(missing!=null)throw new IllegalArgumentException(missing);return null;}
+                if(acquired==null){
+                    if(allowExternalPassthrough(authority))externalAuthorities.add(authority);
+                    if(missing!=null)throw new IllegalArgumentException(missing);
+                    return null;
+                }
                 if(acquired instanceof RuntimeProviderFacade){
                     facade=(RuntimeProviderFacade)acquired;
                     cachedFacades.put(authority,facade);
@@ -179,7 +188,10 @@ final class RuntimeProviders {
                 }
             }
             RuntimeProviderFacade facade=getFacade(auth,null);
-            if(facade==null)return null;
+            if(facade==null){
+                if(allowExternalPassthrough(auth))return engine.host.getContentResolver().query(uri,projection,args,signal);
+                return null;
+            }
             try{
                 return facade.query(uri,projection,args,signal);
             }catch(RuntimeException error){
@@ -197,7 +209,10 @@ final class RuntimeProviders {
                 }
             }
             RuntimeProviderFacade facade=getFacade(auth,null);
-            if(facade==null)return null;
+            if(facade==null){
+                if(allowExternalPassthrough(auth))return engine.host.getContentResolver().getType(uri);
+                return null;
+            }
             try{
                 return facade.getType(uri);
             }catch(RuntimeException error){
@@ -206,6 +221,7 @@ final class RuntimeProviders {
             }
         }
         @Override public Uri insert(Uri uri,ContentValues values,Bundle extras){
+            if(settings(uri))return engine.settingsProvider().insert(uri,values,extras);
             String auth=logical(uri);
             ContentProvider local=findLocal(auth);
             if(local!=null){
@@ -213,7 +229,8 @@ final class RuntimeProviders {
                     return local.insert(uri,values,extras);
                 }
             }
-            RuntimeProviderFacade facade=getFacade(auth,"Unknown URL "+uri);
+            RuntimeProviderFacade facade=getFacade(auth,allowExternalPassthrough(auth)?null:"Unknown URL "+uri);
+            if(facade==null)return engine.host.getContentResolver().insert(uri,values,extras);
             try{
                 return facade.insert(uri,values,extras);
             }catch(RuntimeException error){
@@ -222,6 +239,7 @@ final class RuntimeProviders {
             }
         }
         @Override public int update(Uri uri,ContentValues values,Bundle extras){
+            if(settings(uri))return engine.settingsProvider().update(uri,values,extras);
             String auth=logical(uri);
             ContentProvider local=findLocal(auth);
             if(local!=null){
@@ -229,7 +247,8 @@ final class RuntimeProviders {
                     return local.update(uri,values,extras);
                 }
             }
-            RuntimeProviderFacade facade=getFacade(auth,"Unknown URI "+uri);
+            RuntimeProviderFacade facade=getFacade(auth,allowExternalPassthrough(auth)?null:"Unknown URI "+uri);
+            if(facade==null)return engine.host.getContentResolver().update(uri,values,extras);
             try{
                 return facade.update(uri,values,extras);
             }catch(RuntimeException error){
@@ -238,6 +257,7 @@ final class RuntimeProviders {
             }
         }
         @Override public int delete(Uri uri,Bundle extras){
+            if(settings(uri))return engine.settingsProvider().delete(uri,extras);
             String auth=logical(uri);
             ContentProvider local=findLocal(auth);
             if(local!=null){
@@ -245,7 +265,8 @@ final class RuntimeProviders {
                     return local.delete(uri,extras);
                 }
             }
-            RuntimeProviderFacade facade=getFacade(auth,"Unknown URL "+uri);
+            RuntimeProviderFacade facade=getFacade(auth,allowExternalPassthrough(auth)?null:"Unknown URL "+uri);
+            if(facade==null)return engine.host.getContentResolver().delete(uri,extras);
             try{
                 return facade.delete(uri,extras);
             }catch(RuntimeException error){
@@ -261,7 +282,8 @@ final class RuntimeProviders {
                     return local.bulkInsert(uri,values);
                 }
             }
-            RuntimeProviderFacade facade=getFacade(auth,"Unknown URL "+uri);
+            RuntimeProviderFacade facade=getFacade(auth,allowExternalPassthrough(auth)?null:"Unknown URL "+uri);
+            if(facade==null)return engine.host.getContentResolver().bulkInsert(uri,values);
             try{
                 return facade.bulkInsert(uri,values);
             }catch(RuntimeException error){
@@ -277,7 +299,11 @@ final class RuntimeProviders {
                     return local.applyBatch(authority,operations);
                 }
             }
-            RuntimeProviderFacade facade=getFacade(auth,"Unknown authority "+authority);
+            RuntimeProviderFacade facade=getFacade(auth,allowExternalPassthrough(auth)?null:"Unknown authority "+authority);
+            if(facade==null){
+                try{return engine.host.getContentResolver().applyBatch(authority,operations);}
+                catch(RemoteException error){throw new IllegalStateException("PROVIDER_BATCH_FAILED:"+authority,error);}
+            }
             try{
                 return facade.applyBatch(authority,operations);
             }catch(RuntimeException error){
@@ -294,7 +320,8 @@ final class RuntimeProviders {
                     return local.call(authority,method,arg,extras);
                 }
             }
-            RuntimeProviderFacade facade=getFacade(auth,"Unknown authority "+authority);
+            RuntimeProviderFacade facade=getFacade(auth,allowExternalPassthrough(auth)?null:"Unknown authority "+authority);
+            if(facade==null)return engine.host.getContentResolver().call(authority,method,arg,extras);
             try{
                 return facade.call(authority,method,arg,extras);
             }catch(RuntimeException error){

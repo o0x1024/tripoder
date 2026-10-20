@@ -11,7 +11,7 @@ public final class PackageFrameworkAccess {
     private final Class<?> contextType,managerType,contract;
     private final Constructor<?> constructor;
     private final Field endpoint,global,services,contextCache;
-    private final Method systemContext,packageGetter,userId,feature,features,sandbox,notifyPackageUse,notifyDexLoad,notifyPackagesReplaced,componentEnabled;
+    private final Method systemContext,packageGetter,userId,feature,features,sandbox,notifyPackageUse,notifyDexLoad,notifyPackagesReplaced,componentEnabled,sharedPreferences;
     private final Method[] disable=new Method[3];
     private final Map<String,Method> physical=new HashMap<>(),logical=new HashMap<>();
     private final Object physicalEndpoint;
@@ -21,6 +21,7 @@ public final class PackageFrameworkAccess {
         endpoint=FixedFrameworkMembers.field(35,41,"mPM","Landroid/content/pm/IPackageManager;",false);global=FixedFrameworkMembers.field(36,1,"sPackageManager","Landroid/content/pm/IPackageManager;",true);
         services=FixedFrameworkMembers.field(37,44,"sCache","Ljava/util/Map;",true);contextCache=FixedFrameworkMembers.field(38,3,"mPackageManager","Landroid/content/pm/PackageManager;",false);
         systemContext=FixedFrameworkMembers.method(1,"getSystemContext","()Landroid/app/ContextImpl;",false);packageGetter=FixedFrameworkMembers.method(1,"getPackageManager","()Landroid/content/pm/IPackageManager;",true);
+        sharedPreferences=FixedFrameworkMembers.method(3,"getSharedPreferences","(Ljava/io/File;I)Landroid/content/SharedPreferences;",false);
         userId=FixedFrameworkMembers.method(49,"getIdentifier","()I",false);
         disable[0]=FixedFrameworkMembers.method(42,"disableApplicationInfoCache","()V",true);disable[1]=FixedFrameworkMembers.method(42,"disablePackageInfoCache","()V",true);disable[2]=FixedFrameworkMembers.method(41,"disableGetPackagesForUidCache","()V",true);
         physical.put("package",FixedFrameworkMembers.method(16,"getPackageInfo","(Ljava/lang/String;JI)Landroid/content/pm/PackageInfo;",false));
@@ -45,6 +46,7 @@ public final class PackageFrameworkAccess {
         if(context.getClass()==contextType)return context;if(!(context instanceof ContextWrapper))break;context=((ContextWrapper)context).getBaseContext();
     }throw new SecurityException("PACKAGE_CONTEXT_IMPL_REQUIRED");}
     public static Context systemContext(){PackageFrameworkAccess v=require();return (Context)Objects.requireNonNull(FixedFrameworkMembers.call(v.systemContext,PhysicalApplication.thread()),"PACKAGE_SYSTEM_CONTEXT_REQUIRED");}
+    public static SharedPreferences sharedPreferences(Context context,java.io.File file,int mode){PackageFrameworkAccess v=require();return (SharedPreferences)Objects.requireNonNull(FixedFrameworkMembers.call(v.sharedPreferences,v.unwrap(Objects.requireNonNull(context)),Objects.requireNonNull(file),mode),"PLATFORM_SHARED_PREFERENCES_REQUIRED");}
     public static int userId(){return (Integer)FixedFrameworkMembers.call(require().userId,android.os.Process.myUserHandle());}
     public static Object currentEndpoint(){PackageFrameworkAccess v=require();Object root=FixedFrameworkMembers.call(v.packageGetter,null);if(!v.contract.isInstance(root))throw new IllegalStateException("PACKAGE_ENDPOINT_TYPE");return root;}
     public static Object endpoint(PackageManager manager){PackageFrameworkAccess v=require();if(!v.managerType.isInstance(manager))throw new SecurityException("PACKAGE_FACADE_TYPE");Object root=FixedFrameworkMembers.get(v.endpoint,manager);if(!v.contract.isInstance(root))throw new IllegalStateException("PACKAGE_ENDPOINT_MISSING");return root;}

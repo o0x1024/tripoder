@@ -13,15 +13,16 @@ final class ArtifactIntegrityCache {
     /** The committed tree moved mid-verification; nothing is proven wrong with its bytes, so the install stays usable and the read is simply retried. */
     static final class VerificationUnstable extends IOException{VerificationUnstable(){super("ARTIFACT_CHANGED_DURING_VERIFICATION");}}
     private final LinkedHashMap<String,Entry> entries=new LinkedHashMap<>(16,.75f,true);
-    private long bytes,hits,verified;
+    private long bytes,hits,verified,trustedLoads;
     private static final class Entry {
-        final ArtifactSet set;final Map<String,String> stamp;final long cost;
-        Entry(ArtifactSet set,Map<String,String> stamp){this.set=set;this.stamp=stamp;cost=2L*set.descriptorJson.length()+512L*stamp.size();}
+        final ArtifactSet set;final Map<String,String> stamp;final boolean fullVerified;final long cost;
+        Entry(ArtifactSet set,Map<String,String> stamp,boolean fullVerified){this.set=set;this.stamp=stamp;this.fullVerified=fullVerified;cost=2L*set.descriptorJson.length()+512L*stamp.size();}
     }
-    ArtifactSet get(File directory,String digest)throws Exception{
+    ArtifactSet get(File directory,String digest)throws Exception{return get(directory,digest,false);}
+    ArtifactSet get(File directory,String digest,boolean trusted)throws Exception{
         String key=directory.getCanonicalPath()+":"+digest;Map<String,String> before=stamp(directory);
         synchronized(this){Entry old=entries.get(key);
-            if(old!=null&&old.stamp.equals(before)){hits++;return old.set;}
+            if(old!=null&&old.stamp.equals(before)&&(trusted||old.fullVerified)){hits++;return old.set;}
             if(old!=null){entries.remove(key);bytes-=old.cost;}
         }
         // Full byte verification never monopolizes the cache used by unrelated running apps.
@@ -32,17 +33,20 @@ final class ArtifactIntegrityCache {
         // settled tree a bounded number of times. Verification always fully digests every file, so
         // a genuinely altered byte still fails as ARTIFACT_FILE_CORRUPT regardless of the retry.
         for(int attempt=0;;attempt++){
-            ArtifactSet set=ArtifactSet.verify(directory,digest);
+            ArtifactSet set=trusted?ArtifactSet.loadVerified(directory,digest):ArtifactSet.verify(directory,digest);
             Map<String,String> after=stamp(directory);
-            if(before.equals(after)){synchronized(this){verified++;put(key,new Entry(set,after));}return set;}
+            if(before.equals(after)){synchronized(this){if(trusted)trustedLoads++;else verified++;put(key,new Entry(set,after,!trusted));}return set;}
             if(attempt>=STABILITY_ATTEMPTS)throw new VerificationUnstable();
             before=after;
         }
     }
+    synchronized void evict(File directory,String digest)throws Exception{
+        Entry old=entries.remove(directory.getCanonicalPath()+":"+digest);if(old!=null)bytes-=old.cost;
+    }
     private void put(String key,Entry entry){Entry old=entries.remove(key);if(old!=null)bytes-=old.cost;if(entry.cost>MAX_BYTES)return;entries.put(key,entry);bytes+=entry.cost;
         while(entries.size()>MAX_SETS||bytes>MAX_BYTES){var oldest=entries.entrySet().iterator();var item=oldest.next();bytes-=item.getValue().cost;oldest.remove();}
     }
-    synchronized android.os.Bundle stats(){android.os.Bundle b=new android.os.Bundle();b.putLong("hits",hits);b.putLong("fullVerifications",verified);b.putLong("retainedBytes",bytes);b.putInt("sets",entries.size());return b;}
+    synchronized android.os.Bundle stats(){android.os.Bundle b=new android.os.Bundle();b.putLong("hits",hits);b.putLong("fullVerifications",verified);b.putLong("trustedLoads",trustedLoads);b.putLong("retainedBytes",bytes);b.putInt("sets",entries.size());return b;}
     /** Stable digest of the immutable tree stamp; any inode, size, mode or time change alters it. */
     static String stampDigest(File directory)throws Exception{
         StringBuilder text=new StringBuilder();for(var e:stamp(directory).entrySet())text.append(e.getKey()).append('\0').append(e.getValue()).append('\n');

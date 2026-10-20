@@ -24,13 +24,25 @@ final class ServiceLedger {
     Lease forStub(String stub){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT * FROM service_leases WHERE stub=? AND state!='RELEASED'",new String[]{stub})){if(!c.moveToFirst())throw new SecurityException("SERVICE_STUB_UNASSIGNED");Lease value=new Lease(c);if(c.moveToNext())throw new SecurityException("SERVICE_STUB_OWNER_CONFLICT");return value;}}
     Lease find(String space,String pkg,String component){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT * FROM service_leases WHERE space=? AND package=? AND component=? AND state!='RELEASED'",new String[]{space,pkg,component})){return c.moveToFirst()?new Lease(c):null;}}
     Lease reserve(RuntimeBroker.Slot slot,String component){
-        var identity=slot.allocation.session.identity;
+        var identity=slot.allocation.session.identity;boolean thin=slot.mode==RuntimeMode.THIN;
         try(Cursor c=store.getReadableDatabase().rawQuery("SELECT * FROM service_leases WHERE space=? AND package=? AND component=? AND state!='RELEASED'",new String[]{identity.spaceId,identity.packageName,component})){
             // reserve is reached only by a newly admitted SERVICE_ROUTE request.
             // Retained stub ownership is reusable; the old Hook plan is not replayed.
-            if(c.moveToFirst()){Lease existing=new Lease(c);owner(existing,slot);if(!existing.generation.equals(slot.allocation.session.processGeneration))rebind(existing,slot,ServiceRecoveryPolicy.Admission.NEW_REQUEST);return get(existing.id);}
+            if(c.moveToFirst()){
+                Lease existing=new Lease(c);owner(existing,slot);
+                if(thin){
+                    if(!existing.generation.equals(slot.allocation.session.processGeneration)||!existing.state.equals("LIVE")){
+                        ContentValues row=new ContentValues();row.put("generation",slot.allocation.session.processGeneration);row.put("state","LIVE");row.put("instance",existing.id);update(existing.id,row);
+                    }
+                    return get(existing.id);
+                }
+                if(!existing.generation.equals(slot.allocation.session.processGeneration))rebind(existing,slot,ServiceRecoveryPolicy.Admission.NEW_REQUEST);
+                return get(existing.id);
+            }
         }
-        return insert(identity.spaceId,identity.packageName,identity.installGeneration,identity.processName,slot.activityStub,component,slot.allocation.session.processGeneration,"RESERVED");
+        Lease created=insert(identity.spaceId,identity.packageName,identity.installGeneration,identity.processName,slot.activityStub,component,slot.allocation.session.processGeneration,thin?"LIVE":"RESERVED");
+        if(thin){ContentValues row=new ContentValues();row.put("instance",created.id);update(created.id,row);return get(created.id);}
+        return created;
     }
     Lease reservePassive(ApkStore.BundleInstall install,String process,String component,String processStub){
         Lease existing=find(install.space,install.info.packageName,component);
@@ -54,7 +66,7 @@ final class ServiceLedger {
         if(stub==null)throw new IllegalStateException("SERVICE_CAPACITY_EXHAUSTED");
         ContentValues row=new ContentValues();String id=UUID.randomUUID().toString();row.put("id",id);row.put("space",space);row.put("package",pkg);row.put("installGeneration",install);row.put("processName",processName);row.put("processStub",processStub);row.put("stub",stub);row.put("component",component);row.put("generation",generation);row.put("state",state);store.getWritableDatabase().insertOrThrow("service_leases",null,row);return get(id);
     }
-    Bundle claim(String stub,RuntimeBroker.Slot slot,String instance){Lease lease=forStub(stub);owner(lease,slot);if(lease.state.equals("PASSIVE"))throw new SecurityException("PASSIVE_SERVICE_HAS_NO_START_AUTHORITY");if(!lease.generation.equals(slot.allocation.session.processGeneration))rebind(lease,slot);lease=get(lease.id);if(!Set.of("RESERVED","DORMANT").contains(lease.state))throw new SecurityException("SERVICE_INSTANCE_ALREADY_CLAIMED");ContentValues row=new ContentValues();row.put("state","CLAIMED");row.put("instance",instance);update(lease.id,row);return get(lease.id).wire();}
+    Bundle claim(String stub,RuntimeBroker.Slot slot,String instance){Lease lease=forStub(stub);owner(lease,slot);if(lease.state.equals("PASSIVE"))throw new SecurityException("PASSIVE_SERVICE_HAS_NO_START_AUTHORITY");if(!lease.generation.equals(slot.allocation.session.processGeneration))rebind(lease,slot);lease=get(lease.id);boolean thin=slot.mode==RuntimeMode.THIN;if(thin){ContentValues row=new ContentValues();row.put("state","LIVE");row.put("instance",instance);update(lease.id,row);return get(lease.id).wire();}if(!Set.of("RESERVED","DORMANT").contains(lease.state))throw new SecurityException("SERVICE_INSTANCE_ALREADY_CLAIMED");ContentValues row=new ContentValues();row.put("state","CLAIMED");row.put("instance",instance);update(lease.id,row);return get(lease.id).wire();}
     void lifecycle(String id,String generation,String instance,String event){Lease lease=get(id);if(!lease.generation.equals(generation)||!Objects.equals(lease.instance,instance))throw new SecurityException("SERVICE_INSTANCE_STALE");
         String next;if(event.equals("onCreate")){if(lease.state.equals("LIVE"))return;if(!lease.state.equals("CLAIMED"))throw new SecurityException("SERVICE_CREATE_STATE");next="LIVE";}
         else if(event.equals("onDestroy")){if(lease.state.equals("DORMANT"))return;if(!lease.state.equals("LIVE"))throw new SecurityException("SERVICE_DESTROY_STATE");next="DORMANT";}

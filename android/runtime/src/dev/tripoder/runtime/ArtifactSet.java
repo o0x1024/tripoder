@@ -274,7 +274,7 @@ public final class ArtifactSet {
                     case "components"->{
                         r.beginArray();
                         while(r.hasNext()){
-                            String type=null,name=null,process=null,permission="",authorities="",targetActivity="";Boolean exported=null,enabled=null;
+                            String type=null,name=null,process=null,permission="",authorities="",targetActivity="";Boolean exported=null,enabled=null;ApkManifest.Element declaration=null;
                             r.beginObject();
                             while(r.hasNext()){
                                 switch(r.nextName()){
@@ -286,11 +286,12 @@ public final class ArtifactSet {
                                     case "targetActivity"->targetActivity=r.nextString();
                                     case "exported"->{if(r.peek()==android.util.JsonToken.NULL){r.nextNull();exported=null;}else exported=r.nextBoolean();}
                                     case "enabled"->{if(r.peek()==android.util.JsonToken.NULL){r.nextNull();enabled=null;}else enabled=r.nextBoolean();}
+                                    case "declaration"->declaration=ApkManifest.componentElementFromJsonReader(r,0);
                                     default->r.skipValue();
                                 }
                             }
                             r.endObject();
-                            components.add(new ApkManifest.Component(new ApkManifest.Element(type,"",Map.of(),List.of()),type,name,process,permission,authorities,targetActivity,exported,enabled));
+                            components.add(new ApkManifest.Component(declaration!=null?declaration:new ApkManifest.Element(type,"",Map.of(),List.of()),type,name,process,permission,authorities,targetActivity,exported,enabled));
                         }
                         r.endArray();
                     }

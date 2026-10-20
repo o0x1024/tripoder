@@ -23,10 +23,14 @@ final class RuntimeControllerApplications {
             }
             for(String process:processes){stopping=true;broker.processes.close(process);stopping=false;}
             RuntimeEmptyTasks.removeApplicationTasks(broker,space,pkg,generation);
+            broker.jobBroker.cancelForUninstall(space,pkg,generation,UUID.randomUUID().toString());
+            RuntimeJobRetirement.reconcile(broker);
+            var appTasks=broker.host.getSystemService(android.app.ActivityManager.class).getAppTasks();
             RuntimeControllerService.agents().requireApplicationControl(space,pkg);
             synchronized(broker){
                 RuntimeControllerService.requireLease(lease);requireInstall(broker,space,pkg,generation);
                 retired=broker.activities.retireDeadUnattached(space,pkg,generation,operation);
+                retired+=broker.activities.retireDeadTasks(space,pkg,generation,operation,appTasks);
                 broker.services.abandonDeadCalls(space,pkg,generation);
                 broker.providers.abandonDeadCalls(space,pkg,generation);
                 broker.services.reconcile(broker.host);
@@ -101,6 +105,7 @@ final class RuntimeControllerApplications {
             // The explicit deletion confirmation authorizes stopping this installation only.
             for(String process:processes){stopping=true;broker.processes.close(process);stopping=false;}
             RuntimeEmptyTasks.removeApplicationTasks(broker,space,pkg,generation);
+            var appTasks=broker.host.getSystemService(android.app.ActivityManager.class).getAppTasks();
             // Deleting an application cancels its scheduled jobs through the normal fenced cancel, then retires the emptied components. Outside the broker lock, as Android is called.
             broker.jobBroker.cancelForUninstall(space,pkg,generation,UUID.randomUUID().toString());
             RuntimeJobRetirement.reconcile(broker);
@@ -108,6 +113,7 @@ final class RuntimeControllerApplications {
             synchronized(broker){
                 RuntimeControllerService.requireLease(lease);requireInstall(broker,space,pkg,generation);
                 retired=broker.activities.retireDeadUnattached(space,pkg,generation,operation);
+                retired+=broker.activities.retireDeadTasks(space,pkg,generation,operation,appTasks);
                 broker.services.abandonDeadCalls(space,pkg,generation);
                 broker.providers.abandonDeadCalls(space,pkg,generation);
                 broker.services.reconcile(broker.host);

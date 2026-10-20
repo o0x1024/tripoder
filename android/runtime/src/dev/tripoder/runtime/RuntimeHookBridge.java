@@ -28,6 +28,7 @@ public final class RuntimeHookBridge {
             .put("installGeneration",RuntimeWire.required(input,"installGeneration"))
             .put("descriptorSha256",RuntimeWire.required(input,"descriptorSha"))
             .put("processGeneration",engine.generation).put("pid",android.os.Process.myPid())
+            .put("mode",engine.mode.wire)
             .put("target",new JSONObject().put("packageName",engine.packageName).put("versionCode",Long.toString(artifacts.versionCode)).put("apkSha256",RuntimeWire.required(input,"sha256")));
         javaObservation=new RuntimeJavaObservation(engine::guestLoader,engine::ownsLoader,()->RuntimeEngine.current==engine,identitySnapshot());
     }

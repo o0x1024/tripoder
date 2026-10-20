@@ -17,10 +17,18 @@ final class ControlLaunchChecks {
         String stale=UUID.randomUUID().toString();
         test.check("launch-rejects-stale-project-binding",test.rejected(()->test.execute(session,"prepareLaunch","operation",stale,"project",project,"bindingOperation",UUID.randomUUID().toString(),"generation",generation,"component","dev.tripoder.p0.a.AActivity"),IllegalStateException.class,"LAUNCH_BINDING_STALE"),true);
         test.check("rejected-launch-has-failed-receipt","FAILED".equals(test.execute(session,"query","operation",stale).getString("state")),stale);
+        test.execute(session,"setProjectMode","operation",UUID.randomUUID().toString(),"project",project,"mode","thin");
+        String thinLaunch=UUID.randomUUID().toString();
+        Bundle thinPrepared=ControlWire.call(session,ControlWire.EXECUTE,ControlWire.request("prepareLaunch","operation",thinLaunch,"project",project,"bindingOperation",binding,"generation",generation,"component","dev.tripoder.p0.a.AActivity"));
+        JSONArray thinProcesses=new JSONArray(test.execute(session,"hookProcesses","project",project).getString("processes"));
+        test.check("thin-mode-launch-prepares-slot-in-thin-mode","RUNNING".equals(thinPrepared.getString("state"))&&"thin".equals(thinPrepared.getString("mode"))&&thinProcesses.length()==1&&"thin".equals(thinProcesses.getJSONObject(0).getString("mode")),test.json(thinPrepared));
+        test.execute(session,"abandonLaunch","operation",thinLaunch);
+        test.execute(session,"stopApplication","operation",UUID.randomUUID().toString(),"space",test.report.getString("space"),"package","dev.tripoder.p0.a","generation",generation);
+        test.execute(session,"setProjectMode","operation",UUID.randomUUID().toString(),"project",project,"mode","thick");
         String operation=UUID.randomUUID().toString();Bundle request=ControlWire.request("prepareLaunch","operation",operation,"project",project,"bindingOperation",binding,"generation",generation,"component","dev.tripoder.p0.a.AActivity");
         Bundle prepared=ControlWire.call(session,ControlWire.EXECUTE,request);Intent entry=prepared.getParcelable("intent",Intent.class);Bundle facts=new Bundle(prepared);facts.remove("intent");
         // One call waits for the guest Application and returns the root entry; nothing is started until the caller starts that Intent.
-        test.check("launch-waits-for-guest-application",generation.equals(prepared.getString("installGeneration"))&&prepared.getString("generation")!=null&&"RUNNING".equals(prepared.getString("state"))&&prepared.getString("processName")!=null,test.json(facts));
+        test.check("launch-waits-for-guest-application",generation.equals(prepared.getString("installGeneration"))&&prepared.getString("generation")!=null&&"RUNNING".equals(prepared.getString("state"))&&"thick".equals(prepared.getString("mode"))&&prepared.getString("processName")!=null,test.json(facts));
         test.check("launch-entry-is-own-stub-with-ticket",entry!=null&&entry.getComponent()!=null&&test.enginePackage().equals(entry.getComponent().getPackageName())&&entry.getStringExtra("tripoder.ticket")!=null&&prepared.getString("generation").equals(entry.getStringExtra("tripoder.generation"))&&(entry.getFlags()&(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_MULTIPLE_TASK))==(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_MULTIPLE_TASK),entry==null?"null":entry.toString());
         test.check("duplicate-launch-does-not-return-another-entry",test.rejected(()->ControlWire.call(session,ControlWire.EXECUTE,request),IllegalStateException.class,"LAUNCH_ALREADY_ACCEPTED_QUERY_REQUIRED"),true);
         Bundle pending=test.execute(session,"query","operation",operation);

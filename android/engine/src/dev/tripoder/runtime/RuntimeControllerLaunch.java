@@ -54,8 +54,7 @@ final class RuntimeControllerLaunch {
             synchronized(broker){
                 broker.activities.releaseUnused();
                 if(!hasLiveSession)broker.activities.retireDeadUnattached(install.space,install.info.packageName,generation,operation);
-                int retiredDead=broker.activities.retireDeadTasks(install.space,install.info.packageName,generation,operation,appTasks);
-                android.util.Log.i("TripoderLaunch", "hasLiveSession=" + hasLiveSession + " retiredDead=" + retiredDead);
+                broker.activities.retireDeadTasks(install.space,install.info.packageName,generation,operation,appTasks);
             }
             expireEntries(broker);
             Bundle woken=RuntimeControllerWake.wake(broker,install.space,install.info.packageName,generation,operation);
@@ -75,7 +74,7 @@ final class RuntimeControllerLaunch {
                 Intent intent=broker.activities.controllerEntry(broker.host,ticket,launcher(install,component));issued.put(operation,android.os.SystemClock.elapsedRealtime());
                 Bundle out=broker.processEvidence(slot);out.putString("operation",operation);out.putString("component",component);out.putParcelable("intent",intent);return out;
             }
-        }catch(Exception error){android.util.Log.e("TripoderLaunch","PREPARE_LAUNCH_FAILED started="+started,error);synchronized(broker){if(broker.contract.query(operation).state==ExecutionContract.OperationState.RUNNING){if(started)broker.contract.markUnknown(operation,"LAUNCH_PREPARATION_UNCONFIRMED");else broker.contract.fail(operation,"LAUNCH_TARGET_REJECTED");}}throw error;}
+        }catch(Exception error){boolean modeRejected=String.valueOf(error.getMessage()).startsWith("RUNTIME_MODE_NOT_IMPLEMENTED:");synchronized(broker){if(broker.contract.query(operation).state==ExecutionContract.OperationState.RUNNING){if(started&&!modeRejected)broker.contract.markUnknown(operation,"LAUNCH_PREPARATION_UNCONFIRMED");else broker.contract.fail(operation,modeRejected?"RUNTIME_MODE_NOT_IMPLEMENTED":"LAUNCH_TARGET_REJECTED");}}throw error;}
     }
     /** Entries issued by this authority, by launch operation, with their issue time. An authority restart kills every worker, after which the stale-entry path applies. */
     private static final java.util.Map<String,Long> issued=new java.util.concurrent.ConcurrentHashMap<>();

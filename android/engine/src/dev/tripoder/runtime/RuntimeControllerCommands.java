@@ -41,6 +41,12 @@ final class RuntimeControllerCommands {
             if(input.containsKey("expectedBinding"))fields(input,"command","operation","project","space","package","generation","expectedBinding");else fields(input,"command","operation","project","space","package","generation");
             return new ProjectTargetBindings(broker).bind(ControlWire.required(input,"operation"),ControllerTrust.OPERATIONS,ControlWire.required(input,"project"),ControlWire.required(input,"space"),ControlWire.required(input,"package"),ControlWire.required(input,"generation"),input.getString("expectedBinding"));
         }
+        if("setProjectMode".equals(command)){
+            RuntimeControllerService.agents().requireUiControl(input.getString("project"),"setProjectMode");
+            fields(input,"command","operation","project","mode");
+            synchronized(broker){RuntimeControllerService.requireLease(lease);}
+            return new ProjectTargetBindings(broker).setMode(ControlWire.required(input,"operation"),ControllerTrust.OPERATIONS,ControlWire.required(input,"project"),ControlWire.required(input,"mode"));
+        }
         if("resolveProject".equals(command)){fields(input,"command","project");return new ProjectTargetBindings(broker).resolve(ControlWire.required(input,"project"));}
         synchronized(broker){
             switch(command){
@@ -51,7 +57,7 @@ final class RuntimeControllerCommands {
                     if(spaces.length()>256)throw new IllegalStateException("CATALOG_PAGE_REQUIRED");JSONArray installs=new JSONArray();
                     try(Cursor c=broker.store.getReadableDatabase().rawQuery("SELECT space,package,generation,state,version FROM installs ORDER BY space,package LIMIT 257",null)){while(c.moveToNext())installs.put(new JSONObject().put("space",c.getString(0)).put("package",c.getString(1)).put("generation",c.getString(2)).put("state",c.getString(3)).put("version",c.getLong(4)));}
                     if(installs.length()>256)throw new IllegalStateException("CATALOG_PAGE_REQUIRED");JSONArray projects=new JSONArray();
-                    try(Cursor c=broker.store.getReadableDatabase().rawQuery("SELECT id,space,package,generation,state,operation FROM project_refs WHERE kind='DIRECT' ORDER BY id LIMIT 257",null)){while(c.moveToNext())projects.put(new JSONObject().put("project",c.getString(0)).put("space",c.getString(1)).put("package",c.getString(2)).put("generation",c.getString(3)).put("state",c.getString(4)).put("bindingOperation",c.getString(5)));}
+                    try(Cursor c=broker.store.getReadableDatabase().rawQuery("SELECT id,space,package,generation,state,operation,mode FROM project_refs WHERE kind='DIRECT' ORDER BY id LIMIT 257",null)){while(c.moveToNext())projects.put(new JSONObject().put("project",c.getString(0)).put("space",c.getString(1)).put("package",c.getString(2)).put("generation",c.getString(3)).put("state",c.getString(4)).put("bindingOperation",c.getString(5)).put("mode",c.getString(6)));}
                     if(projects.length()>256)throw new IllegalStateException("CATALOG_PAGE_REQUIRED");out.putString("spaces",spaces.toString());out.putString("installs",installs.toString());out.putString("projects",projects.toString());break;
                 }
                 case "createSpace":{

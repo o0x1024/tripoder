@@ -35,9 +35,20 @@ final class ControlInstallChecks {
             test.check("upgrade-creates-new-install-generation",!generation.equals(current),test.json(upgraded));
             test.check("upgrade-invalidates-project-binding",test.rejected(()->test.execute(session,"resolveProject","project",project),IllegalStateException.class,"PROJECT_BINDING_STALE"),true);
             String rebind=id();Bundle rebound=test.execute(session,"bindProject","operation",rebind,"project",project,"space",space,"package","dev.tripoder.p0.a","generation",current,"expectedBinding",binding);
-            test.check("explicit-rebind-retains-app-data",bound.getString("dataId").equals(rebound.getString("dataId"))&&current.equals(rebound.getString("generation")),test.json(rebound));
+            test.check("explicit-rebind-retains-app-data",bound.getString("dataId").equals(rebound.getString("dataId"))&&current.equals(rebound.getString("generation"))&&"thin".equals(rebound.getString("mode")),test.json(rebound));
             test.check("rebind-cannot-change-application",test.rejected(()->test.execute(session,"bindProject","operation",id(),"project",project,"space",space,"package","dev.tripoder.p0.b","generation",current,"expectedBinding",rebind),IllegalStateException.class,"PROJECT_PACKAGE_CHANGE_UNSUPPORTED"),true);
             test.check("stale-binding-revision-cannot-overwrite-current",test.rejected(()->test.execute(session,"bindProject","operation",id(),"project",project,"space",space,"package","dev.tripoder.p0.a","generation",current,"expectedBinding",binding),IllegalStateException.class,"PROJECT_BINDING_CONFLICT"),true);
+            test.check("set-project-mode-rejects-unknown-mode",test.rejected(()->test.execute(session,"setProjectMode","operation",id(),"project",project,"mode","bogus"),IllegalArgumentException.class,"RUNTIME_MODE_UNKNOWN"),true);
+            Bundle beforeStats=test.execute(session,"resolveProject","project",project).getBundle("integrity");
+            long verifiedBefore=beforeStats.getLong("fullVerifications"),trustedBefore=beforeStats.getLong("trustedLoads");
+            String restoreOp=id();Bundle thickSet=test.execute(session,"setProjectMode","operation",restoreOp,"project",project,"mode","thick");
+            Bundle thickResolved=test.execute(session,"resolveProject","project",project);Bundle thickStats=thickResolved.getBundle("integrity");
+            test.check("set-project-mode-restores-thick","thick".equals(thickSet.getString("mode"))&&"thick".equals(thickResolved.getString("mode")),test.json(thickSet));
+            test.check("thick-mode-resolve-performs-full-artifact-verification",thickStats.getLong("fullVerifications")==verifiedBefore+1&&thickStats.getLong("trustedLoads")==trustedBefore,test.json(thickStats));
+            String modeOp=id();Bundle thinSet=test.execute(session,"setProjectMode","operation",modeOp,"project",project,"mode","thin");
+            Bundle thinResolved=test.execute(session,"resolveProject","project",project);Bundle thinStats=thinResolved.getBundle("integrity");
+            test.check("set-project-mode-persists-thin-with-receipt","thin".equals(thinSet.getString("mode"))&&"thin".equals(thinResolved.getString("mode"))&&"SUCCEEDED".equals(test.execute(session,"query","operation",modeOp).getString("state")),test.json(thinSet));
+            test.check("thin-mode-resolve-uses-trusted-artifact-load-without-full-reverify",thinStats.getLong("trustedLoads")==trustedBefore+1&&thinStats.getLong("fullVerifications")==verifiedBefore+1,test.json(thinStats));
             test.report.put("project",project).put("bindingOperation",rebind).put("installGeneration",current).put("dataId",bound.getString("dataId")).put("installFixture",fixtures);
         }finally{if(!base.delete()||!upgrade.delete())throw new IOException("TEST_COPY_CLEANUP_FAILED");}
     }

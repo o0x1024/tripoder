@@ -66,7 +66,16 @@ public final class ProcessSupervisor {
         Launch launch=found;
         try{launch.ready.get(RuntimeStartupDeadline.remaining(launch.slot.startupDeadlineElapsed,SystemClock.elapsedRealtime()),TimeUnit.MILLISECONDS);}
         catch(TimeoutException timeout){IllegalStateException unknown=startTimeout(launch,timeout);drain(launch,unknown);throw unknown;}
-        catch(ExecutionException error){Throwable cause=error.getCause();if(cause instanceof Exception)throw (Exception)cause;throw new IllegalStateException("PROCESS_START_FAILED",cause);}
+        catch(ExecutionException error){
+            Throwable cause=error.getCause();
+            if(cause instanceof IllegalStateException&&String.valueOf(cause.getMessage()).startsWith("RUNTIME_MODE_NOT_IMPLEMENTED:"))terminateAfterModeRejected(launch,(IllegalStateException)cause);
+            if(cause instanceof Exception)throw (Exception)cause;
+            throw new IllegalStateException("PROCESS_START_FAILED",cause);
+        }
+    }
+    private void terminateAfterModeRejected(Launch launch,IllegalStateException cause)throws Exception{
+        if(!launch.disconnected.await(5,TimeUnit.SECONDS))throw new IllegalStateException("PROCESS_STOP_UNCONFIRMED:"+cause.getMessage());
+        throw new IllegalStateException(cause.getMessage());
     }
     private RuntimeBroker.Slot acquire(String space,String pkg,String process,boolean awaitApplication)throws Exception{return acquire(space,pkg,process,awaitApplication,true);}
     private RuntimeBroker.Slot acquire(String space,String pkg,String process,boolean awaitApplication,boolean wait)throws Exception{
@@ -92,7 +101,12 @@ public final class ProcessSupervisor {
         if(!wait)return launch.slot;
         try{return (awaitApplication?launch.ready:launch.prepared).get(RuntimeStartupDeadline.remaining(launch.slot.startupDeadlineElapsed,SystemClock.elapsedRealtime()),TimeUnit.MILLISECONDS);}
         catch(TimeoutException timeout){IllegalStateException unknown=startTimeout(launch,timeout);drain(launch,unknown);throw unknown;}
-        catch(ExecutionException error){Throwable cause=error.getCause();if(cause instanceof Exception)throw (Exception)cause;throw new IllegalStateException("PROCESS_START_FAILED",cause);}
+        catch(ExecutionException error){
+            Throwable cause=error.getCause();
+            if(cause instanceof IllegalStateException&&String.valueOf(cause.getMessage()).startsWith("RUNTIME_MODE_NOT_IMPLEMENTED:"))terminateAfterModeRejected(launch,(IllegalStateException)cause);
+            if(cause instanceof Exception)throw (Exception)cause;
+            throw new IllegalStateException("PROCESS_START_FAILED",cause);
+        }
     }
     private Launch reserveLaunch(ApkStore.BundleInstall install,String process,String key,boolean external)throws Exception{
         int index=availableIndex(install,process,!external);

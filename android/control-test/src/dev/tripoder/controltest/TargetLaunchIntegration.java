@@ -56,10 +56,12 @@ public final class TargetLaunchIntegration extends ControlTestBase {
         if(recordFile.exists()){
             record=new JSONObject(java.nio.file.Files.readString(recordFile.toPath()));
             if(!expected.equals(record.getString("sha256")))throw new IllegalStateException("TARGET_RECEIPT_DIGEST_CHANGED");
+            if(args.containsKey("mode"))execute(session,"setProjectMode","operation",id(),"project",record.getString("project"),"mode",args.getString("mode"));
             Bundle resolved=execute(session,"resolveProject","project",record.getString("project"));
             if(!SPACE.equals(resolved.getString("space"))||!pkg.equals(resolved.getString("package"))||!record.getString("generation").equals(resolved.getString("generation"))||!record.getString("binding").equals(resolved.getString("bindingOperation")))throw new IllegalStateException("TARGET_BINDING_CHANGED");
         }else if((record=claimExistingInstall(session,catalog,pkg,expected,projects,title))!=null){
             atomicWrite(recordFile,record);
+            if(args.containsKey("mode"))execute(session,"setProjectMode","operation",id(),"project",record.getString("project"),"mode",args.getString("mode"));
         }else{
             String operation=id();Bundle installedResult;
             try(var fd=ParcelFileDescriptor.open(source,ParcelFileDescriptor.MODE_READ_ONLY)){
@@ -69,10 +71,11 @@ public final class TargetLaunchIntegration extends ControlTestBase {
             check("target-install-committed","SUCCEEDED".equals(execute(session,"query","operation",operation).getString("state")),json(installedResult));
             String project=(String)invoke(projects,"create",new Class<?>[]{String.class},title),binding=id(),generation=installedResult.getString("generation");
             execute(session,"bindProject","operation",binding,"project",project,"space",SPACE,"package",pkg,"generation",generation);
+            if(args.containsKey("mode"))execute(session,"setProjectMode","operation",id(),"project",project,"mode",args.getString("mode"));
             record=new JSONObject().put("project",project).put("binding",binding).put("generation",generation).put("sha256",expected);
             atomicWrite(recordFile,record);
         }
-        report.put("targetReceipt",record).put("space",SPACE);
+        report.put("targetReceipt",record).put("space",SPACE).put("projectMode",args.containsKey("mode")?args.getString("mode"):execute(session,"resolveProject","project",record.getString("project")).getString("mode"));
         if(args.containsKey("closeActivityTicket"))for(String ticket:args.getString("closeActivityTicket").split(",",-1)){
             UUID.fromString(ticket);JSONArray entries=new JSONArray(execute(session,"launchEntries","project",record.getString("project")).getString("entries"));String selected=null;
             for(int i=0;i<entries.length();i++){JSONObject item=entries.getJSONObject(i);if(ticket.equals(item.getString("ticket"))){if(selected!=null||!"ACTIVITY_ROUTE".equals(item.optString("kind")))throw new IllegalStateException("EXACT_ACTIVITY_ROUTE_REQUIRED");selected=item.getString("operation");}}
@@ -91,6 +94,7 @@ public final class TargetLaunchIntegration extends ControlTestBase {
         if("true".equals(args.getString("listEntries"))){report.put("installs",new JSONArray(catalog.getString("installs"))).put("launchEntries",new JSONArray(execute(session,"launchEntries","project",record.getString("project")).getString("entries"))).put("workerUid",android.os.Process.myUid());check("launch-entries-listed-without-launch",true,record.getString("project"));return;}
         if(args.containsKey("closeLaunchEntry"))closePriorEntry(session,record,args.getString("closeLaunchEntry"));
         else if(args.containsKey("customPackage")){
+            try{execute(session,"stopApplication","operation",id(),"space",SPACE,"package",pkg,"generation",record.getString("generation"));}catch(Exception ignored){}
             JSONArray priorEntries=new JSONArray(execute(session,"launchEntries","project",record.getString("project")).getString("entries"));
             for(int i=0;i<priorEntries.length();i++){
                 JSONObject item=priorEntries.getJSONObject(i);
@@ -103,6 +107,7 @@ public final class TargetLaunchIntegration extends ControlTestBase {
         if(launcher==null)throw new IllegalStateException("TARGET_LAUNCHER_MISSING");report.put("launcher",launcher);
         check("declared-launcher-policy-supported",launcher.getBoolean("supported"),launcher);
         String launch=id();report.put("launchOperation",launch);Bundle prepared;
+        long prepareStartMs=SystemClock.elapsedRealtime();
         try{prepared=execute(session,"prepareLaunch","operation",launch,"project",record.getString("project"),"bindingOperation",record.getString("binding"),"generation",record.getString("generation"),"component",launcher.getString("component"));}
         catch(Exception error){
             try{
@@ -112,17 +117,21 @@ public final class TargetLaunchIntegration extends ControlTestBase {
             }catch(Exception observation){error.addSuppressed(observation);}
             throw error;
         }
+        long prepareLaunchMs=SystemClock.elapsedRealtime()-prepareStartMs;
         Bundle worker=awaitWorker(session,record.getString("project"),prepared);
-        report.put("workerPid",worker.getInt("pid")).put("workerUid",worker.getInt("uid")).put("processGeneration",prepared.getString("generation"));check("target-application-initialized",worker.getInt("pid")>0&&worker.getInt("uid")==android.os.Process.myUid()&&worker.getInt("pid")!=android.os.Process.myPid(),json(preparedWithoutEntry(prepared)));
+        long workerReadyMs=SystemClock.elapsedRealtime()-prepareStartMs;
+        report.put("prepareLaunchMs",prepareLaunchMs).put("workerReadyMs",workerReadyMs).put("workerPid",worker.getInt("pid")).put("workerUid",worker.getInt("uid")).put("processGeneration",prepared.getString("generation"));check("target-application-initialized",worker.getInt("pid")>0&&worker.getInt("uid")==android.os.Process.myUid()&&worker.getInt("pid")!=android.os.Process.myPid(),json(preparedWithoutEntry(prepared)));
         java.util.concurrent.atomic.AtomicReference<Activity> page=new java.util.concurrent.atomic.AtomicReference<>();Application application=(Application)app;
         Application.ActivityLifecycleCallbacks observer=new Application.ActivityLifecycleCallbacks(){public void onActivityCreated(Activity a,Bundle b){if(a.getClass().getName().equals("dev.tripoder.hooklab.WorkbenchProjectActivity"))page.set(a);}public void onActivityStarted(Activity a){}public void onActivityResumed(Activity a){}public void onActivityPaused(Activity a){}public void onActivityStopped(Activity a){}public void onActivitySaveInstanceState(Activity a,Bundle b){}public void onActivityDestroyed(Activity a){}};
         application.registerActivityLifecycleCallbacks(observer);
         try{
             getTargetContext().startActivity(new Intent().setComponent(engineComponent("dev.tripoder.hooklab.WorkbenchProjectActivity")).putExtra("project",record.getString("project")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             long deadline=SystemClock.elapsedRealtime()+8000;while(page.get()==null&&SystemClock.elapsedRealtime()<deadline)SystemClock.sleep(25);if(page.get()==null)throw new IllegalStateException("PROJECT_PAGE_NOT_CREATED");waitForIdleSync();
+            long activityStartMs=SystemClock.elapsedRealtime();
             runOnMainSync(()->{Intent start=prepared.getParcelable("intent",Intent.class);android.util.Log.i("TripoderLaunch","controller start component="+start.getComponent().flattenToShortString()+" ticket="+start.getStringExtra("tripoder.ticket"));page.get().startActivity(start);});
-            Bundle receipt;deadline=SystemClock.elapsedRealtime()+15000;do{receipt=execute(session,"query","operation",launch);if(!"RUNNING".equals(receipt.getString("state")))break;SystemClock.sleep(100);}while(SystemClock.elapsedRealtime()<deadline);
-            report.put("launchReceipt",json(receipt));check("target-first-activity-acknowledged","SUCCEEDED".equals(receipt.getString("state")),json(receipt));
+            Bundle receipt;deadline=SystemClock.elapsedRealtime()+15000;do{receipt=execute(session,"query","operation",launch);if(!"RUNNING".equals(receipt.getString("state")))break;SystemClock.sleep(25);}while(SystemClock.elapsedRealtime()<deadline);
+            long firstActivityAckMs=SystemClock.elapsedRealtime()-activityStartMs;
+            report.put("firstActivityAckMs",firstActivityAckMs).put("totalLaunchMs",prepareLaunchMs+firstActivityAckMs).put("launchReceipt",json(receipt));check("target-first-activity-acknowledged","SUCCEEDED".equals(receipt.getString("state")),json(receipt));
         }finally{application.unregisterActivityLifecycleCallbacks(observer);}
         long stabilityMs=args.containsKey("stabilitySeconds")?Long.parseLong(args.getString("stabilitySeconds"))*1000L:30000L;
         JSONArray samples=new JSONArray();report.put("stabilitySamples",samples);long started=SystemClock.elapsedRealtime(),stableUntil=started+stabilityMs,lastSample=started,maxGap=0;int emptyStreak=0;
@@ -202,6 +211,7 @@ public final class TargetLaunchIntegration extends ControlTestBase {
             project=(String)invoke(projects,"create",new Class<?>[]{String.class},title);binding=id();
             execute(session,"bindProject","operation",binding,"project",project,"space",SPACE,"package",pkg,"generation",generation);
         }
+        if(args.containsKey("mode"))execute(session,"setProjectMode","operation",id(),"project",project,"mode",args.getString("mode"));
         Bundle resolved=execute(session,"resolveProject","project",project);
         if(!SPACE.equals(resolved.getString("space"))||!pkg.equals(resolved.getString("package"))||!generation.equals(resolved.getString("generation"))||!binding.equals(resolved.getString("bindingOperation")))throw new IllegalStateException("TARGET_CLAIM_BINDING_MISMATCH");
         JSONObject record=new JSONObject().put("project",project).put("binding",binding).put("generation",generation).put("sha256",expected);

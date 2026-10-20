@@ -8,9 +8,10 @@ import java.util.UUID;
 /** Durable Android task references. A dead process does not make its stub available. */
 final class ActivityLedger {
     private final RuntimeStore store;
+    private final ExecutionContract contract;
     private final ActivityComponentLedger components;
     final ActivityLaunchLedger launches;
-    ActivityLedger(RuntimeStore store,ExecutionContract contract,ActivityComponentLedger components){this.store=store;this.components=components;launches=new ActivityLaunchLedger(store,contract);}
+    ActivityLedger(RuntimeStore store,ExecutionContract contract,ActivityComponentLedger components){this.store=store;this.contract=contract;this.components=components;launches=new ActivityLaunchLedger(store,contract);}
     static void create(SQLiteDatabase db){db.execSQL("CREATE TABLE activity_tickets(ticket TEXT PRIMARY KEY, space TEXT NOT NULL, package TEXT NOT NULL, installGeneration TEXT NOT NULL, processName TEXT NOT NULL, stub TEXT NOT NULL, component TEXT NOT NULL, generation TEXT NOT NULL, state TEXT NOT NULL, instance TEXT, taskId INTEGER NOT NULL, resultOperation TEXT, processStub TEXT NOT NULL, destroyedConfirmed INTEGER NOT NULL DEFAULT 0, componentLease TEXT, resourceProof TEXT, entryFenceOperation TEXT)");}
     static final class Ticket {
         final String id,space,pkg,install,process,stub,component,generation,state,instance,resultOperation,processStub,componentLease,resourceProof;final int taskId;final boolean destroyedConfirmed;
@@ -27,19 +28,25 @@ final class ActivityLedger {
         return prepareWithCommit(slot,component,resultOperation,launchOperation,callerPackage,payloadDigest,source,0,associate);
     }
     private String prepareWithCommit(RuntimeBroker.Slot slot,String component,String resultOperation,String launchOperation,String callerPackage,String payloadDigest,Ticket source,int flags,java.util.function.Consumer<String> associate){
-        String ticket=UUID.randomUUID().toString();var identity=slot.allocation.session.identity;
+        String ticket=UUID.randomUUID().toString();var identity=slot.allocation.session.identity;boolean thin=slot.mode==RuntimeMode.THIN&&launchOperation!=null&&!ControllerTrust.OPERATIONS.equals(contract.query(launchOperation).callerIdentity);
         components.releaseUnused();
         var db=store.getWritableDatabase();db.beginTransaction();try{
             String stub=components.acquire(slot,component);
-            ContentValues row=new ContentValues();row.put("ticket",ticket);row.put("space",identity.spaceId);row.put("package",identity.packageName);row.put("installGeneration",identity.installGeneration);row.put("processName",identity.processName);row.put("stub",stub);row.put("processStub",slot.activityStub);row.put("component",component);row.put("generation",slot.allocation.session.processGeneration);row.put("state","PREPARED");row.put("taskId",-1);row.put("resultOperation",resultOperation);
-            row.put("componentLease",components.lease(stub));db.insertOrThrow("activity_tickets",null,row);launches.prepare(ticket,identity.processGeneration,launchOperation,resultOperation!=null,callerPackage,payloadDigest,source,flags);associate.accept(ticket);db.setTransactionSuccessful();return ticket;
+            ContentValues row=new ContentValues();row.put("ticket",ticket);row.put("space",identity.spaceId);row.put("package",identity.packageName);row.put("installGeneration",identity.installGeneration);row.put("processName",identity.processName);row.put("stub",stub);row.put("processStub",slot.activityStub);row.put("component",component);row.put("generation",slot.allocation.session.processGeneration);row.put("state",thin?"LIVE":"PREPARED");row.put("taskId",thin&&source!=null&&source.taskId>=0&&(flags&android.content.Intent.FLAG_ACTIVITY_NEW_TASK)==0?source.taskId:-1);row.put("resultOperation",resultOperation);
+            if(thin){row.put("instance",ticket);row.put("resourceProof","OWNED_TASK_ATTACHED");}
+            row.put("componentLease",components.lease(stub));db.insertOrThrow("activity_tickets",null,row);String delivery=launches.prepare(ticket,identity.processGeneration,launchOperation,resultOperation!=null,callerPackage,payloadDigest,source,flags);
+            if(thin){Ticket prepared=get(ticket);launches.enter(delivery,prepared,prepared,ticket,"CREATE",payloadDigest);launches.received(delivery,ticket,ticket);}
+            associate.accept(ticket);db.setTransactionSuccessful();return ticket;
         }finally{db.endTransaction();}
     }
     void releaseUnused(){components.releaseUnused();}
     /** The physical start for a controller-created root: a launcher-style entry whose stub roots a fresh task the platform then owns. */
     android.content.Intent controllerEntry(android.content.Context host,String id,boolean launcher){
-        Ticket ticket=get(id);android.content.Intent intent=new android.content.Intent().setComponent(new android.content.ComponentName(host,ticket.stub)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK|android.content.Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
-            .putExtra("tripoder.component",ticket.component).putExtra("tripoder.generation",ticket.generation).putExtra("tripoder.ticket",id).putExtra("tripoder.delivery",launches.forTicket(id));
+        Ticket ticket=get(id);String delivery=launches.forTicket(id);var launch=launches.get(delivery);
+        android.content.Intent intent=new android.content.Intent().setComponent(new android.content.ComponentName(host,ticket.stub)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK|android.content.Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+            .putExtra("tripoder.component",ticket.component).putExtra("tripoder.generation",ticket.generation).putExtra("tripoder.ticket",id).putExtra("tripoder.delivery",delivery)
+            .putExtra("tripoder.callerKind",launch.callerKind).putExtra("tripoder.callerPackage",launch.callerPackage).putExtra("tripoder.expectsResult",launch.expectsResult);
+        if(launch.callerComponent!=null)intent.putExtra("tripoder.callerComponent",launch.callerComponent);
         if(launcher)intent.setAction(android.content.Intent.ACTION_MAIN).addCategory(android.content.Intent.CATEGORY_LAUNCHER);return intent;
     }
     void releaseComponentsForUninstall(String space,String pkg){components.releaseForUninstall(space,pkg);}
@@ -83,7 +90,17 @@ final class ActivityLedger {
     Ticket get(String id){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT * FROM activity_tickets WHERE ticket=?",new String[]{id})){if(!c.moveToFirst())throw new SecurityException("ACTIVITY_TICKET_MISSING");return new Ticket(c);}}
     void caller(String delivery,android.os.Bundle out){var launch=launches.get(delivery);launch.caller(out);if("ACTIVITY".equals(launch.callerKind))out.putString("callerPhysical",get(launch.sourceTicket).stub);}
     Ticket source(String id,String instance,RuntimeBroker.Slot slot,int taskId){
-        Ticket ticket=instance(id,slot.allocation.session.processGeneration,instance);requireOwner(ticket,slot);
+        boolean thin=slot.mode==RuntimeMode.THIN;
+        Ticket ticket=thin?get(id):instance(id,slot.allocation.session.processGeneration,instance);requireOwner(ticket,slot);
+        if(thin){
+            if(!ticket.generation.equals(slot.allocation.session.processGeneration))throw new SecurityException("ACTIVITY_INSTANCE_STALE");
+            if(taskId>=0&&(ticket.taskId!=taskId||!"LIVE".equals(ticket.state)||ticket.instance==null)){
+                ContentValues row=new ContentValues();row.put("taskId",taskId);row.put("resourceProof","OWNED_TASK_ATTACHED");
+                if(ticket.instance==null)row.put("instance",instance!=null&&!instance.isEmpty()?instance:id);
+                if("PREPARED".equals(ticket.state)||"CLAIMED".equals(ticket.state))row.put("state","LIVE");
+                update(id,row);ticket=get(id);
+            }
+        }
         // onCreate may start an Activity before its postCreated ACK. Attachment is already
         // confirmed at this point. Destruction/recreation invalidates the old instance.
         if(ticket.taskId<0||ticket.destroyedConfirmed||!(ticket.state.equals("CLAIMED")||ticket.state.equals("LIVE")||ticket.state.equals("FINISHED")))throw new SecurityException("ACTIVITY_SOURCE_NOT_ATTACHED");
@@ -98,13 +115,20 @@ final class ActivityLedger {
         if(!ticket.component.equals(component)||!ticket.generation.equals(slot.allocation.session.processGeneration)||!ticket.stub.equals(stub))throw new SecurityException("ACTIVITY_TICKET_SESSION_MISMATCH");
         if(!ticket.state.equals("PREPARED")&&!ticket.state.equals("RECREATING"))throw new SecurityException("ACTIVITY_TICKET_NOT_CLAIMABLE:"+ticket.state);
         if(!launches.forTicket(id).equals(delivery))throw new SecurityException("ACTIVITY_DELIVERY_TICKET_MISMATCH");
-        var db=store.getWritableDatabase();db.beginTransaction();try{if(ticket.state.equals("PREPARED"))launches.enter(delivery,ticket,ticket,instance,"CREATE",payloadDigest);
-            ContentValues row=new ContentValues();row.put("state","CLAIMED");row.put("instance",instance);row.put("destroyedConfirmed",0);update(id,row);db.setTransactionSuccessful();
+        boolean thin=slot.mode==RuntimeMode.THIN;
+        var db=store.getWritableDatabase();db.beginTransaction();try{
+            if(ticket.state.equals("PREPARED")){
+                launches.enter(delivery,ticket,ticket,instance,"CREATE",payloadDigest);
+                if(thin)launches.received(delivery,id,instance);
+            }
+            ContentValues row=new ContentValues();row.put("state",thin?"LIVE":"CLAIMED");row.put("instance",instance);row.put("destroyedConfirmed",0);
+            if(thin)row.put("resourceProof","OWNED_TASK_ATTACHED");
+            update(id,row);db.setTransactionSuccessful();
         }finally{db.endTransaction();}
     }
-    void attached(String id,String generation,String instance,int taskId){Ticket ticket=instance(id,generation,instance);if(!ticket.state.equals("CLAIMED"))throw new SecurityException("ACTIVITY_ATTACH_STATE");components.requireOwnTask(taskId);ContentValues row=new ContentValues();row.put("taskId",taskId);row.put("resourceProof","OWNED_TASK_ATTACHED");update(id,row);}
+    void attached(String id,String generation,String instance,int taskId){Ticket ticket=instance(id,generation,instance);if(!ticket.state.equals("CLAIMED")&&!ticket.state.equals("LIVE"))throw new SecurityException("ACTIVITY_ATTACH_STATE");components.requireOwnTask(taskId);ContentValues row=new ContentValues();row.put("taskId",taskId);row.put("resourceProof","OWNED_TASK_ATTACHED");update(id,row);}
     void created(String id,String generation,String instance,int taskId){
-        Ticket ticket=instance(id,generation,instance);if((!ticket.state.equals("CLAIMED")&&!ticket.state.equals("FINISHED"))||taskId<0)throw new SecurityException("ACTIVITY_CREATE_STATE");ContentValues row=new ContentValues();row.put("state",ticket.state.equals("FINISHED")?"FINISHED":"LIVE");row.put("taskId",taskId);update(id,row);
+        Ticket ticket=instance(id,generation,instance);if((!ticket.state.equals("CLAIMED")&&!ticket.state.equals("LIVE")&&!ticket.state.equals("FINISHED"))||taskId<0)throw new SecurityException("ACTIVITY_CREATE_STATE");ContentValues row=new ContentValues();row.put("state",ticket.state.equals("FINISHED")?"FINISHED":"LIVE");row.put("taskId",taskId);update(id,row);
         String delivery=launches.forTicket(id);if(launches.get(delivery).state.equals("ENTERED"))launches.received(delivery,id,instance);
     }
     void newIntent(String receiver,String instance,RuntimeBroker.Slot slot,String candidate,String delivery,String stub,String payloadDigest){
@@ -120,7 +144,7 @@ final class ActivityLedger {
         }finally{db.endTransaction();}
     }
     void destroyed(String id,String generation,String instance,boolean finishing,int taskId){
-        Ticket ticket=instance(id,generation,instance);
+        Ticket ticket=get(id);if(!ticket.generation.equals(generation)||(ticket.instance!=null&&!ticket.instance.equals(instance)&&!ticket.id.equals(ticket.instance)))throw new SecurityException("ACTIVITY_INSTANCE_STALE");
         if(!ticket.state.equals("LIVE")&&!ticket.state.equals("FINISHED"))throw new SecurityException("ACTIVITY_DESTROY_STATE");
         ContentValues row=new ContentValues();row.put("destroyedConfirmed",finishing?1:0);row.put("taskId",taskId);row.put("state",ticket.state.equals("FINISHED")||finishing?"FINISHED":"RECREATING");update(id,row);
     }

@@ -14,7 +14,7 @@ import java.util.*;
 public final class WorkbenchProjectActivity extends Activity implements EngineConnection.Listener {
     private static final String[] TABS={"脚本","运行与部署","外部 Agent"};
     private WorkbenchApplication app;private String id,name="",savedSource="",lease="";private EditText editor;
-    private TextView binding,meta,saveNote,recoveryText,title;private Button bind,save,launch;private LinearLayout tabBar,recovery;private View[] pages;private ProductUi.Status status;
+    private TextView binding,meta,saveNote,recoveryText,title;private Button bind,modeButton,save,launch;private LinearLayout tabBar,recovery;private View[] pages;private ProductUi.Status status;
     private WorkbenchCatalog catalog;private WorkbenchHookPanel hooks;private WorkbenchAgentPanel agents;
     private boolean destroyed,loading,tabDirty;private int settled,tab;private final Runnable operationObserver=this::operationChanged;
     @Override public void onCreate(Bundle saved){
@@ -45,7 +45,8 @@ public final class WorkbenchProjectActivity extends Activity implements EngineCo
     private View deployPage(){
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);LinearLayout page=ProductUi.column(this);page.setPadding(d(16),d(4),d(16),d(28));scroll.addView(page);
         LinearLayout target=ProductUi.card(this);ProductUi.add(target,ProductUi.label(this,"运行目标"),0);binding=ProductUi.text(this,"正在确认运行目标…",15,ProductUi.INK,true);ProductUi.add(target,binding,10);
-        bind=ProductUi.button(this,"选择运行目标",false,this::chooseTarget);launch=ProductUi.button(this,"启动应用",true,this::launch);ProductUi.pair(target,bind,launch);ProductUi.add(page,target,0);
+        bind=ProductUi.button(this,"选择运行目标",false,this::chooseTarget);launch=ProductUi.button(this,"启动应用",true,this::launch);ProductUi.pair(target,bind,launch);
+        modeButton=ProductUi.button(this,"运行模式：厚重模式",false,this::chooseMode);ProductUi.add(target,modeButton,8);ProductUi.add(page,target,0);
         recovery=ProductUi.card(this);recovery.setBackground(ProductUi.shape(ProductUi.WARN_BG,18,this));recoveryText=ProductUi.text(this,"",13,ProductUi.WARN,false);recovery.addView(recoveryText);
         ProductUi.pair(recovery,ProductUi.button(this,"刷新结果",false,()->app.operations.query()),ProductUi.button(this,"结束等待",false,()->ProductUi.confirm(this,"结束等待？","引擎会先确认这次启动没有真正开始、应用也没有在运行。确认后可以重新启动；不会重试原来的启动。","结束等待",false,()->app.operations.acknowledgeUnknown(id))));
         recovery.setVisibility(View.GONE);ProductUi.add(page,recovery,12);
@@ -76,7 +77,7 @@ public final class WorkbenchProjectActivity extends Activity implements EngineCo
     @Override protected void onResume(){super.onResume();if(binding!=null&&app!=null&&app.engine.ready()){app.operations.query();refresh();}}
     @Override public void changed(){if(destroyed||binding==null)return;updateActions();if(!app.engine.ready()){catalog=null;lease="";binding.setText(app.engine.failure.isEmpty()?"正在连接运行引擎…":"运行引擎未连接："+app.engine.failure);return;}if(!lease.equals(app.engine.lease)){lease=app.engine.lease;refresh();}}
     private boolean bound(){return catalog!=null&&catalog.bindings.containsKey(id)&&"COMMITTED".equals(catalog.bindings.get(id).optString("state"));}
-    private void updateActions(){boolean busy=app.operations.busyProject(id);bind.setEnabled(!busy&&app.engine.ready());launch.setEnabled(!busy&&app.engine.ready()&&bound());launch.setText(busy?"正在处理…":"启动应用");}
+    private void updateActions(){boolean busy=app.operations.busyProject(id),bound=bound();bind.setEnabled(!busy&&app.engine.ready());modeButton.setEnabled(!busy&&app.engine.ready()&&bound);modeButton.setVisibility(bound?View.VISIBLE:View.GONE);launch.setEnabled(!busy&&app.engine.ready()&&bound);launch.setText(busy?"正在处理…":"启动应用");}
     private void operationChanged(){
         if(destroyed||status==null)return;
         // A deletion receipt removes the source; the page has nothing left to show.
@@ -88,7 +89,9 @@ public final class WorkbenchProjectActivity extends Activity implements EngineCo
     private void refresh(){
         if(loading||!app.engine.ready())return;loading=true;String current=app.engine.lease;
         app.engine.execute(ControlWire.request("catalog"),(value,error)->{loading=false;if(destroyed||!current.equals(app.engine.lease))return;if(error!=null){show(error);return;}try{
-            catalog=new WorkbenchCatalog(value);JSONObject ref=catalog.bindings.get(id);bind.setText(ref==null?"选择运行目标":"更换目标");updateActions();
+            catalog=new WorkbenchCatalog(value);JSONObject ref=catalog.bindings.get(id);bind.setText(ref==null?"选择运行目标":"更换目标");
+            String modeLabel=UiText.runtimeMode(ref==null?"thin":ref.optString("mode","thin"));
+            modeButton.setText("运行模式："+modeLabel);updateActions();
             if(ref==null){binding.setText("还没有选择运行目标\n选择一个已添加的应用后，才能启动和部署脚本。");return;}
             String appName=catalog.appName(app,ref.getString("package")),space=app.spaces.name(ref.getString("space"));
             if(!"COMMITTED".equals(ref.getString("state"))){
@@ -98,8 +101,19 @@ public final class WorkbenchProjectActivity extends Activity implements EngineCo
                 else binding.setText(appName+"\n应用已从所有空间移除。重新添加这个应用后可以继续使用本项目。");
                 return;
             }
-            binding.setText(appName+"\n空间："+space+" · 正在确认…");app.engine.execute(ControlWire.request("resolveProject","project",id),(target,failure)->{if(destroyed||!current.equals(app.engine.lease))return;if(failure!=null){binding.setText(appName+"\n"+UiText.error(failure));return;}binding.setText(appName+"\n空间："+space+" · 已就绪");});
+            binding.setText(appName+"\n空间："+space+" · 模式："+modeLabel+" · 正在确认…");app.engine.execute(ControlWire.request("resolveProject","project",id),(target,failure)->{if(destroyed||!current.equals(app.engine.lease))return;if(failure!=null){binding.setText(appName+"\n"+UiText.error(failure));return;}String resolvedMode=UiText.runtimeMode(target.getString("mode","thin"));modeButton.setText("运行模式："+resolvedMode);binding.setText(appName+"\n空间："+space+" · 模式："+resolvedMode+" · 已就绪");});
         }catch(Exception invalid){show(invalid);}});
+    }
+    private void chooseMode(){
+        if(!app.engine.ready()||!bound())return;
+        JSONObject ref=catalog.bindings.get(id);String current=ref==null?"thin":ref.optString("mode","thin");
+        String[] codes={"thick","thin"};
+        String[] labels={"厚重模式 (thick) · 完整隔离与深度记账","薄壳模式 (thin) · 最小身份重写与直通系统（当前默认）"};
+        int checked="thin".equals(current)?1:0;
+        new AlertDialog.Builder(this).setTitle("选择运行模式").setSingleChoiceItems(labels,checked,(dialog,index)->{
+            dialog.dismiss();String selected=codes[index];if(selected.equals(current))return;
+            try{app.operations.submit(ControlWire.request("setProjectMode","operation",UUID.randomUUID().toString(),"project",id,"mode",selected),"切换运行模式为"+UiText.runtimeMode(selected),null);}catch(Exception error){show(error);}
+        }).setNegativeButton("取消",null).show();
     }
     /** The same application's current installation in the bound space, once the bound one was updated. */
     private JSONObject successor(JSONObject ref){

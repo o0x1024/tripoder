@@ -57,14 +57,18 @@ final class RuntimeProviderBroker {
             if(existing&&(to==null||!broker.providers.find(to.allocation.session.processGeneration,component).getString("publication").equals("READY")))return new Bundle();
         }
         if(!existing&&!local)to=broker.processes.prepare(space,install.info.packageName,process);
-        String target;Bundle publication;
+        String target;Bundle publication;boolean thin;
         synchronized(broker){
-            broker.contract.authenticate(source,pid,uid);target=to.allocation.session.processGeneration;
+            var session=broker.contract.authenticate(source,pid,uid);target=to.allocation.session.processGeneration;
             if(broker.requiredSlot(target)!=to||!to.install.generation.equals(install.generation))throw new SecurityException("PROVIDER_STALE_INSTALL");
             publication=broker.providers.find(target,component);
+            var sourceSlot=broker.requiredSlot(source);
+            thin=sourceSlot.mode==RuntimeMode.THIN&&to.mode==RuntimeMode.THIN;
+            if(thin)publication.putString("callerPackage",session.identity.packageName);
         }
-        String cap=broker.providers.acquire(source,publication,logical,input.getBoolean("stable"));
-        publication.putString("cap",cap);publication.putString("authority",logical);publication.putBoolean("local",local);publication.putString("physical",RuntimeProviderTransport.authority(broker.host,RuntimeSlot.index(to.activityStub)));return publication;
+        publication.putBoolean("thin",thin);
+        publication.putString("cap",thin?publication.getString("lease"):broker.providers.acquire(source,publication,logical,input.getBoolean("stable")));
+        publication.putString("authority",logical);publication.putBoolean("local",local);publication.putString("physical",RuntimeProviderTransport.authority(broker.host,RuntimeSlot.index(to.activityStub)));return publication;
     }
     Bundle handle(int code,Bundle input,String generation)throws Exception{
         return handleTransaction(code,input,generation);

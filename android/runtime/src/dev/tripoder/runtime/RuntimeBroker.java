@@ -49,9 +49,9 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
         activityStarts=new ActivityStartReceipts(store,context,activities,this);processes=new ProcessSupervisor(this);
     }
     public static final class Slot {
-        public final ApkStore.BundleInstall install;public final ExecutionContract.Allocation allocation;public final String activityStub;public IBinder peer;boolean closing;
+        public final ApkStore.BundleInstall install;public final ExecutionContract.Allocation allocation;public final String activityStub;public final RuntimeMode mode;public IBinder peer;boolean closing;
         final long startupDeadlineElapsed=RuntimeStartupDeadline.after(SystemClock.elapsedRealtime());
-        Slot(ApkStore.BundleInstall i,ExecutionContract.Allocation a,String stub){install=i;allocation=a;activityStub=stub;}
+        Slot(ApkStore.BundleInstall i,ExecutionContract.Allocation a,String stub,RuntimeMode m){install=i;allocation=a;activityStub=stub;mode=m;}
     }
     public synchronized Bundle allocate(ApkStore.BundleInstall install,String processName,String stub,IBinder peer)throws Exception {
         return processes.claimComponent(reserve(install,processName,stub),peer);
@@ -69,9 +69,15 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
             if(old.activityStub.equals(stub))throw new IllegalStateException("PROCESS_SLOT_IN_USE");
             if(old.install.space.equals(install.space)&&old.install.info.packageName.equals(install.info.packageName)&&old.allocation.session.identity.processName.equals(processName))throw new IllegalStateException("PROCESS_ALREADY_ALLOCATED");
         }
+        RuntimeMode mode=resolveMode(install.space,install.info.packageName,install.generation);
         ExecutionContract.Allocation a=contract.allocate(install.space,install.info.packageName,install.generation,processName,android.os.Process.myUid());
-        Slot slot=new Slot(install,a,stub);var db=store.getWritableDatabase();db.beginTransaction();try{store.reserve(a.session,stub);providers.reserve(slot);db.setTransactionSuccessful();}finally{db.endTransaction();}
+        Slot slot=new Slot(install,a,stub,mode);var db=store.getWritableDatabase();db.beginTransaction();try{store.reserve(a.session,stub);providers.reserve(slot);db.setTransactionSuccessful();}finally{db.endTransaction();}
         slots.put(a.session.processGeneration,slot);return slot;
+    }
+    private RuntimeMode resolveMode(String space,String pkg,String generation){
+        List<String> modes=new ArrayList<>();
+        try(android.database.Cursor c=store.getReadableDatabase().rawQuery("SELECT mode FROM project_refs WHERE space=? AND package=? AND generation=? AND kind='DIRECT' AND state='COMMITTED' ORDER BY id",new String[]{space,pkg,generation})){while(c.moveToNext())modes.add(c.getString(0));}
+        return RuntimeMode.resolve(modes);
     }
     synchronized Bundle attachPeer(Slot slot,IBinder peer)throws Exception{
         String generation=slot.allocation.session.processGeneration;
@@ -79,7 +85,7 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
         // ProcessSupervisor owns the sole death observation and its drain ACK.
         // A second listener here can write after that ACK let authority close.
         slot.peer=peer;
-        Bundle input=slot.install.wire();input.putLong("startupDeadlineElapsed",slot.startupDeadlineElapsed);input.putBundle("providers",providers.publications(generation));input.putString("generation",generation);input.putString("processName",slot.allocation.session.identity.processName);input.putString("bootstrap",slot.allocation.bootstrapToken);input.putBinder("broker",this);return input;
+        Bundle input=slot.install.wire();input.putString(RuntimeMode.KEY,slot.mode.wire);input.putLong("startupDeadlineElapsed",slot.startupDeadlineElapsed);input.putBundle("providers",providers.publications(generation));input.putString("generation",generation);input.putString("processName",slot.allocation.session.identity.processName);input.putString("bootstrap",slot.allocation.bootstrapToken);input.putBinder("broker",this);return input;
     }
     String retainedStub(ApkStore.BundleInstall install,String process){
         String retained=null;
@@ -90,7 +96,7 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
     synchronized Slot findProcess(String space,String pkg,String process){for(Slot s:slots.values())if(s.install.space.equals(space)&&s.install.info.packageName.equals(pkg)&&s.allocation.session.identity.processName.equals(process))return s;return null;}
     synchronized boolean stubUsed(String stub){for(Slot s:slots.values())if(s.activityStub.equals(stub))return true;return false;}
     synchronized List<Slot> processSlots(){return new ArrayList<>(slots.values());}
-    synchronized Bundle processEvidence(Slot slot){var s=contract.getSession(slot.allocation.session.processGeneration);Bundle b=new Bundle();b.putString("generation",s.processGeneration);b.putString("installGeneration",s.identity.installGeneration);b.putString("processName",s.identity.processName);b.putString("state",s.state.name());b.putInt("pid",s.pid);b.putInt("uid",s.uid);return b;}
+    synchronized Bundle processEvidence(Slot slot){var s=contract.getSession(slot.allocation.session.processGeneration);Bundle b=new Bundle();b.putString("generation",s.processGeneration);b.putString("installGeneration",s.identity.installGeneration);b.putString("processName",s.identity.processName);b.putString("mode",slot.mode.wire);b.putString("state",s.state.name());b.putInt("pid",s.pid);b.putInt("uid",s.uid);return b;}
     public synchronized void dead(String generation){jobAttempts.dead(generation);hookClaims.dead(generation);contract.markDead(generation);store.deadSession(generation);activities.launches.dead(generation);providers.dead(generation,contract);providerBroker.dead(generation);broadcasts.dead(generation,contract);slots.remove(generation);for(var e:deliveries.entrySet())if(e.getValue().source.equals(generation)||e.getValue().target.equals(generation)){var operation=contract.query(e.getKey());if(operation.state==ExecutionContract.OperationState.RUNNING){contract.markUnknown(e.getKey(),"PROCESS_DIED_BEFORE_DELIVERY_ACK");trace("delivery-unknown",e.getKey());}}}
     private void trace(String stage,String op){try{synchronized(events){events.put(new JSONObject().put("stage",stage).put("operation",op).put("operationState",contract.query(op).state.name()).put("time",System.currentTimeMillis()));}}catch(JSONException e){throw new IllegalStateException(e);}}
     public synchronized void remove(String space,String pkg){for(Slot s:slots.values())if(s.install.space.equals(space)&&s.install.info.packageName.equals(pkg))throw new IllegalStateException("INSTALL_IN_USE");apks.removeRecord(space,pkg);}
@@ -244,7 +250,7 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
                 contract.authenticate(generation,pid,uid);var caller=fromContext?null:activities.source(sourceTicket,sourceInstance,requiredSlot(generation),input.getInt("taskId",-1));String toGen=to.allocation.session.processGeneration;
                 if(requiredSlot(toGen)!=to||!to.install.generation.equals(target.generation))throw new IllegalStateException("STALE_INSTALL");
                 String callback=null;if(wantsResult){callback=contract.issueCallback(generation,toGen,op,System.currentTimeMillis()+60000);lastCallback=callback;lastOperation=op;deliveries.put(op,new Delivery(generation,toGen,sourceTicket));}
-                String ticket=activities.prepare(to,component,wantsResult?op:null,op,source.identity.packageName,payloadDigest,caller,input.getInt("flags",0));Bundle result=new Bundle();result.putString("stub",activities.get(ticket).stub);result.putString("generation",toGen);if(callback!=null)result.putString("callback",callback);result.putString("operation",op);result.putString("ticket",ticket);result.putString("delivery",activities.launches.forTicket(ticket));return result;
+                String ticket=activities.prepare(to,component,wantsResult?op:null,op,source.identity.packageName,payloadDigest,caller,input.getInt("flags",0));String delivery=activities.launches.forTicket(ticket);Bundle result=new Bundle();result.putString("stub",activities.get(ticket).stub);result.putString("generation",toGen);if(callback!=null)result.putString("callback",callback);result.putString("operation",op);result.putString("ticket",ticket);result.putString("delivery",delivery);activities.caller(delivery,result);return result;
             }
         }catch(Exception error){synchronized(this){if(contract.query(op).state==ExecutionContract.OperationState.RUNNING)contract.markUnknown(op,"COMPONENT_PREPARATION_UNCONFIRMED");}throw error;}
     }

@@ -24,7 +24,7 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
     private final java.util.Set<String> deadGenerations=java.util.concurrent.ConcurrentHashMap.newKeySet();
     public RuntimeStore(Context context) {
         // P0's experimental database is retained as historical data, never implicitly promoted.
-        super(context, "tripoder-runtime-v2.db", null, 33);
+        super(context, "tripoder-runtime-v2.db", null, 34);
         setWriteAheadLoggingEnabled(true);
         synchronized(RuntimeStore.class){try {
             File directory=new File(context.getFilesDir(),"runtime");
@@ -45,12 +45,12 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
         db.execSQL("CREATE TABLE installs(space TEXT NOT NULL REFERENCES spaces(id), package TEXT NOT NULL, generation TEXT UNIQUE NOT NULL, apk TEXT NOT NULL, sha256 TEXT NOT NULL, descriptorSha TEXT NOT NULL, state TEXT NOT NULL, reason TEXT NOT NULL, version INTEGER NOT NULL, signer TEXT NOT NULL, dataId TEXT NOT NULL, operation TEXT NOT NULL, PRIMARY KEY(space,package))");
         InstallProviderIndex.create(db);
         db.execSQL("CREATE TABLE sessions(generation TEXT PRIMARY KEY, space TEXT NOT NULL, package TEXT NOT NULL, installGeneration TEXT NOT NULL, pid INTEGER NOT NULL, state TEXT NOT NULL, processName TEXT, activityStub TEXT, authorityGeneration TEXT, hookOperation TEXT, closeRequested INTEGER NOT NULL DEFAULT 0)");
-        db.execSQL("CREATE TABLE project_refs(id TEXT PRIMARY KEY, space TEXT NOT NULL, package TEXT NOT NULL, generation TEXT NOT NULL, sourceSha TEXT NOT NULL, snapshot TEXT NOT NULL, state TEXT NOT NULL, operation TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'MIGRATED')");
+        db.execSQL("CREATE TABLE project_refs(id TEXT PRIMARY KEY, space TEXT NOT NULL, package TEXT NOT NULL, generation TEXT NOT NULL, sourceSha TEXT NOT NULL, snapshot TEXT NOT NULL, state TEXT NOT NULL, operation TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'MIGRATED', mode TEXT NOT NULL DEFAULT 'thin')");
         ActivityLedger.create(db);ActivityComponentLedger.create(db);ActivityAffinityLedger.create(db);ActivityEntryLedger.create(db);ActivityLaunchLedger.create(db);ServiceLedger.create(db);ProviderLedger.create(db);BroadcastLedger.create(db);ApplicationStartLedger.create(db);InstallHistory.create(db);JobLedger.create(db);JobAttemptLedger.create(db);PendingIntentLedger.create(db);
     }
     @Override public void onConfigure(SQLiteDatabase db) { db.enableWriteAheadLogging();db.execSQL("PRAGMA synchronous=NORMAL");db.setForeignKeyConstraintsEnabled(true); }
     @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        if(oldVersion<1||oldVersion>32||newVersion!=33)throw new IllegalStateException("SCHEMA_VERSION_UNSUPPORTED");
+        if(oldVersion<1||oldVersion>33||newVersion!=34)throw new IllegalStateException("SCHEMA_VERSION_UNSUPPORTED");
         // Explicit, transactional schema migration. Historical sessions never regain authority.
         if(oldVersion==1){db.execSQL("ALTER TABLE sessions ADD COLUMN processName TEXT");
         db.execSQL("ALTER TABLE sessions ADD COLUMN activityStub TEXT");
@@ -103,6 +103,7 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
         // The controller launch ingress table (schema 18-32) is retired; activity_launches records which
         // operation created each controller root (callerKind CONTROLLER).
         if(oldVersion<33)db.execSQL("DROP TABLE IF EXISTS controller_launches");
+        if(oldVersion<34)db.execSQL("ALTER TABLE project_refs ADD COLUMN mode TEXT NOT NULL DEFAULT 'thick'");
     }
     private void requireAuthority(){if(closed||authorityLock==null||!authorityLock.isValid())throw new IllegalStateException("AUTHORITY_CLOSED");}
     @Override public SQLiteDatabase getReadableDatabase(){requireAuthority();return super.getReadableDatabase();}

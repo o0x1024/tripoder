@@ -48,6 +48,11 @@ final class UiText {
             {"DELETE_SPACE_PARTIAL","空间只清理了一部分，请再次删除空间以完成"},
             {"SPACE_NOT_FOUND","空间已不存在，请刷新"},
             {"DELETE_PROJECT_REJECTED","项目没有删除"},
+            {"PROJECT_MODE_REJECTED","运行模式没有修改"},
+            {"PROJECT_PROCESS_RUNNING_STOP_FIRST","应用正在运行，请先强行停止应用后再切换运行模式"},
+            {"RUNTIME_MODE_NOT_IMPLEMENTED","所选运行模式（薄壳模式）尚未实现，请切回厚重模式后再启动"},
+            {"RUNTIME_MODE_UNKNOWN","不支持的运行模式"},
+            {"RUNTIME_MODE_CONFLICT","同一安装绑定了多个运行模式不一致的项目，请统一项目的运行模式"},
         };
         for(String[] row:rows)CODES.put(row[0],row[1]);
     }
@@ -91,6 +96,13 @@ final class UiText {
             case "OPEN":return "已授权";
             case "CLOSED":return "已结束";
             default:return state==null||state.isEmpty()?"未知":state;
+        }
+    }
+    static String runtimeMode(String mode){
+        switch(mode==null?"":mode){
+            case "thick":return "厚重模式";
+            case "thin":return "薄壳模式";
+            default:return mode==null||mode.isEmpty()?"厚重模式":mode;
         }
     }
     static String duration(long ms){long s=Math.max(0,ms/1000);return s<60?s+" 秒":"约 "+((s+59)/60)+" 分钟";}

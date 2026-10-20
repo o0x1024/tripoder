@@ -59,6 +59,29 @@ public final class ApkManifest {
     static ApkManifest fromJsonReader(android.util.JsonReader r)throws Exception{
         return new ApkManifest(elementFromJsonReader(r,0));
     }
+    static Element componentElementFromJsonReader(android.util.JsonReader r,int depth)throws Exception{
+        if(depth>8)throw bad("MANIFEST_COMPLEXITY");
+        String name=null,namespace="";Map<String,String> attrs=new TreeMap<>();List<Element> children=new ArrayList<>();
+        r.beginObject();
+        while(r.hasNext()){
+            switch(r.nextName()){
+                case "name"->name=r.nextString();
+                case "namespace"->namespace=r.nextString();
+                case "attributes"->{r.beginObject();while(r.hasNext())attrs.put(r.nextName(),r.nextString());r.endObject();}
+                case "children"->{
+                    r.beginArray();
+                    while(r.hasNext()){
+                        Element child=componentElementFromJsonReader(r,depth+1);
+                        if("intent-filter".equals(child.name)||"action".equals(child.name)||"category".equals(child.name)||"data".equals(child.name)||"meta-data".equals(child.name)||"processes".equals(child.name)||"process".equals(child.name))children.add(child);
+                    }
+                    r.endArray();
+                }
+                default->r.skipValue();
+            }
+        }
+        r.endObject();
+        return new Element(name,namespace,attrs,children);
+    }
     private static Element elementFromJsonReader(android.util.JsonReader r,int depth)throws Exception{
         String name=null,namespace="";Map<String,String> attrs=new TreeMap<>();List<Element> children=new ArrayList<>();
         r.beginObject();
@@ -73,6 +96,13 @@ public final class ApkManifest {
                         while(r.hasNext()){
                             Element child=elementFromJsonReader(r,1);
                             if("application".equals(child.name)||"uses-sdk".equals(child.name)||"uses-split".equals(child.name))children.add(child);
+                        }
+                        r.endArray();
+                    }else if(depth==1){
+                        r.beginArray();
+                        while(r.hasNext()){
+                            Element child=componentElementFromJsonReader(r,2);
+                            if(Set.of("activity","activity-alias","service","receiver","provider","processes").contains(child.name))children.add(child);
                         }
                         r.endArray();
                     }else r.skipValue();

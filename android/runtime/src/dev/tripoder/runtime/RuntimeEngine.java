@@ -94,12 +94,15 @@ public final class RuntimeEngine {
     private final java.util.concurrent.FutureTask<Void> applicationStart;
     private final java.util.concurrent.CountDownLatch constructed=new java.util.concurrent.CountDownLatch(1);
     final long startupDeadlineElapsed;
+    /** Fixed for this process by the broker's load bundle; subsystems that have a thin implementation route on it (docs/thin-shim-transformation.md). */
+    final RuntimeMode mode;
     final boolean platformDefaultApplication;
     public RuntimeEngine(Context host,Bundle input)throws Exception {
         if(current!=null)throw new IllegalStateException("PROCESS_IDENTITY_IMMUTABLE");
         RuntimePlatform.requireValidated();
         startupDeadlineElapsed=input.getLong("startupDeadlineElapsed");
         if(RuntimeStartupDeadline.remaining(startupDeadlineElapsed,SystemClock.elapsedRealtime())==0)throw new IllegalStateException("PROCESS_START_TIMEOUT_UNKNOWN");
+        mode=RuntimeMode.parse(input.getString(RuntimeMode.KEY)).requireImplemented();android.util.Log.i("TripoderBoot","runtime mode="+mode.wire);
         this.host=host;generation=RuntimeWire.required(input,"generation");packageName=RuntimeWire.required(input,"package");processName=RuntimeWire.required(input,"processName");
         firstInstallTime=input.getLong("firstInstallTime");lastUpdateTime=input.getLong("lastUpdateTime");
         long bootStart=SystemClock.elapsedRealtime();
@@ -327,10 +330,17 @@ public final class RuntimeEngine {
      * can arrive as the guest component while still carrying its lease. The lease is the identity; its slot is the
      * physical component this process owns. Returns null when the record carries no lease of this generation.
      */
+    private final Map<String,String> thinTicketStubs=new java.util.concurrent.ConcurrentHashMap<>();
+    private final Set<Activity> thinControllerRoots=Collections.newSetFromMap(new java.util.IdentityHashMap<>());
     public Intent leasedRecord(Intent intent)throws Exception{
         if(intent==null)return null;String ticket=intent.getStringExtra("tripoder.ticket");if(ticket==null)return null;
+        if(mode==RuntimeMode.THIN){
+            String cached=thinTicketStubs.get(ticket);
+            if(cached!=null&&RuntimeActivitySlots.owns(cached))return new Intent(intent).setComponent(new ComponentName(host.getPackageName(),cached));
+        }
         Bundle query=auth();query.putString("ticket",ticket);Bundle row=RuntimeWire.call(broker,RuntimeWire.ACTIVITY_RECORD,query);
         String stub=RuntimeWire.required(row,"stub");if(!RuntimeActivitySlots.owns(stub))throw new SecurityException("ACTIVITY_LEASE_STUB_INVALID");
+        if(mode==RuntimeMode.THIN)thinTicketStubs.put(ticket,stub);
         return new Intent(intent).setComponent(new ComponentName(host.getPackageName(),stub));
     }
     /**
@@ -360,13 +370,30 @@ public final class RuntimeEngine {
     RuntimeActivityCreation.Permit claimCreation(Intent intent)throws Exception {
         // Bundle values unparcel lazily and keep the loader seen at their first access; own it before any extras read.
         intent.setExtrasClassLoader(guestLoader());
-        String ticket=RuntimeWire.required(intent.getExtras(),"tripoder.ticket");Bundle gate=auth();gate.putString("candidate",ticket);gate.putString("stub",intent.getComponent().getClassName());gate.putString("kind","factory");
-        if(RuntimeWire.call(broker,RuntimeWire.ACTIVITY_ENTRY_STATUS,gate).getBoolean("closed"))return new RuntimeActivityCreation.Permit(ActivityEntryFences.REJECTED);
+        String ticket=RuntimeWire.required(intent.getExtras(),"tripoder.ticket");
         String activityName=intent.getStringExtra("tripoder.component");
+        if(mode==RuntimeMode.THIN&&generation.equals(intent.getStringExtra("tripoder.generation"))&&intent.getBooleanExtra("tripoder.thinRoute",false)){
+            if(!activityInfos.containsKey(activityName))throw new SecurityException("ACTIVITY_SESSION_MISMATCH");
+            Intent visible=RuntimeActivityIntent.visible(intent,packageName,guestLoader());
+            thinTicketStubs.put(ticket,intent.getComponent().getClassName());
+            Bundle caller=new Bundle();
+            caller.putString("callerKind",intent.getStringExtra("tripoder.callerKind")!=null?intent.getStringExtra("tripoder.callerKind"):"CONTROLLER");
+            caller.putString("callerPackage",intent.getStringExtra("tripoder.callerPackage")!=null?intent.getStringExtra("tripoder.callerPackage"):packageName);
+            if(intent.getStringExtra("tripoder.callerComponent")!=null)caller.putString("callerComponent",intent.getStringExtra("tripoder.callerComponent"));
+            if(intent.getStringExtra("tripoder.callerPhysical")!=null)caller.putString("callerPhysical",intent.getStringExtra("tripoder.callerPhysical"));
+            caller.putBoolean("expectsResult",intent.getBooleanExtra("tripoder.expectsResult",false));
+            ActivityInfo effective=RuntimeActivityIndex.require(activityInfos,activityName);
+            return new RuntimeActivityCreation.Permit(this,intent,visible,ticket,ticket,effective.targetActivity==null?activityName:effective.targetActivity,caller);
+        }
+        if(mode!=RuntimeMode.THIN){
+            Bundle gate=auth();gate.putString("candidate",ticket);gate.putString("stub",intent.getComponent().getClassName());gate.putString("kind","factory");
+            if(RuntimeWire.call(broker,RuntimeWire.ACTIVITY_ENTRY_STATUS,gate).getBoolean("closed"))return new RuntimeActivityCreation.Permit(ActivityEntryFences.REJECTED);
+        }
         if(!activityInfos.containsKey(activityName))throw new SecurityException("ACTIVITY_SESSION_MISMATCH");
         Intent visible=RuntimeActivityIntent.visible(intent,packageName,guestLoader());
-        String instance=UUID.randomUUID().toString();Bundle claim=auth();claim.putString("ticket",ticket);claim.putString("component",activityName);claim.putString("instance",instance);claim.putString("stub",intent.getComponent().getClassName());claim.putString("delivery",RuntimeWire.required(intent.getExtras(),"tripoder.delivery"));claim.putString("payloadDigest",RuntimeActivityIntent.receivedDigest(intent,visible));Bundle claimed=RuntimeWire.call(broker,RuntimeWire.ACTIVITY_CLAIM,claim);
+        String instance=mode==RuntimeMode.THIN?ticket:UUID.randomUUID().toString();Bundle claim=auth();claim.putString("ticket",ticket);claim.putString("component",activityName);claim.putString("instance",instance);claim.putString("stub",intent.getComponent().getClassName());claim.putString("delivery",RuntimeWire.required(intent.getExtras(),"tripoder.delivery"));if(mode!=RuntimeMode.THIN)claim.putString("payloadDigest",RuntimeActivityIntent.receivedDigest(intent,visible));Bundle claimed=RuntimeWire.call(broker,RuntimeWire.ACTIVITY_CLAIM,claim);
         if(claimed.containsKey("rejectedActivity"))return new RuntimeActivityCreation.Permit(claimed.getString("rejectedActivity"));
+        if(mode==RuntimeMode.THIN)thinTicketStubs.put(ticket,intent.getComponent().getClassName());
         ActivityInfo effective=RuntimeActivityIndex.require(activityInfos,activityName);
         return new RuntimeActivityCreation.Permit(this,intent,visible,ticket,instance,effective.targetActivity==null?activityName:effective.targetActivity,claimed);
     }
@@ -374,13 +401,14 @@ public final class RuntimeEngine {
         Intent intent=permit.physical,visible=permit.visible;String activityName=RuntimeWire.required(intent.getExtras(),"tripoder.component");
         String callback=intent.getStringExtra("tripoder.callback"),op=intent.getStringExtra("tripoder.operation");
         if(callback!=null)callbacks.put(activity,new String[]{callback,op});
+        if(mode==RuntimeMode.THIN&&!intent.getBooleanExtra("tripoder.thinRoute",false))thinControllerRoots.add(activity);
         activityInstances.put(activity,new String[]{permit.ticket,permit.instance});
         activityCallers.initial(activity,permit.caller);
         activityMetadata.put(activity,new ActivityInfo(activityInfos.get(activityName)));visibleIntents.put(activity,visible);
     }
-    public void activityAttached(Activity activity){try{Bundle b=activityAuth(activity);b.putInt("taskId",activity.getTaskId());RuntimeWire.call(broker,RuntimeWire.ACTIVITY_ATTACHED,b);}catch(Exception error){throw new IllegalStateException("ACTIVITY_ATTACH_ACK_FAILED",error);}}
+    public void activityAttached(Activity activity){if(mode==RuntimeMode.THIN&&!thinControllerRoots.contains(activity))return;try{Bundle b=activityAuth(activity);b.putInt("taskId",activity.getTaskId());RuntimeWire.call(broker,RuntimeWire.ACTIVITY_ATTACHED,b);}catch(Exception error){throw new IllegalStateException("ACTIVITY_ATTACH_ACK_FAILED",error);}}
     private final java.util.Set<Activity> createdActivities=java.util.Collections.synchronizedSet(java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>()));
-    public void activityCreated(Activity activity){if(!createdActivities.add(activity))return;applyGuestWindowInsetsIfNeeded(activity);try{Bundle b=activityAuth(activity);b.putInt("taskId",activity.getTaskId());RuntimeWire.call(broker,RuntimeWire.ACTIVITY_CREATED,b);}catch(Exception error){throw new IllegalStateException("ACTIVITY_CREATE_ACK_FAILED",error);}}
+    public void activityCreated(Activity activity){if(!createdActivities.add(activity))return;applyGuestWindowInsetsIfNeeded(activity);if(mode==RuntimeMode.THIN)return;try{Bundle b=activityAuth(activity);b.putInt("taskId",activity.getTaskId());RuntimeWire.call(broker,RuntimeWire.ACTIVITY_CREATED,b);}catch(Exception error){throw new IllegalStateException("ACTIVITY_CREATE_ACK_FAILED",error);}}
     private void applyGuestWindowInsetsIfNeeded(Activity activity){
         if(info==null||info.targetSdkVersion<=0||info.targetSdkVersion>=35)return;
         android.view.Window window=activity.getWindow();if(window==null)return;
@@ -397,9 +425,9 @@ public final class RuntimeEngine {
         });
         content.requestApplyInsets();
     }
-    public void activityResumed(Activity activity){try{RuntimeWire.call(broker,RuntimeWire.ACTIVITY_RESUMED,activityAuth(activity));}catch(Exception error){throw new IllegalStateException("ACTIVITY_RESUME_ACK_FAILED",error);}}
+    public void activityResumed(Activity activity){if(mode==RuntimeMode.THIN)return;try{RuntimeWire.call(broker,RuntimeWire.ACTIVITY_RESUMED,activityAuth(activity));}catch(Exception error){throw new IllegalStateException("ACTIVITY_RESUME_ACK_FAILED",error);}}
     public void activityDestroying(Activity activity){destructionTasks.put(activity,activity.getTaskId());}
-    public void activityDestroyed(Activity activity){try{Integer task=destructionTasks.remove(activity);if(task==null)throw new IllegalStateException("ACTIVITY_PRE_DESTROY_MISSING");Bundle b=activityAuth(activity);b.putBoolean("finishing",activity.isFinishing());b.putInt("taskId",task);RuntimeWire.call(broker,RuntimeWire.ACTIVITY_DESTROYED,b);if(activity.isFinishing())pendingResults.remove(b.getString("ticket"));callbacks.remove(activity);visibleIntents.remove(activity);activityInstances.remove(activity);activityMetadata.remove(activity);activityCallers.remove(activity);returned.remove(activity);createdActivities.remove(activity);}catch(Exception error){throw new IllegalStateException("ACTIVITY_DESTROY_ACK_FAILED",error);}}
+    public void activityDestroyed(Activity activity){try{Integer task=destructionTasks.remove(activity);if(task==null)throw new IllegalStateException("ACTIVITY_PRE_DESTROY_MISSING");Bundle b=activityAuth(activity);boolean reportDestroy=mode!=RuntimeMode.THIN||thinControllerRoots.remove(activity)||callbacks.containsKey(activity);if(reportDestroy){b.putBoolean("finishing",activity.isFinishing());b.putInt("taskId",task);RuntimeWire.call(broker,RuntimeWire.ACTIVITY_DESTROYED,b);}if(activity.isFinishing())pendingResults.remove(b.getString("ticket"));callbacks.remove(activity);visibleIntents.remove(activity);activityInstances.remove(activity);activityMetadata.remove(activity);activityCallers.remove(activity);returned.remove(activity);createdActivities.remove(activity);}catch(Exception error){throw new IllegalStateException("ACTIVITY_DESTROY_ACK_FAILED",error);}}
     private Bundle activityAuth(Activity activity){String[] identity=activityInstances.get(activity);if(identity==null)throw new SecurityException("ACTIVITY_INSTANCE_MISSING");Bundle b=auth();b.putString("ticket",identity[0]);b.putString("instance",identity[1]);b.putInt("taskId",activity.getTaskId());return b;}
     public ActivityInfo activityInfo(Activity activity){ActivityInfo declared=activityMetadata.get(activity);if(declared==null)throw new SecurityException("ACTIVITY_NOT_DECLARED_IN_PROCESS");return new ActivityInfo(declared);}
     public int theme(Activity activity){return activityInfo(activity).getThemeResource();}
@@ -407,38 +435,60 @@ public final class RuntimeEngine {
     public Intent newIntent(Activity activity,Intent physical,ComponentCaller caller)throws Exception{
         if(!ownsActivity(activity)||physical==null||physical.getComponent()==null||!host.getPackageName().equals(physical.getComponent().getPackageName()))throw new SecurityException("ACTIVITY_NEW_INTENT_TARGET_MISMATCH");
         physical.setExtrasClassLoader(loader);
+        if(mode==RuntimeMode.THIN){
+            Intent visible=RuntimeActivityIntent.visible(physical,packageName,loader);
+            if(!ActivityComponentLedger.canonical(RuntimeActivityIndex.require(activityInfos,visible.getComponent().getClassName())).equals(ActivityComponentLedger.canonical(activityInfo(activity))))throw new SecurityException("ACTIVITY_NEW_INTENT_COMPONENT_MISMATCH");
+            String callerPkg=physical.getStringExtra("tripoder.callerPackage");
+            activityCallers.enter(activity,callerPkg!=null&&!callerPkg.isEmpty()?callerPkg:packageName,caller);
+            return visible;
+        }
         Bundle admission=auth();admission.putString("candidate",RuntimeWire.required(physical.getExtras(),"tripoder.ticket"));admission.putString("stub",physical.getComponent().getClassName());
         if(brokerCall(RuntimeWire.ACTIVITY_ENTRY_STATUS,admission).getBoolean("closed")){android.util.Log.i("TripoderRuntime","ACTIVITY_CLOSED_NEW_INTENT_REJECTED:"+admission.getString("candidate"));return null;}
         Intent visible=RuntimeActivityIntent.visible(physical,packageName,loader);if(!ActivityComponentLedger.canonical(RuntimeActivityIndex.require(activityInfos,visible.getComponent().getClassName())).equals(ActivityComponentLedger.canonical(activityInfo(activity))))throw new SecurityException("ACTIVITY_NEW_INTENT_COMPONENT_MISMATCH");
         Bundle b=activityAuth(activity);b.putString("candidate",RuntimeWire.required(physical.getExtras(),"tripoder.ticket"));b.putString("delivery",RuntimeWire.required(physical.getExtras(),"tripoder.delivery"));b.putString("stub",physical.getComponent().getClassName());b.putString("payloadDigest",RuntimeActivityIntent.receivedDigest(physical,visible));
         Bundle reply=RuntimeWire.call(broker,RuntimeWire.ACTIVITY_NEW_INTENT,b);if(reply.getBoolean("closed")){android.util.Log.i("TripoderRuntime","ACTIVITY_CLOSED_NEW_INTENT_REJECTED:"+b.getString("candidate"));return null;}activityCallers.enter(activity,RuntimeWire.required(reply,"callerPackage"),caller);return visible;
     }
-    public void newIntentComplete(Activity activity,String delivery,boolean success)throws Exception{try{Bundle b=activityAuth(activity);b.putString("delivery",delivery);b.putBoolean("success",success);RuntimeWire.call(broker,RuntimeWire.ACTIVITY_NEW_INTENT_ACK,b);}finally{activityCallers.leave(activity);}}
+    public void newIntentComplete(Activity activity,String delivery,boolean success)throws Exception{if(mode==RuntimeMode.THIN){activityCallers.leave(activity);return;}try{Bundle b=activityAuth(activity);b.putString("delivery",delivery);b.putBoolean("success",success);RuntimeWire.call(broker,RuntimeWire.ACTIVITY_NEW_INTENT_ACK,b);}finally{activityCallers.leave(activity);}}
     public Intent route(Activity caller,Intent intent,int requestCode)throws Exception {
         if(!visibleIntents.containsKey(caller))throw new SecurityException("ACTIVITY_NOT_REGISTERED");
         Map<Integer,String> pending=pendingResults.computeIfAbsent(activityAuth(caller).getString("ticket"),k->new HashMap<>());
         if(requestCode>=0&&pending.containsKey(requestCode))throw new IllegalStateException("REQUEST_CODE_ALREADY_IN_FLIGHT");
-        intent=RuntimeActivityIntent.snapshot(intent);
-        String digest=RuntimeActivityIntent.digest(intent);
+        String digest;
+        if(mode==RuntimeMode.THIN){intent=new Intent(intent);digest="thin";}
+        else{intent=RuntimeActivityIntent.snapshot(intent);digest=RuntimeActivityIntent.digest(intent);}
         Bundle request=activityAuth(caller);request.putString("package",intent.getComponent().getPackageName());request.putString("component",intent.getComponent().getClassName());request.putString("operation",UUID.randomUUID().toString());request.putString("requestDigest",digest);request.putBoolean("wantsResult",requestCode>=0);request.putInt("flags",intent.getFlags());
         Bundle response;
         try{response=RuntimeWire.call(broker,RuntimeWire.ROUTE,request);}catch(IllegalStateException e){if(String.valueOf(e.getMessage()).contains("PACKAGE_NOT_IN_SPACE"))throw new ActivityNotFoundException("PACKAGE_NOT_IN_SPACE:"+intent.getComponent().getPackageName());throw e;}
         if(requestCode>=0)pending.put(requestCode,RuntimeWire.required(response,"operation"));
-        Intent routed=new Intent(intent).setComponent(new ComponentName(host,RuntimeWire.required(response,"stub")));
+        String stub=RuntimeWire.required(response,"stub"),ticket=RuntimeWire.required(response,"ticket");
+        if(mode==RuntimeMode.THIN)thinTicketStubs.put(ticket,stub);
+        Intent routed=new Intent(intent).setComponent(new ComponentName(host,stub));
         Bundle origExtras=intent.getExtras();routed.putExtra("tripoder.extras",origExtras!=null&&!origExtras.isEmpty());
-        routed.putExtra("tripoder.flags",intent.getFlags()).putExtra("tripoder.component",intent.getComponent().getClassName()).putExtra("tripoder.generation",RuntimeWire.required(response,"generation")).putExtra("tripoder.operation",RuntimeWire.required(response,"operation")).putExtra("tripoder.ticket",RuntimeWire.required(response,"ticket")).putExtra("tripoder.delivery",RuntimeWire.required(response,"delivery"));if(requestCode>=0)routed.putExtra("tripoder.callback",RuntimeWire.required(response,"callback"));return routed;
+        routed.putExtra("tripoder.flags",intent.getFlags()).putExtra("tripoder.component",intent.getComponent().getClassName()).putExtra("tripoder.generation",RuntimeWire.required(response,"generation")).putExtra("tripoder.operation",RuntimeWire.required(response,"operation")).putExtra("tripoder.ticket",ticket).putExtra("tripoder.delivery",RuntimeWire.required(response,"delivery"));
+        if(mode==RuntimeMode.THIN)routed.putExtra("tripoder.thinRoute",true);
+        if(response.containsKey("callerKind"))routed.putExtra("tripoder.callerKind",response.getString("callerKind")).putExtra("tripoder.callerPackage",response.getString("callerPackage")).putExtra("tripoder.expectsResult",response.getBoolean("expectsResult"));
+        if(response.getString("callerComponent")!=null)routed.putExtra("tripoder.callerComponent",response.getString("callerComponent"));
+        if(response.getString("callerPhysical")!=null)routed.putExtra("tripoder.callerPhysical",response.getString("callerPhysical"));
+        if(requestCode>=0)routed.putExtra("tripoder.callback",RuntimeWire.required(response,"callback"));return routed;
     }
     /** A start requested through a non-Activity Context: a new task begun by the process itself, never a result request. */
     public Intent routeFromContext(Intent intent)throws Exception{
         if(intent.getComponent()==null)throw new IllegalArgumentException("ACTIVITY_COMPONENT_REQUIRED");
-        intent=RuntimeActivityIntent.snapshot(intent);
+        String digest;
+        if(mode==RuntimeMode.THIN){intent=new Intent(intent);digest="thin";}
+        else{intent=RuntimeActivityIntent.snapshot(intent);digest=RuntimeActivityIntent.digest(intent);}
         if((intent.getFlags()&Intent.FLAG_ACTIVITY_NEW_TASK)==0)throw new android.util.AndroidRuntimeException("Calling startActivity() from outside of an Activity context requires the FLAG_ACTIVITY_NEW_TASK flag. Is this really what you want?");
-        Bundle request=auth();request.putBoolean("fromContext",true);request.putString("package",intent.getComponent().getPackageName());request.putString("component",intent.getComponent().getClassName());request.putString("operation",UUID.randomUUID().toString());request.putString("requestDigest",RuntimeActivityIntent.digest(intent));request.putBoolean("wantsResult",false);request.putInt("flags",intent.getFlags());
+        Bundle request=auth();request.putBoolean("fromContext",true);request.putString("package",intent.getComponent().getPackageName());request.putString("component",intent.getComponent().getClassName());request.putString("operation",UUID.randomUUID().toString());request.putString("requestDigest",digest);request.putBoolean("wantsResult",false);request.putInt("flags",intent.getFlags());
         Bundle response;
         try{response=RuntimeWire.call(broker,RuntimeWire.ROUTE,request);}catch(IllegalStateException e){if(String.valueOf(e.getMessage()).contains("PACKAGE_NOT_IN_SPACE"))throw new ActivityNotFoundException("PACKAGE_NOT_IN_SPACE:"+intent.getComponent().getPackageName());throw e;}
-        Intent routed=new Intent(intent).setComponent(new ComponentName(host,RuntimeWire.required(response,"stub")));
+        String stub=RuntimeWire.required(response,"stub"),ticket=RuntimeWire.required(response,"ticket");
+        if(mode==RuntimeMode.THIN)thinTicketStubs.put(ticket,stub);
+        Intent routed=new Intent(intent).setComponent(new ComponentName(host,stub));
         Bundle origExtras=intent.getExtras();routed.putExtra("tripoder.extras",origExtras!=null&&!origExtras.isEmpty());
-        routed.putExtra("tripoder.flags",intent.getFlags()).putExtra("tripoder.component",intent.getComponent().getClassName()).putExtra("tripoder.generation",RuntimeWire.required(response,"generation")).putExtra("tripoder.operation",RuntimeWire.required(response,"operation")).putExtra("tripoder.ticket",RuntimeWire.required(response,"ticket")).putExtra("tripoder.delivery",RuntimeWire.required(response,"delivery"));return routed;
+        routed.putExtra("tripoder.flags",intent.getFlags()).putExtra("tripoder.component",intent.getComponent().getClassName()).putExtra("tripoder.generation",RuntimeWire.required(response,"generation")).putExtra("tripoder.operation",RuntimeWire.required(response,"operation")).putExtra("tripoder.ticket",ticket).putExtra("tripoder.delivery",RuntimeWire.required(response,"delivery"));
+        if(mode==RuntimeMode.THIN)routed.putExtra("tripoder.thinRoute",true);
+        if(response.containsKey("callerKind"))routed.putExtra("tripoder.callerKind",response.getString("callerKind")).putExtra("tripoder.callerPackage",response.getString("callerPackage")).putExtra("tripoder.expectsResult",response.getBoolean("expectsResult"));
+        return routed;
     }
     /** The host's own components are never a guest start target: the guest shares the host UID, so this is a policy boundary, not a kernel one. */
     public boolean targetsHost(Intent intent){
@@ -446,6 +496,7 @@ public final class RuntimeEngine {
         return pkg!=null&&host.getPackageName().equals(pkg);
     }
     public void activityStartResult(Object value,int result)throws Exception{
+        if(mode==RuntimeMode.THIN)return;
         if(!(value instanceof Intent))return;
         Intent intent=(Intent)value;if(intent.getComponent()==null||!host.getPackageName().equals(intent.getComponent().getPackageName()))return;
         Bundle b=auth();b.putString("candidate",RuntimeWire.required(intent.getExtras(),"tripoder.ticket"));b.putString("delivery",RuntimeWire.required(intent.getExtras(),"tripoder.delivery"));b.putString("stub",intent.getComponent().getClassName());b.putInt("startResult",result);RuntimeWire.call(broker,RuntimeWire.ACTIVITY_START_RESULT,b);
