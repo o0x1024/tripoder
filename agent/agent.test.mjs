@@ -6,6 +6,7 @@ import { once } from 'node:events';
 import { loadConfig,Transport,decode } from './transport.mjs';
 import { tools,command } from './tools.mjs';
 import { McpServer,MCP_VERSION,MCP_VERSIONS } from './server.mjs';
+import { recoveryReceipt } from './recovery.mjs';
 
 async function initialize(server,version){const response=await server.handle({jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:version}});await server.handle({jsonrpc:'2.0',method:'notifications/initialized'});return response;}
 test('published versions negotiate without connecting to a phone',async()=>{
@@ -51,9 +52,65 @@ test('startup controls and artifact reads work without a live selected process',
  assert.deepEqual(methods,['runtime.capabilities','projects.list','probes.configure','probes.get','process.start','operation.get','artifact.read']);
 });
 test('probe schema rejects accidental fields and limits before any device call',()=>{
- const args={operationId:'configure-1',project:'p',expectedRevision:'',configuration:{enabled:true,maxDexBytes:1048576,startupHook:{selectors:[{kind:'java'}],source:'source'}}};
+ const args={operationId:'configure-1',project:'p',expectedRevision:'',configuration:{enabled:true,maxDexBytes:1048576,startupHook:{selectors:[{id:'startup',kind:'java',className:'owned.Fixture',methodName:'value',argumentTypes:[]}],source:'source'}}};
  assert.equal(command('probes_configure',args).requestId,'configure-1');
  assert.throws(()=>command('probes_configure',{...args,configuration:{enabled:true,maxDexBytes:67108865}}),/TYPE/);
  assert.throws(()=>command('probes_configure',{...args,configuration:{enabled:true,unpack:true}}),/TYPE/);
  assert.throws(()=>command('artifact_read',{processGeneration:'g',artifactId:'a',offset:0,length:16385}),/TYPE/);
+});
+
+const selector={id:'counter',kind:'java',className:'owned.Counter',methodName:'value',argumentTypes:[]};
+test('Java and native selector contracts reject malformed input before dispatch',async()=>{
+ const java={operationId:'observe-valid',selectors:[selector]};
+ assert.equal(command('hook_observe',java).params.selectors[0].methodName,'value');
+ const native={id:'native',kind:'native',moduleName:'libowned.so',symbol:'value',argumentTypes:['int32'],returnType:'int32',buildId:'aabb',signatureSource:'confirmed'};
+ assert.equal(command('hook_observe',{...java,selectors:[native]}).params.selectors[0].kind,'native');
+ const {argumentTypes,...missingArguments}=selector;
+ for(const bad of [{kind:'java',class:'owned.Counter',method:'value'},missingArguments,{...selector,class:'wrong'},{...selector,argumentTypes:['java.lang.Object']},{...native,signatureSource:'unknown'},{...native,returnType:'pointer'}]){
+  assert.throws(()=>command('hook_observe',{...java,selectors:[bad]}),/TOOL_ARGUMENT_TYPE/);
+ }
+ assert.throws(()=>command('hook_observe',{...java,selectors:[selector,selector]}),/duplicate id/);
+ let calls=0;const server=new McpServer({call(){calls++;throw Error('must not dispatch');}});await initialize(server,MCP_VERSION);
+ const response=await server.handle({jsonrpc:'2.0',id:2,method:'tools/call',params:{name:'hook_observe',arguments:{...java,selectors:[missingArguments]}}});
+ const receipt=JSON.parse(response.result.content[0].text);
+ assert.equal(receipt.state,'REJECTED');assert.equal(receipt.dispatched,false);assert.match(receipt.error,/selectors\[0\].*argumentTypes/);assert.equal(calls,0);
+ assert.equal(receipt.recovery.replayAllowed,false);
+});
+test('startup Hook shares the full selector contract',()=>{
+ const args={operationId:'configure',project:'p',expectedRevision:'',configuration:{enabled:true,startupHook:{selectors:[selector],source:'source'}}};
+ assert.equal(command('probes_configure',args).params.configuration.startupHook.selectors[0].id,'counter');
+ assert.throws(()=>command('probes_configure',{...args,configuration:{...args.configuration,startupHook:{selectors:[{kind:'java'}],source:'source'}}}),/missing/);
+});
+test('outcome gate returns original operation and the status recovery command without replay',async()=>{
+ let calls=0;const server=new McpServer({async call(){calls++;return {ok:false,state:'FAILED',operationId:'blocked-call',error:'IllegalStateException:HOOK_OUTCOME_QUERY_REQUIRED:original-op'};}});await initialize(server,MCP_VERSION);
+ const response=await server.handle({jsonrpc:'2.0',id:2,method:'tools/call',params:{name:'hook_events',arguments:{sinceSeq:0}}});
+ const receipt=JSON.parse(response.result.content[0].text);
+ assert.equal(receipt.pendingOperationId,'original-op');assert.deepEqual(receipt.recovery.steps,[{tool:'operation_get',arguments:{operationId:'original-op'}},{tool:'hook_status',arguments:{}}]);assert.equal(calls,1);
+});
+test('operation queries preserve original id outside selected sessions and never become mutations',async()=>{
+ const transport=new Transport();transport.session='closed-session';let wire;
+ transport.exchange=async request=>{wire=request;return {protocol:2,requestId:request.requestId,ok:true,result:{operationId:request.params.operationId,state:'UNKNOWN'}};};
+ const call=command('operation_get',{operationId:'original-op'});assert.notEqual(call.requestId,'original-op');
+ await transport.call(call.method,call.params,call.requestId);assert.equal(wire.session,undefined);assert.equal(wire.params.operationId,'original-op');
+ let calls=0;const server=new McpServer({async call(){calls++;throw Error('TRANSPORT_TIMEOUT_OUTCOME_UNKNOWN');}});await initialize(server,MCP_VERSION);
+ const response=await server.handle({jsonrpc:'2.0',id:2,method:'tools/call',params:{name:'operation_get',arguments:{operationId:'original-op'}}});
+ const receipt=JSON.parse(response.result.content[0].text);assert.equal(receipt.state,'UNAVAILABLE');assert.equal(receipt.operationId,undefined);assert.equal(calls,1);
+});
+test('protocol mismatch gives recovery advice and unknown mutations retain exact identity',async()=>{
+ for(const [name,args,result] of [
+  ['operation_get',{operationId:'original-op'},{ok:false,error:'IllegalArgumentException:AGENT_FIELDS_UNSUPPORTED'}],
+  ['hook_disable',{operationId:'disable-original',revision:'rev'},{ok:false,state:'UNKNOWN',operationId:'disable-original',error:'lost ack'}],
+  ['hook_discard',{operationId:'observe-id'},{ok:false,error:'IllegalArgumentException:AGENT_REQUEST_ID_CONTENT_MISMATCH'}],
+ ]){
+  let calls=0;const server=new McpServer({async call(){calls++;return result;}});await initialize(server,MCP_VERSION);
+  const response=await server.handle({jsonrpc:'2.0',id:2,method:'tools/call',params:{name,arguments:args}});const receipt=JSON.parse(response.result.content[0].text);
+  assert.equal(receipt.recovery.replayAllowed,false);assert.equal(calls,1);
+  if(name==='operation_get')assert.match(receipt.recovery.action,/Reconnect/);
+  else assert.equal(receipt.recovery.steps[0].arguments.operationId,args.operationId);
+ }
+});
+
+test('unknown journal queries retain success envelope without inventing reconciliation or polling',()=>{
+ const receipt=recoveryReceipt({ok:true,result:{operationId:'original',state:'UNKNOWN'}},'operation_get',{operationId:'original'});
+ assert.equal(receipt.ok,true);assert.equal(receipt.result.state,'UNKNOWN');assert.equal(receipt.errorCode,undefined);assert.deepEqual(receipt.recovery.steps,[]);assert.equal(receipt.recovery.replayAllowed,false);
 });

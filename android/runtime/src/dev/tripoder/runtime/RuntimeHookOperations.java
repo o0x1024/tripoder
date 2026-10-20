@@ -6,6 +6,11 @@ import org.json.*;
 
 /** Shared journal and worker call boundary; never call a worker while holding the broker monitor. */
 public final class RuntimeHookOperations {
+    public static final class RejectedCommandException extends IllegalArgumentException {
+        private static final long serialVersionUID=1L;
+        RejectedCommandException(String message){super(message);}
+        RejectedCommandException(Throwable cause){super(cause.getMessage(),cause);}
+    }
     private static final ExecutorService calls=new ThreadPoolExecutor(4,4,0,TimeUnit.MILLISECONDS,new ArrayBlockingQueue<>(16),new ThreadPoolExecutor.AbortPolicy());
     public static Bundle execute(RuntimeBroker broker,String operation,String generation,String request,String caller)throws Exception{
         return execute(broker,operation,generation,request,caller,"");
@@ -36,12 +41,16 @@ public final class RuntimeHookOperations {
             JSONObject response=new JSONObject(reply.getString("result"));
             synchronized(broker){
                 if(broker.contract.getSession(generation).state!=ExecutionContract.ProcessState.RUNNING)throw new IllegalStateException("HOOK_PROCESS_DIED_BEFORE_ACK");
-                if(!response.getBoolean("ok")){broker.contract.fail(operation,"HOOK_COMMAND_REJECTED");throw new IllegalArgumentException(response.getString("error"));}
+                if(!response.getBoolean("ok")){
+                    if("REJECTED".equals(response.optString("outcome"))){broker.contract.fail(operation,"HOOK_COMMAND_REJECTED");throw new RejectedCommandException(response.getString("error"));}
+                    broker.contract.markUnknown(operation,"HOOK_WORKER_OUTCOME_UNCONFIRMED");
+                    throw new IllegalStateException(response.getString("error"));
+                }
                 JSONObject result=response.getJSONObject("result"),durable=new JSONObject(result.toString());durable.remove("token");
                 broker.contract.succeed(operation,durable.toString());return reply;
             }
         }catch(Exception error){
-            synchronized(broker){if(broker.contract.query(operation).state==ExecutionContract.OperationState.RUNNING){if(dispatched)broker.contract.markUnknown(operation,"HOOK_WORKER_OUTCOME_UNCONFIRMED");else broker.contract.fail(operation,"HOOK_DISPATCH_REJECTED");}}
+            synchronized(broker){if(broker.contract.query(operation).state==ExecutionContract.OperationState.RUNNING){if(dispatched)broker.contract.markUnknown(operation,"HOOK_WORKER_OUTCOME_UNCONFIRMED");else {broker.contract.fail(operation,"HOOK_DISPATCH_REJECTED");throw new RejectedCommandException(error);}}}
             throw error;
         }
     }

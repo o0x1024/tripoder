@@ -17,7 +17,10 @@ final class WorkbenchAgentControl {
             AgentCrypto.id(id);if(request.getInt("protocol")!=AgentCrypto.PROTOCOL)throw new IllegalArgumentException("AGENT_PROTOCOL_UNSUPPORTED");
             String method=request.getString("method");JSONObject params=request.getJSONObject("params");Bundle output;
             if(java.util.Set.of("runtime.capabilities","projects.list","probes.configure","probes.get","process.start","application.stop","operation.get","artifact.list","artifact.read").contains(method)){
-                AgentCrypto.fields(request,"protocol","requestId","method","params");
+                // Legacy MCP clients attach their selected session to operation.get.
+                // The operation journal remains queryable after that session closes.
+                if(method.equals("operation.get")&&request.has("session"))AgentCrypto.fields(request,"protocol","requestId","method","params","session");
+                else AgentCrypto.fields(request,"protocol","requestId","method","params");
                 switch(method){
                     case "runtime.capabilities":case "projects.list":AgentCrypto.fields(params);output=app.engine.executeBlocking(ControlWire.request(method.equals("projects.list")?"agentProjects":"agentCapabilities"));break;
                     case "probes.get":AgentCrypto.fields(params,"project");output=app.engine.executeBlocking(ControlWire.request("agentProbeGet","project",params.getString("project")));break;

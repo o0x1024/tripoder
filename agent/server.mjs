@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { loadConfig, Transport } from './transport.mjs';
-import { tools, command } from './tools.mjs';
+import { tools, command, isMutation } from './tools.mjs';
+import { recoveryReceipt } from './recovery.mjs';
 import { randomUUID } from 'node:crypto';
 import { auditFile } from './audit.mjs';
 
@@ -32,11 +33,16 @@ export class McpServer {
     if(!this.ready)return error(-32000,'MCP_NOT_INITIALIZED');
     if(request.method==='tools/list')return reply({tools:this.protocol==='2024-11-05'?tools.map(({annotations,...tool})=>tool):tools});
     if(request.method==='tools/call'){
-      let call;try{call=command(request.params?.name,request.params?.arguments??{});}catch(failure){return error(-32602,failure.message);}
+      const name=request.params?.name,args=request.params?.arguments??{};
+      const toolReply=receipt=>reply({content:[{type:'text',text:JSON.stringify(recoveryReceipt(receipt,name,args))}],isError:!receipt.ok});
+      let call;try{call=command(name,args);}catch(failure){
+        if(!tools.some(tool=>tool.name===name))return error(-32602,failure.message);
+        return toolReply({protocol:2,ok:false,state:'REJECTED',dispatched:false,errorCode:'INVALID_TOOL_ARGUMENTS',error:failure.message});
+      }
       try{
         const receipt=await this.transport.call(call.method,call.params,call.requestId);
-        return reply({content:[{type:'text',text:JSON.stringify(receipt)}],isError:!receipt.ok});
-      }catch(failure){const mutation=request.params?.arguments?.operationId!==undefined;return reply({content:[{type:'text',text:JSON.stringify({protocol:2,ok:false,operationId:call.requestId,state:mutation?'UNKNOWN':'UNAVAILABLE',error:failure.message,action:mutation?'Query operation_get using this id. Do not repeat side effects with a new id.':'Open Tripoder on the connected phone, then list targets.'})}],isError:true});}
+        return toolReply(receipt);
+      }catch(failure){const mutation=isMutation(name);return toolReply({protocol:2,ok:false,...(mutation?{operationId:call.requestId}:{}),state:mutation?'UNKNOWN':'UNAVAILABLE',error:failure.message});}
     }
     return error(-32601,'Method not found');
   }

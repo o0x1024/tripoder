@@ -6,7 +6,7 @@ import java.util.*;
 /** Process-local hook ownership. Authority death already terminates every worker. */
 final class RuntimeHookClaims {
     static final class Claim {
-        final String process,project,binding,lease;boolean busy,retained,uncertain;String state="IDLE";
+        final String process,project,binding,lease;boolean busy,retained,uncertain;String state="IDLE",pendingOperation="";
         Claim(String process,String project,String binding,String lease){this.process=process;this.project=project;this.binding=binding;this.lease=lease;}
     }
     private final RuntimeBroker broker;private final Map<String,Claim> claims=new HashMap<>();
@@ -23,7 +23,7 @@ final class RuntimeHookClaims {
         }else{
             if(!claim.project.equals(project)||!claim.binding.equals(binding))throw new SecurityException("HOOK_PROJECT_OWNER_CONFLICT");
             if(claim.busy)throw new IllegalStateException("HOOK_CONTROL_BUSY");
-            if(claim.uncertain&&!command.equals("status"))throw new IllegalStateException("HOOK_OUTCOME_QUERY_REQUIRED");
+            if(claim.uncertain&&!command.equals("status"))throw new IllegalStateException("HOOK_OUTCOME_QUERY_REQUIRED:"+claim.pendingOperation);
             boolean newOwnerControl=stateless.contains(command)||Set.of("disable","discard").contains(command)||command.equals("updateParameters")&&claim.state.equals("ACTIVE");
             if(!claim.lease.equals(lease)&&!newOwnerControl)throw new SecurityException("HOOK_PREPARATION_LEASE_REVOKED");
         }
@@ -31,14 +31,20 @@ final class RuntimeHookClaims {
     }
     void complete(Claim claim,String command,JSONObject result){
         locked();if(claims.get(claim.process)!=claim)return;
-        claim.busy=false;claim.uncertain=false;
+        claim.busy=false;claim.uncertain=false;claim.pendingOperation="";
         if(command.equals("observe"))claim.state="OBSERVED";
         else if(command.equals("cancelPreparation"))claim.state="OBSERVED";
         else if(result.has("state"))claim.state=result.optString("state");
         if(Set.of("IDLE","DISABLED").contains(claim.state)){claims.remove(claim.process);return;}
         claim.retained=true;
     }
-    void uncertain(Claim claim){locked();if(claims.get(claim.process)==claim){claim.busy=false;claim.uncertain=true;claim.retained=true;}}
+    void rejected(Claim claim){
+        locked();if(claims.get(claim.process)!=claim)return;
+        claim.busy=false;
+        // A rejected recovery query cannot clear an earlier uncertain operation.
+        if(!claim.uncertain&&claim.state.equals("IDLE"))claims.remove(claim.process);
+    }
+    void uncertain(Claim claim,String operation){locked();if(claims.get(claim.process)==claim){claim.busy=false;if(!claim.uncertain)claim.pendingOperation=operation;claim.uncertain=true;claim.retained=true;}}
     void requireUnclaimedProject(String project){locked();for(Claim claim:claims.values())if(claim.project.equals(project))throw new IllegalStateException("PROJECT_HOOK_CONTEXT_IN_USE");}
     void dead(String generation){locked();claims.remove(generation);}
     private void locked(){if(!Thread.holdsLock(broker))throw new IllegalStateException("HOOK_CLAIM_LOCK_REQUIRED");}

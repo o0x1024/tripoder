@@ -110,7 +110,9 @@ final class RuntimeAgentSessions implements AutoCloseable {
             return cache(session,operation,new JSONObject().put("protocol",AgentCrypto.PROTOCOL).put("requestId",operation).put("session",id).put("project",session.project).put("processGeneration",session.process).put("ok",true).put("result",value));
         }catch(Exception error){
             String state="FAILED";synchronized(broker){var row=broker.contract.query(operation);if(row!=null){if(!session.subject.equals(row.callerIdentity))throw new IllegalArgumentException("AGENT_OPERATION_ID_CONFLICT");state=row.state.name();}}
-            return cache(session,operation,new JSONObject().put("protocol",AgentCrypto.PROTOCOL).put("requestId",operation).put("session",id).put("ok",false).put("operationId",operation).put("state",state).put("error",error.getClass().getSimpleName()+":"+String.valueOf(error.getMessage())));
+            JSONObject failure=new JSONObject().put("protocol",AgentCrypto.PROTOCOL).put("requestId",operation).put("session",id).put("ok",false).put("operationId",operation).put("state",state).put("error",error.getClass().getSimpleName()+":"+String.valueOf(error.getMessage()));
+            if(error instanceof RuntimeHookOperations.RejectedCommandException)failure.put("outcome","REJECTED");
+            return cache(session,operation,failure);
         }finally{synchronized(session){session.busy=false;}}
     }
     private JSONObject cache(Session session,String operation,JSONObject response){synchronized(session){session.responses.put(operation,response);session.responseBytes+=response.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8).length;}return response;}

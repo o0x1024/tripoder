@@ -46,7 +46,13 @@ final class RuntimeControllerHooks {
             JSONObject result=new JSONObject(output.getString("result")).getJSONObject("result");
             synchronized(broker){broker.hookClaims.complete(claim,command,result);}
             output.putString("project",project);output.putString("bindingOperation",target.getString("bindingOperation"));return output;
-        }catch(Exception failure){synchronized(broker){broker.hookClaims.uncertain(claim);}throw failure;}
+        }catch(Exception failure){
+            synchronized(broker){
+                if(failure instanceof RuntimeHookOperations.RejectedCommandException)broker.hookClaims.rejected(claim);
+                else broker.hookClaims.uncertain(claim,operation);
+            }
+            throw failure;
+        }
     }
     private static void requireBinding(RuntimeBroker broker,Bundle target){
         try(Cursor c=broker.store.getReadableDatabase().rawQuery("SELECT 1 FROM project_refs p JOIN installs i ON i.space=p.space AND i.package=p.package AND i.generation=p.generation WHERE p.id=? AND p.operation=? AND p.generation=? AND p.state='COMMITTED' AND p.kind='DIRECT' AND i.state='COMMITTED'",new String[]{target.getString("project"),target.getString("bindingOperation"),target.getString("generation")})){if(!c.moveToFirst())throw new IllegalStateException("HOOK_PROJECT_BINDING_STALE");}

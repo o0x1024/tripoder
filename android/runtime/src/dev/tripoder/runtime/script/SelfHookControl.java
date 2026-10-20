@@ -76,9 +76,22 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
     public void invalidateActiveTarget(Throwable cause){invalidation.incrementAndGet();HookInvocationSession session=active;if(session!=null)session.invalidateTarget(cause);}
     @Override public String handle(String raw){
         require(commanding.compareAndSet(false,true),"HOOK_CONTROL_BUSY");
-        try {return HookWire.encode(Map.of("ok",true,"result",command(HookWire.request(raw))));}
-        catch(Exception error){String message=String.valueOf(error);return HookWire.encode(Map.of("ok",false,"error",message.substring(0,Math.min(1000,message.length()))));}
+        boolean dispatched=false;
+        try {
+            Map<String,Object> input=HookWire.request(raw);
+            validateInput(input);
+            dispatched=true;
+            return HookWire.encode(Map.of("ok",true,"result",command(input)));
+        }
+        catch(Exception error){String message=String.valueOf(error);return HookWire.encode(Map.of("ok",false,"outcome",dispatched?"UNKNOWN":"REJECTED","error",message.substring(0,Math.min(1000,message.length()))));}
         finally {commanding.set(false);}
+    }
+    /** Only this phase may certify rejection without executing a command. */
+    private void validateInput(Map<String,Object> input){
+        String name=text(input,"command");Set<String> fields=FIELDS.get(name);require(fields!=null,"HOOK_COMMAND_UNSUPPORTED");
+        Set<String> expected=new HashSet<>(fields);expected.add("command");expected.add("processGeneration");require(input.keySet().equals(expected),"HOOK_COMMAND_FIELDS");
+        require(generation.equals(input.get("processGeneration"))&&identity.equals(platform.identity()),"HOOK_PROCESS_STALE");
+        if(name.equals("observe"))selectors(input.get("selectors"));
     }
     private Map<String,Object> command(Map<String,Object> input){
         String name=text(input,"command");Set<String> fields=FIELDS.get(name);require(fields!=null,"HOOK_COMMAND_UNSUPPORTED");Set<String> expected=new HashSet<>(fields);expected.add("command");expected.add("processGeneration");require(input.keySet().equals(expected),"HOOK_COMMAND_FIELDS");

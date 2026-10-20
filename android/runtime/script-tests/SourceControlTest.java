@@ -31,7 +31,21 @@ public final class SourceControlTest {
     static String observe(SelfHookControl control){return (String)HookEvidence.object(result(command(control,"observe","selectors",l(SELECTOR))).get("evidence")).get("id");}
     static SelfHookControl control(Platform p,AtomicLong clock){AtomicInteger tokens=new AtomicInteger();return new SelfHookControl(IDENTITY,p,clock::get,()->String.format("%064x",tokens.incrementAndGet()));}
     public static void run()throws Throwable {
-        compilation();protocol();firstInvocationRetention();expiryAndFailures();wire();
+        compilation();protocol();rejectionBoundary();firstInvocationRetention();expiryAndFailures();wire();
+    }
+    static void rejectionBoundary(){
+        Platform platform=new Platform();SelfHookControl control=control(platform,new AtomicLong(100));
+        String evidenceId=observe(control);
+        Map<String,Object> invalid=new LinkedHashMap<>(SELECTOR);invalid.remove("argumentTypes");
+        Map<String,Object> rejection=command(control,"observe","selectors",l(invalid));
+        failed(rejection,"HOOK_SELECTOR_FIELDS");
+        check("REJECTED".equals(rejection.get("outcome"))&&platform.observations==1,"invalid selector rejected before platform observation");
+        Map<String,Object> status=result(command(control,"status"));
+        check(evidenceId.equals(status.get("evidenceId")),"rejected selector preserves existing observation");
+        Map<String,Object> uncertain=command(control,"activate","token","invalid","sourceSha256","a".repeat(64));
+        check("UNKNOWN".equals(uncertain.get("outcome")),"execution-phase failures never claim safe rejection");
+        observe(control);
+        check(platform.observations==2,"corrected observation runs after validation rejection");
     }
     static void compilation()throws Throwable {
         String captureSource="import {definePlan} from '@abox/hook';export default definePlan({id:'code',target,params:{},setup(ctx){ctx.java.method('owned.Fixture','value',['int']).replace(({args})=>{const capture=ctx.code.snapshotDex('dex-1');return args[0];});}});";
