@@ -1,25 +1,62 @@
 #define _GNU_SOURCE
+#include "kernel_syscall.h"
 #include "path_policy.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/memfd.h>
+#include <link.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
 #include <unistd.h>
+#define syscall tp_kernel_syscall
 
 /* Independent, process-immutable namespace policy. Direct internal syscalls avoid
  * recursively entering the intercepted libc wrappers. No privileged operations. */
-static char data_paths[4][PATH_MAX], artifact_paths[3][PATH_MAX];
-static size_t data_path_lens[4], artifact_path_lens[3];
+static char data_paths[4][PATH_MAX], artifact_paths[4][PATH_MAX];
+static char artifact_libraries[2][PATH_MAX],logical_libraries[PATH_MAX];
+static size_t data_path_lens[4], artifact_path_lens[4];
 static char guest_process[256], guest_comm[16];
+static char host_storage_roots[3][PATH_MAX];
+static bool host_storage_configured;
 static int data_fd=-1, artifact_fd=-1;
 static bool configured;
 static bool thin_mode;
 void tp_configure_thin(bool thin){thin_mode=thin;}
 
+/* A saved file-backed code page is a runtime preimage, not another ELF instance.
+ * Keep its address/inode/offset accounting while preventing false module bases. */
+struct projected_image {uintptr_t first,last;uint64_t hash;unsigned length;char path[PATH_MAX];};
+static struct projected_image projected_images[4096];
+static _Atomic unsigned projected_count;
+static uint64_t image_hash(const char *text,size_t length){uint64_t hash=UINT64_C(1469598103934665603);for(size_t i=0;i<length;i++)hash=(hash^(unsigned char)text[i])*UINT64_C(1099511628211);return hash;}
+static int register_image(const char *path,uintptr_t base,const Elf64_Phdr *headers,unsigned count){
+    if(!path||path[0]!='/'||!base||!headers||count>1024)return 0;
+    size_t length=0;const volatile char *input=path;while(length<PATH_MAX&&input[length])length++;if(!length||length>=PATH_MAX)return 0;
+    uintptr_t first=UINTPTR_MAX,last=0;
+    for(unsigned i=0;i<count;i++)if(headers[i].p_type==PT_LOAD){uintptr_t low=(base+headers[i].p_vaddr)&~(uintptr_t)4095,high=(base+headers[i].p_vaddr+headers[i].p_memsz+4095)&~(uintptr_t)4095;if(low<first)first=low;if(high>last)last=high;}
+    if(first>=last)return 0;unsigned used=atomic_load_explicit(&projected_count,memory_order_acquire);
+    for(unsigned i=0;i<used;i++)if(projected_images[i].first==first&&projected_images[i].last==last)return 1;
+    if(used>=4096)return 0;struct projected_image *image=&projected_images[used];image->first=first;image->last=last;image->length=(unsigned)length;
+    uint64_t hash=UINT64_C(1469598103934665603);for(size_t i=0;i<length;i++){char c=input[i];image->path[i]=c;hash=(hash^(unsigned char)c)*UINT64_C(1099511628211);}image->path[length]=0;image->hash=hash;
+    atomic_store_explicit(&projected_count,used+1,memory_order_release);return 1;
+}
+int tp_project_module(const char *path,uintptr_t base){
+    const Elf64_Ehdr *header=(const void *)base;
+    if(!base||header->e_ident[0]!=0x7f||header->e_ident[1]!='E'||header->e_ident[2]!='L'||header->e_ident[3]!='F'||header->e_phentsize!=sizeof(Elf64_Phdr)||header->e_phoff>65536)return 0;
+    return register_image(path,base,(const void *)(base+header->e_phoff),header->e_phnum);
+}
+static int initial_image(struct dl_phdr_info *info,size_t size,void *unused){
+    (void)size;(void)unused;const char *name=info->dlpi_name;char canonical[PATH_MAX],descriptor[64];
+    if(name&&name[0]=='/'){
+        int fd=(int)syscall(SYS_openat,AT_FDCWD,name,O_PATH|O_CLOEXEC,0);
+        if(fd>=0){snprintf(descriptor,sizeof(descriptor),"/proc/self/fd/%d",fd);ssize_t count=syscall(SYS_readlinkat,AT_FDCWD,descriptor,canonical,sizeof(canonical)-1);syscall(SYS_close,fd);if(count>0){canonical[count]=0;name=canonical;}}
+    }
+    register_image(name,info->dlpi_addr,info->dlpi_phdr,info->dlpi_phnum);return 0;
+}
 static bool prefix_len(const char *path,const char *root,size_t n) {
     return strncmp(path,root,n)==0&&(path[n]=='/'||path[n]=='\0');
 }
@@ -49,14 +86,19 @@ int tp_configure(const char *data,const char *data_canonical,const char *artifac
     for(int i=0;i<2;i++)if(data_paths[i][0]!='/'||artifact_paths[i][0]!='/'
         ||!(data_path_lens[i]=strlen(data_paths[i]))||!(artifact_path_lens[i]=strlen(artifact_paths[i])))return fail(EINVAL);
     snprintf(data_paths[2],PATH_MAX,"/data/data/%s",package);snprintf(data_paths[3],PATH_MAX,"/data/user/0/%s",package);
-    snprintf(artifact_paths[2],PATH_MAX,"/data/app/~~tripoder/%s",package);
+    const char *incarnation=strrchr(artifacts_canonical,'/');incarnation=incarnation?incarnation+1:artifacts_canonical;
+    if(!*incarnation||strlen(incarnation)>80)return fail(EINVAL);
+    if(snprintf(artifact_paths[2],PATH_MAX,"/data/app/~~%s/%s-%s",incarnation,package,incarnation)>=PATH_MAX)return fail(ENAMETOOLONG);
+    snprintf(artifact_paths[3],PATH_MAX,"/data/app/~~tripoder/%s",package);
     data_path_lens[2]=strlen(data_paths[2]);data_path_lens[3]=strlen(data_paths[3]);
-    artifact_path_lens[2]=strlen(artifact_paths[2]);
+    artifact_path_lens[2]=strlen(artifact_paths[2]);artifact_path_lens[3]=strlen(artifact_paths[3]);
+    for(int i=0;i<2;i++)if(snprintf(artifact_libraries[i],PATH_MAX,"%s/lib/",artifact_paths[i])>=PATH_MAX)return fail(ENAMETOOLONG);
+    if(snprintf(logical_libraries,PATH_MAX,"%s/lib/arm64/",artifact_paths[2])>=PATH_MAX)return fail(ENAMETOOLONG);
     snprintf(guest_process,sizeof(guest_process),"%s",package);set_comm(package);
     data_fd=(int)syscall(SYS_openat,AT_FDCWD,data,O_PATH|O_DIRECTORY|O_CLOEXEC|O_NOFOLLOW,0);if(data_fd<0)return -1;
     artifact_fd=(int)syscall(SYS_openat,AT_FDCWD,artifacts,O_PATH|O_DIRECTORY|O_CLOEXEC|O_NOFOLLOW,0);if(artifact_fd<0)return -1;
     // Relative guest paths start in the immutable data incarnation, not the host cwd.
-    if(syscall(SYS_fchdir,data_fd)<0)return -1;configured=true;return 0;
+    if(syscall(SYS_fchdir,data_fd)<0)return -1;dl_iterate_phdr(initial_image,NULL);configured=true;return 0;
 }
 
 int tp_configure_process(const char *process_name){
@@ -130,27 +172,19 @@ static bool metadata_ancestor(const char *path){
 static bool dot_component(const char *path){
     const char *p=path;while(*p){while(*p=='/')p++;const char *end=p;while(*end&&*end!='/')end++;size_t n=(size_t)(end-p);if((n==1&&p[0]=='.')||(n==2&&p[0]=='.'&&p[1]=='.'))return true;p=end;}return false;
 }
-static bool host_runtime_subpath(const char *path, const char **out_rel) {
-    static const char *const prefixes[] = {
-        "/data/user/0/dev.tripoder.engine",
-        "/data/data/dev.tripoder.engine",
-        "/data/user_de/0/dev.tripoder.engine",
-        "/data/user/0/dev.tripoder.runtimeprobe",
-        "/data/data/dev.tripoder.runtimeprobe",
-        "/data/user_de/0/dev.tripoder.runtimeprobe",
-    };
-    for (size_t i = 0; i < sizeof(prefixes)/sizeof(prefixes[0]); i++) {
-        size_t len = strlen(prefixes[i]);
-        if (strncmp(path, prefixes[i], len) == 0 && (path[len] == '/' || path[len] == '\0')) {
-            const char *sub = path + len;
-            if (*sub == '/') sub++;
-            if (!strncmp(sub, "app_webview", 11) || !strncmp(sub, "shared_prefs", 12) || !strncmp(sub, "cache", 5)) {
-                *out_rel = path + len;
-                return true;
-            }
-        }
-    }
-    return false;
+int tp_configure_host_storage(const char *data,const char *canonical,const char *device){
+    if(!configured||host_storage_configured)return fail(EALREADY);
+    const char *roots[]={data,canonical,device};for(unsigned i=0;i<3;i++)if(!roots[i]||roots[i][0]!='/'||dot_component(roots[i])||copy(host_storage_roots[i],roots[i])<0)return fail(EINVAL);
+    host_storage_configured=true;return 0;
+}
+static bool host_runtime_subpath(const char *path,const char **out_rel){
+    if(!host_storage_configured)return false;
+    for(unsigned i=0;i<3;i++){
+        size_t length=strlen(host_storage_roots[i]);if(!prefix_len(path,host_storage_roots[i],length))continue;
+        const char *sub=path+length;if(*sub=='/')sub++;
+        bool webview=!strncmp(sub,"app_webview",11)&&(sub[11]==0||sub[11]=='/'||sub[11]=='_');
+        if(webview||prefix(sub,"shared_prefs")||prefix(sub,"cache")||prefix(sub,"code_cache")||prefix(sub,"oat")){*out_rel=path+length;return true;}
+    }return false;
 }
 static int normalize_rel(const char *rel,char *out,size_t out_size){
     char *stack[128];
@@ -213,7 +247,7 @@ int tp_resolve(int dirfd,const char *path,enum tp_access access,struct tp_path *
             if(!dot_component(host_rel))return fast_anchor(data_fd,host_rel,out);
             return anchored(data_fd,host_rel,out);
         }
-        for(int i=0;i<3;i++)if(prefix_len(path,artifact_paths[i],artifact_path_lens[i])){
+        for(int i=0;i<4;i++)if(prefix_len(path,artifact_paths[i],artifact_path_lens[i])){
             if(access==TP_WRITE)return fail(EROFS);
             const char *raw_rel=path+artifact_path_lens[i];
             char rel[PATH_MAX];
@@ -222,15 +256,15 @@ int tp_resolve(int dirfd,const char *path,enum tp_access access,struct tp_path *
             }else{
                 if(copy(rel,raw_rel)<0)return -1;
             }
-            if(prefix_len(rel,"/lib/arm64",10)&&rel[10]=='/'){
+            if(prefix_len(rel,"/lib/arm64",10)){
                 char alias[PATH_MAX];
-                int n=snprintf(alias,sizeof(alias),"/lib/%s",rel+11);
+                int n=snprintf(alias,sizeof(alias),"/lib%s",rel+10);
                 if(n<=0||(size_t)n>=sizeof(alias))return fail(ENAMETOOLONG);
                 return fast_anchor(artifact_fd,alias,out);
             }
-            if(prefix_len(rel,"/lib/arm64-v8a",14)&&rel[14]=='/'){
+            if(prefix_len(rel,"/lib/arm64-v8a",14)){
                 char alias[PATH_MAX];
-                int n=snprintf(alias,sizeof(alias),"/lib/%s",rel+15);
+                int n=snprintf(alias,sizeof(alias),"/lib%s",rel+14);
                 if(n<=0||(size_t)n>=sizeof(alias))return fail(ENAMETOOLONG);
                 return fast_anchor(artifact_fd,alias,out);
             }
@@ -275,15 +309,15 @@ int tp_resolve(int dirfd,const char *path,enum tp_access access,struct tp_path *
         if(n<=0||(size_t)n>=sizeof(combined))return fail(ENAMETOOLONG);
         char norm[PATH_MAX];
         if(normalize_rel(combined,norm,sizeof(norm))<0)return -1;
-        if(prefix_len(norm,"/lib/arm64",10)&&norm[10]=='/'){
+        if(prefix_len(norm,"/lib/arm64",10)){
             char alias[PATH_MAX];
-            int an=snprintf(alias,sizeof(alias),"/lib/%s",norm+11);
+            int an=snprintf(alias,sizeof(alias),"/lib%s",norm+10);
             if(an<=0||(size_t)an>=sizeof(alias))return fail(ENAMETOOLONG);
             return fast_anchor(artifact_fd,alias,out);
         }
-        if(prefix_len(norm,"/lib/arm64-v8a",14)&&norm[14]=='/'){
+        if(prefix_len(norm,"/lib/arm64-v8a",14)){
             char alias[PATH_MAX];
-            int an=snprintf(alias,sizeof(alias),"/lib/%s",norm+15);
+            int an=snprintf(alias,sizeof(alias),"/lib%s",norm+14);
             if(an<=0||(size_t)an>=sizeof(alias))return fail(ENAMETOOLONG);
             return fast_anchor(artifact_fd,alias,out);
         }
@@ -349,6 +383,10 @@ static bool write_replaced(struct proc_buf *out,const char *line,size_t len,cons
     size_t prefix_len=(size_t)(pos-line),match_len=strlen(match),rep_len=strlen(replacement);
     return buf_write(out,line,prefix_len)&&buf_write(out,replacement,rep_len)&&buf_write(out,pos+match_len,len-prefix_len-match_len);
 }
+static bool write_artifact_path(struct proc_buf *out,const char *line,size_t len,int index){
+    if(strstr(line,artifact_libraries[index]))return write_replaced(out,line,len,artifact_libraries[index],logical_libraries);
+    return write_replaced(out,line,len,artifact_paths[index],artifact_paths[2]);
+}
 static bool is_vma_header(const char *line,size_t len){
     size_t i=0;
     while(i<len&&((line[i]>='0'&&line[i]<='9')||(line[i]>='a'&&line[i]<='f')))i++;
@@ -356,6 +394,15 @@ static bool is_vma_header(const char *line,size_t len){
     size_t j=++i;
     while(i<len&&((line[i]>='0'&&line[i]<='9')||(line[i]>='a'&&line[i]<='f')))i++;
     return i>j&&i<len&&line[i]==' ';
+}
+static const char *snapshot_alias(const char *line,size_t length){
+    const char *name=line;for(unsigned field=0;field<5;field++){while(*name&&*name!=' ')name++;while(*name==' ')name++;}
+    if(*name!='/')return NULL;size_t bytes=length-(size_t)(name-line);if(bytes&&name[bytes-1]=='\n')bytes--;
+    uint64_t hash=image_hash(name,bytes);unsigned count=atomic_load_explicit(&projected_count,memory_order_acquire);bool known=false;
+    uintptr_t first=0,last=0;const char *at=line;for(;*at&&*at!='-';at++){unsigned digit=(unsigned)(*at>='a'?*at-'a'+10:*at-'0');first=(first<<4)|digit;}if(*at++!='-')return NULL;
+    for(;*at&&*at!=' ';at++){unsigned digit=(unsigned)(*at>='a'?*at-'a'+10:*at-'0');last=(last<<4)|digit;}
+    for(unsigned i=0;i<count;i++){const struct projected_image *image=&projected_images[i];if(image->hash!=hash||image->length!=bytes||memcmp(image->path,name,bytes))continue;known=true;if(first>=image->first&&last<=image->last)return NULL;}
+    return known?name:NULL;
 }
 static bool transform_proc_line(enum tp_proc_kind kind,const char *line,size_t len,bool *skip_vma,struct proc_buf *out){
     if(kind==TP_PROC_STAT){
@@ -376,7 +423,8 @@ static bool transform_proc_line(enum tp_proc_kind kind,const char *line,size_t l
     }
     if(kind==TP_PROC_MAPS){
         if(is_vma_header(line,len)){
-            for(int i=0;i<2;i++)if(strstr(line,artifact_paths[i])){*skip_vma=false;return write_replaced(out,line,len,artifact_paths[i],artifact_paths[2]);}
+            const char *alias=snapshot_alias(line,len);if(alias){*skip_vma=false;return buf_write(out,line,(size_t)(alias-line))&&buf_write(out,"[anon:runtime-code-snapshot]\n",sizeof("[anon:runtime-code-snapshot]\n")-1);}
+            for(int i=0;i<2;i++)if(strstr(line,artifact_paths[i])){*skip_vma=false;return write_artifact_path(out,line,len,i);}
             for(int i=0;i<2;i++)if(strstr(line,data_paths[i])){*skip_vma=false;return write_replaced(out,line,len,data_paths[i],data_paths[3]);}
             const char *dex=strstr(line,"/memfd:tripoder-dex");
             if(dex){*skip_vma=false;return buf_write(out,line,(size_t)(dex-line))&&buf_write(out,"[anon:dalvik-classes.dex]\n",26);}
@@ -392,7 +440,7 @@ static bool transform_proc_line(enum tp_proc_kind kind,const char *line,size_t l
         return *skip_vma?true:buf_write(out,line,len);
     }
     if(kind==TP_PROC_MOUNTS){
-        for(int i=0;i<2;i++)if(strstr(line,artifact_paths[i]))return write_replaced(out,line,len,artifact_paths[i],artifact_paths[2]);
+        for(int i=0;i<2;i++)if(strstr(line,artifact_paths[i]))return write_artifact_path(out,line,len,i);
         for(int i=0;i<2;i++)if(strstr(line,data_paths[i]))return write_replaced(out,line,len,data_paths[i],data_paths[3]);
         if(strstr(line,"dev.tripoder.engine")||strstr(line,"dev.tripoder.runtimeprobe"))return true;
         return buf_write(out,line,len);
@@ -464,7 +512,7 @@ ssize_t tp_unresolve(const char *physical,size_t physical_len,char *out,size_t s
                 const char *rel=raw+strlen(artifact_paths[i]);
                 if(rel[0]=='/'||rel[0]=='\0'){
                     char rewritten[PATH_MAX];
-                    int n=snprintf(rewritten,sizeof(rewritten),"%s%s",artifact_paths[2],rel);
+                    int n=prefix(rel,"/lib")?snprintf(rewritten,sizeof(rewritten),"%s/lib/arm64%s",artifact_paths[2],rel+4):snprintf(rewritten,sizeof(rewritten),"%s%s",artifact_paths[2],rel);
                     if(n>0&&(size_t)n<sizeof(rewritten)){
                         size_t copied=(size_t)n<size?(size_t)n:size;
                         if(copied>0)memcpy(out,rewritten,copied);

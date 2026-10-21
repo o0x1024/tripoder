@@ -13,7 +13,7 @@ final class WorkbenchAgentPanel {
     WorkbenchAgentPanel(Activity page,WorkbenchApplication app,String project,LinearLayout parent){
         this.page=page;this.app=app;LinearLayout card=ProductUi.card(page);
         ProductUi.add(card,ProductUi.text(page,"外部 Agent",18,ProductUi.INK,true),0);
-        ProductUi.add(card,ProductUi.text(page,"电脑上的 MCP Agent 可直接连接。无需设备身份、公钥、配对文件或脚本审批。Agent 可列出运行目标并选择进程。",13,ProductUi.MUTED,false),8);
+        ProductUi.add(card,ProductUi.text(page,"电脑上的 MCP Agent 可直接连接。无需设备身份、公钥、配对文件或脚本审批。MCP 是全局控制入口，可管理空间、应用、脚本和进程；每次操作明确指定目标。",13,ProductUi.MUTED,false),8);
         info=ProductUi.text(page,"",13,ProductUi.INK,false);info.setContentDescription("外部 Agent 连接状态");ProductUi.add(card,info,12);
         enable=ProductUi.button(page,"开启电脑 Agent 入口",true,()->{
             page.getSharedPreferences("agent-control",Context.MODE_PRIVATE).edit().putBoolean("enabled",true).apply();

@@ -22,7 +22,7 @@ public final class CodeProbeIntegration extends ControlTestBase {
         try(var fd=ParcelFileDescriptor.open(apk,ParcelFileDescriptor.MODE_READ_ONLY)){
             Bundle request=ControlWire.request("install","space",space,"operation",id());request.putStringArrayList("names",new ArrayList<>(List.of("base.apk")));request.putStringArrayList("sha256",new ArrayList<>(List.of(fixtures.getString("probeSha256"))));request.putParcelable("fd0",fd);install=ControlWire.call(controller,ControlWire.EXECUTE,request).getString("generation");
         }finally{apk.delete();}
-        project=(String)invoke(projects,"create",new Class<?>[]{String.class},"Code probe fixture "+run);binding=id();execute(controller,"bindProject","operation",binding,"project",project,"space",space,"package","dev.tripoder.probefixture","generation",install);
+        Bundle applicationTarget=applicationProject(controller,projects,space,"dev.tripoder.probefixture",install);project=applicationTarget.getString("project");binding=applicationTarget.getString("bindingOperation");
         long before=SystemClock.elapsedRealtime();Bundle baseline=execute(controller,"prepareLaunch","operation",id(),"project",project,"bindingOperation",binding,"generation",install,"component","dev.tripoder.probefixture.ProbeActivity");Bundle worker=awaitWorker(controller,project,baseline);
         report.put("baselineLaunchMs",SystemClock.elapsedRealtime()-before);runOnMainSync(()->getTargetContext().startActivity(baseline.getParcelable("intent",Intent.class)));waitText("startup=original memory=dynamic-v1 file=dynamic-v1 error=");check("ordinary-thin-application-and-dynamic-loaders-work",true,"actual owned UI");
         signal("ready",new JSONObject().put("project",project).put("processGeneration",baseline.getString("generation")).put("pid",worker.getInt("pid")).put("payloadSha256",fixtures.getString("payloadSha256")));
@@ -31,7 +31,7 @@ public final class CodeProbeIntegration extends ControlTestBase {
         awaitSignal("hooked");waitText("payload=hooked");check("explicit-dynamic-loader-hook-runs-on-real-call",true,"real in-memory class invocation");signal("hooked-ui",new JSONObject());
         awaitSignal("stop-for-artifact");stop();signal("stopped",new JSONObject());
         awaitSignal("restarted");waitText("startup=original memory=dynamic-v1 file=dynamic-v1 error=");check("disabled-probe-plan-restores-ordinary-startup",true,"new generation, original method");signal("restored",new JSONObject());
-        awaitSignal("finished");stop();execute(controller,"deleteSpace","operation",id(),"space",space);invoke(projects,"delete",new Class<?>[]{String.class},project);
+        awaitSignal("finished");stop();execute(controller,"deleteSpace","operation",id(),"space",space);
         report.put("scope","generic-code-probes-owned-application").put("pairingPerformed",false).put("phoneApprovalPerformed",false).put("runtimeMode","thin");
     }
     private void cleanupOwnedFixtures()throws Exception{
@@ -40,7 +40,7 @@ public final class CodeProbeIntegration extends ControlTestBase {
         for(JSONObject value:existing){String name=value.getString("name");if(!name.matches("Code probe fixture control-[a-f0-9]{16}"))continue;String ownedRun=name.substring("Code probe fixture ".length());
             File proof=new File(getTargetContext().getExternalFilesDir(null),"progress-"+ownedRun+".json");if(!proof.isFile())continue;
             JSONObject progress=new JSONObject(java.nio.file.Files.readString(proof.toPath()));if(!ownedRun.equals(progress.getString("runId")))throw new IllegalStateException("OWNED_FIXTURE_RUN_MISMATCH");
-            if(spaces.contains(ownedRun+"-code"))execute(controller,"deleteSpace","operation",id(),"space",ownedRun+"-code");invoke(projects,"delete",new Class<?>[]{String.class},value.getString("id"));
+            if(spaces.contains(ownedRun+"-code"))execute(controller,"deleteSpace","operation",id(),"space",ownedRun+"-code");
         }
     }
     private void stop()throws Exception{execute(controller,"stopApplication","operation",id(),"space",space,"package","dev.tripoder.probefixture","generation",install);runOnMainSync(()->getTargetContext().startActivity(new Intent().setClassName(getTargetContext(),"dev.tripoder.hooklab.WorkbenchActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)));}

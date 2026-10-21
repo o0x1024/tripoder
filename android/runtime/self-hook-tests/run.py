@@ -32,7 +32,7 @@ def main():
         return result.stdout.strip()
     inputs=[runtime/name for name in ['RuntimeSelfHookBootstrap.java','RuntimeSelfHookLoaders.java',
         'RuntimeSelfHookLifecycle.java','RuntimeSelfHookProviderCalls.java','RuntimeSelfHookSelection.java','RuntimeSelfHookBoundaries.java',
-        'RuntimeSelfHookManagerPolicy.java','RuntimeStartupDeadline.java','RuntimePendingIntentPolicy.java','PreferencesWait.java','ServiceRecoveryPolicy.java']]
+        'RuntimeSelfHookManagerPolicy.java','RuntimeFixedPassthrough.java','RuntimeStartupDeadline.java','RuntimePendingIntentPolicy.java','PreferencesWait.java','ServiceRecoveryPolicy.java']]
     inputs+=sorted((here/'src/dev').rglob('*.java'))+sorted((here/'src/fixture').rglob('*.java'))
     before={str(path.relative_to(repo)):digest(path) for path in inputs}
     run(javac,'--release','17','-d',fixture,here/'src/fixture/OwnedApplication.java')
@@ -42,6 +42,7 @@ def main():
              run(java,'-cp',classes,'dev.tripoder.runtime.ComponentTest'),
              run(java,'-cp',classes,'dev.tripoder.runtime.BoundaryTest'),
              run(java,'-cp',classes,'dev.tripoder.runtime.ManagerPolicyTest'),
+             run(java,'-cp',classes,'dev.tripoder.runtime.FixedPassthroughTest'),
              run(java,'-cp',classes,'dev.tripoder.runtime.StartupDeadlineTest'),
              run(java,'-cp',classes,'dev.tripoder.runtime.PendingIntentPolicyTest'),
              run(java,'-cp',classes,'dev.tripoder.runtime.PreferencesWaitTest'),

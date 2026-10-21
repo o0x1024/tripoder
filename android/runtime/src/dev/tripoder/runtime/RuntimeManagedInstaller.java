@@ -17,13 +17,26 @@ final class RuntimeManagedInstaller {
     @FunctionalInterface interface Callback {Object invoke(Object receiver,Object[] arguments,Original original)throws Throwable;}
     private final Map<Executable,ManagedHook.Handle> installed=new LinkedHashMap<>();
     private final Map<Executable,ManagedHook.Handle> reserved;
+    private final Map<ManagedHook.Handle,ManagedHook.Handler> pending=new LinkedHashMap<>();
+    private final boolean deferred;
+    private boolean published;
     private long lastPrepareNs,lastPublishNs;
     private boolean installing,failed;
     RuntimeManagedInstaller(Map<Executable,ManagedHook.Handle> reservations){
+        this(reservations,false);
+    }
+    RuntimeManagedInstaller(Map<Executable,ManagedHook.Handle> reservations,boolean deferred){
         ManagedHook.requireProcessInitialization();
         reserved=new LinkedHashMap<>(Objects.requireNonNull(reservations));
+        this.deferred=deferred;
     }
     synchronized void install(Map<? extends Executable,Callback> supplied)throws Exception {
+        install(supplied,false);
+    }
+    synchronized void installLifecycle(Map<? extends Executable,Callback> supplied)throws Exception {
+        install(supplied,deferred&&published);
+    }
+    private void install(Map<? extends Executable,Callback> supplied,boolean entryOnly)throws Exception {
         if(failed||installing)throw new IllegalStateException("FIXED_INSTALLER_UNAVAILABLE");
         ManagedHook.requireProcessInitialization();
         Map<Executable,Callback> callbacks=new LinkedHashMap<>(Objects.requireNonNull(supplied));
@@ -42,7 +55,7 @@ final class RuntimeManagedInstaller {
             lastPrepareNs=android.os.SystemClock.elapsedRealtimeNanos()-start;start=android.os.SystemClock.elapsedRealtimeNanos();
             Map<ManagedHook.Handle,ManagedHook.Handler> handlers=new LinkedHashMap<>();
             prepared.forEach((target,handle)->{Callback callback=callbacks.get(target);handlers.put(handle,call->callback.invoke(call.receiver(),call.arguments(),call::original));});
-            ManagedHook.enableBatch(handlers);
+            if(deferred&&!published)pending.putAll(handlers);else if(entryOnly)ManagedHook.enableEntryBatch(handlers);else ManagedHook.enableBatch(handlers);
             installed.putAll(prepared);
             lastPublishNs=android.os.SystemClock.elapsedRealtimeNanos()-start;
         }catch(Exception|Error error){
@@ -51,8 +64,17 @@ final class RuntimeManagedInstaller {
             throw error;
         }finally{installing=false;}
     }
+    /** No guest may execute between preparation and this single fixed publication. */
+    synchronized void publishPrepared(){
+        if(!deferred||published||failed||installing||pending.isEmpty()||!reserved.isEmpty())throw new IllegalStateException("FIXED_PUBLICATION_ORDER");
+        installing=true;
+        long start=android.os.SystemClock.elapsedRealtimeNanos();
+        try{ManagedHook.enableBatch(pending);pending.clear();published=true;lastPublishNs=android.os.SystemClock.elapsedRealtimeNanos()-start;}
+        catch(Exception|Error error){failed=true;android.util.Log.e("TripoderHook","FIXED_INSTALLER_PARTIAL_PUBLICATION",error);Process.killProcess(Process.myPid());System.exit(74);throw error;}
+        finally{installing=false;}
+    }
     synchronized void requirePreparedConsumed(){if(!reserved.isEmpty())throw new IllegalStateException("FIXED_PREPARED_BINDINGS_UNUSED:"+reserved.size());}
-    synchronized int installedCount(){if(failed)throw new IllegalStateException("FIXED_INSTALLER_FAILED");return installed.size();}
+    synchronized int installedCount(){if(failed||!pending.isEmpty())throw new IllegalStateException("FIXED_INSTALLER_NOT_PUBLISHED");return installed.size();}
     synchronized long prepareNs(){return lastPrepareNs;}
     synchronized long publishNs(){return lastPublishNs;}
 }

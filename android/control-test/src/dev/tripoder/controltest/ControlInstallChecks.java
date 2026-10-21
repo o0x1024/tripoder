@@ -26,11 +26,12 @@ final class ControlInstallChecks {
             String corrupt=id();
             test.check("incorrect-apk-digest-rejected",test.rejected(()->install(base,"0".repeat(64),space,corrupt,null,ParcelFileDescriptor.MODE_READ_ONLY),SecurityException.class,"APK_DIGEST_MISMATCH"),true);
             test.check("incorrect-digest-has-terminal-failed-receipt","FAILED".equals(test.execute(session,"query","operation",corrupt).getString("state")),corrupt);
-            String project="project-"+test.run,binding=id();
+            Bundle canonical=test.execute(session,"applicationTarget","space",space,"package","dev.tripoder.p0.a","generation",generation);String project=canonical.getString("project"),binding=canonical.getString("bindingOperation");test.execute(session,"selectProjectTarget","operation",id(),"project",project,"space",space,"package","dev.tripoder.p0.a","generation",generation);
             test.check("project-cannot-bind-invented-generation",test.rejected(()->test.execute(session,"bindProject","operation",id(),"project",project,"space",space,"package","dev.tripoder.p0.a","generation","not-current"),IllegalStateException.class,"PROJECT_INSTALL_GENERATION_CONFLICT"),true);
-            Bundle bound=test.execute(session,"bindProject","operation",binding,"project",project,"space",space,"package","dev.tripoder.p0.a","generation",generation);
+            Bundle bound=canonical;
             test.check("project-bound-to-verified-install",generation.equals(bound.getString("generation"))&&binding.equals(bound.getString("bindingOperation")),test.json(bound));
             test.check("project-resolves-same-data-instance",bound.getString("dataId").equals(test.execute(session,"resolveProject","project",project).getString("dataId")),test.json(bound));
+            test.check("identical-reimport-retains-generation-and-project",generation.equals(install(base,sha,space,id(),generation,ParcelFileDescriptor.MODE_READ_ONLY).getString("generation"))&&project.equals(test.execute(session,"applicationTarget","space",space,"package","dev.tripoder.p0.a","generation",generation).getString("project")),true);
             Bundle upgraded=install(upgrade,upgradeSha,space,id(),generation,ParcelFileDescriptor.MODE_READ_ONLY);String current=upgraded.getString("generation");
             test.check("upgrade-creates-new-install-generation",!generation.equals(current),test.json(upgraded));
             test.check("upgrade-invalidates-project-binding",test.rejected(()->test.execute(session,"resolveProject","project",project),IllegalStateException.class,"PROJECT_BINDING_STALE"),true);

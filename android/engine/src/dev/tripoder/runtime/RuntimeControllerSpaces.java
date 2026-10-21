@@ -32,7 +32,7 @@ final class RuntimeControllerSpaces {
                     RuntimeControllerService.requireLease(lease);
                     // An application added while the others were being removed keeps the space.
                     try(Cursor c=db.rawQuery("SELECT 1 FROM installs WHERE space=? LIMIT 1",new String[]{space})){if(c.moveToFirst())throw new IllegalStateException("SPACE_NOT_EMPTY");}
-                    projects=RuntimeControllerApplications.removeBindings(db,"space=?",space);
+                    RuntimeControllerApplications.removeBindings(db,"space=?",space);projects=new org.json.JSONArray();
                     if(db.delete("spaces","id=?",new String[]{space})!=1)throw new IllegalStateException("SPACE_NOT_FOUND:"+space);
                     broker.contract.succeed(operation,new JSONObject().put("space",space).put("installs",removed).put("deletedProjects",projects).toString());
                     db.setTransactionSuccessful();

@@ -10,7 +10,7 @@ import org.json.*;
 /** Installation ingress with an optional project binding. One call waits for the guest Application and returns the entry Intent the workbench starts. */
 final class RuntimeControllerLaunch {
     static Bundle targets(RuntimeBroker broker,Bundle input)throws Exception{
-        RuntimeControllerCommands.fields(input,"command","project");Bundle target=new ProjectTargetBindings(broker).resolve(ControlWire.required(input,"project"));
+        RuntimeControllerCommands.targetFields(input,"command","project");Bundle target=(input.containsKey("bindingOperation")?new ProjectTargetBindings(broker).resolveBinding(ControlWire.required(input,"project"),input.getString("bindingOperation")):new ProjectTargetBindings(broker).resolve(ControlWire.required(input,"project")));
         var install=broker.apks.get(target.getString("space"),target.getString("package"));if(!install.generation.equals(target.getString("generation")))throw new IllegalStateException("LAUNCH_BINDING_STALE");
         JSONArray list=new JSONArray();for(var info:install.activityIndex().values()){
             if(!info.exported||!info.enabled||!info.applicationInfo.enabled||info.permission!=null&&!info.permission.isEmpty())continue;
@@ -37,7 +37,7 @@ final class RuntimeControllerLaunch {
         try{
             Bundle target;
             if(application){target=new Bundle();target.putString("project","");target.putString("bindingOperation","");target.putString("space",input.getString("space"));target.putString("package",input.getString("package"));target.putString("generation",generation);}
-            else target=new ProjectTargetBindings(broker).resolve(project);
+            else target=new ProjectTargetBindings(broker).resolveBinding(project,binding);
             if(!binding.equals(target.getString("bindingOperation"))||!generation.equals(target.getString("generation")))throw new IllegalStateException("LAUNCH_BINDING_STALE");
             var install=broker.apks.get(target.getString("space"),target.getString("package"));if(!generation.equals(install.generation))throw new IllegalStateException("LAUNCH_BINDING_STALE");
             String component=application?launcherComponent(install):input.getString("component");

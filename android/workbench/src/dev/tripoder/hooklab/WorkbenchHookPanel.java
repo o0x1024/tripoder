@@ -11,7 +11,7 @@ import org.json.*;
 /** One explicit observe/prepare/activate flow through the production controller. */
 final class WorkbenchHookPanel implements EngineConnection.Listener {
     private final Activity page;private final WorkbenchApplication app;private final String project;private final Supplier<String> source;
-    private final WorkbenchHooks.Session session;private final TextView info;private final Button process,observe,prepare,activate,disable,discard,query,params,modules,configure;
+    private WorkbenchHooks.Session session;private final TextView info;private final Button process,observe,prepare,activate,disable,discard,query,params,modules,configure;
     private boolean destroyed,loading;private final Runnable operationObserver=this::render;
     WorkbenchHookPanel(Activity page,WorkbenchApplication app,String project,Supplier<String> source,LinearLayout parent){
         this.page=page;this.app=app;this.project=project;this.source=source;session=app.hooks.project(project);
@@ -50,7 +50,7 @@ final class WorkbenchHookPanel implements EngineConnection.Listener {
             loading=false;if(destroyed)return;if(error!=null){show(error);return;}if(!lease.equals(app.engine.lease)){show(new IllegalStateException("连接已改变，请重新选择"));return;}
             try{JSONArray choices=new JSONArray(value.getString("processes"));if(choices.length()==0){session.clearEvidence();session.target=null;session.message="应用尚未运行。请先从本项目启动空间应用。";render();return;}
                 String[] labels=new String[choices.length()];for(int i=0;i<labels.length;i++){JSONObject item=choices.getJSONObject(i);labels[i]=item.getString("processName")+" · PID "+item.getInt("pid");}
-                new AlertDialog.Builder(page).setTitle("选择实际运行的进程").setItems(labels,(dialog,index)->{try{session.select(value,choices.getJSONObject(index),lease);session.message="已选择，正在查询…";perform("status",JSONObject::new,"查询 Hook 状态");}catch(Exception invalid){show(invalid);}}).show();
+                new AlertDialog.Builder(page).setTitle("选择实际运行的进程").setItems(labels,(dialog,index)->{try{JSONObject chosen=choices.getJSONObject(index);session=app.hooks.target(project,value,chosen,lease);session.message="已选择，正在查询…";perform("status",JSONObject::new,"查询 Hook 状态");}catch(Exception invalid){show(invalid);}}).show();
             }catch(Exception invalid){show(invalid);}
         });
     }
@@ -78,6 +78,7 @@ final class WorkbenchHookPanel implements EngineConnection.Listener {
     private interface Fields {JSONObject get()throws Exception;}
     private void perform(String command,Fields fields,String label){try{
         if(session.target==null||!session.lease.equals(app.engine.lease))throw new IllegalStateException("请重新选择运行进程");
+        if(!java.util.Set.of("status","modules","disable","discard").contains(command)&&app.projects.get(project).optBoolean("migrationPending"))throw new IllegalStateException("请先在历史脚本与恢复中选择保留的版本");
         JSONObject raw=fields.get().put("command",command).put("processGeneration",session.process);String process=session.process,lease=session.lease;
         Bundle input=ControlWire.request("hook","operation",UUID.randomUUID().toString(),"project",project,"bindingOperation",session.target.getString("bindingOperation"),"generation",session.target.getString("generation"),"processGeneration",process,"request",raw.toString());
         boolean previouslyUncertain=session.uncertain;session.uncertain=true;

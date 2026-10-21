@@ -9,53 +9,69 @@ final class WorkbenchAgentControl {
     private final WorkbenchApplication app;
     volatile String message="电脑 Agent 入口尚未启动";
     volatile boolean listening;
-    WorkbenchAgentControl(WorkbenchApplication app){this.app=app;}
+    private final WorkbenchAgentLifecycle lifecycle;private final WorkbenchAgentImports imports;
+    WorkbenchAgentControl(WorkbenchApplication app){this.app=app;lifecycle=new WorkbenchAgentLifecycle(app);imports=new WorkbenchAgentImports(app);}
+    private static final java.util.Set<String> VISIBLE_MUTATIONS=java.util.Set.of("space.create","space.rename","space.delete","application.remove","application.delete","application.mode","application.reverify","application.importDevice","import.commit","project.scriptPut","project.selectorsPut","project.archiveRestore","project.migrationAccept","launch.abandon","launch.close","probes.configure","process.start","application.stop","hook.observe","hook.prepare","hook.activate","hook.disable","hook.discard","hook.updateParameters","hook.uiAction","hook.httpRequest","hook.guestInvoke","hook.probeStop","hook.classLoaderCreate","hook.dexSnapshot");
     JSONObject wire(JSONObject request)throws Exception{
         String id=request.optString("requestId","");
         try{
             if(!listening)throw new IllegalStateException("AGENT_ENDPOINT_CLOSED");
             AgentCrypto.id(id);if(request.getInt("protocol")!=AgentCrypto.PROTOCOL)throw new IllegalArgumentException("AGENT_PROTOCOL_UNSUPPORTED");
-            String method=request.getString("method");JSONObject params=request.getJSONObject("params");Bundle output;
-            if(java.util.Set.of("runtime.capabilities","projects.list","probes.configure","probes.get","process.start","application.stop","operation.get","artifact.list","artifact.read").contains(method)){
-                // Legacy MCP clients attach their selected session to operation.get.
-                // The operation journal remains queryable after that session closes.
-                if(method.equals("operation.get")&&request.has("session"))AgentCrypto.fields(request,"protocol","requestId","method","params","session");
-                else AgentCrypto.fields(request,"protocol","requestId","method","params");
-                switch(method){
-                    case "runtime.capabilities":case "projects.list":AgentCrypto.fields(params);output=app.engine.executeBlocking(ControlWire.request(method.equals("projects.list")?"agentProjects":"agentCapabilities"));break;
-                    case "probes.get":AgentCrypto.fields(params,"project");output=app.engine.executeBlocking(ControlWire.request("agentProbeGet","project",params.getString("project")));break;
-                    case "probes.configure":AgentCrypto.fields(params,"project","expectedRevision","configuration");output=app.engine.executeBlocking(ControlWire.request("agentProbeConfigure","operation",id,"project",params.getString("project"),"expectedRevision",params.getString("expectedRevision"),"configuration",params.getJSONObject("configuration").toString()));break;
-                    case "operation.get":AgentCrypto.fields(params,"operationId");output=app.engine.executeBlocking(ControlWire.request("agentOperation","operation",params.getString("operationId")));break;
-                    case "application.stop":AgentCrypto.fields(params,"project","installGeneration");output=app.engine.executeBlocking(ControlWire.request("agentStopApplication","operation",id,"project",params.getString("project"),"installGeneration",params.getString("installGeneration")));break;
-                    case "artifact.list":AgentCrypto.fields(params,"processGeneration");return new JSONObject().put("protocol",AgentCrypto.PROTOCOL).put("requestId",id).put("ok",true).put("result",dev.tripoder.runtime.RuntimeCodeArtifacts.list(app,params.getString("processGeneration")));
-                    case "artifact.read":AgentCrypto.fields(params,"processGeneration","artifactId","offset","length");return new JSONObject().put("protocol",AgentCrypto.PROTOCOL).put("requestId",id).put("ok",true).put("result",dev.tripoder.runtime.RuntimeCodeArtifacts.read(app,params.getString("processGeneration"),params.getString("artifactId"),params.getInt("offset"),params.getInt("length")));
-                    default:{
-                        AgentCrypto.fields(params,"project","component","probeRevision");
-                        output=app.engine.executeBlocking(ControlWire.request("agentPrepareLaunch","operation",id,"project",params.getString("project"),"component",params.getString("component"),"probeRevision",params.getString("probeRevision")));
-                        android.content.Intent intent=output.getParcelable("intent",android.content.Intent.class);if(intent==null)throw new IllegalStateException("PROCESS_ENTRY_MISSING");
-                        try{app.startActivity(intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK));}catch(Exception failure){throw new IllegalStateException("PROCESS_ENTRY_DISPATCH_UNKNOWN_QUERY_OPERATION",failure);}
-                        JSONObject result=new JSONObject().put("project",output.getString("project")).put("processGeneration",output.getString("generation")).put("pid",output.getInt("pid")).put("probeRevision",output.getString("probeRevision")).put("entryDispatchRequested",true).put("operationId",id);
-                        return new JSONObject().put("protocol",AgentCrypto.PROTOCOL).put("requestId",id).put("ok",true).put("result",result);
-                    }
-                }
+            if("operation.get".equals(request.optString("method"))&&request.has("session"))AgentCrypto.fields(request,"protocol","requestId","method","params","session");else AgentCrypto.fields(request,"protocol","requestId","method","params");
+            String method=request.getString("method");JSONObject params=request.getJSONObject("params"),result;Bundle output;
+            if(method.equals("operation.get")){
+                AgentCrypto.fields(params,"operationId");String operation=AgentCrypto.id(params.getString("operationId"));result=lifecycle.receiptIfPresent(operation);
+                if(result==null)result=new JSONObject(app.engine.executeBlocking(ControlWire.request("agentOperation","operation",operation)).getString("result"));
+                // A local edit interrupted before its terminal receipt remains uncertain.
+                if("RUNNING".equals(result.optString("state")))result.put("state","UNKNOWN");
+                lifecycle.cleanupReceipt(result);
+            }else if(method.startsWith("import.")||method.equals("application.importDevice")||method.equals("application.importStatus")){
+                if(method.equals("import.cleanup"))result=lifecycle.mutate(id,method,params,()->imports.call(method,params,id));else{if(lifecycle.receiptIfPresent(id)!=null)throw new IllegalArgumentException("AGENT_REQUEST_ID_CONTENT_MISMATCH");result=imports.call(method,params,id);}
+            }else if(method.equals("runtime.capabilities")){
+                AgentCrypto.fields(params);result=new JSONObject(app.engine.executeBlocking(ControlWire.request("agentCapabilities")).getString("result"));result.put("globalControl",true).put("explicitTargets",true).put("implicitTargetSelection",false);
             }else if(method.equals("targets.list")){
-                AgentCrypto.fields(request,"protocol","requestId","method","params");AgentCrypto.fields(params);
-                output=app.engine.executeBlocking(ControlWire.request("agentTargets"));
-            }else if(method.equals("target.select")){
-                AgentCrypto.fields(request,"protocol","requestId","method","params");AgentCrypto.fields(params,"project","processGeneration");
-                output=app.engine.executeBlocking(ControlWire.request("agentSelect","project",params.getString("project"),"processGeneration",params.getString("processGeneration")));
-            }else{
-                AgentCrypto.fields(request,"protocol","requestId","method","params","session");
-                JSONObject payload=new JSONObject(request.toString());payload.remove("session");
-                return new JSONObject(app.engine.executeBlocking(ControlWire.request("agentCall","session",request.getString("session"),"payload",payload.toString())).getString("result"));
-            }
-            return new JSONObject().put("protocol",AgentCrypto.PROTOCOL).put("requestId",id).put("ok",true).put("result",new JSONObject(output.getString("result")));
+                AgentCrypto.fields(params);result=new JSONObject(app.engine.executeBlocking(ControlWire.request("agentTargets")).getString("result"));
+            }else if(method.equals("artifact.list")){
+                AgentCrypto.fields(params,"processGeneration");result=dev.tripoder.runtime.RuntimeCodeArtifacts.list(app,params.getString("processGeneration"));
+            }else if(method.equals("artifact.read")){
+                AgentCrypto.fields(params,"processGeneration","artifactId","offset","length");result=dev.tripoder.runtime.RuntimeCodeArtifacts.read(app,params.getString("processGeneration"),params.getString("artifactId"),params.getInt("offset"),params.getInt("length"));
+            }else if(java.util.Set.of("probes.get","probes.configure","process.start","application.stop").contains(method)){
+                if(lifecycle.receiptIfPresent(id)!=null)throw new IllegalArgumentException("AGENT_REQUEST_ID_CONTENT_MISMATCH");
+                switch(method){
+                    case "probes.get":AgentCrypto.fields(params,"target");break;
+                    case "probes.configure":AgentCrypto.fields(params,"target","expectedRevision","configuration");break;
+                    case "process.start":AgentCrypto.fields(params,"target","component","probeRevision");break;
+                    default:AgentCrypto.fields(params,"target");
+                }
+                Bundle target=lifecycle.target(params.getJSONObject("target"),false);String project=target.getString("project"),binding=target.getString("bindingOperation");
+                if(method.equals("probes.get"))output=app.engine.executeBlocking(ControlWire.request("agentProbeGet","project",project,"bindingOperation",binding));
+                else if(method.equals("probes.configure"))output=app.engine.executeBlocking(ControlWire.request("agentProbeConfigure","operation",id,"project",project,"bindingOperation",binding,"expectedRevision",params.getString("expectedRevision"),"configuration",params.getJSONObject("configuration").toString()));
+                else if(method.equals("application.stop"))output=app.engine.executeBlocking(ControlWire.request("agentStopApplication","operation",id,"project",project,"bindingOperation",binding,"installGeneration",target.getString("generation")));
+                else{
+                    output=app.engine.executeBlocking(ControlWire.request("agentPrepareLaunch","operation",id,"project",project,"bindingOperation",binding,"component",params.getString("component"),"probeRevision",params.getString("probeRevision")));
+                    android.content.Intent intent=output.getParcelable("intent",android.content.Intent.class);if(intent==null)throw new IllegalStateException("PROCESS_ENTRY_MISSING");
+                    try{app.startActivity(intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK));}catch(Exception failure){throw new IllegalStateException("PROCESS_ENTRY_DISPATCH_UNKNOWN_QUERY_OPERATION",failure);}
+                    return success(id,new JSONObject().put("target",params.getJSONObject("target")).put("processGeneration",output.getString("generation")).put("pid",output.getInt("pid")).put("probeRevision",output.getString("probeRevision")).put("entryDispatchRequested",true).put("operationId",id));
+                }
+                result=new JSONObject(output.getString("result"));
+            }else if(method.startsWith("hook.")||method.equals("process.get")){
+                if(lifecycle.receiptIfPresent(id)!=null)throw new IllegalArgumentException("AGENT_REQUEST_ID_CONTENT_MISMATCH");
+                return new JSONObject(app.engine.executeBlocking(ControlWire.request("agentExplicit","payload",request.toString())).getString("result"));
+            }else result=lifecycle.call(method,params,id);
+            return success(id,result);
         }catch(Exception error){
             JSONObject failure=new JSONObject().put("protocol",AgentCrypto.PROTOCOL).put("requestId",id).put("ok",false).put("error",error.getClass().getSimpleName()+":"+String.valueOf(error.getMessage()));
-            if(java.util.Set.of("process.start","application.stop","probes.configure").contains(request.optString("method"))){failure.put("operationId",id);try{JSONObject row=new JSONObject(app.engine.executeBlocking(ControlWire.request("agentOperation","operation",id)).getString("result"));failure.put("state",row.getString("state"));}catch(Exception notAccepted){failure.put("state","REJECTED");}}
+            if(java.util.Set.of("space.create","space.rename","space.delete","application.remove","application.delete","application.mode","application.reverify","application.importDevice","import.begin","import.commit","import.write","import.cleanup","project.scriptPut","project.selectorsPut","project.archiveRestore","project.migrationAccept","launch.abandon","launch.close","probes.configure","process.start","application.stop","hook.observe","hook.prepare","hook.activate","hook.disable","hook.discard","hook.updateParameters","hook.uiAction","hook.httpRequest","hook.guestInvoke","hook.probeStop","hook.classLoaderCreate","hook.dexSnapshot").contains(request.optString("method")))try{JSONObject row=lifecycle.receiptIfPresent(id);if(row==null)row=new JSONObject(app.engine.executeBlocking(ControlWire.request("agentOperation","operation",id)).getString("result"));failure.put("operationId",id).put("state","RUNNING".equals(row.optString("state"))?"UNKNOWN":row.optString("state","UNKNOWN"));}catch(Exception notAccepted){failure.put("operationId",id).put("state",String.valueOf(notAccepted.getMessage()).contains("OPERATION_NOT_FOUND")?"REJECTED":"UNKNOWN");}
+            else failure.put("state","REJECTED");
             return failure;
+        }finally{
+            String method=request.optString("method");if(VISIBLE_MUTATIONS.contains(method)){
+                JSONObject target=null;if(method.startsWith("hook.")||java.util.Set.of("application.stop","application.remove","process.start").contains(method))try{target=request.getJSONObject("params").getJSONObject("target");}catch(Exception invalid){}
+                app.controlChanged(target);
+            }
         }
     }
+    private static JSONObject success(String id,JSONObject result)throws Exception{return new JSONObject().put("protocol",AgentCrypto.PROTOCOL).put("requestId",id).put("ok",true).put("result",result);}
     void revoke(EngineConnection.Result callback){app.engine.execute(ControlWire.request("agentShutdown"),callback);}
     synchronized void closed(){listening=false;message="电脑 Agent 入口已关闭，应用继续运行";}
 }

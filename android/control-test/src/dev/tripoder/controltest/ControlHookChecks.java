@@ -14,13 +14,13 @@ final class ControlHookChecks {
         Bundle targets=test.execute(session,"hookProcesses","project",project);JSONArray processes=new JSONArray(targets.getString("processes"));
         test.check("hook-lists-real-project-process",processes.length()==1&&binding.equals(targets.getString("bindingOperation")),test.json(targets));process=processes.getJSONObject(0).getString("processGeneration");
         test.report.put("workerPid",processes.getJSONObject(0).getInt("pid")).put("processGeneration",process);
-        String other=project+"-other";Bundle ref=test.execute(session,"bindProject","operation",id(),"project",other,"space",targets.getString("space"),"package",targets.getString("package"),"generation",install);
+        String other=project+"-other";test.check("application-cannot-acquire-second-project",test.rejected(()->test.execute(session,"bindProject","operation",id(),"project",other,"space",targets.getString("space"),"package",targets.getString("package"),"generation",install),IllegalStateException.class,"APPLICATION_PROJECT_ALREADY_EXISTS"),true);
         Bundle mismatch=request("status",new JSONObject());mismatch.putString("generation",id());
         test.check("hook-rejects-stale-install",test.rejected(()->ControlWire.call(session,ControlWire.EXECUTE,mismatch),IllegalStateException.class,"HOOK_PROJECT_BINDING_STALE"),true);
         JSONObject evidence=hook("observe",new JSONObject().put("selectors",selectors()));
         test.check("hook-observation-binds-actual-worker",evidence.getJSONObject("identity").getInt("pid")==processes.getJSONObject(0).getInt("pid"),evidence);
-        Bundle conflict=request("observe",new JSONObject().put("selectors",selectors()));conflict.putString("project",other);conflict.putString("bindingOperation",ref.getString("bindingOperation"));
-        test.check("another-project-cannot-replace-hook-context",test.rejected(()->ControlWire.call(session,ControlWire.EXECUTE,conflict),SecurityException.class,"HOOK_PROJECT_OWNER_CONFLICT"),true);
+        Bundle conflict=request("observe",new JSONObject().put("selectors",selectors()));conflict.putString("project",other);conflict.putString("bindingOperation",binding);
+        test.check("another-project-cannot-replace-hook-context",test.rejected(()->ControlWire.call(session,ControlWire.EXECUTE,conflict),IllegalStateException.class,"PROJECT_NOT_BOUND"),true);
         test.check("project-cannot-rebind-while-hook-context-owned",test.rejected(()->test.execute(session,"bindProject","operation",id(),"project",project,"expectedBinding",binding,"space",targets.getString("space"),"package",targets.getString("package"),"generation",install),IllegalStateException.class,"PROJECT_HOOK_CONTEXT_IN_USE"),true);
         prepared=hook("prepare",new JSONObject().put("evidenceId",evidence.getJSONObject("evidence").getString("id")).put("source",source()));
         test.check("project-script-prepared",prepared.getString("state").equals("PREPARED"),prepared.getString("sourceSha256"));

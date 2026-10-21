@@ -30,13 +30,7 @@ final class WorkbenchAppActions {
     }
     /** Only COMMITTED bindings to this installation count; a stale binding (its installation was removed or updated) never takes over the tap. */
     private void launchIn(WorkbenchCatalog catalog,JSONObject install){
-        String pkg=install.optString("package"),space=install.optString("space");List<JSONObject> projects=new ArrayList<>();
-        try{for(JSONObject project:catalog.projects(app.projects.all(),pkg)){JSONObject ref=catalog.bindings.get(project.optString("id"));if("COMMITTED".equals(ref.optString("state"))&&space.equals(ref.optString("space")))projects.add(project);}}catch(Exception error){ProductUi.notice(page,"读取项目失败",UiText.error(error));return;}
-        if(projects.size()==1){launchProject(projects.get(0));return;}
-        if(projects.size()>1){
-            String[] names=projects.stream().map(project->project.optString("name")).toArray(String[]::new);
-            new AlertDialog.Builder(page).setTitle("用哪个项目启动？").setItems(names,(dialog,index)->launchProject(projects.get(index))).setNegativeButton("取消",null).show();return;
-        }
+        // Launch the requested installation; project ownership never adds a second choice.
         launch(install);
     }
     private void launchProject(JSONObject project){
@@ -91,18 +85,18 @@ final class WorkbenchAppActions {
         return state.importance<=ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE;
     }
     void menu(WorkbenchCatalog catalog,String pkg,String name){
-        new AlertDialog.Builder(page).setTitle(name).setItems(new String[]{"查看项目","选择默认空间","强行停止","从空间移除","删除应用"},(dialog,index)->{
-            if(index==0)page.startActivity(new Intent(page,WorkbenchActivity.class).putExtra("application",pkg));
+        new AlertDialog.Builder(page).setTitle(name).setItems(new String[]{"分析","选择默认空间","强行停止","从空间移除","删除应用"},(dialog,index)->{
+            if(index==0){String id=catalog.project(pkg);if(id!=null)page.startActivity(new Intent(page,WorkbenchProjectActivity.class).putExtra("project",id));}
             else if(index==1)choose(catalog.installations(pkg),"轻点图标时使用的空间",install->{if(remember(pkg,install))app.operations.inform("「"+name+"」将在「"+app.spaces.name(install.optString("space"))+"」中运行");});
             else if(index==2)choose(catalog.installations(pkg),"停止哪个空间中的应用？",install->ProductUi.confirm(page,"强行停止「"+name+"」？","「"+app.spaces.name(install.optString("space"))+"」中正在运行的界面和后台任务会立即结束，尚未保存的内容可能丢失。","强行停止",true,()->stop(install,name)));
-            else if(index==3)choose(catalog.installations(pkg),"从哪个空间移除？",install->{int bound=boundProjects(catalog,pkg,install.optString("space"));ProductUi.confirm(page,"从「"+app.spaces.name(install.optString("space"))+"」移除「"+name+"」？","这个空间中该应用的全部数据会被删除，无法恢复。"+(bound>0?bound+" 个项目会保留，但需要重新选择运行目标。":""),"移除",true,()->uninstall(install,name));});
+            else if(index==3)choose(catalog.installations(pkg),"从哪个空间移除？",install->{int bound=boundProjects(catalog,pkg,install.optString("space"));ProductUi.confirm(page,"从「"+app.spaces.name(install.optString("space"))+"」移除「"+name+"」？","这个空间中该应用的全部数据会被删除，无法恢复。"+"应用脚本会保留。","移除",true,()->uninstall(install,name));});
             else confirmDelete(catalog,pkg,name);
         }).show();
     }
     private int boundProjects(WorkbenchCatalog catalog,String pkg,String space){int count=0;for(JSONObject ref:catalog.bindings.values())if(pkg.equals(ref.optString("package"))&&(space==null||space.equals(ref.optString("space"))))count++;return count;}
     private void confirmDelete(WorkbenchCatalog catalog,String pkg,String name){
         int spaces=catalog.installations(pkg).size(),projects=boundProjects(catalog,pkg,null);
-        ProductUi.confirm(page,"删除「"+name+"」？",(spaces>1?"将从 "+spaces+" 个空间中删除这个应用及其全部数据":"将删除这个应用及其全部数据")+(projects>0?"，并删除绑定到它的 "+projects+" 个项目（包括脚本）":"")+"。无法恢复。","删除",true,()->delete(pkg,name));
+        ProductUi.confirm(page,"删除「"+name+"」？",(spaces>1?"将从 "+spaces+" 个空间中删除这个应用及其全部数据":"将删除这个应用及其全部数据")+"，并删除这个应用的脚本"+"。无法恢复。","删除",true,()->delete(pkg,name));
     }
     private void choose(List<JSONObject> installs,String title,Consumer<JSONObject> selected){
         if(installs.isEmpty()){ProductUi.notice(page,"应用暂时不可用","请刷新后重试。");return;}
@@ -199,10 +193,10 @@ final class WorkbenchAppActions {
             String detail;
             if(spaceFilter==null||spaceFilter.isEmpty()){
                 int spaces=installs.size(),bound=boundProjects(catalog,pkg,null);
-                detail=spaces+" 个空间"+(bound>0?" · "+bound+" 个项目":"");
+                detail=spaces+" 个空间"+"";
             }else{
                 int bound=boundProjects(catalog,pkg,spaceFilter);
-                detail=app.spaces.name(spaceFilter)+(bound>0?" · "+bound+" 个项目":"");
+                detail=app.spaces.name(spaceFilter)+"";
             }
             ProductUi.add(copy,ProductUi.text(page,detail,11,ProductUi.MUTED,false),2);
             row.addView(copy,new LinearLayout.LayoutParams(0,-2,1));
@@ -247,7 +241,7 @@ final class WorkbenchAppActions {
                 if(selected.isEmpty())return;dialog.dismiss();
                 List<JSONObject> installsToRemove=new ArrayList<>();int bound=0;
                 for(String p:selected)for(JSONObject inst:catalog.installations(p))if(spaceFilter.equals(inst.optString("space"))){installsToRemove.add(inst);bound+=boundProjects(catalog,p,spaceFilter);}
-                String msg="将从「"+app.spaces.name(spaceFilter)+"」移除选中的 "+selected.size()+" 个应用及其数据。"+(bound>0?"绑定的 "+bound+" 个项目会保留，但需重新选择运行目标。":"");
+                String msg="将从「"+app.spaces.name(spaceFilter)+"」移除选中的 "+selected.size()+" 个应用及其数据。"+"应用脚本会保留。";
                 ProductUi.confirm(page,"从「"+app.spaces.name(spaceFilter)+"」批量移除？",msg,"移除",true,()->batchUninstallStep(catalog,installsToRemove,0,onDone));
             });
             LinearLayout.LayoutParams ulp=new LinearLayout.LayoutParams(0,-2,1);ulp.leftMargin=ProductUi.dp(page,8);
@@ -258,7 +252,7 @@ final class WorkbenchAppActions {
         Button deleteBtn=ProductUi.danger(page,"批量删除应用（彻底删除）",()->{
             if(selected.isEmpty())return;dialog.dismiss();
             int totalProjects=0;for(String p:selected)totalProjects+=boundProjects(catalog,p,null);
-            String msg="将从所有空间删除选中的 "+selected.size()+" 个应用及其全部数据"+(totalProjects>0?"，并删除绑定的 "+totalProjects+" 个项目（包括脚本）":"")+"。无法恢复。";
+            String msg="将从所有空间删除选中的 "+selected.size()+" 个应用及其全部数据"+"，并删除这些应用的脚本"+"。无法恢复。";
             ProductUi.confirm(page,"批量删除 "+selected.size()+" 个应用？",msg,"删除",true,()->batchDeleteStep(catalog,new ArrayList<>(selected),0,onDone));
         });
         actionButtons.add(deleteBtn);ProductUi.add(buttonBox,deleteBtn,8);

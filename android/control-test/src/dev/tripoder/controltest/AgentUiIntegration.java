@@ -27,7 +27,7 @@ public final class AgentUiIntegration extends ControlTestBase {
         try(var fd=ParcelFileDescriptor.open(apk,ParcelFileDescriptor.MODE_READ_ONLY)){
             Bundle request=ControlWire.request("install","space",space,"operation",id());request.putStringArrayList("names",new ArrayList<>(List.of("base.apk")));request.putStringArrayList("sha256",new ArrayList<>(List.of(fixtures.getString("previewSha256"))));request.putParcelable("fd0",fd);install=ControlWire.call(controller,ControlWire.EXECUTE,request).getString("generation");
         }finally{if(!apk.delete())throw new IOException("TEST_APK_COPY_NOT_REMOVED");}
-        project=(String)invoke(projects,"create",new Class<?>[]{String.class},"MCP 真机验收 "+run.substring(8));binding=id();execute(controller,"bindProject","operation",binding,"project",project,"space",space,"package","dev.tripoder.previewguest","generation",install);
+        Bundle applicationTarget=applicationProject(controller,projects,space,"dev.tripoder.previewguest",install);project=applicationTarget.getString("project");binding=applicationTarget.getString("bindingOperation");
         String originalScript=(String)invoke(projects,"script",new Class<?>[]{String.class},project);
         String launchOperation=id();Bundle prepared=execute(controller,"prepareLaunch","operation",launchOperation,"project",project,"bindingOperation",binding,"generation",install,"component","dev.tripoder.previewguest.CounterActivity");process=prepared.getString("generation");Bundle worker=awaitWorker(controller,project,prepared);
         report.put("workerPid",worker.getInt("pid")).put("workerUid",worker.getInt("uid")).put("project",project).put("space",space).put("processGeneration",process).put("installGeneration",install).put("ownedApkSha256",fixtures.getString("previewSha256")).put("apkRewritten",false);
@@ -43,7 +43,7 @@ public final class AgentUiIntegration extends ControlTestBase {
         check("desktop-close-keeps-exact-worker-running",alive,worker.getInt("pid"));
         check("desktop-draft-does-not-overwrite-project-source",originalScript.equals(invoke(projects,"script",new Class<?>[]{String.class},project)),true);
         report.put("authenticationRequired",false).put("runtimeMode","thin");
-        execute(controller,"deleteSpace","operation",id(),"space",space);invoke(projects,"delete",new Class<?>[]{String.class},project);
+        execute(controller,"deleteSpace","operation",id(),"space",space);
     }
     private void cleanupOwnedFixtures(Object projects)throws Exception{
         File[] files=getTargetContext().getExternalFilesDir(null).listFiles();if(files==null)return;
@@ -56,7 +56,7 @@ public final class AgentUiIntegration extends ControlTestBase {
             JSONObject value=(JSONObject)invoke(projects,"get",new Class<?>[]{String.class},oldProject);
             if(!value.getString("name").equals("MCP 真机验收 "+oldRun.substring(8)))throw new IllegalStateException("OWNED_FIXTURE_NAME_CHANGED");
             if(existing.contains(oldRun+"-agent"))execute(controller,"deleteSpace","operation",id(),"space",oldRun+"-agent");
-            invoke(projects,"delete",new Class<?>[]{String.class},oldProject);
+
         }
     }
     private void awaitEndpoint()throws Exception{long end=SystemClock.elapsedRealtime()+10000;while(!(Boolean)field(agents,"listening")&&SystemClock.elapsedRealtime()<end)SystemClock.sleep(50);if(!(Boolean)field(agents,"listening"))throw new IllegalStateException("OPEN_ENDPOINT_NOT_STARTED");}

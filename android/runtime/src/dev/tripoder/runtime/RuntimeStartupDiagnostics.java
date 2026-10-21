@@ -163,8 +163,9 @@ final class RuntimeStartupDiagnostics {
     private static <T> T onMain(java.util.concurrent.Callable<T> task)throws Exception{
         if(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())return task.call();
         java.util.concurrent.FutureTask<T> future=new java.util.concurrent.FutureTask<>(task);
-        new android.os.Handler(android.os.Looper.getMainLooper()).post(future);
-        return future.get(3,java.util.concurrent.TimeUnit.SECONDS);
+        android.os.Handler.createAsync(android.os.Looper.getMainLooper()).post(future);
+        try{return future.get(10,java.util.concurrent.TimeUnit.SECONDS);}
+        catch(java.util.concurrent.TimeoutException timeout){future.cancel(false);throw timeout;}
     }
     /** Read-only, bounded view-tree evidence of the guest Activities at a main-thread fatal. */
     private static void views(){

@@ -27,7 +27,7 @@ export class McpServer {
     if(request.method==='initialize'){
       if(this.initialized||typeof request.params?.protocolVersion!=='string')return error(-32602,'MCP_INITIALIZE_INVALID');
       this.protocol=MCP_VERSIONS.includes(request.params.protocolVersion)?request.params.protocolVersion:MCP_VERSION;
-      this.initialized=true;return reply({protocolVersion:this.protocol,capabilities:{tools:{listChanged:false}},serverInfo:{name:'tripoder',version:'0.1.0'},instructions:'Tripoder requires no authentication or pairing. Use targets_list and target_select to choose a running process. Read content JSON ok and state; unknown mutations require operation_get, never automatic replay. Closing MCP does not stop the guest or disable Hooks.'});
+      this.initialized=true;return reply({protocolVersion:this.protocol,capabilities:{tools:{listChanged:false}},serverInfo:{name:'tripoder',version:'0.1.0'},instructions:'Tripoder requires no authentication or pairing. This is the global Tripoder control plane. List spaces, applications and targets; every scoped tool requires an explicit target. There is no current selected project or process. Read content JSON ok and state; unknown mutations require operation_get, never automatic replay. Closing MCP does not stop the guest or disable Hooks.'});
     }
     if(request.method==='ping')return reply({});
     if(!this.ready)return error(-32000,'MCP_NOT_INITIALIZED');
@@ -49,8 +49,8 @@ export class McpServer {
 }
 async function main(){
   const options={};const args=process.argv.slice(2);
-  for(let i=0;i<args.length;i+=2){if(!['--serial','--config','--audit'].includes(args[i])||!args[i+1]||options[args[i]])throw Error('Usage: server.mjs [--serial SERIAL] [--audit ABSOLUTE_PATH]');options[args[i]]=args[i+1];}
-  const config=await loadConfig(options['--config']);if(options['--serial'])config.serial=options['--serial'];
+  for(let i=0;i<args.length;i+=2){if(!['--serial','--config','--audit','--device-port'].includes(args[i])||!args[i+1]||options[args[i]])throw Error('Usage: server.mjs [--serial SERIAL] [--audit ABSOLUTE_PATH]');options[args[i]]=args[i+1];}
+  const config=await loadConfig(options['--config']);if(options['--serial'])config.serial=options['--serial'];if(options['--device-port']){const port=Number(options['--device-port']);if(!Number.isInteger(port)||port<1||port>65535)throw Error('DEVICE_PORT_INVALID');config.devicePort=port;}
   const audit=options['--audit']?auditFile(options['--audit']):undefined;
   const transport=new Transport(config); // Lazy: initialize/tools/list work even with no phone attached.
   const server=new McpServer(transport,audit);let buffered=Buffer.alloc(0),chain=Promise.resolve(),busy=false,closing=false,queued=0;

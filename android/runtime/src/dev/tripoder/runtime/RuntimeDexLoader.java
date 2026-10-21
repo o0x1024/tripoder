@@ -18,13 +18,10 @@ final class RuntimeDexLoader {
         return createInternal(set,libraries,parent,true);
     }
     static ClassLoader createForGuest(ArtifactSet set,String libraries,ClassLoader parent,boolean thin)throws Exception{
-        if (thin && RuntimeEngine.current != null && RuntimeEngine.current.applicationInfo != null) {
-            var ai = RuntimeEngine.current.applicationInfo;
-            if (ai.sourceDir != null && ai.sourceDir.startsWith("/data/app/") && new File(ai.sourceDir).exists()) {
-                return new dalvik.system.PathClassLoader(ai.sourceDir, ai.nativeLibraryDir, parent);
-            }
-        }
-        return createInternal(set,libraries,parent,false,thin);
+        var info=RuntimeEngine.current.applicationInfo;
+        StringBuilder path=new StringBuilder();
+        for(var part:set.parts)path.append(path.length()==0?"":File.pathSeparator).append(RuntimeEngine.current.executionCode.part(part.path));
+        return new dalvik.system.PathClassLoader(path.toString(),info.nativeLibraryDir,parent);
     }
     private static ClassLoader createInternal(ArtifactSet set,String libraries,ClassLoader parent,boolean retainMemfdMappings)throws Exception{
         return createInternal(set,libraries,parent,retainMemfdMappings,false);
@@ -93,7 +90,7 @@ final class RuntimeDexLoader {
         // real installation produces. A loader ART only ever uses for in-memory code cannot be handed to guests that
         // inspect their own loader (App Bundle runtimes, hot-fix frameworks, quinox).
         StringBuilder dexPath=new StringBuilder();
-        for(File apk:apkFiles)dexPath.append(dexPath.length()==0?"":File.pathSeparator).append(apk.getAbsolutePath());
+        for(File apk:apkFiles)dexPath.append(dexPath.length()==0?"":File.pathSeparator).append(apk.getCanonicalPath());
         // Android's own loader already serves resources from each APK. A custom
         // resource-only parent and an empty wrapper add lookup work and make ART
         // reject the class-loader context used by secondary-DEX optimization.

@@ -46,6 +46,7 @@ final class RuntimeHookClaims {
     }
     void uncertain(Claim claim,String operation){locked();if(claims.get(claim.process)==claim){claim.busy=false;if(!claim.uncertain)claim.pendingOperation=operation;claim.uncertain=true;claim.retained=true;}}
     void requireUnclaimedProject(String project){locked();for(Claim claim:claims.values())if(claim.project.equals(project))throw new IllegalStateException("PROJECT_HOOK_CONTEXT_IN_USE");}
+    void requireUnclaimedBinding(String project,String binding){locked();for(Claim claim:claims.values())if(claim.project.equals(project)&&claim.binding.equals(binding))throw new IllegalStateException("PROJECT_HOOK_CONTEXT_IN_USE");}
     void dead(String generation){locked();claims.remove(generation);}
     private void locked(){if(!Thread.holdsLock(broker))throw new IllegalStateException("HOOK_CLAIM_LOCK_REQUIRED");}
 }

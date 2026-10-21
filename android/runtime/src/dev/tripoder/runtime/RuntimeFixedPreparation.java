@@ -10,78 +10,12 @@ final class RuntimeFixedPreparation {
     private static boolean processPrepared,frameworkPrepared,reserved;
     private static FrameworkAccess.Members members;
     private static Map<Executable,ManagedHook.Handle> reservations=Map.of();
-    static void neutralizeVendorMonitors(){
-        try{
-            // The platform's per-Looper MessageMonitor is intrinsic process state: the vendor Looper dereferences it on
-            // every dispatch. Nulling it (or disabling its ENABLED switch) leaves the dispatcher inconsistent and
-            // aborts the app on the next message, so instrumentation is never disabled by field surgery here.
-            try{
-                Class<?> su=Class.forName("miui.mqsas.scout.ScoutUtils");
-                for(String fieldName: new String[]{"ENABLED_SCOUT", "ENABLED_LT_SCOUT", "ENABLED_CEHCK_FROZEN"}){
-                    try{
-                        Field f=su.getDeclaredField(fieldName);
-                        f.setAccessible(true);
-                        f.setBoolean(null,false);
-                    }catch(Throwable ignored){}
-                }
-            }catch(Throwable ignored){}
-            try{
-                Class<?> ati=Class.forName("android.app.ActivityThreadImpl");
-                try{
-                    Field sdp=ati.getDeclaredField("ScoutDisablePackageList");
-                    sdp.setAccessible(true);
-                    sdp.set(null,new java.util.AbstractList<String>(){
-                        @Override public String get(int index){return "";}
-                        @Override public int size(){return 1;}
-                        @Override public boolean contains(Object o){return true;}
-                    });
-                }catch(Throwable ignored){}
-                try{
-                    Field anr=ati.getDeclaredField("ENABLE_ANR_CLUE");
-                    anr.setAccessible(true);
-                    anr.setBoolean(null,false);
-                }catch(Throwable ignored){}
-                try{
-                    Field sm=ati.getDeclaredField("mAppScoutStateMachine");
-                    sm.setAccessible(true);
-                    Object stateMachine=sm.get(null);
-                    if(stateMachine!=null){
-                        try{
-                            Method quitNow=stateMachine.getClass().getMethod("quitNow");
-                            quitNow.invoke(stateMachine);
-                        }catch(Throwable ignored){}
-                    }
-                    sm.set(null,null);
-                }catch(Throwable ignored){}
-                try{
-                    Field st=ati.getDeclaredField("mAppScoutThread");
-                    st.setAccessible(true);
-                    st.set(null,null);
-                }catch(Throwable ignored){}
-            }catch(Throwable ignored){}
-            try{
-                ThreadGroup rootGroup=Thread.currentThread().getThreadGroup();
-                while(rootGroup.getParent()!=null)rootGroup=rootGroup.getParent();
-                Thread[] threads=new Thread[rootGroup.activeCount()+16];
-                int count=rootGroup.enumerate(threads,true);
-                for(int i=0;i<count;i++){
-                    Thread t=threads[i];if(t==null)continue;
-                    String n=t.getName();
-                    if(n!=null&&(n.contains("MiuiMonitor")||n.contains("Scout"))){
-                        if(t instanceof android.os.HandlerThread ht)ht.quit();
-                        else t.interrupt();
-                    }
-                }
-            }catch(Throwable ignored){}
-        }catch(Throwable ignored){}
-    }
     static synchronized void process()throws Exception{
         if(!processPrepared){
-            if(!RuntimeThinPolicy.active())neutralizeVendorMonitors();
             framework();List<dev.tripoder.selfhook.dex.AbiSignature> signatures=new ArrayList<>();
             for(Executable target:targets().keySet())signatures.add(new dev.tripoder.selfhook.dex.AbiSignature(target));
             dev.tripoder.selfhook.dex.HelperDex.prepareTemplates(signatures);
-            ManagedHook.initializeProcess(RuntimeEngine.current!=null&&RuntimeEngine.current.mode==RuntimeMode.THIN);processPrepared=true;
+            ManagedHook.initializeProcessForBootstrap(RuntimeEngine.current!=null&&RuntimeEngine.current.mode==RuntimeMode.THIN);processPrepared=true;
         }else ManagedHook.requireProcessInitialization();
     }
     static synchronized FrameworkAccess.Members framework()throws Exception{
@@ -104,7 +38,11 @@ final class RuntimeFixedPreparation {
         Map<Executable,Executable[]> targets=new LinkedHashMap<>();
         for(var family:RuntimeSelfHookManagerPolicy.Family.values())if(!RuntimeThinPolicy.active()||!RuntimeThinPolicy.platformManager(family))for(Method method:FixedManagerInventory.methods(family.ordinal()))targets.put(method,new Executable[0]);
         for(var group:FixedComponentHooks.Group.values())for(Method method:FixedComponentHooks.methods(group))targets.put(method,new Executable[0]);
-        for(var group:FixedRuntimeHooks.Group.values())if(!RuntimeThinPolicy.active()||!RuntimeThinPolicy.platformHooks(group))for(Executable method:FixedRuntimeHooks.methods(group))targets.put(method,new Executable[0]);
+        for(var group:FixedRuntimeHooks.Group.values())if(!RuntimeThinPolicy.active()||!RuntimeThinPolicy.platformHooks(group))for(Executable method:FixedRuntimeHooks.methods(group)){
+            if(!RuntimeThinPolicy.active()&&group==FixedRuntimeHooks.Group.PACKAGES&&RuntimeFixedPassthrough.packageMethod(method.getDeclaringClass().getName(),method.getName(),method.getParameterCount()))continue;
+            if(group==FixedRuntimeHooks.Group.TRAFFIC&&RuntimeFixedPassthrough.trafficMethod(RuntimeSelfHookManagerPolicy.signature((Method)method)))continue;
+            targets.put(method,new Executable[0]);
+        }
         for(Method method:JobFrameworkAccess.hooks())targets.put(method,new Executable[0]);
         for(Method method:PendingIntentFrameworkAccess.hooks())targets.put(method,new Executable[0]);
         targets.put((Method)members.methods[1],new Executable[0]);

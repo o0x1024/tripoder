@@ -53,19 +53,25 @@ final class RuntimeControllerApplications {
     /** The user's one deletion of an application: every installation of the package in every space is stopped and removed together with its data, and so are the projects bound to it. The caller learns which projects went so it can drop the source it keeps for them.
      *  Bindings alone are enough to proceed, so a retry after a partial deletion, or an application already removed from every space, still finishes. */
     static Bundle delete(RuntimeBroker broker,Bundle input,String lease)throws Exception{
-        RuntimeControllerCommands.fields(input,"command","operation","package");
+        if(input.containsKey("expectedInstalls"))RuntimeControllerCommands.fields(input,"command","operation","package","expectedInstalls");else RuntimeControllerCommands.fields(input,"command","operation","package");
         String operation=ControlWire.required(input,"operation"),pkg=ControlWire.required(input,"package");RuntimeFiles.id(pkg);
-        String digest=ApkStore.textDigest(new JSONObject().put("kind","controller-delete-application-v1").put("package",pkg).toString());
+        String digest=ApkStore.textDigest(new JSONObject().put("kind","controller-delete-application-v1").put("package",pkg).put("expectedInstalls",input.getString("expectedInstalls","")).toString());
         synchronized(broker){if(!broker.contract.accept(operation,ControllerTrust.OPERATIONS,digest).created)throw new IllegalStateException("DELETE_APPLICATION_ALREADY_ACCEPTED_QUERY_REQUIRED");broker.contract.start(operation);}
         int removed=0;
         try{
             List<String[]> installs=new ArrayList<>();List<String> bound=new ArrayList<>();
             synchronized(broker){
                 RuntimeControllerService.requireLease(lease);
+                if(input.containsKey("expectedInstalls")){
+                    java.util.Set<String> expected=new java.util.TreeSet<>(),actual=new java.util.TreeSet<>();org.json.JSONArray list=new org.json.JSONArray(input.getString("expectedInstalls"));
+                    for(int i=0;i<list.length();i++){JSONObject target=list.getJSONObject(i);if(!pkg.equals(target.getString("package")))throw new IllegalArgumentException("APPLICATION_TARGET_PACKAGE_MISMATCH");expected.add(target.getString("space")+"\n"+target.getString("installGeneration"));}
+                    try(Cursor c=broker.store.getReadableDatabase().rawQuery("SELECT space,generation FROM installs WHERE package=?",new String[]{pkg})){while(c.moveToNext())actual.add(c.getString(0)+"\n"+c.getString(1));}
+                    if(!actual.equals(expected))throw new IllegalStateException("APPLICATION_INSTALLATIONS_CONFLICT");
+                }
                 try(Cursor c=broker.store.getReadableDatabase().rawQuery("SELECT space,generation FROM installs WHERE package=? ORDER BY space",new String[]{pkg})){while(c.moveToNext())installs.add(new String[]{c.getString(0),c.getString(1)});}
                 try(Cursor c=broker.store.getReadableDatabase().rawQuery("SELECT id FROM project_refs WHERE package=?",new String[]{pkg})){while(c.moveToNext())bound.add(c.getString(0));}
             }
-            if(installs.isEmpty()&&bound.isEmpty())throw new IllegalStateException("APPLICATION_NOT_INSTALLED");
+
             for(String project:bound)RuntimeControllerService.agents().requireUiControl(project,"deleteApplication");
             for(String[] install:installs){uninstallOne(broker,operation+"-"+removed,install[0],pkg,install[1],lease);removed++;}
             org.json.JSONArray projects;
@@ -73,7 +79,9 @@ final class RuntimeControllerApplications {
                 var db=broker.store.getWritableDatabase();db.beginTransaction();
                 try{
                     RuntimeControllerService.requireLease(lease);
-                    projects=removeBindings(db,"package=?",pkg);
+                    try(Cursor c=db.rawQuery("SELECT 1 FROM installs WHERE package=? LIMIT 1",new String[]{pkg})){if(c.moveToFirst())throw new IllegalStateException("APPLICATION_INSTALLATIONS_CONFLICT");}
+                    projects=new org.json.JSONArray();try(Cursor c=db.rawQuery("SELECT id FROM application_projects WHERE package=? UNION SELECT id FROM project_aliases WHERE package=?",new String[]{pkg,pkg})){while(c.moveToNext())projects.put(c.getString(0));}
+                    removeBindings(db,"package=?",pkg);db.delete("application_projects","package=?",new String[]{pkg});db.delete("project_aliases","package=?",new String[]{pkg});
                     broker.contract.succeed(operation,new JSONObject().put("installs",removed).put("deletedProjects",projects).toString());
                     db.setTransactionSuccessful();
                 }finally{db.endTransaction();}

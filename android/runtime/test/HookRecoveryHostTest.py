@@ -46,20 +46,39 @@ public final class ControlWire {public static Bundle request(String command,Stri
     'dev/tripoder/hooklab/WorkbenchApplication.java': '''package dev.tripoder.hooklab;
 import android.os.Bundle;
 final class WorkbenchApplication {
- final EngineConnection engine=new EngineConnection();
+ final EngineConnection engine=new EngineConnection();int uiChanges;void controlChanged(org.json.JSONObject target){uiChanges++;}
  void startActivity(android.content.Intent intent){throw new AssertionError("unexpected launch");}
 }
 final class EngineConnection {
  interface Result {void done(Bundle value);}
- int calls;String operation;
- Bundle executeBlocking(Bundle request){if(!"agentOperation".equals(request.getString("command")))throw new AssertionError("unexpected mutation");calls++;operation=request.getString("operation");Bundle out=new Bundle();out.putString("result","{\\"operationId\\":\\""+operation+"\\",\\"state\\":\\"UNKNOWN\\"}");return out;}
+ int calls;String operation;boolean unavailable;
+ Bundle executeBlocking(Bundle request){if(unavailable){calls++;throw new IllegalStateException("ENGINE_NOT_CONNECTED");}if(!"agentOperation".equals(request.getString("command")))throw new AssertionError("unexpected mutation");calls++;operation=request.getString("operation");Bundle out=new Bundle();out.putString("result","{\\"operationId\\":\\""+operation+"\\",\\"state\\":\\"UNKNOWN\\"}");return out;}
  void execute(Bundle request,Result result){throw new AssertionError("unexpected shutdown");}
 }''',
     'dev/tripoder/runtime/RuntimeCodeArtifacts.java': '''package dev.tripoder.runtime;
 public final class RuntimeCodeArtifacts {
- public static Object list(Object app,String generation){throw new AssertionError("unexpected artifact read");}
- public static Object read(Object app,String generation,String artifact,int offset,int length){throw new AssertionError("unexpected artifact read");}
+ public static org.json.JSONObject list(Object app,String generation){throw new AssertionError("unexpected artifact read");}
+ public static org.json.JSONObject read(Object app,String generation,String artifact,int offset,int length){throw new AssertionError("unexpected artifact read");}
 }''',
+    'dev/tripoder/hooklab/WorkbenchAgentLifecycle.java': '''package dev.tripoder.hooklab;
+import org.json.JSONObject;import android.os.Bundle;
+final class WorkbenchAgentLifecycle {
+ private final WorkbenchApplication app;WorkbenchAgentLifecycle(WorkbenchApplication app){this.app=app;}
+ JSONObject receiptIfPresent(String id){return null;}
+ void cleanupReceipt(JSONObject receipt){}
+ JSONObject call(String method,JSONObject params,String id){if(method.equals("space.delete")){app.engine.executeBlocking(dev.tripoder.control.ControlWire.request("deleteSpace","operation",id,"space",params.getString("space")));}throw new AssertionError("unexpected lifecycle call");}
+ Bundle target(JSONObject target,boolean process){throw new AssertionError("unexpected target resolution");}
+ interface Mutation{JSONObject run()throws Exception;}
+ JSONObject mutate(String id,String method,JSONObject params,Mutation action)throws Exception{throw new AssertionError("unexpected local mutation");}
+}
+''',
+    'dev/tripoder/hooklab/WorkbenchAgentImports.java': '''package dev.tripoder.hooklab;
+import org.json.JSONObject;
+final class WorkbenchAgentImports {
+ WorkbenchAgentImports(WorkbenchApplication app){}
+ JSONObject call(String method,JSONObject params,String id){throw new AssertionError("unexpected import");}
+}
+''',
     'dev/tripoder/runtime/FakeBoundary.java': '''package dev.tripoder.runtime;
 import android.os.Bundle;
 final class RuntimeBroker {

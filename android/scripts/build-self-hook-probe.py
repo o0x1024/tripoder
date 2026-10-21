@@ -48,9 +48,9 @@ def main():
                  PROBE / 'native/probe_art_deopt.c', CORE / 'native/thread_park.c',
                  PROBE / 'native/probe_thread_park.c', CORE / 'native/park_diagnostic.c', CORE / 'native/page_commit.c',
                  PROBE / 'native/probe_noncooperative.c', CORE / 'native/fixed_libc.c',
-                 ROOT / 'android/runtime/native/io_adapter.c', ROOT / 'android/runtime/native/path_policy.c',
+                 ROOT / 'android/runtime/native/user_memory.c', ROOT / 'android/runtime/native/io_adapter.c', ROOT / 'android/runtime/native/path_policy.c',
                  PROBE / 'native/probe_libc.c', PROBE / 'native/probe_libc_cases.c',
-                 CORE / 'native/art_reflection_view.c', PROBE / 'native/probe_reflection_view.c',
+                 CORE / 'native/signal_chain.c', CORE / 'native/elf_plt_hook.c', CORE / 'native/art_reflection_view.c', PROBE / 'native/probe_reflection_view.c',
                  PROBE / 'native/probe_framework.c', CORE / 'native/art_framework.c', CORE / 'native/application_adapter.c',
                  CORE / 'native/art_int_entry.c', CORE / 'native/art_method_storage.c', CORE / 'native/art_managed_entry.c',
                  CORE / 'native/managed_abi.c', CORE / 'native/art_jni_original.c', PROBE / 'native/probe_gc.c', CORE / 'native/physical_application.c',
@@ -101,7 +101,7 @@ def main():
               CORE / 'native/libc_fixed_contract.h', ROOT / 'android/runtime/native/io_adapter.h',
               CORE / 'native/art_reflection_view.h',
               CORE / 'native/art_framework_contract.h', CORE / 'tests/check_art_framework_contract.py',
-              ROOT / 'android/runtime/native/path_policy.h', PROBE / 'native/probe_libc_cases.h',
+              ROOT / 'android/runtime/native/path_policy.h', ROOT/'android/runtime/native/kernel_syscall.h', ROOT/'android/runtime/native/user_memory.h', ROOT/'android/runtime/native/kernel_syscall_a64.S', PROBE / 'native/probe_libc_cases.h',
               CORE / 'native/art_fixed_contract.h', CORE / 'native/art_managed_contract.h', CORE / 'tests/core_checks.h',
               PROBE / 'native/probe_owned.h', PROBE / 'native/probe_maps.h', PROBE / 'native/fixture.S',
               CORE / 'tests/host_main.c', CORE / 'tests/check_host.py',
@@ -271,7 +271,7 @@ def main():
                '-I'+str(CORE/'native/abi'),'-I'+str(scalar_fixture),
                '-I'+str(build),
                '-Wl,--no-undefined,-z,relro,-z,now,-z,noexecstack,--build-id=sha1',
-               *c_sources, PROBE/'native/notifier_register_oracle.S',cpp_object, build/'entry_leaf_fixture.o', build/'scalar_call.o',build/'scalar_capture.o',build/'scalar_inbound.o','-o', library]
+               *c_sources, ROOT/'android/runtime/native/kernel_syscall_a64.S', PROBE/'native/notifier_register_oracle.S',cpp_object, build/'entry_leaf_fixture.o', build/'scalar_call.o',build/'scalar_capture.o',build/'scalar_inbound.o','-o', library]
     subprocess.run(list(map(str, command)), check=True)
     subprocess.run([sys.executable, str(CORE / 'tests/check_park_binary.py'), '--library', str(library),
                     '--objdump', str(toolchain / 'llvm-objdump'), '--output', str(build / 'park-binary-audit.json')], check=True)

@@ -20,5 +20,9 @@ final class WorkbenchHooks {
     Session project(String project){return sessions.computeIfAbsent(project,key->new Session());}
     /** Existing session only; lists read state without creating one per project. */
     Session peek(String project){return sessions.get(project);}
-    void forget(String project){sessions.remove(project);}
+    Session target(String project,Bundle target,JSONObject process,String lease)throws Exception{String key=project+":"+target.getString("bindingOperation")+":"+process.getString("processGeneration");Session value=sessions.computeIfAbsent(key,ignored->new Session());value.select(target,process,lease);sessions.put(project,value);return value;}
+    void invalidate(JSONObject target){
+        for(Session session:new HashSet<>(sessions.values()))if(session.target!=null&&target.optString("space").equals(session.target.getString("space"))&&target.optString("package").equals(session.target.getString("package"))&&target.optString("installGeneration").equals(session.target.getString("generation"))&&(!target.has("processGeneration")||target.optString("processGeneration").equals(session.process))){session.clearEvidence();session.message="电脑 Agent 已更新这个运行目标，请查询实际 Hook 状态。";}
+    }
+    void forget(String project){sessions.keySet().removeIf(key->key.equals(project)||key.startsWith(project+":"));}
 }

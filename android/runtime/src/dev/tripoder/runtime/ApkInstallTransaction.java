@@ -40,15 +40,24 @@ final class ApkInstallTransaction {
             ArtifactSet prepared=ArtifactSet.materialize(stage);fault.at("AFTER_VERIFY");
             String pkg=prepared.packageName;ApkStore.Row old;Map<String,String> inventory;
             synchronized(apks.authority){
-                apks.catalog.requireSpace(space);apks.catalog.requireUnused(space,pkg);old=apks.row(space,pkg);
+                apks.catalog.requireSpace(space);old=apks.row(space,pkg);
                 requireGeneration(old,expected);inventory=inventory(space);
             }
             // These can perform full validation of cold historical installations. No Broker lock.
             if(old!=null){
-                if(!apks.get(space,pkg).generation.equals(old.generation))throw new IllegalStateException("INSTALL_GENERATION_CONFLICT");
+                var previous=apks.get(space,pkg);if(!previous.generation.equals(old.generation))throw new IllegalStateException("INSTALL_GENERATION_CONFLICT");
                 if(!old.signer.equals(prepared.signerSha))throw new SecurityException("UPGRADE_SIGNER_MISMATCH");
+                if(prepared.versionCode==old.version&&prepared.descriptorSha.equals(old.descriptorSha)){
+                    // Exact original artifacts already installed: retain data, project, generation and live processes.
+                    synchronized(apks.authority){
+                        var current=apks.row(space,pkg);requireGeneration(current,expected);if(!"COMMITTED".equals(current.state))throw new IllegalStateException("INSTALL_STATE_CHANGED");var db=apks.store.getWritableDatabase();db.beginTransaction();
+                        try{apks.contract.succeed(operation,old.generation);db.setTransactionSuccessful();}finally{db.endTransaction();}
+                    }
+                    return previous;
+                }
                 if(prepared.versionCode<=old.version)throw new IllegalArgumentException("UPGRADE_VERSION_NOT_NEWER");
             }
+            synchronized(apks.authority){apks.catalog.requireUnused(space,pkg);}
             apks.requireProviderAuthorities(space,prepared);
             RuntimeFiles.mkdir(destination.getParentFile());
             Os.chmod(stage.toString(),0700);Os.rename(stage.toString(),destination.toString());Os.chmod(destination.toString(),0555);

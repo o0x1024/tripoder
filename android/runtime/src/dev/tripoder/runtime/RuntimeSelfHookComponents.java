@@ -19,7 +19,9 @@ final class RuntimeSelfHookComponents {
         Object invoke(Object receiver,Object[] arguments,RuntimeSelfHookLifecycle.Original original)throws Throwable;
     }
     interface Installer {
-        /** Return only after every exact Method has live, verified caller coverage. Failure is fatal. */
+        /** Publish every exact entry before exposing the component to Android.
+         * Guest lifecycle dispatch uses that entry; arbitrary old inlined local
+         * callers are not a component-delivery boundary. Failure is fatal. */
         void install(Map<Method,Callback> callbacks)throws Exception;
     }
 

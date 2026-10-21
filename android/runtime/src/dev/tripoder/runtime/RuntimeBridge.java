@@ -82,7 +82,7 @@ public final class RuntimeBridge {
     public static java.util.ArrayList<android.os.Bundle> historicalStarts(int max)throws Exception{return RuntimeEngine.current.activityManager.history(max);}
     public static java.util.List<android.app.ApplicationExitInfo> historicalExits(String pkg,int pid,int max)throws Exception{return RuntimeEngine.current.activityManager.exits(pkg,pid,max);}
     public static void storageFinisher(Runnable finisher){RuntimeSelfHookApplication.addFinisher(finisher);}
-    public static String nativeStorageSpec()throws Exception{return RuntimeEngine.current.storage.nativeSpec(new java.io.File(RuntimeEngine.current.info.sourceDir).getParentFile());}
+    public static String nativeStorageSpec()throws Exception{return RuntimeEngine.current.storage.nativeSpec(RuntimeEngine.current.artifactDirectory);}
     public static boolean owns(Activity activity){return activity!=null&&RuntimeEngine.current!=null&&RuntimeEngine.current.ownsActivity(activity);}
     public static boolean instrumentationBound(Instrumentation instrumentation){return dev.tripoder.selfhook.ActivityFrameworkAccess.bound(instrumentation);}
     public static Activity constructWithCurrentInstrumentation(RuntimeActivityCreation.Permit permit)throws Exception{return RuntimeSelfHookActivities.construct(permit);}

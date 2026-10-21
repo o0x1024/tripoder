@@ -16,14 +16,13 @@ public final class RuntimeHookBridge {
     private final JSONObject identity;
     private final ArtifactSet artifacts;
     private final RuntimeNativeMappingEvidence runtimeMappings;
-    private final String artifactCanonicalRoot;
     private final RuntimeJavaObservation javaObservation;
     private RuntimeNativeObservation nativeObservation;
     private volatile HookCommandDispatcher selfHookControl;
     private SelfHookControl localControl;
     private final Map<String,ArtifactSet.FileRecord> nativeFilesByName;
     RuntimeHookBridge(RuntimeEngine engine,Bundle input,ArtifactSet artifacts)throws Exception{
-        this.engine=engine;this.artifacts=artifacts;artifactCanonicalRoot=artifacts.directory.getCanonicalPath();
+        this.engine=engine;this.artifacts=artifacts;
         Map<String,ArtifactSet.FileRecord> byName=new LinkedHashMap<>(artifacts.nativeFiles.size()*2);
         for(var item:artifacts.nativeFiles)if(item.path.startsWith("lib/"))byName.put(item.path.substring(4),item);
         nativeFilesByName=Collections.unmodifiableMap(byName);
@@ -57,15 +56,23 @@ public final class RuntimeHookBridge {
     public void installSelfHookControl(SelfHookControl.Platform platform){
         SelfHookControl control=new SelfHookControl(HookWire.request(identity.toString()),platform,android.os.SystemClock::elapsedRealtime);localControl=control;
         installSelfHookControl(raw->{
+            long statusStart=android.os.SystemClock.elapsedRealtime();
             String response=control.handle(raw);
             if(!"status".equals(HookWire.request(raw).get("command")))return response;
             Map<String,Object> wire=HookWire.request(response);
             if(!Boolean.TRUE.equals(wire.get("ok")))return response;
             @SuppressWarnings("unchecked") Map<String,Object> result=(Map<String,Object>)wire.get("result");
+            long controlDone=android.os.SystemClock.elapsedRealtime();
             result.put("runtimeNativeMappings",runtimeMappings.snapshot());
+            long mappingsDone=android.os.SystemClock.elapsedRealtime();
             Map<String,Object> policy=HookWire.request(dev.tripoder.selfhook.ManagedHook.processPolicy());
             policy.put("fixedBindings",RuntimeSelfHookProduct.installedBindings());result.put("executionPolicy",policy);
             result.put("nativeCoreResources",dev.tripoder.selfhook.NativeHook.resources());
+            result.put("nativeSyscalls",HookWire.request(RuntimeSelfHookStorage.syscallNamespaceNative()));
+            result.put("nativeSignalChain",HookWire.request(RuntimeSelfHookStorage.signalChainNative()));
+            result.put("executionCode",Map.of("source","VERIFIED_INSTALLATION_COPY","directory",engine.executionCode.visibleDirectory,"descriptorSha256",artifacts.descriptorSha));
+            long done=android.os.SystemClock.elapsedRealtime();
+            if(done-statusStart>500)android.util.Log.i("TripoderHook","STATUS_TIMING:control="+(controlDone-statusStart)+":mappings="+(mappingsDone-controlDone)+":resources="+(done-mappingsDone));
             return HookWire.encode(wire);
         });
     }
@@ -108,20 +115,20 @@ public final class RuntimeHookBridge {
     private String canonicalLibraryPath(String name)throws Exception{
         var item=nativeFilesByName.get(name);
         if(item!=null){
-            java.io.File file=new java.io.File(artifacts.directory,item.path);
+            java.io.File file=engine.executionCode.libraryFile(name);
             if(file.length()!=item.size)throw new SecurityException("HOOK_MODULE_ARTIFACT_CHANGED");
-            return artifactCanonicalRoot+"/"+item.path;
+            return engine.executionCode.libraryPath(name);
         }
         throw new SecurityException("HOOK_MODULE_OUTSIDE_GUEST");
     }
     private JSONObject verifiedLibraryArtifact(String name)throws Exception{
         var item=nativeFilesByName.get(name);
         if(item!=null){
-            java.io.File file=new java.io.File(artifacts.directory,item.path);ArtifactSet.regular(file.toPath());
+            java.io.File file=engine.executionCode.libraryFile(name);ArtifactSet.regular(file.toPath());
             String canonical=RuntimeSelfHookStorage.physicalArtifactPath(file.toString());
-            if(!canonical.equals(artifactCanonicalRoot+"/"+item.path))throw new SecurityException("HOOK_MODULE_CANONICAL_ROOT_CHANGED");
+            if(!canonical.equals(engine.executionCode.canonicalDirectory+"/lib/arm64/"+name))throw new SecurityException("HOOK_MODULE_CANONICAL_ROOT_CHANGED");
             if(file.length()!=item.size||!ArtifactSet.digest(file).equals(item.sha256))throw new SecurityException("HOOK_MODULE_ARTIFACT_CHANGED");
-            return new JSONObject().put("moduleName",name).put("path",canonical).put("sourcePath",file.toString()).put("sha256",item.sha256);
+            return new JSONObject().put("moduleName",name).put("path",engine.executionCode.libraryPath(name)).put("sourcePath",file.toString()).put("sha256",item.sha256);
         }
         throw new SecurityException("HOOK_MODULE_OUTSIDE_GUEST");
     }

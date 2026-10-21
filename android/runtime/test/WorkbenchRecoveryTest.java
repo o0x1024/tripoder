@@ -18,6 +18,12 @@ public final class WorkbenchRecoveryTest {
         check(!response.getBoolean("ok")&&response.getString("error").contains("AGENT_FIELDS_UNSUPPORTED")&&app.engine.calls==2,"unrelated envelope fields still rejected");
         response=control.wire(request().put("params",new JSONObject().put("operationId","original-mutation").put("extra",true)));
         check(!response.getBoolean("ok")&&app.engine.calls==2,"query argument contract stays strict");
+        check(app.uiChanges==0,"read-only reconciliation does not trigger UI refresh");
+        app.engine.unavailable=true;
+        response=control.wire(new JSONObject().put("protocol",2).put("requestId","stop-space").put("method","space.delete").put("params",new JSONObject().put("space","explicit-space")));
+        check(!response.getBoolean("ok")&&response.getString("state").equals("UNKNOWN")&&response.getString("operationId").equals("stop-space"),"failed reconciliation cannot turn an uncertain mutation into a rejection");
+        check(app.uiChanges==1,"external mutation invalidates UI even when its result is uncertain");
+        check(app.engine.calls==4,"one dispatch and one reconciliation attempt, without mutation replay");
         System.out.println("WORKBENCH_RECOVERY_PASS checks="+checks);
     }
 }

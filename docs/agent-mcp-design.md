@@ -1,57 +1,35 @@
-# AI Agent 控制面与 MCP
+# AI Agent 全局控制面与 MCP
 
-当前实现以 `agent/server.mjs`、`agent/tools.mjs` 和 Android `RuntimeAgentSessions` 为准。电脑 Agent 直接连接，无需设备配对身份、公私钥、签名、手机授权或脚本审批。完整导入配置见 [MCP 使用说明](../agent/README.md)。
+MCP 连接到设备上的 Tripoder 全局入口，不绑定任何空间、应用、项目或进程。每次有作用域的调用都显式携带目标，完整配置与参数示例见 [MCP 使用说明](../agent/README.md)，以 `agent/tools.mjs` 的 `tools/list` 为准。
 
-## 接入链路
+## 控制链路
 
-```text
-任意 MCP stdio 客户端
-  → Node.js agent/server.mjs
-  → ADB forward
-  → 手机 127.0.0.1:29731（无签名长度帧，protocol=2）
-  → 工作台现有 Binder 连接
-  → :authority 目标校验与操作日志
-  → 实际客体进程的 Hook/UI/检查管线
-```
+MCP stdio → Node.js → ADB forward → 手机 loopback 长度帧（protocol=2）→ 主进程 Binder → authority → 安装或具体客体进程。初始化和工具发现延迟连接设备。全局设置管理入口，关闭入口不停止应用或已激活 Hook。
 
-打开 Tripoder、工作台连接引擎后自动启动电脑入口。电脑只需 Node.js、ADB 和设备连接；单设备自动识别，多设备用 `--serial`。ADB 路径优先从环境获取，也会查找常见 Android SDK 与 Homebrew 安装位置。手机可停止入口并重新开启。
+## 对象与目标
 
-MCP 的初始化和工具发现采用延迟设备连接：手机离线、未安装 ADB、旧 `--config` 文件不存在，均不会导致 stdio 初始化直接退出。真实工具调用会返回可读的设备或入口错误。MCP 协商支持 `2024-11-05`、`2025-03-26`、`2025-06-18`、`2025-11-25`。
+- 空间操作使用 `space`；应用删除使用包名和明确的安装代次清单。
+- 安装操作使用 `target: {space, package, installGeneration}`。
+- 进程操作使用 `target: {space, package, installGeneration, processGeneration}`。
+- 源码操作按包名定位应用唯一项目，写入同时校验当前源码/声明 SHA。
+- 操作查询使用原 `operationId`，不可变产物使用原进程代次及产物 ID。
 
-## 目标上下文
+没有连接级的当前目标，也没有单候选自动选择。`target_select` / `session_get` / `session_close` 不再发布。Android 内部为准确的项目绑定与进程保留有界控制上下文，用于准备令牌、回执关联和所有权检查；每次请求都重新解析显式目标，不读取连接选中状态。内部上下文不会限制全局枚举或其他资源的操作。
 
-`targets_list` 列出实际 RUNNING 且项目绑定、安装代次仍有效的进程；`target_select` 选择项目与 processGeneration。只有一个主进程候选时可以自动选择；有歧义时明确返回候选列表。这个选择用于确定操作对象，不是身份验证。
+目标列表从全部有效安装与 RUNNING 进程生成，不要求用户先创建项目。安装与项目初始化可恢复；首次需要该安装的分析绑定时，authority 通过持久幂等操作补齐。
 
-上下文不设授权到期时间或总请求次数限制。停止进程、更新绑定后，重新选择时清理过期上下文，避免反复启动耗尽容量。操作仍检查准确绑定和进程代次，防止旧请求落到新的应用实例。
+## 能力覆盖
 
-多个 Agent 可连接同一目标，手机控制保持可用。并发操作通过现有管线串行处理；冲突或未知结果需查询当前状态，不能隐式换目标或重放。
+全局状态/资源、空间管理、设备应用发现、原始 APK/splits 导入与升级、安装移除、应用彻底删除、运行模式、源码读写与恢复、启动目标枚举、进程启停、启动入口恢复、Hook 生命周期、Java/Native 观察、ClassLoader/DEX 与代码快照、UI 操作、存储与网络审计、HTTP、客体方法调用和产物读取。
 
-## 当前 42 个工具
+电脑 APK 导入保持原始字节，分块上限 12 KiB、最多 64 个 APK；SHA 与只读 FD 在安装前再次验证。暂存可查询、取消或在安装终结后清理，未知结果不重放。直接从手机导入读取所选系统应用的原始 base/split APK。
 
-| 能力 | 工具 |
-| --- | --- |
-| 目标与上下文 | `targets_list`、`target_select`、`session_get`、`process_get`、`session_close` |
-| 操作对账 | `operation_get` |
-| Hook 生命周期 | `hook_observe`、`hook_prepare`、`hook_activate`、`hook_status`、`hook_modules`、`hook_disable`、`hook_discard` |
-| Hook 参数与事件 | `hook_update_params`、`hook_events` |
-| DEX / Native | `dex_search_classes`、`dex_inspect_class`、`native_exports_search` |
-| UI / 诊断 | `ui_dump_hierarchy`、`ui_dispatch_action`、`crash_diagnostics_get`、`manifest_inspect` |
-| 存储 / 网络 / 调用 | `storage_inspect`、`network_traffic_get`、`http_send_request`、`guest_invoke` |
-| 启动与探针 | `runtime_capabilities`、`projects_list`、`probes_get`、`probes_configure`、`process_start`、`application_stop`、`probe_status`、`probes_stop` |
-| 动态代码与产物 | `classloaders_list`、`classloader_create`、`dex_list`、`class_inspect`、`dex_snapshot`、`runtime_events`、`artifacts_list`、`artifact_read` |
+## 状态与恢复
 
-参数和边界以 `tools/list` 返回的 schema 为准。MCP 通过 process_start 启动已绑定且已停止的项目；安装、卸载、截图和任意 shell 尚未暴露。通用启动探针、动态加载与代码快照参见 [运行时观察](runtime-observation.md)。
+运行时修改使用 authority 操作日志；主进程源码/名称等修改使用原子落盘的本地操作日志，同一个 `operation_get` 入口可查询两者。相同操作 ID 改变内容拒绝。进程退出或重启后，原代次拒绝执行；结果未知时保留原操作 ID 对账，不能换 ID 重放。Hook 仍保留观察证据、准备令牌、源码 SHA、所有权和未知结果状态门。
 
-## Hook 与失败语义
+多个 Agent 和手机编辑器可以同时访问。源码 SHA/CAS 避免覆盖；运行时命令通过原控制管线判断并发冲突。全局入口的能力与单次调用的明确作用范围分别检查。
 
-正常顺序为观察实际方法 → 准备受限脚本 → 使用返回的 token 与准确源码 SHA 激活 → 操作客体 → 查看真实命中/错误 → 显式停用。准备 token 保证对应准确编译产物，不需要人工签发或审批。外部草稿不会写入项目编辑器。
+## 验证边界
 
-修改操作携带 operationId。同 ID、同内容返回原回执，改变内容拒绝；设备未知结果返回 UNKNOWN，保留原 ID 用 `operation_get` 对账。内存响应缓存有界，底层修改日志继续防止重复副作用。
-
-关闭 MCP 只移除电脑的 ADB 转发；`session_close` 只关闭目标上下文；停止电脑入口只关闭连接与上下文。它们均不自动停用 Hook 或结束客体。需要恢复原方法时显式调用 `hook_disable`，停用后验证实际调用结果。结束客体仍使用工作台应用控制。
-
-## 验收边界
-
-`validate-agent-control.py` 使用真实手机、自研计数器和独立 stdio MCP 客户端，验证免配对/免审批、真实返回值 Hook、重复操作去重、显式停用、多个客户端及断开后进程存活，并核对进程和原生映射。该验收不等于 Sentinel 桌面/模型实际调用，也不证明所有第三方应用兼容。
-
-旧证据中的 P-256、手机审批、十分钟授权和断联终止属于历史实现，当前已移除。
+主机测试覆盖 MCP schema、显式目标隔离、传输、上传与失败不重放、实际 SQLite 迁移 SQL、源码保留/归档/恢复与 CAS。Android 源码须用 API 37 平台及匹配 apksig 编译。真机安装、真实 Hook 命中及停用恢复仍需独立验收，不能由主机测试代替。历史证据按其对应版本解释。

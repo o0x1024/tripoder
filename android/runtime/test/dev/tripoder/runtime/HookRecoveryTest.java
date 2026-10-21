@@ -62,6 +62,18 @@ public final class HookRecoveryTest {
             rejects(()->claims.begin(generation,"other","binding","lease","observe"),"HOOK_PROJECT_OWNER_CONFLICT");
             rejects(()->claims.begin(generation,"project","binding","other-lease","prepare"),"HOOK_PREPARATION_LEASE_REVOKED");
         }
+        var otherSpace=broker.contract.allocate("space-b","owned.fixture","install-b","owned.fixture",12345);
+        broker.contract.attach(otherSpace.bootstrapToken,124,12345);String otherGeneration=otherSpace.session.processGeneration;broker.contract.markRunning(otherGeneration,124,12345);
+        synchronized(broker){
+            claims.requireUnclaimedBinding("project","binding-b");check(true,"another space binding is independent of the first space claim");
+            var second=claims.begin(otherGeneration,"project","binding-b","lease","observe");claims.complete(second,"observe",new JSONObject().put("state","OBSERVED"));
+            rejects(()->claims.requireUnclaimedBinding("project","binding"),"PROJECT_HOOK_CONTEXT_IN_USE");
+            rejects(()->claims.requireUnclaimedBinding("project","binding-b"),"PROJECT_HOOK_CONTEXT_IN_USE");
+            var uncertain=claims.begin(generation,"project","binding","lease","activate");claims.uncertain(uncertain,"space-a-unknown");
+            second=claims.begin(otherGeneration,"project","binding-b","lease","status");claims.complete(second,"status",new JSONObject().put("state","OBSERVED"));
+            check(uncertain.uncertain&&uncertain.pendingOperation.equals("space-a-unknown"),"querying another space never clears the original uncertainty");
+            claims.dead(otherGeneration);claims.requireUnclaimedBinding("project","binding-b");check(true,"stopping one space releases only its own binding claim");
+        }
         var field=RuntimeHookOperations.class.getDeclaredField("calls");field.setAccessible(true);((ExecutorService)field.get(null)).shutdownNow();
         try{RuntimeHookOperations.execute(broker,"queue-rejected",generation,request,"host");throw new AssertionError("closed executor accepted");}
         catch(RuntimeHookOperations.RejectedCommandException expected){check(broker.contract.query("queue-rejected").state==ExecutionContract.OperationState.FAILED,"pre-dispatch rejection is known failed");}

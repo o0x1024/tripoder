@@ -33,6 +33,16 @@ final class RuntimeControllerCommands {
         }
         if("deleteApplication".equals(command))return RuntimeControllerApplications.delete(broker,input,lease);
         if("deleteProject".equals(command))return RuntimeControllerProjects.delete(broker,input,lease);
+        if("applicationTarget".equals(command)){
+            fields(input,"command","space","package","generation");return new ApplicationProjects(broker).target(input.getString("space"),input.getString("package"),input.getString("generation"));
+        }
+        if("selectProjectTarget".equals(command)){
+            fields(input,"command","operation","project","space","package","generation");
+            Bundle target=new ApplicationProjects(broker).target(input.getString("space"),input.getString("package"),input.getString("generation"));
+            if(!input.getString("project").equals(target.getString("project")))throw new IllegalStateException("PROJECT_PACKAGE_CHANGE_UNSUPPORTED");
+            synchronized(broker){String operation=input.getString("operation"),digest=ApkStore.textDigest("select-target-v1\n"+input.getString("project")+"\n"+input.getString("space")+"\n"+input.getString("generation"));var accepted=broker.contract.accept(operation,ControllerTrust.OPERATIONS,digest);if(accepted.created){broker.contract.start(operation);var db=broker.store.getWritableDatabase();db.beginTransaction();try{new ApplicationProjects(broker).select(input.getString("project"),input.getString("space"));broker.contract.succeed(operation,"{}");db.setTransactionSuccessful();}finally{db.endTransaction();}}else if(accepted.operation.state!=ExecutionContract.OperationState.SUCCEEDED)throw new IllegalStateException("OPERATION_QUERY_REQUIRED");}
+            return target;
+        }
         if("deleteSpace".equals(command))return RuntimeControllerSpaces.delete(broker,input,lease);
         if("hookProcesses".equals(command))return RuntimeControllerHooks.processes(broker,input);
         if("hook".equals(command)){RuntimeControllerService.agents().requireUiControl(input.getString("project"),new JSONObject(input.getString("request")).getString("command"));return RuntimeControllerHooks.execute(broker,input,lease);}
@@ -41,6 +51,7 @@ final class RuntimeControllerCommands {
             if(input.containsKey("expectedBinding"))fields(input,"command","operation","project","space","package","generation","expectedBinding");else fields(input,"command","operation","project","space","package","generation");
             return new ProjectTargetBindings(broker).bind(ControlWire.required(input,"operation"),ControllerTrust.OPERATIONS,ControlWire.required(input,"project"),ControlWire.required(input,"space"),ControlWire.required(input,"package"),ControlWire.required(input,"generation"),input.getString("expectedBinding"));
         }
+        if("setApplicationMode".equals(command)){fields(input,"command","operation","project","space","generation","mode");return new ProjectTargetBindings(broker).setModeIn(input.getString("operation"),ControllerTrust.OPERATIONS,input.getString("project"),input.getString("space"),input.getString("generation"),input.getString("mode"));}
         if("setProjectMode".equals(command)){
             RuntimeControllerService.agents().requireUiControl(input.getString("project"),"setProjectMode");
             fields(input,"command","operation","project","mode");
@@ -53,12 +64,13 @@ final class RuntimeControllerCommands {
                 case "status":
                     fields(input,"command");out.putString("authority",broker.store.authorityGeneration);out.putString("lease",lease);out.putInt("engineUid",android.os.Process.myUid());out.putInt("enginePid",android.os.Process.myPid());out.putInt("controllerUid",android.os.Process.myUid());out.putInt("schema",broker.store.getReadableDatabase().getVersion());out.putBoolean("strongIsolation",false);out.putBoolean("hookReady",true);break;
                 case "catalog":{
+                    new ApplicationProjects(broker).reconcile();
                     fields(input,"command");JSONArray spaces=new JSONArray();for(String space:broker.catalog.spaces())spaces.put(space);
                     if(spaces.length()>256)throw new IllegalStateException("CATALOG_PAGE_REQUIRED");JSONArray installs=new JSONArray();
                     try(Cursor c=broker.store.getReadableDatabase().rawQuery("SELECT space,package,generation,state,version FROM installs ORDER BY space,package LIMIT 257",null)){while(c.moveToNext())installs.put(new JSONObject().put("space",c.getString(0)).put("package",c.getString(1)).put("generation",c.getString(2)).put("state",c.getString(3)).put("version",c.getLong(4)));}
                     if(installs.length()>256)throw new IllegalStateException("CATALOG_PAGE_REQUIRED");JSONArray projects=new JSONArray();
-                    try(Cursor c=broker.store.getReadableDatabase().rawQuery("SELECT id,space,package,generation,state,operation,mode FROM project_refs WHERE kind='DIRECT' ORDER BY id LIMIT 257",null)){while(c.moveToNext())projects.put(new JSONObject().put("project",c.getString(0)).put("space",c.getString(1)).put("package",c.getString(2)).put("generation",c.getString(3)).put("state",c.getString(4)).put("bindingOperation",c.getString(5)).put("mode",c.getString(6)));}
-                    if(projects.length()>256)throw new IllegalStateException("CATALOG_PAGE_REQUIRED");out.putString("spaces",spaces.toString());out.putString("installs",installs.toString());out.putString("projects",projects.toString());break;
+                    try(Cursor c=broker.store.getReadableDatabase().rawQuery("SELECT id,space,package,generation,state,operation,mode FROM project_refs WHERE kind='DIRECT' ORDER BY id,space LIMIT 257",null)){while(c.moveToNext())projects.put(new JSONObject().put("project",c.getString(0)).put("space",c.getString(1)).put("package",c.getString(2)).put("generation",c.getString(3)).put("state",c.getString(4)).put("bindingOperation",c.getString(5)).put("mode",c.getString(6)));}
+                    if(projects.length()>256)throw new IllegalStateException("CATALOG_PAGE_REQUIRED");out.putString("spaces",spaces.toString());out.putString("installs",installs.toString());out.putString("projects",projects.toString());out.putString("applications",new ApplicationProjects(broker).list().toString());break;
                 }
                 case "createSpace":{
                     fields(input,"command","space","operation");String space=ControlWire.required(input,"space"),operation=ControlWire.required(input,"operation");RuntimeFiles.id(space);
@@ -85,5 +97,6 @@ final class RuntimeControllerCommands {
         return out;
     }
     static void fields(Bundle input,String...names){if(!input.keySet().equals(Set.of(names)))throw new IllegalArgumentException("CONTROL_FIELDS_UNSUPPORTED");for(String name:names)if(!(input.get(name) instanceof String))throw new IllegalArgumentException("CONTROL_FIELD_TYPE:"+name);}
+    static void targetFields(Bundle input,String...names){if(input.containsKey("bindingOperation")&&!java.util.Arrays.asList(names).contains("bindingOperation")){String[] all=java.util.Arrays.copyOf(names,names.length+1);all[names.length]="bindingOperation";fields(input,all);}else fields(input,names);}
     private RuntimeControllerCommands(){}
 }

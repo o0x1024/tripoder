@@ -6,6 +6,8 @@ import android.content.pm.*;
 import android.content.res.*;
 import android.os.*;
 import java.io.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.*;
 import org.json.JSONObject;
 
@@ -15,7 +17,12 @@ public final class RuntimeEngine {
     public static volatile boolean adapterReady;
     public final Context host;
     public final String generation,packageName,processName;
+    final String installGeneration;
     public final File data;
+    final File artifactDirectory;
+    final String artifactCanonicalDirectory;
+    final String dataCanonicalDirectory;
+    final RuntimeExecutionCode executionCode;
     final RuntimeStorage storage;
     final RuntimeHookBridge hooks;
     public ClassLoader loader;
@@ -36,6 +43,9 @@ public final class RuntimeEngine {
      */
     private Application published;
     Application guestApplication(){return published!=null?published:application;}
+    private volatile boolean applicationAttached;
+    /** LoadedApk publishes its Application only after Instrumentation.newApplication (including attach) returns. */
+    Application applicationContext(){return applicationAttached?RuntimeSelfHookApplication.installedApplication():null;}
     private ContentResolver settingsResolver;
     private SettingsReadProvider settingsProvider;
     private final IBinder broker;
@@ -97,6 +107,8 @@ public final class RuntimeEngine {
     final long startupDeadlineElapsed;
     /** Fixed for this process by the broker's load bundle; subsystems that have a thin implementation route on it (docs/thin-shim-transformation.md). */
     final RuntimeMode mode;
+    final boolean traceExit;
+    final String exitTracePath;
     private volatile RuntimeCodeProbes codeProbes;
     private final IdentityHashMap<ClassLoader,String> loaderReferences=new IdentityHashMap<>();
     String loaderReference(ClassLoader loader){synchronized(loaderReferences){String id=loaderReferences.get(loader);if(id==null){if(loaderReferences.size()>=128)throw new IllegalStateException("CLASS_LOADER_CAPACITY");id=UUID.randomUUID().toString();loaderReferences.put(loader,id);}return id;}}
@@ -110,10 +122,15 @@ public final class RuntimeEngine {
         startupDeadlineElapsed=input.getLong("startupDeadlineElapsed");
         if(RuntimeStartupDeadline.remaining(startupDeadlineElapsed,SystemClock.elapsedRealtime())==0)throw new IllegalStateException("PROCESS_START_TIMEOUT_UNKNOWN");
         mode=RuntimeMode.parse(input.getString(RuntimeMode.KEY)).requireImplemented();android.util.Log.i("TripoderBoot","runtime mode="+mode.wire);
-        this.host=host;generation=RuntimeWire.required(input,"generation");packageName=RuntimeWire.required(input,"package");processName=RuntimeWire.required(input,"processName");
+        this.host=host;installGeneration=RuntimeWire.required(input,"installGeneration");generation=RuntimeWire.required(input,"generation");packageName=RuntimeWire.required(input,"package");processName=RuntimeWire.required(input,"processName");
+        android.os.Bundle diagnostics=host.getPackageManager().getApplicationInfo(host.getPackageName(),PackageManager.GET_META_DATA).metaData;
+        traceExit=diagnostics!=null&&diagnostics.getBoolean("tripoder.diagnostics.exit",false);
+        exitTracePath=traceExit?new File(host.getExternalFilesDir(null),"native-exit-"+generation).toString():null;
         firstInstallTime=input.getLong("firstInstallTime");lastUpdateTime=input.getLong("lastUpdateTime");
         long bootStart=SystemClock.elapsedRealtime();
         File apk=new File(RuntimeWire.required(input,"apk"));
+        artifactDirectory=apk.getParentFile();
+        artifactCanonicalDirectory=artifactDirectory.getCanonicalPath();
         String liteFile=input.getString("descriptorLiteFile"),liteSha=input.getString("descriptorLiteSha"),stampDigest=input.getString("artifactStamp");
         boolean trustedLoad=liteFile!=null&&liteSha!=null&&stampDigest!=null;
         ArtifactSet artifacts=trustedLoad?ArtifactSet.loadTrusted(apk.getParentFile(),RuntimeWire.required(input,"descriptorSha"),liteFile,liteSha,stampDigest):ArtifactSet.loadVerified(apk.getParentFile(),RuntimeWire.required(input,"descriptorSha"));
@@ -121,7 +138,7 @@ public final class RuntimeEngine {
         boot("verify",bootStart);
         platformDefaultApplication=artifacts.baseManifest.applicationName.isEmpty()||artifacts.baseManifest.applicationName.equals(Application.class.getName());
         if(artifacts.parts.isEmpty())throw new IllegalStateException("RUNTIME_SPLIT_EXECUTION_NOT_YET_SUPPORTED");
-        storage=new RuntimeStorage(host,input);data=storage.root;
+        storage=new RuntimeStorage(host,input);data=storage.root;dataCanonicalDirectory=data.getCanonicalPath();
         int archiveFlags=PackageManager.GET_CONFIGURATIONS|PackageManager.GET_ACTIVITIES|PackageManager.GET_SERVICES|PackageManager.GET_RECEIVERS|PackageManager.GET_PROVIDERS|PackageManager.GET_META_DATA|PackageManager.GET_PERMISSIONS|PackageManager.GET_SIGNING_CERTIFICATES|PackageManager.GET_SIGNATURES|PackageManager.GET_URI_PERMISSION_PATTERNS|PackageManager.MATCH_DISABLED_COMPONENTS;
         PackageInfo pkg=host.getPackageManager().getPackageArchiveInfo(apk.toString(),archiveFlags);if(pkg==null||!pkg.packageName.equals(packageName))throw new SecurityException("LOAD_PACKAGE_MISMATCH");
         RuntimeManifestIndex.includeSplits(artifacts,pkg);
@@ -136,16 +153,19 @@ public final class RuntimeEngine {
         // ApplicationInfo's copy constructor copies its own fields but not PackageItemInfo.metaData. The archive
         // metadata is part of the verified manifest an installed application receives from PackageManager, so carry it
         // explicitly; otherwise every guest reading its own <meta-data> sees null (Alipay's logging key, for example).
-        info=new ApplicationInfo(pkg.applicationInfo);info.metaData=pkg.applicationInfo.metaData==null?null:new android.os.Bundle(pkg.applicationInfo.metaData);info.sourceDir=apk.toString();info.publicSourceDir=apk.toString();info.dataDir=data.toString();info.deviceProtectedDataDir=new File(data,"device-protected").toString();info.nativeLibraryDir=new File(apk.getParentFile(),"lib").getCanonicalPath();info.uid=android.os.Process.myUid();GuestPackageManager.setPrimaryCpuAbi(info,"arm64-v8a");
+        info=new ApplicationInfo(pkg.applicationInfo);info.metaData=pkg.applicationInfo.metaData==null?null:new android.os.Bundle(pkg.applicationInfo.metaData);info.sourceDir=apk.getCanonicalPath();info.publicSourceDir=info.sourceDir;info.dataDir=data.toString();info.deviceProtectedDataDir=new File(data,"device-protected").toString();info.nativeLibraryDir=new File(apk.getParentFile(),"lib").getCanonicalPath();info.uid=android.os.Process.myUid();GuestPackageManager.setPrimaryCpuAbi(info,"arm64-v8a");
         current=this;
+        executionCode=RuntimeExecutionCode.prepare(artifacts,data,installGeneration);
         applicationInfo=GuestPackageManager.copyApplicationInfo(info,true);
+        // Establish the code namespace before ART/linker see the first guest path.
+        System.loadLibrary("tripoderselfhook");RuntimeSelfHookStorage.install();
         for(ActivityInfo activity:RuntimeActivityIndex.create(artifacts,pkg).values())if(processName.equals(activity.processName))activityInfos.put(activity.name,activity);
         boot("activityIndex",bootStart);
         ClassLoader parent=host.getClassLoader().getParent()!=null?host.getClassLoader().getParent():ClassLoader.getSystemClassLoader().getParent();
         ClassLoader defining=RuntimeDexLoader.createForGuest(artifacts,info.nativeLibraryDir,parent,mode==RuntimeMode.THIN);
         artifactLoader=defining;loader=defining;
         boot("dexLoader",bootStart);
-        resources=host.getPackageManager().getResourcesForApplication(info);
+        resources=host.getPackageManager().getResourcesForApplication(applicationInfo);
         boot("resources",bootStart);
         var declarations=RuntimeManifestIndex.resolve(artifacts,pkg);manifestDeclarations=artifacts.components;filterSpecs=artifacts.filterSpecs;providerIndex=new RuntimeProviderIndex(pkg.providers,declarations);serviceIndex=new RuntimeServiceIndex(pkg.services,declarations);
         providers=new RuntimeProviders(this,pkg.providers,java.util.Objects.requireNonNull(input.getBundle("providers")),declarations);
@@ -166,7 +186,6 @@ public final class RuntimeEngine {
         if(!adapterReady)throw new IllegalStateException("SELF_HOOK_READY_PUBLICATION_MISSING");
         installWindowSessionProxy();
         installAppWidgetBoundary();
-        if(mode!=RuntimeMode.THIN)RuntimeFixedPreparation.neutralizeVendorMonitors();
         if (Boolean.getBoolean("tripoder.debug.mainSampler")) {
             Thread sampler = new Thread(() -> {
                 Thread main = Looper.getMainLooper().getThread();
@@ -208,9 +227,9 @@ public final class RuntimeEngine {
             Context logical=RuntimeBridge.createApplicationContext(host,application,GuestPackageManager.copyApplicationInfo(info,true),loader,componentFactory,resources);
             logMyAppDiag("STEP2_AFTER_CREATE_APP_CTX", application);
             Context guestContext=GuestContext.application(logical,this);
-            updateActivityThreadApplication(application);
-            logMyAppDiag("STEP3_AFTER_UPDATE_AT_APP", application);
-            try {
+            updateActivityThreadPackage();
+            logMyAppDiag("STEP3_BOUND_PACKAGE", application);
+            if (Boolean.getBoolean("tripoder.debug.startupDetails")) try {
                 String src = guestContext.getApplicationInfo().sourceDir;
                 File f = new File(src);
                 android.util.Log.i("TripoderTestFile", "File: " + src + " exists=" + f.exists() + " canRead=" + f.canRead() + " len=" + f.length());
@@ -227,9 +246,11 @@ public final class RuntimeEngine {
             }
             try{RuntimeBridge.attachApplication(application,guestContext);}
             finally{RuntimeBridge.observeApplicationOwnership("after-attach",host,application);if(codeProbes!=null)codeProbes.stage("APPLICATION_ATTACHED");}
+            applicationAttached=true;
+            updateActivityThreadApplication(application);
             logMyAppDiag("STEP4_AFTER_ATTACH_APP", application);
             android.util.Log.i("TripoderBoot","APPLICATION_ATTACH base="+(application.getBaseContext()==null?"null":application.getBaseContext().getClass().getName()));
-            try {
+            if (Boolean.getBoolean("tripoder.debug.startupDetails")) try {
                 Class<?> cls = application.getClass();
                 StringBuilder sb = new StringBuilder("DIAG_APP cls=" + cls.getName() + ": ");
                 for (java.lang.reflect.Field f : cls.getDeclaredFields()) {
@@ -274,14 +295,13 @@ public final class RuntimeEngine {
                 published.registerActivityLifecycleCallbacks((RuntimeApplication)host);
             }
             RuntimeBridge.checkApplicationOwnership(host,application);
-            if(mode!=RuntimeMode.THIN)RuntimeFixedPreparation.neutralizeVendorMonitors();
             recordStart("READY");ready=true;event("application-ready");return null;
             }catch(Exception|Error error){try{recordStart("FAILED");}catch(Exception receipt){error.addSuppressed(receipt);}throw error;}
         });
         constructed.countDown();event("adapter-ready");
     }
     private static void logMyAppDiag(String tag, Application app) {
-        if (app == null) return;
+        if (!Boolean.getBoolean("tripoder.debug.startupDetails") || app == null) return;
         try {
             Class<?> cls = app.getClass();
             StringBuilder sb = new StringBuilder("DIAG_APP [" + tag + "] cls=" + cls.getName() + " base=" + (app.getBaseContext() == null ? "null" : app.getBaseContext().getClass().getName()) + ": ");
@@ -658,6 +678,17 @@ public final class RuntimeEngine {
         } catch (Throwable t) {
             android.util.Log.w("TripoderHardened", "Failed to update ActivityThread application", t);
         }
+    }
+
+    /** The bind record owns the package before newApplication starts; mApplication remains unpublished until attach returns. */
+    private static void updateActivityThreadPackage()throws Exception{
+        Object packageInfo=dev.tripoder.selfhook.ApplicationAdapter.packageInfo();
+        if(packageInfo==null)throw new IllegalStateException("APPLICATION_LOADED_APK_MISSING");
+        Class<?> type=Class.forName("android.app.ActivityThread");
+        Method current=type.getDeclaredMethod("currentActivityThread");current.setAccessible(true);
+        Object thread=current.invoke(null);Field boundField=type.getDeclaredField("mBoundApplication");boundField.setAccessible(true);
+        Object bound=boundField.get(thread);if(bound==null)throw new IllegalStateException("APPLICATION_BIND_RECORD_MISSING");
+        Field infoField=bound.getClass().getDeclaredField("info");infoField.setAccessible(true);infoField.set(bound,packageInfo);
     }
 
     private void installWindowSessionProxy() {

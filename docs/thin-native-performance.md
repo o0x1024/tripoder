@@ -4,7 +4,7 @@
 
 ## 已实施
 
-- **保留 JIT/AOT**：thin 的 `ManagedHook.initializeProcess(true)` 不调用全局退优化、不关闭 JIT、不修改进程调试状态。仅被 Hook 的方法设置 `kAccCompileDontBother`，原方法备份和停用后的入口使用稳定桥，避免持有可能被 ART 回收的 JIT 代码地址。thick 保留原进程策略。
+- **保留 JIT/AOT**：thin 的 `ManagedHook.initializeProcess(true)` 不调用全局退优化、不关闭 JIT、不修改进程调试状态。仅被 Hook 的方法设置 `kAccCompileDontBother`，原方法备份和停用后的入口使用稳定桥，避免持有可能被 ART 回收的 JIT 代码地址。thick 保留完整适配，在固定适配初始化期暂停 JIT，完成后恢复原有设置；新目标首次发布前反优化调用者，并使用同样的方法级编译/内联屏障。
 - **预热不提前决定执行策略**：无客体身份的空闲槽只准备框架元数据和 helper 模板；收到实际模式后才初始化 ART 并准备该模式需要的目标。
 - **七类系统服务直接使用 Android 实现**：网络连接、电话、音频、电池、电源、Wi-Fi P2P、网络统计。thin 不再安装这些 Manager 的整类 Hook，也不再包装流量标记、UI 音效、失败诊断和 Wi-Fi Channel 关闭操作。固定 Hook 从 **2300 降到 1021**。
 - **标准 ClassLoader**：thin 用真正的 `PathClassLoader` 直接加载 APK，删除资源代理父加载器和空的外层加载器。APK 资源由平台加载器提供，避免不被 ART 识别的自定义加载器链。

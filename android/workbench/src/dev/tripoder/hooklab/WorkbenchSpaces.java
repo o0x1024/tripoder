@@ -11,7 +11,7 @@ final class WorkbenchSpaces {
     private final SharedPreferences names;private boolean defaultRequested;
     WorkbenchSpaces(Context host){names=host.getSharedPreferences("space-names",Context.MODE_PRIVATE);}
     String name(String id){if(id==null||id.isEmpty())return "";return names.getString(id,DEFAULT.equals(id)?"默认空间":id);}
-    void rename(String id,String name){names.edit().putString(id,name.trim()).apply();}
+    void rename(String id,String name){if(!names.edit().putString(id,name.trim()).commit())throw new IllegalStateException("空间名称保存失败");}
     /** After the engine deleted a space: its name and any application's remembered default pointing at it go. */
     static void forget(Context host,String id){
         host.getSharedPreferences("space-names",Context.MODE_PRIVATE).edit().remove(id).apply();

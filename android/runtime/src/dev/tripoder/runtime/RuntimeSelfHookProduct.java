@@ -20,7 +20,7 @@ final class RuntimeSelfHookProduct {
         RuntimeSelfHookProduct value=new RuntimeSelfHookProduct(engine);
         EnumMap<RuntimeSelfHookBootstrap.Capability,RuntimeSelfHookBootstrap.Installer> plan=new EnumMap<>(RuntimeSelfHookBootstrap.Capability.class);
         plan.put(PROCESS_EXECUTION_POLICY,()->{
-            RuntimeFixedPreparation.process();value.managed=new RuntimeManagedInstaller(RuntimeFixedPreparation.take());value.adapters=new RuntimeSelfHookInstallers(value.managed);
+            RuntimeFixedPreparation.process();value.managed=new RuntimeManagedInstaller(RuntimeFixedPreparation.take(),engine.mode==RuntimeMode.THICK);value.adapters=new RuntimeSelfHookInstallers(value.managed);
         });
         plan.put(FRAMEWORK_ACCESS,()->{
             RuntimeSelfHookApplication.prepareFramework(engine,RuntimeSelfHookPhysical.INSTANCE);
@@ -61,9 +61,10 @@ final class RuntimeSelfHookProduct {
             android.util.Log.i("TripoderSelfHook","INSTALLED:"+capability+":ns="+(android.os.SystemClock.elapsedRealtimeNanos()-start));
         }));
         long start=android.os.SystemClock.elapsedRealtimeNanos();
-        RuntimeSelfHookBootstrap.PROCESS.install(measured,()->{value.managed.requirePreparedConsumed();RuntimeBridge.selfHookReady();});
+        RuntimeSelfHookBootstrap.PROCESS.install(measured,()->{value.managed.requirePreparedConsumed();if(engine.mode==RuntimeMode.THICK)value.managed.publishPrepared();ManagedHook.completeBootstrap();RuntimeBridge.selfHookReady();});
         installedBindings=value.managed.installedCount();
         android.util.Log.i("TripoderSelfHook","READY:"+RuntimeSelfHookBootstrap.PROCESS.status()+":bindings="+value.managed.installedCount()+":ns="+(android.os.SystemClock.elapsedRealtimeNanos()-start));
+        android.util.Log.i("TripoderSelfHook","FIXED_PUBLICATION:bindings="+installedBindings+":ns="+value.managed.publishNs());
         android.util.Log.i("TripoderSelfHook","PREPARATION_METRICS:"+dev.tripoder.selfhook.OriginalMethodStorage.preparationMetrics());
         android.util.Log.i("TripoderSelfHook","MANAGED_PREPARATION_METRICS:"+ManagedHook.preparationMetrics());
         android.util.Log.i("TripoderSelfHook","EXECUTION_POLICY:"+ManagedHook.processPolicy());

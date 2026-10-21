@@ -18,13 +18,15 @@ final class WorkbenchOperations {
     // Main-thread confined: submissions and engine callbacks both run on the main looper.
     private final Set<String> submitting=new HashSet<>(),querying=new HashSet<>();
     String message="";int settled;
-    WorkbenchOperations(Context host,EngineConnection engine){this.host=host;this.engine=engine;state=host.getSharedPreferences("operations",Context.MODE_PRIVATE);projects=new WorkbenchProjects(host);migrate();}
+    WorkbenchOperations(Context host,EngineConnection engine){this.host=host;this.engine=engine;state=host.getSharedPreferences("operations",Context.MODE_PRIVATE);projects=((WorkbenchApplication)host.getApplicationContext()).projects;migrate();}
     /** The journal used to hold a single "pending" operation; it becomes an ordinary record of unknown command. */
     private void migrate(){
         String id=state.getString("pending",null);if(id==null)return;
         try{if(!state.edit().putString(RECORD+id,new JSONObject().put("label",state.getString("label","操作")).put("scope","").put("command","").toString()).remove("pending").remove("label").remove("space").commit())throw new IllegalStateException("操作记录迁移失败");}
         catch(org.json.JSONException error){throw new IllegalStateException(error);}
     }
+    /** Main-thread invalidation after an external control request; this never replays the request. */
+    void externalChanged(){settled++;changed();}
     void observe(Runnable observer){observers.add(observer);}
     void remove(Runnable observer){observers.remove(observer);}
     private void changed(){for(var observer:observers)observer.run();}
@@ -65,6 +67,7 @@ final class WorkbenchOperations {
             resolve("query",id);
         });
     }
+    JSONObject terminalReceipt(String operation){try{String value=state.getString("receipt-"+operation,null);return value==null?null:new JSONObject(value);}catch(Exception invalid){return null;}}
     void query(){resolveAll("query");}
     void cancelIfNotAccepted(){resolveAll("cancelNotAccepted");}
     private void resolveAll(String command){

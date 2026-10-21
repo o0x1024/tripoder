@@ -9,11 +9,12 @@ import java.util.Set;
 final class RuntimeControllerEntryClosures {
     static Bundle recovery(RuntimeBroker broker,Bundle input)throws Exception{
         if(!input.containsKey("project"))return preparationRecovery(broker,input);
-        RuntimeControllerCommands.fields(input,"command","project","operation");String operation=ControlWire.required(input,"operation"),project=ControlWire.required(input,"project");RuntimeFiles.id(operation);
+        RuntimeControllerCommands.targetFields(input,"command","project","operation");String operation=ControlWire.required(input,"operation"),project=ControlWire.required(input,"project");RuntimeFiles.id(operation);
         synchronized(broker){
             String root=ActivityEntryFences.controllerTicket(broker.store,operation);var original=broker.contract.query(operation);
-            if(root==null||original==null||!ControllerTrust.OPERATIONS.equals(original.callerIdentity)||original.state!=ExecutionContract.OperationState.UNKNOWN)throw new SecurityException("UNKNOWN_PROJECT_LAUNCH_REQUIRED");
-            Bundle target=new ProjectTargetBindings(broker).resolve(project);
+            if(root==null)return preparationRecovery(broker,ControlWire.request("launchRecovery","operation",operation));
+            if(original==null||!ControllerTrust.OPERATIONS.equals(original.callerIdentity)||original.state!=ExecutionContract.OperationState.UNKNOWN)throw new SecurityException("UNKNOWN_PROJECT_LAUNCH_REQUIRED");
+            Bundle target=input.containsKey("bindingOperation")?new ProjectTargetBindings(broker).resolveBinding(project,input.getString("bindingOperation")):new ProjectTargetBindings(broker).resolve(project);
             var ticket=broker.activities.get(root);
             if(!ticket.space.equals(target.getString("space"))||!ticket.pkg.equals(target.getString("package"))||!ticket.install.equals(target.getString("generation")))throw new SecurityException("LAUNCH_RECOVERY_BINDING_STALE");boolean inert=Set.of("FINISHED","REVOKED","RETIRED").contains(ticket.state)||ActivityEntryFences.closed(broker.store,ticket.id);
             int open,live;var db=broker.store.getReadableDatabase();
@@ -50,8 +51,8 @@ final class RuntimeControllerEntryClosures {
         }
     }
     static Bundle list(RuntimeBroker broker,Bundle input)throws Exception{
-        RuntimeControllerCommands.fields(input,"command","project");
-        Bundle target=new ProjectTargetBindings(broker).resolve(ControlWire.required(input,"project"));JSONArray entries=new JSONArray();
+        RuntimeControllerCommands.targetFields(input,"command","project");
+        Bundle target=input.containsKey("bindingOperation")?new ProjectTargetBindings(broker).resolveBinding(ControlWire.required(input,"project"),input.getString("bindingOperation")):new ProjectTargetBindings(broker).resolve(ControlWire.required(input,"project"));JSONArray entries=new JSONArray();
         synchronized(broker){
             try(var c=broker.store.getReadableDatabase().rawQuery("SELECT l.operation,t.ticket,t.generation,t.state,t.taskId,s.state,o.state,o.detail FROM activity_launches l JOIN activity_tickets t ON t.ticket=l.candidate JOIN sessions s ON s.generation=t.generation JOIN operations o ON o.id=l.operation WHERE t.space=? AND t.package=? AND t.installGeneration=? AND l.callerKind='CONTROLLER' AND t.entryFenceOperation IS NULL AND t.taskId<0 AND t.state IN ('PREPARED','CLAIMED') AND s.state='DEAD' AND o.state='UNKNOWN' ORDER BY l.operation LIMIT 129",new String[]{target.getString("space"),target.getString("package"),target.getString("generation")})){
                 while(c.moveToNext())entries.put(new JSONObject().put("operation",c.getString(0)).put("ticket",c.getString(1)).put("processGeneration",c.getString(2)).put("ticketState",c.getString(3)).put("taskId",c.getInt(4)).put("processState",c.getString(5)).put("outcome",c.getString(6)).put("detail",c.getString(7)).put("resourcesRetained",true));

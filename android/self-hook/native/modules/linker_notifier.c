@@ -1,5 +1,7 @@
 #define _GNU_SOURCE
 #include "linker_notifier.h"
+#include "../signal_chain.h"
+#include "path_policy.h"
 #include "linker_contract.h"
 #include "near_notifier.h"
 #include "../code_page.h"
@@ -105,7 +107,7 @@ __attribute__((noinline,no_stack_protector)) static bool tp_linker_scan_consiste
         enum tp_module_change status=tp_module_reconcile(&observer.slots[i],value);
         if(status==TP_MODULE_CHANGE_IN_USE)tp_linker_fail_stop(198);
         if(status!=TP_MODULE_CHANGE_OK)return false;
-        if(!old.live&&value.map){atomic_fetch_add_explicit(&observer.added,1,memory_order_relaxed);tp_linker_record(i,old.generation+1,value.base,TP_MODULE_ADDED);}
+        if(!old.live&&value.map){if(!tp_project_module(observer.paths[i],value.base)||!tp_signal_chain_module_added(value.base))tp_linker_fail_stop(197);atomic_fetch_add_explicit(&observer.added,1,memory_order_relaxed);tp_linker_record(i,old.generation+1,value.base,TP_MODULE_ADDED);}
         if(old.live&&!value.map){atomic_fetch_add_explicit(&observer.removed,1,memory_order_relaxed);tp_linker_record(i,old.generation,old.base,TP_MODULE_REMOVED);}
         if(value.map&&was_ambiguous!=(matches[i]>1))tp_linker_record(i,old.live?old.generation:old.generation+1,value.base,matches[i]>1?TP_MODULE_AMBIGUOUS:TP_MODULE_UNIQUE);
     }

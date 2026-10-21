@@ -59,7 +59,7 @@ public final class GuestContext extends GuestStorageContext {
     @Override public ClassLoader getClassLoader(){return resourceOnlyLoader==null?engine.loader:resourceOnlyLoader;}
     @Override public Resources getResources(){return guestResources;}
     @Override public AssetManager getAssets(){return guestResources.getAssets();}
-    @Override public Context getApplicationContext(){if(resourceOnlyLoader!=null)return null;android.app.Application visible=engine.guestApplication();return visible==null?this:visible;}
+    @Override public Context getApplicationContext(){return resourceOnlyLoader!=null?null:engine.applicationContext();}
     @Override public ApplicationInfo getApplicationInfo(){return engine.applicationInfo;}
     @Override public String getPackageCodePath(){return getApplicationInfo().sourceDir;}
     @Override public String getPackageResourcePath(){return getApplicationInfo().publicSourceDir;}

@@ -26,19 +26,15 @@ flowchart TD
 
 ## 2. ART Java 方法 Hook (`ManagedHook`)
 
-### 2.1 核心原理：ArtMethod 入口替换与 Nterp 汇编解释器加速
+### 2.1 ArtMethod 入口与发布策略
 
-在 Android ART（API 29–35+）中，Java 方法调用通过 `ArtMethod::entry_point_from_quick_compiled_code_` 派发。若直接仅替换目标方法的入口指针，已被 JIT/AOT 内联（Inlined）的调用方将绕过 Hook。
+当前实现绑定仓库已验证的 ART 二进制合约。修改目标入口不能自动覆盖已经内联的调用者，`fullCallerCoverage` 和 `preexistingCompiledFramesCovered` 始终报告 false。
 
-为了同时保证 **100% 拦截无内联遗漏** 与 **接近原生的启动性能**，`self-hook` 采用 **Nterp 汇编解释器策略 (`claim_and_enable_nterp_locked`)**：
+THICK 的固定 helper、备份方法和回调先在正常 ART 状态下准备，再以一次暂停发布。初次发布及后续普通 Hook 的新目标发布，会反优化并使 JIT code cache 失效；只调用 `DeoptimizeEverything` 可能在 `ConfigureStubs` 时重新发布仍含旧内联代码的 JIT 调用者。缓存对象必须来自已绑定的 Runtime/Jit，并核对其身份与固定函数体。
 
-1. **解除已编译内联并禁用 JIT**：
-   - 在获取 `mutator_lock_` 独占锁后，调用 `instrumentation->DeoptimizeEverything("tripoder")` 将调用栈上已内联的方法去优化，并停止 JIT 后台编译线程以防重新内联。
-2. **启用 `ExecuteNterpImpl` 而非慢速 C++ Switch 解释器**：
-   - **严禁调用 `ForceInterpretOnly()`**：因为 `ForceInterpretOnly()` 会设置 `interpret_only_ = true`，强制所有方法退回慢速 C++ `SwitchImpl` 解释器，导致应用启动慢 10–30 倍。
-   - 改为设置 `Runtime::SetJavaDebuggable(true)` 并调用 `Instrumentation::ConfigureStubs("tripoder", /*desired_level=*/0)`，此时 `ComputeInstrumentationLevel` 计算为 `kInstrumentNothing`，ART 自动将所有满足条件的普通字节码方法入口配置为高速 ARM64 汇编解释器 **`ExecuteNterpImpl`**，性能接近原生 JIT 代码。
-3. **单一入口写作者所有权 (`UpdateEntryPoints`)**：
-   - 所有对目标 `ArtMethod` Quick 入口点的修改，统一经过中央入口管理器，备份原始 `ArtMethod` 元数据至影子方法（Backup `ArtMethod`），并将目标方法入口指向自研的 `QuickHookBridge` 汇编跳板。
+固定发布完成后恢复原有运行标志和 JIT 选项，受控方法保留编译/内联屏障及稳定备份入口。Guest Service/Receiver 在注册给 Android 前安装实际回调入口，不为每个组件重复反优化全进程；若该入口升级为普通 Hook，仍补做调用者失效。THIN 保留原有编译策略、固定集合与发布顺序。
+
+原方法备份保持 GC root 和稳定桥，中央入口管理器继续维护已注册目标的入口所有权。实际冷启动、编译调用者及停用恢复的验证见 [THICK P0/P1 记录](thick-startup-p0-p1.md)。
 
 ### 2.2 GC Root 读屏障安全 (`DeclaringClass` Read Barrier)
 

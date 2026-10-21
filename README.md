@@ -16,7 +16,7 @@ Tripoder 是一个面向 Android 的**无需 Root 的免重打包应用虚拟化
    - **ART Java Hook (`ManagedHook`)**：采用 `ExecuteNterpImpl` ARM64 汇编解释器策略（替代慢速 C++ Switch 解释器，提速 10–30 倍），兼顾 100% 防内联拦截、GC Root 读屏障安全与 Caller-Sensitive 栈归属隐藏。
    - **ARM64 Native Hook (`NativeHook` & `fixed_libc`)**：内置 ARM64 指令重定位规划器、信号线程安全停顿、基于 `mremap` 的 W^X 匿名页原子发布，以及接管 `libc.so` 10 个核心路径入口的双页导出包装器（支撑虚拟路径重定向与 `/proc/self/*` 隐身）。
 3. **AI Agent 原生控制面 (MCP Server)**
-   - 电脑通过 stdio MCP 和 ADB 直接连接，无需身份认证、配对或手机脚本审批。提供 **42 个 MCP 工具**，覆盖运行目标选择、运行时类/方法内省、Hook 管线、主动调用 Java 方法、存储/网络审计与 UI 自动化；断开连接不会结束客体应用。
+   - 电脑通过 stdio MCP 和 ADB 直接连接，无需身份认证、配对或手机脚本审批。提供全局 MCP 控制入口，覆盖空间与应用管理、原始 APK 导入、唯一项目源码、进程与 Hook、存储/网络审计及 UI 自动化；每次操作显式指定目标；断开连接不会结束客体应用。
 
 ---
 
@@ -25,13 +25,13 @@ Tripoder 是一个面向 Android 的**无需 Root 的免重打包应用虚拟化
 所有架构与设计规范均收敛于 [`docs/`](docs/README.md) 目录：
 
 - **[文档总索引 (`docs/README.md`)](docs/README.md)**
-- **[当前总体架构 (`docs/current-architecture.md`)](docs/current-architecture.md)**：第一性原理边界、单 APK 三进程模型、Space × App × Project 模型与工程结构。
+- **[当前总体架构 (`docs/current-architecture.md`)](docs/current-architecture.md)**：第一性原理边界、单 APK 三进程模型、每个应用唯一项目与多空间运行模型与工程结构。
 - **[执行契约与状态机 (`docs/execution-contract.md`)](docs/execution-contract.md)**：Install、ProcessSession、Component Lease、Operation 与退出排空围栏。
 - **[Runtime 虚拟化设计 (`docs/runtime-design.md`)](docs/runtime-design.md)**：Application 引导、四大组件、存储隔离、系统服务代理与 `/proc` 隐身机制。
 - **[Self-Hook 与脚本引擎设计 (`docs/self-hook-design.md`)](docs/self-hook-design.md)**：ART Nterp Java Hook、ARM64 Native Hook、`fixed_libc` 双页事务与 `RestrictedAst` 编译器。
 - **[Guest 兼容性分层与基线 (`docs/guest-compatibility.md`)](docs/guest-compatibility.md)**：L1–L13 兼容性矩阵、真机实测基线与已知边界。
 - **[启动性能架构 (`docs/launch-performance.md`)](docs/launch-performance.md)**：启动关键路径与六大核心性能优化细节。
-- **[AI Agent 控制面与 MCP 规范 (`docs/agent-mcp-design.md`)](docs/agent-mcp-design.md)**：免配对接入、42 个 MCP 工具与实际操作闭环。
+- **[AI Agent 控制面与 MCP 规范 (`docs/agent-mcp-design.md`)](docs/agent-mcp-design.md)**：免配对接入、全局工具、显式目标与实际操作闭环。
 
 ---
 

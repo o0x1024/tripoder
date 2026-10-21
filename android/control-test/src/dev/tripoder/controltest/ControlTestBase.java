@@ -80,6 +80,11 @@ abstract class ControlTestBase extends Instrumentation {
         }while(SystemClock.elapsedRealtime()<end);
         throw new IllegalStateException("WORKER_NOT_RUNNING_AFTER_PREPARE");
     }
+    Bundle applicationProject(IBinder peer,Object projects,String space,String pkg,String generation)throws Exception{
+        Bundle target=execute(peer,"applicationTarget","space",space,"package",pkg,"generation",generation);
+        execute(peer,"selectProjectTarget","operation",java.util.UUID.randomUUID().toString(),"project",target.getString("project"),"space",space,"package",pkg,"generation",generation);
+        var reconcile=projects.getClass().getDeclaredMethod("reconcile",JSONArray.class);reconcile.setAccessible(true);reconcile.invoke(projects,new JSONArray(execute(peer,"catalog").getString("applications")));return target;
+    }
     Bundle execute(IBinder peer,String command,String...pairs)throws Exception{return ControlWire.call(peer,ControlWire.EXECUTE,ControlWire.request(command,pairs));}
     void check(String name,boolean passed,Object value)throws Exception{
         checks.put(new JSONObject().put("name",name).put("passed",passed).put("observed",value));

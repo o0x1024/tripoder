@@ -87,41 +87,16 @@ final class GuestPackageManager extends DeniedPackageManager {
         if (source.splitPublicSourceDirs != null) copy.splitPublicSourceDirs = source.splitPublicSourceDirs.clone();
         copy.metaData = includeMetadata && source.metaData != null ? source.metaData.deepCopy() : null;
         if (source.packageName != null) {
-            String appDir = "/data/app/~~tripoder/" + source.packageName;
+            // APK, splits and native libraries name this verified installation. Never borrow paths from a
+            // separately installed system copy, which may be updated or removed independently.
             copy.dataDir = "/data/user/0/" + source.packageName;
             copy.deviceProtectedDataDir = "/data/user_de/0/" + source.packageName;
-            copy.sourceDir = appDir + "/base.apk";
-            copy.publicSourceDir = appDir + "/base.apk";
-            if (copy.splitSourceDirs != null) {
-                for (int i = 0; i < copy.splitSourceDirs.length; i++) {
-                    if (copy.splitSourceDirs[i] != null) {
-                        copy.splitSourceDirs[i] = appDir + "/" + new java.io.File(copy.splitSourceDirs[i]).getName();
-                    }
-                }
-            }
-            if (copy.splitPublicSourceDirs != null) {
-                for (int i = 0; i < copy.splitPublicSourceDirs.length; i++) {
-                    if (copy.splitPublicSourceDirs[i] != null) {
-                        copy.splitPublicSourceDirs[i] = appDir + "/" + new java.io.File(copy.splitPublicSourceDirs[i]).getName();
-                    }
-                }
-            }
-            copy.nativeLibraryDir = appDir + "/lib";
+            RuntimeExecutionCode code=RuntimeEngine.current.executionCode;
+            copy.sourceDir=code.part("base.apk");copy.publicSourceDir=copy.sourceDir;
+            if(copy.splitSourceDirs!=null)for(int i=0;i<copy.splitSourceDirs.length;i++)if(copy.splitSourceDirs[i]!=null)copy.splitSourceDirs[i]=code.part(new java.io.File(copy.splitSourceDirs[i]).getName());
+            if(copy.splitPublicSourceDirs!=null)for(int i=0;i<copy.splitPublicSourceDirs.length;i++)if(copy.splitPublicSourceDirs[i]!=null)copy.splitPublicSourceDirs[i]=code.part(new java.io.File(copy.splitPublicSourceDirs[i]).getName());
+            copy.nativeLibraryDir=code.visibleDirectory+"/lib/arm64";
             setPrimaryCpuAbi(copy, "arm64-v8a");
-            if (RuntimeEngine.current != null && RuntimeEngine.current.host != null) {
-                try {
-                    ApplicationInfo hostAi = RuntimeEngine.current.host.getPackageManager().getApplicationInfo(source.packageName, 0);
-                    if (hostAi != null && hostAi.sourceDir != null && hostAi.sourceDir.startsWith("/data/app/") && new java.io.File(hostAi.sourceDir).exists()) {
-                        copy.sourceDir = hostAi.sourceDir;
-                        copy.publicSourceDir = hostAi.publicSourceDir;
-                        if (hostAi.splitSourceDirs != null) copy.splitSourceDirs = hostAi.splitSourceDirs.clone();
-                        if (hostAi.splitPublicSourceDirs != null) copy.splitPublicSourceDirs = hostAi.splitPublicSourceDirs.clone();
-                        if (hostAi.nativeLibraryDir != null && new java.io.File(hostAi.nativeLibraryDir).exists()) {
-                            copy.nativeLibraryDir = hostAi.nativeLibraryDir;
-                        }
-                    }
-                } catch (Throwable ignored) {}
-            }
         }
         return copy;
     }

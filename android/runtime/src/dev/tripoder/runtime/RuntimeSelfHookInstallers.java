@@ -13,7 +13,7 @@ final class RuntimeSelfHookInstallers implements RuntimeSelfHookComponents.Insta
     public void install(Map<Method,RuntimeSelfHookComponents.Callback> callbacks)throws Exception {
         Map<Method,RuntimeManagedInstaller.Callback> batch=new LinkedHashMap<>();
         callbacks.forEach((method,callback)->batch.put(method,(receiver,args,original)->callback.invoke(receiver,args,original::call)));
-        managed.install(batch);
+        managed.installLifecycle(batch);
     }
     public void install(RuntimeSelfHookManagerPolicy.Family family,Map<Method,RuntimeSelfHookManagerPolicy.Callback> callbacks)throws Exception {
         if(!callbacks.keySet().equals(new HashSet<>(FixedManagerInventory.methods(family.ordinal()))))

@@ -80,12 +80,13 @@ public final class ManagedHook {
     private ManagedHook(){}
     private static native boolean prepareNative(int slot,Executable target,Method helper,Class<?> owner,String shorty,Executable[] callers);
     private static native int prepareBatchNative(int first,Executable[] targets,Method[] helpers,Class<?>[] owners,String[] shorties,Executable[][] callerArrays);
-    private static native boolean toggleBatchNative(int[] slots,boolean active);
+    private static native boolean toggleBatchNative(int[] slots,boolean active,boolean entryOnly);
     private static native Object originalNative(int slot,Object receiver,Object[] args);
     private static native String reportNative(int slot);
     private static native byte[] relayNative(int slot);
     private static native String processPolicyNative();
-    private static native boolean initializeProcessNative(boolean preserveCompilation);
+    private static native boolean initializeProcessNative(boolean preserveCompilation,boolean deferPublication);
+    private static native boolean completeBootstrapNative();
     private static native int capacityNative();
     private static native int nativeOriginalRemainingNative();
     private static void requireCapacity(){
@@ -103,21 +104,31 @@ public final class ManagedHook {
      * a typed ownership receipt; callers need not parse per-entry JSON reports. */
     public static synchronized void enableBatch(Map<Handle,Handler> supplied){
         if(changing)throw new IllegalStateException("HOOK_PUBLICATION_REENTRY");changing=true;
-        try{enableBatchLocked(supplied);}finally{changing=false;}
+        try{enableBatchLocked(supplied,false);}finally{changing=false;}
     }
-    private static void enableBatchLocked(Map<Handle,Handler> supplied){
+    /** Entry-only delivery for guest callbacks. The owner dispatches through
+     * the actual method entry; arbitrary old compiled/inlined callers are not
+     * migrated. Boot methods and native targets are excluded. */
+    public static synchronized void enableEntryBatch(Map<Handle,Handler> supplied){
+        if(changing)throw new IllegalStateException("HOOK_PUBLICATION_REENTRY");changing=true;
+        try{enableBatchLocked(supplied,true);}finally{changing=false;}
+    }
+    private static void enableBatchLocked(Map<Handle,Handler> supplied,boolean entryOnly){
         Map<Handle,Handler> batch=new LinkedHashMap<>(supplied);
         if(batch.isEmpty()||batch.size()>HookCapacity.MAX_ENTRIES)throw new IllegalStateException("HOOK_ENABLE_STATE");
         java.util.Set<Class<?>> owners=new java.util.LinkedHashSet<>();int[] slots=new int[batch.size()];int i=0;
         for(var item:batch.entrySet()){
             Handle handle=item.getKey();if(handle==null||item.getValue()==null||handle.entry.handler!=null||entries.get(handle.entry.id)!=handle.entry)
                 throw new IllegalStateException("HOOK_ENABLE_STATE");
+            if(entryOnly&&(!(handle.entry.target instanceof Method)||handle.entry.target.getDeclaringClass().getClassLoader()==null
+                ||Modifier.isStatic(handle.entry.target.getModifiers())||Modifier.isNative(handle.entry.target.getModifiers())))
+                throw new IllegalArgumentException("GUEST_CALLBACK_ENTRY_REQUIRED");
             owners.add(handle.entry.target.getDeclaringClass());slots[i++]=handle.entry.id;
         }
         try {for(Class<?> owner:owners)if(Class.forName(owner.getName(),true,owner.getClassLoader())!=owner)throw new IllegalStateException("CLASS_IDENTITY_CHANGED");}
         catch(ClassNotFoundException error){throw new IllegalStateException("CLASS_INITIALIZATION_FAILED",error);}
         batch.forEach((handle,handler)->handle.entry.handler=handler);
-        if(!toggleBatchNative(slots,true)){batch.keySet().forEach(handle->handle.entry.handler=null);throw new IllegalStateException("HOOK_ACTIVATION_REJECTED");}
+        if(!toggleBatchNative(slots,true,entryOnly)){batch.keySet().forEach(handle->handle.entry.handler=null);throw new IllegalStateException("HOOK_ACTIVATION_REJECTED");}
     }
     public static synchronized void disableBatch(java.util.Collection<Handle> supplied){
         if(changing)throw new IllegalStateException("HOOK_PUBLICATION_REENTRY");changing=true;
@@ -129,22 +140,35 @@ public final class ManagedHook {
         int[] slots=new int[batch.size()];int i=0;
         for(Handle handle:batch){if(handle==null||handle.entry.handler==null||entries.get(handle.entry.id)!=handle.entry)throw new IllegalStateException("HOOK_DISABLE_STATE");slots[i++]=handle.entry.id;}
         batch.forEach(handle->handle.entry.handler=null);
-        if(!toggleBatchNative(slots,false))throw new IllegalStateException("HOOK_DISABLE_REJECTED");
+        if(!toggleBatchNative(slots,false,false))throw new IllegalStateException("HOOK_DISABLE_REJECTED");
     }
 
     /** Process bootstrap, before constructing/loading any guest application code.
      * This is a one-shot policy mutation, not a proof that old AOT frames migrated.
      * The owner of the guest lifecycle must enforce the execution boundary. */
+    /** Complete fixed adapter publication before the first guest class executes. */
+    public static synchronized void completeBootstrap(){
+        requireProcessInitialization();
+        if(!completeBootstrapNative())throw new IllegalStateException("PROCESS_BOOTSTRAP_COMPLETION_FAILED");
+    }
     public static synchronized void initializeProcess(){
         initializeProcess(false);
     }
     /** Thin hosting preserves ordinary ART compilation. Only hooked entries are
      * excluded from compilation/inlining; old compiled callers are not covered. */
     public static synchronized void initializeProcess(boolean preserveCompilation){
+        initializeProcess(preserveCompilation,false);
+    }
+    /** Fixed bootstrap prepares every backup/helper before its first publication.
+     * Keep ordinary ART execution until that publication needs caller invalidation. */
+    public static synchronized void initializeProcessForBootstrap(boolean preserveCompilation){
+        initializeProcess(preserveCompilation,true);
+    }
+    private static void initializeProcess(boolean preserveCompilation,boolean deferPublication){
         requireCapacity();
         if(processInitializationAttempted||used!=0)throw new IllegalStateException("PROCESS_POLICY_INITIALIZATION_ORDER");
         processInitializationAttempted=true;
-        if(!initializeProcessNative(preserveCompilation))throw new IllegalStateException("PROCESS_POLICY_INITIALIZATION_FAILED");
+        if(!initializeProcessNative(preserveCompilation,deferPublication))throw new IllegalStateException("PROCESS_POLICY_INITIALIZATION_FAILED");
         processInitialized=true;
     }
 

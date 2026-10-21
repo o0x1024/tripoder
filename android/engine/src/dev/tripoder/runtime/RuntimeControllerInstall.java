@@ -20,7 +20,8 @@ final class RuntimeControllerInstall {
         // All input validation finishes before admission. Endpoint closes every received FD, also on error.
         ApkStore.BundleInstall install=broker.apks.installForCaller(input.getString("operation"),ControllerTrust.OPERATIONS,input.getString("space"),sources,input.getString("expectedGeneration"),ApkStore.NO_FAULT);
         Bundle out=new Bundle();out.putString("space",install.space);out.putString("package",install.info.packageName);out.putString("generation",install.generation);
-        out.putString("sha256",install.sha256);out.putString("descriptorSha",install.artifacts.descriptorSha);out.putLong("version",install.artifacts.versionCode);return out;
+        out.putString("sha256",install.sha256);out.putString("descriptorSha",install.artifacts.descriptorSha);out.putLong("version",install.artifacts.versionCode);
+        synchronized(broker){var current=broker.apks.row(install.space,install.info.packageName);if(current!=null&&install.generation.equals(current.generation))new ApplicationProjects(broker).ensure(install.info.packageName);}return out;
     }
     private RuntimeControllerInstall(){}
 }

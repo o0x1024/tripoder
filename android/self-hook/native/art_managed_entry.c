@@ -21,7 +21,7 @@ struct entry {
     uintptr_t callers[64],relay,prepared_quick;
     char shorty[34];
     uint32_t semantic_flags,dex_index,method_index;
-    bool instance,attempted,native;
+    bool instance,attempted,native,callers_invalidated;
     _Atomic bool ready,active;
     _Atomic uint64_t originals;
     _Atomic uintptr_t desired_entry;
@@ -70,38 +70,87 @@ static bool unhooked_managed_entry(uintptr_t quick){
     uintptr_t base=art.managed.access.base;
     return quick==art.managed.interpreter_bridge||quick==base+0x728040||quick==base+0x2bc5d0;
 }
-static bool claim_and_enable_nterp_locked(void){
+static _Atomic bool bootstrap_complete;
+static _Atomic unsigned publication_deoptimizations;
+static _Atomic unsigned callback_publications;
+static uint8_t *bootstrap_jit_option;
+static uint8_t saved_jit_option;
+static uintptr_t policy_runtime;
+static uint8_t saved_runtime_interpret;
+static uint32_t saved_runtime_debug;
+static bool bootstrap_deferred,runtime_state_saved;
+static void restore_runtime_state_locked(void){
+    if(!runtime_state_saved)return;
+    *(uint8_t *)(policy_runtime+0x362)=saved_runtime_interpret;
+    *(uint32_t *)(policy_runtime+0x3f0)=saved_runtime_debug;
+}
+static bool runtime_state_restored(void){
+    return !runtime_state_saved||(*(uint8_t *)(policy_runtime+0x362)==saved_runtime_interpret
+        &&*(uint32_t *)(policy_runtime+0x3f0)==saved_runtime_debug);
+}
+static bool claim_and_enable_nterp_locked(bool invalidate_callers){
     // Thin hosting leaves JIT, AOT, debuggability and instrumentation untouched.
     // Entry ownership below is per method, never a process-wide interpreter lease.
     if(native_compilation)return interpreter.level(interpreter.instrumentation)==0;
     bool already=atomic_load_explicit(&interpreter.claimed,memory_order_acquire);
-    volatile uint32_t *level=(volatile uint32_t *)((uintptr_t)interpreter.instrumentation+4);
-    if(already)*level=2;
-    bool accepted=tp_art_interpreter_claim_locked(&interpreter);
-    if(already)*level=0;
-    else if(accepted){
-        uintptr_t runtime=*(uintptr_t *)(art.managed.access.base+0xe19200);
-        uintptr_t jit_ptr=runtime?*(uintptr_t *)(runtime+0x298):0;
-        uintptr_t jit_opt=jit_ptr?*(uintptr_t *)(jit_ptr+0x10):0;
-        if(jit_opt)*(uint8_t *)jit_opt=0;
+    bool accepted;
+    bool invalidate=already&&atomic_load_explicit(&bootstrap_complete,memory_order_acquire)&&invalidate_callers;
+    uintptr_t runtime=0;uint8_t prior_interpret=0;uint32_t prior_debug=0;
+    if(!already||invalidate){
+        runtime=*(uintptr_t *)(art.managed.access.base+0xe19200);if(!runtime)return false;
+        prior_interpret=*(uint8_t *)(runtime+0x362);prior_debug=*(uint32_t *)(runtime+0x3f0);
+        if(!already){policy_runtime=runtime;saved_runtime_interpret=prior_interpret;saved_runtime_debug=prior_debug;runtime_state_saved=true;}
+    }
+    if(already&&!invalidate)accepted=interpreter.level(interpreter.instrumentation)==0;
+    else if(already){
+        // The publication lease owns this client, not all future compilation.
+        // Invalidate compiled callers before changing the selected entries.
+        if(interpreter.level(interpreter.instrumentation)!=0)return false;
+        interpreter.deopt_all(interpreter.instrumentation,tp_art_interpreter_client);
+        accepted=interpreter.level(interpreter.instrumentation)==2;
+    }else accepted=tp_art_interpreter_claim_locked(&interpreter);
+    if(accepted&&(!already||invalidate)){
+        // DeoptimizeEverything alone does not retire cached JIT code. Without
+        // invalidation ConfigureStubs can republish a caller with the old
+        // inlined body, even though the target entry is correctly hooked.
+        if(!tp_art_entry_writer_invalidate_compiled_callers())return false;
+        atomic_fetch_add_explicit(&publication_deoptimizations,1,memory_order_relaxed);
+        if(!already){
+            uintptr_t jit=*(uintptr_t *)(runtime+0x298),options=jit?*(uintptr_t *)(jit+0x10):0;bootstrap_jit_option=(uint8_t *)options;if(bootstrap_jit_option){saved_jit_option=*bootstrap_jit_option;*bootstrap_jit_option=0;}
+        }
         if(runtime){*(uint8_t *)(runtime+0x362)=0;*(uint32_t *)(runtime+0x3f0)=1;}
         ((void (*)(void *,const char *,int,bool))(art.managed.access.base+0x8df864))(
             interpreter.instrumentation,tp_art_interpreter_client,0,false);
         for(unsigned i=0;i<TP_MANAGED_ENTRY_LIMIT;i++)if(entries[i].helper)entries[i].helper->quick=art.managed.interpreter_bridge;
+        // Configure the invalidated callers while mutators are stopped, then
+        // return the runtime's execution flags to their preimage. Entry barriers
+        // protect our targets; ordinary methods need no lifetime debug policy.
+        if(atomic_load_explicit(&bootstrap_complete,memory_order_acquire)){
+            *(uint8_t *)(runtime+0x362)=prior_interpret;*(uint32_t *)(runtime+0x3f0)=prior_debug;
+        }
     }
     return accepted;
 }
-JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_initializeProcessNative(JNIEnv *env,jclass cls,jboolean preserve_compilation){
+JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_initializeProcessNative(JNIEnv *env,jclass cls,jboolean preserve_compilation,jboolean defer_publication){
     (void)cls;
     if(atomic_load_explicit(&explicitly_initialized,memory_order_acquire)||!bind_process(env))return JNI_FALSE;
     native_compilation=preserve_compilation;
+    bootstrap_deferred=defer_publication&&!preserve_compilation;
     if(!tp_art_entry_writer_activate())return JNI_FALSE;
     char jit=0,mutators=0;art.managed.jit_suspend(&jit);
     art.managed.access.suspend(&mutators,"tripoder-managed-process-start",false);
-    bool accepted=claim_and_enable_nterp_locked();
+    bool accepted=bootstrap_deferred?interpreter.level(interpreter.instrumentation)==0:claim_and_enable_nterp_locked(true);
     art.managed.access.resume(&mutators);art.managed.jit_resume(&jit);
     if(!accepted)fatal("TP_MANAGED_PROCESS_POLICY");
     atomic_store_explicit(&explicitly_initialized,true,memory_order_release);return JNI_TRUE;
+}
+JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_completeBootstrapNative(JNIEnv *env,jclass cls){
+    (void)env;(void)cls;if(!atomic_load_explicit(&explicitly_initialized,memory_order_acquire)||atomic_load_explicit(&bootstrap_complete,memory_order_acquire))return JNI_FALSE;
+    if(native_compilation){atomic_store_explicit(&bootstrap_complete,true,memory_order_release);return JNI_TRUE;}
+    char jit=0,mutators=0;art.managed.jit_suspend(&jit);art.managed.access.suspend(&mutators,"tripoder-managed-bootstrap-complete",false);
+    bool accepted=atomic_load_explicit(&interpreter.claimed,memory_order_acquire)&&interpreter.level(interpreter.instrumentation)==0&&(!bootstrap_jit_option||*bootstrap_jit_option==0);
+    if(accepted){restore_runtime_state_locked();if(bootstrap_jit_option)*bootstrap_jit_option=saved_jit_option;atomic_store_explicit(&bootstrap_complete,true,memory_order_release);}
+    art.managed.access.resume(&mutators);art.managed.jit_resume(&jit);return accepted?JNI_TRUE:JNI_FALSE;
 }
 JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_prepareNative(JNIEnv *env,jclass cls,jint index,
     jobject target,jobject helper,jclass owner,jstring shorty,jobjectArray callers){
@@ -256,7 +305,7 @@ JNIEXPORT jint JNICALL Java_dev_tripoder_selfhook_ManagedHook_prepareBatchNative
     }
     return -1;
 }
-JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative(JNIEnv *env,jclass cls,jintArray incoming,jboolean enabled){
+JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative(JNIEnv *env,jclass cls,jintArray incoming,jboolean enabled,jboolean entry_only){
     (void)cls;if(!incoming)return JNI_FALSE;jsize count=(*env)->GetArrayLength(env,incoming);
     if(count<1||count>TP_MANAGED_ENTRY_LIMIT)return JNI_FALSE;
     jint indices[TP_MANAGED_ENTRY_LIMIT];bool selected[TP_MANAGED_ENTRY_LIMIT]={false};
@@ -264,10 +313,12 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNat
     for(jsize i=0;i<count;i++){
         int index=indices[i];if(index<0||index>=TP_MANAGED_ENTRY_LIMIT||selected[index])return JNI_FALSE;selected[index]=true;
         struct entry *e=&entries[index];if(!atomic_load(&e->ready)||atomic_load(&e->active)==(bool)enabled||e->transitions==256)return JNI_FALSE;
+        if(entry_only&&(!enabled||e->native||!e->instance||e->caller_count||e->transitions||!atomic_load_explicit(&bootstrap_complete,memory_order_acquire)))return JNI_FALSE;
     }
     if(enabled&&!tp_art_entry_writer_activate())return JNI_FALSE;
     char jit=0,mutators=0;art.managed.jit_suspend(&jit);art.managed.access.suspend(&mutators,"tripoder-managed-batch-toggle",false);
-    bool accepted=claim_and_enable_nterp_locked()&&tp_art_entry_writer_installed();
+    bool invalidate_callers=false;for(jsize i=0;i<count;i++)if(enabled&&!entry_only&&!entries[indices[i]].callers_invalidated)invalidate_callers=true;
+    bool accepted=claim_and_enable_nterp_locked(invalidate_callers)&&tp_art_entry_writer_installed();
     unsigned failure=accepted?0:1;int failed_index=-1;uintptr_t observed_quick=0,expected_quick=0;uint32_t observed_flags=0;
     struct identity_snapshot identity={0};uintptr_t prepared_quick=0;uint32_t expected_flags=0,expected_dex=0,expected_index=0;
     // Validate EVERY preimage and GC root before registering or changing any entry.
@@ -277,11 +328,11 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNat
         uintptr_t expected=e->transitions&&atomic_load(&e->active)?e->relay:(e->native?art.managed.jni_bridge:art.managed.interpreter_bridge);
         bool quick_ok=e->target->quick==expected;
         if(e->transitions==0)quick_ok=quick_ok||(!e->native&&unhooked_managed_entry(e->target->quick))
-            ||(native_compilation&&e->target->quick==e->prepared_quick);
+            ||((native_compilation||entry_only)&&e->target->quick==e->prepared_quick);
         failure=!valid_snapshot(e,&identity)?2:!tp_art_backup_rooted_slot_locked((unsigned)slot,e->target,e->backup)?3:
-            !quick_ok?4:(!native_compilation&&(e->target->flags&UINT32_C(0x02000000)))?5:0;
+            !quick_ok?4:(e->transitions&&!e->native&&!(e->target->flags&UINT32_C(0x02000000)))?5:0;
         accepted=failure==0;
-        if(!native_compilation&&e->transitions==0)for(unsigned n=0;n<e->caller_count;n++)if(
+        if(!native_compilation&&!entry_only&&e->transitions==0)for(unsigned n=0;n<e->caller_count;n++)if(
             !unhooked_managed_entry(((struct tp_art_method_view *)e->callers[n])->quick)){accepted=false;failure=6;}
         if(!accepted){failed_index=slot;observed_quick=e->target->quick;expected_quick=expected;observed_flags=e->target->flags;
             prepared_quick=e->prepared_quick;expected_flags=e->semantic_flags;expected_dex=e->dex_index;expected_index=e->method_index;}
@@ -293,7 +344,7 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNat
     }
     for(jsize i=0;accepted&&i<count;i++){
         struct entry *e=&entries[indices[i]];if(!e->native)e->target->flags&=~UINT32_C(0x00100000);
-        if(native_compilation&&!e->native){
+        if(!e->native){
             // kAccCompileDontBother also prevents the ART inliner from consuming
             // the original bytecode. Ordinary guest/framework methods stay compilable.
             e->target->flags|=UINT32_C(0x02000000);
@@ -305,9 +356,10 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNat
         atomic_store_explicit(&e->desired_entry,desired,memory_order_release);e->target->quick=desired;
         accepted=valid(e)&&e->target->quick==atomic_load_explicit(&e->desired_entry,memory_order_acquire);
         if(!accepted){failure=8;failed_index=indices[i];}
-        if(accepted){atomic_store_explicit(&e->active,enabled,memory_order_release);e->transitions++;e->stage=enabled?"ACTIVE":"DISABLED";}
+        if(accepted){if(enabled&&!entry_only&&!native_compilation)e->callers_invalidated=true;atomic_store_explicit(&e->active,enabled,memory_order_release);e->transitions++;e->stage=enabled?"ACTIVE":"DISABLED";}
     }
     art.managed.access.resume(&mutators);art.managed.jit_resume(&jit);
+    if(accepted&&entry_only)atomic_fetch_add_explicit(&callback_publications,1,memory_order_relaxed);
     if(!accepted){char reason[512];snprintf(reason,sizeof(reason),"TP_MANAGED_ENTRY_OWNERSHIP stage=%u slot=%d quick=%lx expected=%lx prepared=%lx flags=%x identity=%u owners=%lx/%lx semantic=%x/%x dex=%u/%u index=%u/%u data=%lx/%lx",failure,failed_index,(unsigned long)observed_quick,(unsigned long)expected_quick,(unsigned long)prepared_quick,observed_flags,identity.mismatch,(unsigned long)identity.target_owner,(unsigned long)identity.backup_owner,identity.flags,expected_flags,identity.dex_index,expected_dex,identity.method_index,expected_index,(unsigned long)identity.target_data,(unsigned long)identity.backup_data);fatal(reason);}
     return JNI_TRUE;
 }
@@ -332,19 +384,22 @@ JNIEXPORT jstring JNICALL Java_dev_tripoder_selfhook_ManagedHook_reportNative(JN
         atomic_load(&e->active)?"true":"false",e->transitions,(unsigned long long)atomic_load(&e->originals),e->root_count,e->relay?1:0,
         e->caller_count,rooted?"true":"false",e->shorty,e->instance?"true":"false",(unsigned long)e->relay,(unsigned long)e->helper,
         (unsigned long)art.managed.interpreter_bridge,target.flags,backup.flags,(unsigned long)target.quick,
-        (unsigned long)atomic_load(&e->desired_entry),e->transitions?"true":"false",tp_art_entry_writer_installed()?"true":"false",native_compilation?"method-entry-only":"process-interpreter-lease",
+        (unsigned long)atomic_load(&e->desired_entry),e->transitions?"true":"false",tp_art_entry_writer_installed()?"true":"false",native_compilation?"method-entry-only":"publication-deoptimization-lease",
         atomic_load_explicit(&interpreter.claimed,memory_order_acquire)?"true":"false",
         atomic_load(&interpreter.observed_level),atomic_load(&interpreter.claims));return (*env)->NewStringUTF(env,text);
 }
 JNIEXPORT jstring JNICALL Java_dev_tripoder_selfhook_ManagedHook_processPolicyNative(JNIEnv *env,jclass cls){
-    (void)cls;char text[640];
+    (void)cls;char text[1024];
+    uintptr_t runtime=bound?*(uintptr_t *)(art.managed.access.base+0xe19200):0;
+    uintptr_t jit=runtime?*(uintptr_t *)(runtime+0x298):0,options=jit?*(uintptr_t *)(jit+0x10):0;
+    bool jit_enabled=options&&*(uint8_t *)options;
     snprintf(text,sizeof(text),"{\"bound\":%s,\"owned\":%s,\"observedLevel\":%d,\"claims\":%u,"
         "\"client\":\"%s\",\"processLifetimeLease\":%s,\"policy\":\"%s\",\"preserveCompilation\":%s,"
-        "\"explicitInitialization\":%s,\"preexistingCompiledFramesCovered\":false,\"fullCallerCoverage\":false}",
+        "\"bootstrapComplete\":%s,\"publicationDeoptimizations\":%u,\"callbackPublications\":%u,\"bootstrapDeferred\":%s,\"runtimeStateRestored\":%s,\"allowUnhookedCompilation\":true,\"jitEnabled\":%s,\"explicitInitialization\":%s,\"preexistingCompiledFramesCovered\":false,\"fullCallerCoverage\":false}",
         bound?"true":"false",atomic_load_explicit(&interpreter.claimed,memory_order_acquire)?"true":"false",
-        bound?(native_compilation?0:atomic_load(&interpreter.observed_level)):-1,atomic_load(&interpreter.claims),tp_art_interpreter_client,
-        native_compilation?"false":"true",native_compilation?"method-entry-only":"process-interpreter-lease",native_compilation?"true":"false",
-        atomic_load_explicit(&explicitly_initialized,memory_order_acquire)?"true":"false");
+        bound?interpreter.level(interpreter.instrumentation):-1,atomic_load(&interpreter.claims),tp_art_interpreter_client,
+        "false",native_compilation?"method-entry-only":"publication-deoptimization-lease",native_compilation?"true":"false",
+        atomic_load_explicit(&bootstrap_complete,memory_order_acquire)?"true":"false",atomic_load_explicit(&publication_deoptimizations,memory_order_relaxed),atomic_load_explicit(&callback_publications,memory_order_relaxed),bootstrap_deferred?"true":"false",runtime_state_restored()?"true":"false",jit_enabled?"true":"false",atomic_load_explicit(&explicitly_initialized,memory_order_acquire)?"true":"false");
     return (*env)->NewStringUTF(env,text);
 }
 JNIEXPORT jbyteArray JNICALL Java_dev_tripoder_selfhook_ManagedHook_relayNative(JNIEnv *env,jclass cls,jint index){

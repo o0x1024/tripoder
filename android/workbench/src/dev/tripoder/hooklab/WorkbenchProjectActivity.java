@@ -12,22 +12,22 @@ import java.util.*;
 
 /** One project in three places: the script, its run target with deployment, and external Agent control. Activation needs a worker ACK. */
 public final class WorkbenchProjectActivity extends Activity implements EngineConnection.Listener {
-    private static final String[] TABS={"脚本","运行与部署","外部 Agent"};
+    private static final String[] TABS={"脚本","运行与部署"};
     private WorkbenchApplication app;private String id,name="",savedSource="",lease="";private EditText editor;
     private TextView binding,meta,saveNote,recoveryText,title;private Button bind,modeButton,save,launch;private LinearLayout tabBar,recovery;private View[] pages;private ProductUi.Status status;
     private WorkbenchCatalog catalog;private WorkbenchHookPanel hooks;private WorkbenchAgentPanel agents;
-    private boolean destroyed,loading,tabDirty;private int settled,tab;private final Runnable operationObserver=this::operationChanged;
+    private boolean destroyed,loading,refreshAgain,tabDirty;private int settled,tab;private final Runnable operationObserver=this::operationChanged;
     @Override public void onCreate(Bundle saved){
         ProductUi.theme(this);super.onCreate(saved);app=(WorkbenchApplication)getApplication();
         try{
-            id=WorkbenchProjects.id(getIntent().getStringExtra("project"));JSONObject project=app.projects.get(id);name=project.getString("name");savedSource=app.projects.script(id);tab=saved==null?0:saved.getInt("tab",0);
+            id=WorkbenchProjects.id(getIntent().getStringExtra("project"));JSONObject project=app.projects.get(id);name=project.optString("package",project.getString("name"));savedSource=app.projects.script(id);tab=saved==null?0:Math.min(1,saved.getInt("tab",0));
             LinearLayout root=ProductUi.root(this),toolbar=ProductUi.toolbar(this,name,true);title=ProductUi.title(toolbar);
             toolbar.addView(ProductUi.iconButton(this,"more","更多",this::more),new LinearLayout.LayoutParams(d(48),d(48)));root.addView(toolbar);
             LinearLayout tabWrap=ProductUi.column(this);tabWrap.setPadding(d(16),d(2),d(16),d(6));tabBar=ProductUi.column(this);tabWrap.addView(tabBar);root.addView(tabWrap);
             status=new ProductUi.Status(this);status.view.setOnClickListener(v->app.operations.query());root.addView(status.view);
             FrameLayout container=new FrameLayout(this);root.addView(container,new LinearLayout.LayoutParams(-1,0,1));
-            pages=new View[]{scriptPage(saved),deployPage(),agentPage()};for(View page:pages)container.addView(page,new FrameLayout.LayoutParams(-1,-1));
-            showTab(tab);app.operations.observe(operationObserver);app.engine.observe(this);operationChanged();
+            pages=new View[]{scriptPage(saved),deployPage()};for(View page:pages)container.addView(page,new FrameLayout.LayoutParams(-1,-1));
+            showTab(tab);app.operations.observe(operationObserver);app.engine.observe(this);operationChanged();if(project.optBoolean("migrationPending"))startActivity(new android.content.Intent(this,WorkbenchArchivesActivity.class).putExtra("project",id));
         }catch(Exception error){ProductUi.notice(this,"无法打开项目",UiText.error(error));}
     }
     private int d(int n){return ProductUi.dp(this,n);}
@@ -65,17 +65,12 @@ public final class WorkbenchProjectActivity extends Activity implements EngineCo
     }
     private void selectTab(int index){if(index!=tab)showTab(index);}
     private void more(){
-        new AlertDialog.Builder(this).setItems(new String[]{"重命名项目","处理旧的启动入口","删除项目"},(dialog,index)->{
-            if(index==0)WorkbenchProjectActions.rename(this,app,id,name,this::reloadName);
-            else if(index==1)WorkbenchEntryClosure.show(this,app,id);
-            else WorkbenchProjectActions.delete(this,app,catalog,id,name,()->{if(!exists())super.finish();});
-        }).show();
+        new AlertDialog.Builder(this).setItems(new String[]{"处理旧的启动入口","历史脚本与恢复"},(dialog,index)->{if(index==0)WorkbenchEntryClosure.show(this,app,id);else startActivity(new android.content.Intent(this,WorkbenchArchivesActivity.class).putExtra("project",id));}).show();
     }
-    private void reloadName(){try{name=app.projects.get(id).getString("name");title.setText(name);}catch(Exception error){status.show(UiText.error(error),false);}}
-    private boolean exists(){try{app.projects.get(id);return true;}catch(Exception gone){return false;}}
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);if(editor!=null)out.putString("source",editor.getText().toString());out.putInt("tab",tab);}
     @Override protected void onResume(){super.onResume();if(binding!=null&&app!=null&&app.engine.ready()){app.operations.query();refresh();}}
     @Override public void changed(){if(destroyed||binding==null)return;updateActions();if(!app.engine.ready()){catalog=null;lease="";binding.setText(app.engine.failure.isEmpty()?"正在连接运行引擎…":"运行引擎未连接："+app.engine.failure);return;}if(!lease.equals(app.engine.lease)){lease=app.engine.lease;refresh();}}
+    private boolean exists(){try{app.projects.get(id);return true;}catch(Exception absent){return false;}}
     private boolean bound(){return catalog!=null&&catalog.bindings.containsKey(id)&&"COMMITTED".equals(catalog.bindings.get(id).optString("state"));}
     private void updateActions(){boolean busy=app.operations.busyProject(id),bound=bound();bind.setEnabled(!busy&&app.engine.ready());modeButton.setEnabled(!busy&&app.engine.ready()&&bound);modeButton.setVisibility(bound?View.VISIBLE:View.GONE);launch.setEnabled(!busy&&app.engine.ready()&&bound);launch.setText(busy?"正在处理…":"启动应用");}
     private void operationChanged(){
@@ -87,9 +82,9 @@ public final class WorkbenchProjectActivity extends Activity implements EngineCo
         updateActions();boolean completed=settled!=app.operations.settled;settled=app.operations.settled;if(completed)refresh();
     }
     private void refresh(){
-        if(loading||!app.engine.ready())return;loading=true;String current=app.engine.lease;
-        app.engine.execute(ControlWire.request("catalog"),(value,error)->{loading=false;if(destroyed||!current.equals(app.engine.lease))return;if(error!=null){show(error);return;}try{
-            catalog=new WorkbenchCatalog(value);JSONObject ref=catalog.bindings.get(id);bind.setText(ref==null?"选择运行目标":"更换目标");
+        if(!app.engine.ready())return;if(loading){refreshAgain=true;return;}loading=true;refreshAgain=false;String current=app.engine.lease;
+        app.engine.execute(ControlWire.request("catalog"),(value,error)->{loading=false;try{if(destroyed||!current.equals(app.engine.lease))return;if(error!=null){show(error);return;}
+            catalog=new WorkbenchCatalog(value);catalog.sync(app);if(!dirty()){String latest=app.projects.script(id);if(!latest.equals(savedSource)){savedSource=latest;editor.setText(latest);updateSave();}}name=catalog.appName(app,app.projects.get(id).getString("package"));title.setText(name);JSONObject ref=catalog.bindings.get(id);bind.setText(ref==null?"选择运行目标":"更换目标");
             String modeLabel=UiText.runtimeMode(ref==null?"thin":ref.optString("mode","thin"));
             modeButton.setText("运行模式："+modeLabel);updateActions();
             if(ref==null){binding.setText("还没有选择运行目标\n选择一个已添加的应用后，才能启动和部署脚本。");return;}
@@ -102,7 +97,7 @@ public final class WorkbenchProjectActivity extends Activity implements EngineCo
                 return;
             }
             binding.setText(appName+"\n空间："+space+" · 模式："+modeLabel+" · 正在确认…");app.engine.execute(ControlWire.request("resolveProject","project",id),(target,failure)->{if(destroyed||!current.equals(app.engine.lease))return;if(failure!=null){binding.setText(appName+"\n"+UiText.error(failure));return;}String resolvedMode=UiText.runtimeMode(target.getString("mode","thin"));modeButton.setText("运行模式："+resolvedMode);binding.setText(appName+"\n空间："+space+" · 模式："+resolvedMode+" · 已就绪");});
-        }catch(Exception invalid){show(invalid);}});
+        }catch(Exception invalid){show(invalid);}finally{if(refreshAgain&&!destroyed&&app.engine.ready()){refreshAgain=false;refresh();}}});
     }
     private void chooseMode(){
         if(!app.engine.ready()||!bound())return;
@@ -125,7 +120,7 @@ public final class WorkbenchProjectActivity extends Activity implements EngineCo
     private void chooseTarget(){
         if(!app.engine.ready()){app.engine.connect(this);return;}if(catalog==null){refresh();return;}
         JSONObject prior=catalog.bindings.get(id);List<JSONObject> choices=new ArrayList<>();
-        if(prior==null)choices.addAll(catalog.committed());
+        if(prior==null)try{choices.addAll(catalog.installations(app.projects.get(id).getString("package")));}catch(Exception error){show(error);return;}
         else{
             String space=prior.optString("space"),generation=prior.optString("generation");
             for(JSONObject install:catalog.installations(prior.optString("package")))if(!generation.equals(install.optString("generation")))choices.add(install);
@@ -133,7 +128,7 @@ public final class WorkbenchProjectActivity extends Activity implements EngineCo
         }
         if(choices.isEmpty()){
             if(prior==null)ProductUi.notice(this,"还没有可以选择的应用","请先回到应用页添加一个应用。");
-            else ProductUi.notice(this,"没有可以更换的目标",catalog.appName(app,prior.optString("package"))+" 不在其他空间中，也没有新版本。换一个应用请新建项目。");
+            else ProductUi.notice(this,"没有可以更换的目标",catalog.appName(app,prior.optString("package"))+" 不在其他空间中，也没有新版本。");
             return;
         }
         if(choices.size()==1||(prior!=null&&successor(prior)!=null)){confirmTarget(choices.get(0),prior);return;}
@@ -142,7 +137,7 @@ public final class WorkbenchProjectActivity extends Activity implements EngineCo
     }
     private void confirmTarget(JSONObject install,JSONObject prior){
         ProductUi.confirm(this,"使用这个运行目标？",WorkbenchCatalog.label(app,install)+"\n\n应用以后更新时，需要回到这里重新确认。保存的脚本不会自动部署。","确认",false,()->{
-            try{Bundle input=ControlWire.request("bindProject","operation",UUID.randomUUID().toString(),"project",id,"space",install.getString("space"),"package",install.getString("package"),"generation",install.getString("generation"));if(prior!=null)input.putString("expectedBinding",prior.getString("bindingOperation"));app.operations.submit(input,"设置运行目标",null);}catch(Exception error){show(error);}
+            try{Bundle input=ControlWire.request("selectProjectTarget","operation",UUID.randomUUID().toString(),"project",id,"space",install.getString("space"),"package",install.getString("package"),"generation",install.getString("generation"));app.operations.submit(input,"设置运行目标",null);}catch(Exception error){show(error);}
         });
     }
     private void launch(){
@@ -174,7 +169,7 @@ public final class WorkbenchProjectActivity extends Activity implements EngineCo
         meta.setText(lines+" 行 · "+String.format(Locale.ROOT,"%.1f",bytes/1024f)+" / 64 KiB");meta.setTextColor(bytes>65536?ProductUi.DANGER:ProductUi.MUTED);
         if(dirty!=tabDirty){tabDirty=dirty;if(pages!=null)showTab(tab);}
     }
-    private void save(){try{String source=editor.getText().toString();app.projects.script(id,source);savedSource=source;updateSave();saveNote.setText("已保存");}catch(Exception error){saveNote.setText("");ProductUi.notice(this,"脚本没有保存",UiText.error(error));}}
+    private void save(){try{String source=editor.getText().toString();app.projects.script(id,source,savedSource);savedSource=source;updateSave();saveNote.setText("已保存");}catch(Exception error){saveNote.setText("");ProductUi.notice(this,"脚本没有保存",UiText.error(error));}}
     private void show(Exception error){if(status!=null)status.show(UiText.error(error),false);}
     @Override public void finish(){if(dirty()){new AlertDialog.Builder(this).setTitle("脚本还有未保存的修改").setNegativeButton("继续编辑",null).setNeutralButton("放弃修改",(d,w)->super.finish()).setPositiveButton("保存并返回",(d,w)->{save();if(!dirty())super.finish();}).show();return;}super.finish();}
     @Override protected void onDestroy(){destroyed=true;if(hooks!=null)hooks.dispose();if(agents!=null)agents.dispose();if(app!=null){app.engine.remove(this);app.operations.remove(operationObserver);}super.onDestroy();}

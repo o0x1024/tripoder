@@ -80,7 +80,7 @@ static bool physical(JNIEnv *env,bool attached){
     else if(!same(env,host_owner,host))valid=false,state.broken="host LoadedApk.mApplication";
     if(valid&&state.roots[LOGICAL]){
         jobject owner=(*env)->GetObjectField(env,state.roots[LOGICAL],state.fields[2]);
-        valid=(same(env,owner,guest)||guest_attached(env,owner))&&!same(env,state.roots[PHYSICAL],state.roots[LOGICAL]);
+        valid=((!attached&&!owner)||same(env,owner,guest)||guest_attached(env,owner))&&!same(env,state.roots[PHYSICAL],state.roots[LOGICAL]);
         if(!valid)state.broken="logical LoadedApk.mApplication";
         // The class loader pair belongs to the guest, exactly as its resources do: platform hot-fix and plugin runtimes
         // replace it during attachBaseContext to publish patch/plugin DEX. Accept any replacement that still resolves
@@ -199,7 +199,6 @@ JNIEXPORT jobject JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_createNa
     (*env)->SetObjectField(env,logical,state.fields[5],loader);
     (*env)->SetObjectField(env,logical,state.fields[6],resources);
     (*env)->SetObjectField(env,logical,state.fields[7],factory);
-    (*env)->SetObjectField(env,logical,state.fields[2],guest);
     if((*env)->ExceptionCheck(env)||!keep(env,LOGICAL,logical)||!keep(env,DECLARED,declared))goto error;
     state.stage="LOGICAL_CONTEXT";
     jclass context_type=(*env)->FindClass(env,"android/content/Context");
@@ -228,6 +227,11 @@ JNIEXPORT void JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_attachNativ
     state.attaches++;
     (*env)->CallNonvirtualVoidMethod(env,state.roots[GUEST],state.classes[0],state.methods[6],wrapper);
     if((*env)->ExceptionCheck(env))goto done;
+    // Android's LoadedApk assigns mApplication after newApplication/attach returns.
+    // Keep a delegate explicitly installed by the guest; otherwise publish the attached instance now.
+    jobject installed=(*env)->GetObjectField(env,state.roots[LOGICAL],state.fields[2]);
+    if(!installed)(*env)->SetObjectField(env,state.roots[LOGICAL],state.fields[2],state.roots[GUEST]);
+    if(!tp_art_reflection_complete(env)) {fail(env,"APPLICATION_PUBLICATION_FAILED");goto done;}
     if(!physical(env,true)){static char why[128];snprintf(why,sizeof(why),"APPLICATION_POST_ATTACH_IDENTITY:%s",state.broken?state.broken:"?");fail(env,why);goto done;}
     state.stage="ATTACHED";
 done:
@@ -263,8 +267,8 @@ JNIEXPORT jstring JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_reportNa
     (void)unused;struct tp_art_reflection_report view;tp_art_reflection_report(&view);
     char text[1024];snprintf(text,sizeof(text),"{\"stage\":\"%s\",\"constructs\":%u,\"attaches\":%u,\"physicalChecks\":%u,"
         "\"retainedGlobalRefs\":%u,\"viewReady\":%s,\"viewEnabled\":%s,\"viewTransitions\":%u,\"viewRoots\":%u,"
-        "\"mappedGets\":%llu,\"mappedSets\":%llu,\"denials\":%llu}",state.stage,state.constructs,state.attaches,state.checks,state.retained,
+        "\"mappedGets\":%llu,\"mappedSets\":%llu,\"denials\":%llu,\"metadataDecodes\":%llu}",state.stage,state.constructs,state.attaches,state.checks,state.retained,
         view.ready?"true":"false",view.enabled?"true":"false",view.transitions,view.retained_roots,
-        (unsigned long long)view.mapped_gets,(unsigned long long)view.mapped_sets,(unsigned long long)view.denials);
+        (unsigned long long)view.mapped_gets,(unsigned long long)view.mapped_sets,(unsigned long long)view.denials,(unsigned long long)view.metadata_decodes);
     return (*env)->NewStringUTF(env,text);
 }

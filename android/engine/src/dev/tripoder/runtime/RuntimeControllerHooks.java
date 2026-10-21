@@ -8,8 +8,8 @@ import org.json.*;
 /** Trusted project ownership is checked before a worker sees any hook command. */
 final class RuntimeControllerHooks {
     static Bundle processes(RuntimeBroker broker,Bundle input)throws Exception{
-        RuntimeControllerCommands.fields(input,"command","project");
-        Bundle target=new ProjectTargetBindings(broker).resolve(ControlWire.required(input,"project"));JSONArray processes=new JSONArray();
+        RuntimeControllerCommands.targetFields(input,"command","project");
+        Bundle target=(input.containsKey("bindingOperation")?new ProjectTargetBindings(broker).resolveBinding(ControlWire.required(input,"project"),input.getString("bindingOperation")):new ProjectTargetBindings(broker).resolve(ControlWire.required(input,"project")));JSONArray processes=new JSONArray();
         synchronized(broker){
             requireBinding(broker,target);
             try(Cursor c=broker.store.getReadableDatabase().rawQuery("SELECT generation,pid,processName FROM sessions WHERE space=? AND package=? AND installGeneration=? AND authorityGeneration=? AND state='RUNNING'",new String[]{target.getString("space"),target.getString("package"),target.getString("generation"),broker.store.authorityGeneration})){
@@ -31,7 +31,7 @@ final class RuntimeControllerHooks {
         if(raw.length()>28000)throw new IllegalArgumentException("HOOK_REQUEST_SIZE");
         JSONObject request=new JSONObject(raw);String command=request.getString("command");
         if(!generation.equals(request.getString("processGeneration")))throw new SecurityException("HOOK_PROCESS_STALE");
-        Bundle target=new ProjectTargetBindings(broker).resolve(project);
+        Bundle target=new ProjectTargetBindings(broker).resolveBinding(project,input.getString("bindingOperation"));
         if(!input.getString("bindingOperation").equals(target.getString("bindingOperation"))||!input.getString("generation").equals(target.getString("generation")))throw new IllegalStateException("HOOK_PROJECT_BINDING_STALE");
         RuntimeHookClaims.Claim claim;
         synchronized(broker){

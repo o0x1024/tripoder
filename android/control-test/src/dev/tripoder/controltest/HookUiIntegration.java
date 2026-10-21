@@ -25,8 +25,7 @@ public final class HookUiIntegration extends ControlTestBase {
             Bundle request=ControlWire.request("install","space",space,"operation",id());request.putStringArrayList("names",new ArrayList<>(List.of("base.apk")));request.putStringArrayList("sha256",new ArrayList<>(List.of(fixtures.getString("previewSha256"))));request.putParcelable("fd0",fd);
             install=ControlWire.call(session,ControlWire.EXECUTE,request).getString("generation");
         }finally{if(!apk.delete())throw new IOException("TEST_APK_COPY_NOT_REMOVED");}
-        project=(String)invoke(projects,"create",new Class<?>[]{String.class},"Hook 真机验收 "+run.substring(8));binding=id();
-        execute(session,"bindProject","operation",binding,"project",project,"space",space,"package","dev.tripoder.previewguest","generation",install);
+        Bundle applicationTarget=applicationProject(session,projects,space,"dev.tripoder.previewguest",install);project=applicationTarget.getString("project");binding=applicationTarget.getString("bindingOperation");
         JSONArray selectors=new JSONArray().put(new JSONObject().put("id","counter").put("kind","java").put("className","dev.tripoder.previewguest.CounterActivity").put("methodName","formatCount").put("argumentTypes",new JSONArray().put("int")));
         invoke(projects,"selectors",new Class<?>[]{String.class,String.class},project,selectors.toString());
         final String script="import { definePlan } from '@abox/hook';\nexport default definePlan({\n  id: 'counter-ui', target, params: {},\n  setup(ctx) {\n    ctx.java.method('dev.tripoder.previewguest.CounterActivity', 'formatCount', ['int'])\n      .replace(({args}) => 'Hook ' + args[0]);\n  }\n});\n";

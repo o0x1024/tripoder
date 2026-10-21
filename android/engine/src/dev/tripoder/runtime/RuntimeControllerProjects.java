@@ -10,7 +10,7 @@ final class RuntimeControllerProjects {
     static Bundle delete(RuntimeBroker broker,Bundle input,String lease)throws Exception{
         RuntimeControllerCommands.fields(input,"command","operation","project");
         String operation=ControlWire.required(input,"operation"),project=ControlWire.required(input,"project");RuntimeFiles.id(project);
-        RuntimeControllerService.agents().requireUiControl(project,"deleteProject");
+        throwIfApplicationProject(broker,project);RuntimeControllerService.agents().requireUiControl(project,"deleteProject");
         String digest=ApkStore.textDigest(new JSONObject().put("kind","controller-delete-project-v1").put("project",project).toString());
         synchronized(broker){
             if(!broker.contract.accept(operation,ControllerTrust.OPERATIONS,digest).created)throw new IllegalStateException("DELETE_PROJECT_ALREADY_ACCEPTED_QUERY_REQUIRED");broker.contract.start(operation);
@@ -26,5 +26,6 @@ final class RuntimeControllerProjects {
         }
         Bundle out=new Bundle();out.putString("project",project);return out;
     }
+    private static void throwIfApplicationProject(RuntimeBroker broker,String project){synchronized(broker){try(var c=broker.store.getReadableDatabase().rawQuery("SELECT 1 FROM application_projects WHERE id=?",new String[]{project})){if(c.moveToFirst())throw new IllegalStateException("PROJECT_DELETION_REQUIRES_APPLICATION_DELETE");}}}
     private RuntimeControllerProjects(){}
 }

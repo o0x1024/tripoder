@@ -18,7 +18,9 @@ final class RuntimeSelfHookSystemEdges {
     static void traffic(RuntimeManagedInstaller installer)throws Exception{
         Map<Executable,RuntimeManagedInstaller.Callback> callbacks=new LinkedHashMap<>();Set<String> seen=new HashSet<>();
         for(Executable target:FixedRuntimeHooks.methods(FixedRuntimeHooks.Group.TRAFFIC)){
-            String key=RuntimeSelfHookManagerPolicy.signature((Method)target);seen.add(key);callbacks.put(target,(receiver,args,original)->{
+            String key=RuntimeSelfHookManagerPolicy.signature((Method)target);seen.add(key);
+            if(RuntimeFixedPassthrough.trafficMethod(key))continue;
+            callbacks.put(target,(receiver,args,original)->{
                 if(key.equals("getUidStats(int,int)")||key.equals("getIfaceStats(java.lang.String,int)"))RuntimeBridge.trafficKind((Integer)args[1]);
                 if(key.equals("getTotalStats(int)"))RuntimeBridge.trafficKind((Integer)args[0]);
                 if(UID.contains(key)){RuntimeBridge.trafficUid((Integer)args[0]);return original.call(args);}

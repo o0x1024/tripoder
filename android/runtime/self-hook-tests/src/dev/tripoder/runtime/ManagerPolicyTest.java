@@ -34,28 +34,28 @@ public final class ManagerPolicyTest {
         for(var family:RuntimeSelfHookManagerPolicy.Family.values()) {
             for(String key:RuntimeSelfHookManagerPolicy.required(family)) {
                 route.result=arguments[0];int before=route.executions;
-                check(RuntimeSelfHookManagerPolicy.invoke(family,route,key,receiver,arguments,a->{throw new AssertionError("owned escaped");})==arguments[0]);
+                check(RuntimeSelfHookManagerPolicy.invoke(family,route,key,Object.class,receiver,arguments,a->{throw new AssertionError("owned escaped");})==arguments[0]);
                 check(route.executions==before+1);supported++;
             }
             int before=route.executions;
-            rejected(()->RuntimeSelfHookManagerPolicy.invoke(family,route,"unlistedControl()",receiver,arguments,a->{throw new AssertionError("denial escaped");}),family==RuntimeSelfHookManagerPolicy.Family.NETWORK_STATS?SecurityException.class:UnsupportedOperationException.class);
+            rejected(()->RuntimeSelfHookManagerPolicy.invoke(family,route,"unlistedControl()",Object.class,receiver,arguments,a->{throw new AssertionError("denial escaped");}),family==RuntimeSelfHookManagerPolicy.Family.NETWORK_STATS?SecurityException.class:UnsupportedOperationException.class);
             check(route.executions==before);
             route.owned=false;
-            check(RuntimeSelfHookManagerPolicy.invoke(family,route,"unlistedControl()",receiver,arguments,a->{check(a==arguments);return arguments[0];})==arguments[0]);
+            check(RuntimeSelfHookManagerPolicy.invoke(family,route,"unlistedControl()",Object.class,receiver,arguments,a->{check(a==arguments);return arguments[0];})==arguments[0]);
             check(route.executions==before);route.owned=true;
             rejected(()->RuntimeSelfHookManagerPolicy.required(family).add("unlistedControl()"),UnsupportedOperationException.class);
         }
         var battery=RuntimeSelfHookManagerPolicy.Family.BATTERY;
         for(var denial:java.util.Map.of(RuntimeSelfHookManagerPolicy.Family.NOTIFICATIONS,"NOTIFICATION",RuntimeSelfHookManagerPolicy.Family.SHORTCUTS,"SHORTCUT").entrySet()){
-            try{RuntimeSelfHookManagerPolicy.invoke(denial.getKey(),route,"unlistedControl()",receiver,arguments,a->{throw new AssertionError("owned denial escaped");});throw new AssertionError("owned denial accepted");}
+            try{RuntimeSelfHookManagerPolicy.invoke(denial.getKey(),route,"unlistedControl()",Object.class,receiver,arguments,a->{throw new AssertionError("owned denial escaped");});throw new AssertionError("owned denial accepted");}
             catch(UnsupportedOperationException error){check(error.getMessage().equals(denial.getValue()+"_CAPABILITY_UNSUPPORTED:unlistedControl()"));}
         }
         for(Object precise:new Object[]{Long.MIN_VALUE,Long.MAX_VALUE,9007199254740993L,Float.NaN,-0.0f}) {
             route.result=precise;
-            check(RuntimeSelfHookManagerPolicy.invoke(battery,route,"getLongProperty(int)",receiver,new Object[]{1},a->{throw new AssertionError();})==precise);
+            check(RuntimeSelfHookManagerPolicy.invoke(battery,route,"getLongProperty(int)",Object.class,receiver,new Object[]{1},a->{throw new AssertionError();})==precise);
         }
         Throwable failure=new Exception("original");route.failure=failure;
-        try{RuntimeSelfHookManagerPolicy.invoke(battery,route,"getLongProperty(int)",receiver,new Object[]{1},a->{throw new AssertionError();});throw new AssertionError();}
+        try{RuntimeSelfHookManagerPolicy.invoke(battery,route,"getLongProperty(int)",Object.class,receiver,new Object[]{1},a->{throw new AssertionError();});throw new AssertionError();}
         catch(Throwable error){check(error==failure);}route.failure=null;
         Method[] inventory=Battery.class.getDeclaredMethods();var plan=RuntimeSelfHookManagerPolicy.plan(battery,Battery.class,inventory,route);
         check(plan.size()==8);check(plan.keySet().stream().filter(m->m.getName().equals("variant")).count()==2);

@@ -31,6 +31,7 @@ final class RuntimeAgentSessions implements AutoCloseable {
             case "agentPrepareLaunch":return RuntimeAgentAnalysis.prepareLaunch(broker,input,lease);
             case "agentStopApplication":return RuntimeAgentAnalysis.stopApplication(broker,input,lease);
             case "agentCapabilities":case "agentProjects":case "agentProbeConfigure":case "agentProbeGet":case "agentOperation":result=RuntimeAgentAnalysis.control(broker,input);break;
+            case "agentExplicit":RuntimeControllerCommands.fields(input,"command","payload");result=explicit(input.getString("payload"),lease);break;
             case "agentTargets":RuntimeControllerCommands.fields(input,"command");result=targets();break;
             case "agentSelect":RuntimeControllerCommands.fields(input,"command","project","processGeneration");result=select(input,lease);break;
             case "agentCall":RuntimeControllerCommands.fields(input,"command","session","payload");result=call(input.getString("session"),input.getString("payload"),lease);break;
@@ -40,6 +41,7 @@ final class RuntimeAgentSessions implements AutoCloseable {
         Bundle out=new Bundle();out.putString("result",result.toString());return out;
     }
     private JSONObject targets()throws Exception{
+        new ApplicationProjects(broker).reconcile();
         JSONArray rows=new JSONArray();synchronized(broker){
             try(var c=broker.store.getReadableDatabase().rawQuery("SELECT p.id,p.space,p.package,p.generation,p.operation,p.mode,s.generation,s.processName,s.pid FROM project_refs p JOIN installs i ON i.space=p.space AND i.package=p.package AND i.generation=p.generation JOIN sessions s ON s.space=p.space AND s.package=p.package AND s.installGeneration=p.generation WHERE p.kind='DIRECT' AND p.state='COMMITTED' AND i.state='COMMITTED' AND s.state='RUNNING' AND s.authorityGeneration=? ORDER BY p.id,s.processName LIMIT 257",new String[]{broker.store.authorityGeneration})){
                 while(c.moveToNext())rows.put(new JSONObject().put("project",c.getString(0)).put("space",c.getString(1)).put("package",c.getString(2)).put("installGeneration",c.getString(3)).put("bindingOperation",c.getString(4)).put("mode",c.getString(5)).put("processGeneration",c.getString(6)).put("processName",c.getString(7)).put("pid",c.getInt(8)));
@@ -48,9 +50,19 @@ final class RuntimeAgentSessions implements AutoCloseable {
         if(rows.length()>256)throw new IllegalStateException("AGENT_TARGET_PAGE_REQUIRED");
         return new JSONObject().put("targets",rows).put("authenticationRequired",false);
     }
+    private JSONObject explicit(String raw,String lease)throws Exception{
+        JSONObject request=new JSONObject(raw);AgentCrypto.fields(request,"protocol","requestId","method","params");
+        JSONObject params=request.getJSONObject("params"),identity=params.getJSONObject("target");
+        AgentCrypto.fields(identity,"space","package","installGeneration","processGeneration");
+        Bundle target=new ApplicationProjects(broker).target(AgentCrypto.text(identity,"space"),AgentCrypto.text(identity,"package"),AgentCrypto.text(identity,"installGeneration"));
+        String process=AgentCrypto.text(identity,"processGeneration");
+        // Resolve and fence this call's exact target. No connection-wide selection is read or changed.
+        JSONObject context=select(ControlWire.request("agentSelect","project",target.getString("project"),"processGeneration",process,"bindingOperation",target.getString("bindingOperation")),lease);
+        params.remove("target");if(request.getString("method").equals("hook.guestInvoke")){Object invocation=params.remove("invocation");if(!(invocation instanceof JSONObject))throw new IllegalArgumentException("AGENT_INVOCATION_REQUIRED");params.put("target",invocation);}JSONObject response=call(context.getString("session"),request.toString(),lease);response.remove("session");response.put("target",identity);return response;
+    }
     private synchronized JSONObject select(Bundle input,String lease)throws Exception{
         String project=ControlWire.required(input,"project"),process=ControlWire.required(input,"processGeneration");
-        Bundle target=new ProjectTargetBindings(broker).resolve(project);
+        Bundle target=input.containsKey("bindingOperation")?new ProjectTargetBindings(broker).resolveBinding(project,input.getString("bindingOperation")):new ProjectTargetBindings(broker).resolve(project);
         synchronized(broker){
             var slot=broker.requiredSlot(process);var identity=slot.allocation.session.identity;
             if(broker.contract.getSession(process).state!=ExecutionContract.ProcessState.RUNNING||!identity.spaceId.equals(target.getString("space"))||!identity.packageName.equals(target.getString("package"))||!identity.installGeneration.equals(target.getString("generation")))throw new IllegalStateException("AGENT_TARGET_STALE");
@@ -61,7 +73,7 @@ final class RuntimeAgentSessions implements AutoCloseable {
             boolean current=prior.live&&prior.lease.equals(lease);
             if(current)try{
                 synchronized(broker){current=broker.contract.getSession(prior.process).state==ExecutionContract.ProcessState.RUNNING;}
-                Bundle binding=new ProjectTargetBindings(broker).resolve(prior.project);
+                Bundle binding=new ProjectTargetBindings(broker).resolveBinding(prior.project,prior.target.getString("bindingOperation"));
                 current=current&&prior.target.getString("bindingOperation").equals(binding.getString("bindingOperation"));
             }catch(Exception stale){current=false;}
             if(!current&&!prior.busy){prior.live=false;prior.state="CLOSED";}
@@ -100,9 +112,7 @@ final class RuntimeAgentSessions implements AutoCloseable {
             JSONObject value;
             if(method.equals("session.get")){AgentCrypto.fields(params);synchronized(session){value=describe(session);}}
             else if(method.equals("process.get")){
-                AgentCrypto.fields(params);Bundle list=RuntimeControllerHooks.processes(broker,ControlWire.request("hookProcesses","project",session.project));JSONArray actual=new JSONArray(list.getString("processes"));JSONObject found=null;
-                for(int i=0;i<actual.length();i++)if(actual.getJSONObject(i).getString("processGeneration").equals(session.process))found=actual.getJSONObject(i);
-                if(found==null)throw new IllegalStateException("AGENT_TARGET_STOPPED_SELECT_TARGET");value=found;
+                AgentCrypto.fields(params);synchronized(broker){try(var c=broker.store.getReadableDatabase().rawQuery("SELECT pid,processName FROM sessions WHERE generation=? AND state='RUNNING' AND authorityGeneration=?",new String[]{session.process,broker.store.authorityGeneration})){if(!c.moveToFirst())throw new IllegalStateException("AGENT_TARGET_STOPPED");value=new JSONObject().put("processGeneration",session.process).put("pid",c.getInt(0)).put("processName",c.getString(1)).put("space",session.target.getString("space")).put("package",session.target.getString("package"));}}
             }else if(method.equals("operation.get"))value=operation(session,params);
             else if(method.startsWith("hook."))value=hook(session,operation,method.substring(5),params);
             else if(method.equals("session.close")){AgentCrypto.fields(params);synchronized(session){session.live=false;session.state="CLOSED";value=describe(session);}}

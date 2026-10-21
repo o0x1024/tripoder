@@ -20,7 +20,7 @@ public final class LogicalApplicationFixture extends Application {
         require(attaches++==0,"FIXTURE_ATTACH_ONCE");
         require(base.getPackageName().equals("dev.tripoder.selfhookprobe.logical"),"FIXTURE_LOGICAL_PACKAGE");
         require(resolvesSelf(base.getClassLoader()),"FIXTURE_SELECTED_LOADER_DEFINITION");
-        require(base.getApplicationContext()==this,"FIXTURE_LOGICAL_OUTER_CONTEXT");
+        require(base.getApplicationContext()==null,"FIXTURE_APPLICATION_UNPUBLISHED_DURING_ATTACH");
         try {
             Context raw=base;int depth=0;
             while(raw instanceof ContextWrapper&&depth++<16)raw=((ContextWrapper)raw).getBaseContext();
@@ -28,11 +28,11 @@ public final class LogicalApplicationFixture extends Application {
             Field packageInfo=raw.getClass().getDeclaredField("mPackageInfo");packageInfo.setAccessible(true);
             logicalApk=packageInfo.get(raw);
             Field owner=logicalApk.getClass().getDeclaredField("mApplication");owner.setAccessible(true);
-            require(owner.get(logicalApk)==this,"FIXTURE_LOGICAL_APK_OWNER");owner.set(logicalApk,this);
+            require(owner.get(logicalApk)==null,"FIXTURE_LOGICAL_APK_UNPUBLISHED");
             Class<?> threadType=Class.forName("android.app.ActivityThread",false,null);
             Object thread=threadType.getDeclaredMethod("currentActivityThread").invoke(null);
             Field initial=threadType.getDeclaredField("mInitialApplication");initial.setAccessible(true);
-            require(initial.get(thread)==this,"FIXTURE_INITIAL_LOGICAL_VIEW");initial.set(thread,this);
+            require(initial.get(thread)==null,"FIXTURE_INITIAL_UNPUBLISHED_VIEW");
             try{initial.set(thread,null);throw new IllegalStateException("FIXTURE_NULL_VIEW_WRITE_ACCEPTED");}catch(SecurityException expected){denials++;}
             try{initial.set(thread,new Application());throw new IllegalStateException("FIXTURE_FOREIGN_VIEW_WRITE_ACCEPTED");}catch(SecurityException expected){denials++;}
         }catch(ReflectiveOperationException error){throw new IllegalStateException("FIXTURE_FRAMEWORK_ACCESS",error);}

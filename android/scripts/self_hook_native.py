@@ -33,10 +33,12 @@ def build_native(repo, build, ndk, libc, art, linker):
     sources = sorted((core/'native').glob('*.c'))
     for group in ('coverage', 'abi', 'modules'):
         sources += sorted((core/'native'/group).glob('*.c'))
-    sources += [runtime/name for name in ('io_adapter.c', 'path_policy.c', 'self_hook_storage.c')]
-    assembly = [core/'native/abi/scalar_call_a64.S', core/'native/abi/scalar_inbound_a64.S']
+    sources += [runtime/name for name in ('io_adapter.c', 'path_policy.c', 'self_hook_storage.c', 'exit_diagnostics.c', 'syscall_namespace.c', 'user_memory.c', 'mapping_evidence.c')]
+    assembly = [core/'native/abi/scalar_call_a64.S', core/'native/abi/scalar_inbound_a64.S',runtime/'kernel_syscall_a64.S']
     cpp = core/'native/coverage/loaded_class_inventory.cpp'
     inputs = set(sources + assembly + [cpp, Path(__file__).resolve(), core/'tests/check_park_binary.py'])
+    java_inputs=sorted((core/'java').rglob('*.java'))+[repo/'android/runtime/src/dev/tripoder/runtime'/name for name in ('RuntimeSelfHookStorage.java','RuntimeNativeMappingEvidence.java')]
+    inputs.update(java_inputs)
     for root in (core/'native', core/'include', runtime):
         inputs.update(path for path in root.rglob('*') if path.suffix in ('.h', '.hpp', '.S'))
     inputs.update(path for path, _, _ in checks)
@@ -78,13 +80,14 @@ def build_native(repo, build, ndk, libc, art, linker):
     exports = run(toolchain/'llvm-nm', '--dynamic', '--defined-only', library)
     symbols = {line.split()[-1] for line in exports.splitlines() if line.split()}
     if not symbols or any(not name.startswith(('Java_dev_tripoder_selfhook_', 'Java_dev_tripoder_selfhook_coverage_',
-                                               'Java_dev_tripoder_runtime_RuntimeSelfHookStorage_')) for name in symbols):
+                                               'Java_dev_tripoder_runtime_RuntimeSelfHookStorage_'))
+                          and name!='Java_dev_tripoder_runtime_RuntimeNativeMappingEvidence_relevantRowsNative' for name in symbols):
         raise RuntimeError('SELF_HOOK_PRODUCT_EXPORTS:'+exports)
     # A JNI method is resolved by name; a declaration whose symbol is absent fails on the device at first use, and a
     # symbol without a declaration is dead code. Neither can be caught by compiling, so the pair is checked here as a
     # bijection instead of being discovered by a guest startup failure.
     declared = {}
-    for source in (core/'java').rglob('*.java'):
+    for source in java_inputs:
         text = source.read_text()
         text = re.sub(r'/\*.*?\*/', '', text, flags=re.S)
         text = re.sub(r'//[^\n]*', '', text)
@@ -95,7 +98,7 @@ def build_native(repo, build, ndk, libc, art, linker):
         for method in re.finditer(r'\bnative\b[^;{}]*?(\b\w+)\s*\(', text):
             name = 'Java_'+package.group(1).replace('.','_')+'_'+source.stem+'_'+method.group(1)
             declared[name] = source.name
-    java_exports = {name for name in symbols if name.startswith('Java_dev_tripoder_selfhook')}
+    java_exports = {name for name in symbols if name.startswith('Java_dev_tripoder_')}
     # The other legal implementation is RegisterNatives from a table of method names; the table entry is the literal,
     # so a declared method is implemented when either the direct export or its registration literal exists.
     registered = set()

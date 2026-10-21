@@ -15,15 +15,16 @@ import java.util.*;
 /** Application library and project index are distinct views over the existing authority. */
 public final class WorkbenchActivity extends Activity implements EngineConnection.Listener {
     private WorkbenchApplication app;private EngineConnection engine;private WorkbenchCatalog catalog;private WorkbenchAppActions appActions;
+    private WorkbenchAgentPanel globalAgent;
     private LinearLayout body,nav;private ScrollView scroll;private TextView title,spaceChip;private ProductUi.Status status;
     private String application,lease="",spaceFilter="",renderedPage="",busySignature="";
-    private int tab,settled;private boolean destroyed,refreshing;
+    private int tab,settled;private boolean destroyed,refreshing,refreshAgain;
     private final Set<String> presentationRequests=new HashSet<>();
     private final Runnable operationObserver=this::operationChanged;
-    private static final String[] TABS={"应用","项目","设置"},TAB_ICONS={"grid","folder","settings"};
+    private static final String[] TABS={"应用","设置"},TAB_ICONS={"grid","settings"};
     @Override public void onCreate(Bundle saved){
         ProductUi.theme(this);super.onCreate(saved);app=(WorkbenchApplication)getApplication();engine=app.engine;appActions=new WorkbenchAppActions(this,app);
-        application=getIntent().getStringExtra("application");tab=saved==null?getIntent().getIntExtra("tab",0):saved.getInt("tab",0);spaceFilter=saved==null?"":saved.getString("spaceFilter","");
+        application=getIntent().getStringExtra("application");tab=saved==null?getIntent().getIntExtra("tab",0):saved.getInt("tab",0);spaceFilter=saved==null?"":saved.getString("spaceFilter","");tab=tab==0?0:1;
         LinearLayout root=ProductUi.root(this),toolbar=ProductUi.toolbar(this,application==null?"Tripoder":"应用",application!=null);title=ProductUi.title(toolbar);
         spaceChip=ProductUi.text(this,"全部空间 ▾",13,ProductUi.MUTED,true);spaceChip.setGravity(Gravity.CENTER);spaceChip.setMinHeight(d(40));spaceChip.setPadding(d(12),0,d(12),0);spaceChip.setBackground(new RippleDrawable(ColorStateList.valueOf(ProductUi.TINT),ProductUi.shape(ProductUi.night?ProductUi.SURFACE:0xffe8eaf2,20,this),null));spaceChip.setOnClickListener(v->selectSpace());
         if(application==null)toolbar.addView(spaceChip);
@@ -42,7 +43,14 @@ public final class WorkbenchActivity extends Activity implements EngineConnectio
         String busy=app.operations.busySignature();boolean redraw=!busy.equals(busySignature);busySignature=busy;
         if(complete)refresh();else if(redraw)render();
     }
-    private void refresh(){if(refreshing||!engine.ready())return;refreshing=true;String current=engine.lease;engine.execute(ControlWire.request("catalog"),(value,error)->{refreshing=false;if(destroyed||!current.equals(engine.lease))return;if(error!=null){show(error);return;}try{catalog=new WorkbenchCatalog(value);if(!spaceFilter.isEmpty()&&!catalog.spaces.contains(spaceFilter))spaceFilter="";Set<String> active=new HashSet<>();for(JSONObject install:catalog.installs)active.add(install.optString("generation"));app.presentations.prune(active);app.spaces.ensureDefault(catalog,app.operations,engine);render();}catch(Exception invalid){show(invalid);}});}
+    private void refresh(){
+        if(!engine.ready())return;if(refreshing){refreshAgain=true;return;}refreshing=true;refreshAgain=false;String current=engine.lease;
+        engine.execute(ControlWire.request("catalog"),(value,error)->{refreshing=false;try{
+            if(destroyed||!current.equals(engine.lease))return;if(error!=null){show(error);return;}
+            catalog=new WorkbenchCatalog(value);catalog.sync(app);if(!spaceFilter.isEmpty()&&!catalog.spaces.contains(spaceFilter))spaceFilter="";
+            Set<String> active=new HashSet<>();for(JSONObject install:catalog.installs)active.add(install.optString("generation"));app.presentations.prune(active);app.spaces.ensureDefault(catalog,app.operations,engine);render();
+        }catch(Exception invalid){show(invalid);}finally{if(refreshAgain&&!destroyed&&engine.ready()){refreshAgain=false;refresh();}}});
+    }
     private void more(){
         List<String> items=new ArrayList<>();items.add("刷新");items.add("新建空间");
         boolean hasApps=catalog!=null&&!catalog.applications(spaceFilter).isEmpty();
@@ -66,17 +74,17 @@ public final class WorkbenchActivity extends Activity implements EngineConnectio
     private void render(){
         if(body==null||destroyed)return;
         String page=application!=null?"app:"+application:"tab:"+tab;int y=page.equals(renderedPage)?scroll.getScrollY():0;renderedPage=page;
-        body.removeAllViews();nav.removeAllViews();nav.setVisibility(application==null?View.VISIBLE:View.GONE);
+        if(globalAgent!=null){globalAgent.dispose();globalAgent=null;}body.removeAllViews();nav.removeAllViews();nav.setVisibility(application==null?View.VISIBLE:View.GONE);
         spaceChip.setVisibility(application==null&&tab==0&&catalog!=null&&catalog.spaces.size()>1?View.VISIBLE:View.GONE);spaceChip.setText((spaceFilter.isEmpty()?"全部空间":app.spaces.name(spaceFilter))+" ▾");spaceChip.setContentDescription("空间筛选："+(spaceFilter.isEmpty()?"全部空间":app.spaces.name(spaceFilter)));
         for(int i=0;i<TABS.length;i++){final int index=i;LinearLayout item=WorkbenchLibraryUi.navItem(this,TAB_ICONS[i],TABS[i],tab==i,()->{tab=index;render();});item.setContentDescription(TABS[i]+"标签");nav.addView(item,new LinearLayout.LayoutParams(0,-2,1));}
         title.setText(application!=null?(catalog==null?application:catalog.appName(app,application)):tab==0?"Tripoder":TABS[tab]);
-        try{if(application!=null)renderApp();else if(tab==0)renderApps();else if(tab==1)renderProjects(null);else renderSettings();}catch(Exception error){WorkbenchLibraryUi.copy(body,"读取失败："+UiText.error(error));}
+        try{if(application!=null)renderApp();else if(tab==0)renderApps();else renderSettings();}catch(Exception error){WorkbenchLibraryUi.copy(body,"读取失败："+UiText.error(error));}
         scroll.post(()->scroll.scrollTo(0,y));
     }
     private boolean waiting(){
         if(catalog!=null)return false;
         if(engine.ready())WorkbenchLibraryUi.copy(body,"正在读取…");
-        else if(engine.failure.isEmpty())body.addView(ProductUi.empty(this,"box","正在启动运行引擎","引擎就绪后会显示你的应用和项目。",null,null));
+        else if(engine.failure.isEmpty())body.addView(ProductUi.empty(this,"box","正在启动运行引擎","引擎就绪后会显示你的应用。",null,null));
         else body.addView(ProductUi.empty(this,"box","运行引擎没有连接",engine.failure,"重新连接",()->engine.connect(this)));
         return true;
     }
@@ -84,7 +92,7 @@ public final class WorkbenchActivity extends Activity implements EngineConnectio
         if(waiting())return;
         var all=app.projects.all();var visibleApps=catalog.applications(spaceFilter);
         LinearLayout header=ProductUi.row(this);header.setPadding(d(20),d(10),d(20),d(6));
-        header.addView(ProductUi.text(this,visibleApps.isEmpty()?"":visibleApps.size()+" 个应用 · 轻点运行，长按管理",13,ProductUi.MUTED,false),new LinearLayout.LayoutParams(0,-2,1));
+        header.addView(ProductUi.text(this,visibleApps.isEmpty()?"":visibleApps.size()+" 个应用 · 轻点运行，长按分析与管理",13,ProductUi.MUTED,false),new LinearLayout.LayoutParams(0,-2,1));
         if(app.agents.listening)header.addView(ProductUi.chip(this,"AI 入口已开启",ProductUi.GREEN,ProductUi.TINT));
         ProductUi.add(body,header,0);
         if(visibleApps.isEmpty()){
@@ -95,10 +103,10 @@ public final class WorkbenchActivity extends Activity implements EngineConnectio
         for(String pkg:visibleApps){
             List<JSONObject> projects=catalog.projects(all,pkg);int count=projects.size();var installs=catalog.installations(pkg);Bundle cached=installs.isEmpty()?null:app.presentations.get(installs.get(0).optString("generation"));Drawable icon=app.presentations.iconDrawable(this,cached);
             boolean busy=app.operations.busyPackage(pkg);for(JSONObject project:projects)busy|=app.operations.busyProject(project.optString("id"));
-            String name=catalog.appName(app,pkg),detail=busy?"正在启动…":count>0?count+" 个项目":"";
+            String name=catalog.appName(app,pkg),detail=busy?"正在启动…":installs.isEmpty()?"未安装 · 脚本保留":"";
             var tile=new WorkbenchLibraryUi.Tile(this,name,detail,icon,false,()->appActions.launch(catalog,pkg,spaceFilter));tile.packageName(pkg);
             tile.setOnLongClickListener(v->{appActions.menu(catalog,pkg,catalog.appName(app,pkg));return true;});
-            tile.setContentDescription(name+(count>0?"，"+count+" 个项目":"")+(busy?"，正在启动":""));if(cached==null)loadPresentation(pkg,tile);tiles.add(tile);
+            tile.setContentDescription(name+(busy?"，正在启动":""));if(cached==null)loadPresentation(pkg,tile);tiles.add(tile);
         }
         var add=new WorkbenchLibraryUi.Tile(this,"添加应用","",new ProductUi.Icon("plus",ProductUi.ACCENT),false,this::addApplication);add.setContentDescription("添加应用");tiles.add(add);WorkbenchLibraryUi.grid(body,tiles);
     }
@@ -110,53 +118,12 @@ public final class WorkbenchActivity extends Activity implements EngineConnectio
         List<String> spaces=new ArrayList<>();for(JSONObject install:installs)spaces.add(app.spaces.name(install.optString("space")));ProductUi.add(copy,ProductUi.text(this,installs.isEmpty()?"应用已不在任何空间中，项目仍然保留":"安装在 "+String.join("、",spaces),12,ProductUi.MUTED,false),4);
         LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1);lp.leftMargin=d(14);hero.addView(copy,lp);ProductUi.add(body,hero,0);
         if(cached==null&&!installs.isEmpty())loadPresentation(application,null);
-        addProjectButton(application);WorkbenchLibraryUi.section(body,"项目");projectRows(catalog.projects(app.projects.all(),application),application);
+        ProductUi.add(body,ProductUi.button(this,"分析",true,()->openAnalysis(application)),12);
     }
-    private void addProjectButton(String pkg){LinearLayout box=ProductUi.column(this);box.setPadding(d(20),d(8),d(20),0);ProductUi.add(box,ProductUi.button(this,"＋ 新建项目",true,()->WorkbenchProjectCreation.show(this,app,catalog,pkg,this::openProject)),0);ProductUi.add(body,box,0);}
-    private void renderProjects(String pkg)throws Exception{
-        var all=app.projects.all();
-        WorkbenchLibraryUi.copy(body,"每个项目保存一份脚本，并绑定到一个应用。");addProjectButton(null);
-        if(catalog==null&&!engine.ready())WorkbenchLibraryUi.copy(body,"运行引擎连接后会显示每个项目的运行目标。");
-        if(catalog!=null)orphanedApplications();
-        projectRows(all,null);
-    }
-    /** An application removed from every space has no tile left to long-press, so the projects still bound to it are offered for deletion here. */
-    private void orphanedApplications(){
-        Set<String> installed=new HashSet<>(catalog.applications());Map<String,Integer> orphaned=new TreeMap<>();
-        for(JSONObject ref:catalog.bindings.values()){String pkg=ref.optString("package");if(!installed.contains(pkg))orphaned.merge(pkg,1,Integer::sum);}
-        LinearLayout box=ProductUi.column(this);box.setPadding(d(16),d(8),d(16),0);
-        for(var entry:orphaned.entrySet()){String pkg=entry.getKey();int count=entry.getValue();
-            LinearLayout card=ProductUi.card(this);card.setBackground(ProductUi.shape(ProductUi.WARN_BG,18,this));
-            ProductUi.add(card,ProductUi.text(this,pkg+" 已从所有空间移除",14,ProductUi.INK,true),0);
-            ProductUi.add(card,ProductUi.text(this,count+" 个项目仍绑定它，不能再启动或部署。",12,ProductUi.WARN,false),6);
-            Button delete=ProductUi.button(this,"删除这些项目",false,()->ProductUi.confirm(this,"删除绑定到 "+pkg+" 的 "+count+" 个项目？","项目的脚本和设置会一起删除。无法恢复。","删除",true,()->{
-                try{app.operations.submit(ControlWire.request("deleteApplication","operation",UUID.randomUUID().toString(),"package",pkg),"删除 "+pkg+" 的项目",null);}
-                catch(Exception error){ProductUi.notice(this,"没有删除",UiText.error(error));}
-            }));
-            delete.setContentDescription("删除 "+pkg+" 的项目");ProductUi.add(card,delete,10);
-            ProductUi.add(box,card,10);
-        }
-        if(!orphaned.isEmpty())ProductUi.add(body,box,0);
-    }
-    private void projectRows(List<JSONObject> list,String pkg)throws Exception{
-        if(list.isEmpty()){body.addView(ProductUi.empty(this,"folder","还没有项目",pkg==null?"项目用来保存脚本，观察和修改某个应用的行为。点上方「新建项目」开始。":"为这个应用新建一个项目，开始编写脚本。",null,null));return;}
-        LinearLayout box=ProductUi.column(this);box.setPadding(d(16),d(4),d(16),0);
-        for(JSONObject project:list){String id=project.getString("id"),name=project.getString("name");JSONObject ref=catalog==null?null:catalog.bindings.get(id);
-            String target=catalog==null?"正在确认运行目标…":ref==null?"尚未选择运行目标":catalog.appName(app,ref.getString("package"))+" · "+app.spaces.name(ref.getString("space"))+("COMMITTED".equals(ref.getString("state"))?"":" · 目标已失效，需要重新选择");
-            LinearLayout row=ProductUi.card(this);row.setPadding(d(18),d(16),d(18),d(16));ProductUi.add(row,ProductUi.text(this,name,16,ProductUi.INK,true),0);ProductUi.add(row,ProductUi.text(this,target,12,ProductUi.MUTED,false),7);
-            LinearLayout meta=ProductUi.row(this);var session=app.hooks.peek(id);boolean active=session!=null&&session.status!=null&&"ACTIVE".equals(session.status.optString("state"));
-            if(active){TextView chip=ProductUi.chip(this,"脚本运行中",ProductUi.GREEN,ProductUi.TINT);LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(-2,-2);cp.rightMargin=d(8);meta.addView(chip,cp);}
-            long modified=app.projects.modified(id);if(modified>0)meta.addView(ProductUi.text(this,"编辑于 "+DateUtils.getRelativeTimeSpanString(modified,System.currentTimeMillis(),DateUtils.MINUTE_IN_MILLIS),12,ProductUi.MUTED,false));
-            if(meta.getChildCount()>0)ProductUi.add(row,meta,9);
-            row.setBackground(new RippleDrawable(ColorStateList.valueOf(ProductUi.TINT),row.getBackground(),null));row.setFocusable(true);row.setOnClickListener(v->openProject(id));
-            row.setOnLongClickListener(v->{WorkbenchProjectActions.menu(this,app,catalog,id,name,this::refreshProjects);return true;});row.setContentDescription(name+"，"+target+(active?"，脚本运行中":""));
-            ProductUi.add(box,row,10);
-        }
-        ProductUi.add(body,box,0);
-    }
-    private void refreshProjects(){refresh();render();}
-    private void openProject(String id){startActivity(new Intent(this,WorkbenchProjectActivity.class).putExtra("project",id));}
+    private void openAnalysis(String pkg){String id=catalog.project(pkg);if(id==null){ProductUi.notice(this,"项目正在初始化","请刷新后重试。");return;}startActivity(new Intent(this,WorkbenchProjectActivity.class).putExtra("project",id));}
     private void renderSettings(){
+        globalAgent=new WorkbenchAgentPanel(this,app,"",body);
+        ProductUi.add(body,ProductUi.button(this,"历史脚本与恢复",false,()->startActivity(new Intent(this,WorkbenchArchivesActivity.class))),12);
         WorkbenchLibraryUi.section(body,"运行引擎");
         LinearLayout box=ProductUi.column(this);box.setPadding(d(16),0,d(16),0);LinearLayout card=ProductUi.card(this);
         LinearLayout row=ProductUi.row(this);row.addView(ProductUi.text(this,engine.ready()?"已连接":"未连接",15,ProductUi.INK,true),new LinearLayout.LayoutParams(0,-2,1));
@@ -191,7 +158,7 @@ public final class WorkbenchActivity extends Activity implements EngineConnectio
     /** Every application in the space, its data and the projects bound to it go; the confirmation states exactly that before anything is sent. */
     private void confirmDeleteSpace(String space){
         String name=app.spaces.name(space);long apps=catalog.installs.stream().filter(i->space.equals(i.optString("space"))).count(),projects=catalog.bindings.values().stream().filter(ref->space.equals(ref.optString("space"))).count();
-        String consequence=(apps>0?"将删除这个空间中的 "+apps+" 个应用及其全部数据":"这个空间中没有应用")+(projects>0?"，并删除绑定到这个空间的 "+projects+" 个项目（包括脚本）":"")+"。无法恢复。";
+        String consequence=(apps>0?"将删除这个空间中的 "+apps+" 个应用及其全部数据":"这个空间中没有应用")+"。应用脚本会保留"+"。无法恢复。";
         ProductUi.confirm(this,"删除空间「"+name+"」？",consequence,"删除",true,()->{
             if(!engine.ready()){ProductUi.notice(this,"暂时不能删除","运行引擎还没有连接，请稍后再试。");return;}
             try{app.operations.submit(ControlWire.request("deleteSpace","operation",UUID.randomUUID().toString(),"space",space),"删除空间「"+name+"」",null);}
@@ -209,5 +176,5 @@ public final class WorkbenchActivity extends Activity implements EngineConnectio
     }
     private void applyPresentation(WorkbenchLibraryUi.Tile tile,Bundle value){if(tile==null)return;String label=value.getString("label");tile.name.setText(label);CharSequence description=tile.getContentDescription();if(description!=null){String text=description.toString();int comma=text.indexOf('，');tile.setContentDescription(label+(comma<0?"":text.substring(comma)));}Drawable icon=app.presentations.iconDrawable(this,value);if(icon!=null)tile.icon.setImageDrawable(icon);}
     private void show(Exception error){app.operations.inform(UiText.error(error));}
-    @Override protected void onDestroy(){destroyed=true;engine.remove(this);app.operations.remove(operationObserver);super.onDestroy();}
+    @Override protected void onDestroy(){destroyed=true;if(globalAgent!=null)globalAgent.dispose();engine.remove(this);app.operations.remove(operationObserver);super.onDestroy();}
 }

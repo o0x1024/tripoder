@@ -11,9 +11,9 @@ typedef jobject (*get_function)(JNIEnv *,jobject,jobject);
 typedef void (*set_function)(JNIEnv *,jobject,jobject,jobject);
 enum root_index { FIELD, OWNER, PHYSICAL, LOGICAL, VALUE_TYPE, SECURITY, FIELD_TYPE, GET_METHOD, SET_METHOD, ROOT_COUNT };
 static struct {
-    _Atomic bool attempted, busy, ready, enabled;
+    _Atomic bool attempted, busy, ready, enabled, published;
     _Atomic unsigned transitions;
-    _Atomic uint64_t gets, sets, mapped_gets, mapped_sets, denials, original_exceptions;
+    _Atomic uint64_t gets, sets, mapped_gets, mapped_sets, denials, original_exceptions, metadata_decodes;
     jobject roots[ROOT_COUNT];
     _Atomic(jobject) logical;
     jfieldID field_id;
@@ -26,10 +26,14 @@ static struct {
 
 static void fatal(const char *reason) { android_set_abort_message(reason); abort(); }
 static int matches(JNIEnv *env,jobject field,jobject owner) {
+    // The view owns one ActivityThread instance. Unrelated reflection (including
+    // VM-generated opaque Field objects) must retain ART's own decoding path.
+    if(!(*env)->IsSameObject(env,owner,view.roots[OWNER]))return 0;
+    atomic_fetch_add_explicit(&view.metadata_decodes,1,memory_order_relaxed);
     jfieldID id=(*env)->FromReflectedField(env,field);
     if ((*env)->ExceptionCheck(env)) return -1;
     if (!id) fatal("TP_REFLECTION_FIELD_ID_MISSING");
-    return id==view.field_id&&(*env)->IsSameObject(env,owner,view.roots[OWNER]);
+    return id==view.field_id;
 }
 static void deny(JNIEnv *env) {
     atomic_fetch_add(&view.denials,1);
@@ -76,7 +80,8 @@ static jobject get(JNIEnv *env,jobject field,jobject owner) {
     if (!selected) return result;
     atomic_fetch_add(&view.mapped_gets,1);
     if (!(*env)->IsSameObject(env,result,view.roots[PHYSICAL])) { deny(env); return NULL; }
-    return (*env)->NewLocalRef(env,atomic_load_explicit(&view.logical,memory_order_acquire));
+    return atomic_load_explicit(&view.published,memory_order_acquire)?
+        (*env)->NewLocalRef(env,atomic_load_explicit(&view.logical,memory_order_acquire)):NULL;
 }
 static void set(JNIEnv *env,jobject field,jobject owner,jobject value) {
     if (!atomic_load_explicit(&view.ready,memory_order_acquire)) fatal("TP_REFLECTION_CALLBACK_NOT_READY");
@@ -146,6 +151,7 @@ static bool prepare(JNIEnv *env,jobject field,jobject owner,jobject physical,job
     view.flags[0]=get_state.flags;view.flags[1]=set_state.flags;
     view.quick[0]=get_state.quick;view.quick[1]=set_state.quick;
     atomic_store_explicit(&view.logical,view.roots[LOGICAL],memory_order_release);
+    atomic_store_explicit(&view.published,!pending,memory_order_release);
     atomic_store_explicit(&view.ready,true,memory_order_release);
     success=true;
 done:
@@ -173,10 +179,14 @@ bool tp_art_reflection_promote(JNIEnv *env,jobject logical){
     // The promoted global is retained by the atomic owner until process exit.
     return true;
 }
+bool tp_art_reflection_complete(JNIEnv *env){
+    if((*env)->ExceptionCheck(env)||!atomic_load_explicit(&view.logical,memory_order_acquire))return false;
+    atomic_store_explicit(&view.published,true,memory_order_release);return true;
+}
 jobject tp_art_reflection_value(JNIEnv *env){
     if(!atomic_load_explicit(&view.ready,memory_order_acquire))return NULL;
     jobject value=atomic_load_explicit(&view.enabled,memory_order_acquire)?
-        atomic_load_explicit(&view.logical,memory_order_acquire):view.roots[PHYSICAL];
+        (atomic_load_explicit(&view.published,memory_order_acquire)?atomic_load_explicit(&view.logical,memory_order_acquire):NULL):view.roots[PHYSICAL];
     return (*env)->NewLocalRef(env,value);
 }
 
@@ -213,5 +223,5 @@ void tp_art_reflection_report(struct tp_art_reflection_report *r) {
         .retained_roots=atomic_load(&view.ready)?ROOT_COUNT-1+(atomic_load(&view.logical)!=NULL):0,.ready=atomic_load(&view.ready),.enabled=atomic_load(&view.enabled),
         .gets=atomic_load(&view.gets),.sets=atomic_load(&view.sets),.mapped_gets=atomic_load(&view.mapped_gets),
         .mapped_sets=atomic_load(&view.mapped_sets),.denials=atomic_load(&view.denials),
-        .original_exceptions=atomic_load(&view.original_exceptions)};
+        .original_exceptions=atomic_load(&view.original_exceptions),.metadata_decodes=atomic_load(&view.metadata_decodes)};
 }

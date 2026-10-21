@@ -69,8 +69,7 @@ public final class TargetLaunchIntegration extends ControlTestBase {
                 installedResult=ControlWire.call(session,ControlWire.EXECUTE,request);
             }
             check("target-install-committed","SUCCEEDED".equals(execute(session,"query","operation",operation).getString("state")),json(installedResult));
-            String project=(String)invoke(projects,"create",new Class<?>[]{String.class},title),binding=id(),generation=installedResult.getString("generation");
-            execute(session,"bindProject","operation",binding,"project",project,"space",SPACE,"package",pkg,"generation",generation);
+            String generation=installedResult.getString("generation");Bundle canonical=applicationProject(session,projects,SPACE,pkg,generation);String project=canonical.getString("project"),binding=canonical.getString("bindingOperation");
             if(args.containsKey("mode"))execute(session,"setProjectMode","operation",id(),"project",project,"mode",args.getString("mode"));
             record=new JSONObject().put("project",project).put("binding",binding).put("generation",generation).put("sha256",expected);
             atomicWrite(recordFile,record);
@@ -208,9 +207,9 @@ public final class TargetLaunchIntegration extends ControlTestBase {
         String project,binding;
         if(bound!=null){project=bound.getString("project");binding=bound.getString("bindingOperation");}
         else{
-            project=(String)invoke(projects,"create",new Class<?>[]{String.class},title);binding=id();
-            execute(session,"bindProject","operation",binding,"project",project,"space",SPACE,"package",pkg,"generation",generation);
+            Bundle canonical=applicationProject(session,projects,SPACE,pkg,generation);project=canonical.getString("project");binding=canonical.getString("bindingOperation");
         }
+        execute(session,"selectProjectTarget","operation",id(),"project",project,"space",SPACE,"package",pkg,"generation",generation);
         if(args.containsKey("mode"))execute(session,"setProjectMode","operation",id(),"project",project,"mode",args.getString("mode"));
         Bundle resolved=execute(session,"resolveProject","project",project);
         if(!SPACE.equals(resolved.getString("space"))||!pkg.equals(resolved.getString("package"))||!generation.equals(resolved.getString("generation"))||!binding.equals(resolved.getString("bindingOperation")))throw new IllegalStateException("TARGET_CLAIM_BINDING_MISMATCH");

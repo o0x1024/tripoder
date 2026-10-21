@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include "path_policy.h"
 #include <errno.h>
+#include <dlfcn.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,6 +12,7 @@
 #include <unistd.h>
 
 int tp_openat(int,const char *,int,unsigned);
+int tp_mkdirat(int,const char *,unsigned);
 int tp_fstatat(int,const char *,struct stat *,int);
 int tp_unlinkat(int,const char *,int);
 int tp_renameat2(int,const char *,int,const char *,unsigned);
@@ -29,6 +31,42 @@ int main(int argc,char **argv){
     setup(snprintf(files,sizeof(files),"%s/files",data)<(int)sizeof(files));setup(mkdir(files,0700)==0);
     setup(snprintf(file,sizeof(file),"%s/base.apk",artifacts)<(int)sizeof(file));write_raw(file,"owned-artifact");
     setup(tp_configure(data,data,artifacts,artifacts,"dev.tripoder.iofixture")==0);
+    Dl_info module;setup(dladdr((void *)getpid,&module)!=0&&module.dli_fname&&module.dli_fbase);
+    int image_fd=open(module.dli_fname,O_RDONLY|O_CLOEXEC);struct stat image_stat;setup(image_fd>=0&&fstat(image_fd,&image_stat)==0);
+    void *source_alias=mmap(NULL,4096,PROT_READ|PROT_EXEC,MAP_PRIVATE,image_fd,4096);close(image_fd);setup(source_alias!=MAP_FAILED);
+    int projected_fd=tp_openat(AT_FDCWD,"/proc/self/maps",O_RDONLY,0);setup(projected_fd>=0);char *projected=calloc(1,262144);setup(projected!=NULL);size_t used=0;ssize_t count;
+    while(used<262143&&(count=read(projected_fd,projected+used,262143-used))>0)used+=(size_t)count;close(projected_fd);
+    bool alias_named=false,canonical_named=false,identity_kept=false;char *save=NULL;
+    for(char *line=strtok_r(projected,"\n",&save);line;line=strtok_r(NULL,"\n",&save)){
+        unsigned long first,last,offset,inode;char mode[5];if(sscanf(line,"%lx-%lx %4s %lx %*s %lu",&first,&last,mode,&offset,&inode)!=5)continue;
+        if(first<=(uintptr_t)source_alias&&(uintptr_t)source_alias<last){alias_named=strstr(line,"[anon:runtime-code-snapshot]")!=NULL&&strstr(line,module.dli_fname)==NULL;identity_kept=inode==(unsigned long)image_stat.st_ino&&offset==4096;}
+        if(first<=(uintptr_t)module.dli_fbase&&(uintptr_t)module.dli_fbase<last&&strstr(line,module.dli_fname))canonical_named=true;
+    }
+    check("saved-code-alias-is-not-an-elf-module-base",alias_named);
+    check("real-elf-module-base-remains-visible",canonical_named);
+    check("saved-code-alias-keeps-physical-inode-and-offset",identity_kept);free(projected);setup(munmap(source_alias,4096)==0);
+    image_fd=open("/system/bin/linker64",O_RDONLY|O_CLOEXEC);setup(image_fd>=0);char canonical_linker[PATH_MAX],descriptor[64];snprintf(descriptor,sizeof(descriptor),"/proc/self/fd/%d",image_fd);ssize_t path_size=readlink(descriptor,canonical_linker,sizeof(canonical_linker)-1);setup(path_size>0);canonical_linker[path_size]=0;
+    source_alias=mmap(NULL,4096,PROT_READ|PROT_EXEC,MAP_PRIVATE,image_fd,4096);close(image_fd);setup(source_alias!=MAP_FAILED);projected_fd=tp_openat(AT_FDCWD,"/proc/self/maps",O_RDONLY,0);setup(projected_fd>=0);projected=calloc(1,262144);setup(projected!=NULL);used=0;
+    while(used<262143&&(count=read(projected_fd,projected+used,262143-used))>0)used+=(size_t)count;close(projected_fd);alias_named=false;canonical_named=false;save=NULL;
+    for(char *line=strtok_r(projected,"\n",&save);line;line=strtok_r(NULL,"\n",&save)){unsigned long first,last;if(sscanf(line,"%lx-%lx",&first,&last)!=2)continue;
+        if(first<=(uintptr_t)source_alias&&(uintptr_t)source_alias<last)alias_named=strstr(line,"[anon:runtime-code-snapshot]")!=NULL&&strstr(line,canonical_linker)==NULL;
+        else if(strstr(line,canonical_linker))canonical_named=true;
+    }
+    check("loader-symlink-and-kernel-module-name-share-identity",alias_named);
+    check("canonical-linker-image-remains-visible",canonical_named);free(projected);setup(munmap(source_alias,4096)==0);
+    char host_root[PATH_MAX],device_root[PATH_MAX],host_view[PATH_MAX],guest_view[PATH_MAX];setup(snprintf(host_root,sizeof(host_root),"%s/physical-host",root)<(int)sizeof(host_root));setup(snprintf(device_root,sizeof(device_root),"%s/device-host",root)<(int)sizeof(device_root));
+    setup(tp_configure_host_storage(host_root,host_root,device_root)==0);
+    check("host-storage-owner-cannot-change-after-binding",tp_configure_host_storage(device_root,device_root,host_root)==-1&&errno==EALREADY);
+    setup(snprintf(host_view,sizeof(host_view),"%s/app_webview_tripoder-fixture",host_root)<(int)sizeof(host_view));setup(tp_mkdirat(AT_FDCWD,host_view,0700)==0);
+    setup(snprintf(host_view,sizeof(host_view),"%s/app_webview_tripoder-fixture/webview_data.lock",host_root)<(int)sizeof(host_view));setup(snprintf(guest_view,sizeof(guest_view),"%s/app_webview_tripoder-fixture/webview_data.lock",data)<(int)sizeof(guest_view));
+    int webview_lock=tp_openat(AT_FDCWD,host_view,O_RDWR|O_CREAT|O_EXCL,0600);struct stat webview_fd,webview_path;
+    check("actual-host-webview-lock-is-owned-by-guest-data",webview_lock>=0&&fstat(webview_lock,&webview_fd)==0&&stat(guest_view,&webview_path)==0&&webview_fd.st_ino==webview_path.st_ino);if(webview_lock>=0)close(webview_lock);
+    struct tp_path scoped;setup(snprintf(host_view,sizeof(host_view),"%s/shared_prefs/WebViewChromiumPrefs.xml",host_root)<(int)sizeof(host_view));int policy=tp_resolve(AT_FDCWD,host_view,TP_WRITE,&scoped);
+    check("webview-preferences-use-the-bound-host-identity",policy==0&&scoped.owned&&!strcmp(scoped.leaf,"shared_prefs/WebViewChromiumPrefs.xml"));if(policy==0)tp_release(&scoped);
+    setup(snprintf(host_view,sizeof(host_view),"%s/code_cache/provider",device_root)<(int)sizeof(host_view));policy=tp_resolve(AT_FDCWD,host_view,TP_WRITE,&scoped);
+    check("provider-code-cache-stays-in-guest-incarnation",policy==0&&scoped.owned&&!strcmp(scoped.leaf,"code_cache/provider"));if(policy==0)tp_release(&scoped);
+    setup(snprintf(host_view,sizeof(host_view),"%s/files/private",host_root)<(int)sizeof(host_view));check("webview-routing-does-not-grant-host-private-files",tp_resolve(AT_FDCWD,host_view,TP_READ,&scoped)==-1&&errno==EACCES);
+    setup(snprintf(host_view,sizeof(host_view),"%s/cache_unrelated/private",host_root)<(int)sizeof(host_view));check("host-cache-capability-requires-a-directory-boundary",tp_resolve(AT_FDCWD,host_view,TP_WRITE,&scoped)==-1&&errno==EACCES);
     struct tp_path gpu;
     int resolved=tp_resolve(AT_FDCWD,"/dev/kgsl-3d0",TP_WRITE,&gpu);
     check("explicit-gpu-device-capability",resolved==0&&!strcmp(gpu.leaf,"/dev/kgsl-3d0")&&!gpu.owned);if(resolved==0)tp_release(&gpu);
@@ -42,7 +80,10 @@ int main(int argc,char **argv){
     int dir=tp_openat(AT_FDCWD,"/data/data/dev.tripoder.iofixture/files",O_PATH|O_DIRECTORY,0);check("real-directory-fd",dir>=0);
     int relative=tp_openat(dir,"value",O_RDONLY,0);memset(bytes,0,sizeof(bytes));check("relative-dirfd-read",relative>=0&&read(relative,bytes,5)==5&&!strcmp(bytes,"value"));if(relative>=0)close(relative);
     int missing=tp_openat(AT_FDCWD,"/data/data/dev.tripoder.iofixture/files/missing/../value",O_RDONLY,0);check("missing-parent-not-normalized-away",missing==-1&&errno==ENOENT);
-    int escaped=tp_openat(dir,"../value",O_CREAT|O_WRONLY,0600);check("dirfd-parent-above-anchor-explicitly-rejected",escaped==-1&&errno==EACCES);
+    int escaped=tp_openat(dir,"../value",O_CREAT|O_WRONLY,0600);char parent_file[PATH_MAX];struct stat parent_fd_info,parent_path_info;
+    setup(snprintf(parent_file,sizeof(parent_file),"%s/value",data)<(int)sizeof(parent_file));
+    check("dirfd-parent-resolves-within-guest-root",escaped>=0&&fstat(escaped,&parent_fd_info)==0&&fstatat(AT_FDCWD,parent_file,&parent_path_info,0)==0&&parent_fd_info.st_ino==parent_path_info.st_ino);
+    if(escaped>=0)close(escaped);setup(unlink(parent_file)==0);
     escaped=tp_openat(AT_FDCWD,"/data/data/dev.tripoder.iofixture/../outside",O_CREAT|O_WRONLY,0600);check("logical-root-escape-rejected",escaped==-1&&errno==EACCES);
     int immutable=tp_openat(AT_FDCWD,file,O_WRONLY|O_TRUNC,0);check("artifact-write-rejected",immutable==-1&&errno==EROFS);
     int unrelated=tp_openat(AT_FDCWD,"/data/data/another.app/private",O_RDONLY,0);check("unknown-private-path-denied",unrelated==-1&&errno==EACCES);
@@ -63,7 +104,7 @@ int main(int argc,char **argv){
     close(dupped);if(map!=MAP_FAILED){check("mapping-survives-fd-close",memcmp(map,"value",5)==0);memcpy(map,"after",5);check("shared-mapping-msync",msync(map,4096,MS_SYNC)==0);check("munmap",munmap(map,4096)==0);}
     close(dir);int cwd=tp_openat(AT_FDCWD,"relative",O_CREAT|O_EXCL|O_RDWR,0600);check("cwd-is-guest-data",cwd>=0);if(cwd>=0)close(cwd);
     setup(symlink(file,link)==0);memset(target_buf,0,sizeof(target_buf));link_len=tp_readlinkat(AT_FDCWD,"/data/data/dev.tripoder.iofixture/files/link",target_buf,sizeof(target_buf)-1);
-    check("readlinkat-reverses-artifact-to-logical-apk-path",link_len>0&&!strcmp(target_buf,"/data/app/~~tripoder/dev.tripoder.iofixture/base.apk"));setup(unlink(link)==0);
+    check("readlinkat-reverses-artifact-to-logical-apk-path",link_len>0&&!strcmp(target_buf,"/data/app/~~code/dev.tripoder.iofixture-code/base.apk"));setup(unlink(link)==0);
     int logical_apk=tp_openat(AT_FDCWD,"/data/app/~~tripoder/dev.tripoder.iofixture/base.apk",O_RDONLY,0);char apk_bytes[16]={0};
     check("logical-artifact-apk-open",logical_apk>=0&&read(logical_apk,apk_bytes,14)==14&&!strcmp(apk_bytes,"owned-artifact"));
     if(logical_apk>=0){

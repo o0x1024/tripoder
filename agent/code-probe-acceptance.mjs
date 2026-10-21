@@ -5,6 +5,8 @@ import { resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { randomUUID,createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
+import {tools} from './tools.mjs';
+let fixtureTarget,fixtureProcess;
 const opts=Object.fromEntries(process.argv.slice(2).reduce((a,v,i,all)=>i%2?a:[...a,[v,all[i+1]]],[])),exec=promisify(execFile);
 const serial=opts['--serial'],run=opts['--run'],dir=resolve(opts['--evidence']),ready=JSON.parse(await readFile(opts['--ready'],'utf8')),remote='/sdcard/Android/data/dev.tripoder.engine/files/';
 if(!/^control-[a-f0-9]{16}$/.test(run))throw Error('OWNED_RUN_REQUIRED');await mkdir(dir,{recursive:true});
@@ -13,7 +15,7 @@ const child=spawn(process.execPath,[resolve('agent/server.mjs'),'--serial',seria
 createInterface({input:child.stdout}).on('line',line=>{const response=JSON.parse(line);transcript.push({direction:'response',message:response});const item=pending.get(response.id);if(item){pending.delete(response.id);clearTimeout(item.timer);item.resolve(response);}});
 child.on('exit',code=>{for(const item of pending.values()){clearTimeout(item.timer);item.reject(Error('MCP_EXIT:'+code+':'+stderr));}pending.clear();});
 async function rpc(method,params={}){const id=++sequence,request={jsonrpc:'2.0',id,method,params};transcript.push({direction:'request',message:request});const response=new Promise((resolve,reject)=>{const timer=setTimeout(()=>{pending.delete(id);reject(Error('MCP_TIMEOUT:'+method));},30000);pending.set(id,{resolve,reject,timer});});child.stdin.write(JSON.stringify(request)+'\n');const value=await response;if(value.error)throw Error(JSON.stringify(value.error));return value.result;}
-async function tool(name,args={},success=true){const result=await rpc('tools/call',{name,arguments:args});const receipt=JSON.parse(result.content[0].text);if(success)assert.equal(receipt.ok,true,JSON.stringify(receipt));return success?receipt.result:receipt;}
+async function tool(name,args={},success=true){const schema=tools.find(t=>t.name===name)?.inputSchema;if(schema?.required.includes('target')){args={...args,target:schema.properties.target.required.includes('processGeneration')?{...fixtureTarget,processGeneration:fixtureProcess}:fixtureTarget};delete args.project;delete args.installGeneration;}const result=await rpc('tools/call',{name,arguments:args});const receipt=JSON.parse(result.content[0].text);if(success)assert.equal(receipt.ok,true,JSON.stringify(receipt));if(success&&name==='process_start')fixtureProcess=receipt.result.processGeneration;return success?receipt.result:receipt;}
 function check(name,value){assert.ok(value,name);checks.push({name,passed:true});}
 async function marker(name){const path=resolve(dir,name+'.json');await writeFile(path,'{}');await exec('adb',['-s',serial,'push',path,remote+run+'-open-'+name+'.json']);}
 async function waitMarker(name){const end=Date.now()+25000;while(Date.now()<end){try{return JSON.parse((await exec('adb',['-s',serial,'shell','cat',remote+run+'-open-'+name+'.json'])).stdout);}catch{}await new Promise(r=>setTimeout(r,100));}throw Error('PHONE_STAGE_TIMEOUT:'+name);}
@@ -24,8 +26,8 @@ async function download(generation,artifact){let offset=0;const chunks=[];while(
 try{
  await rpc('initialize',{protocolVersion:'2025-03-26',capabilities:{},clientInfo:{name:'generic-code-probe-acceptance',version:'1'}});child.stdin.write(JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})+'\n');
  const capabilities=await tool('runtime_capabilities');check('capabilities-without-selected-process',capabilities.startupProbes&&capabilities.dexMemorySnapshots&&capabilities.defaultProbeHooks===0);
- const projectInfo=(await tool('projects_list')).projects.find(p=>p.project===ready.project);check('lists-stopped-and-running-projects',projectInfo);
- await tool('target_select',{project:ready.project,processGeneration:ready.processGeneration});const baseline=await tool('probe_status'),baselineHook=await tool('hook_status');
+ const listed=(await tool('targets_list')).targets.find(p=>p.processGeneration===ready.processGeneration&&p.project===ready.project);assert.ok(listed);fixtureTarget={space:listed.space,package:listed.package,installGeneration:listed.installGeneration};fixtureProcess=listed.processGeneration;const projectInfo=listed;check('lists-unique-application-project',(await tool('projects_list')).applications.some(p=>p.project===ready.project));
+const baseline=await tool('probe_status'),baselineHook=await tool('hook_status');
  check('ordinary-thin-has-no-probe-hooks-or-background-scans',baseline.enabled===false&&baseline.installedHooks===0&&baseline.scans===0&&baseline.pendingCaptures===0);
  check('ordinary-thin-preserves-compilation',baselineHook.executionPolicy.preserveCompilation===true);
  const stopId=randomUUID(),stopArgs={operationId:stopId,project:ready.project,installGeneration:projectInfo.installGeneration};const stopped=await tool('application_stop',stopArgs);check('agent-stops-exact-project-installation',stopped.stoppedProcesses===1);check('stop-operation-retry-does-not-repeat-side-effects',(await tool('application_stop',stopArgs)).stoppedProcesses===1);await marker('baseline-done');await waitMarker('code-ready');
@@ -35,7 +37,7 @@ try{
  check('configuration-operation-reconciles-without-running-process',(await tool('operation_get',{operationId})).state==='SUCCEEDED');
  check('identical-configuration-operation-is-idempotent',(await tool('probes_configure',{operationId,project:ready.project,expectedRevision:'',configuration})).revision===configured.revision);
  const stale=await tool('probes_configure',{operationId:randomUUID(),project:ready.project,expectedRevision:'wrong',configuration},false);check('stale-configuration-revision-is-rejected',stale.ok===false&&/PROBE_REVISION_STALE/.test(stale.error));
- const started=await tool('process_start',{operationId:randomUUID(),project:ready.project,component:'',probeRevision:configured.revision});await tool('target_select',{project:ready.project,processGeneration:started.processGeneration});captureGeneration=started.processGeneration;await marker('started');await waitMarker('visible');
+ const started=await tool('process_start',{operationId:randomUUID(),project:ready.project,component:'',probeRevision:configured.revision});captureGeneration=started.processGeneration;await marker('started');await waitMarker('visible');
  const status=await tool('probe_status'),hook=await tool('hook_status');check('startup-hook-hit-before-agent-selected-process',hook.state==='ACTIVE'&&hook.hits===1&&hook.errors===0);
  check('analysis-preserves-thin-compilation-and-fixed-bindings',hook.executionPolicy.preserveCompilation===true&&hook.executionPolicy.fixedBindings===baselineHook.executionPolicy.fixedBindings&&status.installedHooks>0);
  const loaders=(await tool('classloaders_list')).classLoaders;const memory=loaders.find(l=>l.type==='dalvik.system.InMemoryDexClassLoader'),file=loaders.find(l=>l.type==='dalvik.system.DexClassLoader');check('discovers-independent-memory-and-file-loaders',memory&&file&&memory.classLoaderId!==file.classLoaderId);
@@ -61,7 +63,7 @@ try{
  const stoppedProbes=await tool('probes_stop',{operationId:randomUUID()});check('probe-stop-removes-loader-hooks-without-killing-guest',stoppedProbes.enabled===false&&stoppedProbes.installedHooks===0);await tool('application_stop',{operationId:randomUUID(),project:ready.project,installGeneration:projectInfo.installGeneration});await marker('stop-for-artifact');await waitMarker('stopped');check('completed-artifact-readable-after-worker-exit',(await download(started.processGeneration,kept)).length===kept.size);
  check('artifact-inventory-survives-worker-exit',(await tool('artifacts_list',{processGeneration:captureGeneration})).artifacts.some(a=>a.artifactId===manual.artifactId&&a.installGeneration===projectInfo.installGeneration));
  const disabled=await tool('probes_configure',{operationId:randomUUID(),project:ready.project,expectedRevision:configured.revision,configuration:{enabled:false}});
- const restarted=await tool('process_start',{operationId:randomUUID(),project:ready.project,component:'',probeRevision:disabled.revision});await tool('target_select',{project:ready.project,processGeneration:restarted.processGeneration});await marker('restarted');await waitMarker('restored');
+ const restarted=await tool('process_start',{operationId:randomUUID(),project:ready.project,component:'',probeRevision:disabled.revision});await marker('restarted');await waitMarker('restored');
  check('restart-does-not-replay-startup-script',(await tool('hook_status')).state==='IDLE');check('disabled-plan-installs-zero-loader-hooks',(await tool('probe_status')).installedHooks===0);
  const old=await tool('class_inspect',{classLoaderId:memory.classLoaderId,className:'dev.tripoder.dynamic.Payload'},false);check('old-loader-reference-rejected-in-new-process',old.ok===false&&/REFERENCE_STALE/.test(old.error));
  await marker('finished');await writeFile(resolve(dir,'desktop-result.json'),JSON.stringify({passed:true,checks},null,2));console.log(JSON.stringify({passed:true,checks:checks.length}));
