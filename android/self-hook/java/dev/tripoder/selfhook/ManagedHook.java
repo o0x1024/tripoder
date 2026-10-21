@@ -25,12 +25,14 @@ public final class ManagedHook {
         private final Thread thread=Thread.currentThread();
         private boolean called,closed,originalCompleted;
         private Throwable originalFailure;
-        Invocation(Entry entry,Object receiver,Object[] args){this.entry=entry;this.receiver=receiver;this.args=args.length==0?EMPTY_ARGS:args.clone();}
+        Invocation(Entry entry,Object receiver,Object[] args){this.entry=entry;this.receiver=receiver;this.args=args.length==0?EMPTY_ARGS:args;}
         public Object receiver(){return receiver;}
         public Object[] arguments(){return args.length==0?EMPTY_ARGS:args.clone();}
+        Object[] internalArguments(){return args;}
         public Object original(Object... replacement) throws Throwable {
             if(Thread.currentThread()!=thread||called||closed)throw new IllegalStateException("ORIGINAL_INVOCATION_NOT_OWNED");
-            validateArguments(entry,receiver,replacement);called=true;
+            if(replacement!=args)validateArguments(entry,receiver,replacement);
+            called=true;
             try{Object result=originalNative(entry.id,receiver,replacement);originalCompleted=true;return result;}
             catch(Throwable error){originalFailure=error;throw error;}
         }
@@ -237,7 +239,6 @@ public final class ManagedHook {
         return execute(entry,snapshot,receiver,args);
     }
     private static Object execute(Entry entry,Handler handler,Object receiver,Object[] args) throws Throwable {
-        validateArguments(entry,receiver,args);
         if(handler==null)return originalNative(entry.id,receiver,args);
         Invocation call=new Invocation(entry,receiver,args);
         try {Object result=handler.invoke(call);

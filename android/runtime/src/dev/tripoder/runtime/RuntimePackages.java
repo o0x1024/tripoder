@@ -53,7 +53,10 @@ final class RuntimePackages implements InvocationHandler {
 
     void requireInfrastructure(String kind,String pkg,ComponentName component,int user){
         if(infrastructurePackage==null||!infrastructurePackage.equals(pkg)||user!=infrastructureUser)throw new SecurityException("PHYSICAL_PACKAGE_CAPABILITY_DENIED");
-        if(component!=null){Set<ComponentName> allowed=infrastructureComponents.get(kind);if(allowed==null||!allowed.contains(component))throw new SecurityException("PHYSICAL_COMPONENT_CAPABILITY_DENIED");}
+        if(component!=null){
+            Set<ComponentName> allowed=infrastructureComponents.get(kind);
+            if(allowed==null||!allowed.contains(component))throw new PackageAbsent(component.flattenToShortString());
+        }
         else if(!kind.equals("package")&&!kind.equals("application"))throw new SecurityException("PHYSICAL_COMPONENT_REQUIRED");
     }
     synchronized boolean registered(PackageManager facade){return resources.containsKey(facade);}
@@ -77,7 +80,7 @@ final class RuntimePackages implements InvocationHandler {
         return manager(context,view);
     }
     /** Not this guest, the host, or a WebView provider: invisible to the caller, so every query about it answers "absent" in Binder's own terms (null, false, zero). */
-    private static final class PackageAbsent extends RuntimeException{PackageAbsent(String pkg){super("PACKAGE_ABSENT:"+pkg,null,false,false);}}
+    static final class PackageAbsent extends RuntimeException{PackageAbsent(String pkg){super("PACKAGE_ABSENT:"+pkg,null,false,false);}}
     /**
      * The single decision that defines which package world answers a query. The guest's own package is served by the
      * verified archive (its real ApplicationInfo, components and metadata); the host package is physical
@@ -92,15 +95,19 @@ final class RuntimePackages implements InvocationHandler {
     }
     private void user(Object value){if(!(value instanceof Integer)||((Integer)value)!=RuntimePackageBridge.userId())throw new SecurityException("PACKAGE_USER_UNSUPPORTED");}
     String installer(String pkg){
-        if(!engine.packageName.equals(pkg))throw new SecurityException("INSTALLER_QUERY_OUTSIDE_INSTALL");
-        // This APK was installed into this data incarnation by the Runtime host.
-        return engine.host.getPackageName();
+        if(pkg==null)return null;
+        if(engine.packageName.equals(pkg))return engine.host.getPackageName();
+        if(engine.host.getPackageName().equals(pkg)||engine.webView.owns(pkg)){
+            try{return engine.host.getPackageManager().getInstallerPackageName(pkg);}catch(Throwable ignored){return null;}
+        }
+        return null;
     }
     private final Map<String,Integer> guestComponentStates=new HashMap<>();
     int componentEnabled(ComponentName component,int user){
         if(component==null)throw new IllegalArgumentException("COMPONENT_REQUIRED");
         if(engine.webView.owns(component.getPackageName()))return engine.webView.componentEnabled(component,user);
-        if(!engine.packageName.equals(component.getPackageName()))throw new SecurityException("WEBVIEW_COMPONENT_QUERY_DENIED:"+component);
+        if(infrastructurePackage!=null&&infrastructurePackage.equals(component.getPackageName()))return PackageManager.COMPONENT_ENABLED_STATE_DEFAULT;
+        if(!engine.packageName.equals(component.getPackageName()))throw new PackageAbsent(component.flattenToShortString());
         if(user!=RuntimePackageBridge.userId())throw new SecurityException("PACKAGE_USER_UNSUPPORTED");
         synchronized(this){return guestComponentStates.getOrDefault(component.getClassName(),PackageManager.COMPONENT_ENABLED_STATE_DEFAULT);}
     }
@@ -116,11 +123,16 @@ final class RuntimePackages implements InvocationHandler {
             if(type==boolean.class)return false;if(type==int.class)return 0;if(type==long.class)return 0L;
             return null;
         }
+        catch(Throwable t){
+            android.util.Log.w("TripoderPackages", "IPM call threw unexpected exception method=" + method.getName(), t);
+            throw t;
+        }
     }
     private Object dispatch(Object proxy,Method method,Object[] input)throws Throwable{
         Object[] a=input==null?new Object[0]:input;
         if(method.getDeclaringClass()==Object.class){switch(method.getName()){case "toString":return "TripoderPackageEndpoint";case "hashCode":return System.identityHashCode(proxy);case "equals":return proxy==a[0];default:throw new AssertionError(method);}}
         String key=method.getName()+Arrays.toString(method.getParameterTypes());
+        android.util.Log.i("TripoderPackages","IPM call key="+key+" a="+Arrays.toString(a));
         switch(key){
             case "asBinder[]":return binder();
             case "getPackageInfo[class java.lang.String, long, int]":{
@@ -136,7 +148,14 @@ final class RuntimePackages implements InvocationHandler {
             }
             case "getApplicationInfo[class java.lang.String, long, int]":{
                 user(a[2]);String pkg=(String)a[0];if(engine.webView.owns(pkg))return engine.webView.applicationInfo(pkg,(Long)a[1],(Integer)a[2]);if(infrastructure(pkg))return RuntimePackageBridge.physicalApplicationInfo(pkg,(Long)a[1],(Integer)a[2]);
-                return metadata.getApplicationInfo(pkg,PackageManager.ApplicationInfoFlags.of((Long)a[1]));
+                try {
+                    ApplicationInfo ai = metadata.getApplicationInfo(pkg,PackageManager.ApplicationInfoFlags.of((Long)a[1]));
+                    android.util.Log.i("TripoderPackages", "getApplicationInfo returned: " + ai + " metaData=" + (ai == null ? "null" : ai.metaData));
+                    return ai;
+                } catch (Throwable t) {
+                    android.util.Log.w("TripoderPackages", "getApplicationInfo threw", t);
+                    throw t;
+                }
             }
             case "getServiceInfo[class android.content.ComponentName, long, int]":
             case "getProviderInfo[class android.content.ComponentName, long, int]":

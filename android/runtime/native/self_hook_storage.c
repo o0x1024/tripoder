@@ -17,6 +17,43 @@
 #include <dlfcn.h>
 #include <signal.h>
 #include <ucontext.h>
+#include <unwind.h>
+
+struct trace_state {
+    int count;
+    void *addrs[32];
+};
+
+static _Unwind_Reason_Code trace_cb(struct _Unwind_Context *ctx, void *arg) {
+    struct trace_state *state = (struct trace_state *)arg;
+    if (state->count < 32) {
+        state->addrs[state->count++] = (void *)_Unwind_GetIP(ctx);
+        return _URC_NO_REASON;
+    }
+    return _URC_END_OF_STACK;
+}
+
+static void on_exit_handler(void) {
+    void *liblog = dlopen("liblog.so", RTLD_NOW);
+    int (*log_print)(int, const char*, const char*, ...) = liblog ? (int (*)(int, const char*, const char*, ...))dlsym(liblog, "__android_log_print") : NULL;
+    if (!log_print) return;
+
+    struct trace_state state;
+    memset(&state, 0, sizeof(state));
+    _Unwind_Backtrace(trace_cb, &state);
+    log_print(6, "TripoderExit", "ATEXIT CALLED! tid=%d, frames=%d", (int)syscall(SYS_gettid), state.count);
+    for (int i = 0; i < state.count; i++) {
+        Dl_info info;
+        if (dladdr(state.addrs[i], &info) && info.dli_fname) {
+            log_print(6, "TripoderExit", "  #%02d pc %p (%s + 0x%lx %s)",
+                i, state.addrs[i], info.dli_fname,
+                (unsigned long)((uintptr_t)state.addrs[i] - (uintptr_t)info.dli_fbase),
+                info.dli_sname ? info.dli_sname : "?");
+        } else {
+            log_print(6, "TripoderExit", "  #%02d pc %p", i, state.addrs[i]);
+        }
+    }
+}
 
 static struct sigaction s_old_segv, s_old_bus;
 static void tp_crash_handler(int sig, siginfo_t *info, void *uctx_ptr) {
@@ -56,6 +93,7 @@ static void tp_crash_handler(int sig, siginfo_t *info, void *uctx_ptr) {
     }
 }
 static void tp_install_crash_handler(void) {
+    atexit(on_exit_handler);
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
     sa.sa_sigaction = tp_crash_handler;
@@ -195,10 +233,8 @@ JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_installN
     if(!report.ready||!report.enabled||report.validated_entries!=10||report.changed_words!=40||report.absolute_entries!=10||report.publications!=2||
        report.restorations||!report.source_bti||!report.lease_held)
         fail(env,"NATIVE_STORAGE_PUBLICATION_UNCONFIRMED");
-    if(!thin){
-        dl_iterate_phdr(hook_libdl_cb, NULL);
-        tp_install_crash_handler();
-    }
+    dl_iterate_phdr(hook_libdl_cb, NULL);
+    tp_install_crash_handler();
 }
 JNIEXPORT jbyteArray JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_readPhysicalProc(JNIEnv *env,jclass unused,jstring path,jint limit){
     (void)unused;

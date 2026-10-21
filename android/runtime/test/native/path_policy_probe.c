@@ -65,7 +65,17 @@ int main(int argc,char **argv){
     setup(symlink(file,link)==0);memset(target_buf,0,sizeof(target_buf));link_len=tp_readlinkat(AT_FDCWD,"/data/data/dev.tripoder.iofixture/files/link",target_buf,sizeof(target_buf)-1);
     check("readlinkat-reverses-artifact-to-logical-apk-path",link_len>0&&!strcmp(target_buf,"/data/app/~~tripoder/dev.tripoder.iofixture/base.apk"));setup(unlink(link)==0);
     int logical_apk=tp_openat(AT_FDCWD,"/data/app/~~tripoder/dev.tripoder.iofixture/base.apk",O_RDONLY,0);char apk_bytes[16]={0};
-    check("logical-artifact-apk-open",logical_apk>=0&&read(logical_apk,apk_bytes,14)==14&&!strcmp(apk_bytes,"owned-artifact"));if(logical_apk>=0)close(logical_apk);
+    check("logical-artifact-apk-open",logical_apk>=0&&read(logical_apk,apk_bytes,14)==14&&!strcmp(apk_bytes,"owned-artifact"));
+    if(logical_apk>=0){
+        char fd_link[64];snprintf(fd_link,sizeof(fd_link),"/proc/self/fd/%d",logical_apk);
+        int fd_reopen=tp_openat(AT_FDCWD,fd_link,O_RDONLY,0);char reopen_bytes[16]={0};
+        check("proc-self-fd-reopen-allowed-target",fd_reopen>=0&&read(fd_reopen,reopen_bytes,14)==14&&!strcmp(reopen_bytes,"owned-artifact"));
+        if(fd_reopen>=0)close(fd_reopen);
+        close(logical_apk);
+    }
+    int linker_fd=tp_openat(AT_FDCWD,"/apex/com.android.runtime/bin/linker64",O_RDONLY,0);unsigned char elf_mag[4]={0};
+    check("platform-linker-read-allowed",linker_fd>=0&&read(linker_fd,elf_mag,4)==4&&elf_mag[0]==0x7f&&elf_mag[1]=='E'&&elf_mag[2]=='L'&&elf_mag[3]=='F');
+    if(linker_fd>=0)close(linker_fd);
     int proc_cmd=tp_openat(AT_FDCWD,"/proc/self/cmdline",O_RDONLY,0);char cmd_bytes[64]={0};
     check("proc-self-cmdline-virtualized",proc_cmd>=0&&read(proc_cmd,cmd_bytes,sizeof(cmd_bytes)-1)==(ssize_t)strlen("dev.tripoder.iofixture")+1&&!strcmp(cmd_bytes,"dev.tripoder.iofixture"));if(proc_cmd>=0)close(proc_cmd);
     printf("{\"summary\":true,\"passed\":%s,\"checks\":%d,\"failures\":%d,\"hookInstalled\":false,\"strongIsolationVerified\":false}\n",failures==0?"true":"false",checks,failures);return failures?1:0;

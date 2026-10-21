@@ -15,7 +15,7 @@ final class RuntimeThinPolicy {
         };
     }
     private static final Set<String> SERVICES=Set.of(Context.CONNECTIVITY_SERVICE,Context.TELEPHONY_SERVICE,
-        Context.AUDIO_SERVICE,Context.BATTERY_SERVICE,Context.POWER_SERVICE,Context.WIFI_P2P_SERVICE,Context.NETWORK_STATS_SERVICE);
+        Context.AUDIO_SERVICE,Context.BATTERY_SERVICE,Context.POWER_SERVICE,Context.WIFI_SERVICE,Context.WIFI_P2P_SERVICE,Context.NETWORK_STATS_SERVICE);
     static boolean platformService(String name){return name!=null&&SERVICES.contains(name);}
     static boolean platformHooks(FixedRuntimeHooks.Group group){
         return group==FixedRuntimeHooks.Group.TRAFFIC||group==FixedRuntimeHooks.Group.WIFI_CHANNEL

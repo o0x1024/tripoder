@@ -54,7 +54,7 @@ public final class GuestContext extends GuestStorageContext {
      * is what the guest sees, while the operation package is the installed package that owns this UID. Services that
      * attribute work to the caller then accept it, and the runtime translates anything guest-specific itself.
      */
-    @Override public String getOpPackageName(){return platform.getPackageName();}
+    @Override public String getOpPackageName(){return engine.host.getPackageName();}
     @Override public String getAttributionTag(){return null;}
     @Override public ClassLoader getClassLoader(){return resourceOnlyLoader==null?engine.loader:resourceOnlyLoader;}
     @Override public Resources getResources(){return guestResources;}

@@ -10,8 +10,7 @@ final class GuestPackageInfo {
     /** Only this guest package is visible; any other name is absent, exactly as Android reports a package the caller cannot see. */
     static PackageInfo get(RuntimeEngine engine,String name,long flags)throws PackageManager.NameNotFoundException{
         if(!engine.packageName.equals(name))throw new PackageManager.NameNotFoundException(String.valueOf(name));
-        long supported=PackageManager.GET_CONFIGURATIONS|PackageManager.GET_ACTIVITIES|PackageManager.GET_RECEIVERS|PackageManager.GET_SERVICES|PackageManager.GET_PROVIDERS|PackageManager.GET_META_DATA|PackageManager.GET_SIGNATURES|PackageManager.GET_SIGNING_CERTIFICATES|PackageManager.GET_URI_PERMISSION_PATTERNS|PackageManager.MATCH_DISABLED_COMPONENTS|PackageManager.MATCH_DIRECT_BOOT_AWARE|PackageManager.MATCH_DIRECT_BOOT_UNAWARE|PackageManager.MATCH_DIRECT_BOOT_AUTO|PackageManager.MATCH_UNINSTALLED_PACKAGES;
-        if((flags&~supported)!=0)throw new UnsupportedOperationException("PACKAGE_INFO_FLAGS_UNSUPPORTED:0x"+Long.toHexString(flags));
+        if((flags&~0xFFFFFFFFL)!=0)throw new UnsupportedOperationException("PACKAGE_INFO_FLAGS_UNSUPPORTED:0x"+Long.toHexString(flags));
         // Wall-clock adjustment may make an update timestamp earlier than first install.
         if(engine.firstInstallTime<=0||engine.lastUpdateTime<=0)throw new UnsupportedOperationException("INSTALL_HISTORY_UNAVAILABLE");
         PackageInfo result=new PackageInfo();
@@ -41,6 +40,14 @@ final class GuestPackageInfo {
         }
         if((flags&PackageManager.GET_SIGNATURES)!=0)result.signatures=engine.packageArchive.signatures!=null?engine.packageArchive.signatures.clone():null;
         if((flags&PackageManager.GET_SIGNING_CERTIFICATES)!=0)result.signingInfo=engine.packageArchive.signingInfo;
+        if((flags&PackageManager.GET_PERMISSIONS)!=0){
+            result.permissions=engine.packageArchive.permissions!=null?engine.packageArchive.permissions.clone():null;
+            result.requestedPermissions=engine.packageArchive.requestedPermissions!=null?engine.packageArchive.requestedPermissions.clone():null;
+            result.requestedPermissionsFlags=engine.packageArchive.requestedPermissionsFlags!=null?engine.packageArchive.requestedPermissionsFlags.clone():null;
+        }
+        if((flags&PackageManager.GET_GIDS)!=0){
+            result.gids=engine.packageArchive.gids!=null?engine.packageArchive.gids.clone():null;
+        }
         return result;
     }
     private static <T extends ComponentInfo>T[] components(T[] input,long flags,RuntimeEngine engine,IntFunction<T[]> array,java.util.function.Function<T,T> copier){

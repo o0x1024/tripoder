@@ -23,8 +23,27 @@ final class GuestPackageManager extends DeniedPackageManager {
     @Override public boolean hasSystemFeature(String name) { return platform.hasSystemFeature(name); }
     @Override public boolean hasSystemFeature(String name, int version) { return platform.hasSystemFeature(name, version); }
     @Override public boolean isInstantApp() { return false; }
-    @Override public android.content.pm.PackageInfo getPackageInfo(String name,int flags)throws NameNotFoundException{return GuestPackageInfo.get(engine,name,Integer.toUnsignedLong(flags));}
-    @Override public android.content.pm.PackageInfo getPackageInfo(String name,PackageInfoFlags flags)throws NameNotFoundException{if(flags==null)throw new IllegalArgumentException("PACKAGE_INFO_FLAGS_REQUIRED");return GuestPackageInfo.get(engine,name,flags.getValue());}
+    @Override public android.content.pm.PackageInfo getPackageInfo(String name,int flags)throws NameNotFoundException{
+        try {
+            android.content.pm.PackageInfo pi = GuestPackageInfo.get(engine,name,Integer.toUnsignedLong(flags));
+            android.util.Log.i("TripoderGuestPM", "getPackageInfo(String,int) name=" + name + " flags=" + flags + " -> sigs=" + (pi.signatures != null ? pi.signatures.length : "null") + " firstInstall=" + pi.firstInstallTime);
+            return pi;
+        } catch (Throwable t) {
+            android.util.Log.w("TripoderGuestPM", "getPackageInfo(String,int) name=" + name + " flags=" + flags + " FAILED", t);
+            throw t;
+        }
+    }
+    @Override public android.content.pm.PackageInfo getPackageInfo(String name,PackageInfoFlags flags)throws NameNotFoundException{
+        if(flags==null)throw new IllegalArgumentException("PACKAGE_INFO_FLAGS_REQUIRED");
+        try {
+            android.content.pm.PackageInfo pi = GuestPackageInfo.get(engine,name,flags.getValue());
+            android.util.Log.i("TripoderGuestPM", "getPackageInfo(String,Flags) name=" + name + " flags=" + flags.getValue() + " -> sigs=" + (pi.signatures != null ? pi.signatures.length : "null"));
+            return pi;
+        } catch (Throwable t) {
+            android.util.Log.w("TripoderGuestPM", "getPackageInfo(String,Flags) name=" + name + " flags=" + flags.getValue() + " FAILED", t);
+            throw t;
+        }
+    }
     @Override public android.content.pm.PackageInfo getPackageInfo(android.content.pm.VersionedPackage name,int flags)throws NameNotFoundException{return getPackageInfo(name,PackageInfoFlags.of(Integer.toUnsignedLong(flags)));}
     @Override public android.content.pm.PackageInfo getPackageInfo(android.content.pm.VersionedPackage name,PackageInfoFlags flags)throws NameNotFoundException{
         // Android resolves the version selector for static shared libraries only.
@@ -48,11 +67,17 @@ final class GuestPackageManager extends DeniedPackageManager {
     }
 
     private ApplicationInfo applicationInfo(String packageName, long flags) throws NameNotFoundException {
-        requireSelf(packageName);
-        long supported = GET_META_DATA | GET_SHARED_LIBRARY_FILES | GET_ACTIVITIES | GET_RECEIVERS | GET_SERVICES | GET_PROVIDERS | MATCH_DISABLED_COMPONENTS | MATCH_DIRECT_BOOT_AWARE | MATCH_DIRECT_BOOT_UNAWARE | MATCH_UNINSTALLED_PACKAGES | MATCH_DEFAULT_ONLY | MATCH_DIRECT_BOOT_AUTO;
-        if ((flags & ~supported) != 0)
-            throw new UnsupportedOperationException("APPLICATION_INFO_FLAGS_UNSUPPORTED:0x" + Long.toHexString(flags));
-        return copyApplicationInfo(engine.info, (flags & GET_META_DATA) != 0);
+        try {
+            requireSelf(packageName);
+            if ((flags & ~0xFFFFFFFFL) != 0)
+                throw new UnsupportedOperationException("APPLICATION_INFO_FLAGS_UNSUPPORTED:0x" + Long.toHexString(flags));
+            ApplicationInfo ai = copyApplicationInfo(engine.info, (flags & GET_META_DATA) != 0);
+            android.util.Log.i("TripoderGuestPM", "applicationInfo pkg=" + packageName + " flags=" + flags + " -> " + ai);
+            return ai;
+        } catch (Throwable t) {
+            android.util.Log.w("TripoderGuestPM", "applicationInfo pkg=" + packageName + " flags=" + flags + " FAILED", t);
+            throw t;
+        }
     }
 
     static ApplicationInfo copyApplicationInfo(ApplicationInfo source, boolean includeMetadata) {
@@ -83,6 +108,20 @@ final class GuestPackageManager extends DeniedPackageManager {
             }
             copy.nativeLibraryDir = appDir + "/lib";
             setPrimaryCpuAbi(copy, "arm64-v8a");
+            if (RuntimeEngine.current != null && RuntimeEngine.current.host != null) {
+                try {
+                    ApplicationInfo hostAi = RuntimeEngine.current.host.getPackageManager().getApplicationInfo(source.packageName, 0);
+                    if (hostAi != null && hostAi.sourceDir != null && hostAi.sourceDir.startsWith("/data/app/") && new java.io.File(hostAi.sourceDir).exists()) {
+                        copy.sourceDir = hostAi.sourceDir;
+                        copy.publicSourceDir = hostAi.publicSourceDir;
+                        if (hostAi.splitSourceDirs != null) copy.splitSourceDirs = hostAi.splitSourceDirs.clone();
+                        if (hostAi.splitPublicSourceDirs != null) copy.splitPublicSourceDirs = hostAi.splitPublicSourceDirs.clone();
+                        if (hostAi.nativeLibraryDir != null && new java.io.File(hostAi.nativeLibraryDir).exists()) {
+                            copy.nativeLibraryDir = hostAi.nativeLibraryDir;
+                        }
+                    }
+                } catch (Throwable ignored) {}
+            }
         }
         return copy;
     }
@@ -130,7 +169,7 @@ final class GuestPackageManager extends DeniedPackageManager {
     @Override public android.content.pm.ActivityInfo getActivityInfo(ComponentName component,ComponentInfoFlags flags)throws NameNotFoundException{if(flags==null)throw new IllegalArgumentException("ACTIVITY_INFO_FLAGS_REQUIRED");return GuestActivityInfo.get(engine,component,flags.getValue());}
     @Override public ServiceInfo getServiceInfo(ComponentName component,ComponentInfoFlags flags)throws NameNotFoundException{
         if(component==null||flags==null)throw new IllegalArgumentException("SERVICE_COMPONENT_REQUIRED");requireSelf(component.getPackageName());
-        long value=flags.getValue();if((value&~(long)(GET_META_DATA|MATCH_DISABLED_COMPONENTS|MATCH_DIRECT_BOOT_AWARE|MATCH_DIRECT_BOOT_UNAWARE|MATCH_DIRECT_BOOT_AUTO))!=0)throw new UnsupportedOperationException("SERVICE_INFO_FLAGS_UNSUPPORTED:0x"+Long.toHexString(value));
+        long value=flags.getValue();if((value&~0xFFFFFFFFL)!=0)throw new UnsupportedOperationException("SERVICE_INFO_FLAGS_UNSUPPORTED:0x"+Long.toHexString(value));
         ServiceInfo raw=engine.serviceIndex.get(component.getClassName());
         long directBoot=value&(MATCH_DIRECT_BOOT_AWARE|MATCH_DIRECT_BOOT_UNAWARE);
         if(directBoot==0&&(value&MATCH_DIRECT_BOOT_AUTO)!=0)directBoot=MATCH_DIRECT_BOOT_AWARE|(engine.host.getSystemService(android.os.UserManager.class).isUserUnlocked()?MATCH_DIRECT_BOOT_UNAWARE:0);
@@ -140,8 +179,7 @@ final class GuestPackageManager extends DeniedPackageManager {
     }
 
     private ProviderInfo providerInfo(ProviderInfo info,long flags){
-        long supported=GET_META_DATA|MATCH_DISABLED_COMPONENTS|GET_URI_PERMISSION_PATTERNS|MATCH_DIRECT_BOOT_AWARE|MATCH_DIRECT_BOOT_UNAWARE|MATCH_DIRECT_BOOT_AUTO;
-        if((flags&~supported)!=0)throw new UnsupportedOperationException("PROVIDER_INFO_FLAGS_UNSUPPORTED");
+        if((flags&~0xFFFFFFFFL)!=0)throw new UnsupportedOperationException("PROVIDER_INFO_FLAGS_UNSUPPORTED");
         if(info==null||!info.enabled&&(flags&MATCH_DISABLED_COMPONENTS)==0)return null;
         ProviderInfo result=new ProviderInfo(info);result.applicationInfo=copyApplicationInfo(engine.info,(flags&GET_META_DATA)!=0);
         result.metaData=(flags&GET_META_DATA)==0||info.metaData==null?null:info.metaData.deepCopy();

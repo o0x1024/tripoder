@@ -18,6 +18,12 @@ final class RuntimeDexLoader {
         return createInternal(set,libraries,parent,true);
     }
     static ClassLoader createForGuest(ArtifactSet set,String libraries,ClassLoader parent,boolean thin)throws Exception{
+        if (thin && RuntimeEngine.current != null && RuntimeEngine.current.applicationInfo != null) {
+            var ai = RuntimeEngine.current.applicationInfo;
+            if (ai.sourceDir != null && ai.sourceDir.startsWith("/data/app/") && new File(ai.sourceDir).exists()) {
+                return new dalvik.system.PathClassLoader(ai.sourceDir, ai.nativeLibraryDir, parent);
+            }
+        }
         return createInternal(set,libraries,parent,false,thin);
     }
     private static ClassLoader createInternal(ArtifactSet set,String libraries,ClassLoader parent,boolean retainMemfdMappings)throws Exception{
@@ -91,8 +97,7 @@ final class RuntimeDexLoader {
         // Android's own loader already serves resources from each APK. A custom
         // resource-only parent and an empty wrapper add lookup work and make ART
         // reject the class-loader context used by secondary-DEX optimization.
-        if(thin)return new dalvik.system.PathClassLoader(dexPath.toString(),libraries,parent);
-        return new RuntimeGuestLoader(dexPath.toString(),libraries,new RuntimeResourceLoader(parent,apkFiles));
+        return new dalvik.system.PathClassLoader(dexPath.toString(),libraries,parent);
     }
 
     /** The platform's own DEX container element, one per verified buffer, in archive order. */

@@ -53,7 +53,7 @@ final class RuntimeWebView {
         return !actual.isEmpty()&&actual.equals(expected);
     }
     int componentEnabled(android.content.ComponentName component,int user){
-        if(component==null||!components.contains(component))throw new SecurityException("WEBVIEW_COMPONENT_QUERY_DENIED:"+component);
+        if(component==null||!components.contains(component))throw new RuntimePackages.PackageAbsent(component==null?"null":component.flattenToShortString());
         require(component.getPackageName(),0,user);
         return dev.tripoder.selfhook.PackageFrameworkAccess.componentEnabled(component,user);
     }
@@ -62,7 +62,7 @@ final class RuntimeWebView {
         require(component.getPackageName(),flags,user);
         android.content.pm.ServiceInfo expected=null;
         if(provider.services!=null)for(var value:provider.services)if(value.name.equals(component.getClassName()))expected=value;
-        if(expected==null)throw new SecurityException("WEBVIEW_SERVICE_NOT_DECLARED:"+component);
+        if(expected==null)throw new RuntimePackages.PackageAbsent(component.flattenToShortString());
         packageInfo(component.getPackageName(),QUERY_FLAGS,user);
         var actual=(android.content.pm.ServiceInfo)dev.tripoder.selfhook.PackageFrameworkAccess.physical("getServiceInfo",component,flags,user);
         if(actual==null||!Objects.equals(expected.name,actual.name)||!Objects.equals(expected.packageName,actual.packageName)

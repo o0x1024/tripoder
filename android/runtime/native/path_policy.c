@@ -91,18 +91,23 @@ static int anchored(int anchor,const char *relative,struct tp_path *out){
 error:
     for(int i=0;i<=depth;i++)syscall(SYS_close,fds[i]);return fail(saved);
 }
-static bool is_linker_exec(const char *path){
-    if(!path)return false;
-    size_t len=strlen(path);
-    if(len>=13&&!strcmp(path+len-13,"/bin/linker64"))return true;
-    if(len>=11&&!strcmp(path+len-11,"/bin/linker"))return true;
-    if(!strcmp(path,"linker")||!strcmp(path,"linker64"))return true;
-    return false;
-}
 static bool platform_read(const char *path){
-    if(is_linker_exec(path))return false;
-    const char *roots[]={"/system","/system_ext","/apex","/vendor","/product","/odm","/proc","/sys","/data/app","/dev/__properties__"};
+    const char *roots[]={"/system","/system_ext","/apex","/vendor","/product","/odm","/proc","/sys","/data/app","/dev/__properties__","/etc"};
     for(size_t i=0;i<sizeof(roots)/sizeof(roots[0]);i++)if(prefix(path,roots[i]))return true;return false;
+}
+static bool is_proc_self_fd_link(const char *path){
+    if(strncmp(path,"/proc/",6)!=0)return false;
+    const char *rest=path+6;
+    if(!strncmp(rest,"self/fd/",8))rest+=8;
+    else if(!strncmp(rest,"thread-self/fd/",15))rest+=15;
+    else{
+        char *end=NULL;unsigned long pid=strtoul(rest,&end,10);
+        if(end==rest||strncmp(end,"/fd/",4)!=0||pid!=(unsigned long)syscall(SYS_getpid))return false;
+        rest=end+4;
+    }
+    if(*rest<'0'||*rest>'9')return false;
+    while(*rest>='0'&&*rest<='9')rest++;
+    return *rest=='\0';
 }
 static bool is_ashmem_node(const char *path){
     if(strncmp(path,"/dev/ashmem",11)!=0)return false;
@@ -125,6 +130,61 @@ static bool metadata_ancestor(const char *path){
 static bool dot_component(const char *path){
     const char *p=path;while(*p){while(*p=='/')p++;const char *end=p;while(*end&&*end!='/')end++;size_t n=(size_t)(end-p);if((n==1&&p[0]=='.')||(n==2&&p[0]=='.'&&p[1]=='.'))return true;p=end;}return false;
 }
+static bool host_runtime_subpath(const char *path, const char **out_rel) {
+    static const char *const prefixes[] = {
+        "/data/user/0/dev.tripoder.engine",
+        "/data/data/dev.tripoder.engine",
+        "/data/user_de/0/dev.tripoder.engine",
+        "/data/user/0/dev.tripoder.runtimeprobe",
+        "/data/data/dev.tripoder.runtimeprobe",
+        "/data/user_de/0/dev.tripoder.runtimeprobe",
+    };
+    for (size_t i = 0; i < sizeof(prefixes)/sizeof(prefixes[0]); i++) {
+        size_t len = strlen(prefixes[i]);
+        if (strncmp(path, prefixes[i], len) == 0 && (path[len] == '/' || path[len] == '\0')) {
+            const char *sub = path + len;
+            if (*sub == '/') sub++;
+            if (!strncmp(sub, "app_webview", 11) || !strncmp(sub, "shared_prefs", 12) || !strncmp(sub, "cache", 5)) {
+                *out_rel = path + len;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+static int normalize_rel(const char *rel,char *out,size_t out_size){
+    char *stack[128];
+    int depth=0;
+    char buf[PATH_MAX];
+    if(strlen(rel)>=sizeof(buf))return fail(ENAMETOOLONG);
+    strcpy(buf,rel);
+    char *saveptr=NULL;
+    char *token=strtok_r(buf,"/",&saveptr);
+    while(token){
+        if(!strcmp(token,".")){}
+        else if(!strcmp(token,"..")){
+            if(depth>0)depth--;
+        }else{
+            if(depth>=128)return fail(ENAMETOOLONG);
+            stack[depth++]=token;
+        }
+        token=strtok_r(NULL,"/",&saveptr);
+    }
+    size_t pos=0;
+    if(depth==0){
+        if(out_size<2)return fail(ENAMETOOLONG);
+        out[0]='/';out[1]='\0';return 0;
+    }
+    for(int i=0;i<depth;i++){
+        size_t len=strlen(stack[i]);
+        if(pos+1+len+1>out_size)return fail(ENAMETOOLONG);
+        out[pos++]='/';
+        memcpy(out+pos,stack[i],len);
+        pos+=len;
+    }
+    out[pos]='\0';
+    return 0;
+}
 static int fast_anchor(int anchor,const char *relative,struct tp_path *out){
     while(*relative=='/')relative++;
     if(!*relative){
@@ -142,37 +202,54 @@ static int fast_anchor(int anchor,const char *relative,struct tp_path *out){
 int tp_resolve(int dirfd,const char *path,enum tp_access access,struct tp_path *out){
     memset(out,0,sizeof(*out));out->parent=AT_FDCWD;
     if(!configured)return fail(ENOSYS);if(!path)return fail(EFAULT);size_t size=strnlen(path,PATH_MAX);if(size>=PATH_MAX)return fail(ENAMETOOLONG);if(size==0)return fail(ENOENT);
-    if(is_linker_exec(path))return fail(EACCES);
     if(path[0]=='/'){
         for(int i=0;i<4;i++)if(prefix_len(path,data_paths[i],data_path_lens[i])){
             const char *rel=path+data_path_lens[i];
             if(!dot_component(rel))return fast_anchor(data_fd,rel,out);
             return anchored(data_fd,rel,out);
         }
+        const char *host_rel = NULL;
+        if(host_runtime_subpath(path, &host_rel)){
+            if(!dot_component(host_rel))return fast_anchor(data_fd,host_rel,out);
+            return anchored(data_fd,host_rel,out);
+        }
         for(int i=0;i<3;i++)if(prefix_len(path,artifact_paths[i],artifact_path_lens[i])){
             if(access==TP_WRITE)return fail(EROFS);
-            const char *rel=path+artifact_path_lens[i];
+            const char *raw_rel=path+artifact_path_lens[i];
+            char rel[PATH_MAX];
+            if(dot_component(raw_rel)){
+                if(normalize_rel(raw_rel,rel,sizeof(rel))<0)return -1;
+            }else{
+                if(copy(rel,raw_rel)<0)return -1;
+            }
             if(prefix_len(rel,"/lib/arm64",10)&&rel[10]=='/'){
                 char alias[PATH_MAX];
                 int n=snprintf(alias,sizeof(alias),"/lib/%s",rel+11);
                 if(n<=0||(size_t)n>=sizeof(alias))return fail(ENAMETOOLONG);
-                if(!dot_component(alias))return fast_anchor(artifact_fd,alias,out);
-                return anchored(artifact_fd,alias,out);
+                return fast_anchor(artifact_fd,alias,out);
             }
             if(prefix_len(rel,"/lib/arm64-v8a",14)&&rel[14]=='/'){
                 char alias[PATH_MAX];
                 int n=snprintf(alias,sizeof(alias),"/lib/%s",rel+15);
                 if(n<=0||(size_t)n>=sizeof(alias))return fail(ENAMETOOLONG);
-                if(!dot_component(alias))return fast_anchor(artifact_fd,alias,out);
-                return anchored(artifact_fd,alias,out);
+                return fast_anchor(artifact_fd,alias,out);
             }
-            if(!dot_component(rel))return fast_anchor(artifact_fd,rel,out);
-            return anchored(artifact_fd,rel,out);
+            return fast_anchor(artifact_fd,rel,out);
         }
         // Platform paths are explicit read-only capabilities, not a general host passthrough.
         if(dot_component(path))return fail(EACCES);
+        if(access!=TP_METADATA&&is_proc_self_fd_link(path)){
+            char target[PATH_MAX];
+            long n=syscall(SYS_readlinkat,AT_FDCWD,path,target,sizeof(target)-1);
+            if(n<=0||target[0]!='/'||is_proc_self_fd_link(target))return fail(EACCES);
+            target[n]='\0';
+            if((strstr(target,"dev.tripoder.engine")||strstr(target,"dev.tripoder.runtimeprobe"))
+                &&!prefix(target,data_paths[0])&&!prefix(target,data_paths[1])
+                &&!prefix(target,artifact_paths[0])&&!prefix(target,artifact_paths[1]))return fail(EACCES);
+            return tp_resolve(AT_FDCWD,target,access,out);
+        }
         // /proc is also a namespace of magic links. Content opens through a process
-        // root/cwd/fd alias require the later descriptor-capability layer, not this grant.
+        // root/cwd/fd alias require the descriptor-capability check above, not this grant.
         if(access==TP_READ&&prefix_len(path,"/proc",5))for(const char *p=path;*p;p++)if(*p=='/'&&(prefix_len(p,"/root",5)||prefix_len(p,"/cwd",4)||prefix_len(p,"/fd",3)))return fail(EACCES);
         if(device_node(path)||(access!=TP_WRITE&&platform_read(path))||(access==TP_METADATA&&metadata_ancestor(path))){if(copy(out->leaf,path)<0)return -1;return 0;}
         return fail(EACCES);
@@ -181,13 +258,36 @@ int tp_resolve(int dirfd,const char *path,enum tp_access access,struct tp_path *
     char directory[PATH_MAX];if(fd_path(dirfd,directory)<0)return -1;
     for(int i=0;i<2;i++)if(prefix_len(directory,data_paths[i],data_path_lens[i])){
         if(dirfd!=AT_FDCWD&&!dot_component(path))return fast_anchor(dirfd,path,out);
-        int anchor=dirfd==AT_FDCWD?(int)syscall(SYS_openat,AT_FDCWD,".",O_PATH|O_DIRECTORY|O_CLOEXEC,0):dirfd;if(anchor<0)return -1;
-        int result=anchored(anchor,path,out),saved=errno;if(dirfd==AT_FDCWD)syscall(SYS_close,anchor);errno=saved;return result;
+        const char *rel_dir=directory+data_path_lens[i];
+        char combined[PATH_MAX];
+        int n=snprintf(combined,sizeof(combined),"%s/%s",rel_dir,path);
+        if(n<=0||(size_t)n>=sizeof(combined))return fail(ENAMETOOLONG);
+        char norm[PATH_MAX];
+        if(normalize_rel(combined,norm,sizeof(norm))<0)return -1;
+        return fast_anchor(data_fd,norm,out);
     }
     for(int i=0;i<2;i++)if(prefix_len(directory,artifact_paths[i],artifact_path_lens[i])){
         if(access==TP_WRITE)return fail(EROFS);if(dirfd==AT_FDCWD)return fail(EACCES);
         if(!dot_component(path))return fast_anchor(dirfd,path,out);
-        return anchored(dirfd,path,out);
+        const char *rel_dir=directory+artifact_path_lens[i];
+        char combined[PATH_MAX];
+        int n=snprintf(combined,sizeof(combined),"%s/%s",rel_dir,path);
+        if(n<=0||(size_t)n>=sizeof(combined))return fail(ENAMETOOLONG);
+        char norm[PATH_MAX];
+        if(normalize_rel(combined,norm,sizeof(norm))<0)return -1;
+        if(prefix_len(norm,"/lib/arm64",10)&&norm[10]=='/'){
+            char alias[PATH_MAX];
+            int an=snprintf(alias,sizeof(alias),"/lib/%s",norm+11);
+            if(an<=0||(size_t)an>=sizeof(alias))return fail(ENAMETOOLONG);
+            return fast_anchor(artifact_fd,alias,out);
+        }
+        if(prefix_len(norm,"/lib/arm64-v8a",14)&&norm[14]=='/'){
+            char alias[PATH_MAX];
+            int an=snprintf(alias,sizeof(alias),"/lib/%s",norm+15);
+            if(an<=0||(size_t)an>=sizeof(alias))return fail(ENAMETOOLONG);
+            return fast_anchor(artifact_fd,alias,out);
+        }
+        return fast_anchor(artifact_fd,norm,out);
     }
     if(access==TP_WRITE||dot_component(path)||!platform_read(directory))return fail(EACCES);
     if(prefix(directory,"/proc")){
@@ -233,10 +333,21 @@ static bool write_all(int fd,const char *buf,size_t len){
     }
     return true;
 }
-static bool write_replaced(int fd,const char *line,size_t len,const char *match,const char *replacement){
-    const char *pos=strstr(line,match);if(!pos)return write_all(fd,line,len);
+struct proc_buf { int fd; char data[16384]; size_t used; };
+static bool buf_flush(struct proc_buf *b){
+    if(b->used==0)return true;
+    bool ok=write_all(b->fd,b->data,b->used);
+    b->used=0;return ok;
+}
+static bool buf_write(struct proc_buf *b,const char *src,size_t len){
+    if(len>sizeof(b->data))return buf_flush(b)&&write_all(b->fd,src,len);
+    if(b->used+len>sizeof(b->data)&&!buf_flush(b))return false;
+    memcpy(b->data+b->used,src,len);b->used+=len;return true;
+}
+static bool write_replaced(struct proc_buf *out,const char *line,size_t len,const char *match,const char *replacement){
+    const char *pos=strstr(line,match);if(!pos)return buf_write(out,line,len);
     size_t prefix_len=(size_t)(pos-line),match_len=strlen(match),rep_len=strlen(replacement);
-    return write_all(fd,line,prefix_len)&&write_all(fd,replacement,rep_len)&&write_all(fd,pos+match_len,len-prefix_len-match_len);
+    return buf_write(out,line,prefix_len)&&buf_write(out,replacement,rep_len)&&buf_write(out,pos+match_len,len-prefix_len-match_len);
 }
 static bool is_vma_header(const char *line,size_t len){
     size_t i=0;
@@ -246,54 +357,54 @@ static bool is_vma_header(const char *line,size_t len){
     while(i<len&&((line[i]>='0'&&line[i]<='9')||(line[i]>='a'&&line[i]<='f')))i++;
     return i>j&&i<len&&line[i]==' ';
 }
-static bool transform_proc_line(enum tp_proc_kind kind,const char *line,size_t len,bool *skip_vma,int out_fd){
+static bool transform_proc_line(enum tp_proc_kind kind,const char *line,size_t len,bool *skip_vma,struct proc_buf *out){
     if(kind==TP_PROC_STAT){
         const char *lparen=strchr(line,'(');const char *rparen=lparen?strrchr(lparen,')'):NULL;
         if(lparen&&rparen&&rparen>lparen){
             size_t prefix_len=(size_t)(lparen-line+1);
-            return write_all(out_fd,line,prefix_len)&&write_all(out_fd,guest_comm,strlen(guest_comm))&&write_all(out_fd,rparen,len-(size_t)(rparen-line));
+            return buf_write(out,line,prefix_len)&&buf_write(out,guest_comm,strlen(guest_comm))&&buf_write(out,rparen,len-(size_t)(rparen-line));
         }
-        return write_all(out_fd,line,len);
+        return buf_write(out,line,len);
     }
     if(kind==TP_PROC_STATUS){
         if(len>=6&&!memcmp(line,"Name:\t",6)){
             char buf[32];int n=snprintf(buf,sizeof(buf),"Name:\t%s\n",guest_comm);
-            return n>0&&write_all(out_fd,buf,(size_t)n);
+            return n>0&&buf_write(out,buf,(size_t)n);
         }
-        if(len>=11&&!memcmp(line,"TracerPid:\t",11))return write_all(out_fd,"TracerPid:\t0\n",13);
-        return write_all(out_fd,line,len);
+        if(len>=11&&!memcmp(line,"TracerPid:\t",11))return buf_write(out,"TracerPid:\t0\n",13);
+        return buf_write(out,line,len);
     }
     if(kind==TP_PROC_MAPS){
         if(is_vma_header(line,len)){
-            for(int i=0;i<2;i++)if(strstr(line,artifact_paths[i])){*skip_vma=false;return write_replaced(out_fd,line,len,artifact_paths[i],artifact_paths[2]);}
-            for(int i=0;i<2;i++)if(strstr(line,data_paths[i])){*skip_vma=false;return write_replaced(out_fd,line,len,data_paths[i],data_paths[3]);}
+            for(int i=0;i<2;i++)if(strstr(line,artifact_paths[i])){*skip_vma=false;return write_replaced(out,line,len,artifact_paths[i],artifact_paths[2]);}
+            for(int i=0;i<2;i++)if(strstr(line,data_paths[i])){*skip_vma=false;return write_replaced(out,line,len,data_paths[i],data_paths[3]);}
             const char *dex=strstr(line,"/memfd:tripoder-dex");
-            if(dex){*skip_vma=false;return write_all(out_fd,line,(size_t)(dex-line))&&write_all(out_fd,"[anon:dalvik-classes.dex]\n",26);}
+            if(dex){*skip_vma=false;return buf_write(out,line,(size_t)(dex-line))&&buf_write(out,"[anon:dalvik-classes.dex]\n",26);}
             // The runtime's own executable memfds (near-address trampolines, linker/ART notifiers) are
             // named with an identifying token that the dynamic linker echoes into maps. A real device's
             // in-memory executable code shows up as an anonymous JIT memfd, so present them that way.
             const char *mf=strstr(line,"/memfd:tripoder");
             if(mf){const char *name=mf+7;const char *end=name;while(end<line+len&&*end!=' '&&*end!='\n')end++;*skip_vma=false;
-                return write_all(out_fd,line,(size_t)(name-line))&&write_all(out_fd,"jit-cache",9)&&write_all(out_fd,end,len-(size_t)(end-line));}
+                return buf_write(out,line,(size_t)(name-line))&&buf_write(out,"jit-cache",9)&&buf_write(out,end,len-(size_t)(end-line));}
             if(strstr(line,"libtripoderselfhook.so")||strstr(line,"libtripoderio.so")||strstr(line,"frida")||strstr(line,"gadget")||strstr(line,"dev.tripoder.engine")||strstr(line,"dev.tripoder.runtimeprobe")){*skip_vma=true;return true;}
-            *skip_vma=false;return write_all(out_fd,line,len);
+            *skip_vma=false;return buf_write(out,line,len);
         }
-        return *skip_vma?true:write_all(out_fd,line,len);
+        return *skip_vma?true:buf_write(out,line,len);
     }
     if(kind==TP_PROC_MOUNTS){
-        for(int i=0;i<2;i++)if(strstr(line,artifact_paths[i]))return write_replaced(out_fd,line,len,artifact_paths[i],artifact_paths[2]);
-        for(int i=0;i<2;i++)if(strstr(line,data_paths[i]))return write_replaced(out_fd,line,len,data_paths[i],data_paths[3]);
+        for(int i=0;i<2;i++)if(strstr(line,artifact_paths[i]))return write_replaced(out,line,len,artifact_paths[i],artifact_paths[2]);
+        for(int i=0;i<2;i++)if(strstr(line,data_paths[i]))return write_replaced(out,line,len,data_paths[i],data_paths[3]);
         if(strstr(line,"dev.tripoder.engine")||strstr(line,"dev.tripoder.runtimeprobe"))return true;
-        return write_all(out_fd,line,len);
+        return buf_write(out,line,len);
     }
-    return write_all(out_fd,line,len);
+    return buf_write(out,line,len);
 }
 int tp_open_proc(const char *path,int flags){
     if(!configured)return fail(ENOSYS);
     enum tp_proc_kind kind=classify_proc(path);
     // The kernel already serves these files efficiently. Thin needs no full
-    // maps/mounts read, filtering, memfd allocation and rewritten copy.
-    if(thin_mode&&(kind==TP_PROC_MAPS||kind==TP_PROC_MOUNTS))return fail(ENOSYS);
+    // mounts read, filtering, memfd allocation and rewritten copy.
+    if(thin_mode&&kind==TP_PROC_MOUNTS)return fail(ENOSYS);
     if(kind==TP_PROC_NONE)return fail(ENOSYS);
     int mfd=(int)syscall(SYS_memfd_create,"procfs",MFD_CLOEXEC);
     if(mfd<0)return -1;
@@ -306,6 +417,7 @@ int tp_open_proc(const char *path,int flags){
     }else{
         int raw=(int)syscall(SYS_openat,AT_FDCWD,path,O_RDONLY|O_CLOEXEC,0);
         if(raw<0){saved=errno;syscall(SYS_close,mfd);return fail(saved);}
+        struct proc_buf out={.fd=mfd,.used=0};
         char chunk[8192],line[4096];size_t line_len=0;bool skip_vma=false;ok=true;
         for(;;){
             ssize_t n=(ssize_t)syscall(SYS_read,raw,chunk,sizeof(chunk));
@@ -315,7 +427,7 @@ int tp_open_proc(const char *path,int flags){
                 if(line_len<sizeof(line)-1)line[line_len++]=chunk[i];
                 if(chunk[i]=='\n'){
                     line[line_len]='\0';
-                    if(!transform_proc_line(kind,line,line_len,&skip_vma,mfd)){ok=false;saved=errno;break;}
+                    if(!transform_proc_line(kind,line,line_len,&skip_vma,&out)){ok=false;saved=errno;break;}
                     line_len=0;
                 }
             }
@@ -323,8 +435,9 @@ int tp_open_proc(const char *path,int flags){
         }
         if(ok&&line_len>0){
             line[line_len]='\0';
-            if(!transform_proc_line(kind,line,line_len,&skip_vma,mfd)){ok=false;saved=errno;}
+            if(!transform_proc_line(kind,line,line_len,&skip_vma,&out)){ok=false;saved=errno;}
         }
+        if(ok&&!buf_flush(&out)){ok=false;saved=errno;}
         syscall(SYS_close,raw);
     }
     if(!ok||syscall(SYS_lseek,mfd,0,SEEK_SET)<0){syscall(SYS_close,mfd);return fail(saved);}
@@ -358,13 +471,6 @@ ssize_t tp_unresolve(const char *physical,size_t physical_len,char *out,size_t s
                         return (ssize_t)copied;
                     }
                 }
-            }
-            // ART keeps the engine's own install APK open; a guest that locates "its own" package by
-            // scanning /proc/self/fd and reading the link finds the host install path. Present the
-            // guest's logical APK instead, so the readback carries no host-package identity.
-            if(!strncmp(raw,"/data/app/",10)&&strstr(raw,"dev.tripoder.engine")&&physical_len>=9&&!strcmp(raw+physical_len-9,"/base.apk")){
-                char rewritten[PATH_MAX];int n=snprintf(rewritten,sizeof(rewritten),"%s/base.apk",artifact_paths[2]);
-                if(n>0&&(size_t)n<sizeof(rewritten)){size_t copied=(size_t)n<size?(size_t)n:size;if(copied>0)memcpy(out,rewritten,copied);return (ssize_t)copied;}
             }
         }
     }
