@@ -28,6 +28,11 @@ public final class ExecutionContract {
         void write(Operation operation) throws Exception;
         List<Operation> incomplete() throws Exception;
     }
+    /** A durable admission check rejected a NEW effect; the journal itself remains healthy. */
+    public static final class AdmissionRejected extends IllegalStateException {
+        private static final long serialVersionUID=1L;
+        public AdmissionRejected(String detail){super(detail);}
+    }
 
     public static final class ContractException extends IllegalStateException {
         private static final long serialVersionUID = 1L;
@@ -438,6 +443,7 @@ public final class ExecutionContract {
     }
     private void write(Operation operation) {
         try { store.write(operation); }
+        catch (AdmissionRejected rejected) { throw error("RECOVERY_SCOPE_UNKNOWN", rejected.getMessage()); }
         catch (Exception failure) { throw storageFailure(failure); }
     }
     private ContractException storageFailure(Exception failure) {

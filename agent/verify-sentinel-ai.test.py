@@ -12,14 +12,15 @@ class VerificationTest(unittest.TestCase):
         self.c.executescript('''CREATE TABLE ai_messages(id TEXT,conversation_id TEXT,role TEXT,metadata TEXT,tool_calls TEXT);
           CREATE TABLE ai_request_usage(conversation_id TEXT,execution_id TEXT,request_id TEXT,provider TEXT,model TEXT,input_tokens INTEGER,output_tokens INTEGER,request_started_at_ms INTEGER,request_finished_at_ms INTEGER,observed_at_ms INTEGER);''')
         audit=[];calls=[]
-        for number,name in enumerate(sorted(verifier.REQUIRED)):
+        for number,(name,action) in enumerate(sorted(verifier.REQUIRED)):
             args={'operationId':self.run+'-prepare'} if name=='hook_prepare' else {}
-            receipt={'protocol':1,'ok':True,'requestId':'request-'+str(number),'result':{'state':'DISABLED' if name=='hook_disable' else 'OPEN','hits':2,'errors':0}}
+            if action:args['action']=action
+            receipt={'protocol':2,'ok':True,'requestId':'request-'+str(number),'result':{'state':'DISABLED' if name=='hook_disable' else 'OPEN','hits':2,'errors':0}}
             raw=json.dumps(receipt,separators=(',',':'));result=json.dumps([{'type':'text','text':json.dumps({'content':[{'type':'text','text':raw}],'is_error':False})}])
             call={'id':'call-'+str(number),'name':verifier.PREFIX+name,'arguments':json.dumps(args),'result':result}
             metadata={'execution_id':'execution','tool_name':call['name'],'tool_args':args,'tool_result':result,'sequence':number}
             self.c.execute('INSERT INTO ai_messages VALUES(?,?,?,?,?)',(call['id'],'conversation','tool',json.dumps(metadata),None));calls.append(call)
-            audit.append({'tool':name,'receiptSha256':hashlib.sha256(raw.encode()).hexdigest(),'requestId':receipt['requestId']})
+            audit.append({'tool':name,'action':action,'receiptSha256':hashlib.sha256(raw.encode()).hexdigest(),'requestId':receipt['requestId']})
         self.c.execute('INSERT INTO ai_messages VALUES(?,?,?,?,?)',('assistant','conversation','assistant',json.dumps({'execution_id':'execution'}),json.dumps(calls)))
         self.c.execute('INSERT INTO ai_request_usage VALUES(?,?,?,?,?,?,?,?,?,?)',('conversation','execution','request','synthetic','synthetic',1,1,1,2,2));self.c.commit()
         (self.root/'device-observation.json').write_text(json.dumps({'passed':True,'sentinelClientVerified':True,'runId':self.run}))
@@ -45,7 +46,7 @@ class VerificationTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'MODEL_REQUEST_USAGE_EVIDENCE_MISSING'):self.run_verify()
 
     def test_business_failure_cannot_be_wrapped_as_success(self):
-        raw=json.dumps([{'type':'text','text':json.dumps({'content':[{'type':'text','text':json.dumps({'protocol':1,'ok':False})}],'is_error':False})}])
+        raw=json.dumps([{'type':'text','text':json.dumps({'content':[{'type':'text','text':json.dumps({'protocol':2,'ok':False})}],'is_error':False})}])
         with self.assertRaisesRegex(ValueError,'MCP_BUSINESS_STATUS_MISMATCH'):verifier.decode_tool_result(raw)
 
 if __name__=='__main__':unittest.main()

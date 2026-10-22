@@ -149,6 +149,7 @@ final class ActivityLedger {
         ContentValues row=new ContentValues();row.put("destroyedConfirmed",finishing?1:0);row.put("taskId",taskId);row.put("state",ticket.state.equals("FINISHED")||finishing?"FINISHED":"RECREATING");update(id,row);
     }
     Ticket restore(String id,String stub){
+        if(store.recoveryPaused(get(id).generation))throw new IllegalStateException("RECOVERY_TARGET_PAUSED_EXPLICIT_START_REQUIRED");
         requireTaskOpen(id);Ticket ticket=get(id);if(!ticket.stub.equals(stub)||!(ticket.state.equals("LIVE")||ticket.state.equals("RECREATING")||ticket.state.equals("CLAIMED")&&"OWNED_TASK_ATTACHED".equals(ticket.resourceProof)))throw new SecurityException("ACTIVITY_RESTORE_NOT_CONFIRMED");
         store.requireOpen(ticket.generation);if(store.hookRecoveryBlocked(ticket.generation))throw new SecurityException("HOOK_COMPONENT_RECOVERY_REQUIRES_EXPLICIT_START");
         try(Cursor c=store.getReadableDatabase().rawQuery("SELECT state FROM sessions WHERE generation=?",new String[]{ticket.generation})){if(!c.moveToFirst()||!c.getString(0).equals("DEAD"))throw new SecurityException("ACTIVITY_PREVIOUS_PROCESS_NOT_DEAD");}

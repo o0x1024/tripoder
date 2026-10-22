@@ -30,6 +30,11 @@ export const invocation={...object({
 export const parameters={type:'object',description:'Patch script-defined scalar parameters. Read hook_status for current values/revision/version and the project source for parameter declarations; omitted names retain their values. Runtime enforces the compiled plan and an 8192-character total budget.',maxProperties:64,propertyNames:{type:'string',maxLength:8192},additionalProperties:scalar,examples:[{enabled:true,label:'example',count:3}]};
 
 const meanings={
+  exportId:'Exact export ID returned by file_export_begin. It also identifies the original export operation.',
+  entryId:'Exact file entry ID from file_export_manifest; never a phone or computer path.',
+  path:'Absolute phone path for kind=path, or a relative path below the selected guest root.',
+  root:'Guest storage root resolved from the exact installation.',
+  followSymlinks:'Whether to follow readable source symlinks. False rejects encountered links; cycles and guest root escapes are rejected.',
   operationId:'Persistent ID for this exact operation. Generate a fresh UUID for a new mutation; after a lost receipt query operation_get with the original ID before retrying.',
   target:'Explicit installation/process identity copied from applications_list or targets_list; never infer generations or use a selected UI target.',
   space:'Runtime space ID from spaces_list or the installation record; not its display name.',

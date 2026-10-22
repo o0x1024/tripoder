@@ -25,11 +25,13 @@ public final class RuntimeHookOperations {
             slot=broker.requiredSlot(generation);var session=broker.contract.getSession(generation);
             if(session.state!=ExecutionContract.ProcessState.RUNNING||slot.peer==null)throw new IllegalStateException("HOOK_PROCESS_NOT_RUNNING");pid=session.pid;
             String digest=ApkStore.textDigest("hook-command-v2\n"+scope+"\n"+generation+"\n"+request);
+            try(RuntimeMutationGuard effect=RuntimeMutationGuard.generation(broker,generation,"hook:"+command.getString("command"))){
             if(!broker.contract.accept(operation,caller,digest).created)throw new IllegalStateException("HOOK_ALREADY_ACCEPTED_QUERY_REQUIRED");
             broker.contract.start(operation);
             // A new process has no accepted hook plan. Replaying its old component
             // would silently change execution semantics, including after ACK loss.
             if("activate".equals(command.getString("command")))broker.store.requireExplicitHookRecovery(generation,operation);
+            }
         }
         boolean dispatched=false;
         try{

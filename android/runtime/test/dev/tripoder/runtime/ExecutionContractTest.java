@@ -22,9 +22,10 @@ public final class ExecutionContractTest {
     private static final class MemoryStore implements Store {
         final Map<String, Operation> rows = new HashMap<>();
         int writes, reads, failAtWrite = -1;
-        boolean throwAfterCommit;
+        boolean throwAfterCommit;boolean rejectAdmission;
         @Override public Operation read(String id) { reads++; return rows.get(id); }
         @Override public void write(Operation row) throws Exception {
+            if(rejectAdmission&&row.state==OperationState.ACCEPTED)throw new AdmissionRejected("original-unknown");
             writes++;
             if (writes == failAtWrite && !throwAfterCommit) throw new java.io.IOException("synthetic storage failure");
             rows.put(row.id, row);
@@ -326,6 +327,10 @@ public final class ExecutionContractTest {
 
     public static void main(String[] args) throws Exception {
         identities(); owners(); operations(); recoveryAndStorageFailure(); callbacks(); concurrency();
+        MemoryStore admissionStore=new MemoryStore();ExecutionContract admission=ready(admissionStore,new Clock());admissionStore.rejectAdmission=true;
+        rejects("uncertain-scope-rejects-before-admission","RECOVERY_SCOPE_UNKNOWN",()->admission.accept("blocked-effect","controller",HASH));
+        check("rejected-scope-has-no-operation",admission.query("blocked-effect")==null);
+        admissionStore.rejectAdmission=false;check("scope-rejection-does-not-poison-journal",admission.accept("unrelated-effect","controller",HASH).created);
         StringBuilder output = new StringBuilder("{\"suite\":\"execution-contract-host\",\"evidenceKind\":\"host-javac\",\"passed\":true,\"checks\":");
         output.append(checks.size()).append(",\"androidDeviceVerified\":false,\"securityIsolationVerified\":false,\"names\":[");
         for (int i = 0; i < checks.size(); i++) { if (i > 0) output.append(','); output.append('"').append(checks.get(i)).append('"'); }

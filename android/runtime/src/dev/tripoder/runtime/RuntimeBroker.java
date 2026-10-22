@@ -59,6 +59,7 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
         return processes.claimComponent(reserve(install,processName,stub),peer);
     }
     synchronized Slot reserve(ApkStore.BundleInstall install,String processName,String stub)throws Exception{
+        store.requireProcessStart(install,processName);
         var current=apks.get(install.space,install.info.packageName);
         if(!current.generation.equals(install.generation)||!current.data.equals(install.data))throw new IllegalStateException("STALE_INSTALL");
         current.wire();
@@ -99,7 +100,7 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
     synchronized boolean stubUsed(String stub){for(Slot s:slots.values())if(s.activityStub.equals(stub))return true;return false;}
     synchronized List<Slot> processSlots(){return new ArrayList<>(slots.values());}
     synchronized Bundle processEvidence(Slot slot){var s=contract.getSession(slot.allocation.session.processGeneration);Bundle b=new Bundle();b.putString("generation",s.processGeneration);b.putString("installGeneration",s.identity.installGeneration);b.putString("processName",s.identity.processName);b.putString("mode",slot.mode.wire);b.putString("state",s.state.name());b.putInt("pid",s.pid);b.putInt("uid",s.uid);return b;}
-    public synchronized void dead(String generation){jobAttempts.dead(generation);hookClaims.dead(generation);contract.markDead(generation);store.deadSession(generation);activities.launches.dead(generation);providers.dead(generation,contract);providerBroker.dead(generation);broadcasts.dead(generation,contract);slots.remove(generation);for(var e:deliveries.entrySet())if(e.getValue().source.equals(generation)||e.getValue().target.equals(generation)){var operation=contract.query(e.getKey());if(operation.state==ExecutionContract.OperationState.RUNNING){contract.markUnknown(e.getKey(),"PROCESS_DIED_BEFORE_DELIVERY_ACK");trace("delivery-unknown",e.getKey());}}}
+    public synchronized void dead(String generation){store.pause(generation);jobAttempts.dead(generation);hookClaims.dead(generation);contract.markDead(generation);store.deadSession(generation);activities.launches.dead(generation);providers.dead(generation,contract);providerBroker.dead(generation);broadcasts.dead(generation,contract);slots.remove(generation);for(var e:deliveries.entrySet())if(e.getValue().source.equals(generation)||e.getValue().target.equals(generation)){var operation=contract.query(e.getKey());if(operation.state==ExecutionContract.OperationState.RUNNING){contract.markUnknown(e.getKey(),"PROCESS_DIED_BEFORE_DELIVERY_ACK");trace("delivery-unknown",e.getKey());}}}
     private void trace(String stage,String op){try{synchronized(events){events.put(new JSONObject().put("stage",stage).put("operation",op).put("operationState",contract.query(op).state.name()).put("time",System.currentTimeMillis()));}}catch(JSONException e){throw new IllegalStateException(e);}}
     public synchronized void remove(String space,String pkg){for(Slot s:slots.values())if(s.install.space.equals(space)&&s.install.info.packageName.equals(pkg))throw new IllegalStateException("INSTALL_IN_USE");apks.removeRecord(space,pkg);}
     public synchronized String generation(String space,String pkg){for(var e:slots.entrySet())if(e.getValue().install.space.equals(space)&&e.getValue().install.info.packageName.equals(pkg))return e.getKey();throw new IllegalStateException("PROCESS_NOT_REGISTERED");}
@@ -115,6 +116,7 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
     }
     Slot slotForTermination(String gen){Slot slot=slots.get(gen);if(slot==null)throw new IllegalStateException("STALE_SESSION");return slot;}
     @Override protected Bundle handle(int code,Bundle input,int pid,int uid)throws Exception {
+        RuntimeRecoveryGate.require();
         if(code==RuntimeWire.PENDING_INTENT)return pendingIntentBroker.route(input,pid,uid);
         if(code==RuntimeWire.EXIT_HISTORY)return RuntimeExitHistory.query(this,input,pid,uid);
         if(code==RuntimeWire.PERMISSION_CONTROLLER)return RuntimePermissionController.query(this,input,pid,uid);

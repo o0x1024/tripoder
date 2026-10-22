@@ -11,6 +11,8 @@ final class WorkbenchAgentControl {
     volatile boolean listening;
     volatile AgentNetworkIdentity networkIdentity;
     private final WorkbenchAgentLifecycle lifecycle;private final WorkbenchAgentImports imports;
+    private WorkbenchFileExports exports;
+    private synchronized WorkbenchFileExports exports()throws Exception{if(exports==null)exports=new WorkbenchFileExports(app);return exports;}
     WorkbenchAgentControl(WorkbenchApplication app){this.app=app;lifecycle=new WorkbenchAgentLifecycle(app);imports=new WorkbenchAgentImports(app);}
     private static final java.util.Set<String> VISIBLE_MUTATIONS=java.util.Set.of("space.create","space.rename","space.delete","application.remove","application.delete","application.mode","application.reverify","application.importDevice","import.commit","project.scriptPut","project.selectorsPut","project.archiveRestore","project.migrationAccept","launch.abandon","launch.close","probes.configure","process.start","application.stop","hook.observe","hook.prepare","hook.activate","hook.disable","hook.discard","hook.updateParameters","hook.uiAction","hook.httpRequest","hook.guestInvoke","hook.probeStop","hook.classLoaderCreate","hook.dexSnapshot");
     JSONObject wire(JSONObject request)throws Exception{
@@ -22,14 +24,18 @@ final class WorkbenchAgentControl {
             String method=request.getString("method");JSONObject params=request.getJSONObject("params"),result;Bundle output;
             if(method.equals("operation.get")){
                 AgentCrypto.fields(params,"operationId");String operation=AgentCrypto.id(params.getString("operationId"));result=lifecycle.receiptIfPresent(operation);
+                if(result==null)result=exports().store.receipt(operation);
                 if(result==null)result=new JSONObject(app.engine.executeBlocking(ControlWire.request("agentOperation","operation",operation)).getString("result"));
                 // A local edit interrupted before its terminal receipt remains uncertain.
                 if("RUNNING".equals(result.optString("state")))result.put("state","UNKNOWN");
                 lifecycle.cleanupReceipt(result);
+            }else if(method.startsWith("file.")){
+                if(method.equals("file.exportBegin")&&lifecycle.receiptIfPresent(id)!=null)throw new IllegalArgumentException("AGENT_REQUEST_ID_CONTENT_MISMATCH");
+                result=exports().call(method,params,id);
             }else if(method.startsWith("import.")||method.equals("application.importDevice")||method.equals("application.importStatus")){
                 if(method.equals("import.cleanup"))result=lifecycle.mutate(id,method,params,()->imports.call(method,params,id));else{if(lifecycle.receiptIfPresent(id)!=null)throw new IllegalArgumentException("AGENT_REQUEST_ID_CONTENT_MISMATCH");result=imports.call(method,params,id);}
             }else if(method.equals("runtime.capabilities")){
-                AgentCrypto.fields(params);result=new JSONObject(app.engine.executeBlocking(ControlWire.request("agentCapabilities")).getString("result"));result.put("authenticationRequired",true).put("mcpTransports",new JSONArray().put("stdio").put("streamable-http")).put("globalControl",true).put("explicitTargets",true).put("implicitTargetSelection",false);
+                AgentCrypto.fields(params);result=new JSONObject(app.engine.executeBlocking(ControlWire.request("agentCapabilities")).getString("result"));result.put("filePull",WorkbenchFileExports.capabilities()).put("authenticationRequired",true).put("mcpTransports",new JSONArray().put("stdio").put("streamable-http")).put("globalControl",true).put("explicitTargets",true).put("implicitTargetSelection",false);
             }else if(method.equals("targets.list")){
                 AgentCrypto.fields(params);result=new JSONObject(app.engine.executeBlocking(ControlWire.request("agentTargets")).getString("result")).put("authenticationRequired",true);
             }else if(method.equals("artifact.list")){
@@ -62,6 +68,10 @@ final class WorkbenchAgentControl {
             return success(id,result);
         }catch(Exception error){
             JSONObject failure=new JSONObject().put("protocol",AgentCrypto.PROTOCOL).put("requestId",id).put("ok",false).put("error",error.getClass().getSimpleName()+":"+String.valueOf(error.getMessage()));
+            if(java.util.Set.of("file.exportBegin","file.exportCancel","file.exportRelease").contains(request.optString("method"))){
+                boolean rejected=false;if("file.exportBegin".equals(request.optString("method")))try{rejected=exports().store.receipt(id)==null;}catch(Exception unavailable){}
+                failure.put("operationId",id).put("state",rejected?"REJECTED":"UNKNOWN");if(rejected)failure.put("dispatched",false);return failure;
+            }
             if(java.util.Set.of("space.create","space.rename","space.delete","application.remove","application.delete","application.mode","application.reverify","application.importDevice","import.begin","import.commit","import.write","import.cleanup","project.scriptPut","project.selectorsPut","project.archiveRestore","project.migrationAccept","launch.abandon","launch.close","probes.configure","process.start","application.stop","hook.observe","hook.prepare","hook.activate","hook.disable","hook.discard","hook.updateParameters","hook.uiAction","hook.httpRequest","hook.guestInvoke","hook.probeStop","hook.classLoaderCreate","hook.dexSnapshot").contains(request.optString("method")))try{JSONObject row=lifecycle.receiptIfPresent(id);if(row==null)row=new JSONObject(app.engine.executeBlocking(ControlWire.request("agentOperation","operation",id)).getString("result"));failure.put("operationId",id).put("state","RUNNING".equals(row.optString("state"))?"UNKNOWN":row.optString("state","UNKNOWN"));}catch(Exception notAccepted){failure.put("operationId",id).put("state",String.valueOf(notAccepted.getMessage()).contains("OPERATION_NOT_FOUND")?"REJECTED":"UNKNOWN");}
             else failure.put("state","REJECTED");
             return failure;

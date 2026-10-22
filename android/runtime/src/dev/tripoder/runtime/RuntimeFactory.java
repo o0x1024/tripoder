@@ -16,7 +16,7 @@ public final class RuntimeFactory extends AppComponentFactory {
         return super.instantiateReceiver(cl,name,intent);
     }
     @Override public Service instantiateService(ClassLoader cl,String name,Intent intent)throws InstantiationException,IllegalAccessException,ClassNotFoundException{
-        if(RuntimeServices.isStub(name))try{bootstrap(name,"restoreService",null);return RuntimeEngine.current.services.instantiate(name,intent);}catch(Exception error){throw new IllegalStateException("GUEST_SERVICE_FAILED",error);}
+        if(RuntimeServices.isStub(name))try{if(bootstrap(name,"restoreService",null)!=null)return new RuntimeRejectedService();return RuntimeEngine.current.services.instantiate(name,intent);}catch(Exception error){throw new IllegalStateException("GUEST_SERVICE_FAILED",error);}
         return super.instantiateService(cl,name,intent);
     }
     static String bootstrap(String name,String method,String ticket)throws Exception{
@@ -30,6 +30,7 @@ public final class RuntimeFactory extends AppComponentFactory {
         if(bootstrap==null)throw new IllegalStateException("BOOTSTRAP_RESPONSE_MISSING");
         if(bootstrap.containsKey("rejectedReceiver")){if(!method.equals("restoreReceiver"))throw new SecurityException("INVALID_REJECTION_KIND");return bootstrap.getString("rejectedReceiver");}
         if(bootstrap.containsKey("rejectedActivity")){if(!method.equals("restoreActivity"))throw new SecurityException("INVALID_REJECTION_KIND");return bootstrap.getString("rejectedActivity");}
+        if(bootstrap.containsKey("rejectedService")){if(!method.equals("restoreService"))throw new SecurityException("INVALID_REJECTION_KIND");return bootstrap.getString("rejectedService");}
         if(bootstrap.getBoolean("awaitExisting")){RuntimeEngine.awaitConstructed();return null;}
         control.configureAbort(bootstrap.getString("bootstrap"));control.claim(bootstrap.getInt("authorityPid"));new RuntimeEngine(host,bootstrap);
         return null;

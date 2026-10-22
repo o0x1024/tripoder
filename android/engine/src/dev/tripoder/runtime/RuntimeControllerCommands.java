@@ -8,6 +8,9 @@ import java.util.*;
 /** Explicit production commands. No fault injection, arbitrary physical path or raw worker Binder. */
 final class RuntimeControllerCommands {
     static Bundle execute(RuntimeBroker broker,Bundle input,String lease)throws Exception{
+        try(RuntimeMutationGuard scope=RuntimeMutationGuard.enter(broker,input)){return executeScoped(broker,input,lease);}
+    }
+    private static Bundle executeScoped(RuntimeBroker broker,Bundle input,String lease)throws Exception{
         if("install".equals(input.getString("command")))return RuntimeControllerInstall.install(broker,input);
         if(input.hasFileDescriptors())throw new SecurityException("CONTROL_FILE_DESCRIPTOR_UNSUPPORTED");
         String command=ControlWire.required(input,"command");Bundle out=new Bundle();
@@ -15,6 +18,18 @@ final class RuntimeControllerCommands {
         if(command.equals("appPresentation"))return RuntimeControllerPresentation.read(broker,input);
         if(command.equals("reclaimEmptyTasks")){fields(input,"command");String receipt=RuntimeEmptyTasks.reclaim(broker,null).toString();Bundle resources=RuntimeControllerResources.inspect(broker);resources.putString("reclaimed",receipt);return resources;}
         if(command.equals("resources")){fields(input,"command");return RuntimeControllerResources.inspect(broker);}
+        if(command.equals("fileSource")){
+            fields(input,"command","space","package","generation","root");
+            synchronized(broker){
+                var install=broker.apks.get(ControlWire.required(input,"space"),ControlWire.required(input,"package"));
+                if(!install.generation.equals(ControlWire.required(input,"generation")))throw new IllegalStateException("STALE_INSTALL");
+                String root=ControlWire.required(input,"root");java.io.File path=switch(root){
+                    case "data"->install.data;
+                    case "apk"->install.apk.getParentFile();
+                    default->throw new IllegalArgumentException("FILE_GUEST_ROOT_INVALID");
+                };out.putString("path",path.toString());return out;
+            }
+        }
         if(command.startsWith("agent"))return RuntimeControllerService.agents().control(input,lease);
         if("launchTargets".equals(command))return RuntimeControllerLaunch.targets(broker,input);
         if("launchEntries".equals(command))return RuntimeControllerEntryClosures.list(broker,input);
@@ -73,7 +88,7 @@ final class RuntimeControllerCommands {
                     out.putString("space",space);break;
                 }
                 case "query":{
-                    fields(input,"command","operation");RuntimeControllerLaunch.expireEntries(broker);var operation=broker.contract.query(ControlWire.required(input,"operation"));if(operation==null)throw new IllegalStateException("OPERATION_NOT_FOUND");
+                    fields(input,"command","operation");var operation=broker.contract.query(ControlWire.required(input,"operation"));if(operation==null)throw new IllegalStateException("OPERATION_NOT_FOUND");
                     if(!ControllerTrust.OPERATIONS.equals(operation.callerIdentity))throw new SecurityException("OPERATION_OWNER_MISMATCH");out.putString("state",operation.state.name());out.putString("result",operation.result);out.putString("detail",operation.detail);out.putString("evidence",operation.evidence);break;
                 }
                 case "cancelNotAccepted":{

@@ -10,6 +10,16 @@ import org.json.*;
  * Client strings are IDs, never paths. Binary bytes are transferred in chunks. */
 public final class RuntimeCodeArtifacts {
     private static String id(String value){if(value==null||!value.matches("[A-Za-z0-9_-]{1,80}"))throw new IllegalArgumentException("ARTIFACT_REFERENCE_INVALID");return value;}
+    public static File file(Context host,String generation,String artifactId)throws Exception{
+        Path directory=host.getFilesDir().toPath().resolve("code-artifacts").resolve(id(generation));
+        Path meta=directory.resolve(id(artifactId)+".json"),data=directory.resolve(id(artifactId)+".dex");
+        if(Files.isSymbolicLink(directory.getParent())||Files.isSymbolicLink(directory)||Files.isSymbolicLink(meta)||Files.isSymbolicLink(data)||Files.size(meta)>8192)throw new IOException("ARTIFACT_PATH_INVALID");
+        JSONObject value=new JSONObject(Files.readString(meta));
+        if(!generation.equals(value.getString("processGeneration"))||!artifactId.equals(value.getString("artifactId"))||!"COMPLETE".equals(value.getString("state"))||Files.size(data)!=value.getLong("size"))throw new IOException("ARTIFACT_NOT_COMPLETE");
+        java.security.MessageDigest sha=java.security.MessageDigest.getInstance("SHA-256");try(InputStream input=Files.newInputStream(data)){byte[] bytes=new byte[65536];int count;while((count=input.read(bytes))!=-1)sha.update(bytes,0,count);}
+        if(!java.util.HexFormat.of().formatHex(sha.digest()).equals(value.getString("sha256")))throw new IOException("ARTIFACT_HASH_MISMATCH");
+        return data.toFile();
+    }
     public static JSONObject list(Context host,String generation)throws Exception{
         File directory=new File(new File(host.getFilesDir(),"code-artifacts"),id(generation));JSONArray rows=new JSONArray();
         if(Files.isSymbolicLink(directory.toPath())||Files.isSymbolicLink(directory.getParentFile().toPath()))throw new IOException("ARTIFACT_PATH_INVALID");

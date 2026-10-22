@@ -11,8 +11,10 @@ public final class WorkbenchRecoveryTest {
         WorkbenchApplication app=new WorkbenchApplication();WorkbenchAgentControl control=new WorkbenchAgentControl(app);control.listening=true;
         JSONObject response=control.wire(request());
         check(response.getBoolean("ok")&&response.getJSONObject("result").getString("state").equals("UNKNOWN"),"sessionless operation reconciliation");
+        response=control.wire(request());
+        check(response.getBoolean("ok"),"original operation can be queried repeatedly without session resurrection");
         response=control.wire(request().put("session","closed-old-session"));
-        check(response.getBoolean("ok"),"legacy session field accepted for operation.get");
+        check(!response.getBoolean("ok")&&app.engine.calls==2,"stale session field is rejected without dispatch");
         check(app.engine.calls==2&&app.engine.operation.equals("original-mutation"),"query uses original operation, never request id or mutation replay");
         response=control.wire(request().put("session","old-session").put("extra","unexpected"));
         check(!response.getBoolean("ok")&&response.getString("error").contains("AGENT_FIELDS_UNSUPPORTED")&&app.engine.calls==2,"unrelated envelope fields still rejected");

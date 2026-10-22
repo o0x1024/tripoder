@@ -40,7 +40,7 @@ public final class LibraryUiIntegration extends WorkbenchUiTestBase {
         AccessibilityNodeInfo tile=findPackage(getUiAutomation().getRootInActiveWindow(),"dev.tripoder.previewguest");if(tile==null)throw new IllegalStateException("APP_TILE_MISSING");
         check("home-separates-apps-from-projects",find(getUiAutomation().getRootInActiveWindow(),"＋ 新建项目",false)==null,"home is app grid");
         check("one-tile-per-package-across-spaces",countPackage(getUiAutomation().getRootInActiveWindow(),"dev.tripoder.previewguest")==1,"one application tile");
-        capture("application-grid");tile.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);click("分析");waitNode("项目脚本编辑器",true);
+        capture("application-grid");tile.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);click("应用分析");waitNode("项目脚本编辑器",true);
         AccessibilityNodeInfo editor=waitNode("项目脚本编辑器",true);Bundle text=new Bundle();text.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,"// unique application source\n");editor.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,text);scrollTo("保存脚本 · 有未保存修改");click("保存脚本 · 有未保存修改");awaitOperations();clickBack();
         check("analysis-edits-the-application-single-source",invoke(projects,"script",new Class<?>[]{String.class},project).equals("// unique application source\n"),project);
         check("global-project-index-removed",find(getUiAutomation().getRootInActiveWindow(),"项目标签",true)==null,"application and settings navigation");

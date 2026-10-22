@@ -8,8 +8,8 @@ export function recoveryReceipt(receipt,name,args){
   if(errorCode==='HOOK_OUTCOME_QUERY_REQUIRED'){
     const pendingOperationId=error.match(/HOOK_OUTCOME_QUERY_REQUIRED:([A-Za-z0-9_-]{1,80})/)?.[1];
     if(pendingOperationId)steps.push({tool:'operation_get',arguments:{operationId:pendingOperationId}});
-    steps.push({tool:'hook_status',arguments:{target:args.target}});
-    action='Query the original operation, then read actual Hook status. Reading events does not clear this gate. Never replay an unknown mutation.';
+    steps.push({tool:'process_inspect',arguments:{action:'hook_status',target:args.target}});
+    action='Query the original operation, then use process_inspect(action=hook_status) to read actual Hook status. Reading events does not clear this gate. Never replay an unknown mutation.';
     return {...receipt,errorCode,...(pendingOperationId?{pendingOperationId}:{}),recovery:{action,steps,replayAllowed:false}};
   }
   if(receipt.state==='UNKNOWN'||receipt.result?.state==='UNKNOWN'){

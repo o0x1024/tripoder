@@ -1,10 +1,15 @@
 // Shared JS / production-Java acceptance cases, including all public tools.
 import {writeFile} from 'node:fs/promises';
-import {tools} from './tools.mjs';
+import {tools,operationRoutes,referenceMigrations} from './tools.mjs';
 const target={space:'space-a',package:'owned.app',installGeneration:'install-a',processGeneration:'process-a'};
 const values={operationId:'operation-a',uploadId:'upload-a',launchOperationId:'launch-a',target,space:'space-a',package:'owned.app',expectedRevision:'',probeRevision:'',component:'',expectedGeneration:'',expectedSha256:'a'.repeat(64),sourceSha256:'a'.repeat(64),sha256:'a'.repeat(64),name:'base.apk',className:'owned.Counter',methodName:'value',argumentTypes:[],arguments:[],classLoaderId:'loader-a',cursor:'',category:'all',packagePrefix:'',symbolPrefix:'',moduleName:'libowned.so',data:'YWJjZA==',source:'export default {};',configuration:{}};
 function example(schema,key){
+  if(key==='cursor'&&schema.type==='integer')return 0;
+  if(key==='entryId')return 'e0';
   if(key==='target')return Object.fromEntries(Object.keys(schema.properties).map(k=>[k,target[k]]));
+  if(key==='source'&&schema.anyOf)return {kind:'path',path:'/tmp/example'};
+  if(key==='destination')return '/tmp/download';
+  if(key==='action'&&schema.enum)return schema.enum[0];
   if(Object.hasOwn(values,key))return structuredClone(values[key]);
   if(schema.examples)return structuredClone(schema.examples[0]);
   if(schema.anyOf)return example(schema.anyOf[0],key);
@@ -16,7 +21,8 @@ function example(schema,key){
   return 'example';
 }
 export const cases=[];
-for(const tool of tools){
+for(const route of operationRoutes){
+  const tool={name:route.tool,inputSchema:route.inputSchema};
   const args=example(tool.inputSchema,'');
   cases.push({name:tool.name,args,valid:true});
   cases.push({name:tool.name,args:{...args,unexpected:true},valid:false});
@@ -52,5 +58,7 @@ for(const [name,args,valid] of [
   ['hook_update_params',{...scoped('parameters',{flag:true,count:1.5,text:''}),revision:'revision-a',parameterVersion:1},true],
   ['hook_update_params',{...scoped('parameters',{nested:{}}),revision:'revision-a',parameterVersion:1},false],
   ['probes_configure',{operationId:'probe-a',target:{space:'space-a',package:'owned.app',installGeneration:'install-a'},expectedRevision:'',configuration:{enabled:true,discoverLoaders:false,maxDexBytes:112}},true],
-])cases.push({name,args,valid});
+]){
+ const migration=referenceMigrations[name];cases.push({name:migration?.tool??name,args:{...args,...(migration?.action?{action:migration.action}:{})},valid});
+}
 if(process.argv[1]&&import.meta.url===new URL(process.argv[1],'file:').href)await writeFile(process.argv[2],JSON.stringify(cases));

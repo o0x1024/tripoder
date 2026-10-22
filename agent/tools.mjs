@@ -1,5 +1,6 @@
 const id=value=>{if(typeof value!=='string'||!/^[-A-Za-z0-9_]{1,80}$/.test(value))throw Error('ID_INVALID');return value;};
 import { randomUUID } from 'node:crypto';
+import {groups,synonyms} from './tool-groups.mjs';
 import {object,javaTypes,uiAction,httpRequest,invocation,parameters,describeSchema,validate,validateInvocation} from './tool-schema.mjs';
 const text={type:'string',minLength:1};
 const operation={...text,pattern:'^[A-Za-z0-9_-]{1,80}$',description:'Persistent id for this exact command. Reuse only for identical content; query after an unknown outcome.'};
@@ -11,6 +12,11 @@ const nativeSelector=object({id:symbolId,kind:{type:'string',enum:['native']},mo
 const selectors={type:'array',minItems:1,maxItems:32,items:{anyOf:[javaSelector,nativeSelector]},description:'Unique ids. Use exact declared argument types, including [] for no arguments. Java example: {"id":"counter","kind":"java","className":"com.example.Counter","methodName":"value","argumentTypes":[]}. Native signatures must be independently confirmed.'};
 const installTarget=object({space:{...text,maxLength:80},package:{...text,maxLength:256},installGeneration:{...text,maxLength:80}});
 const processTarget=object({...installTarget.properties,processGeneration:{...text,maxLength:80}});
+export const fileSource={description:'File or directory readable by the Tripoder host UID. Guest sources require an exact installation; artifacts come from artifacts_list. No adb or root.',anyOf:[
+ {...object({kind:{type:'string',enum:['path']},path:{type:'string',minLength:1,maxLength:4096,pattern:'^/'}}),examples:[{kind:'path',path:'/sdcard/Download/example'}]},
+ object({kind:{type:'string',enum:['guest']},target:installTarget,root:{type:'string',enum:['data','apk']},path:{type:'string',maxLength:4096,description:'Relative path below the selected storage root; empty means the whole root.'}}),
+ object({kind:{type:'string',enum:['artifact']},processGeneration:{...text,maxLength:80},artifactId:{...text,maxLength:80}})
+]};
 let definitions=[
  ['runtime_capabilities','runtime.capabilities','Query supported runtime observation, startup probes and snapshot limits without selecting a process.',{}],
  ['projects_list','projects.list','List applications and their unique projects, including retained projects without an installation.',{}],
@@ -89,21 +95,73 @@ definitions.push(
  ['application_upload_write','import.write','Write at most 12 KiB to an upload at the exact byte offset. Use a new operationId for each chunk.',{operationId:operation,uploadId:operation,index:{type:'integer',minimum:0,maximum:63},offset:{type:'integer',minimum:0,maximum:1073741824},data:{type:'string',minLength:4,maxLength:16384,pattern:'^[A-Za-z0-9+/]+={0,2}$'}}],
  ['application_upload_commit','import.commit','Verify and install staged original APKs. operationId must equal the upload id. Query the same id after an unknown result.',{operationId:operation}]
 );
-const mutations=new Set(['probes_configure','probes_stop','process_start','application_stop','classloader_create','dex_snapshot','hook_observe','hook_prepare','hook_activate','hook_update_params','ui_dispatch_action','http_send_request','guest_invoke','hook_disable','hook_discard','space_create','space_rename','space_delete','application_import','application_import_device','application_remove','application_delete','application_mode_set','project_script_put','project_selectors_put','project_archive_restore','project_migration_accept','launch_abandon','launch_close','application_reverify','application_import_cleanup','application_upload_begin','application_upload_write','application_upload_commit']);
-export const tools=definitions.map(([name,method,description,properties])=>({name,description:description+(Object.keys(properties).length?'':' No arguments: call with {}.'),inputSchema:describeSchema({...object(properties),description:Object.keys(properties).length?'Arguments for '+name+'. Supply the required fields exactly; omit only fields declared optional.':'No arguments. Pass an empty JSON object {}.',...(Object.keys(properties).length?{}:{examples:[{}]})}),annotations:{readOnlyHint:!mutations.has(name),destructiveHint:mutations.has(name),idempotentHint:true,openWorldHint:false}}));
-export const isMutation=name=>mutations.has(name);
-export const contract=definitions.filter(d=>d[0]!=='application_import').map(([name,method])=>({tool:tools.find(t=>t.name===name),method,mutation:mutations.has(name)}));
+definitions.push(
+ ['file_stat','file.stat','Inspect a readable phone file or directory.',{source:fileSource}],
+ ['files_list','file.list','Page a live directory. cursor=0 starts; nextCursor=-1 ends. This is not a snapshot.',{source:fileSource,cursor:{type:'integer',minimum:0,description:'Zero-based entry index. Start at 0 and copy nextCursor; -1 marks the end.'},limit:{type:'integer',minimum:1,maximum:128}}],
+ ['file_export_begin','file.exportBegin','Prepare an immutable file/directory export in the background. Query this operation/export id after a timeout; never create another export to recover. Existing artifacts are valid sources.',{operationId:operation,source:fileSource,followSymlinks:{type:'boolean',description:'Explicitly follow readable symlinks; false rejects encountered links. Guest links cannot escape the selected root.'}}],
+ ['file_export_status','file.exportStatus','Query export preparation. Only READY snapshots are downloadable; INTERRUPTED preparation is never replayed.',{exportId:{...text,maxLength:80}}],
+ ['file_export_manifest','file.exportManifest','Read a READY export manifest. Root entry has path="". Preserve empty directories. cursor=0 starts; nextCursor=-1 ends.',{exportId:{...text,maxLength:80},cursor:{type:'integer',minimum:0,description:'Zero-based entry index. Start at 0 and copy nextCursor; -1 marks the end.'},limit:{type:'integer',minimum:1,maximum:128}}],
+ ['file_export_read','file.exportRead','Read at most 256 KiB of an immutable exported file. Download with a client-side file_pull; do not relay bulk base64 through model context.',{exportId:{...text,maxLength:80},entryId:{...text,pattern:'^e[0-9]{1,5}$'},offset:{type:'integer',minimum:0,maximum:4294967296},length:{type:'integer',minimum:1,maximum:262144}}],
+ ['file_export_cancel','file.exportCancel','Cancel only this export and discard its snapshot, retaining source files.',{operationId:operation,exportId:{...text,maxLength:80}}],
+ ['file_export_release','file.exportRelease','Release only this export snapshot after download. Source files are retained.',{operationId:operation,exportId:{...text,maxLength:80}}],
+ ['file_pull_status','local.filePullStatus','Read progress of a computer-side pull job.',{operationId:operation}],
+ ['file_pull_cancel','local.filePullCancel','Pause a computer-side pull job; keep its snapshot and partial files for resume.',{operationId:operation}],
+ ['file_pull','local.filePull','Download a file or directory to the computer running this stdio adapter. Start with source and destination; resume with the same operationId and arguments. Returns only local paths, hashes and status. HTTP clients need a local receiver such as Sentinel mcp_file_pull.',{operationId:operation,source:fileSource,destination:{...text,maxLength:4096,description:'Absolute final computer path; must not already exist.'},followSymlinks:{type:'boolean'}}]
+);
+const mutations=new Set(['file_pull_cancel','file_export_begin','file_export_cancel','file_export_release','file_pull','probes_configure','probes_stop','process_start','application_stop','classloader_create','dex_snapshot','hook_observe','hook_prepare','hook_activate','hook_update_params','ui_dispatch_action','http_send_request','guest_invoke','hook_disable','hook_discard','space_create','space_rename','space_delete','application_import','application_import_device','application_remove','application_delete','application_mode_set','project_script_put','project_selectors_put','project_archive_restore','project_migration_accept','launch_abandon','launch_close','application_reverify','application_import_cleanup','application_upload_begin','application_upload_write','application_upload_commit']);
+// Internal operation definitions are not published as legacy MCP tools.
+const localMethods=new Set(['application.import','local.filePull','local.filePullStatus','local.filePullCancel']);
+const internal=new Map(definitions.map(([name,method,description,properties])=>[name,{name,method,description,properties,mutation:mutations.has(name)}]));
+const publicNames=Object.fromEntries(Object.entries(groups).flatMap(([tool,g])=>Object.entries(g.actions).map(([action,old])=>[old,{tool,action}])));
+for(const [old,next] of Object.entries(synonyms))publicNames[old]=publicNames[next];
+const retiredPattern=new RegExp('(?<![A-Za-z0-9_=])('+Object.keys(publicNames).sort((a,b)=>b.length-a.length).join('|')+')(?![A-Za-z0-9_]|\\s*\\()','g');
+const publicDescription=value=>value.replace(retiredPattern,old=>publicNames[old].tool+'(action='+publicNames[old].action+')');
+function publicDescriptions(schema){for(const [key,value] of Object.entries(schema)){if(key==='description'&&typeof value==='string')schema[key]=publicDescription(value);else if(value&&typeof value==='object'){if(Array.isArray(value))value.forEach(v=>{if(v&&typeof v==='object')publicDescriptions(v);});else publicDescriptions(value);}}return schema;}
+const used=new Set(Object.values(groups).flatMap(g=>Object.values(g.actions)));
+const describe=route=>publicDescriptions(describeSchema({...object(route.properties),description:route.description}));
+function publish(name,routes,description){
+  const mutation=routes[0].mutation;
+  if(routes.some(r=>r.mutation!==mutation))throw Error('MIXED_TOOL_EFFECTS:'+name);
+  const actions=routes.filter(r=>r.action).map(r=>r.action),properties={},common=routes.map(r=>new Set(Object.keys(r.properties)));
+  for(const route of routes)for(const [key,schema] of Object.entries(route.properties)){
+    const prior=properties[key];if(!prior)properties[key]=schema;
+    else if(JSON.stringify(prior)!==JSON.stringify(schema)){const variants=prior.anyOf??[prior];if(!variants.some(v=>JSON.stringify(v)===JSON.stringify(schema)))properties[key]={anyOf:[...variants,schema],description:prior.description??('Action-specific '+key+'. Inspect the selected action contract.')};}
+  }
+  if(actions.length)properties.action={type:'string',enum:actions,description:routes.map(r=>r.action+': '+r.description+' Required: '+Object.keys(r.properties).join(', ')+'.'+(r.properties.target?' Target fields: '+r.properties.target.required.join(', ')+'.':'')).join(' ')};
+  const required=Object.keys(properties).filter(key=>key==='action'||common.every(keys=>keys.has(key)));
+  const branches=routes.map(r=>describe({...r,properties:{...(r.action?{action:{type:'string',enum:[r.action],description:'Exact action discriminator.'}}:{}),...r.properties}}));
+  const previous=Object.fromEntries(routes.map(r=>[r.name,r.action??null]));
+  for(const [alias,original] of Object.entries(synonyms))if(Object.hasOwn(previous,original))previous[alias]=previous[original];
+  const inputSchema=publicDescriptions(describeSchema({...object(properties,required),description:'Flat arguments for '+name+'. The selected action has a strict branch schema. No unspecified fields.',}));
+  return {tool:{name,description:publicDescription(description),inputSchema,_meta:{'dev.tripoder/contractVersion':2,'dev.tripoder/previousTools':previous,'dev.tripoder/actionSchemas':actions.length?Object.fromEntries(routes.map((r,i)=>[r.action,branches[i]])):{}},annotations:{readOnlyHint:!mutation,destructiveHint:mutation,idempotentHint:true,openWorldHint:false}},mutation,routes:routes.map(r=>({action:r.action??null,method:r.method,mutation:r.mutation,inputSchema:describe({...r,properties:{...(r.action?{action:{type:'string',enum:[r.action],description:'Exact action.'}}:{}),...r.properties}})}))};
+}
+const records=[];
+for(const [name,group] of Object.entries(groups)){const routes=Object.entries(group.actions).map(([action,key])=>({...internal.get(key),action}));records.push(publish(name,routes,group.description));}
+for(const row of internal.values())if(!used.has(row.name)&&!Object.hasOwn(synonyms,row.name))records.push(publish(row.name,[row],row.description));
+export const tools=records.map(r=>r.tool);
+export const contract=records.filter(r=>r.routes.every(route=>!localMethods.has(route.method)));
 export const localImportTool=tools.find(t=>t.name==='application_import');
+export const localPullTools=tools.filter(t=>['file_pull','file_pull_status'].includes(t.name));
+export const operationRoutes=records.flatMap(record=>record.routes.map(route=>({tool:record.tool.name,...route})));
+export const referenceMigrations=Object.fromEntries(records.flatMap(record=>Object.entries(record.tool._meta['dev.tripoder/previousTools']).map(([previous,action])=>[previous,{tool:record.tool.name,action,method:record.routes.find(r=>r.action===action)?.method}])));
+export const isMutation=name=>records.find(r=>r.tool.name===name)?.mutation??false;
+export function operationCall(method,args){
+  if(method==='projects.list')method='applications.list';
+  const route=operationRoutes.find(r=>r.method===method);if(!route)throw Error('OPERATION_NOT_FOUND:'+method);
+  return {name:route.tool,arguments:{...args,...(route.action?{action:route.action}:{})}};
+}
+export const operationSchema=method=>operationRoutes.find(r=>r.method===method)?.inputSchema;
 export function command(name,args){
-  const tool=tools.find(item=>item.name===name);if(!tool)throw Error('TOOL_NOT_FOUND');
+  const record=records.find(r=>r.tool.name===name);if(!record)throw Error('TOOL_NOT_FOUND');
   if(!args||typeof args!=='object'||Array.isArray(args))throw Error('TOOL_ARGUMENT_FIELDS: expected object');
-  const missing=tool.inputSchema.required.filter(key=>!Object.hasOwn(args,key));
-  const extra=Object.keys(args).filter(key=>!Object.hasOwn(tool.inputSchema.properties,key));
-  if(missing.length||extra.length)throw Error('TOOL_ARGUMENT_FIELDS: '+[missing.length?'missing '+missing.join(', '):'',extra.length?'unsupported '+extra.join(', '):''].filter(Boolean).join('; '));
-  validate(args,tool.inputSchema,'arguments');
+  const route=record.routes.find(r=>r.action===null||r.action===args.action);
+  if(!route)throw Error('INVALID_ACTION:'+name+': expected '+record.routes.map(r=>r.action).join(', '));
+  validate(args,route.inputSchema,'arguments');
   if(args.invocation)validateInvocation(args.invocation);
   const selected=args.selectors??args.configuration?.startupHook?.selectors;
   if(selected&&new Set(selected.map(s=>s.id)).size!==selected.length)throw Error('TOOL_ARGUMENT_TYPE:selectors: duplicate id');
-  const params={...args};let requestId=randomUUID();if(mutations.has(name)){requestId=id(params.operationId);delete params.operationId;}
-  return {method:definitions.find(item=>item[0]===name)[1],params,requestId};
+  const params={...args};delete params.action; // UI actions are not grouped and retain their action payload.
+  if(route.action===null&&Object.hasOwn(args,'action'))params.action=args.action;
+  let requestId=randomUUID();if(route.mutation){requestId=id(params.operationId);delete params.operationId;}
+  return {method:route.method,params,requestId};
 }

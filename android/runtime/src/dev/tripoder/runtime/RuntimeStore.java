@@ -24,7 +24,7 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
     private final java.util.Set<String> deadGenerations=java.util.concurrent.ConcurrentHashMap.newKeySet();
     public RuntimeStore(Context context) {
         // P0's experimental database is retained as historical data, never implicitly promoted.
-        super(context, "tripoder-runtime-v2.db", null, 35);
+        super(context, "tripoder-runtime-v2.db", null, 36);
         setWriteAheadLoggingEnabled(true);
         synchronized(RuntimeStore.class){try {
             File directory=new File(context.getFilesDir(),"runtime");
@@ -40,6 +40,7 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
         }catch(Exception error){try{if(authorityFile!=null)authorityFile.close();}catch(Exception close){error.addSuppressed(close);}throw new IllegalStateException("AUTHORITY_ACQUIRE_FAILED",error);}}
     }
     @Override public void onCreate(SQLiteDatabase db) {
+        recoveryTables(db);
         db.execSQL("CREATE TABLE operations(id TEXT PRIMARY KEY, caller TEXT NOT NULL, digest TEXT NOT NULL, state TEXT NOT NULL, result TEXT, detail TEXT, created INTEGER NOT NULL, updated INTEGER NOT NULL, evidence TEXT)");
         db.execSQL("CREATE TABLE spaces(id TEXT PRIMARY KEY, created INTEGER NOT NULL)");
         db.execSQL("CREATE TABLE installs(space TEXT NOT NULL REFERENCES spaces(id), package TEXT NOT NULL, generation TEXT UNIQUE NOT NULL, apk TEXT NOT NULL, sha256 TEXT NOT NULL, descriptorSha TEXT NOT NULL, state TEXT NOT NULL, reason TEXT NOT NULL, version INTEGER NOT NULL, signer TEXT NOT NULL, dataId TEXT NOT NULL, operation TEXT NOT NULL, PRIMARY KEY(space,package))");
@@ -105,6 +106,11 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
         if(oldVersion<33)db.execSQL("DROP TABLE IF EXISTS controller_launches");
         if(oldVersion<34)db.execSQL("ALTER TABLE project_refs ADD COLUMN mode TEXT NOT NULL DEFAULT 'thick'");
         if(oldVersion<35)ApplicationProjects.migrate(db);
+        if(oldVersion<36){recoveryTables(db);db.execSQL("INSERT OR IGNORE INTO recovery_paused SELECT generation,space,package,installGeneration,processName FROM sessions");}
+    }
+    private static void recoveryTables(SQLiteDatabase db){
+        db.execSQL("CREATE TABLE IF NOT EXISTS operation_scopes(operation TEXT PRIMARY KEY,scope TEXT NOT NULL,command TEXT NOT NULL,dispatch TEXT NOT NULL)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS recovery_paused(generation TEXT PRIMARY KEY,space TEXT NOT NULL,package TEXT NOT NULL,installGeneration TEXT NOT NULL,processName TEXT NOT NULL)");
     }
     private void requireAuthority(){if(closed||authorityLock==null||!authorityLock.isValid())throw new IllegalStateException("AUTHORITY_CLOSED");}
     @Override public SQLiteDatabase getReadableDatabase(){requireAuthority();return super.getReadableDatabase();}
@@ -115,7 +121,11 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
     @Override public void write(ExecutionContract.Operation op) {
         ContentValues v=new ContentValues();v.put("id",op.id);v.put("caller",op.callerIdentity);v.put("digest",op.payloadDigest);v.put("state",op.state.name());
         v.put("result",op.result);v.put("detail",op.detail);v.put("created",op.createdAtMs);v.put("updated",op.updatedAtMs);v.put("evidence",op.evidence);
-        if(getWritableDatabase().insertWithOnConflict("operations",null,v,SQLiteDatabase.CONFLICT_REPLACE)==-1)throw new IllegalStateException("OPERATION_PERSIST_FAILED");
+        var db=getWritableDatabase();db.beginTransaction();try{
+            if(op.state==ExecutionContract.OperationState.ACCEPTED)RuntimeMutationGuard.accepting(db,op);
+            if(op.state==ExecutionContract.OperationState.RUNNING)db.execSQL("UPDATE operation_scopes SET dispatch='MAY_HAVE_DISPATCHED' WHERE operation=?",new Object[]{op.id});
+            if(db.insertWithOnConflict("operations",null,v,SQLiteDatabase.CONFLICT_REPLACE)==-1)throw new IllegalStateException("OPERATION_PERSIST_FAILED");db.setTransactionSuccessful();
+        }finally{db.endTransaction();}
     }
     @Override public List<ExecutionContract.Operation> incomplete() {
         List<ExecutionContract.Operation> out=new ArrayList<>();
@@ -157,7 +167,22 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
         try(Cursor c=getReadableDatabase().rawQuery("SELECT generation,pid FROM sessions WHERE state NOT IN ('DEAD','FAILED')",null)){
             while(c.moveToNext())for(var process:running)if(process.pid==c.getInt(1)&&process.uid==android.os.Process.myUid())throw new IllegalStateException("ORPHAN_PROCESS_STILL_LIVE:"+c.getString(0));
         }
+        if(RuntimeRecoveryGate.productEnabled())getWritableDatabase().execSQL("INSERT OR IGNORE INTO recovery_paused SELECT generation,space,package,installGeneration,processName FROM sessions WHERE state NOT IN ('DEAD','FAILED')");
         getWritableDatabase().execSQL("UPDATE sessions SET state='DEAD' WHERE state NOT IN ('DEAD','FAILED')");
+        if(RuntimeRecoveryGate.productEnabled())fencePausedEntries(null);
+    }
+    void pause(String generation){if(RuntimeRecoveryGate.productEnabled()){var db=getWritableDatabase();db.beginTransaction();try{db.execSQL("INSERT OR IGNORE INTO recovery_paused SELECT generation,space,package,installGeneration,processName FROM sessions WHERE generation=?",new Object[]{generation});fencePausedEntries(generation);db.setTransactionSuccessful();}finally{db.endTransaction();}}}
+    private void fencePausedEntries(String generation){
+        // Keep system identities and original UNKNOWN receipts; only close old execution admission.
+        var db=getWritableDatabase();
+        String affected=generation==null?"SELECT installGeneration FROM recovery_paused":"SELECT installGeneration FROM recovery_paused WHERE generation=?";Object[] args=generation==null?new Object[0]:new Object[]{generation};
+        db.execSQL("UPDATE pending_intents SET fenced=1,currentVersion=0 WHERE installGeneration IN ("+affected+")",args);
+        db.execSQL("UPDATE job_versions SET fenced=1 WHERE installGeneration IN ("+affected+")",args);
+    }
+    boolean recoveryPaused(String generation){if(!RuntimeRecoveryGate.productEnabled())return false;try(Cursor c=getReadableDatabase().rawQuery("SELECT 1 FROM recovery_paused WHERE generation=?",new String[]{generation})){return c.moveToFirst();}}
+    void requireProcessStart(ApkStore.BundleInstall install,String process){
+        if(!RuntimeRecoveryGate.productEnabled()||RuntimeMutationGuard.explicitStart())return;
+        try(Cursor c=getReadableDatabase().rawQuery("SELECT 1 FROM recovery_paused WHERE space=? AND package=? AND installGeneration=? AND processName=? LIMIT 1",new String[]{install.space,install.info.packageName,install.generation,process})){if(c.moveToFirst())throw new IllegalStateException("RECOVERY_TARGET_PAUSED_EXPLICIT_START_REQUIRED");}
     }
     @Override public synchronized void close(){
         closed=true;

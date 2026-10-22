@@ -19,7 +19,7 @@ public final class RuntimeSlot {
     static int index(String name){for(int i=0;i<CAPACITY;i++)if(activity(i).getName().equals(name))return i;throw new IllegalArgumentException("PROCESS_STUB_INVALID");}
     public static boolean isActivity(String name){for(int i=0;i<CAPACITY;i++)if(activity(i).getName().equals(name))return true;return false;}
     public static class Worker extends Service {
-        @Override public void onCreate(){super.onCreate();if(RuntimeEngine.current==null)try{long start=android.os.SystemClock.elapsedRealtime();System.loadLibrary("tripoderselfhook");RuntimeFixedPreparation.prewarm();android.util.Log.i("TripoderBoot","SLOT_PREWARMED:ms="+(android.os.SystemClock.elapsedRealtime()-start));}catch(Exception error){throw new IllegalStateException("SLOT_PHYSICAL_PREPARATION_FAILED",error);}}
+        @Override public void onCreate(){super.onCreate();if(!RuntimeRecoveryGate.productEnabled()&&RuntimeEngine.current==null)try{long start=android.os.SystemClock.elapsedRealtime();System.loadLibrary("tripoderselfhook");RuntimeFixedPreparation.prewarm();android.util.Log.i("TripoderBoot","SLOT_PREWARMED:ms="+(android.os.SystemClock.elapsedRealtime()-start));}catch(Exception error){throw new IllegalStateException("SLOT_PHYSICAL_PREPARATION_FAILED",error);}}
         @Override public IBinder onBind(Intent intent){var control=RuntimeProcessControl.get(getApplicationContext());control.configureAbort(intent.getStringExtra("tripoder.bootstrapAbort"));return control;}
     }
     public static final class WorkerA extends Worker {}

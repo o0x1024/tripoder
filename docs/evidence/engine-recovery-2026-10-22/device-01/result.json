@@ -1,0 +1,212 @@
+{
+  "runId": "control-f6643b1464884b1e",
+  "startedAt": 1792661166993,
+  "uid": 10456,
+  "pid": 24256,
+  "deviceBuild": "Xiaomi\/madrid\/madrid:17\/CP2A.260605.016\/OS4.0.24.0.XEOCNXM:user\/release-keys",
+  "scope": "real-device-engine-crash-recovery",
+  "workbenchStartupStatus": {
+    "schema": 36,
+    "hookReady": true,
+    "lease": "f969404b-0837-43cb-8f86-d5b95bc50aa7",
+    "enginePid": 24364,
+    "engineUid": 10456,
+    "strongIsolation": false,
+    "authority": "4a2bd415-9248-4e19-b908-b2e6bcc93725",
+    "controllerUid": 10456
+  },
+  "effectDispatchCount": 1,
+  "originalOperation": "recovery-effect-control-f6643b1464884b1e",
+  "finalRecovery": {
+    "supervisorPid": 24852,
+    "nextAt": 0,
+    "reason": "USER_STOPPED",
+    "automaticAttempts": 3,
+    "epoch": "13e9b574-9046-4673-b8c7-ffc522e19465",
+    "state": "STOPPED",
+    "totalAttempts": 5
+  },
+  "passed": true,
+  "checks": [
+    {
+      "name": "real-workbench-foreground-startup-connected",
+      "passed": true,
+      "observed": ""
+    },
+    {
+      "name": "initial-attempt-persisted",
+      "passed": true,
+      "observed": {
+        "supervisorPid": 24328,
+        "nextAt": 0,
+        "reason": "",
+        "automaticAttempts": 0,
+        "epoch": "6e3c5c48-9f33-483e-8c28-06b2b82bcd9c",
+        "state": "READY",
+        "totalAttempts": 1
+      }
+    },
+    {
+      "name": "authority-recovered-once",
+      "passed": true,
+      "observed": {
+        "supervisorPid": 24328,
+        "nextAt": 0,
+        "reason": "",
+        "automaticAttempts": 1,
+        "epoch": "097eeed6-645e-43a8-b3cb-aa714fdf4256",
+        "state": "READY",
+        "totalAttempts": 2
+      }
+    },
+    {
+      "name": "incomplete-effect-stays-unknown",
+      "passed": true,
+      "observed": "recovery-effect-control-f6643b1464884b1e"
+    },
+    {
+      "name": "real-authority-process-replaced",
+      "passed": true,
+      "observed": 24446
+    },
+    {
+      "name": "same-id-cannot-replay",
+      "passed": true,
+      "observed": "recovery-effect-control-f6643b1464884b1e"
+    },
+    {
+      "name": "new-id-conflicting-scope-rejected",
+      "passed": true,
+      "observed": "recovery-effect-control-f6643b1464884b1e"
+    },
+    {
+      "name": "unrelated-scope-still-usable",
+      "passed": true,
+      "observed": "another-space"
+    },
+    {
+      "name": "uncertain-effect-dispatched-exactly-once",
+      "passed": true,
+      "observed": "1"
+    },
+    {
+      "name": "automatic-budget-2",
+      "passed": true,
+      "observed": {
+        "supervisorPid": 24328,
+        "nextAt": 0,
+        "reason": "",
+        "automaticAttempts": 2,
+        "epoch": "5e0cbe2b-dfd9-45e1-9a9d-829a2051ebe1",
+        "state": "READY",
+        "totalAttempts": 3
+      }
+    },
+    {
+      "name": "automatic-budget-3",
+      "passed": true,
+      "observed": {
+        "supervisorPid": 24328,
+        "nextAt": 0,
+        "reason": "",
+        "automaticAttempts": 3,
+        "epoch": "ee49ac12-84cf-47a0-9296-40cdd35764fa",
+        "state": "READY",
+        "totalAttempts": 4
+      }
+    },
+    {
+      "name": "fourth-death-opens-circuit",
+      "passed": true,
+      "observed": {
+        "supervisorPid": 24328,
+        "nextAt": 0,
+        "reason": "AUTHORITY_DIED",
+        "automaticAttempts": 3,
+        "epoch": "ee49ac12-84cf-47a0-9296-40cdd35764fa",
+        "state": "OPEN",
+        "totalAttempts": 4
+      }
+    },
+    {
+      "name": "no-restarts-past-longest-backoff",
+      "passed": true,
+      "observed": {
+        "supervisorPid": 24328,
+        "nextAt": 0,
+        "reason": "AUTHORITY_DIED",
+        "automaticAttempts": 3,
+        "epoch": "ee49ac12-84cf-47a0-9296-40cdd35764fa",
+        "state": "OPEN",
+        "totalAttempts": 4
+      }
+    },
+    {
+      "name": "budget-survives-supervisor-process-death",
+      "passed": true,
+      "observed": {
+        "supervisorPid": 24852,
+        "nextAt": 0,
+        "reason": "AUTHORITY_DIED",
+        "automaticAttempts": 3,
+        "epoch": "ee49ac12-84cf-47a0-9296-40cdd35764fa",
+        "state": "OPEN",
+        "totalAttempts": 4
+      }
+    },
+    {
+      "name": "ordinary-connect-does-not-reset-circuit",
+      "passed": true,
+      "observed": {
+        "supervisorPid": 24852,
+        "nextAt": 0,
+        "reason": "AUTHORITY_DIED",
+        "automaticAttempts": 3,
+        "epoch": "ee49ac12-84cf-47a0-9296-40cdd35764fa",
+        "state": "OPEN",
+        "totalAttempts": 4
+      }
+    },
+    {
+      "name": "explicit-retry-preserves-automatic-budget",
+      "passed": true,
+      "observed": {
+        "supervisorPid": 24852,
+        "nextAt": 0,
+        "reason": "",
+        "automaticAttempts": 3,
+        "epoch": "13e9b574-9046-4673-b8c7-ffc522e19465",
+        "state": "READY",
+        "totalAttempts": 5
+      }
+    },
+    {
+      "name": "manual-retry-does-not-chain",
+      "passed": true,
+      "observed": {
+        "supervisorPid": 24852,
+        "nextAt": 0,
+        "reason": "AUTHORITY_DIED",
+        "automaticAttempts": 3,
+        "epoch": "13e9b574-9046-4673-b8c7-ffc522e19465",
+        "state": "OPEN",
+        "totalAttempts": 5
+      }
+    },
+    {
+      "name": "explicit-stop-persisted",
+      "passed": true,
+      "observed": {
+        "supervisorPid": 24852,
+        "nextAt": 0,
+        "reason": "USER_STOPPED",
+        "automaticAttempts": 3,
+        "epoch": "13e9b574-9046-4673-b8c7-ffc522e19465",
+        "state": "STOPPED",
+        "totalAttempts": 5
+      }
+    }
+  ],
+  "fullP5Accepted": false,
+  "finishedAt": 1792661248730
+}

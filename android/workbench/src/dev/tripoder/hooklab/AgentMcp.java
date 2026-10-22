@@ -11,6 +11,7 @@ final class AgentMcp implements AutoCloseable {
     static final String VERSION="2025-11-25";
     private final WorkbenchAgentControl control;
     private final Map<String,JSONObject> entries=new LinkedHashMap<>();
+    private final Map<String,JSONObject> retired=new LinkedHashMap<>();
     private final Map<String,Session> sessions=new LinkedHashMap<>();
     // Binder transactions cannot be forcibly cancelled. Bound both local waits
     // and the number of possibly stuck transactions; never queue/replay commands.
@@ -28,7 +29,7 @@ final class AgentMcp implements AutoCloseable {
         this.control=control;JSONObject contract;
         try(var input=context.getAssets().open("mcp-contract.json")){contract=new JSONObject(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
         if(!VERSION.equals(contract.getString("protocolVersion")))throw new IllegalArgumentException("MCP_CONTRACT_VERSION");
-        JSONArray records=contract.getJSONArray("entries");for(int i=0;i<records.length();i++){JSONObject entry=records.getJSONObject(i);entries.put(entry.getJSONObject("tool").getString("name"),entry);}
+        JSONArray records=contract.getJSONArray("entries");for(int i=0;i<records.length();i++){JSONObject entry=records.getJSONObject(i),tool=entry.getJSONObject("tool");String name=tool.getString("name");entries.put(name,entry);JSONObject previous=tool.getJSONObject("_meta").optJSONObject("dev.tripoder/previousTools");if(previous!=null)for(var keys=previous.keys();keys.hasNext();){String old=keys.next();if(!old.equals(name))retired.put(old,new JSONObject().put("tool",name).put("action",previous.get(old)));}}
     }
     boolean remove(String id){synchronized(sessions){return sessions.remove(id)!=null;}}
     Reply handle(JSONObject request,String sessionId,String version,java.util.function.BooleanSupplier authorized)throws Exception{
@@ -42,7 +43,7 @@ final class AgentMcp implements AutoCloseable {
                 return control.wire(call.wire);
             });
         }catch(RejectedExecutionException busy){return tool(call.id,unavailable(call,"MCP_DISPATCH_BUSY",false));}
-        try{return tool(call.id,future.get(call.mutation?mutationTimeoutMs:queryTimeoutMs,TimeUnit.MILLISECONDS));}
+        try{return callTool(call,future.get(call.mutation?mutationTimeoutMs:queryTimeoutMs,TimeUnit.MILLISECONDS));}
         catch(TimeoutException timeout){future.cancel(false);return tool(call.id,unavailable(call,"MCP_EXECUTION_TIMEOUT",true));}
         catch(InterruptedException interrupted){future.cancel(false);Thread.currentThread().interrupt();return tool(call.id,unavailable(call,"MCP_WAIT_INTERRUPTED",true));}
         catch(ExecutionException failed){return tool(call.id,unavailable(call,"MCP_DISPATCH_FAILED",true));}
@@ -63,7 +64,7 @@ final class AgentMcp implements AutoCloseable {
             if(id==null||!sessionId.isEmpty()||!VERSION.equals(params.optString("protocolVersion")))return new Reply(400,error(id,-32602,"MCP_INITIALIZE_INVALID"),null);
             long now=System.currentTimeMillis();sessions.values().removeIf(s->now-s.used>86400000L);if(sessions.size()>=64)return new Reply(503,error(id,-32000,"MCP_SESSION_LIMIT"),null);
             String created=UUID.randomUUID().toString();sessions.put(created,new Session());
-            return new Reply(200,result(id,new JSONObject().put("protocolVersion",VERSION).put("capabilities",new JSONObject().put("tools",new JSONObject().put("listChanged",false))).put("serverInfo",new JSONObject().put("name","tripoder").put("version","0.2.0")).put("instructions","Global Tripoder control. Every scoped call requires an explicit target. Unknown mutations require operation_get with the original operationId; never automatically replay. Disconnecting does not stop guests or disable Hooks.")),created);
+            return new Reply(200,result(id,new JSONObject().put("protocolVersion",VERSION).put("capabilities",new JSONObject().put("tools",new JSONObject().put("listChanged",false))).put("serverInfo",new JSONObject().put("name","tripoder").put("version","0.3.0")).put("instructions","Global Tripoder control. Grouped tools require a fixed action enum and only its declared parameters. Every scoped call requires an explicit target. Unknown mutations require operation_get with the original operationId; never automatically replay. Disconnecting does not stop guests or disable Hooks.")),created);
         }
         Session session=sessions.get(sessionId);if(session==null)return new Reply(404,error(id,-32000,"MCP_SESSION_NOT_FOUND"),null);
         if(!VERSION.equals(version))return new Reply(400,error(id,-32602,"MCP_PROTOCOL_VERSION_REQUIRED"),null);session.used=System.currentTimeMillis();
@@ -72,19 +73,23 @@ final class AgentMcp implements AutoCloseable {
         if(!session.ready)return new Reply(400,error(id,-32000,"MCP_NOT_INITIALIZED"),null);
         if("tools/list".equals(method)){JSONArray list=new JSONArray();for(JSONObject entry:entries.values())list.put(entry.getJSONObject("tool"));return new Reply(200,result(id,new JSONObject().put("tools",list)),null);}
         if(!"tools/call".equals(method))return new Reply(200,error(id,-32601,"Method not found"),null);
-        String name=params.optString("name");JSONObject entry=entries.get(name);if(entry==null)return new Reply(200,error(id,-32602,"TOOL_NOT_FOUND"),null);
+        String name=params.optString("name");JSONObject entry=entries.get(name);if(entry==null){JSONObject replacement=retired.get(name);if(replacement!=null)return tool(id,new JSONObject().put("ok",false).put("state","REJECTED").put("dispatched",false).put("errorCode","TOOL_RETIRED").put("error","Refresh tools and use the replacement's action contract. This call was not dispatched.").put("replacement",replacement));return new Reply(200,error(id,-32602,"TOOL_NOT_FOUND"),null);}
         Object raw=params.has("arguments")?params.get("arguments"):new JSONObject();JSONObject receipt;
-        try{AgentSchema.validate(raw,entry.getJSONObject("tool").getJSONObject("inputSchema"),"arguments");AgentSchema.selectors((JSONObject)raw);}
+        JSONObject route=null;
+        try{if(!(raw instanceof JSONObject))throw new IllegalArgumentException("arguments must be an object");JSONArray routes=entry.getJSONArray("routes");for(int i=0;i<routes.length();i++){JSONObject candidate=routes.getJSONObject(i);if(candidate.isNull("action")||candidate.getString("action").equals(((JSONObject)raw).optString("action"))){route=candidate;break;}}if(route==null)throw new IllegalArgumentException("INVALID_ACTION: "+name+" requires one of "+entry.getJSONObject("tool").getJSONObject("inputSchema").getJSONObject("properties").getJSONObject("action").getJSONArray("enum"));AgentSchema.validate(raw,route.getJSONObject("inputSchema"),"arguments");AgentSchema.selectors((JSONObject)raw);}
         catch(Exception invalid){receipt=new JSONObject().put("protocol",2).put("ok",false).put("state","REJECTED").put("dispatched",false).put("errorCode","INVALID_TOOL_ARGUMENTS").put("error",invalid.getMessage());return tool(id,receipt);}
-        JSONObject args=new JSONObject(raw.toString());boolean mutation=entry.getBoolean("mutation");String operation=mutation?args.getString("operationId"):UUID.randomUUID().toString();if(mutation)args.remove("operationId");
-        JSONObject wire=new JSONObject().put("protocol",2).put("requestId",operation).put("method",entry.getString("method")).put("params",args);
+        JSONObject args=new JSONObject(raw.toString());boolean mutation=route.getBoolean("mutation");String operation=mutation?args.getString("operationId"):UUID.randomUUID().toString();if(mutation)args.remove("operationId");if(!route.isNull("action"))args.remove("action");
+        JSONObject wire=new JSONObject().put("protocol",2).put("requestId",operation).put("method",route.getString("method")).put("params",args);
         return new Call(id,wire,mutation,sessionId);
+    }
+    private static Reply callTool(Call call,JSONObject receipt)throws Exception{
+        Reply reply=tool(call.id,receipt);if(reply.body()!=null&&receipt.has("recovery")&&call.wire.getJSONObject("params").has("target")&&"HOOK_OUTCOME_QUERY_REQUIRED".equals(receipt.optString("errorCode"))){JSONArray steps=receipt.getJSONObject("recovery").getJSONArray("steps");steps.put(new JSONObject().put("tool","process_inspect").put("arguments",new JSONObject().put("action","hook_status").put("target",call.wire.getJSONObject("params").getJSONObject("target"))));return new Reply(200,result(call.id,new JSONObject().put("content",new JSONArray().put(new JSONObject().put("type","text").put("text",receipt.toString()))).put("isError",!receipt.optBoolean("ok"))),null);}return reply;
     }
     private static Reply tool(Object id,JSONObject receipt)throws Exception{
         if(!receipt.optBoolean("ok")||"UNKNOWN".equals(receipt.optJSONObject("result")==null?"":receipt.getJSONObject("result").optString("state"))){
             String operation=receipt.optString("operationId"),error=receipt.optString("error");JSONArray steps=new JSONArray();String action="Inspect the error and exact target before issuing a command.";
             java.util.regex.Matcher pending=java.util.regex.Pattern.compile("HOOK_OUTCOME_QUERY_REQUIRED:([A-Za-z0-9_-]{1,80})").matcher(error);
-            if(pending.find()){operation=pending.group(1);receipt.put("pendingOperationId",operation);receipt.put("errorCode","HOOK_OUTCOME_QUERY_REQUIRED");steps.put(new JSONObject().put("tool","operation_get").put("arguments",new JSONObject().put("operationId",operation)));action="Query the original operation and hook_status. Never replay an unknown mutation.";}
+            if(pending.find()){operation=pending.group(1);receipt.put("pendingOperationId",operation);receipt.put("errorCode","HOOK_OUTCOME_QUERY_REQUIRED");steps.put(new JSONObject().put("tool","operation_get").put("arguments",new JSONObject().put("operationId",operation)));action="Query the original operation and process_inspect(action=hook_status). Never replay an unknown mutation.";}
             else if("UNKNOWN".equals(receipt.optString("state"))&&!operation.isEmpty()){steps.put(new JSONObject().put("tool","operation_get").put("arguments",new JSONObject().put("operationId",operation)));action="Query the original operationId; do not replay.";}
             else if(receipt.optBoolean("ok")){action="The original journal still records UNKNOWN. Inspect actual state; do not assume success or replay.";}
             receipt.put("recovery",new JSONObject().put("action",action).put("steps",steps).put("replayAllowed",false));

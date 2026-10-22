@@ -84,14 +84,47 @@ final class WorkbenchAppActions {
         ActivityManager.RunningAppProcessInfo state=new ActivityManager.RunningAppProcessInfo();ActivityManager.getMyMemoryState(state);
         return state.importance<=ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE;
     }
-    void menu(WorkbenchCatalog catalog,String pkg,String name){
-        new AlertDialog.Builder(page).setTitle(name).setItems(new String[]{"分析","选择默认空间","强行停止","从空间移除","删除应用"},(dialog,index)->{
-            if(index==0){String id=catalog.project(pkg);if(id!=null)page.startActivity(new Intent(page,WorkbenchProjectActivity.class).putExtra("project",id));}
-            else if(index==1)choose(catalog.installations(pkg),"轻点图标时使用的空间",install->{if(remember(pkg,install))app.operations.inform("「"+name+"」将在「"+app.spaces.name(install.optString("space"))+"」中运行");});
-            else if(index==2)choose(catalog.installations(pkg),"停止哪个空间中的应用？",install->ProductUi.confirm(page,"强行停止「"+name+"」？","「"+app.spaces.name(install.optString("space"))+"」中正在运行的界面和后台任务会立即结束，尚未保存的内容可能丢失。","强行停止",true,()->stop(install,name)));
-            else if(index==3)choose(catalog.installations(pkg),"从哪个空间移除？",install->{int bound=boundProjects(catalog,pkg,install.optString("space"));ProductUi.confirm(page,"从「"+app.spaces.name(install.optString("space"))+"」移除「"+name+"」？","这个空间中该应用的全部数据会被删除，无法恢复。"+"应用脚本会保留。","移除",true,()->uninstall(install,name));});
-            else confirmDelete(catalog,pkg,name);
+    void menu(WorkbenchCatalog catalog,String pkg,String name,String filter){
+        String current=catalog.modeLabel(pkg,filter),next=current.equals("THIN")?"thick":current.equals("THICK")?"thin":null;
+        String modeAction=next==null?"切换运行模式":"切换为 "+next.toUpperCase(Locale.ROOT);
+        List<String> items=new ArrayList<>();if(!current.isEmpty())items.add(modeAction);
+        items.addAll(List.of("应用分析","选择默认空间","强行停止","从空间移除","删除应用"));
+        new AlertDialog.Builder(page).setTitle(name).setItems(items.toArray(String[]::new),(dialog,index)->{
+            String choice=items.get(index);
+            if(choice.equals(modeAction)){chooseMode(catalog,pkg,name,filter,next);return;}
+            switch(choice){
+                case "应用分析":{String id=catalog.project(pkg);if(id!=null)page.startActivity(new Intent(page,WorkbenchProjectActivity.class).putExtra("project",id));break;}
+                case "选择默认空间":choose(catalog.installations(pkg),"轻点图标时使用的空间",install->{if(remember(pkg,install))app.operations.inform("「"+name+"」将在「"+app.spaces.name(install.optString("space"))+"」中运行");});break;
+                case "强行停止":choose(catalog.installations(pkg),"停止哪个空间中的应用？",install->ProductUi.confirm(page,"强行停止「"+name+"」？","「"+app.spaces.name(install.optString("space"))+"」中正在运行的界面和后台任务会立即结束，尚未保存的内容可能丢失。","强行停止",true,()->stop(install,name)));break;
+                case "从空间移除":choose(catalog.installations(pkg),"从哪个空间移除？",install->{int bound=boundProjects(catalog,pkg,install.optString("space"));ProductUi.confirm(page,"从「"+app.spaces.name(install.optString("space"))+"」移除「"+name+"」？","这个空间中该应用的全部数据会被删除，无法恢复。"+"应用脚本会保留。","移除",true,()->uninstall(install,name));});break;
+                case "删除应用":confirmDelete(catalog,pkg,name);break;
+            }
         }).show();
+    }
+    private void chooseMode(WorkbenchCatalog catalog,String pkg,String name,String filter,String next){
+        if(!ready())return;
+        List<JSONObject> installs=new ArrayList<>();for(JSONObject install:catalog.installations(pkg))if(filter==null||filter.isEmpty()||filter.equals(install.optString("space")))installs.add(install);
+        Consumer<JSONObject> selected=install->{
+            if(next!=null){setMode(catalog,install,name,next);return;}
+            String current=catalog.modeLabel(pkg,install.optString("space"));
+            new AlertDialog.Builder(page).setTitle("运行模式 · "+app.spaces.name(install.optString("space"))).setSingleChoiceItems(new String[]{"THIN","THICK"},current.equals("THIN")?0:current.equals("THICK")?1:-1,(dialog,index)->{
+                dialog.dismiss();String mode=index==0?"thin":"thick";if(!current.equals(mode.toUpperCase(Locale.ROOT)))setMode(catalog,install,name,mode);
+            }).setNegativeButton("取消",null).show();
+        };
+        if(installs.isEmpty()){ProductUi.notice(page,"暂时不能切换","应用未安装，请刷新后重试。");return;}
+        if(installs.size()==1){selected.accept(installs.get(0));return;}
+        String[] labels=installs.stream().map(i->app.spaces.name(i.optString("space"))+" · "+catalog.modeLabel(pkg,i.optString("space"))).toArray(String[]::new);
+        new AlertDialog.Builder(page).setTitle("切换哪个空间的运行模式？").setItems(labels,(dialog,index)->selected.accept(installs.get(index))).setNegativeButton("取消",null).show();
+    }
+    private void setMode(WorkbenchCatalog catalog,JSONObject install,String name,String mode){
+        if(!ready())return;String project=catalog.project(install.optString("package"));
+        if(project==null||project.isEmpty()){ProductUi.notice(page,"暂时不能切换","项目正在初始化，请刷新后重试。");return;}
+        try{
+            Bundle request=ControlWire.request("setApplicationMode","operation",UUID.randomUUID().toString(),"project",project,"space",install.optString("space"),"generation",install.optString("generation"),"mode",mode);
+            app.operations.submit(request,"将「"+name+"」切换为 "+mode.toUpperCase(Locale.ROOT),null,(value,error)->{
+                if(error!=null&&!page.isDestroyed()&&!page.isFinishing())ProductUi.notice(page,"没有切换运行模式",UiText.error(error));
+            });
+        }catch(Exception error){ProductUi.notice(page,"没有切换运行模式",UiText.error(error));}
     }
     private int boundProjects(WorkbenchCatalog catalog,String pkg,String space){int count=0;for(JSONObject ref:catalog.bindings.values())if(pkg.equals(ref.optString("package"))&&(space==null||space.equals(ref.optString("space"))))count++;return count;}
     private void confirmDelete(WorkbenchCatalog catalog,String pkg,String name){

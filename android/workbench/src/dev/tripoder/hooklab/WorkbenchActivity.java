@@ -32,7 +32,7 @@ public final class WorkbenchActivity extends Activity implements EngineConnectio
         root.addView(toolbar);status=new ProductUi.Status(this);status.view.setOnClickListener(v->app.operations.query());root.addView(status.view);
         scroll=new ScrollView(this);scroll.setFillViewport(true);body=ProductUi.column(this);body.setPadding(0,0,0,d(24));scroll.addView(body);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
         View line=new View(this);line.setBackgroundColor(ProductUi.LINE);root.addView(line,new LinearLayout.LayoutParams(-1,d(1)));nav=ProductUi.row(this);nav.setBackgroundColor(ProductUi.SURFACE);root.addView(nav);line.setVisibility(application==null?View.VISIBLE:View.GONE);
-        app.operations.observe(operationObserver);engine.observe(this);operationChanged();render();if(saved==null)engine.connect(this);
+        app.operations.observe(operationObserver);engine.observe(this);operationChanged();render();if(saved==null)engine.connectInitially(this);
     }
     private int d(int value){return ProductUi.dp(this,value);}
     @Override protected void onResume(){super.onResume();if(engine!=null&&engine.ready()){app.operations.query();refresh();}else if(body!=null)render();}
@@ -105,7 +105,7 @@ public final class WorkbenchActivity extends Activity implements EngineConnectio
             boolean busy=app.operations.busyPackage(pkg);for(JSONObject project:projects)busy|=app.operations.busyProject(project.optString("id"));
             String name=catalog.appName(app,pkg),detail=busy?"正在启动…":installs.isEmpty()?"未安装 · 脚本保留":"";
             var tile=new WorkbenchLibraryUi.Tile(this,name,detail,icon,false,()->appActions.launch(catalog,pkg,spaceFilter));tile.packageName(pkg);
-            tile.setOnLongClickListener(v->{appActions.menu(catalog,pkg,catalog.appName(app,pkg));return true;});
+            tile.setOnLongClickListener(v->{appActions.menu(catalog,pkg,catalog.appName(app,pkg),spaceFilter);return true;});
             String mode=catalog.modeLabel(pkg,spaceFilter);tile.mode(mode);tile.setContentDescription(name+(busy?"，正在启动":"")+(mode.isEmpty()?"":"，运行模式："+mode));if(cached==null)loadPresentation(pkg,tile);tiles.add(tile);
         }
         var add=new WorkbenchLibraryUi.Tile(this,"添加应用","",new ProductUi.Icon("plus",ProductUi.ACCENT),false,this::addApplication);add.setContentDescription("添加应用");tiles.add(add);WorkbenchLibraryUi.grid(body,tiles);
@@ -126,10 +126,11 @@ public final class WorkbenchActivity extends Activity implements EngineConnectio
         ProductUi.add(body,ProductUi.button(this,"历史脚本与恢复",false,()->startActivity(new Intent(this,WorkbenchArchivesActivity.class))),12);
         WorkbenchLibraryUi.section(body,"运行引擎");
         LinearLayout box=ProductUi.column(this);box.setPadding(d(16),0,d(16),0);LinearLayout card=ProductUi.card(this);
-        LinearLayout row=ProductUi.row(this);row.addView(ProductUi.text(this,engine.ready()?"已连接":"未连接",15,ProductUi.INK,true),new LinearLayout.LayoutParams(0,-2,1));
+        LinearLayout row=ProductUi.row(this);row.addView(ProductUi.text(this,engine.state,15,ProductUi.INK,true),new LinearLayout.LayoutParams(0,-2,1));
         row.addView(ProductUi.chip(this,engine.ready()?"正常":"需要处理",engine.ready()?ProductUi.GREEN:ProductUi.WARN,engine.ready()?ProductUi.TINT:ProductUi.WARN_BG));card.addView(row);
         if(!engine.failure.isEmpty())ProductUi.add(card,ProductUi.text(this,engine.failure,12,ProductUi.MUTED,false),8);
         ProductUi.add(card,ProductUi.button(this,engine.ready()?"刷新应用":"重新连接",false,()->{if(engine.ready())refresh();else engine.connect(this);}),12);ProductUi.add(box,card,0);ProductUi.add(body,box,0);
+        ProductUi.add(card,ProductUi.button(this,"停止引擎与自动恢复",false,()->engine.stopRecovery((value,error)->{if(error!=null)show(error);else app.operations.inform("引擎已停止；未确认操作保持原状态");})),8);
         if(app.operations.pending()){
             WorkbenchLibraryUi.section(body,"未确认的操作");LinearLayout pending=ProductUi.card(this);
             ProductUi.add(pending,ProductUi.text(this,app.operations.pendingIds().size()+" 项操作的结果还没有确认。通常刷新即可；如果启动一直卡住，可以结束等待。",13,ProductUi.INK,false),0);

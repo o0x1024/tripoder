@@ -128,7 +128,7 @@ final class WorkbenchOperations {
                     settled++;
                     if("SUCCEEDED".equals(status))inform(label+" · 已完成");
                     else if("FAILED".equals(status))inform(label+" · 未完成："+UiText.detail(value.getString("detail")));
-                    else inform(label+" · 结果未知："+UiText.detail(value.getString("detail"))+"。可以重新操作");
+                    else inform(label+" · 结果未知："+UiText.detail(value.getString("detail"))+"。请先核对实际状态，勿重复提交");
                 }catch(Exception failure){inform(UiText.error(failure));}
             }else inform(label+" · 仍在处理");
         });

@@ -10,6 +10,7 @@ import android.os.*;
 public final class RuntimeBootstrapProvider extends ContentProvider {
     @Override public boolean onCreate(){return true;}
     @Override public Bundle call(String method,String arg,Bundle request){try{
+        try{RuntimeRecoveryGate.require();}catch(IllegalStateException blocked){Bundle rejected=new Bundle();String key="restoreActivity".equals(method)?"rejectedActivity":"restoreService".equals(method)?"rejectedService":"restoreJob".equals(method)?"rejectedJob":"rejectedReceiver";rejected.putString(key,"ENGINE_RECOVERING_OR_FENCED");return rejected;}
         int pid=Binder.getCallingPid(),uid=Binder.getCallingUid();
         if("restoreJob".equals(method)){if(arg!=null)throw new SecurityException("JOB_BOOTSTRAP_SHAPE");return RuntimeJobBootstrap.call(getContext(),request,pid,uid);}
         boolean activity="restoreActivity".equals(method),service="restoreService".equals(method),receiver="restoreReceiver".equals(method);
@@ -30,6 +31,7 @@ public final class RuntimeBootstrapProvider extends ContentProvider {
             if(receiver){
                 if(broker.broadcasts.rejectRetiredEntry(RuntimeWire.required(request,"ticket"),index)){Bundle rejected=new Bundle();rejected.putString("rejectedReceiver","BROADCAST_RESOURCE_RETIRED");return rejected;}
                 Bundle delivery=broker.broadcasts.get(RuntimeWire.required(request,"ticket"));String target=delivery.getString("target");
+                if(broker.store.recoveryPaused(target)){Bundle rejected=new Bundle();rejected.putString("rejectedReceiver","RECOVERY_TARGET_PAUSED_EXPLICIT_START_REQUIRED");return rejected;}
                 if(broker.store.closeRequested(target)){Bundle rejected=new Bundle();rejected.putString("rejectedReceiver","PROCESS_CLOSING");return rejected;}
                 var slot=broker.requiredSlot(target);
                 if(!delivery.getString("state").equals("PREPARED")||!slot.activityStub.equals(RuntimeSlot.activity(index).getName())||delivery.getString("component").isEmpty())throw new SecurityException("BROADCAST_BOOTSTRAP_MISMATCH");
@@ -44,12 +46,14 @@ public final class RuntimeBootstrapProvider extends ContentProvider {
                     if(!existing.install.generation.equals(ticket.install)||!existing.activityStub.equals(ticket.processStub))throw new SecurityException("BOOTSTRAP_RESERVATION_MISMATCH");
                     bootstrap=broker.processes.claimComponent(existing,peer);bootstrap.putInt("authorityPid",android.os.Process.myPid());return bootstrap;
                 }
+                if(broker.store.recoveryPaused(ticket.generation)){Bundle rejected=new Bundle();rejected.putString("rejectedActivity","RECOVERY_TARGET_PAUSED_EXPLICIT_START_REQUIRED");return rejected;}
                 if(broker.store.hookRecoveryBlocked(ticket.generation)){Bundle rejected=new Bundle();rejected.putString("rejectedActivity","HOOK_COMPONENT_RECOVERY_REQUIRES_EXPLICIT_START");return rejected;}
                 var saved=broker.activities.restore(RuntimeWire.required(request,"ticket"),stub);var install=broker.apks.get(saved.space,saved.pkg);
                 if(!saved.install.equals(install.generation))throw new SecurityException("BOOTSTRAP_INSTALL_STALE");
                 var slot=broker.findProcess(saved.space,saved.pkg,saved.process);if(slot==null)slot=broker.reserve(install,saved.process,saved.processStub);if(!slot.activityStub.equals(saved.processStub)||!slot.install.generation.equals(install.generation))throw new SecurityException("BOOTSTRAP_RESERVATION_MISMATCH");bootstrap=broker.processes.claimComponent(slot,peer);broker.activities.rebind(saved,slot);
             }else{
                 var pending=broker.services.forStub(stub);var existing=broker.findProcess(pending.space,pending.pkg,pending.process);
+                if(broker.store.recoveryPaused(pending.generation)){Bundle rejected=new Bundle();rejected.putString("rejectedService","RECOVERY_TARGET_PAUSED_EXPLICIT_START_REQUIRED");return rejected;}
                 if(existing!=null&&pending.generation.equals(existing.allocation.session.processGeneration)){
                     if(!existing.install.generation.equals(pending.install)||!existing.activityStub.equals(pending.processStub))throw new SecurityException("BOOTSTRAP_RESERVATION_MISMATCH");
                     bootstrap=broker.processes.claimComponent(existing,peer);bootstrap.putInt("authorityPid",android.os.Process.myPid());return bootstrap;

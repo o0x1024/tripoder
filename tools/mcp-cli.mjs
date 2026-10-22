@@ -4,8 +4,8 @@
 import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
 
-const serial = process.env.ANDROID_SERIAL || 'd861a4fa';
-const child = spawn(process.execPath, ['agent/server.mjs', '--serial', serial], {
+const connection=process.env.TRIPODER_CONNECTION;if(!connection)throw Error('TRIPODER_CONNECTION must be an absolute exported connection file path');
+const child = spawn(process.execPath, ['agent/server.mjs', '--connection', connection], {
   cwd: new URL('..', import.meta.url).pathname,
   stdio: ['pipe', 'pipe', 'pipe'],
 });
@@ -29,7 +29,7 @@ function call(method, params = {}, timeout = 120000) {
 
 const mode = process.argv[2] || 'list';
 await call('initialize', {
-  protocolVersion: '2025-06-18',
+  protocolVersion: '2025-11-25',
   capabilities: {},
   clientInfo: { name: 'tripoder-mcp-cli', version: '0.1.0' },
 });

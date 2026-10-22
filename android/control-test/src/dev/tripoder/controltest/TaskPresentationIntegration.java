@@ -19,10 +19,10 @@ import org.json.*;
 /** Real guest tasks in both modes, including the application's own later description. */
 public final class TaskPresentationIntegration extends WorkbenchUiTestBase {
     private static final String PACKAGE="dev.tripoder.taskpresentation",LABEL="客体任务验收";
-    private IBinder session;
+    private IBinder session;private String firstSpace;
     @Override void test()throws Exception{
         report.put("scope","guest-recents-label-icon-and-custom-description");
-        startThroughWorkbench(false);Object app=getTargetContext().getApplicationContext();session=(IBinder)field(field(app,"engine"),"session");
+        isolateOperationJournal();startThroughWorkbench(false);Object app=getTargetContext().getApplicationContext();session=(IBinder)field(field(app,"engine"),"session");
         JSONArray before=new JSONArray(execute(session,"catalog").getString("applications"));
         for(int i=0;i<before.length();i++)if(PACKAGE.equals(before.getJSONObject(i).getString("package")))throw new IllegalStateException("FIXTURE_APPLICATION_ALREADY_EXISTS");
         JSONObject fixtures;try(var input=getContext().getAssets().open("install-fixtures.json")){fixtures=new JSONObject(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
@@ -40,6 +40,7 @@ public final class TaskPresentationIntegration extends WorkbenchUiTestBase {
                 }
                 String generation=installed.getString("generation");Bundle target=execute(session,"applicationTarget","space",space,"package",PACKAGE,"generation",generation);
                 execute(session,"setApplicationMode","operation",id(),"project",target.getString("project"),"space",space,"generation",generation,"mode",mode);
+                if(mode.equals("thin"))firstSpace=space;
                 badgeChecks(mode,space);
                 Bundle ready=execute(session,"prepareApplicationLaunch","operation",id(),"space",space,"package",PACKAGE,"generation",generation);
                 Intent entry=ready.getParcelable("intent",Intent.class);getTargetContext().startActivity(entry);waitNode("设置动态任务标题",false);
@@ -48,6 +49,7 @@ public final class TaskPresentationIntegration extends WorkbenchUiTestBase {
                 int taskId=task.getTaskInfo().taskId;
                 check("guest-task-remains-owned-by-host-"+mode,enginePackage().equals(task.getTaskInfo().baseActivity.getPackageName()),taskId);
                 check("guest-recents-icon-has-tripoder-badge-"+mode,awaitBadgedIcon(task,false),mode);
+                runningModeCheck(mode,space,target.getString("project"),ready.getString("generation"),task);
                 captureRecents(mode);
                 getUiAutomation().performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK);waitNode("设置动态任务标题",false);
                 click("设置动态任务标题");awaitTask(entry,"动态客体任务");
@@ -91,10 +93,42 @@ public final class TaskPresentationIntegration extends WorkbenchUiTestBase {
     private void badgeChecks(String mode,String space)throws Exception{
         Activity page=startActivitySync(new Intent().setComponent(engineComponent("dev.tripoder.hooklab.WorkbenchActivity")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));
         String all=mode.equals("thin")?"THIN":"THIN / THICK";awaitBadge(page,all);capture(mode.equals("thin")?"mode-badge-thin":"mode-badge-mixed");
+        if(mode.equals("thin")){
+            longPressTile();waitNode("切换为 THICK",false);capture("quick-mode-menu");click("切换为 THICK");awaitBadge(page,"THICK");
+            check("long-press-switches-directly-to-thick",modeIn(space).equals("thick")&&find(getUiAutomation().getRootInActiveWindow(),"项目脚本编辑器",true)==null,true);
+            longPressTile();click("切换为 THIN");awaitBadge(page,"THIN");check("long-press-switches-back-to-thin",modeIn(space).equals("thin"),true);
+        }
         if(mode.equals("thick")){
+            longPressTile();click("切换运行模式");waitNode("切换哪个空间的运行模式？",false);capture("quick-mode-spaces");click("取消");
+            check("cancel-space-choice-keeps-both-modes",modeIn(firstSpace).equals("thin")&&modeIn(space).equals("thick"),true);
+            longPressTile();click("切换运行模式");click(firstSpace+" · THIN");waitNode("运行模式 · "+firstSpace,false);click("THICK");awaitBadge(page,"THICK");
+            check("multi-space-switch-changes-only-chosen-space",modeIn(firstSpace).equals("thick")&&modeIn(space).equals("thick"),true);
+            longPressTile();click("切换为 THIN");click(firstSpace+" · THICK");awaitBadge(page,"THIN / THICK");
             runOnMainSync(()->{try{var filter=page.getClass().getDeclaredField("spaceFilter");filter.setAccessible(true);filter.set(page,space);invoke(page,"render",new Class<?>[0]);}catch(Exception error){throw new IllegalStateException(error);}});
             awaitBadge(page,"THICK");capture("mode-badge-thick");
+            longPressTile();click("切换为 THIN");awaitBadge(page,"THIN");
+            check("filtered-space-switch-skips-space-picker",modeIn(firstSpace).equals("thin")&&modeIn(space).equals("thin"),true);
+            longPressTile();click("切换为 THICK");awaitBadge(page,"THICK");
         }
+    }
+    private void longPressTile()throws Exception{
+        long deadline=SystemClock.elapsedRealtime()+8000;
+        do{AccessibilityNodeInfo tile=findPackage(getUiAutomation().getRootInActiveWindow(),PACKAGE);if(tile!=null&&tile.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK))return;SystemClock.sleep(40);}while(SystemClock.elapsedRealtime()<deadline);
+        throw new IllegalStateException("APPLICATION_LONG_PRESS_FAILED");
+    }
+    private String modeIn(String space)throws Exception{
+        JSONArray refs=new JSONArray(execute(session,"catalog").getString("projects"));
+        for(int i=0;i<refs.length();i++){JSONObject ref=refs.getJSONObject(i);if(space.equals(ref.getString("space"))&&PACKAGE.equals(ref.getString("package"))&&ref.getString("state").equals("COMMITTED"))return ref.getString("mode");}
+        throw new IllegalStateException("FIXTURE_MODE_MISSING");
+    }
+    private void runningModeCheck(String mode,String space,String project,String process,ActivityManager.AppTask task)throws Exception{
+        shell("am start -W -n "+enginePackage()+"/dev.tripoder.hooklab.WorkbenchActivity");
+        longPressTile();click("切换为 "+(mode.equals("thin")?"THICK":"THIN"));waitNode("没有切换运行模式",false);
+        waitNode("应用正在运行，请先强行停止应用后再切换运行模式",false);
+        JSONArray processes=new JSONArray(execute(session,"hookProcesses","project",project).getString("processes"));boolean live=false;
+        for(int i=0;i<processes.length();i++)if(process.equals(processes.getJSONObject(i).getString("processGeneration")))live=true;
+        check("quick-mode-never-stops-running-application-"+mode,live&&modeIn(space).equals(mode),true);capture("quick-mode-running-"+mode);click("知道了");
+        runOnMainSync(task::moveToFront);waitNode("设置动态任务标题",false);
     }
     private void awaitBadge(Activity page,String label)throws Exception{
         long deadline=SystemClock.elapsedRealtime()+8000;View[] tile={null};

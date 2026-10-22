@@ -3,6 +3,7 @@ package dev.tripoder.runtime;
 import android.app.*;
 import android.content.Intent;
 import android.os.*;
+import dev.tripoder.control.*;
 
 /** Started lifetime belongs to the engine. A workbench page never owns or closes the broker. */
 public final class RuntimeControllerService extends Service {
@@ -13,19 +14,37 @@ public final class RuntimeControllerService extends Service {
     static void requireLease(String lease){ControllerLease current=activeLeases;if(current==null)throw new SecurityException("CONTROL_LEASE_REVOKED");current.require(lease);}
     @Override public void onCreate(){
         super.onCreate();if(!Application.getProcessName().equals(getPackageName()+":authority"))throw new IllegalStateException("AUTHORITY_PROCESS_REQUIRED");
-        activeAgents=new RuntimeAgentSessions(RuntimeAuthorityOwner.get(this));
         leases=new ControllerLease(this,(input,lease)->RuntimeControllerCommands.execute(RuntimeAuthorityOwner.get(this),input,lease));
         activeLeases=leases;
         NotificationManager manager=getSystemService(NotificationManager.class);manager.createNotificationChannel(new NotificationChannel("engine","Tripoder 运行引擎",NotificationManager.IMPORTANCE_LOW));
     }
-    @Override public int onStartCommand(Intent intent,int flags,int startId){
-        // The only ongoing notification of the package; tapping returns to the workbench task.
-        Intent open=getPackageManager().getLaunchIntentForPackage(getPackageName());
-        PendingIntent page=open==null?null:PendingIntent.getActivity(this,0,open,PendingIntent.FLAG_IMMUTABLE);
-        Notification notification=new Notification.Builder(this,"engine").setSmallIcon(android.R.drawable.ic_media_play).setContentTitle("Tripoder 运行中")
-            .setContentText("点击返回工作台查看空间与运行状态").setContentIntent(page).setOngoing(true).build();startForeground(1,notification);return START_NOT_STICKY;
-    }
-    @Override public IBinder onBind(Intent intent){return leases.entry;}
+    @Override public int onStartCommand(Intent intent,int flags,int startId){stopSelf(startId);return START_NOT_STICKY;}
+    private final IBinder lifecycle=new ControlWire.Endpoint(){
+        @Override protected void authorize(int code,int pid,int uid){
+            if(uid==android.os.Process.myUid()){
+                var rows=getSystemService(ActivityManager.class).getRunningAppProcesses();
+                if(rows!=null)for(var row:rows)if(row.pid==pid&&row.uid==uid&&row.processName.equals(getPackageName()+":recovery"))return;
+            }
+            throw new SecurityException("RECOVERY_CALLER_REJECTED");
+        }
+        @Override protected Bundle handle(int code,Bundle input,int pid,int uid)throws Exception{
+            String epoch=ControlWire.required(input,"epoch");
+            if(code==RecoveryWire.INITIALIZE){
+                if(input.size()!=2||input.getBinder("supervisor")==null)throw new IllegalArgumentException("RECOVERY_PERMIT_INVALID");
+                RuntimeRecoveryGate.begin(epoch,input.getBinder("supervisor"));
+                try{var broker=RuntimeAuthorityOwner.get(RuntimeControllerService.this);
+                    activeAgents=new RuntimeAgentSessions(broker);RuntimeRecoveryGate.complete();RuntimeControllerLaunch.startMaintenance(broker);
+                }catch(Exception|Error failure){RuntimeRecoveryGate.failed();throw failure;}
+                Bundle result=new Bundle();result.putString("epoch",epoch);result.putBinder("entry",leases.entry);return result;
+            }
+            if(!RuntimeRecoveryGate.matches(epoch))throw new IllegalStateException("RECOVERY_ATTEMPT_STALE");
+            if(code==RecoveryWire.ABORT){RuntimeRecoveryGate.failed();new Thread(()->{SystemClock.sleep(20);android.os.Process.killProcess(android.os.Process.myPid());},"recovery-abort").start();return new Bundle();}
+            if(code==RecoveryWire.HEALTH){RuntimeRecoveryGate.require();var broker=RuntimeAuthorityOwner.get(RuntimeControllerService.this);synchronized(broker){try(var c=broker.store.getReadableDatabase().rawQuery("SELECT COUNT(*) FROM operations",null)){if(!c.moveToFirst())throw new IllegalStateException("RECOVERY_HEALTH_FAILED");}}
+                Bundle result=new Bundle();result.putString("epoch",epoch);return result;}
+            throw new IllegalArgumentException("RECOVERY_OPERATION_UNSUPPORTED");
+        }
+    };
+    @Override public IBinder onBind(Intent intent){return RecoveryWire.LIFECYCLE.equals(intent.getAction())?lifecycle:leases.entry;}
     @Override protected void dump(java.io.FileDescriptor fd,java.io.PrintWriter out,String[] args){
         if(args==null||args.length!=1||!"threads".equals(args[0])){super.dump(fd,out,args);return;}
         // Invoked through Android's DUMP-protected service path. No broker lock,
@@ -38,5 +57,5 @@ public final class RuntimeControllerService extends Service {
         }
         out.println("threads="+threads.size()+" truncated="+(threads.size()>128));
     }
-    @Override public void onDestroy(){if(activeAgents!=null){activeAgents.close();activeAgents=null;}leases.close();if(activeLeases==leases)activeLeases=null;super.onDestroy();}
+    @Override public void onDestroy(){if(activeAgents!=null){activeAgents.close();activeAgents=null;}if(leases!=null)leases.close();if(activeLeases==leases)activeLeases=null;super.onDestroy();}
 }

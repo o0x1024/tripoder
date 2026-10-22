@@ -12,7 +12,7 @@ public final class ProcessSupervisor {
     private final Handler main=new Handler(Looper.getMainLooper());
     private final ExecutorService starts=Executors.newFixedThreadPool(RuntimeSlot.CAPACITY);
     private final ExecutorService stops=Executors.newFixedThreadPool(RuntimeSlot.CAPACITY);
-    ProcessSupervisor(RuntimeBroker broker){this.broker=broker;main.postDelayed(this::maintainSpare,SPARE_INITIAL_DELAY_MS);}
+    ProcessSupervisor(RuntimeBroker broker){this.broker=broker;if(RuntimeRecoveryGate.automaticPrewarm())main.postDelayed(this::maintainSpare,SPARE_INITIAL_DELAY_MS);}
     private static final long SPARE_INITIAL_DELAY_MS=3000,SPARE_AFTER_LAUNCH_DELAY_MS=1500;
     /** One identity-free, already prewarmed worker (library loaded, fixed hooks reserved, no guest identity). Guarded by broker. */
     private Spare spare;
@@ -26,6 +26,7 @@ public final class ProcessSupervisor {
     }
     /** Idle-time prewarm so a click finds a worker with the 2 s library/hook preparation already done. Never runs ahead of a launch in flight. */
     void maintainSpare(){
+        if(!RuntimeRecoveryGate.automaticPrewarm())return;
         final Spare created;
         synchronized(broker){
             if(spare!=null)return;

@@ -109,6 +109,6 @@ final class ServiceLedger {
     }
     private void owner(Lease lease,RuntimeBroker.Slot slot){var identity=slot.allocation.session.identity;if(!lease.space.equals(identity.spaceId)||!lease.pkg.equals(identity.packageName)||!lease.install.equals(identity.installGeneration)||!lease.process.equals(identity.processName)||!lease.processStub.equals(slot.activityStub))throw new SecurityException("SERVICE_LEASE_OWNER_MISMATCH");}
     private void requireDead(String generation){requireDead(generation,ServiceRecoveryPolicy.Admission.SYSTEM_RECOVERY);}
-    private void requireDead(String generation,ServiceRecoveryPolicy.Admission admission){ServiceRecoveryPolicy.require(store.closeRequested(generation),store.isDead(generation),store.hookRecoveryBlocked(generation),admission);}
+    private void requireDead(String generation,ServiceRecoveryPolicy.Admission admission){if(admission==ServiceRecoveryPolicy.Admission.SYSTEM_RECOVERY&&store.recoveryPaused(generation))throw new IllegalStateException("RECOVERY_TARGET_PAUSED_EXPLICIT_START_REQUIRED");ServiceRecoveryPolicy.require(store.closeRequested(generation),store.isDead(generation),store.hookRecoveryBlocked(generation),admission);}
     private void update(String id,ContentValues row){if(store.getWritableDatabase().update("service_leases",row,"id=?",new String[]{id})!=1)throw new IllegalStateException("SERVICE_PERSIST_FAILED");}
 }

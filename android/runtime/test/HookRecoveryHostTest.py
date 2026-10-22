@@ -7,6 +7,11 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[3]
 JAVA = Path(os.environ.get('TRIPODER_JAVA_HOME', '/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home')) / 'bin'
+JSON_JAR=Path(tempfile.gettempdir())/'tripoder-source-test-deps/json-20250517.jar'
+if not JSON_JAR.exists():
+    import urllib.request
+    JSON_JAR.parent.mkdir(exist_ok=True)
+    urllib.request.urlretrieve('https://repo.maven.apache.org/maven2/org/json/json/20250517/json-20250517.jar',JSON_JAR)
 STUBS = {
     'android/os/Bundle.java': '''package android.os;
 import java.util.*;
@@ -96,6 +101,10 @@ final class RuntimeWire {
 }
 final class ApkStore {
  static String textDigest(String text)throws Exception{return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(text.getBytes(java.nio.charset.StandardCharsets.UTF_8)));}
+}
+final class RuntimeMutationGuard implements AutoCloseable {
+ static RuntimeMutationGuard generation(RuntimeBroker broker,String generation,String command){return new RuntimeMutationGuard();}
+ public void close(){}
 }''',
 }
 
@@ -103,16 +112,30 @@ with tempfile.TemporaryDirectory(prefix='tripoder-hook-recovery-') as tmp:
     output = Path(tmp)
     sources = []
     for name, text in STUBS.items():
+        if name.startswith('org/json/'):continue
         source = output / name
         source.parent.mkdir(parents=True, exist_ok=True)
         source.write_text(text)
         sources.append(source)
+    dependencies=output/'dev/tripoder/hooklab/RecoveryHostDependencies.java'
+    dependencies.write_text('''package dev.tripoder.hooklab;
+import org.json.JSONObject;
+final class AgentNetworkIdentity {}
+final class WorkbenchFileExports {
+ final Receipts store=new Receipts();
+ WorkbenchFileExports(WorkbenchApplication app){}
+ static JSONObject capabilities(){return new JSONObject();}
+ JSONObject call(String method,JSONObject params,String id){throw new AssertionError("unexpected file mutation");}
+ static final class Receipts {JSONObject receipt(String id){return null;}}
+}''')
+    sources.append(dependencies)
     production = ROOT / 'android/runtime/src/dev/tripoder/runtime'
     sources += [production / (name + '.java') for name in ('ExecutionContract', 'RuntimeHookClaims', 'RuntimeHookOperations')]
     sources += list((production / 'script').glob('*.java'))
     sources += [ROOT / 'android/self-hook/java/dev/tripoder/selfhook' / name for name in ('NativeHook.java', 'NativeModules.java')]
     sources += [Path(__file__).parent / 'dev/tripoder/runtime/HookRecoveryTest.java']
     sources += [Path(__file__).parent / 'WorkbenchRecoveryTest.java', ROOT / 'android/workbench/src/dev/tripoder/hooklab/WorkbenchAgentControl.java', ROOT / 'android/control/src/dev/tripoder/control/AgentCrypto.java']
-    subprocess.run([str(JAVA / 'javac'), '--release', '17', '-d', str(output), *map(str, sources)], check=True)
-    subprocess.run([str(JAVA / 'java'), '-ea', '-cp', str(output), 'dev.tripoder.runtime.HookRecoveryTest'], check=True, timeout=30)
-    subprocess.run([str(JAVA / 'java'), '-ea', '-cp', str(output), 'dev.tripoder.hooklab.WorkbenchRecoveryTest'], check=True, timeout=30)
+    subprocess.run([str(JAVA / 'javac'), '--release', '17', '-cp', str(JSON_JAR), '-d', str(output), *map(str, sources)], check=True)
+    classpath=str(output)+os.pathsep+str(JSON_JAR)
+    subprocess.run([str(JAVA / 'java'), '-ea', '-cp', classpath, 'dev.tripoder.runtime.HookRecoveryTest'], check=True, timeout=30)
+    subprocess.run([str(JAVA / 'java'), '-ea', '-cp', classpath, 'dev.tripoder.hooklab.WorkbenchRecoveryTest'], check=True, timeout=30)

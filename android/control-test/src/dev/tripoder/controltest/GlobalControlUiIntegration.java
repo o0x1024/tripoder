@@ -26,7 +26,7 @@ public final class GlobalControlUiIntegration extends WorkbenchUiTestBase {
             Bundle request=ControlWire.request("install","operation",id(),"space",space);request.putStringArrayList("names",new ArrayList<>(List.of("base.apk")));request.putStringArrayList("sha256",new ArrayList<>(List.of(fixtures.getString("launcherSha256"))));request.putParcelable("fd0",descriptor);installed=ControlWire.call(controller,ControlWire.EXECUTE,request);
         }finally{apk.delete();}
         JSONObject original=wire("project.get",new JSONObject().put("package",pkg));
-        clickDescription("更多");click("刷新");waitTile(pkg,true);findPackage(getUiAutomation().getRootInActiveWindow(),pkg).performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);waitNode("分析",false);click("分析");waitNode("项目脚本编辑器",true);
+        clickDescription("更多");click("刷新");waitTile(pkg,true);findPackage(getUiAutomation().getRootInActiveWindow(),pkg).performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);waitNode("应用分析",false);click("应用分析");waitNode("项目脚本编辑器",true);
         check("application-opens-its-single-analysis-page",find(getUiAutomation().getRootInActiveWindow(),"＋ 新建项目",false)==null,true);
         JSONObject first=wire("project.scriptPut",new JSONObject().put("package",pkg).put("expectedSha256",original.getString("sourceSha256")).put("source","// changed by desktop\n"));
         waitEditor("// changed by desktop\n");check("external-save-refreshes-clean-editor",true,first.getString("sourceSha256"));

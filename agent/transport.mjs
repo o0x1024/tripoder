@@ -3,7 +3,7 @@ import {constants} from 'node:fs';
 import {isAbsolute} from 'node:path';
 import https from 'node:https';
 import {X509Certificate,createHash,randomUUID} from 'node:crypto';
-import {localImportTool,command} from './tools.mjs';
+import {localImportTool,command,operationCall} from './tools.mjs';
 
 export const MCP_VERSION='2025-11-25';
 export async function loadConfig(path){
@@ -19,7 +19,7 @@ export function validateConfig(config){
   return {...config,fingerprint:cert.fingerprint256};
 }
 export class Transport {
-  constructor(config){this.config=config;this.session=null;this.ready=false;this.closed=false;this.sequence=0;this.queue=Promise.resolve();}
+  constructor(config){this.config=config;this.session=null;this.ready=false;this.closed=false;this.sequence=0;this.localPrefix=randomUUID();this.queue=Promise.resolve();}
   async rpc(request){
     if(this.closed)throw Object.assign(Error('TRANSPORT_CLOSED'),{dispatched:false});
     const body=Buffer.from(JSON.stringify(request));if(body.length>65536)throw Object.assign(Error('MCP_FRAME_TOO_LARGE'),{dispatched:false});
@@ -47,9 +47,10 @@ export class Transport {
     });
   }
   async tool(name,args){
-    const response=await this.rpc({jsonrpc:'2.0',id:++this.sequence,method:'tools/call',params:{name,arguments:args}});if(response.error)throw Object.assign(Error(response.error.message),{dispatched:false});
+    const response=await this.rpc({jsonrpc:'2.0',id:'local-'+this.localPrefix+'-'+(++this.sequence),method:'tools/call',params:{name,arguments:args}});if(response.error)throw Object.assign(Error(response.error.message),{dispatched:false});
     const receipt=JSON.parse(response.result.content[0].text);return receipt;
   }
+  async operation(method,args){const call=operationCall(method,args);return this.tool(call.name,call.arguments);}
   async importApks(args){
     command('application_import',args);const files=[];let dispatched=false;
     try{
@@ -59,15 +60,15 @@ export class Transport {
         while(offset<info.size){const {bytesRead}=await handle.read(buffer,0,Math.min(buffer.length,info.size-offset),offset);if(!bytesRead)throw Error('APK_FILE_CHANGED');digest.update(buffer.subarray(0,bytesRead));offset+=bytesRead;}
         Object.assign(files.at(-1),{size:info.size,sha256:digest.digest('hex')});
       }
-      const uploadId=args.operationId;let receipt=await this.tool('application_upload_begin',{operationId:uploadId,space:args.space,expectedGeneration:args.expectedGeneration,files:files.map(({name,size,sha256})=>({name,size,sha256}))});dispatched=true;
+      const uploadId=args.operationId;let receipt=await this.operation('import.begin',{operationId:uploadId,space:args.space,expectedGeneration:args.expectedGeneration,files:files.map(({name,size,sha256})=>({name,size,sha256}))});dispatched=true;
       if(!receipt.ok||receipt.result?.state==='SUCCEEDED')return receipt;
       for(const [index,file] of files.entries()){
         let offset=receipt.result.offsets[index];const buffer=Buffer.alloc(12288);
         while(offset<file.size){const {bytesRead}=await file.handle.read(buffer,0,Math.min(buffer.length,file.size-offset),offset);if(!bytesRead)throw Error('APK_FILE_CHANGED');
-          const chunk=await this.tool('application_upload_write',{operationId:randomUUID(),uploadId,index,offset,data:buffer.subarray(0,bytesRead).toString('base64')});if(!chunk.ok)return {...chunk,operationId:uploadId};offset+=bytesRead;
+          const chunk=await this.operation('import.write',{operationId:randomUUID(),uploadId,index,offset,data:buffer.subarray(0,bytesRead).toString('base64')});if(!chunk.ok)return {...chunk,operationId:uploadId};offset+=bytesRead;
         }
       }
-      return await this.tool('application_upload_commit',{operationId:uploadId});
+      return await this.operation('import.commit',{operationId:uploadId});
     }catch(error){if(dispatched)error.dispatched=true;else if(error.dispatched===undefined)error.dispatched=false;throw error;}
     finally{await Promise.all(files.map(file=>file.handle.close()));}
   }

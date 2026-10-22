@@ -1,3 +1,4 @@
+import {operationCall,operationSchema} from './tools.mjs';
 /** Process-cold launch measurements through the real MCP transport and Android foreground task. */
 import {spawn, execFile} from 'node:child_process';
 import {promisify} from 'node:util';
@@ -16,8 +17,8 @@ const child=spawn(process.execPath,[resolve('agent/server.mjs'),'--serial',seria
 child.stderr.on('data',b=>stderr=(stderr+b).slice(-16384));
 createInterface({input:child.stdout}).on('line',line=>{const value=JSON.parse(line),item=pending.get(value.id);if(item){clearTimeout(item.timer);pending.delete(value.id);item.resolve(value);}});
 child.on('exit',code=>{for(const item of pending.values())item.reject(Error('MCP_EXIT:'+code+':'+stderr));pending.clear();});
-async function rpc(method,params={}){const id=++sequence;const p=new Promise((resolve,reject)=>{const timer=setTimeout(()=>{pending.delete(id);reject(Error('MCP_TIMEOUT:'+method));},params.name==='process_start'?75000:35000);pending.set(id,{resolve,reject,timer});});child.stdin.write(JSON.stringify({jsonrpc:'2.0',id,method,params})+'\n');const response=await p;if(response.error)throw Error(JSON.stringify(response.error));return response.result;}
-async function tool(name,args={},required=true){const response=await rpc('tools/call',{name,arguments:args}),receipt=JSON.parse(response.content[0].text);if(required&&!receipt.ok)throw Object.assign(Error(name+':'+receipt.error),{receipt});return required?receipt.result:receipt;}
+async function rpc(method,params={}){const id=++sequence;const p=new Promise((resolve,reject)=>{const timer=setTimeout(()=>{pending.delete(id);reject(Error('MCP_TIMEOUT:'+method));},params.name==='process.start'?75000:35000);pending.set(id,{resolve,reject,timer});});child.stdin.write(JSON.stringify({jsonrpc:'2.0',id,method,params})+'\n');const response=await p;if(response.error)throw Error(JSON.stringify(response.error));return response.result;}
+async function tool(name,args={},required=true){const response=await rpc('tools/call',operationCall(name,args)),receipt=JSON.parse(response.content[0].text);if(required&&!receipt.ok)throw Object.assign(Error(name+':'+receipt.error),{receipt});return required?receipt.result:receipt;}
 const mutate=(name,args)=>tool(name,{operationId:randomUUID(),...args});
 const command=(...args)=>shell(adb,['-s',serial,...args],{maxBuffer:4*1024*1024});
 const install={space:config.space,package:config.package,installGeneration:config.installGeneration};
@@ -33,10 +34,10 @@ const report={schema:1,label:options['--label'],serial,hostPackage:host,installa
 try{
  await rpc('initialize',{protocolVersion:'2025-03-26',capabilities:{},clientInfo:{name:'process-cold-startup-benchmark',version:'1'}});
  child.stdin.write(JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})+'\n');
- for(let attempt=0;;attempt++){const status=await tool('runtime_status',{},false);if(status.ok)break;if(attempt===9)throw Error('ENDPOINT_NOT_READY:'+status.error);await new Promise(resolve=>setTimeout(resolve,500));}
- const plan=await tool('probes_get',{target:install});assert.equal(plan.configuration.enabled,false,'benchmark requires probes off');
- const original=(await tool('launch_entries_list',{target:install})).mode;report.originalMode=original;
- await mutate('application_stop',{target:install});if(original!=='thick')await mutate('application_mode_set',{target:install,mode:'thick'});
+ for(let attempt=0;;attempt++){const status=await tool('runtime.status',{},false);if(status.ok)break;if(attempt===9)throw Error('ENDPOINT_NOT_READY:'+status.error);await new Promise(resolve=>setTimeout(resolve,500));}
+ const plan=await tool('probes.get',{target:install});assert.equal(plan.configuration.enabled,false,'benchmark requires probes off');
+ const original=(await tool('launch.entries',{target:install})).mode;report.originalMode=original;
+ await mutate('application.stop',{target:install});if(original!=='thick')await mutate('application.mode',{target:install,mode:'thick'});
  const paths=(await command('shell','pm','path',host)).stdout.trim().split('\n');
  const path=paths.find(p=>p.startsWith('package:')&&p.endsWith('/base.apk')).slice(8);
  report.hostApkSha256=(await command('shell','sha256sum',path)).stdout.split(/\s+/)[0];
@@ -45,22 +46,22 @@ try{
  for(let index=0;index<rounds;index++){
   if(report.authorityCold){
    await command('shell','am','force-stop',host);await command('shell','am','start','-W','-n',host+'/dev.tripoder.hooklab.WorkbenchActivity');
-   for(let attempt=0;;attempt++){const status=await tool('runtime_status',{},false);if(status.ok)break;if(attempt===9)throw Error('ENDPOINT_NOT_READY:'+status.error);await new Promise(resolve=>setTimeout(resolve,500));}
+   for(let attempt=0;;attempt++){const status=await tool('runtime.status',{},false);if(status.ok)break;if(attempt===9)throw Error('ENDPOINT_NOT_READY:'+status.error);await new Promise(resolve=>setTimeout(resolve,500));}
   }
-  await mutate('application_stop',{target:install});
+  await mutate('application.stop',{target:install});
   await command('shell','input','keyevent','KEYCODE_WAKEUP');
   await command('shell','am','start','-W','-n',host+'/dev.tripoder.hooklab.WorkbenchActivity');
   const marker=randomUUID();await command('shell','log','-t','TripoderBenchmark',marker);
   const sample={index,marker,startedAt:new Date().toISOString(),ready:false};samples.push(sample);
   const started=performance.now();
   try{
-   const process=await mutate('process_start',{target:install,component:'',probeRevision:plan.revision});
+   const process=await mutate('process.start',{target:install,component:'',probeRevision:plan.revision});
    sample.dispatchMs=Math.round(performance.now()-started);sample.pid=process.pid;sample.processGeneration=process.processGeneration;
    const target={...install,processGeneration:process.processGeneration};
    const deadline=started+90000;
    while(performance.now()<deadline){
-    const ui=await tool('ui_dump_hierarchy',{target,includeInvisible:false},false);
-    if(!ui.ok){sample.observationError=ui.error;if(ui.operationId)sample.observationReconciled=await tool('operation_get',{operationId:ui.operationId},false);break;}
+    const ui=await tool('hook.uiDump',{target,includeInvisible:false},false);
+    if(!ui.ok){sample.observationError=ui.error;if(ui.operationId)sample.observationReconciled=await tool('operation.get',{operationId:ui.operationId},false);break;}
     const shown=ui.result.activities.filter(a=>activities.includes(a.activity)&&a.nodes.some(n=>n.visible));
     if(shown.length){
      const dump=(await command('shell','dumpsys','activity','activities')).stdout;
@@ -69,8 +70,8 @@ try{
     }
     await new Promise(resolve=>setTimeout(resolve,250));
    }
-   if(sample.ready){const status=await tool('hook_status',{target},false);if(status.ok){sample.executionPolicy=status.result.executionPolicy;sample.fixedBindings=status.result.executionPolicy.fixedBindings;sample.identity=status.result.identity;}else{sample.statusError=status.error;if(status.operationId)sample.statusReconciled=await tool('operation_get',{operationId:status.operationId},false);}}
-  }catch(error){sample.error=String(error);if(error.receipt){sample.receipt=error.receipt;if(error.receipt.operationId)sample.reconciled=await tool('operation_get',{operationId:error.receipt.operationId},false);}}
+   if(sample.ready){const status=await tool('hook.status',{target},false);if(status.ok){sample.executionPolicy=status.result.executionPolicy;sample.fixedBindings=status.result.executionPolicy.fixedBindings;sample.identity=status.result.identity;}else{sample.statusError=status.error;if(status.operationId)sample.statusReconciled=await tool('operation.get',{operationId:status.operationId},false);}}
+  }catch(error){sample.error=String(error);if(error.receipt){sample.receipt=error.receipt;if(error.receipt.operationId)sample.reconciled=await tool('operation.get',{operationId:error.receipt.operationId},false);}}
   sample.elapsedMs=Math.round(performance.now()-started);
   await writeFile(join(directory,'summary.json'),JSON.stringify(report,null,2));await writeFile(join(directory,'stages.log'),log.join('\n')+'\n');
   console.log(JSON.stringify({phase:'sample',label:report.label,index,ready:sample.ready,dispatchMs:sample.dispatchMs,foregroundObservedMs:sample.foregroundObservedMs,error:sample.error||sample.observationError||sample.statusError}));

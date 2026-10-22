@@ -53,20 +53,20 @@ Authorization: Bearer <手机导出配置中的 token>
 
 ## 工具与文件
 
-手机工具契约由 `agent/tools.mjs` 在构建时生成 `mcp-contract.json` 并打包进 APK。HTTP 发布共享工具；stdio 从手机读取同一列表，额外发布本地便利工具 `application_import`。
+手机工具契约由 `agent/tools.mjs` 在构建时生成 `mcp-contract.json` 并打包进 APK。HTTP 发布共享工具；stdio 从手机读取同一列表，额外发布本地便利工具 `application_import`、`file_pull` 和 `file_pull_status`。
 
-全部 70 个工具（HTTP 69 个，stdio 额外 1 个）的入参契约由 `tools.mjs` 和 `tool-schema.mjs` 共同定义。字段说明标明 ID/游标的查询来源、空字符串的含义、必填项和数值/长度边界；HTTP 与 stdio 读取同一份手机契约。无参查询明确使用 `{}`，不是缺失 schema。只有 `headers` 和脚本 `parameters` 等动态字典允许自定义键，并限制值类型。
+全部 36 个工具（HTTP 33 个，stdio 额外 3 个）的入参契约由 `tools.mjs` 和 `tool-schema.mjs` 共同定义。字段说明标明 ID/游标的查询来源、空字符串的含义、必填项和数值/长度边界；HTTP 与 stdio 读取同一份手机契约。全局查询使用 `runtime_query` 的固定 action；没有默认 action。模型看到扁平对象 Schema，完整 action 契约通过 MCP `_meta` 发布，客户端和手机派发前分别严格校验。只有 `headers` 和脚本 `parameters` 等动态字典允许自定义键，并限制值类型。
 
 复杂参数示例（外层仍需 `operationId` 和精确 `target`）：`http_send_request.request` 使用 `{method:"GET",url:"https://example.com/",timeoutMs:5000}`；`ui_dispatch_action.action` 使用 `{kind:"tap",x:120,y:240}` 或 `{kind:"setText",id:"search",text:"example"}`；`guest_invoke.invocation` 使用 `{className:"com.example.Counter",methodName:"value",argumentTypes:[],arguments:[]}`。Java `long` 必须传十进制字符串，`byte[]` 使用偶数长度十六进制字符串；参数数量、类型与范围在派发前校验。
 
 - `application_import`（仅 stdio）：读取电脑绝对路径 APK，计算 SHA-256，使用共享分块上传接口。
-- `application_upload_begin`：传 `operationId`、`space`、`expectedGeneration`、`files:[{name,size,sha256}]`。首文件 `base.apk`，后续 `split-1.apk` 等。
-- `application_upload_write`：每块独立 `operationId`，传 `uploadId`、`index`、`offset`、base64 `data`，最多 12 KiB 原始字节。
-- `application_upload_commit`：`operationId` 必须等于原 upload ID。校验全部字节后安装。
-- `application_import_status`：按原 upload ID 查询暂存偏移和安装回执。
-- `application_import_cleanup`：显式取消未提交上传或释放已终结安装的暂存；不清理 UNKNOWN/运行中操作。
+- `application_upload(action=begin)`：传 `operationId`、`space`、`expectedGeneration`、`files:[{name,size,sha256}]`。首文件 `base.apk`，后续 `split-1.apk` 等。
+- `application_upload(action=write)`：每块独立 `operationId`，传 `uploadId`、`index`、`offset`、base64 `data`，最多 12 KiB 原始字节。
+- `application_upload(action=commit)`：`operationId` 必须等于原 upload ID。校验全部字节后安装。
+- `application_query(action=import_status)`：按原 upload ID 查询暂存偏移和安装回执。
+- `application_upload(action=cleanup)`：显式取消未提交上传或释放已终结安装的暂存；不清理 UNKNOWN/运行中操作。
 
-HTTP 不读取客户端本地路径。双方均支持设备原始 APK 导入 `application_import_device`、源码 SHA/CAS、产物分块读取及原控制工具。
+HTTP 不读取客户端本地路径。双方均支持设备原始 APK 导入 `application_manage(action=import_device)`、源码 SHA/CAS、产物分块读取及原控制工具。
 
 有安装作用域的调用带 `target:{space,package,installGeneration}`；有进程作用域的调用再带 `processGeneration`。连接没有默认选中目标，也不自动选择唯一候选。
 
@@ -74,7 +74,15 @@ HTTP 不读取客户端本地路径。双方均支持设备原始 APK 导入 `ap
 
 手机端查询最多等待 15 秒，修改操作最多等待 60 秒；超时返回 `MCP_EXECUTION_TIMEOUT`，查询为 `UNAVAILABLE`，修改为 `UNKNOWN` 并保留原 operationId。同步 Binder 事务可能仍在执行，超时不证明远端停止。独立执行池最多容纳两个未结束事务，不排队；耗尽时返回 `MCP_DISPATCH_BUSY` / `dispatched:false`。ping、工具列表与会话撤销不持有执行锁。必须先检查原回执与实际状态，不能通过自动重试或重启入口来推断原操作失败。
 
-典型 Hook 流程：targets_list → hook_observe → hook_prepare → hook_activate → 实际调用/操作 → hook_status → hook_disable。ACTIVE 不证明实际命中；应检查返回值、hits、errors 和停用后行为恢复。
+典型 Hook 流程：application_query(action=targets) → hook_observe → hook_prepare → hook_activate → 实际调用/操作 → process_inspect(action=hook_status) → hook_disable。ACTIVE 不证明实际命中；应检查返回值、hits、errors 和停用后行为恢复。
+
+## 工具分组
+
+当前公开入口、固定 action、关键生命周期工具及旧引用迁移详见 [MCP 工具分组](../docs/mcp-tool-groups.md)。旧工具名不再派发，错误会给出替代入口；不会自动重放旧修改。
+
+## 通用文件 pull
+
+手机普通文件、递归目录和 DEX dump 共用 `file_export` / `file_query`；支持全局绝对路径、精确客体安装的数据/APK 根和已有产物引用。电脑侧负责落盘、断点续传、SHA-256 校验和目录重建；详见 [通用文件 pull](../docs/file-pull.md)。
 
 ## 验证
 

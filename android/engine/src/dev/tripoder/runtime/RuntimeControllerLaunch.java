@@ -9,6 +9,11 @@ import org.json.*;
 
 /** Installation ingress with an optional project binding. One call waits for the guest Application and returns the entry Intent the workbench starts. */
 final class RuntimeControllerLaunch {
+    /** Expiration is maintenance, never a side effect of reading an operation receipt. */
+    static void startMaintenance(RuntimeBroker broker){
+        android.os.Handler main=new android.os.Handler(android.os.Looper.getMainLooper());
+        main.postDelayed(new Runnable(){public void run(){try{RuntimeRecoveryGate.require();expireEntries(broker);}catch(Exception error){android.util.Log.w("TripoderLaunch","Entry expiration maintenance failed",error);}finally{main.postDelayed(this,1000);}}},1000);
+    }
     static Bundle targets(RuntimeBroker broker,Bundle input)throws Exception{
         RuntimeControllerCommands.targetFields(input,"command","project");Bundle target=(input.containsKey("bindingOperation")?new ProjectTargetBindings(broker).resolveBinding(ControlWire.required(input,"project"),input.getString("bindingOperation")):new ProjectTargetBindings(broker).resolve(ControlWire.required(input,"project")));
         var install=broker.apks.get(target.getString("space"),target.getString("package"));if(!install.generation.equals(target.getString("generation")))throw new IllegalStateException("LAUNCH_BINDING_STALE");

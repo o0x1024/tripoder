@@ -43,9 +43,10 @@
         <activity android:name="dev.tripoder.hooklab.WorkbenchArchivesActivity" android:exported="false"/>
         <activity android:name="dev.tripoder.hooklab.WorkbenchAddActivity" android:exported="false"/>
         <service android:name="dev.tripoder.hooklab.AgentControlService" android:exported="false" android:foregroundServiceType="connectedDevice"/>
-        <service android:name="dev.tripoder.runtime.RuntimeControllerService" android:process=":authority" android:exported="false" android:foregroundServiceType="specialUse">
+        <service android:name="dev.tripoder.runtime.EngineRecoveryService" android:process=":recovery" android:exported="false" android:foregroundServiceType="specialUse">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="User-controlled execution of imported apps inside Tripoder runtime spaces"/>
         </service>
+        <service android:name="dev.tripoder.runtime.RuntimeControllerService" android:process=":authority" android:exported="false"/>
         <provider android:name="dev.tripoder.runtime.RuntimeBootstrapProvider" android:authorities="dev.tripoder.engine.runtime.bootstrap" android:exported="false" android:process=":authority"/>
         <receiver android:name="dev.tripoder.runtime.RuntimePendingIntentIngress" android:exported="false" android:process=":authority"/>
         <activity android:name="dev.tripoder.runtime.RuntimePendingActivityIngress" android:exported="false" android:process=":authority" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:excludeFromRecents="true" android:noHistory="true" android:taskAffinity="dev.tripoder.engine.pendingentry"/>
