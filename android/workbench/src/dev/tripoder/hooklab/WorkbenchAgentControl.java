@@ -4,11 +4,12 @@ import android.os.Bundle;
 import dev.tripoder.control.*;
 import org.json.*;
 
-/** Bounded, unsigned desktop requests over the device loopback endpoint. */
+/** Validated MCP commands dispatched through the existing control pipeline. */
 final class WorkbenchAgentControl {
     private final WorkbenchApplication app;
     volatile String message="电脑 Agent 入口尚未启动";
     volatile boolean listening;
+    volatile AgentNetworkIdentity networkIdentity;
     private final WorkbenchAgentLifecycle lifecycle;private final WorkbenchAgentImports imports;
     WorkbenchAgentControl(WorkbenchApplication app){this.app=app;lifecycle=new WorkbenchAgentLifecycle(app);imports=new WorkbenchAgentImports(app);}
     private static final java.util.Set<String> VISIBLE_MUTATIONS=java.util.Set.of("space.create","space.rename","space.delete","application.remove","application.delete","application.mode","application.reverify","application.importDevice","import.commit","project.scriptPut","project.selectorsPut","project.archiveRestore","project.migrationAccept","launch.abandon","launch.close","probes.configure","process.start","application.stop","hook.observe","hook.prepare","hook.activate","hook.disable","hook.discard","hook.updateParameters","hook.uiAction","hook.httpRequest","hook.guestInvoke","hook.probeStop","hook.classLoaderCreate","hook.dexSnapshot");
@@ -17,7 +18,7 @@ final class WorkbenchAgentControl {
         try{
             if(!listening)throw new IllegalStateException("AGENT_ENDPOINT_CLOSED");
             AgentCrypto.id(id);if(request.getInt("protocol")!=AgentCrypto.PROTOCOL)throw new IllegalArgumentException("AGENT_PROTOCOL_UNSUPPORTED");
-            if("operation.get".equals(request.optString("method"))&&request.has("session"))AgentCrypto.fields(request,"protocol","requestId","method","params","session");else AgentCrypto.fields(request,"protocol","requestId","method","params");
+            AgentCrypto.fields(request,"protocol","requestId","method","params");
             String method=request.getString("method");JSONObject params=request.getJSONObject("params"),result;Bundle output;
             if(method.equals("operation.get")){
                 AgentCrypto.fields(params,"operationId");String operation=AgentCrypto.id(params.getString("operationId"));result=lifecycle.receiptIfPresent(operation);
@@ -28,9 +29,9 @@ final class WorkbenchAgentControl {
             }else if(method.startsWith("import.")||method.equals("application.importDevice")||method.equals("application.importStatus")){
                 if(method.equals("import.cleanup"))result=lifecycle.mutate(id,method,params,()->imports.call(method,params,id));else{if(lifecycle.receiptIfPresent(id)!=null)throw new IllegalArgumentException("AGENT_REQUEST_ID_CONTENT_MISMATCH");result=imports.call(method,params,id);}
             }else if(method.equals("runtime.capabilities")){
-                AgentCrypto.fields(params);result=new JSONObject(app.engine.executeBlocking(ControlWire.request("agentCapabilities")).getString("result"));result.put("globalControl",true).put("explicitTargets",true).put("implicitTargetSelection",false);
+                AgentCrypto.fields(params);result=new JSONObject(app.engine.executeBlocking(ControlWire.request("agentCapabilities")).getString("result"));result.put("authenticationRequired",true).put("mcpTransports",new JSONArray().put("stdio").put("streamable-http")).put("globalControl",true).put("explicitTargets",true).put("implicitTargetSelection",false);
             }else if(method.equals("targets.list")){
-                AgentCrypto.fields(params);result=new JSONObject(app.engine.executeBlocking(ControlWire.request("agentTargets")).getString("result"));
+                AgentCrypto.fields(params);result=new JSONObject(app.engine.executeBlocking(ControlWire.request("agentTargets")).getString("result")).put("authenticationRequired",true);
             }else if(method.equals("artifact.list")){
                 AgentCrypto.fields(params,"processGeneration");result=dev.tripoder.runtime.RuntimeCodeArtifacts.list(app,params.getString("processGeneration"));
             }else if(method.equals("artifact.read")){

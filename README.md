@@ -16,7 +16,7 @@ Tripoder 是一个面向 Android 的**无需 Root 的免重打包应用虚拟化
    - **ART Java Hook (`ManagedHook`)**：采用 `ExecuteNterpImpl` ARM64 汇编解释器策略（替代慢速 C++ Switch 解释器，提速 10–30 倍），兼顾 100% 防内联拦截、GC Root 读屏障安全与 Caller-Sensitive 栈归属隐藏。
    - **ARM64 Native Hook (`NativeHook` & `fixed_libc`)**：内置 ARM64 指令重定位规划器、信号线程安全停顿、基于 `mremap` 的 W^X 匿名页原子发布，以及接管 `libc.so` 10 个核心路径入口的双页导出包装器（支撑虚拟路径重定向与 `/proc/self/*` 隐身）。
 3. **AI Agent 原生控制面 (MCP Server)**
-   - 电脑通过 stdio MCP 和 ADB 直接连接，无需身份认证、配对或手机脚本审批。提供全局 MCP 控制入口，覆盖空间与应用管理、原始 APK 导入、唯一项目源码、进程与 Hook、存储/网络审计及 UI 自动化；每次操作显式指定目标；断开连接不会结束客体应用。
+   - 电脑可选择 stdio 适配器或 Streamable HTTP MCP，经 HTTPS 连接手机，无需 ADB；使用手机导出的证书和访问凭证，不需要逐条批准脚本。提供全局 MCP 控制入口，覆盖空间与应用管理、原始 APK 导入、唯一项目源码、进程与 Hook、存储/网络审计及 UI 自动化；每次操作显式指定目标；断开连接不会结束客体应用。
 
 ---
 

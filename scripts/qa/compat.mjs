@@ -94,16 +94,28 @@ function hostScreen(nodes) {
   return /Tripoder/.test(all) && /(应用标签|设置标签|连接工具|个应用|运行引擎没有连接)/.test(all);
 }
 
-async function resetHost() {
+async function resetHost({ force = false } = {}) {
   if (NO_RESET) return true;
+  if (!force) {
+    // The engine survives normal app switches; only restart it when the hook died.
+    const r = await mcp.call('runtime_status').catch(() => null);
+    if (r && r.hookReady) return true;
+  }
   await adb(['shell', 'am', 'force-stop', HOST]).catch(() => {});
   await sleep(1500);
   await adb(['shell', 'am', 'start', '-W', '-n', `${HOST}/dev.tripoder.hooklab.WorkbenchActivity`]).catch(() => {});
   for (let i = 0; i < 8; i++) {
     await sleep(2000);
-    try { const r = await mcp.call('runtime_status'); if (r.hookReady) return true; } catch {}
+    try { const r = await mcp.call('runtime_status'); if (r.hookReady) { await sleep(2500); return true; } } catch {}
   }
   return false;
+}
+
+/** True while the workbench is still loading its app catalog. */
+async function hostLoading() {
+  const nodes = await stableTree();
+  const all = texts(nodes).join(' | ');
+  return /正在读取/.test(all);
 }
 
 function texts(nodes) { return flow.texts(nodes); }
@@ -331,21 +343,35 @@ async function run(pkg) {
   const gen = install.installGeneration || install.generation;
   rec.installGeneration = gen;
   const target = { space: 'default', package: pkg, installGeneration: gen };
-  const running = await alive(pkg);
-  if (running) await mcp.call('application_stop', { operationId: opid(`stop-${pkg}`), target }).catch(() => {});
-  await mcp.call('application_mode_set', { operationId: opid(`mode-${pkg}-${MODE}`), target, mode: MODE });
-  rec.steps.push('mode=' + MODE);
-  await adb(['logcat', '-b', 'crash', '-c']).catch(() => {});
+  for (let i = 0; i < 6 && (await hostLoading()); i++) await sleep(2000);
 
-  const started = await mcp.call('process_start', {
-    operationId: opid(`start-${pkg}-${MODE}`),
-    target, component: '', probeRevision: '',
-  }, { timeoutMs: 150000 });
-  rec.processGeneration = started.processGeneration;
-  rec.pid = started.pid;
-  rec.steps.push('started pid=' + started.pid);
-  await sleep(MODE === 'thick' ? 12000 : 8000);
-  const pre = await stableTree();
+  // Launch with up to three attempts: an engine restart mid-run can steal focus
+  // back to the workbench, which must not be mistaken for an app failure.
+  let pre = [];
+  let started = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt) {
+      await mcp.call('application_stop', { operationId: opid(`stop-retry-${pkg}`), target }).catch(() => {});
+      await resetHost({ force: true });
+      for (let i = 0; i < 6 && (await hostLoading()); i++) await sleep(2000);
+    }
+    const running = await alive(pkg);
+    if (running) await mcp.call('application_stop', { operationId: opid(`stop-${pkg}`), target }).catch(() => {});
+    await mcp.call('application_mode_set', { operationId: opid(`mode-${pkg}-${MODE}`), target, mode: MODE });
+    rec.steps.push('mode=' + MODE + (attempt ? `#retry${attempt}` : ''));
+    await adb(['logcat', '-b', 'crash', '-c']).catch(() => {});
+    started = await mcp.call('process_start', {
+      operationId: opid(`start-${pkg}-${MODE}`),
+      target, component: '', probeRevision: '',
+    }, { timeoutMs: 150000 });
+    rec.processGeneration = started.processGeneration;
+    rec.pid = started.pid;
+    rec.steps.push('started pid=' + started.pid);
+    await sleep((MODE === 'thick' ? 12000 : 8000) + attempt * 4000);
+    pre = await stableTree();
+    if (!hostScreen(pre)) break;
+    rec.steps.push('host-screen-after-start#' + attempt);
+  }
   if (hostScreen(pre)) {
     rec.status = 'ENGINE_LOST_ON_START';
     rec.crash = await crashLog(pkg);
@@ -377,6 +403,11 @@ async function run(pkg) {
     } else {
       rec.login = await login(pkg, PHONES[0]);
       rec.steps.push('login:' + rec.login.state);
+      if (rec.login.state === 'HOST_LOST') {
+        rec.status = 'ENGINE_LOST_DURING_LOGIN';
+        rec.crash = await crashLog(pkg);
+        return rec;
+      }
     }
   } else {
     rec.login = { ok: true, state: 'NO_LOGIN_REQUIRED' };

@@ -1,94 +1,79 @@
-import { readFile, access, open, stat } from 'node:fs/promises';
-import { constants } from 'node:fs';
-import { homedir } from 'node:os';
-import { join, delimiter } from 'node:path';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-import net from 'node:net';
-import { randomUUID, createHash } from 'node:crypto';
-import { isAbsolute } from 'node:path';
-const exec=promisify(execFile);
-export const DEVICE_PORT=29731;
-export const DEVICE_PROTOCOL=2;
-async function resolveAdb(command){
-  if(command!=='adb')return command;
-  const name=process.platform==='win32'?'adb.exe':'adb';
-  const candidates=[process.env.ADB,...(process.env.PATH||'').split(delimiter).filter(Boolean).map(p=>join(p,name)),
-    ...[process.env.ANDROID_HOME,process.env.ANDROID_SDK_ROOT].filter(Boolean).map(p=>join(p,'platform-tools',name)),
-    join(homedir(),'Library/Android/sdk/platform-tools',name),join(homedir(),'Android/Sdk/platform-tools',name),
-    ...(process.env.LOCALAPPDATA?[join(process.env.LOCALAPPDATA,'Android/Sdk/platform-tools',name)]:[]),'/opt/homebrew/bin/adb','/usr/local/bin/adb'];
-  for(const path of candidates.filter(Boolean))try{await access(path,constants.X_OK);return path;}catch{}
-  return command;
+import {open} from 'node:fs/promises';
+import {constants} from 'node:fs';
+import {isAbsolute} from 'node:path';
+import https from 'node:https';
+import {X509Certificate,createHash,randomUUID} from 'node:crypto';
+import {localImportTool,command} from './tools.mjs';
+
+export const MCP_VERSION='2025-11-25';
+export async function loadConfig(path){
+  if(!path||!isAbsolute(path))throw Error('CONNECTION_ABSOLUTE_PATH_REQUIRED');
+  const handle=await open(path,constants.O_RDONLY|constants.O_NOFOLLOW);
+  try{const info=await handle.stat();if(!info.isFile()||info.size>32768||process.platform!=='win32'&&((info.mode&0o077)!==0||info.uid!==process.getuid()))throw Error('CONNECTION_FILE_PERMISSIONS_USE_0600');let parsed;try{parsed=JSON.parse(await handle.readFile('utf8'));}catch{throw Error('CONNECTION_CONFIG_INVALID');}return validateConfig(parsed);}finally{await handle.close();}
 }
-export function exact(value,fields){if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).sort().join('\0')!==[...fields].sort().join('\0'))throw Error('FIELDS_UNSUPPORTED');}
-export function id(value){if(typeof value!=='string'||!/^[-A-Za-z0-9_]{1,80}$/.test(value))throw Error('ID_INVALID');return value;}
-export function decode(request,response){
-  if(!response||response.protocol!==DEVICE_PROTOCOL||typeof response.ok!=='boolean')throw Error('PROTOCOL_UNSUPPORTED');
-  if(response.requestId!==request.requestId)throw Error('RESPONSE_CORRELATION_MISMATCH');return response;
-}
-// Old MCP configurations may still contain --config. Only the optional serial
-// is migrated; keys, permissions and pairing sessions have no role anymore.
-export async function loadConfig(file){
-  if(!file)return {};
-  try{const value=JSON.parse(await readFile(file,'utf8'));return typeof value.serial==='string'?{serial:value.serial}:{};}
-  catch(error){if(error.code==='ENOENT')return {};throw Error('LEGACY_CONFIG_INVALID_USE_SERIAL');}
+export function validateConfig(config){
+  if(!config||Object.keys(config).sort().join(',')!=='certificatePem,token,url')throw Error('CONNECTION_FIELDS_INVALID');
+  const url=new URL(config.url);if(url.protocol!=='https:'||url.pathname!=='/mcp'||url.username||url.password||url.hash||url.search)throw Error('CONNECTION_HTTPS_MCP_REQUIRED');
+  if(typeof config.token!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(config.token))throw Error('CONNECTION_TOKEN_INVALID');
+  const cert=new X509Certificate(config.certificatePem);if(!cert.checkIP(url.hostname)&&!cert.checkHost(url.hostname))throw Error('CONNECTION_CERTIFICATE_ADDRESS_MISMATCH');
+  return {...config,fingerprint:cert.fingerprint256};
 }
 export class Transport {
-  constructor(config={}, {adb='adb'}={}){this.config=config;this.adb=adb;this.port=null;this.queue=Promise.resolve();this.closed=false;this.opening=null;}
-  async open(){
-    if(this.closed)throw Error('TRANSPORT_CLOSED');if(this.port!==null)return;
-    if(this.opening)return this.opening;
-    this.opening=this.connect();try{await this.opening;}finally{this.opening=null;}
+  constructor(config){this.config=config;this.session=null;this.ready=false;this.closed=false;this.sequence=0;this.queue=Promise.resolve();}
+  async rpc(request){
+    if(this.closed)throw Object.assign(Error('TRANSPORT_CLOSED'),{dispatched:false});
+    const body=Buffer.from(JSON.stringify(request));if(body.length>65536)throw Object.assign(Error('MCP_FRAME_TOO_LARGE'),{dispatched:false});
+    const headers={'content-type':'application/json','accept':'application/json, text/event-stream','authorization':'Bearer '+this.config.token,'content-length':body.length};
+    if(this.session){headers['mcp-session-id']=this.session;headers['mcp-protocol-version']=MCP_VERSION;}
+    return new Promise((resolve,reject)=>{
+      let sent=false,done=false;let deadline;const fail=(code,dispatched=sent)=>{if(done)return;done=true;clearTimeout(deadline);const error=Object.assign(Error(code),{dispatched});reject(error);};
+      const req=https.request(this.config.url,{method:'POST',headers,ca:this.config.certificatePem,rejectUnauthorized:true,minVersion:'TLSv1.3',maxVersion:'TLSv1.3',agent:false,checkServerIdentity:(_host,cert)=>cert.fingerprint256===this.config.fingerprint?undefined:Error('MCP_CERTIFICATE_MISMATCH')},response=>{
+        const knownRejected=[400,401,403,404,405,406,413,415,429,503].includes(response.statusCode);
+        if(response.statusCode!==200&&response.statusCode!==202){response.resume();fail('MCP_HTTP_'+response.statusCode,!knownRejected);return;}
+        const chunks=[];let size=0;response.on('data',chunk=>{size+=chunk.length;if(size>524288){fail('MCP_RESPONSE_TOO_LARGE');req.destroy();}else chunks.push(chunk);});
+        response.on('aborted',()=>fail('MCP_RESPONSE_INTERRUPTED'));
+        response.on('error',()=>fail('MCP_RESPONSE_INTERRUPTED'));
+        response.on('end',()=>{if(done)return;try{
+          const bytes=Buffer.concat(chunks);if(response.statusCode===202){if(request.id!==undefined||bytes.length)throw Error('MCP_NOTIFICATION_RESPONSE_INVALID');done=true;clearTimeout(deadline);resolve(null);return;}
+          if(!(response.headers['content-type']??'').startsWith('application/json'))throw Error('MCP_RESPONSE_TYPE_INVALID');
+          const value=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));if(value.jsonrpc!=='2.0'||value.id!==request.id)throw Error('MCP_RESPONSE_CORRELATION_MISMATCH');
+          if(request.method==='initialize'&&!value.error){const session=response.headers['mcp-session-id'];if(typeof session!=='string'||!session)throw Error('MCP_SESSION_MISSING');this.session=session;}
+          done=true;clearTimeout(deadline);resolve(value);
+        }catch(error){fail(error.message);}});
+      });
+      deadline=setTimeout(()=>{fail(sent?'TRANSPORT_TIMEOUT_OUTCOME_UNKNOWN':'MCP_CONNECTION_TIMEOUT');req.destroy();},75000);
+      req.on('socket',socket=>{socket.once('secureConnect',()=>{sent=true;});});
+      req.on('error',error=>fail(sent?'TRANSPORT_INTERRUPTED_OUTCOME_UNKNOWN':'MCP_CONNECTION_FAILED:'+error.code));req.end(body);
+    });
   }
-  async connect(){
-    this.adb=await resolveAdb(this.adb);
-    let serial=this.config.serial||process.env.ANDROID_SERIAL;
-    if(!serial){const result=await exec(this.adb,['devices'],{timeout:10000,maxBuffer:8192});const devices=result.stdout.split('\n').map(s=>s.trim().match(/^([^\s]+)\s+device$/)?.[1]).filter(Boolean);if(devices.length!==1)throw Error(devices.length?'MULTIPLE_ADB_DEVICES_USE_SERIAL':'NO_ADB_DEVICE_CONNECT_PHONE');serial=devices[0];}
-    if(!/^[-A-Za-z0-9_.:]{1,100}$/.test(serial))throw Error('DEVICE_SERIAL_INVALID');
-    const result=await exec(this.adb,['-s',serial,'forward','tcp:0',`tcp:${this.config.devicePort??DEVICE_PORT}`],{timeout:10000,maxBuffer:4096});
-    const value=result.stdout.trim();if(!/^\d+$/.test(value)||+value<1||+value>65535)throw Error('ADB_FORWARD_PORT_INVALID');this.serial=serial;this.port=+value;
+  async tool(name,args){
+    const response=await this.rpc({jsonrpc:'2.0',id:++this.sequence,method:'tools/call',params:{name,arguments:args}});if(response.error)throw Object.assign(Error(response.error.message),{dispatched:false});
+    const receipt=JSON.parse(response.result.content[0].text);return receipt;
   }
-  async exchange(request){
-    await this.open();const body=Buffer.from(JSON.stringify(request));if(body.length>65536)throw Error('FRAME_TOO_LARGE');const header=Buffer.alloc(4);header.writeUInt32BE(body.length);
-    const frame=await new Promise((resolve,reject)=>{
-      const socket=net.connect({host:'127.0.0.1',port:this.port});let chunks=Buffer.alloc(0),size=null,done=false;
-      const finish=(error,data)=>{if(done)return;done=true;socket.destroy();error?reject(error):resolve(data);};
-      // Cold guest startup includes verification, adapter publication and Application.onCreate.
-      const timeoutMs=request.method==='process.start'?65000:22000;
-      socket.setTimeout(timeoutMs,()=>finish(Error('TRANSPORT_TIMEOUT_OUTCOME_UNKNOWN')));
-      socket.on('connect',()=>socket.write(Buffer.concat([header,body])));
-      socket.on('error',()=>finish(Error('TRIPODER_ENDPOINT_UNAVAILABLE_OPEN_APP')));
-      socket.on('end',()=>{if(!done)finish(Error('TRANSPORT_EOF_OUTCOME_UNKNOWN'));});
-      socket.on('data',chunk=>{chunks=Buffer.concat([chunks,chunk]);if(chunks.length>131076)return finish(Error('RESPONSE_FRAME_TOO_LARGE'));if(size===null&&chunks.length>=4){size=chunks.readUInt32BE(0);if(size<2||size>131072)return finish(Error('RESPONSE_FRAME_SIZE'));}if(size!==null&&chunks.length>=size+4){if(chunks.length!==size+4)return finish(Error('RESPONSE_TRAILING_DATA'));finish(null,chunks.subarray(4));}});
-    });return decode(request,JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(frame)));
-  }
-  request(method,params,requestId){return this.exchange({protocol:DEVICE_PROTOCOL,requestId:id(requestId),method,params});}
-  call(method,params,requestId){const job=this.queue.then(()=>this.perform(method,params,requestId));this.queue=job.catch(()=>{});return job;}
-  async perform(method,params,requestId){
-    if(method==='application.import')return this.importApks(params,requestId);
-    return this.request(method,params,requestId);
-  }
-  async importApks(params,requestId){
-    const files=[];
+  async importApks(args){
+    command('application_import',args);const files=[];let dispatched=false;
     try{
-      for(const [index,path] of params.apkPaths.entries()){
-        if(!isAbsolute(path))throw Error('APK_ABSOLUTE_PATH_REQUIRED');
-        const handle=await open(path,'r');files.push({handle,name:index===0?'base.apk':`split-${index}.apk`});
-        const info=await handle.stat();if(!info.isFile()||info.size<1||info.size>1024*1024*1024)throw Error('APK_FILE_SIZE');
-        const digest=createHash('sha256');const buffer=Buffer.alloc(12288);let offset=0;
+      for(const [index,path] of args.apkPaths.entries()){
+        if(!isAbsolute(path))throw Error('APK_ABSOLUTE_PATH_REQUIRED');const handle=await open(path,'r');files.push({handle,name:index===0?'base.apk':`split-${index}.apk`});const info=await handle.stat();
+        if(!info.isFile()||info.size<1||info.size>1073741824)throw Error('APK_FILE_SIZE');const digest=createHash('sha256'),buffer=Buffer.alloc(12288);let offset=0;
         while(offset<info.size){const {bytesRead}=await handle.read(buffer,0,Math.min(buffer.length,info.size-offset),offset);if(!bytesRead)throw Error('APK_FILE_CHANGED');digest.update(buffer.subarray(0,bytesRead));offset+=bytesRead;}
         Object.assign(files.at(-1),{size:info.size,sha256:digest.digest('hex')});
       }
-      let reply=await this.request('import.begin',{space:params.space,expectedGeneration:params.expectedGeneration,files:files.map(({name,size,sha256})=>({name,size,sha256}))},requestId);
-      if(!reply.ok||reply.result?.state==='SUCCEEDED')return reply;
+      const uploadId=args.operationId;let receipt=await this.tool('application_upload_begin',{operationId:uploadId,space:args.space,expectedGeneration:args.expectedGeneration,files:files.map(({name,size,sha256})=>({name,size,sha256}))});dispatched=true;
+      if(!receipt.ok||receipt.result?.state==='SUCCEEDED')return receipt;
       for(const [index,file] of files.entries()){
-        let offset=reply.result?.offsets?.[index]??0;const buffer=Buffer.alloc(12288);
+        let offset=receipt.result.offsets[index];const buffer=Buffer.alloc(12288);
         while(offset<file.size){const {bytesRead}=await file.handle.read(buffer,0,Math.min(buffer.length,file.size-offset),offset);if(!bytesRead)throw Error('APK_FILE_CHANGED');
-          const chunk=await this.request('import.write',{uploadId:requestId,index,offset,data:buffer.subarray(0,bytesRead).toString('base64')},randomUUID());if(!chunk.ok)return {...chunk,requestId,operationId:requestId};offset+=bytesRead;
+          const chunk=await this.tool('application_upload_write',{operationId:randomUUID(),uploadId,index,offset,data:buffer.subarray(0,bytesRead).toString('base64')});if(!chunk.ok)return {...chunk,operationId:uploadId};offset+=bytesRead;
         }
       }
-      return await this.request('import.commit',{},requestId);
-    }finally{await Promise.all(files.map(file=>file.handle.close()));}
+      return await this.tool('application_upload_commit',{operationId:uploadId});
+    }catch(error){if(dispatched)error.dispatched=true;else if(error.dispatched===undefined)error.dispatched=false;throw error;}
+    finally{await Promise.all(files.map(file=>file.handle.close()));}
   }
-  async close(){if(this.closed)return;this.closed=true;if(this.opening)await this.opening.catch(()=>{});if(this.port!==null)await exec(this.adb,['-s',this.serial,'forward','--remove',`tcp:${this.port}`],{timeout:5000,maxBuffer:4096});}
+  async close(){
+    if(this.closed)return;this.closed=true;if(!this.session)return;
+    await new Promise(resolve=>{const timer=setTimeout(()=>req.destroy(),3000);const done=()=>{clearTimeout(timer);resolve();};const req=https.request(this.config.url,{method:'DELETE',ca:this.config.certificatePem,rejectUnauthorized:true,minVersion:'TLSv1.3',agent:false,headers:{authorization:'Bearer '+this.config.token,'mcp-session-id':this.session,'mcp-protocol-version':MCP_VERSION}},res=>{res.resume();res.on('end',done);});req.on('error',done);req.end();});this.session=null;
+  }
 }
+export {localImportTool};

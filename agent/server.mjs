@@ -1,66 +1,48 @@
 #!/usr/bin/env node
-import { loadConfig, Transport } from './transport.mjs';
-import { tools, command, isMutation } from './tools.mjs';
-import { recoveryReceipt } from './recovery.mjs';
-import { randomUUID } from 'node:crypto';
-import { auditFile } from './audit.mjs';
+import {loadConfig,Transport,localImportTool,MCP_VERSION} from './transport.mjs';
+import {isMutation} from './tools.mjs';
+import {recoveryReceipt} from './recovery.mjs';
+import {auditFile} from './audit.mjs';
 
-// Base tools lifecycle is shared by these published MCP versions. Unknown
-// versions negotiate the latest supported version instead of closing stdio.
-export const MCP_VERSION='2025-11-25';
-export const MCP_VERSIONS=['2024-11-05','2025-03-26','2025-06-18','2025-11-25'];
+/** Stdio transport adapter. All shared MCP semantics and commands live on the phone. */
 export class McpServer {
-  constructor(transport,audit){this.transport=transport;this.audit=audit;this.initialized=false;this.ready=false;}
+  constructor(transport,audit){this.transport=transport;this.audit=audit;this.ready=false;}
   async handle(request){
-    const response=await this.dispatch(request);this.audit?.record(request,response);return response;
-  }
-  async dispatch(request){
-    if(Array.isArray(request)){
-      if(request.length===0||request.length>8)return {jsonrpc:'2.0',id:null,error:{code:-32600,message:'Batch must contain 1 to 8 messages'}};
-      const responses=[];for(const item of request){const response=await this.handle(item);if(response!==null)responses.push(response);}return responses.length?responses:null;
-    }
-    if(!request||request.jsonrpc!=='2.0'||typeof request.method!=='string')return {jsonrpc:'2.0',id:request?.id??null,error:{code:-32600,message:'Invalid Request'}};
-    const notification=request.id===undefined;
-    if(notification){if(request.method==='notifications/initialized'&&this.initialized)this.ready=true;return null;}
-    const reply=result=>({jsonrpc:'2.0',id:request.id,result});
-    const error=(code,message)=>({jsonrpc:'2.0',id:request.id,error:{code,message}});
-    if(request.method==='initialize'){
-      if(this.initialized||typeof request.params?.protocolVersion!=='string')return error(-32602,'MCP_INITIALIZE_INVALID');
-      this.protocol=MCP_VERSIONS.includes(request.params.protocolVersion)?request.params.protocolVersion:MCP_VERSION;
-      this.initialized=true;return reply({protocolVersion:this.protocol,capabilities:{tools:{listChanged:false}},serverInfo:{name:'tripoder',version:'0.1.0'},instructions:'Tripoder requires no authentication or pairing. This is the global Tripoder control plane. List spaces, applications and targets; every scoped tool requires an explicit target. There is no current selected project or process. Read content JSON ok and state; unknown mutations require operation_get, never automatic replay. Closing MCP does not stop the guest or disable Hooks.'});
-    }
-    if(request.method==='ping')return reply({});
-    if(!this.ready)return error(-32000,'MCP_NOT_INITIALIZED');
-    if(request.method==='tools/list')return reply({tools:this.protocol==='2024-11-05'?tools.map(({annotations,...tool})=>tool):tools});
-    if(request.method==='tools/call'){
-      const name=request.params?.name,args=request.params?.arguments??{};
-      const toolReply=receipt=>reply({content:[{type:'text',text:JSON.stringify(recoveryReceipt(receipt,name,args))}],isError:!receipt.ok});
-      let call;try{call=command(name,args);}catch(failure){
-        if(!tools.some(tool=>tool.name===name))return error(-32602,failure.message);
-        return toolReply({protocol:2,ok:false,state:'REJECTED',dispatched:false,errorCode:'INVALID_TOOL_ARGUMENTS',error:failure.message});
+    let response;
+    if(!request||Array.isArray(request)||request.jsonrpc!=='2.0'||typeof request.method!=='string')response={jsonrpc:'2.0',id:request?.id??null,error:{code:-32600,message:'Invalid Request'}};
+    else try{
+      if(this.ready&&request.id!==undefined&&request.method==='tools/call'&&request.params?.name==='application_import'){
+        let receipt;try{receipt=await this.transport.importApks(request.params.arguments??{});}catch(error){receipt={protocol:2,ok:false,state:error.dispatched?'UNKNOWN':'REJECTED',dispatched:!!error.dispatched,operationId:request.params.arguments?.operationId,error:error.message};}
+        response={jsonrpc:'2.0',id:request.id,result:{content:[{type:'text',text:JSON.stringify(recoveryReceipt(receipt,'application_import',request.params.arguments??{}))}],isError:!receipt.ok}};
+      }else{
+        response=await this.transport.rpc(request);
+        if(request.method==='notifications/initialized')this.ready=true;
+        if(request.method==='tools/list'&&response?.result?.tools)response.result.tools.push(localImportTool);
       }
-      try{
-        const receipt=await this.transport.call(call.method,call.params,call.requestId);
-        return toolReply(receipt);
-      }catch(failure){const mutation=isMutation(name);return toolReply({protocol:2,ok:false,...(mutation?{operationId:call.requestId}:{}),state:mutation?'UNKNOWN':'UNAVAILABLE',error:failure.message});}
+    }catch(error){
+      if(request.id===undefined)throw error;
+      if(request.method==='tools/call'){
+        const args=request.params?.arguments??{},mutation=isMutation(request.params?.name);const receipt=recoveryReceipt({protocol:2,ok:false,state:error.dispatched&&mutation?'UNKNOWN':error.dispatched?'UNAVAILABLE':'REJECTED',...(error.dispatched===false?{dispatched:false}:{}),...(mutation?{operationId:args.operationId}:{}),error:error.message},request.params?.name,args);
+        response={jsonrpc:'2.0',id:request.id,result:{content:[{type:'text',text:JSON.stringify(receipt)}],isError:true}};
+      }else response={jsonrpc:'2.0',id:request.id,error:{code:-32000,message:error.message}};
     }
-    return error(-32601,'Method not found');
+    this.audit?.record(request,response);return response;
   }
 }
 async function main(){
-  const options={};const args=process.argv.slice(2);
-  for(let i=0;i<args.length;i+=2){if(!['--serial','--config','--audit','--device-port'].includes(args[i])||!args[i+1]||options[args[i]])throw Error('Usage: server.mjs [--serial SERIAL] [--audit ABSOLUTE_PATH]');options[args[i]]=args[i+1];}
-  const config=await loadConfig(options['--config']);if(options['--serial'])config.serial=options['--serial'];if(options['--device-port']){const port=Number(options['--device-port']);if(!Number.isInteger(port)||port<1||port>65535)throw Error('DEVICE_PORT_INVALID');config.devicePort=port;}
-  const audit=options['--audit']?auditFile(options['--audit']):undefined;
-  const transport=new Transport(config); // Lazy: initialize/tools/list work even with no phone attached.
-  const server=new McpServer(transport,audit);let buffered=Buffer.alloc(0),chain=Promise.resolve(),busy=false,closing=false,queued=0;
-  const send=response=>{if(response!==null)process.stdout.write(JSON.stringify(response)+'\n');};
+  const options={},args=process.argv.slice(2);for(let i=0;i<args.length;i+=2){if(!['--connection','--audit'].includes(args[i])||!args[i+1]||options[args[i]])throw Error('Usage: server.mjs --connection ABSOLUTE_PATH [--audit ABSOLUTE_PATH]');options[args[i]]=args[i+1];}
+  const config=await loadConfig(options['--connection']);const audit=options['--audit']?auditFile(options['--audit']):undefined;
+  const transport=new Transport(config),server=new McpServer(transport,audit);let buffer=Buffer.alloc(0),chain=Promise.resolve(),queued=0,closing=false;
   const close=async()=>{if(closing)return;closing=true;await transport.close();audit?.close();};
   process.stdin.on('data',chunk=>{
-    buffered=Buffer.concat([buffered,chunk]);if(buffered.length>65536){process.stderr.write('MCP_FRAME_TOO_LARGE\n');process.stdin.destroy();void close();return;}
-    let boundary;while((boundary=buffered.indexOf(10))>=0){const line=buffered.subarray(0,boundary);buffered=buffered.subarray(boundary+1);if(++queued>32){process.stderr.write('MCP_QUEUE_BUDGET_EXCEEDED\n');process.stdin.destroy();void close();return;}chain=chain.then(async()=>{try{let request;try{request=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(line));}catch{send({jsonrpc:'2.0',id:null,error:{code:-32700,message:'Parse error'}});return;}busy=true;try{send(await server.handle(request));}finally{busy=false;}}finally{queued--;}});}
+    buffer=Buffer.concat([buffer,chunk]);if(buffer.length>65536){process.stderr.write('MCP_FRAME_TOO_LARGE\n');process.stdin.destroy();void close();return;}
+    let boundary;while((boundary=buffer.indexOf(10))>=0){const line=buffer.subarray(0,boundary);buffer=buffer.subarray(boundary+1);if(++queued>32){process.stderr.write('MCP_QUEUE_BUDGET_EXCEEDED\n');process.stdin.destroy();void close();return;}
+      chain=chain.then(async()=>{try{let request;try{request=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(line));}catch{process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:null,error:{code:-32700,message:'Parse error'}})+'\n');return;}
+        const response=await server.handle(request);if(response!==null)process.stdout.write(JSON.stringify(response)+'\n');
+      }catch(error){process.stderr.write(error.message+'\n');process.stdin.destroy();await close();}finally{queued--;}});
+    }
   });
-  process.stdin.on('end',()=>{void chain.finally(close);});process.stdin.on('error',()=>{void close();});
-  for(const signal of ['SIGTERM','SIGINT'])process.on(signal,()=>{void close().finally(()=>process.exit(0));});
+  process.stdin.on('end',()=>{void chain.finally(close);});process.stdin.on('error',()=>{void chain.finally(close);});for(const signal of ['SIGTERM','SIGINT'])process.on(signal,()=>{void chain.finally(close).finally(()=>process.exit(0));});
 }
 if(import.meta.url===new URL(process.argv[1],'file:').href)main().catch(error=>{process.stderr.write(error.message+'\n');process.exitCode=1;});
+export {MCP_VERSION};

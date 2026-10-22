@@ -249,6 +249,13 @@ export class Flow {
       trail.push(texts.slice(0, 8));
       this.note(`round ${round}:`, texts.slice(0, 10).join(' | ').slice(0, 300));
 
+      // 0a. Lost the guest window (engine restart) — stop immediately; taps would hit
+      //     the Tripoder workbench instead of the app and corrupt the run.
+      if (/应用标签/.test(joined) && /设置标签|连接工具|正在读取/.test(joined)) {
+        this.note('guest window lost: Tripoder workbench in front');
+        return { state: 'HOST_LOST', detail: 'workbench-visible', trail, codeUsed };
+      }
+
       // 0. Already inside the app? A late auto-login (carrier auth completing in the
       //    background) must not be undone by re-driving a login CTA on the main UI.
       if (round > 0 && this.mainScreen(nodes) && !this.loginMarkers(nodes)) {

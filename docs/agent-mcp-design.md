@@ -4,7 +4,16 @@ MCP 连接到设备上的 Tripoder 全局入口，不绑定任何空间、应用
 
 ## 控制链路
 
-MCP stdio → Node.js → ADB forward → 手机 loopback 长度帧（protocol=2）→ 主进程 Binder → authority → 安装或具体客体进程。初始化和工具发现延迟连接设备。全局设置管理入口，关闭入口不停止应用或已激活 Hook。
+两种显式选择的入口：
+
+- stdio MCP → 本地 Node 适配器 → 手机 HTTPS `/mcp`。
+- Streamable HTTP MCP 客户端 → 手机 HTTPS `/mcp`。
+
+手机 `AgentMcp` 统一处理初始化、工具发现、参数校验和分派 → `WorkbenchAgentControl` → 主进程 Binder → authority → 安装或具体客体进程。工具契约由 `agent/tools.mjs` 构建生成并随 APK 发布，stdio 读取手机工具列表，额外提供读取电脑本地 APK 的便利工具。手机发布共享上传 begin/write/commit；HTTP 不接受电脑本地路径。
+
+网络入口首次默认关闭，只绑定 Wi-Fi/以太网 IPv4 地址。TLS 使用 AndroidKeyStore 私钥和导出证书信任；每次请求验证可重置的安装级 Bearer 令牌。认证在业务派发前完成，校验 Host/Origin 和有界 HTTP 请求。原协议 2 只用于手机内部命令，不再开放旧的未认证长度帧入口。无 ADB、旧配置兼容或自动切换。
+
+MCP 会话只管理协议就绪状态，最多 64 个、空闲 24 小时过期；不持有目标或业务权限。关闭会话或全局入口不停止应用或已激活 Hook；可能已经派发的操作不能因断网推断已取消。初始化和工具发现均由手机真实响应。
 
 ## 对象与目标
 

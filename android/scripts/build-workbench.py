@@ -7,6 +7,7 @@ import argparse
 import json
 from pathlib import Path
 import shutil
+import subprocess
 import zipfile
 from runtime_apk_builder import ApkBuilder, sha
 from runtime_activity_slots import generate_activity_slots
@@ -36,6 +37,7 @@ def main():
     files += [Path(__file__).resolve(),android/'scripts/runtime_apk_builder.py',android/'scripts/runtime_activity_slots.py',android/'scripts/runtime_job_slots.py',android/'scripts/self_hook_native.py']
     self_hook_java=sorted((android/'self-hook/java').rglob('*.java'))
     files += self_hook_java
+    files += [repo/'agent/tools.mjs',repo/'agent/export-contract.mjs']
     fixture_base=android/'runtime-probe/build/a.apk';fixture_upgrade=android/'runtime-probe/build/assets/a-upgrade.apk'
     fixture_preview=android/'runtime-probe/build/preview-guest.apk'
     fixture_receipt=json.loads((android/'runtime-probe/build/build-receipt.json').read_text())
@@ -74,6 +76,7 @@ def main():
     assets=build/'assets'
     if assets.exists():shutil.rmtree(assets)
     assets.mkdir();shutil.copytree(android/'runtime/licenses',assets/'licenses')
+    subprocess.run(['node',str(repo/'agent/export-contract.mjs'),str(assets/'mcp-contract.json')],cwd=repo,check=True)
     entries=[]
     for slot,letter in enumerate('ABCDEFGH'):
         entries.append(f'<service android:name="dev.tripoder.runtime.RuntimeSlot$Worker{letter}" android:exported="false" android:process=":slot{slot}"/>')
