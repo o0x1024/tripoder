@@ -28,6 +28,16 @@ await adb(['shell', 'settings put system accelerometer_rotation 0']).catch(() =>
 await adb(['shell', 'settings put system user_rotation 0']).catch(() => {});
 
 const mcp = await new Mcp({ timeoutMs: 150000 }).init();
+
+// Reclaim slot processes left by an interrupted earlier pass (8 slots only).
+const preTargets = await mcp.call('targets_list').catch(() => null);
+for (const t of preTargets?.targets ?? []) {
+  await mcp.call('application_stop', {
+    operationId: opid(`clean-${t.package}`),
+    target: { space: t.space, package: t.package, installGeneration: t.installGeneration },
+  }).catch(() => {});
+}
+if ((preTargets?.targets ?? []).length) console.log(`[compat] reclaimed ${preTargets.targets.length} leftover guest process(es)`);
 const flow = new Flow(mcp, { artifacts: OUT, verbose: true });
 const state = resume ? JSON.parse(await readFile(STATE_PATH, 'utf8').catch(() => '{}')) : {};
 const save = () => writeFile(STATE_PATH, JSON.stringify(state, null, 2));
@@ -48,11 +58,16 @@ async function targets() {
 
 async function alive(pkg, processGeneration = '') {
   const t = await targets();
+  const hit = (t?.targets || []).find((x) => x.package === pkg);
+  if (hit) {
+    if (processGeneration && hit.processGeneration && hit.processGeneration !== processGeneration) return null;
+    return hit;
+  }
+  // The target list can lag a live guest; confirm with the kernel before calling it a crash.
+  const pid = await adb(['shell', `pidof ${pkg}`]).then((out) => String(out).trim()).catch(() => '');
+  if (/^\d+/.test(pid)) return { package: pkg, processName: pkg, processGeneration, pid: Number(pid.split(/\s+/)[0]) };
   if (!t) return 'UNKNOWN';
-  const hit = (t.targets || []).find((x) => x.package === pkg);
-  if (!hit) return null;
-  if (processGeneration && hit.processGeneration && hit.processGeneration !== processGeneration) return null;
-  return hit;
+  return null;
 }
 
 async function crashLog(pkg) {
@@ -80,7 +95,7 @@ async function tree(nodes) {
   const t = nodes ? { nodes } : await flow.tree();
   return t.nodes || [];
 }
-async function stableTree(rounds = 4) {
+async function stableTree(rounds = 3) {
   let nodes = [];
   for (let i = 0; i < rounds; i++) {
     nodes = await tree();
@@ -90,8 +105,12 @@ async function stableTree(rounds = 4) {
   return nodes;
 }
 function hostScreen(nodes) {
-  const all = flow.texts(nodes).join(' | ');
-  return /Tripoder/.test(all) && /(应用标签|设置标签|连接工具|个应用|运行引擎没有连接)/.test(all);
+  // The guest is composed inside the host window, so a dump can carry both. Only call it
+  // the workbench when nothing on screen belongs to the guest package.
+  if ((nodes ?? []).some((n) => flow.pkg && n.rid && n.rid.startsWith(flow.pkg))) return false;
+  const all = flow.texts(nodes ?? []).join(' | ');
+  const workbench = /Tripoder/.test(all) && /(应用标签|设置标签|连接工具|个应用|运行引擎没有连接)/.test(all);
+  return workbench;
 }
 
 async function resetHost({ force = false } = {}) {
@@ -334,16 +353,24 @@ async function ensureImported(pkg) {
 
 async function run(pkg) {
   const startedAt = Date.now();
+  const mark = (label) => console.log(`[step +${Math.round((Date.now() - startedAt) / 100) / 10}s] ${pkg} ${label}`);
+  mark('begin');
   await adb(['shell', 'settings put system accelerometer_rotation 0']).catch(() => {});
   await adb(['shell', 'settings put system user_rotation 0']).catch(() => {});
   const rec = { package: pkg, mode: MODE, startedAt: new Date().toISOString(), steps: [], screens: [] };
   const hostReady = await resetHost();
   rec.steps.push('host-reset=' + hostReady);
+  mark('host-reset=' + hostReady);
   const install = await ensureImported(pkg);
+  mark('imported=' + (install.installGeneration || install.generation));
   const gen = install.installGeneration || install.generation;
   rec.installGeneration = gen;
   const target = { space: 'default', package: pkg, installGeneration: gen };
-  for (let i = 0; i < 6 && (await hostLoading()); i++) await sleep(2000);
+  flow.pkg = pkg; // the UI driver must resolve this guest's process, not the host screen
+  flow._target = null;
+  flow._legacyDump = false;
+  for (let i = 0; i < 2 && (await hostLoading()); i++) await sleep(1500);
+  mark('host-idle');
 
   // Launch with up to three attempts: an engine restart mid-run can steal focus
   // back to the workbench, which must not be mistaken for an app failure.
@@ -353,12 +380,13 @@ async function run(pkg) {
     if (attempt) {
       await mcp.call('application_stop', { operationId: opid(`stop-retry-${pkg}`), target }).catch(() => {});
       await resetHost({ force: true });
-      for (let i = 0; i < 6 && (await hostLoading()); i++) await sleep(2000);
+      for (let i = 0; i < 2 && (await hostLoading()); i++) await sleep(1500);
     }
     const running = await alive(pkg);
     if (running) await mcp.call('application_stop', { operationId: opid(`stop-${pkg}`), target }).catch(() => {});
     await mcp.call('application_mode_set', { operationId: opid(`mode-${pkg}-${MODE}`), target, mode: MODE });
     rec.steps.push('mode=' + MODE + (attempt ? `#retry${attempt}` : ''));
+    mark('mode=' + MODE + ' -> starting');
     await adb(['logcat', '-b', 'crash', '-c']).catch(() => {});
     started = await mcp.call('process_start', {
       operationId: opid(`start-${pkg}-${MODE}`),
@@ -367,9 +395,13 @@ async function run(pkg) {
     rec.processGeneration = started.processGeneration;
     rec.pid = started.pid;
     rec.steps.push('started pid=' + started.pid);
+    mark('started pid=' + started.pid);
     await sleep((MODE === 'thick' ? 12000 : 8000) + attempt * 4000);
     pre = await stableTree();
-    if (!hostScreen(pre)) break;
+    mark('pre-tree nodes=' + pre.length);
+    // A live guest whose window is not composited yet still counts as started; only a
+    // workbench screen with a dead process is a real launch failure.
+    if (!hostScreen(pre) || (await alive(pkg, rec.processGeneration))) break;
     rec.steps.push('host-screen-after-start#' + attempt);
   }
   if (hostScreen(pre)) {
@@ -384,7 +416,9 @@ async function run(pkg) {
     rec.screens.push({ name: 'launch-crash', screenshot: await flow.shot(`${pkg}-${MODE}-launch-crash`).catch(() => null) });
     return rec;
   }
+  mark('alive-after-start -> sweep');
   const swept = await sweep(7);
+  mark('sweep done: ' + (swept.join(',') || 'none'));
   if (swept.length) rec.steps.push('overlays:' + swept.join(','));
   rec.screens.push({ name: 'after-consent', screenshot: await flow.shot(`${pkg}-${MODE}-after-consent`).catch(() => null) });
   if (!(await alive(pkg, rec.processGeneration))) {
@@ -401,7 +435,9 @@ async function run(pkg) {
     if (credentialOnly(nodes)) {
       rec.login = { ok: false, state: 'CREDENTIAL_ONLY', notes: ['no-phone-login'] };
     } else {
+      mark('login-start');
       rec.login = await login(pkg, PHONES[0]);
+      mark('login=' + rec.login.state);
       rec.steps.push('login:' + rec.login.state);
       if (rec.login.state === 'HOST_LOST') {
         rec.status = 'ENGINE_LOST_DURING_LOGIN';
@@ -422,7 +458,9 @@ async function run(pkg) {
   }
 
   // Even when login is unavailable, exercise whatever public UI is reachable.
+  mark('browse-start');
   const browse = await deepBrowse(pkg, rec.processGeneration, { maxTabs: ls.login && !rec.login.ok ? 2 : 4, maxCards: 1 });
+  mark('browse done: ' + browse.visited.length + ' screens');
   rec.browse = browse;
   rec.screens.push(...browse.visited);
   rec.steps.push('screens=' + browse.visited.length);
@@ -457,8 +495,15 @@ for (const pkg of work) {
   console.log(`\n=== ${pkg} (${MODE}) ===`);
   const t0 = Date.now();
   let rec;
+  const WATCHDOG = Number(arg('watchdog', '210000'));
   try {
-    rec = await run(pkg);
+    rec = await Promise.race([
+      run(pkg),
+      new Promise((resolve) => setTimeout(() => resolve({
+        package: pkg, mode: MODE, status: 'APP_TIMEOUT', screens: [],
+        error: `watchdog ${WATCHDOG}ms exceeded`,
+      }), WATCHDOG).unref()),
+    ]);
   } catch (error) {
     rec = { package: pkg, mode: MODE, status: 'ERROR', error: String(error.message || error).slice(0, 900), screens: [] };
   }

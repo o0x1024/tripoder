@@ -17,7 +17,9 @@ public final class SingleProjectSourceTest {
         check(store.all().size()==1,"one active source project");check(store.script(first).equals("first source"),"canonical source preserved");
         check(store.get(first).getBoolean("migrationPending"),"different source requires a version decision");
         check(store.archived(null).size()==2,"duplicate and orphan source both archived");check(store.archivedScript(second).equals("second source"),"duplicate source recoverable");check(store.archivedScript(orphan).equals("unbound source"),"unbound source recoverable");
+        File meta=new File(root,"projects/"+first+"/project.json");java.nio.file.attribute.FileTime marker=java.nio.file.attribute.FileTime.fromMillis(1000000);Files.setLastModifiedTime(meta.toPath(),marker);
         store.reconcile(ownership);check(store.all().size()==1&&store.archived(null).size()==2,"repeated recovery does not duplicate or overwrite");
+        check(Files.getLastModifiedTime(meta.toPath()).equals(marker),"unchanged catalog does not rewrite or fsync project metadata");
         store.restore(first,second);store.acceptMigration(first);check(store.script(first).equals("second source"),"selected version restored");check(new JSONArray(store.selectors(first)).getJSONObject(0).getString("id").equals("old"),"selectors follow selected version");
         check(store.archived(null).size()==3,"current source backed up before restoration");
         boolean stale=false;try{store.script(first,"lost update","first source");}catch(java.io.IOException expected){stale=true;}check(stale&&store.script(first).equals("second source"),"stale editor cannot overwrite external edit");
@@ -28,7 +30,7 @@ public final class SingleProjectSourceTest {
         boolean symlink=false;try{store.script(first,"overwrite");}catch(java.io.IOException expected){symlink=true;}check(symlink&&Files.readString(outside.toPath()).equals("external source"),"source never follows symlinks");
         store.delete(first);check(Files.readString(outside.toPath()).equals("external source"),"deletion never follows symlinks");
         store.reconcile(ownership);check(store.all().isEmpty(),"an older catalog snapshot cannot recreate a deleted project");
-        System.out.println("SingleProjectSourceTest: 18 checks passed");
+        System.out.println("SingleProjectSourceTest: 19 checks passed");
     }
     private static void check(boolean condition,String name){if(!condition)throw new AssertionError(name);}
 }

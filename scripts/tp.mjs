@@ -9,11 +9,14 @@ const timeoutIdx = argv.indexOf('--timeout');
 const timeoutMs = timeoutIdx >= 0 ? Number(argv.splice(timeoutIdx, 2)[1]) : 90000;
 const serialIdx = argv.indexOf('--serial');
 const serial = serialIdx >= 0 ? argv.splice(serialIdx, 2)[1] : process.env.ANDROID_SERIAL || 'd861a4fa';
+const connIdx = argv.indexOf('--connection');
+const connection = connIdx >= 0 ? argv.splice(connIdx, 2)[1]
+  : process.env.TRIPODER_CONNECTION || resolve(process.env.HOME, '.tripoder/tripoder-connection.json');
 const tool = argv[0];
 const args = argv[1] ? JSON.parse(argv[1]) : {};
 
 const root = resolve(import.meta.dirname, '..');
-const child = spawn(process.execPath, [resolve(root, 'agent/server.mjs'), '--serial', serial], {
+const child = spawn(process.execPath, [resolve(root, 'agent/server.mjs'), '--connection', connection], {
   stdio: ['pipe', 'pipe', 'pipe'],
 });
 let stderr = '';
@@ -38,7 +41,7 @@ function notify(method, params) { child.stdin.write(JSON.stringify({ jsonrpc: '2
 
 try {
   const init = await rpc('initialize', {
-    protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'tp-cli', version: '1' },
+    protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'tp-cli', version: '1' },
   });
   if (init.error) throw new Error('INIT_FAILED ' + JSON.stringify(init.error));
   notify('notifications/initialized', {});

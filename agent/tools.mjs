@@ -1,10 +1,9 @@
 const id=value=>{if(typeof value!=='string'||!/^[-A-Za-z0-9_]{1,80}$/.test(value))throw Error('ID_INVALID');return value;};
 import { randomUUID } from 'node:crypto';
+import {object,javaTypes,uiAction,httpRequest,invocation,parameters,describeSchema,validate,validateInvocation} from './tool-schema.mjs';
 const text={type:'string',minLength:1};
 const operation={...text,pattern:'^[A-Za-z0-9_-]{1,80}$',description:'Persistent id for this exact command. Reuse only for identical content; query after an unknown outcome.'};
-const object=(properties,required=Object.keys(properties))=>({type:'object',properties,required,additionalProperties:false});
 const symbolId={...text,maxLength:64,pattern:'^[a-zA-Z][a-zA-Z0-9_-]{0,63}$'};
-const javaTypes=['boolean','byte','short','int','long','char','float','double','java.lang.String','[B','byte[]'];
 const nativeTypes=['int32','uint32','int64','uint64','float','double'];
 const argumentsOf=types=>({type:'array',minItems:0,maxItems:16,items:{type:'string',enum:types}});
 const javaSelector=object({id:symbolId,kind:{type:'string',enum:['java']},className:{...text,maxLength:512},methodName:{...text,maxLength:128,pattern:'^[^<].*$'},argumentTypes:argumentsOf(javaTypes),classLoaderId:{...text,maxLength:80,pattern:'^[A-Za-z0-9_-]{1,80}$'}},['id','kind','className','methodName','argumentTypes']);
@@ -42,14 +41,14 @@ let definitions=[
  ['dex_inspect_class','hook.dexInspect','Inspect declared methods and fields of a guest class without initializing it.',{className:{...text,maxLength:512}}],
  ['native_exports_search','hook.nativeExports','Search exported ELF symbols of a loaded guest native module by symbolPrefix.',{moduleName:{...text,pattern:'^lib[a-zA-Z0-9_+.$-]+\\.so$'},symbolPrefix:{type:'string',minLength:0,maxLength:256},limit:{type:'integer',minimum:1,maximum:200}}],
  ['ui_dump_hierarchy','hook.uiDump','Dump the live guest Activity view hierarchy (bounds, text, resourceId, clickable).',{includeInvisible:{type:'boolean'}}],
- ['ui_dispatch_action','hook.uiAction','Dispatch an in-process UI action (tap, swipe, clickText, setText, or key) to the foreground guest Activity.',{operationId:operation,action:{type:'object'}}],
+ ['ui_dispatch_action','hook.uiAction','Dispatch an in-process UI action (tap, swipe, clickText, setText, or key) to the foreground guest Activity.',{operationId:operation,action:uiAction}],
  ['crash_diagnostics_get','hook.diagnostics','Read structured startup/runtime failure diagnostics recorded in the guest process.',{}],
  ['manifest_inspect','hook.manifestInspect','Inspect guest manifest security configuration, permissions, and exported components (activities, services, receivers, providers, intentFilters).',{}],
  ['storage_inspect','hook.storageInspect','Audit guest sandbox storage (all, shared_prefs, databases, or files) for plaintext sensitive entries and SQLite schemas.',{category:{type:'string',minLength:3,maxLength:16,pattern:'^(all|shared_prefs|databases|files)$'},limit:{type:'integer',minimum:1,maximum:100}}],
  ['network_traffic_get','hook.networkTraffic','Read bounded HTTP/HTTPS exchanges captured in the guest process since sinceSeq.',{sinceSeq:{type:'integer',minimum:0},limit:{type:'integer',minimum:1,maximum:100}}],
- ['http_send_request','hook.httpRequest','Send an explicit HTTP/HTTPS request from the guest process network context and record the exchange.',{operationId:operation,request:{type:'object'}}],
- ['guest_invoke','hook.guestInvoke','Invoke a declared guest Java method in-process with bounded scalar/String/hex-byte[] arguments (e.g., to compute API signatures).',{operationId:operation,invocation:{type:'object'}}],
- ['hook_update_params','hook.updateParameters','Hot-update active Hook parameters with CAS parameterVersion without recompiling or re-hooking.',{operationId:operation,revision:text,parameterVersion:{type:'integer',minimum:1,maximum:10000},parameters:{type:'object',description:'Script-defined parameter names and values, validated against the active compiled plan.'}}],
+ ['http_send_request','hook.httpRequest','Send an explicit HTTP/HTTPS request from the guest process network context and record the exchange.',{operationId:operation,request:httpRequest}],
+ ['guest_invoke','hook.guestInvoke','Invoke a declared guest Java method in-process with bounded scalar/String/hex-byte[] arguments (e.g., to compute API signatures).',{operationId:operation,invocation}],
+ ['hook_update_params','hook.updateParameters','Hot-update active Hook parameters with CAS parameterVersion without recompiling or re-hooking.',{operationId:operation,revision:text,parameterVersion:{type:'integer',minimum:1,maximum:10000},parameters}],
  ['hook_disable','hook.disable','Disable the exact current revision and drain callbacks. Does not undo business side effects.',{operationId:operation,revision:text}],
  ['hook_discard','hook.discard','Discard prepared/observed state without activation.',{operationId:operation}],
 ];
@@ -86,36 +85,12 @@ definitions.push(
  ['launch_abandon','launch.abandon','Revoke an exact prepared launch entry that has not been entered.',{operationId:operation,launchOperationId:operation}],
 );
 definitions.push(
- ['application_upload_begin','import.begin','Stage APK metadata. operationId identifies the upload and must also identify its commit.',{operationId:operation,space:text,expectedGeneration:{type:'string',maxLength:80},files:{type:'array',minItems:1,maxItems:64,items:object({name:{...text,pattern:'^(base|split-[0-9]+)\\.apk$'},size:{type:'integer',minimum:1,maximum:1073741824},sha256:{type:'string',pattern:'^[a-f0-9]{64}$'}})}}],
+ ['application_upload_begin','import.begin','Stage APK metadata. operationId identifies the upload and must also identify its commit.',{operationId:operation,space:text,expectedGeneration:{type:'string',maxLength:80},files:{type:'array',minItems:1,maxItems:64,items:object({name:{...text,description:'APK staging filename: base.apk first, then split-1.apk, split-2.apk, etc.',pattern:'^(base|split-[0-9]+)\\.apk$'},size:{type:'integer',minimum:1,maximum:1073741824},sha256:{type:'string',pattern:'^[a-f0-9]{64}$'}})}}],
  ['application_upload_write','import.write','Write at most 12 KiB to an upload at the exact byte offset. Use a new operationId for each chunk.',{operationId:operation,uploadId:operation,index:{type:'integer',minimum:0,maximum:63},offset:{type:'integer',minimum:0,maximum:1073741824},data:{type:'string',minLength:4,maxLength:16384,pattern:'^[A-Za-z0-9+/]+={0,2}$'}}],
  ['application_upload_commit','import.commit','Verify and install staged original APKs. operationId must equal the upload id. Query the same id after an unknown result.',{operationId:operation}]
 );
 const mutations=new Set(['probes_configure','probes_stop','process_start','application_stop','classloader_create','dex_snapshot','hook_observe','hook_prepare','hook_activate','hook_update_params','ui_dispatch_action','http_send_request','guest_invoke','hook_disable','hook_discard','space_create','space_rename','space_delete','application_import','application_import_device','application_remove','application_delete','application_mode_set','project_script_put','project_selectors_put','project_archive_restore','project_migration_accept','launch_abandon','launch_close','application_reverify','application_import_cleanup','application_upload_begin','application_upload_write','application_upload_commit']);
-export const tools=definitions.map(([name,method,description,properties])=>({name,description,inputSchema:{type:'object',properties,required:Object.keys(properties),additionalProperties:false},annotations:{readOnlyHint:!mutations.has(name),destructiveHint:mutations.has(name),idempotentHint:true,openWorldHint:false}}));
-function validate(value,schema,path){
-  const reject=reason=>{throw Error('TOOL_ARGUMENT_TYPE:'+path+': '+reason);};
-  if(schema.anyOf){
-    const branch=schema.anyOf.find(s=>s.properties?.kind?.enum?.includes(value?.kind));
-    if(!branch)reject('kind must be java or native');
-    return validate(value,branch,path);
-  }
-  if(schema.enum&&!schema.enum.includes(value))reject('expected '+schema.enum.join(' | '));
-  if(schema.type==='string'&&(typeof value!=='string'||value.length<(schema.minLength??0)||value.length>(schema.maxLength??32000)||schema.pattern&&!new RegExp(schema.pattern).test(value)))reject('invalid string');
-  if(schema.type==='integer'&&(!Number.isSafeInteger(value)||value<schema.minimum||schema.maximum!==undefined&&value>schema.maximum))reject('integer outside supported range');
-  if(schema.type==='boolean'&&typeof value!=='boolean')reject('expected boolean');
-  if(schema.type==='object'){
-    if(!value||typeof value!=='object'||Array.isArray(value))reject('expected object');
-    const missing=(schema.required??[]).filter(key=>!Object.hasOwn(value,key));
-    if(missing.length)reject('missing '+missing.join(', '));
-    const extra=Object.keys(value).filter(key=>!Object.hasOwn(schema.properties??{},key));
-    if(schema.additionalProperties===false&&extra.length)reject('unsupported '+extra.join(', '));
-    for(const [key,child] of Object.entries(schema.properties??{}))if(Object.hasOwn(value,key))validate(value[key],child,path+'.'+key);
-  }
-  if(schema.type==='array'){
-    if(!Array.isArray(value)||value.length<(schema.minItems??0)||value.length>(schema.maxItems??Infinity))reject('invalid array length');
-    value.forEach((item,index)=>validate(item,schema.items,path+'['+index+']'));
-  }
-}
+export const tools=definitions.map(([name,method,description,properties])=>({name,description:description+(Object.keys(properties).length?'':' No arguments: call with {}.'),inputSchema:describeSchema({...object(properties),description:Object.keys(properties).length?'Arguments for '+name+'. Supply the required fields exactly; omit only fields declared optional.':'No arguments. Pass an empty JSON object {}.',...(Object.keys(properties).length?{}:{examples:[{}]})}),annotations:{readOnlyHint:!mutations.has(name),destructiveHint:mutations.has(name),idempotentHint:true,openWorldHint:false}}));
 export const isMutation=name=>mutations.has(name);
 export const contract=definitions.filter(d=>d[0]!=='application_import').map(([name,method])=>({tool:tools.find(t=>t.name===name),method,mutation:mutations.has(name)}));
 export const localImportTool=tools.find(t=>t.name==='application_import');
@@ -125,7 +100,8 @@ export function command(name,args){
   const missing=tool.inputSchema.required.filter(key=>!Object.hasOwn(args,key));
   const extra=Object.keys(args).filter(key=>!Object.hasOwn(tool.inputSchema.properties,key));
   if(missing.length||extra.length)throw Error('TOOL_ARGUMENT_FIELDS: '+[missing.length?'missing '+missing.join(', '):'',extra.length?'unsupported '+extra.join(', '):''].filter(Boolean).join('; '));
-  for(const [key,schema] of Object.entries(tool.inputSchema.properties))validate(args[key],schema,key);
+  validate(args,tool.inputSchema,'arguments');
+  if(args.invocation)validateInvocation(args.invocation);
   const selected=args.selectors??args.configuration?.startupHook?.selectors;
   if(selected&&new Set(selected.map(s=>s.id)).size!==selected.length)throw Error('TOOL_ARGUMENT_TYPE:selectors: duplicate id');
   const params={...args};let requestId=randomUUID();if(mutations.has(name)){requestId=id(params.operationId);delete params.operationId;}

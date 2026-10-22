@@ -122,6 +122,12 @@ final class RuntimeSelfHookActivities {
             }
             if(name.equals("getCaller")||name.equals("getInitialCaller")||name.equals("getCurrentCaller")){ComponentCaller caller=(ComponentCaller)original.call(args);return RuntimeBridge.owns(activity)?RuntimeBridge.activityCaller(activity,caller,name.equals("getCurrentCaller")):caller;}
             if(!RuntimeBridge.owns(activity))return original.call(args);
+            if(name.equals("setTaskDescription")){
+                ActivityManager.TaskDescription decorated;
+                try{decorated=RuntimeEngine.current.taskPresentation.decorate((ActivityManager.TaskDescription)args[0]);}
+                catch(RuntimeException error){android.util.Log.w("TripoderActivities","guest-task-badge",error);return original.call(args);}
+                return original.call(decorated);
+            }
             if(name.equals("getReferrer"))return RuntimeBridge.activityReferrer(activity);
             if(name.equals("getCallingActivity"))return RuntimeBridge.callingActivity(activity,(ComponentName)original.call(args));
             if(name.equals("getCallingPackage")){ComponentName caller=activity.getCallingActivity();return caller==null?null:caller.getPackageName();}

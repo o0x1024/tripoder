@@ -41,7 +41,7 @@ final class RuntimeAgentSessions implements AutoCloseable {
         Bundle out=new Bundle();out.putString("result",result.toString());return out;
     }
     private JSONObject targets()throws Exception{
-        new ApplicationProjects(broker).reconcile();
+        new ApplicationProjects(broker).reconcileMetadata();
         JSONArray rows=new JSONArray();synchronized(broker){
             try(var c=broker.store.getReadableDatabase().rawQuery("SELECT p.id,p.space,p.package,p.generation,p.operation,p.mode,s.generation,s.processName,s.pid FROM project_refs p JOIN installs i ON i.space=p.space AND i.package=p.package AND i.generation=p.generation JOIN sessions s ON s.space=p.space AND s.package=p.package AND s.installGeneration=p.generation WHERE p.kind='DIRECT' AND p.state='COMMITTED' AND i.state='COMMITTED' AND s.state='RUNNING' AND s.authorityGeneration=? ORDER BY p.id,s.processName LIMIT 257",new String[]{broker.store.authorityGeneration})){
                 while(c.moveToNext())rows.put(new JSONObject().put("project",c.getString(0)).put("space",c.getString(1)).put("package",c.getString(2)).put("installGeneration",c.getString(3)).put("bindingOperation",c.getString(4)).put("mode",c.getString(5)).put("processGeneration",c.getString(6)).put("processName",c.getString(7)).put("pid",c.getInt(8)));

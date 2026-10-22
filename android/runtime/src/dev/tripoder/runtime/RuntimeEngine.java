@@ -58,6 +58,7 @@ public final class RuntimeEngine {
     final RuntimeProviderIndex providerIndex;
     final RuntimeServiceIndex serviceIndex;
     final RuntimeActivityManager activityManager=new RuntimeActivityManager(this);
+    final RuntimeTaskPresentation taskPresentation=new RuntimeTaskPresentation(this);
     final RuntimeConnectivity connectivity=new RuntimeConnectivity(this);
     final RuntimeTelephony telephony=new RuntimeTelephony(this);
     final RuntimeAudio audio=new RuntimeAudio(this);
@@ -455,7 +456,7 @@ public final class RuntimeEngine {
         activityCallers.initial(activity,permit.caller);
         activityMetadata.put(activity,new ActivityInfo(activityInfos.get(activityName)));visibleIntents.put(activity,visible);
     }
-    public void activityAttached(Activity activity){if(mode==RuntimeMode.THIN&&!thinControllerRoots.contains(activity))return;try{Bundle b=activityAuth(activity);b.putInt("taskId",activity.getTaskId());RuntimeWire.call(broker,RuntimeWire.ACTIVITY_ATTACHED,b);}catch(Exception error){throw new IllegalStateException("ACTIVITY_ATTACH_ACK_FAILED",error);}}
+    public void activityAttached(Activity activity){taskPresentation.attached(activity);if(mode==RuntimeMode.THIN&&!thinControllerRoots.contains(activity))return;try{Bundle b=activityAuth(activity);b.putInt("taskId",activity.getTaskId());RuntimeWire.call(broker,RuntimeWire.ACTIVITY_ATTACHED,b);}catch(Exception error){throw new IllegalStateException("ACTIVITY_ATTACH_ACK_FAILED",error);}}
     private final java.util.Set<Activity> createdActivities=java.util.Collections.synchronizedSet(java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>()));
     public void activityCreated(Activity activity){if(!createdActivities.add(activity))return;applyGuestWindowInsetsIfNeeded(activity);if(mode==RuntimeMode.THIN)return;try{Bundle b=activityAuth(activity);b.putInt("taskId",activity.getTaskId());RuntimeWire.call(broker,RuntimeWire.ACTIVITY_CREATED,b);}catch(Exception error){throw new IllegalStateException("ACTIVITY_CREATE_ACK_FAILED",error);}}
     private void applyGuestWindowInsetsIfNeeded(Activity activity){

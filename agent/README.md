@@ -55,6 +55,10 @@ Authorization: Bearer <手机导出配置中的 token>
 
 手机工具契约由 `agent/tools.mjs` 在构建时生成 `mcp-contract.json` 并打包进 APK。HTTP 发布共享工具；stdio 从手机读取同一列表，额外发布本地便利工具 `application_import`。
 
+全部 70 个工具（HTTP 69 个，stdio 额外 1 个）的入参契约由 `tools.mjs` 和 `tool-schema.mjs` 共同定义。字段说明标明 ID/游标的查询来源、空字符串的含义、必填项和数值/长度边界；HTTP 与 stdio 读取同一份手机契约。无参查询明确使用 `{}`，不是缺失 schema。只有 `headers` 和脚本 `parameters` 等动态字典允许自定义键，并限制值类型。
+
+复杂参数示例（外层仍需 `operationId` 和精确 `target`）：`http_send_request.request` 使用 `{method:"GET",url:"https://example.com/",timeoutMs:5000}`；`ui_dispatch_action.action` 使用 `{kind:"tap",x:120,y:240}` 或 `{kind:"setText",id:"search",text:"example"}`；`guest_invoke.invocation` 使用 `{className:"com.example.Counter",methodName:"value",argumentTypes:[],arguments:[]}`。Java `long` 必须传十进制字符串，`byte[]` 使用偶数长度十六进制字符串；参数数量、类型与范围在派发前校验。
+
 - `application_import`（仅 stdio）：读取电脑绝对路径 APK，计算 SHA-256，使用共享分块上传接口。
 - `application_upload_begin`：传 `operationId`、`space`、`expectedGeneration`、`files:[{name,size,sha256}]`。首文件 `base.apk`，后续 `split-1.apk` 等。
 - `application_upload_write`：每块独立 `operationId`，传 `uploadId`、`index`、`offset`、base64 `data`，最多 12 KiB 原始字节。
@@ -67,6 +71,8 @@ HTTP 不读取客户端本地路径。双方均支持设备原始 APK 导入 `ap
 有安装作用域的调用带 `target:{space,package,installGeneration}`；有进程作用域的调用再带 `processGeneration`。连接没有默认选中目标，也不自动选择唯一候选。
 
 修改使用明确、唯一的 `operationId`；同 ID、同内容返回原回执。执行前本地校验、连接/证书失败、认证拒绝可报告 `dispatched:false`。可能已派发后断网为 UNKNOWN，不自动重发，使用 `operation_get` 对账。查询到后续状态不等于原操作已成功。
+
+手机端查询最多等待 15 秒，修改操作最多等待 60 秒；超时返回 `MCP_EXECUTION_TIMEOUT`，查询为 `UNAVAILABLE`，修改为 `UNKNOWN` 并保留原 operationId。同步 Binder 事务可能仍在执行，超时不证明远端停止。独立执行池最多容纳两个未结束事务，不排队；耗尽时返回 `MCP_DISPATCH_BUSY` / `dispatched:false`。ping、工具列表与会话撤销不持有执行锁。必须先检查原回执与实际状态，不能通过自动重试或重启入口来推断原操作失败。
 
 典型 Hook 流程：targets_list → hook_observe → hook_prepare → hook_activate → 实际调用/操作 → hook_status → hook_disable。ACTIVE 不证明实际命中；应检查返回值、hits、errors 和停用后行为恢复。
 

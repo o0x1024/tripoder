@@ -11,6 +11,13 @@ public final class ProjectTargetBindings {
     private final RuntimeBroker broker;
     public ProjectTargetBindings(RuntimeBroker broker){this.broker=broker;}
     public Bundle bind(String operation,String caller,String project,String space,String pkg,String generation,String expectedBinding)throws Exception{
+        return bind(operation,caller,project,space,pkg,generation,expectedBinding,true);
+    }
+    /** Repairs a reference to a durable install, without opening its APK. Execution still resolves the artifacts. */
+    Bundle bindMetadata(String operation,String caller,String project,String space,String pkg,String generation,String expectedBinding)throws Exception{
+        return bind(operation,caller,project,space,pkg,generation,expectedBinding,false);
+    }
+    private Bundle bind(String operation,String caller,String project,String space,String pkg,String generation,String expectedBinding,boolean verifyArtifacts)throws Exception{
         project(project);RuntimeFiles.id(space);RuntimeFiles.id(pkg);RuntimeFiles.id(generation);if(expectedBinding!=null)RuntimeFiles.id(expectedBinding);
         String digest=ApkStore.textDigest(new JSONObject().put("kind","direct-binding-v1").put("project",project).put("space",space).put("package",pkg).put("generation",generation).put("expectedBinding",expectedBinding==null?JSONObject.NULL:expectedBinding).toString());
         synchronized(broker){
@@ -22,11 +29,14 @@ public final class ProjectTargetBindings {
         try{
             // A project's scripts and selectors are written for one application; a new space or version is a rebinding, another application is a new project.
             synchronized(broker){Row prior=rowIn(project,space);if(prior!=null&&!pkg.equals(prior.pkg))throw new IllegalStateException("PROJECT_PACKAGE_CHANGE_UNSUPPORTED");}
-            var install=broker.apks.get(space,pkg);if(!generation.equals(install.generation))throw new IllegalStateException("PROJECT_INSTALL_GENERATION_CONFLICT");
+            // Capture durable identity before expensive work, then compare again while publishing.
+            String dataId;
+            synchronized(broker){var current=broker.apks.row(space,pkg);if(current==null||!"COMMITTED".equals(current.state)||!generation.equals(current.generation))throw new IllegalStateException("PROJECT_INSTALL_GENERATION_CONFLICT");dataId=current.dataId;}
+            if(verifyArtifacts){var install=broker.apks.get(space,pkg);if(!generation.equals(install.generation)||!dataId.equals(install.data.getName()))throw new IllegalStateException("PROJECT_INSTALL_GENERATION_CONFLICT");}
             synchronized(broker){
 
                 var current=broker.apks.row(space,pkg);
-                if(current==null||!"COMMITTED".equals(current.state)||!generation.equals(current.generation)||!install.data.getName().equals(current.dataId))throw new IllegalStateException("PROJECT_INSTALL_GENERATION_CONFLICT");
+                if(current==null||!"COMMITTED".equals(current.state)||!generation.equals(current.generation)||!dataId.equals(current.dataId))throw new IllegalStateException("PROJECT_INSTALL_GENERATION_CONFLICT");
                 Row prior=rowIn(project,space);
                 if(expectedBinding==null&&prior!=null)throw new IllegalStateException("PROJECT_BINDING_ALREADY_EXISTS");
                 if(expectedBinding!=null&&(prior==null||!"DIRECT".equals(prior.kind)||!expectedBinding.equals(prior.operation)))throw new IllegalStateException("PROJECT_BINDING_CONFLICT");
@@ -95,23 +105,33 @@ public final class ProjectTargetBindings {
         Row row;synchronized(broker){try(Cursor c=broker.store.getReadableDatabase().rawQuery("SELECT id,space,package,generation,operation,state,kind,mode FROM project_refs WHERE id=? AND operation=?",new String[]{project,operation})){row=c.moveToFirst()?new Row(c):null;}}
         return resolveRow(project,row);
     }
+    Bundle resolveMetadataIn(String project,String space)throws Exception{return resolveMetadataRow(project,rowIn(project,space));}
     private Bundle resolveRow(String project,Row initial)throws Exception{
-        project(project);Row row;JSONObject receipt;
+        Bundle target=resolveMetadataRow(project,initial);
+        // Parsing and verification must not extend the broker critical section.
+        var install=broker.apks.get(target.getString("space"),target.getString("package"));
+        if(!target.getString("generation").equals(install.generation)||!target.getString("dataId").equals(install.data.getName()))throw new IllegalStateException("PROJECT_BINDING_STALE");
+        Bundle latest=resolveMetadataRow(project,initial);
+        latest.putBundle("integrity",broker.apks.integrityStats());
+        return latest;
+    }
+    /** Database-only summary. It proves reference identity, not APK integrity or readiness to execute. */
+    private Bundle resolveMetadataRow(String project,Row initial)throws Exception{
+        project(project);
         synchronized(broker){
-            row=initial;if(row==null)throw new IllegalStateException("PROJECT_NOT_BOUND");
+            Row row=initial;if(row==null)throw new IllegalStateException("PROJECT_NOT_BOUND");
             if(!"DIRECT".equals(row.kind))throw new IllegalStateException("PROJECT_BINDING_KIND_MISMATCH");
             if(!"COMMITTED".equals(row.state))throw new IllegalStateException("PROJECT_BINDING_STALE");
             var operation=broker.contract.query(row.operation);
             if(operation==null||operation.state!=ExecutionContract.OperationState.SUCCEEDED)throw new SecurityException("PROJECT_BINDING_RECEIPT_INVALID");
-            receipt=new JSONObject(operation.result);
+            JSONObject receipt=new JSONObject(operation.result);
             if(!project.equals(receipt.getString("project"))||!row.space.equals(receipt.getString("space"))||!row.pkg.equals(receipt.getString("package"))||!row.generation.equals(receipt.getString("generation"))||!row.operation.equals(receipt.getString("bindingOperation")))throw new SecurityException("PROJECT_BINDING_RECEIPT_INVALID");
+            var current=broker.apks.row(row.space,row.pkg);
+            if(current==null||!"COMMITTED".equals(current.state)||!row.generation.equals(current.generation)||!receipt.getString("dataId").equals(current.dataId))throw new IllegalStateException("PROJECT_BINDING_STALE");
+            Row latest=rowIn(project,row.space);
+            if(latest==null||!Objects.equals(latest.operation,row.operation)||!"COMMITTED".equals(latest.state)||!row.generation.equals(latest.generation)||!row.pkg.equals(latest.pkg))throw new IllegalStateException("PROJECT_BINDING_STALE");
+            return bundle(receipt,RuntimeMode.parse(latest.mode).wire);
         }
-        var install=broker.apks.get(row.space,row.pkg);
-        if(!row.generation.equals(install.generation)||!receipt.getString("dataId").equals(install.data.getName()))throw new IllegalStateException("PROJECT_BINDING_STALE");
-        Row latest;synchronized(broker){latest=rowIn(project,row.space);if(latest==null||!Objects.equals(latest.operation,row.operation)||!"COMMITTED".equals(latest.state))throw new IllegalStateException("PROJECT_BINDING_STALE");}
-        Bundle out=bundle(receipt,RuntimeMode.parse(latest.mode).wire);
-        out.putBundle("integrity",broker.apks.integrityStats());
-        return out;
     }
     private Row row(String project){synchronized(broker){
         String selected=new ApplicationProjects(broker).selected(project);Row chosen=rowIn(project,selected);if(chosen!=null)return chosen;

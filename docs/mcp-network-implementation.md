@@ -49,3 +49,14 @@ stdio 客户端 → Node 适配器 → 手机 HTTPS `/mcp`；HTTP 客户端直�
 后续已完成 Sentinel 桌面接入：为每个 MCP 服务器配置独立受信公共证书，保留 TLS 校验，实际发现 69 个工具，并通过桌面调用 `runtime_capabilities`。按用户要求卸载 `globaltest` 及配套测试包后，再次停止 ADB 服务、在 Sentinel 断开并重新连接主应用，工具调用返回 `ok=true`、`is_error=false`，requestId=`bcfbe4ea-13bf-4ce4-b470-d53e74d3bad8`。完整桌面证据保存在 Sentinel 仓库的 `docs/evidence/mcp-trusted-certificates-2026-10-22-01/`。
 
 尚未覆盖云端客户端接入、长时间锁屏运行、真机凭证重置界面和派发后丢失回执的网络故障注入；主机侧已验证 UNKNOWN 不自动重放。下一步建议验证长时间锁屏和网络切换后的明确恢复流程。
+
+## 2026-10-22：schema 与执行等待修复
+
+- 全部 70 个工具（HTTP 69 个、stdio 本地导入 1 个）的字段增加含义、ID/游标来源、长度边界和额外字段策略。HTTP 请求、五种 UI 动作及其 `type` 别名、Java 方法调用、动态参数字典使用明确的嵌套 schema。无参工具明确说明调用 `{}`。
+- Node 与手机 Java 使用同一契约，补齐通用 anyOf、number、null、字典值和属性名校验；方法调用额外校验参数数量与 Java ABI 数值/long/hex-byte[] 边界。
+- 手机 MCP 会话锁不再包围 Binder 执行。查询等待 15 秒、修改等待 60 秒；两个有界执行槽且不排队，耗尽时明确返回未派发。超时查询返回 UNAVAILABLE，修改返回 UNKNOWN 并携带原 operationId 和禁止自动重放的恢复步骤。
+- Sentinel 对单次 MCP 调用设置 75 秒等待预算，并在等待远端期间释放客户端 mutex。取消/中断收尾通过持久化执行记录解析实际 conversation_id；工具开始记录携带 execution_id/generation，并处理取消后延迟写入开始记录的竞态。工具卡片支持 cancelled/timed_out 显示。
+
+验证：70 份 schema 通过标准 JSON Schema 编译；生产 Java 校验器通过 320 个共享参数案例及阻塞查询/修改、服务发现、会话撤销和执行槽耗尽检查；HTTP/stdio 主机测试 19 项通过。Sentinel 数据库回归 3 项、MCP 适配器回归 4 项、工具卡片测试 12 项通过，`cargo check -p sentinel-ai --lib` 与 `vue-tsc --noEmit` 通过。
+
+最终 APK 已构建，SHA-256 为 `17d483973dbd1667380773494bfb8e5b81361d80aff9a82dd32e01d47813e3a0`；包内契约与源码一致，相关生产输入摘要已核对。本轮没有安装手机或重启 Sentinel，也没有改写用户现有对话数据库；以上结果属于构建与主机验证，尚不代表更新后的真机/桌面端验收。需要更新手机 APK、运行新的 Sentinel 构建，并重连 MCP 以读取新工具契约。

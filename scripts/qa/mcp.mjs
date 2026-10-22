@@ -7,7 +7,8 @@ import { mkdir, writeFile } from 'node:fs/promises';
 
 const ROOT = resolve(import.meta.dirname, '..', '..');
 export const SERIAL = process.env.ANDROID_SERIAL || 'd861a4fa';
-export const HOST_PACKAGE = process.env.TP_HOST_PACKAGE || 'dev.tripoder.engine.globaltest';
+export const HOST_PACKAGE = process.env.TP_HOST_PACKAGE || 'dev.tripoder.engine';
+export const CONNECTION = process.env.TRIPODER_CONNECTION || resolve(process.env.HOME, '.tripoder/tripoder-connection.json');
 
 export class Mcp {
   constructor({ serial = SERIAL, timeoutMs = 120000 } = {}) {
@@ -15,7 +16,13 @@ export class Mcp {
     this.timeoutMs = timeoutMs;
     this.pending = new Map();
     this.stderr = '';
-    this.child = spawn(process.execPath, [resolve(ROOT, 'agent/server.mjs'), '--serial', serial], {
+    this.spawnChild();
+  }
+  /** (Re)create the stdio adapter. A phone-side engine restart drops the HTTPS session. */
+  spawnChild() {
+    if (this.child) { try { this.child.kill('SIGKILL'); } catch {} }
+    this.pending.clear();
+    this.child = spawn(process.execPath, [resolve(ROOT, 'agent/server.mjs'), '--connection', CONNECTION], {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     this.child.stderr.on('data', (b) => { this.stderr = (this.stderr + b.toString()).slice(-8000); });
@@ -33,11 +40,20 @@ export class Mcp {
       this.child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n');
     });
   }
-  async init() {
-    const r = await this.rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'tripoder-qa', version: '1' } });
-    if (r.error) throw new Error('INIT_FAILED ' + JSON.stringify(r.error));
-    this.child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} }) + '\n');
-    return this;
+  async init({ attempts = 5 } = {}) {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        const r = await this.rpc('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'tripoder-qa', version: '1' } }, 30000);
+        if (r.error) throw new Error('INIT_FAILED ' + JSON.stringify(r.error));
+        this.child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} }) + '\n');
+        return this;
+      } catch (error) {
+        if (attempt >= attempts) throw error;
+        console.log('[mcp] init retry', attempt, String(error.message).slice(0, 80));
+        this.spawnChild();
+        await new Promise((r) => setTimeout(r, 5000));
+      }
+    }
   }
   async call(tool, args = {}, { timeoutMs } = {}) {
     const response = await this.rpc('tools/call', { name: tool, arguments: args }, timeoutMs);
@@ -90,7 +106,7 @@ export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** Newest SMS bodies (device SMS store), used for login verification codes. */
 export async function recentSms(limit = 5) {
-  const out = await shell(`content query --uri content://sms --projection _id:address:date:body --sort "date DESC" 2>/dev/null | head -${limit}`);
+  const out = await shell(`content query --uri content://sms/inbox --projection _id,address,date,body --sort "date DESC" 2>/dev/null | head -${limit}`);
   return out.split('\n').filter(Boolean).map((line) => {
     const m = line.match(/^Row: \d+ _id=(\d+), address=([^,]*), date=(\d+), body=(.*)$/s);
     return m ? { id: Number(m[1]), address: m[2], date: Number(m[3]), body: m[4] } : { raw: line };

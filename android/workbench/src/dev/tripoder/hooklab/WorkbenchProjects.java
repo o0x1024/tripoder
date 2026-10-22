@@ -30,7 +30,7 @@ final class WorkbenchProjects {
                 if(!new File(dir,"scripts").isDirectory()&&!new File(dir,"scripts").mkdirs())throw new IOException("创建项目目录失败");
                 if(!new File(dir,"scripts/main.ts").exists())atomic(new File(dir,"scripts/main.ts"),"// 在这里编写 Tripoder 脚本。保存后按需部署到所选空间的进程。\n");
                 atomic(new File(dir,"project.json"),new JSONObject().put("schema",2).put("id",id).put("name",pkg).put("package",pkg).put("createdAt",System.currentTimeMillis()).toString(2));
-            }else{JSONObject meta=get(id);meta.put("package",pkg);atomic(new File(dir,"project.json"),meta.toString(2));}
+            }else{JSONObject meta=get(id);if(!pkg.equals(meta.optString("package"))){meta.put("package",pkg);atomic(new File(dir,"project.json"),meta.toString(2));}}
             org.json.JSONArray legacy=app.optJSONArray("legacyProjects");if(legacy!=null)for(int j=0;j<legacy.length();j++)archive(legacy.getString(j),pkg,id);
         }
         // UI and MCP catalog replies can arrive out of order. Only genuinely unbound legacy sources

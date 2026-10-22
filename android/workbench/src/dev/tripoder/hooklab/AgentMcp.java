@@ -3,26 +3,59 @@ package dev.tripoder.hooklab;
 import android.content.Context;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.*;
 import org.json.*;
 
 /** MCP dispatch shared by native HTTP clients and the desktop stdio adapter. */
-final class AgentMcp {
+final class AgentMcp implements AutoCloseable {
     static final String VERSION="2025-11-25";
     private final WorkbenchAgentControl control;
     private final Map<String,JSONObject> entries=new LinkedHashMap<>();
     private final Map<String,Session> sessions=new LinkedHashMap<>();
+    // Binder transactions cannot be forcibly cancelled. Bound both local waits
+    // and the number of possibly stuck transactions; never queue/replay commands.
+    private final ThreadPoolExecutor dispatch=new ThreadPoolExecutor(2,2,0,TimeUnit.MILLISECONDS,new SynchronousQueue<>());
+    private final long queryTimeoutMs,mutationTimeoutMs;
+    private volatile boolean closed;
     private static final class Session {boolean ready;long used=System.currentTimeMillis();}
     record Reply(int status,JSONObject body,String session){}
+    private record Call(Object id,JSONObject wire,boolean mutation,String session){}
     AgentMcp(Context context,WorkbenchAgentControl control)throws Exception{
+        this(context,control,15000,60000);
+    }
+    AgentMcp(Context context,WorkbenchAgentControl control,long queryTimeoutMs,long mutationTimeoutMs)throws Exception{
+        this.queryTimeoutMs=queryTimeoutMs;this.mutationTimeoutMs=mutationTimeoutMs;
         this.control=control;JSONObject contract;
         try(var input=context.getAssets().open("mcp-contract.json")){contract=new JSONObject(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
         if(!VERSION.equals(contract.getString("protocolVersion")))throw new IllegalArgumentException("MCP_CONTRACT_VERSION");
         JSONArray records=contract.getJSONArray("entries");for(int i=0;i<records.length();i++){JSONObject entry=records.getJSONObject(i);entries.put(entry.getJSONObject("tool").getString("name"),entry);}
     }
-    synchronized boolean remove(String id){return sessions.remove(id)!=null;}
-    synchronized Reply handle(JSONObject request,String sessionId,String version,java.util.function.BooleanSupplier authorized)throws Exception{
+    boolean remove(String id){synchronized(sessions){return sessions.remove(id)!=null;}}
+    Reply handle(JSONObject request,String sessionId,String version,java.util.function.BooleanSupplier authorized)throws Exception{
+        Object prepared;synchronized(sessions){prepared=prepare(request,sessionId,version,authorized);}
+        if(prepared instanceof Reply reply)return reply;
+        Call call=(Call)prepared;Future<JSONObject> future;
+        try{
+            future=dispatch.submit(()->{
+                // Recheck revocation immediately before dispatch, outside network parsing.
+                synchronized(sessions){if(closed||!authorized.getAsBoolean()||!sessions.containsKey(call.session))return unavailable(call,"MCP_SESSION_CLOSED",false);}
+                return control.wire(call.wire);
+            });
+        }catch(RejectedExecutionException busy){return tool(call.id,unavailable(call,"MCP_DISPATCH_BUSY",false));}
+        try{return tool(call.id,future.get(call.mutation?mutationTimeoutMs:queryTimeoutMs,TimeUnit.MILLISECONDS));}
+        catch(TimeoutException timeout){future.cancel(false);return tool(call.id,unavailable(call,"MCP_EXECUTION_TIMEOUT",true));}
+        catch(InterruptedException interrupted){future.cancel(false);Thread.currentThread().interrupt();return tool(call.id,unavailable(call,"MCP_WAIT_INTERRUPTED",true));}
+        catch(ExecutionException failed){return tool(call.id,unavailable(call,"MCP_DISPATCH_FAILED",true));}
+    }
+    private static JSONObject unavailable(Call call,String code,boolean dispatched)throws Exception{
+        JSONObject receipt=new JSONObject().put("protocol",2).put("requestId",call.wire.getString("requestId")).put("ok",false).put("dispatched",dispatched).put("state",dispatched?(call.mutation?"UNKNOWN":"UNAVAILABLE"):"REJECTED").put("errorCode",code).put("error",code);
+        if(call.mutation)receipt.put("operationId",call.wire.getString("requestId"));
+        return receipt;
+    }
+    @Override public void close(){synchronized(sessions){closed=true;sessions.clear();}dispatch.shutdownNow();}
+    private Object prepare(JSONObject request,String sessionId,String version,java.util.function.BooleanSupplier authorized)throws Exception{
         Object id=request.opt("id");
-        if(!authorized.getAsBoolean())return new Reply(401,null,null);
+        if(closed||!authorized.getAsBoolean())return new Reply(401,null,null);
         if(!"2.0".equals(request.optString("jsonrpc"))||!(request.opt("method") instanceof String)||id!=null&&!(id instanceof String)&&!(id instanceof Number))return new Reply(400,error(id,-32600,"Invalid Request"),null);
         if(request.has("params")&&!(request.opt("params") instanceof JSONObject))return new Reply(400,error(id,-32602,"Object params required"),null);
         String method=request.getString("method");JSONObject params=request.optJSONObject("params");if(params==null)params=new JSONObject();
@@ -45,7 +78,7 @@ final class AgentMcp {
         catch(Exception invalid){receipt=new JSONObject().put("protocol",2).put("ok",false).put("state","REJECTED").put("dispatched",false).put("errorCode","INVALID_TOOL_ARGUMENTS").put("error",invalid.getMessage());return tool(id,receipt);}
         JSONObject args=new JSONObject(raw.toString());boolean mutation=entry.getBoolean("mutation");String operation=mutation?args.getString("operationId"):UUID.randomUUID().toString();if(mutation)args.remove("operationId");
         JSONObject wire=new JSONObject().put("protocol",2).put("requestId",operation).put("method",entry.getString("method")).put("params",args);
-        receipt=control.wire(wire);return tool(id,receipt);
+        return new Call(id,wire,mutation,sessionId);
     }
     private static Reply tool(Object id,JSONObject receipt)throws Exception{
         if(!receipt.optBoolean("ok")||"UNKNOWN".equals(receipt.optJSONObject("result")==null?"":receipt.getJSONObject("result").optString("state"))){

@@ -39,6 +39,7 @@ public final class AgentControlService extends Service {
     private void serve(SSLSocket client){try(client){AgentHttp.serve(client,identity,mcp);}catch(Exception error){if(error instanceof SSLException)android.util.Log.w("TripoderAgent","TLS handshake rejected",error);else android.util.Log.w("TripoderAgent","Connection interrupted: "+error.getClass().getSimpleName());}finally{connections.remove(client);}}
     @Override public IBinder onBind(Intent intent){return null;}
     @Override public void onDestroy(){
+        if(mcp!=null)mcp.close();
         control.listening=false;control.networkIdentity=null;if(networkCallback!=null)getSystemService(ConnectivityManager.class).unregisterNetworkCallback(networkCallback);
         try{if(socket!=null)socket.close();}catch(IOException ignored){}acceptor.shutdownNow();clients.shutdownNow();for(SSLSocket client:connections)try{client.close();}catch(IOException ignored){}connections.clear();
         control.revoke((reply,error)->{});control.closed();if(startupFailure!=null)control.message=startupFailure;super.onDestroy();

@@ -1,6 +1,5 @@
 package dev.tripoder.runtime;
 
-import android.database.Cursor;
 import android.os.Bundle;
 import dev.tripoder.control.ControlWire;
 import org.json.*;
@@ -12,6 +11,7 @@ final class RuntimeControllerCommands {
         if("install".equals(input.getString("command")))return RuntimeControllerInstall.install(broker,input);
         if(input.hasFileDescriptors())throw new SecurityException("CONTROL_FILE_DESCRIPTOR_UNSUPPORTED");
         String command=ControlWire.required(input,"command");Bundle out=new Bundle();
+        if(command.equals("catalog")){fields(input,"command");return RuntimeControllerCatalog.read(broker);}
         if(command.equals("appPresentation"))return RuntimeControllerPresentation.read(broker,input);
         if(command.equals("reclaimEmptyTasks")){fields(input,"command");String receipt=RuntimeEmptyTasks.reclaim(broker,null).toString();Bundle resources=RuntimeControllerResources.inspect(broker);resources.putString("reclaimed",receipt);return resources;}
         if(command.equals("resources")){fields(input,"command");return RuntimeControllerResources.inspect(broker);}
@@ -63,15 +63,6 @@ final class RuntimeControllerCommands {
             switch(command){
                 case "status":
                     fields(input,"command");out.putString("authority",broker.store.authorityGeneration);out.putString("lease",lease);out.putInt("engineUid",android.os.Process.myUid());out.putInt("enginePid",android.os.Process.myPid());out.putInt("controllerUid",android.os.Process.myUid());out.putInt("schema",broker.store.getReadableDatabase().getVersion());out.putBoolean("strongIsolation",false);out.putBoolean("hookReady",true);break;
-                case "catalog":{
-                    new ApplicationProjects(broker).reconcile();
-                    fields(input,"command");JSONArray spaces=new JSONArray();for(String space:broker.catalog.spaces())spaces.put(space);
-                    if(spaces.length()>256)throw new IllegalStateException("CATALOG_PAGE_REQUIRED");JSONArray installs=new JSONArray();
-                    try(Cursor c=broker.store.getReadableDatabase().rawQuery("SELECT space,package,generation,state,version FROM installs ORDER BY space,package LIMIT 257",null)){while(c.moveToNext())installs.put(new JSONObject().put("space",c.getString(0)).put("package",c.getString(1)).put("generation",c.getString(2)).put("state",c.getString(3)).put("version",c.getLong(4)));}
-                    if(installs.length()>256)throw new IllegalStateException("CATALOG_PAGE_REQUIRED");JSONArray projects=new JSONArray();
-                    try(Cursor c=broker.store.getReadableDatabase().rawQuery("SELECT id,space,package,generation,state,operation,mode FROM project_refs WHERE kind='DIRECT' ORDER BY id,space LIMIT 257",null)){while(c.moveToNext())projects.put(new JSONObject().put("project",c.getString(0)).put("space",c.getString(1)).put("package",c.getString(2)).put("generation",c.getString(3)).put("state",c.getString(4)).put("bindingOperation",c.getString(5)).put("mode",c.getString(6)));}
-                    if(projects.length()>256)throw new IllegalStateException("CATALOG_PAGE_REQUIRED");out.putString("spaces",spaces.toString());out.putString("installs",installs.toString());out.putString("projects",projects.toString());out.putString("applications",new ApplicationProjects(broker).list().toString());break;
-                }
                 case "createSpace":{
                     fields(input,"command","space","operation");String space=ControlWire.required(input,"space"),operation=ControlWire.required(input,"operation");RuntimeFiles.id(space);
                     String digest=ApkStore.textDigest("controller-create-space-v1\n"+space);var admission=broker.contract.accept(operation,ControllerTrust.OPERATIONS,digest);

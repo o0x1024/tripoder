@@ -37,7 +37,7 @@ def main():
     files += [Path(__file__).resolve(),android/'scripts/runtime_apk_builder.py',android/'scripts/runtime_activity_slots.py',android/'scripts/runtime_job_slots.py',android/'scripts/self_hook_native.py']
     self_hook_java=sorted((android/'self-hook/java').rglob('*.java'))
     files += self_hook_java
-    files += [repo/'agent/tools.mjs',repo/'agent/export-contract.mjs']
+    files += [repo/'agent/tools.mjs',repo/'agent/tool-schema.mjs',repo/'agent/export-contract.mjs']
     fixture_base=android/'runtime-probe/build/a.apk';fixture_upgrade=android/'runtime-probe/build/assets/a-upgrade.apk'
     fixture_preview=android/'runtime-probe/build/preview-guest.apk'
     fixture_receipt=json.loads((android/'runtime-probe/build/build-receipt.json').read_text())
@@ -68,6 +68,9 @@ def main():
     result_probe=builder.apk('result-contract-guest',sorted(result_contract.glob('*.java')),result_contract/'AndroidManifest.xml')
     biometric_contract=android/'control-test/biometric-contract-fixture'
     biometric_probe=builder.apk('biometric-contract-guest',sorted(biometric_contract.glob('*.java')),biometric_contract/'AndroidManifest.xml')
+    task_fixture=android/'control-test/task-presentation-fixture'
+    task_probe=builder.apk('task-presentation-guest',sorted(task_fixture.glob('*.java')),task_fixture/'AndroidManifest.xml',resources=task_fixture/'res')
+    fixture_info['taskPresentationSha256']=sha(task_probe)
     fixture_info['applicationContractSha256']=sha(contract_probe)
     generated=build/'generated';generated.mkdir(exist_ok=True)
     common=sorted((android/'control/src').rglob('*.java'))
@@ -115,6 +118,7 @@ def main():
     shutil.copyfile(autofill_probe,test_assets/'autofill-contract-guest.apk')
     shutil.copyfile(result_probe,test_assets/'result-contract-guest.apk')
     shutil.copyfile(biometric_probe,test_assets/'biometric-contract-guest.apk')
+    shutil.copyfile(task_probe,test_assets/'task-presentation-guest.apk')
     control_test=builder.apk('tripoder-control-test',common+sorted((android/'control-test/src').rglob('*.java')),control_manifest,assets=test_assets)
     after={str(p.relative_to(repo)):sha(p) for p in files}
     if before!=after:raise RuntimeError('SOURCES_CHANGED_DURING_BUILD')

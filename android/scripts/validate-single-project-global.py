@@ -16,7 +16,7 @@ def main():
     parser.add_argument('--package', default='dev.tripoder.engine')
     parser.add_argument('--test-package', default='dev.tripoder.controltest')
     parser.add_argument('--evidence', type=Path, required=True)
-    parser.add_argument('--phase', choices=['migration', 'global-ui', 'library-ui', 'app-actions-ui', 'multi-add', 'publication', 'execution-code', 'thick-policy', 'all'], default='all')
+    parser.add_argument('--phase', choices=['migration', 'global-ui', 'library-ui', 'app-actions-ui', 'multi-add', 'publication', 'execution-code', 'thick-policy', 'catalog-seed', 'catalog-cold', 'task-presentation', 'all'], default='all')
     options = parser.parse_args()
     for value in (options.package, options.test_package):
         if not re.fullmatch(r'[A-Za-z0-9_.]+', value):
@@ -36,12 +36,14 @@ def main():
     started = call('shell', 'date "+%m-%d %H:%M:%S.%3N"').stdout.strip()
     report = {'passed': False, 'package': options.package, 'uid': uid, 'phases': [], 'deviceLogStart': started}
     phases = {'migration': 'SingleProjectMigrationIntegration', 'global-ui': 'GlobalControlUiIntegration', 'library-ui': 'LibraryUiIntegration', 'app-actions-ui': 'AppActionsUiIntegration', 'multi-add': 'MultiAddUiIntegration', 'publication': 'ApplicationPublicationIntegration', 'execution-code': 'ExecutionCodeIntegration', 'thick-policy': 'ThickPolicyIntegration'}
+    phases.update({'catalog-seed': 'CatalogReadIntegration', 'catalog-cold': 'CatalogReadIntegration'})
+    phases['task-presentation']='TaskPresentationIntegration'
     selected = ['migration', 'global-ui'] if options.phase == 'all' else [options.phase]
     remote = '/sdcard/Android/data/' + options.package + '/files/'
     try:
         for phase in selected:
             run = 'control-' + uuid.uuid4().hex[:16]
-            command = [*adb, 'shell', 'am', 'instrument', '-w', '-r', '-e', 'runId', run, options.test_package + '/dev.tripoder.controltest.' + phases[phase]]
+            command = [*adb, 'shell', 'am', 'instrument', '-w', '-r', '-e', 'runId', run, '-e', 'phase', phase, options.test_package + '/dev.tripoder.controltest.' + phases[phase]]
             output_file = options.evidence / (phase + '-instrumentation.txt')
             with output_file.open('w') as output:
                 process = subprocess.Popen(command, stdout=output, stderr=subprocess.STDOUT, text=True)

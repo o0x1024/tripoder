@@ -4,12 +4,12 @@ import { Mcp, adb, sleep, saveShot, ensureDir, targetOf, waitForCode } from './m
 import { resolve } from 'node:path';
 import { writeFile, mkdir } from 'node:fs/promises';
 
-// Set TP_QA_PHONES to two comma-separated test numbers in the local environment.
+// Set TP_QA_PHONES to one or two comma-separated test numbers in the local environment.
 const configuredPhones = process.env.TP_QA_PHONES;
 if (typeof configuredPhones !== 'string') throw new Error('TP_QA_PHONES_REQUIRED');
 export const PHONES = configuredPhones.split(',').map((phone) => phone.trim());
-if (PHONES.length !== 2 || PHONES.some((phone) => !/^1[3-9]\d{9}$/.test(phone))) {
-  throw new Error('TP_QA_PHONES_REQUIRES_TWO_MOBILE_NUMBERS');
+if (PHONES.length < 1 || PHONES.length > 2 || PHONES.some((phone) => !/^1[3-9]\d{9}$/.test(phone))) {
+  throw new Error('TP_QA_PHONES_REQUIRES_ONE_OR_TWO_MOBILE_NUMBERS');
 }
 
 export class Flow {
@@ -55,40 +55,91 @@ export class Flow {
     return this.mcp.call('application_stop', { operationId: `f-stop2-${Date.now()}`, target: targetOf(inst) }).catch(() => {});
   }
 
-  /** Parsed accessibility tree of the current screen. */
+  /** Accessibility tree of the current screen.
+   *  Two providers: the in-process guest dump (fast, no accessibility idle wait) and
+   *  uiautomator (sees static dialogs the guest dump can miss when its main thread is busy).
+   *  The driver prefers whichever produced text for this package last time. */
   async tree() {
+    const target = await this.activeTarget().catch(() => null);
+    const textCount = (nodes) => nodes.filter((n) => (n.text || n.desc || '').trim()).length;
+    let process = null;
+    if (target) process = await this.processTree(target);
+    if (process && textCount(process.nodes) > 0 && !this._legacyDump) return process;
+    const legacy = await this.legacyTree();
+    if (legacy.nodes.length && textCount(legacy.nodes) > 0) {
+      if (!process || textCount(process.nodes) === 0) this._legacyDump = true;
+      return legacy;
+    }
+    if (process && process.nodes.length) return process;
+    if (legacy.nodes.length) return legacy;
+    return process ?? legacy;
+  }
+
+  /** In-process hierarchy through the guest process (authoritative, never blocks on idle). */
+  async processTree(target) {
+    let dump = null;
+    try { dump = await this.mcp.call('ui_dump_hierarchy', { target, includeInvisible: true }, { timeoutMs: 10000 }); }
+    catch (error) { this.note('ui-dump-error:', String(error.message).slice(0, 90)); }
+    if (!dump) return null;
+    // Several guest activities can be attached at once; the foreground one is the
+    // activity that actually exposes visible nodes.
+    const score = (activity) => {
+      const nodes = activity.nodes ?? [];
+      return nodes.filter((n) => n.visible !== false).length * 1000 + nodes.length;
+    };
+    const activity = (dump.activities ?? [])
+      .filter((activity) => (activity.nodes ?? []).length)
+      .sort((a, b) => score(b) - score(a))[0];
+    if (!activity) return { xml: '', nodes: [], root: null, activity: null };
+    const all = activity.nodes ?? [];
+    const visible = all.filter((n) => n.visible !== false);
+    const source = visible.length ? visible : all;
+    const nodes = source.map((n) => {
+      const b = n.bounds ?? [0, 0, 0, 0];
+      return {
+        text: n.text || '', desc: n.contentDescription || '', cls: n.className || '',
+        clickable: !!n.clickable, checked: !!n.checked, selected: !!n.selected,
+        enabled: n.enabled !== false, focused: !!n.focused,
+        bounds: [b[0], b[1], b[2], b[3]],
+        centre: [Math.round((b[0] + b[2]) / 2), Math.round((b[1] + b[3]) / 2)],
+        pkg: activity.activity || '', rid: n.id || '',
+      };
+    });
+    return { xml: '', nodes, root: nodes[0] || null, activity: activity.activity };
+  }
+
+  /** Platform uiautomator snapshot; slower and idle-sensitive, kept as a cross-check. */
+  async legacyTree() {
     let xml = '';
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const remote = `/sdcard/qa-ui-${Date.now()}-${attempt}.xml`;
-      const out = await adb(['shell', `uiautomator dump ${remote}`], { timeout: 30000 }).catch(() => '');
-      if (/dumped to/i.test(String(out))) {
-        xml = await adb(['shell', `cat ${remote}`], { timeout: 30000 }).catch(() => '');
-        await adb(['shell', `rm -f ${remote}`]).catch(() => {});
-        if (xml.includes('<hierarchy')) break;
-      }
-      await sleep(1200);
+    const remote = `/sdcard/qa-ui-${Date.now()}.xml`;
+    const out = await adb(['shell', `uiautomator dump ${remote}`], { timeout: 12000 }).catch(() => '');
+    if (/dumped to/i.test(String(out))) {
+      xml = await adb(['shell', `cat ${remote}`], { timeout: 20000 }).catch(() => '');
+      await adb(['shell', `rm -f ${remote}`]).catch(() => {});
     }
     const nodes = [];
-    const re = /<node\b([^>]*?)\/?>/g;
-    let m;
-    while ((m = re.exec(xml))) {
-      const attrs = {};
-      const attrRe = /([a-zA-Z:_-]+)="([^"]*)"/g;
-      let a;
-      while ((a = attrRe.exec(m[1]))) attrs[a[1]] = a[2];
-      const b = (attrs.bounds || '').match(/\[(\d+),(\d+)\]\[(\d+),(\d+)\]/);
-      if (!b) continue;
-      nodes.push({
-        text: attrs.text || '', desc: attrs['content-desc'] || '', cls: attrs.class || '',
-        clickable: attrs.clickable === 'true', checked: attrs.checked === 'true',
-        selected: attrs.selected === 'true',
-        enabled: attrs.enabled !== 'false', focused: attrs.focused === 'true',
-        bounds: [+b[1], +b[2], +b[3], +b[4]],
-        centre: [Math.round((+b[1] + +b[3]) / 2), Math.round((+b[2] + +b[4]) / 2)],
-        pkg: attrs.package || '',
-      });
+    if (xml.includes('<hierarchy')) {
+      const re = /<node\b([^>]*?)\/?>/g;
+      let m;
+      while ((m = re.exec(xml))) {
+        const attrs = {};
+        const attrRe = /([a-zA-Z:_-]+)="([^"]*)"/g;
+        let a;
+        while ((a = attrRe.exec(m[1]))) attrs[a[1]] = a[2];
+        const b = (attrs.bounds || '').match(/\[(\d+),(\d+)\]\[(\d+),(\d+)\]/);
+        if (!b) continue;
+        nodes.push({
+          text: attrs.text || '', desc: attrs['content-desc'] || '', cls: attrs.class || '',
+          clickable: attrs.clickable === 'true', checked: attrs.checked === 'true',
+          selected: attrs.selected === 'true', enabled: attrs.enabled !== 'false',
+          focused: attrs.focused === 'true',
+          bounds: [+b[1], +b[2], +b[3], +b[4]],
+          centre: [Math.round((+b[1] + +b[3]) / 2), Math.round((+b[2] + +b[4]) / 2)],
+          pkg: attrs.package || '',
+        });
+      }
     }
-    return { xml, nodes, root: nodes[0] || null };
+    return { xml, nodes, root: nodes[0] || null, activity: null };
   }
 
   texts(nodes = []) { return nodes.filter((n) => n.text || n.desc).map((n) => (n.text || n.desc).replace(/\s+/g, ' ')); }

@@ -436,10 +436,50 @@ public final class ArtifactSet {
     static String hex(byte[] bytes){StringBuilder out=new StringBuilder(bytes.length*2);for(byte b:bytes)out.append(Character.forDigit((b>>4)&15,16)).append(Character.forDigit(b&15,16));return out.toString();}
     static IOException reject(String reason){return new IOException(reason);}
     static void requireSpace(File directory,long required)throws IOException{if(required<0||directory.getUsableSpace()<required)throw reject("ARTIFACT_DISK_BUDGET");}
+    /** Serializes the descriptor into ONE builder. Building sub-strings per node made the
+     *  cost quadratic: every parent copied each child's text, so a descriptor with tens of
+     *  thousands of file entries (large games, big asset packs) exhausted the authority heap
+     *  with an OutOfMemoryError before DESCRIPTOR_LIMIT could reject it. */
     private static String json(Object value){
-        if(value==null)return "null";if(value instanceof Number||value instanceof Boolean)return value.toString();
-        if(value instanceof Map<?,?>){StringJoiner out=new StringJoiner(",","{","}");for(Map.Entry<?,?> e:((Map<?,?>)value).entrySet())out.add(json(e.getKey().toString())+":"+json(e.getValue()));return out.toString();}
-        if(value instanceof Iterable<?>){StringJoiner out=new StringJoiner(",","[","]");for(Object v:(Iterable<?>)value)out.add(json(v));return out.toString();}
-        String s=value.toString();StringBuilder out=new StringBuilder("\"");for(int i=0;i<s.length();i++){char c=s.charAt(i);if(c=='"'||c=='\\')out.append('\\').append(c);else if(c<32||Character.isSurrogate(c))out.append(String.format(Locale.ROOT,"\\u%04x",(int)c));else out.append(c);}return out.append('"').toString();
+        StringBuilder out=new StringBuilder(64*1024);
+        appendJson(out,value);
+        return out.toString();
+    }
+    private static void appendJson(StringBuilder out,Object value){
+        if(value==null){out.append("null");return;}
+        if(value instanceof Number||value instanceof Boolean){out.append(value);return;}
+        if(value instanceof Map<?,?>){
+            out.append('{');boolean first=true;
+            for(Map.Entry<?,?> e:((Map<?,?>)value).entrySet()){
+                if(!first)out.append(',');
+                first=false;
+                appendJsonString(out,e.getKey().toString());
+                out.append(':');
+                appendJson(out,e.getValue());
+            }
+            out.append('}');
+            return;
+        }
+        if(value instanceof Iterable<?>){
+            out.append('[');boolean first=true;
+            for(Object v:(Iterable<?>)value){
+                if(!first)out.append(',');
+                first=false;
+                appendJson(out,v);
+            }
+            out.append(']');
+            return;
+        }
+        appendJsonString(out,value.toString());
+    }
+    private static void appendJsonString(StringBuilder out,String s){
+        out.append('"');
+        for(int i=0;i<s.length();i++){
+            char c=s.charAt(i);
+            if(c=='"'||c=='\\')out.append('\\').append(c);
+            else if(c<32||Character.isSurrogate(c))out.append(String.format(Locale.ROOT,"\\u%04x",(int)c));
+            else out.append(c);
+        }
+        out.append('"');
     }
 }
