@@ -58,6 +58,15 @@ def main():
     with zipfile.ZipFile(payload) as archive:(payload_assets/'payload.dex').write_bytes(archive.read('classes.dex'))
     fixture_probe=builder.apk('code-probe-guest',[probe_fixture/'ProbeApplication.java',probe_fixture/'ProbeActivity.java'],probe_fixture/'AndroidManifest.xml',assets=payload_assets)
     fixture_info['probeSha256']=sha(fixture_probe);fixture_info['payloadSha256']=sha(payload_assets/'payload.dex')
+    application_contract=android/'control-test/application-contract-fixture'
+    contract_probe=builder.apk('application-contract-guest',sorted(application_contract.glob('*.java')),application_contract/'AndroidManifest.xml')
+    autofill_contract=android/'control-test/autofill-contract-fixture'
+    autofill_probe=builder.apk('autofill-contract-guest',sorted(autofill_contract.glob('*.java')),autofill_contract/'AndroidManifest.xml')
+    result_contract=android/'control-test/result-contract-fixture'
+    result_probe=builder.apk('result-contract-guest',sorted(result_contract.glob('*.java')),result_contract/'AndroidManifest.xml')
+    biometric_contract=android/'control-test/biometric-contract-fixture'
+    biometric_probe=builder.apk('biometric-contract-guest',sorted(biometric_contract.glob('*.java')),biometric_contract/'AndroidManifest.xml')
+    fixture_info['applicationContractSha256']=sha(contract_probe)
     generated=build/'generated';generated.mkdir(exist_ok=True)
     common=sorted((android/'control/src').rglob('*.java'))
     native=build/'native';native.mkdir(exist_ok=True)
@@ -99,6 +108,10 @@ def main():
     shutil.copyfile(fixture_launcher,test_assets/'launcher-guest.apk')
     shutil.copyfile(fixture_singletask,test_assets/'launcher-singletask.apk')
     shutil.copyfile(fixture_probe,test_assets/'code-probe-guest.apk')
+    shutil.copyfile(contract_probe,test_assets/'application-contract-guest.apk')
+    shutil.copyfile(autofill_probe,test_assets/'autofill-contract-guest.apk')
+    shutil.copyfile(result_probe,test_assets/'result-contract-guest.apk')
+    shutil.copyfile(biometric_probe,test_assets/'biometric-contract-guest.apk')
     control_test=builder.apk('tripoder-control-test',common+sorted((android/'control-test/src').rglob('*.java')),control_manifest,assets=test_assets)
     after={str(p.relative_to(repo)):sha(p) for p in files}
     if before!=after:raise RuntimeError('SOURCES_CHANGED_DURING_BUILD')

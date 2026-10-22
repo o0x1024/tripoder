@@ -45,7 +45,22 @@ final class RuntimeSelfHookSystemEdges {
     }
     static void ui(RuntimeManagedInstaller installer)throws Exception{
         Map<Executable,RuntimeManagedInstaller.Callback> callbacks=new LinkedHashMap<>();
-        for(Executable target:FixedRuntimeHooks.methods(FixedRuntimeHooks.Group.UI))callbacks.put(target,(receiver,args,original)->{RuntimeBridge.playUiSound(ActivityFrameworkAccess.view(receiver),(Integer)args[0]);return null;});installer.install(callbacks);
+        for(Executable target:FixedRuntimeHooks.methods(FixedRuntimeHooks.Group.UI)){
+            switch(target.getName()){
+                case "playSoundEffect":callbacks.put(target,(receiver,args,original)->{RuntimeBridge.playUiSound(ActivityFrameworkAccess.view(receiver),(Integer)args[0]);return null;});break;
+                case "autofillClientGetComponentName":callbacks.put(target,(receiver,args,original)->{
+                    android.app.Activity activity=ActivityFrameworkAccess.autofillActivity(receiver);
+                    if(!RuntimeBridge.owns(activity))return original.call(args);
+                    // Autofill validates the component against the caller UID and real Activity
+                    // token. Use this instance's admitted window, while Activity keeps its
+                    // guest-visible component for application code.
+                    return RuntimeEngine.current.physicalActivityComponent(activity);
+                });break;
+                default:throw new IllegalStateException("UI_FIXED_BINDING_UNHANDLED:"+target);
+            }
+        }
+        installer.install(callbacks);
+        RuntimeBiometrics.install(installer);
     }
     static void failures(RuntimeManagedInstaller installer)throws Exception{
         Map<Executable,RuntimeManagedInstaller.Callback> callbacks=new LinkedHashMap<>();

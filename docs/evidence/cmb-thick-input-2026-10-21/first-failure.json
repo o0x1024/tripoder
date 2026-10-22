@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "package": "cmb.pb",
+  "mode": "thick",
+  "pid": 31218,
+  "trigger": "Touch empty login account input",
+  "firstCausalFailure": {
+    "at": "2026-10-21T22:44:00.148+08:00",
+    "service": "AutofillManagerServiceImpl",
+    "message": "App package dev.tripoder.engine.globaltest UID 10439 passed cmb.pb/cmb.pb.app.mainframe.container.PBMainActivity owned by UID 10344"
+  },
+  "blockedMainThread": [
+    "SyncResultReceiver.waitResult",
+    "SyncResultReceiver.getIntResult",
+    "AutofillManager.startSessionLocked",
+    "AutofillManager.notifyViewEntered",
+    "View.onFocusChanged",
+    "View.requestFocus",
+    "TextView.onTouchEvent",
+    "CmbPwdEditText.onTouchEvent"
+  ],
+  "callbackTimeoutMs": 5000,
+  "terminalExit": {
+    "at": "2026-10-21T22:44:08.102+08:00",
+    "reason": "ANR",
+    "description": "Input dispatching timed out; waited 5001ms for MotionEvent UP"
+  },
+  "separateUnresolvedFailure": {
+    "pid": 29988,
+    "at": "2026-10-21T22:43:42.352+08:00",
+    "signal": 11,
+    "scope": "Earlier startup native crash; no causal link to input focus proven"
+  }
+}

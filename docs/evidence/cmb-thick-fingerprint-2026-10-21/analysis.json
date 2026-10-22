@@ -1,0 +1,118 @@
+{
+  "schema": 2,
+  "status": "FIX_DEPLOYED_AND_REAL_BANK_USER_VERIFIED",
+  "mode": "thick",
+  "currentPage": {
+    "screenshot": "artifacts/cmb-thick-fingerprint/fingerprint-permission-error.png",
+    "deviceTimeOnScreenshot": "23:35",
+    "error": "FP_ERROR_#18: cmb.pb from uid 10439 not allowed to perform USE_BIOMETRIC",
+    "userPositionedPage": true
+  },
+  "confirmedFacts": {
+    "hostPackage": "dev.tripoder.engine.globaltest",
+    "hostUid": 10439,
+    "physicalBankPackage": "cmb.pb",
+    "physicalBankUid": 10344,
+    "hostUseBiometricGranted": true,
+    "hostUseFingerprintGranted": true,
+    "physicalBankUseBiometricGranted": true,
+    "physicalBankUseFingerprintGranted": true,
+    "failure": "Biometric permission/attribution check receives logical bank package paired with physical host UID.",
+    "modeFromTargetsList": "thick",
+    "pid": 3925,
+    "processGeneration": "85cf4e7ddf847b3880d203d0bc871b5a8e27b787b609c1055e07bc4b7515419d"
+  },
+  "notConfirmed": [
+    "Earlier rejected finish receiver lifecycle; this failure did not recur in the current verified fingerprint flow."
+  ],
+  "nextSteps": [
+    "Continue authorized read-only post-login business regression if requested."
+  ],
+  "earlierFinishFailure": {
+    "status": "ANALYSIS_AWAITING_ORIGINAL_FINGERPRINT_PAGE",
+    "confirmedFacts": {
+      "screenshotAtCapture": "Tripoder workbench showing bank application starting; original fingerprint page no longer foreground.",
+      "failedPid": 28784,
+      "failureAt": "2026-10-21T23:22:53.478+08:00",
+      "firstFailure": "SecurityException:RESULT_CALLER_UNSUPPORTED",
+      "failureGuard": "Activity.finish receiver absent from current runtime Activity ownership map",
+      "stack": [
+        "RuntimeSelfHookActivities.routing/finish",
+        "BaseActivity.finish",
+        "FastLoginGestureSetupActivity.k",
+        "CheckPwdHelper.showSMSLoginTips callback",
+        "BaseAlertDialog.onClick"
+      ],
+      "biometricPreAuthRequestObserved": true,
+      "preAuthPackage": "dev.tripoder.engine.globaltest",
+      "activeActivitiesAtFailure": [
+        "cmb.pb.app.mainframe.container.PBMainActivity"
+      ]
+    },
+    "hypotheses": [
+      "A delayed dialog callback may try to finish an Activity whose active registration was already removed.",
+      "An unregistered replacement/synthetic Activity receiver is also possible. Receiver identity and lifecycle sequence have not been captured."
+    ],
+    "notConfirmed": [
+      "Fingerprint hardware availability",
+      "Fingerprint authentication result",
+      "Whether the rejected receiver was previously admitted and destroyed"
+    ],
+    "nextSteps": [
+      "Capture the actual fingerprint anomaly page without changing login settings.",
+      "Correlate admitted/destroyed/finish-denied object identities, without tokens or account values.",
+      "Reproduce a late repeated finish in an owned fixture before changing any ownership rule."
+    ],
+    "authenticationSettingsChanged": false,
+    "productionOwnershipRuleChanged": false,
+    "sensitiveAccountOrBiometricDataRecorded": false,
+    "incidentalCardScreenshotDeleted": true
+  },
+  "productionCodeChangedForCurrentAnalysis": true,
+  "fallbackAdded": false,
+  "sensitiveAccountOrBiometricDataRecorded": false,
+  "fix": {
+    "boundary": "Pinned BiometricPrompt canonical constructor and authenticateInternal(long,...)",
+    "identityProjection": "Only admitted current guest Context is wrapped for platform prompt; original guest Context remains logical.",
+    "permissionGate": "Guest manifest must declare USE_BIOMETRIC or USE_FINGERPRINT before original system authentication.",
+    "realSystemAuthenticationPreserved": true,
+    "sameFixtureApkBeforeAfter": "27c7d6ddffa82fec320ef0df9fc97cc5a45e336d6f9246d2f24acf0d60d16a15",
+    "ownedPositive": "Real system dialog animation/session and explicit cancellation callback observed.",
+    "ownedNegative": "BIOMETRIC_PERMISSION_NOT_DECLARED",
+    "installedHostSha256": "8c3ebc3070f73d24a5f2633f114f0e4fb1334aee60e8b79c34b0c2371fde23ce",
+    "temporaryOwnedInstallationsAndSpaceRemoved": true
+  },
+  "realBankAfterDeployment": {
+    "processGeneration": "5044d941f4fcae428b2fb29f89d6f92a7efa0a20c10cdeff8d07a09d0b3c3ec1",
+    "pid": 16273,
+    "mode": "thick",
+    "homeReached": true,
+    "userLoginRequiredAfterRestart": true,
+    "fingerprintVerification": "USER_CONFIRMED_SUCCESS_AND_NORMAL_RETURN",
+    "loginWindowSecureFlagObserved": true,
+    "screenshotAssessment": "Protected window captured black; no credential content obtained; actual authentication requires user on device.",
+    "firstFatalAfterStartObserved": false,
+    "nonFatalNotes": [
+      "Pre-existing/independent dex finalizer assertion messages observed; not classified as authentication failure."
+    ],
+    "userConfirmation": "指纹验证成功并正常返回",
+    "sameProcessAliveAfterVerification": true,
+    "finalTarget": {
+      "project": "734259a3-74b3-4c26-bd27-93427e98bfad",
+      "space": "default",
+      "package": "cmb.pb",
+      "installGeneration": "c7c06216-0d55-4621-a44e-1175f9f9a4bc",
+      "bindingOperation": "0c3fdfe7-015a-3686-83c4-5875ebf5edea",
+      "mode": "thick",
+      "processGeneration": "5044d941f4fcae428b2fb29f89d6f92a7efa0a20c10cdeff8d07a09d0b3c3ec1",
+      "processName": "cmb.pb",
+      "pid": 16273
+    },
+    "errorCheck": {
+      "pid": 16273,
+      "errors": []
+    }
+  },
+  "authenticationSettingsChangedByAgent": false,
+  "acceptanceBoundary": "Owned system prompt/cancel and manifest-denial checks automated; real bank fingerprint performed and success/normal return explicitly confirmed by user. No biometric contents recorded."
+}

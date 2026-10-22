@@ -1,0 +1,117 @@
+{
+  "schema": 1,
+  "status": "PASSED",
+  "validatedAt": "2026-10-21T22:01:18.740700+08:00",
+  "serial": "d861a4fa",
+  "scope": "Original CMB 14.4.5 unlogged privacy/startup/home/My navigation, process-cold launches, and background resume in THICK",
+  "runtimeMode": "thick",
+  "fallbackAdded": false,
+  "bankApkModified": false,
+  "bankDetectionLogicModified": false,
+  "originalBankIdentity": {
+    "packageName": "cmb.pb",
+    "versionCode": "1446",
+    "apkSha256": "d01869749503636d6c776fe6c1c3f5eac945bbdaf38e43167cfa87305c1cfe1d"
+  },
+  "host": {
+    "package": "dev.tripoder.engine.globaltest",
+    "apkSha256": "cba1fd4f0cd15c23563bcd6e6a036869e1fa3ccb09e97ff36f7d294356e4bf4d",
+    "nativeCoreSha256": "ecd414edf5f260098eba7a594ae8c86611aaeac686f00d172bd8f943af5a8b8e",
+    "deviceMcpPort": 29731,
+    "developmentSigningOnly": true
+  },
+  "buildSourcesMatchCurrentTree": true,
+  "sourceSha256": {
+    "android/control-test/src/dev/tripoder/controltest/ApplicationPublicationIntegration.java": "c54b7410492646603ac321ba311d11497d0dd0f4286c1786d1095a2ed4398e7c",
+    "android/runtime/native/path_policy.c": "a11cc0928357e0bcc5a9b4442794e98abbbfb78ee25df4036bcbc8891f17583f",
+    "android/runtime/src/dev/tripoder/runtime/ArtifactSet.java": "c503e2361297da1638b6ec7dbf3cc23791fec9289657d543f7276a9a28e36f3f",
+    "android/runtime/src/dev/tripoder/runtime/GuestIntentResolver.java": "2794daf3b4b6926bb0aab1b10ad35d81f296c3545b546af4b5965530941124b1",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeBroadcastBroker.java": "c4aed0a039e01ac675ea5cd9765538a1ee473d7a1fc05be60a7675c8a0db6262",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeEngine.java": "ced49bde78c5a75c0bdde4eb2fadbb702bcb7d20155316b7f35fd08b3ec062ac",
+    "android/runtime/src/dev/tripoder/runtime/RuntimePendingIntentBroker.java": "8c29351707b9285f0be1f1c08e27d5af5e0c3f4a23ae70ae3f01dba6d9e28f80",
+    "android/runtime/src/dev/tripoder/runtime/RuntimeSelfHookApplication.java": "912bb871ea82bcf550426040fecafa374c8149f6521d532d2d1b4778d01b7425",
+    "android/runtime/test/native/path_policy_probe.c": "9a02c73a56101ec2567dad6bc09b89defd2fee5e9924bdac61a9f981d9be9097",
+    "android/scripts/build-workbench.py": "e561b9499308886abab3637c1d4ec6bfc7fc5f805147a2a3dbb24e86f8417512",
+    "android/self-hook/java/dev/tripoder/selfhook/ApplicationAdapter.java": "1b48d936ea8905d951b130fbd07d97f573c088b7b6a62fd644daaa3951ea42d3",
+    "android/self-hook/native/application_adapter.c": "b6699c2c91b945b677a8d6432e1aeadd6a3529c02836b35410f8b91d92980153",
+    "android/self-hook/native/art_reflection_view.c": "abd941e6abca5fb4edd3d3530f29466ba10ee5cf9f49ea8b20311ad39dd464d6",
+    "android/self-hook/native/art_reflection_view.h": "6151daeba55c65fedfbd0f47d7244c6d0b94b1b9a0804c54d123d0ee4d9d1d5c",
+    "docs/current-architecture.md": "5781c24b90968e1ce6992e9daffba1a4e91e7c9acd1fa94a51e948b6f1f6f5d9",
+    "android/control-test/application-contract-fixture/MainActivity.java": "5105034da547d5ccb2a2e80e2481b2ebdfddde4f8be11f68c8081ae764327883",
+    "android/control-test/application-contract-fixture/AndroidManifest.xml": "ee8704a15d7a81935377f9c49c850cfe684986a35ef725f981d67cdf9b2a5e37",
+    "android/control-test/application-contract-fixture/ProxyApplication.java": "e30c7e525e2f8ffd22ff75358a637649b617cfe4196a8e1413708f120594f1b0"
+  },
+  "fixes": [
+    {
+      "area": "Application owner",
+      "cause": "Guest proxy exposes the real Application through getApplicationContext; the runtime retained the proxy for Activity ownership, so real lifecycle callbacks did not populate the Activity stack. Privacy dialog creation returned null and the launch framework rendered disconnected(null).",
+      "change": "Resolve the guest-declared Application after onCreate; require attachment to the same logical LoadedApk and publish it consistently to component ownership and logical process view; reject host and unattached candidates."
+    },
+    {
+      "area": "Manifest implicit broadcast",
+      "cause": "Widget update broadcast hit MANIFEST_IMPLICIT_BROADCAST_NOT_IMPLEMENTED. A first implementation also read worker-only flat filters in authority and delivered zero receivers; that failed gate was corrected before final acceptance.",
+      "change": "Share sealed declaration filter decoding; match manifest receivers and apply existing leases, permissions, exported/enabled checks and SDK background rules."
+    },
+    {
+      "area": "Native media allocation",
+      "cause": "Runtime denied the real DMA heap namespace; Codec2 could not find the system heap, selected ION, then dereferenced an uninitialized allocator at libcodec2_vndk.so+0x59038.",
+      "change": "Read-only /dev/dma_heap directory and bounded first-level heap node access, including relative directory-fd opens; kernel/SELinux remain authoritative. /dev/ion and unrelated device nodes remain denied."
+    }
+  ],
+  "checks": {
+    "applicationPublicationDeviceChecks": 15,
+    "nativePathPolicyChecks": 55,
+    "directSyscallChecks": 15,
+    "realContractFixture": "application=true,context=true,created=1,received=2,unexpected=0",
+    "finalColdRuns": [
+      {
+        "pid": 28084,
+        "processGeneration": "96297c43839caec1c0be6307c2126c5bfdff4912cdd55561afbf9eaf4c8f5d1d",
+        "observedAlive": "04:50",
+        "foregroundTask": 7031,
+        "homeMyHome": true,
+        "backgroundLauncherObserved": true,
+        "sameProcessResumed": true
+      },
+      {
+        "pid": 30556,
+        "processGeneration": "4336db16115a0f619becdf948cfceddf537c309ff59bf5d4cda4c1fc5c64c59c",
+        "observedAlive": "PID     ELAPSED NAME                       \n30556       05:19 dev.tripoder.engine.globaltest:slot7",
+        "foregroundTask": 7032,
+        "homeVisible": true
+      }
+    ],
+    "capturedRuntimeFailures": [],
+    "exitDiagnosticsEnabled": false,
+    "nativeSignalChainClaims": 1,
+    "hookState": "IDLE",
+    "fixedBindings": 2257
+  },
+  "foregroundEvidence": "topResumedActivity=ActivityRecord{201781836 u0 dev.tripoder.engine.globaltest/dev.tripoder.runtime.generated.TaskP7$F0M1C2 t7032}",
+  "homeLabels": [
+    "转账",
+    "账户总览",
+    "信用卡",
+    "收支明细",
+    "首页",
+    "我的"
+  ],
+  "mediaLog": "--------- beginning of main\n10-21 21:59:16.165 30556 32059 D C2Store : debug.c2.use_dmabufheaps set, forcing DMABUF Heaps\n10-21 21:59:16.165 30556 32059 D C2Store : Using DMABUF Heaps\n",
+  "screenshot": {
+    "path": "artifacts/cmb-thick-fix/final/home-final.png",
+    "sha256": "7029f61dcf4905994676034522d235410d0f6c1141bf4f77881bac988341d840"
+  },
+  "limitations": [
+    "No bank account login or authenticated transaction was tested.",
+    "Standalone path/syscall probes run as Android shell; actual guest media and UI behavior was verified separately.",
+    "No universal app compatibility, strong same-UID isolation, or full Hook caller coverage is claimed."
+  ],
+  "cleanup": {
+    "temporaryJavaDexViewProbesRemoved": true,
+    "temporaryNativeSignalExperimentRemoved": true,
+    "exitDiagnosticsManifestFlagRemoved": true,
+    "fixtureApplicationRemoved": true,
+    "diagnosticHostAndTestPackageRemoved": true
+  },
+  "nextStep": "Authenticated business regression with the account owner, using normal login and identity verification."
+}

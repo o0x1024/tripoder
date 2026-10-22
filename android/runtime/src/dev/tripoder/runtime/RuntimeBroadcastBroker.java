@@ -77,7 +77,7 @@ final class RuntimeBroadcastBroker {
             var install=broker.apks.get(sender.space,component.getPackageName());var declared=RuntimeComponents.declared(install,"receiver",component.getClassName());RuntimeComponents.authorize(declared,install.info.packageName,sender.info.packageName);
             if(receiverPermission==null||RuntimeSystemBroadcasts.holds(install,sender,receiverPermission)){var to=broker.processes.reserveComponent(install,declared.process);Bundle target=new Bundle();target.putString("target",to.allocation.session.processGeneration);target.putString("component",declared.name);target.putString("registration","");target.putString("stub",RuntimeReceiverSlots.type(RuntimeSlot.index(to.activityStub)).getName());targets.add(target);}
         }else{
-            requireDynamicImplicit(sender,intent);
+            targets.addAll(manifestTargets(sender,intent,receiverPermission));
             for(BroadcastLedger.ActiveRegistration registration:broker.broadcasts.activeRegistrationsForSpace(sender.space)){
                 if(intent.getPackage()!=null&&!intent.getPackage().equals(registration.pkg))continue;
                 if(!registration.exported&&!sender.info.packageName.equals(registration.pkg))continue;
@@ -93,13 +93,33 @@ final class RuntimeBroadcastBroker {
         }
         if(targets.size()>128)throw new IllegalArgumentException("BROADCAST_FANOUT_LIMIT");return targets;
     }
-    void requireDynamicImplicit(ApkStore.BundleInstall sender,Intent intent)throws Exception{
-        if(intent.getComponent()!=null)throw new IllegalArgumentException("IMPLICIT_INTENT_REQUIRED");
-        String pkg=intent.getPackage()!=null?intent.getPackage():sender.info.packageName;
-        if(!pkg.equals(sender.info.packageName)&&broker.apks.row(sender.space,pkg)==null)return;
-        var install=pkg.equals(sender.info.packageName)?sender:broker.apks.get(sender.space,pkg);
-        if(broker.resolveMode(install.space,install.info.packageName,install.generation)==RuntimeMode.THIN)return;
-        for(var c:install.components())if(c.enabled&&c.type.equals("receiver"))for(var filter:c.declaration.children)if(filter.name.equals("intent-filter"))for(var action:filter.children)if(action.name.equals("action")&&Objects.equals(action.android("name",""),intent.getAction()))throw new UnsupportedOperationException("MANIFEST_IMPLICIT_BROADCAST_NOT_IMPLEMENTED");
+    /** Resolve manifest receivers from sealed filters before using the existing component lease and delivery ledger. */
+    private List<Bundle> manifestTargets(ApkStore.BundleInstall sender,Intent intent,String receiverPermission)throws Exception{
+        List<String> packages=new ArrayList<>();
+        synchronized(broker){
+            try(var rows=broker.store.getReadableDatabase().rawQuery("SELECT package FROM installs WHERE space=? AND state='COMMITTED' ORDER BY package",new String[]{sender.space})){
+                while(rows.moveToNext()){String pkg=rows.getString(0);if(intent.getPackage()==null||intent.getPackage().equals(pkg))packages.add(pkg);}
+            }
+        }
+        List<Bundle> targets=new ArrayList<>();
+        for(String pkg:packages){
+            ApkStore.BundleInstall install=pkg.equals(sender.info.packageName)?sender:broker.apks.get(sender.space,pkg);
+            // Android O+ excludes background manifest delivery for an unrestricted custom implicit broadcast.
+            // A package-targeted broadcast remains eligible; dynamic registrations are resolved independently.
+            if(intent.getPackage()==null&&install.info.applicationInfo.targetSdkVersion>=26)continue;
+            for(var component:install.components()){
+                if(!component.enabled||!component.type.equals("receiver"))continue;
+                if(!pkg.equals(sender.info.packageName)&&(!component.exported||!component.permission.isEmpty()&&!RuntimeSystemBroadcasts.holds(sender,install,component.permission)))continue;
+                if(receiverPermission!=null&&!RuntimeSystemBroadcasts.holds(install,sender,receiverPermission))continue;
+                boolean matches=false;
+                for(IntentFilter filter:GuestIntentResolver.build(ArtifactSet.manifestFilters(component)))if(RuntimeBroadcastIntent.matches(filter,intent)){matches=true;break;}
+                if(!matches)continue;
+                if(targets.size()>=128)throw new IllegalArgumentException("BROADCAST_FANOUT_LIMIT");
+                var to=broker.processes.reserveComponent(install,component.process);
+                Bundle target=new Bundle();target.putString("target",to.allocation.session.processGeneration);target.putString("component",component.name);target.putString("registration","");target.putString("stub",RuntimeReceiverSlots.type(RuntimeSlot.index(to.activityStub)).getName());targets.add(target);
+            }
+        }
+        return targets;
     }
     ArrayList<Bundle> pending(PendingIntentLedger.Version value,Intent intent,boolean ordered)throws Exception{
         ApkStore.BundleInstall sender=broker.apks.get(value.space,value.pkg);broker.pendingIntentBroker.current(sender);

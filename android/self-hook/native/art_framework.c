@@ -31,7 +31,7 @@ struct string_view { const char *data; size_t size; };
 struct range { uintptr_t begin,end; };
 static struct {
     struct tp_art_access access;
-    jclass classes[60];
+    jclass classes[62];
     struct range ranges[2048];
     unsigned range_count;
     void *manager;
@@ -89,7 +89,7 @@ static const char *names[]={"android/app/Application","android/app/ActivityThrea
     "android/app/ActivityThread$ActivityClientRecord","android/os/UserHandle",
     "android/app/JobSchedulerImpl","android/app/job/JobInfo","android/app/job/JobParameters","android/app/job/JobService","android/app/job/IJobCallback$Stub$Proxy",
     "android/app/PendingIntent","android/content/IntentSender","android/app/AlarmManager","android/app/ApplicationExitInfo",
-    "android/appwidget/AppWidgetManager"};
+    "android/appwidget/AppWidgetManager","android/view/autofill/AutofillClientController","android/hardware/biometrics/BiometricPrompt"};
 _Static_assert(sizeof(names)/sizeof(names[0])==sizeof(registry.classes)/sizeof(registry.classes[0]),"fixed boot class roots");
 static const struct { unsigned owner;const char *name,*type; } fields[]={
     {1,"mInitialApplication","Landroid/app/Application;"},{0,"mLoadedApk","Landroid/app/LoadedApk;"},
@@ -118,9 +118,11 @@ static const struct { unsigned owner;const char *name,*type; } fields[]={
     {1,"sPackageManager","Landroid/content/pm/IPackageManager;"},
     {44,"sCache","Ljava/util/Map;"},
     {3,"mPackageManager","Landroid/content/pm/PackageManager;"},
-    {52,"callback","Landroid/os/IBinder;"},{52,"extras","Landroid/os/PersistableBundle;"},{52,"mJobNamespace","Ljava/lang/String;"}};
+    {52,"callback","Landroid/os/IBinder;"},{52,"extras","Landroid/os/PersistableBundle;"},{52,"mJobNamespace","Ljava/lang/String;"},{60,"mActivity","Landroid/app/Activity;"},
+    {61,"mContext","Landroid/content/Context;"},{48,"state","Landroid/os/Bundle;"},
+    {27,"mSavedInstanceState","Landroid/os/Bundle;"}};
 static const bool field_static[]={false,false,false,false,false,false,false,false,false,false,false,true,
-    false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,false,false,false,false};
+    false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false};
 _Static_assert(sizeof(field_static)/sizeof(field_static[0])==sizeof(fields)/sizeof(fields[0]),"fixed field storage kinds");
 
 static bool readable(uintptr_t address,size_t bytes) {

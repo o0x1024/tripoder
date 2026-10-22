@@ -1,0 +1,179 @@
+{
+  "schema": 1,
+  "status": "READ_ONLY_UI_REGRESSION_COMPLETED",
+  "mode": "thick",
+  "hostApkSha256": "8c3ebc3070f73d24a5f2633f114f0e4fb1334aee60e8b79c34b0c2371fde23ce",
+  "sourceHashMismatches": [],
+  "target": {
+    "space": "default",
+    "package": "cmb.pb",
+    "installGeneration": "c7c06216-0d55-4621-a44e-1175f9f9a4bc",
+    "processGeneration": "0247fd55ca0020f2f260e35b1ecd2e24beebd3074462908e9090359ff5c60a6d",
+    "pid": 22412
+  },
+  "plannedReadOnlyChecks": [
+    "Post-login My page and home navigation",
+    "Account overview and return",
+    "Bank card list and return",
+    "Income/expense list and return",
+    "Wealth holdings entry and return",
+    "Background/foreground resume without process restart"
+  ],
+  "excludedActions": [
+    "Transfers, payments, purchases, redemptions, applications or agreements",
+    "Authentication setting changes",
+    "Recording account numbers, balances, transactions, credentials or biometric contents"
+  ],
+  "preflight": {
+    "sameVerifiedBiometricFixBuildInstalled": true,
+    "guestInstallUnchanged": true,
+    "startupProbesEnabled": false,
+    "nativeSystemFingerprintSessionCreated": true,
+    "loginUiHasFingerprintInputArea": true,
+    "otherApplicationsStoppedOrModified": false
+  },
+  "userLoginConfirmation": "已验证并进入登录后页面",
+  "loginAcceptedEvidence": [
+    "User confirmation",
+    "My page exposes logout/settings buttons",
+    "Same THICK process generation remains live"
+  ],
+  "toolLimitations": [
+    {
+      "operationId": "cmb-ro-card-list-return",
+      "state": "UNKNOWN",
+      "reason": "UI_TEXT_NOT_FOUND:返回，按钮",
+      "reconciledViaOperationGet": true,
+      "hookStatusAfterReconciliation": "IDLE",
+      "actualPageAfterAttempt": "Bank card H5 page still foreground",
+      "replayed": false,
+      "actualReturnVerification": "Independent Android Back action after actual card-page state confirmation, followed by logged-in My-page verification. Original UNKNOWN receipt remains UNKNOWN."
+    },
+    {
+      "operationId": "cmb-ro-account-overview-open",
+      "state": "SUCCEEDED",
+      "clicked": false,
+      "acceptedAsNavigationSuccess": false,
+      "actualNavigation": "Independent native tap on freshly confirmed public label coordinates; page title and total-assets label verified afterward."
+    }
+  ],
+  "completedLocalDate": "2026-10-22",
+  "cases": [
+    {
+      "name": "Post-login My/home navigation",
+      "status": "UI_RENDER_NAVIGATION_RETURN_PASSED",
+      "evidence": [
+        "card-list-system-back.json",
+        "home-after-cards.json",
+        "my-after-holdings.json"
+      ],
+      "publicMarkers": [
+        "退出登录，按钮",
+        "首页",
+        "我的"
+      ]
+    },
+    {
+      "name": "Bank card list and system Back",
+      "status": "UI_RENDER_NAVIGATION_RETURN_PASSED",
+      "evidence": [
+        "card-list-ui.json",
+        "card-list-visual.json",
+        "card-list-system-back.json"
+      ],
+      "publicMarkers": [
+        "银行卡",
+        "一卡通",
+        "信用卡"
+      ]
+    },
+    {
+      "name": "Account overview and return",
+      "status": "UI_RENDER_NAVIGATION_RETURN_PASSED",
+      "evidence": [
+        "account-overview-entered-ui.json",
+        "account-overview-entered-visual.json",
+        "account-overview-return.json"
+      ],
+      "publicMarkers": [
+        "账户总览",
+        "总资产"
+      ]
+    },
+    {
+      "name": "Income/expense page, detail entry and return",
+      "status": "UI_RENDER_NAVIGATION_RETURN_PASSED",
+      "evidence": [
+        "income-expense-visual.json",
+        "income-expense-details-visual.json",
+        "income-expense-return.json"
+      ],
+      "publicMarkers": [
+        "收支",
+        "收入",
+        "支出",
+        "明细"
+      ]
+    },
+    {
+      "name": "Wealth -> wealth management -> holdings and return",
+      "status": "UI_RENDER_NAVIGATION_RETURN_PASSED",
+      "evidence": [
+        "wealth-ui.json",
+        "wealth-products-ui.json",
+        "wealth-holdings-ui.json",
+        "wealth-holdings-visual.json",
+        "wealth-holdings-return.json"
+      ],
+      "publicMarkers": [
+        "财富",
+        "理财",
+        "持仓",
+        "交易记录"
+      ]
+    },
+    {
+      "name": "Five-second background and foreground resume",
+      "status": "UI_RENDER_NAVIGATION_RETURN_PASSED",
+      "evidence": [
+        "foreground-resume-ui.json",
+        "final-error-check.json",
+        "diagnostic-counters.json"
+      ],
+      "publicMarkers": [
+        "退出登录，按钮",
+        "我的"
+      ]
+    }
+  ],
+  "backgroundResume": {
+    "seconds": 5,
+    "taskId": 7086,
+    "samePid": 22412,
+    "sameProcessGeneration": true,
+    "loggedInAfterResume": true,
+    "additionalVerificationRequired": false
+  },
+  "runtimeOutcome": {
+    "mode": "thick",
+    "sameBankProcessAlive": true,
+    "structuredRuntimeFailureCount": 0,
+    "scopedCrashAndIdentityErrorMatches": 0,
+    "systemAnrOrAuthFastFailMatches": 0,
+    "fallbackAdded": false,
+    "productionCodeChangedThisRound": false
+  },
+  "acceptanceBoundary": "Real bank UI entry, rendered public labels, navigation, return, login retention and short background resume. Account values and transaction/holding correctness were not inspected or reconciled; long background expiry and process-death restore were not tested.",
+  "privacy": {
+    "screenshotsWritten": false,
+    "ocrTextEmitted": "Explicit public label allowlist only",
+    "rawUiTreesSaved": false,
+    "accountValuesOrTransactionsSaved": false,
+    "credentialsOrBiometricContentsCollected": false
+  },
+  "furtherSuggestedCoverage": [
+    "Credit-card statement read-only entry",
+    "Read-only date/range filtering",
+    "Longer background session expiry and process-death restore (requires another personal login if challenged)"
+  ]
+}

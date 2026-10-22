@@ -40,12 +40,20 @@ final class FixedFrameworkMembers {
         "android.app.ActivityThread$ActivityClientRecord","android.os.UserHandle",
         "android.app.JobSchedulerImpl","android.app.job.JobInfo","android.app.job.JobParameters","android.app.job.JobService","android.app.job.IJobCallback$Stub$Proxy",
         "android.app.PendingIntent","android.content.IntentSender","android.app.AlarmManager","android.app.ApplicationExitInfo",
-        "android.appwidget.AppWidgetManager"};
+        "android.appwidget.AppWidgetManager","android.view.autofill.AutofillClientController","android.hardware.biometrics.BiometricPrompt"};
     static Class<?> owner(int index)throws Exception{return Class.forName(NAMES[index],false,null);}
     static Field field(int slot,int owner,String name,String type,boolean isStatic)throws Exception {
         Field value=FrameworkAccess.fixedField(slot);
         if(value==null||value.getDeclaringClass()!=owner(owner)||!value.getName().equals(name)||!descriptor(value.getType()).equals(type)
             ||Modifier.isStatic(value.getModifiers())!=isStatic)throw new IllegalStateException("PRODUCT_FIELD_IDENTITY:"+name);
+        value.setAccessible(true);return value;
+    }
+    /** A registry slot whose member may be absent on a newer boot framework. Returns null
+     * only when the resolved member is missing or its identity differs; never a generic lookup. */
+    static Field optionalField(int slot,int owner,String name,String type,boolean isStatic)throws Exception {
+        Field value=FrameworkAccess.fixedField(slot);
+        if(value==null||value.getDeclaringClass()!=owner(owner)||!value.getName().equals(name)||!descriptor(value.getType()).equals(type)
+            ||Modifier.isStatic(value.getModifiers())!=isStatic)return null;
         value.setAccessible(true);return value;
     }
     static Object member(int index,String name,String descriptor,boolean isStatic)throws Exception {

@@ -48,13 +48,23 @@ MCP 是全局控制入口。安装与进程操作分别显式携带空间、包�
 
 安装制品目录继续封存原始 APK、签名与摘要描述符。`RuntimeExecutionCode` 在明确安装的数据代次内生成运行副本，统一 APK/Split、ClassLoader、资源、so 的 ABI 目录与 Native 模块观察路径；构造前逐文件核对原始摘要，并拒绝并发修改、符号链接与异常文件归属。可执行副本保持只读，其父目录允许 Android 和客体生成 profile/oat 等派生缓存。模式切换不会借用手机上另一个系统安装的代码路径，也不会修改、重签被测 APK。
 
-`LoadedApk` 在 Application attach 前绑定到启动记录；Application 实例在 attach 完成后发布。attach 期间 `getApplicationContext()` 保持平台的空值语义；完成后从逻辑 `LoadedApk.mApplication` 读取，及时跟随合法的壳/热修复委托替换。物理宿主 Application 的身份单独保存。
+`LoadedApk` 在 Application attach 前绑定到启动记录；Application 实例在 attach 完成后发布。Application.onCreate 完成后，运行时读取客体明确返回的 ApplicationContext，核对其已附着同一逻辑 LoadedApk，再统一发布为组件的 Application、LoadedApk.mApplication 和逻辑进程 Application 视图；宿主及未附着对象会被拒绝。attach 期间 `getApplicationContext()` 保持平台的空值语义；完成后从逻辑 `LoadedApk.mApplication` 读取，及时跟随合法的壳/热修复委托替换。物理宿主 Application 的身份单独保存。
 
-路径兼容层在第一条客体 ClassLoader 路径交给 ART/linker 前建立。直接系统调用和 libc 回调使用同一策略和有界独立临时栈，兼容小 pthread/信号栈；用户指针经 kernel user-copy 校验，非法指针返回 `EFAULT`。路径分派通过 ART 特殊信号链接收自有 `SYS_SECCOMP`，客体注册 SIGSYS 崩溃处理器后仍保留分派；其他信号继续遵循应用处理链。无法建立该边界时拒绝启动，不自动换模式或重放未知操作。
+Activity 实例记录保留已准入的物理窗口组件及 ticket/instance。THICK 的 `AutofillClientController.autofillClientGetComponentName()` 向系统返回该实例的物理组件，与真实调用 UID 和 Activity token 一致；应用自身的 `Activity.getComponentName()` 仍返回逻辑组件。自动填充服务与回调继续由 Android 执行，不禁用自动填充，也不伪造同步成功回调。该固定入口和所属 Activity 字段纳入设备固定 Framework 注册表。
+
+THICK 的 `BiometricPrompt` 仅在构造入口投影已准入客体 Context 的系统身份：认证与取消使用真实宿主包名、UID 及 AttributionSource，原客体 Context、资源、SDK 目标及回调保持原语义。原始系统认证执行前检查客体清单声明 `USE_BIOMETRIC` 或 `USE_FINGERPRINT`；未声明者拒绝，系统自身权限、AppOps、前台限制和硬件验证继续执行。构造函数、认证入口与 `mContext` 字段均纳入设备固定 Framework 注册表，不改认证结果、不关闭验证、不增加 fallback。
+
+Activity 结果继续由 Android 原始 `Intent` 传递。客体定义的 `Serializable` 结果只向启动账本记录的同包 Activity 结果调用者开放，对象定义 ClassLoader 必须属于当前客体；控制面及其他包的结果接收方不获得该能力。结果保持 48 KiB 上限，拒绝文件描述符及 Binder（包括封装在客体 Parcelable 中的 Binder）。接收方通过结果票据授权后，先绑定当前客体 ClassLoader，再交给原始 `onActivityResult`；成功、取消、失败状态码不重写。
+
+路径兼容层在第一条客体 ClassLoader 路径交给 ART/linker 前建立。直接系统调用和 libc 回调使用同一策略和有界独立临时栈，兼容小 pthread/信号栈；用户指针经 kernel user-copy 校验，非法指针返回 `EFAULT`。路径分派通过 ART 特殊信号链接收自有 `SYS_SECCOMP`，客体注册 SIGSYS 崩溃处理器后仍保留分派；其他信号继续遵循应用处理链。特殊处理器执行期间阻塞信号，由 sigchain 在返回时恢复被中断线程的原掩码；不能用空掩码提前送达该线程原本阻塞的待处理信号（例如 Android 的 SIGPIPE）。无法建立该边界时拒绝启动，不自动换模式或重放未知操作。
 
 进程镜像按 ELF 的真实加载区间登记，并用实际文件描述符消除加载器名称与内核路径之间的符号链接差异。保存供恢复的文件代码页仍保留真实地址、inode、offset 和权限；在客体的 maps/smaps 视图中，它们标记为运行时快照，不再冒充原 ELF 模块。运行时的恢复与所有权校验仍使用同一物理元数据。
 
+Android 媒体内存分配通过显式的 `/dev/dma_heap` 只读目录与首级 heap 节点能力访问真实设备，目录 fd 相对打开执行同一策略；实际 open 和 ioctl 仍受内核权限与 SELinux 检查。
+
 WebView、平台代码缓存和偏好存储使用实际宿主 Context 提供的凭据/设备保护数据根目录进行识别，再路由至当前客体数据代次；不依赖宿主包名字符串。该能力只覆盖 WebView、shared_prefs、cache、code_cache、oat 等既定基础设施目录，不开放宿主私有 files 或其他相邻目录。
+
+THICK 的清单隐式广播从封存清单完整匹配 action、category、URI 和 MIME，并沿用组件进程租约与广播投递账本。接收方的空间、exported、权限与 enabled 限制继续执行；targetSdk 26 及以上的非定包普通隐式广播只匹配动态注册接收器。有序多目标投递仍未实现。
 
 THICK 先在正常 ART 状态下准备全部固定适配，再以一次批量发布完成初始反优化和 JIT code cache 失效，随后恢复原有运行标志与 JIT 设置。Guest Receiver/Service 生命周期在交给 Android 前按实际方法入口安装，不为每个新组件重复反优化全进程；普通脚本 Hook 首次发布及入口覆盖升级仍使已编译调用者失效，所有受控 managed 方法保留编译/内联屏障。THICK 中仅无条件调用原方法的 Package/Traffic 包装退出固定集合，Manager 能力限制继续保留。THIN 保持原有固定绑定集合、发布顺序和编译策略；THICK 不通过模式切换绕过完整适配。`executionPolicy` 报告当前 instrumentation level、JIT 和运行标志恢复状态，以及全局反优化与回调发布次数。该策略不承诺任意已有活动帧或全部内联调用者热迁移；`fullCallerCoverage` 与 `preexistingCompiledFramesCovered` 继续为 false。
 

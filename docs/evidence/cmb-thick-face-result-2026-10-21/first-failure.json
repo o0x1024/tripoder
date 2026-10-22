@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "status": "RETURN_TYPE_UNKNOWN",
+  "mode": "thick",
+  "package": "cmb.pb",
+  "pid": 12878,
+  "at": "2026-10-21T22:58:56.020+08:00",
+  "userObservation": "Application exited during identity liveness verification, not after an explicit user cancellation.",
+  "firstFailure": "IllegalArgumentException:RESULT_EXTRAS_UNSUPPORTED",
+  "firstFrames": [
+    "RuntimeActivityResult.value:32",
+    "RuntimeActivityResult.bundle:21",
+    "RuntimeActivityResult.require:14",
+    "RuntimeEngine.returning:567",
+    "RuntimeSelfHookActivities.routing",
+    "BaseDetectActivity.onCancel:62",
+    "CmbLivenessActivity.finishPage",
+    "CmbLivenessActivity.endActivityColorStage:211",
+    "CmbLivenessActivity.onFaceColorFinished:20"
+  ],
+  "interpretation": "The SDK internal cancellation/failure return attempts Activity.finish with a result value rejected by the runtime. The old error omits its type. No verification-success or failure outcome is inferred.",
+  "secondaryFailures": [
+    "Bank CrashHandler attempts to finish remaining activities and encounters the same result admission exception.",
+    "Bank terminates process with SIGKILL; Android restoration then fails ACTIVITY_RESTORE_NOT_CONFIRMED."
+  ],
+  "sensitiveValuesRecorded": false,
+  "autofillTimeoutObservedInThisRun": false,
+  "userClarification": "Verification passed; application crashed during the return path."
+}

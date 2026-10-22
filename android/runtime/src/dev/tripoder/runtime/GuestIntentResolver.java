@@ -65,7 +65,7 @@ final class GuestIntentResolver {
         Map<String,List<IntentFilter>> byComponent=FILTERS.computeIfAbsent(engine,key->Collections.synchronizedMap(new HashMap<>()));
         return byComponent.computeIfAbsent(component.type+"/"+component.name,key->build(engine.filterSpecs.getOrDefault(key,List.of())));
     }
-    private static List<IntentFilter> build(List<ArtifactSet.FilterSpec> specs){
+    static List<IntentFilter> build(List<ArtifactSet.FilterSpec> specs){
         List<IntentFilter> result=new ArrayList<>();
         for(ArtifactSet.FilterSpec spec:specs){
             // A filter with no action matches nothing in Android; keep it out so it cannot match actionless intents by accident.

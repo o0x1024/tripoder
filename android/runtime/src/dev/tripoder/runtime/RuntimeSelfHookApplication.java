@@ -72,6 +72,12 @@ final class RuntimeSelfHookApplication {
         addFinisher=(Method)members.methods[7];addFinisher.setAccessible(true);
     }
 
+    /** Loader for extras already delivered in a platform Intent, before the engine has claimed it. */
+    static ClassLoader intentExtrasLoader() {
+        RuntimeSelfHookApplication value = current;
+        return value == null ? null : value.engine.guestLoader();
+    }
+
     private static RuntimeSelfHookApplication require() {
         RuntimeSelfHookApplication value=current;
         if(value==null||RuntimeEngine.current!=value.engine)
@@ -121,6 +127,17 @@ final class RuntimeSelfHookApplication {
 
     /** The application the guest published on its LoadedApk after onCreate, or the created instance before that. */
     static Application installedApplication(){require();return ApplicationAdapter.installedApplication();}
+
+    /** Resolve the guest's explicit delegation once onCreate has completed, then bind all component owners to it. */
+    static Application publishApplication(){
+        mainThread();require();
+        Context context=ApplicationAdapter.installedApplication().getApplicationContext();
+        if(!(context instanceof Application))throw new SecurityException("APPLICATION_CONTEXT_OWNER_REQUIRED");
+        Application application=(Application)context;
+        ApplicationAdapter.publishApplication(application);
+        return application;
+    }
+
 
     static void check(Context host,Application guest) {
         mainThread();RuntimeSelfHookApplication value=require();

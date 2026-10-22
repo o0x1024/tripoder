@@ -159,11 +159,22 @@ static bool is_ashmem_node(const char *path){
     }
     return true;
 }
-static bool device_node(const char *path){
+static bool dma_heap_node(const char *path){
+    static const char root[]="/dev/dma_heap/";
+    if(strncmp(path,root,sizeof(root)-1)!=0)return false;
+    const char *name=path+sizeof(root)-1;if(!*name||!strcmp(name,".")||!strcmp(name,".."))return false;
+    for(const char *p=name;*p;p++)if(!((*p>='a'&&*p<='z')||(*p>='A'&&*p<='Z')||(*p>='0'&&*p<='9')||*p=='_'||*p=='-'||*p=='.'))return false;
+    return true;
+}
+static bool device_node(const char *path,enum tp_access access){
+    // MediaCodec discovers the kernel DMA heaps through this read-only directory.
+    // The actual node open and every ioctl retain Android UID/SELinux enforcement.
+    if(!strcmp(path,"/dev/dma_heap"))return access!=TP_WRITE;
+
     // A real accelerated Android window needs the GPU character device. This is
     // an explicit platform capability; Android UID/SELinux checks still apply.
     // Never grant the /dev subtree or substitute a software renderer on denial.
-    return !strcmp(path,"/dev/null")||!strcmp(path,"/dev/zero")||!strcmp(path,"/dev/urandom")||!strcmp(path,"/dev/random")||!strcmp(path,"/dev/kgsl-3d0")||is_ashmem_node(path);
+    return !strcmp(path,"/dev/null")||!strcmp(path,"/dev/zero")||!strcmp(path,"/dev/urandom")||!strcmp(path,"/dev/random")||!strcmp(path,"/dev/kgsl-3d0")||dma_heap_node(path)||is_ashmem_node(path);
 }
 static bool metadata_ancestor(const char *path){
     if(!strcmp(path,"/"))return true;
@@ -285,7 +296,7 @@ int tp_resolve(int dirfd,const char *path,enum tp_access access,struct tp_path *
         // /proc is also a namespace of magic links. Content opens through a process
         // root/cwd/fd alias require the descriptor-capability check above, not this grant.
         if(access==TP_READ&&prefix_len(path,"/proc",5))for(const char *p=path;*p;p++)if(*p=='/'&&(prefix_len(p,"/root",5)||prefix_len(p,"/cwd",4)||prefix_len(p,"/fd",3)))return fail(EACCES);
-        if(device_node(path)||(access!=TP_WRITE&&platform_read(path))||(access==TP_METADATA&&metadata_ancestor(path))){if(copy(out->leaf,path)<0)return -1;return 0;}
+        if(device_node(path,access)||(access!=TP_WRITE&&platform_read(path))||(access==TP_METADATA&&metadata_ancestor(path))){if(copy(out->leaf,path)<0)return -1;return 0;}
         return fail(EACCES);
     }
     if(dirfd==AT_FDCWD&&!dot_component(path))return fast_anchor(data_fd,path,out);
@@ -322,6 +333,11 @@ int tp_resolve(int dirfd,const char *path,enum tp_access access,struct tp_path *
             return fast_anchor(artifact_fd,alias,out);
         }
         return fast_anchor(artifact_fd,norm,out);
+    }
+    if(!strcmp(directory,"/dev/dma_heap")){
+        char combined[PATH_MAX];int n=snprintf(combined,sizeof(combined),"%s/%s",directory,path);
+        if(n<=0||(size_t)n>=sizeof(combined))return fail(ENAMETOOLONG);
+        return tp_resolve(AT_FDCWD,combined,access,out);
     }
     if(access==TP_WRITE||dot_component(path)||!platform_read(directory))return fail(EACCES);
     if(prefix(directory,"/proc")){

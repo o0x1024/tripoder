@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "acceptedAsSuccess": false,
+  "gates": [
+    {
+      "stage": "original-privacy-launch",
+      "runtimeMode": "thick",
+      "pid": 25462,
+      "failure": "java.lang.NullPointerException",
+      "frame": "cmb.pb.app.launch.appentrystage.privacyauthorize.a.h(PrivacyAuthorizeTask.java:126)",
+      "applicationOwner": "cmb.shield.AW",
+      "explicitApplicationContext": "com.pb.main.ShellApplication",
+      "consequence": "current Activity stack empty; dialog factory returns null; launch framework shows internet-disconnected(null)",
+      "fix": "publish and bind the guest-declared attached Application"
+    },
+    {
+      "stage": "after-application-fix",
+      "pid": 6887,
+      "failure": "BROADCAST_SEND_UNCONFIRMED",
+      "cause": "MANIFEST_IMPLICIT_BROADCAST_NOT_IMPLEMENTED",
+      "frame": "cmb.pb.cmbwidget.WidgetBiz$sendUpdateWidgetBroadCast$1.invokeSuspend",
+      "fix": "sealed manifest filter resolution through existing receiver leases and delivery ledger"
+    },
+    {
+      "stage": "initial-manifest-resolution-fixture",
+      "failure": "actual receiver count 0 instead of 2",
+      "cause": "authority read worker-only filterSpecs",
+      "acceptedAsSuccess": false,
+      "fix": "shared parsing from sealed manifest declarations"
+    },
+    {
+      "stage": "after-broadcast-fix",
+      "pid": 18241,
+      "failure": "SIGSEGV",
+      "address": "0x0",
+      "module": "/system/lib64/libcodec2_vndk.so",
+      "fileOffset": "0x59038",
+      "symbol": "android::C2AllocatorIon::setUsageMapper",
+      "observedRegister": {
+        "x8": "0"
+      },
+      "platformLog": [
+        "debug.c2.use_dmabufheaps set, but no system heap. Ignoring override!",
+        "Using ION",
+        "open /dev/ion failed: Permission denied"
+      ],
+      "fix": "allow the real DMA heap directory and first-level nodes; preserve kernel permission checks; no ION capability added"
+    },
+    {
+      "stage": "media-fix-with-exit-diagnostics",
+      "pid": 21409,
+      "homeWasObserved": true,
+      "laterExitSignal": 13,
+      "diagnosticRootCause": "UNKNOWN",
+      "acceptedAsReleaseValidation": false,
+      "note": "opt-in diagnostic run retained as failed; final acceptance uses diagnostics disabled"
+    },
+    {
+      "stage": "background-entry-observation",
+      "pid": 28577,
+      "applicationReady": true,
+      "activityCount": 0,
+      "foreground": "com.miui.home/.launcher.Launcher",
+      "acceptedAsVisibleLaunch": false,
+      "note": "stopped exact installation, retired one unattached ticket, and repeated launch from visible workbench",
+      "verifiedCause": "Android ActivityTaskManager: Background activity launch blocked; caller had no visible Activity."
+    }
+  ],
+  "rejectedExperiments": [
+    "ART/APEX metadata query did not resolve the failure and was removed",
+    "signal-chain ensure experiment did not resolve native failure and was removed",
+    "temporary Throwable/View/DEX probes were removed"
+  ]
+}

@@ -179,6 +179,11 @@ bool tp_art_reflection_promote(JNIEnv *env,jobject logical){
     // The promoted global is retained by the atomic owner until process exit.
     return true;
 }
+bool tp_art_reflection_adopt(JNIEnv *env,jobject application){
+    if((*env)->ExceptionCheck(env)||!application||!atomic_load_explicit(&view.ready,memory_order_acquire)
+       ||!atomic_load_explicit(&view.enabled,memory_order_acquire)||!atomic_load_explicit(&view.published,memory_order_acquire))return false;
+    return publish(env,application);
+}
 bool tp_art_reflection_complete(JNIEnv *env){
     if((*env)->ExceptionCheck(env)||!atomic_load_explicit(&view.logical,memory_order_acquire))return false;
     atomic_store_explicit(&view.published,true,memory_order_release);return true;

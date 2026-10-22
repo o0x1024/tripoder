@@ -12,7 +12,7 @@ public final class FrameworkAccess {
     private FrameworkAccess() {}
     private static boolean prepared;
     // One slot per fixed boot class root; the index space is defined by art_framework.c names[].
-    private static final Object[][] declarationCache=new Object[60][];
+    private static final Object[][] declarationCache=new Object[62][];
     private static native boolean prepareNative(Method field,Method count,Method method);
     public static native String statusNative();
     @FastNative private static native Field fieldNative(int slot);
@@ -108,7 +108,7 @@ public final class FrameworkAccess {
         declarationCache[owner]=result;return result.clone();
     }
     static synchronized Field fixedField(int slot){
-        if(!prepared||slot<0||slot>=42)throw new IllegalStateException("FIXED_FIELD_ORDER");
+        if(!prepared||slot<0||slot>=46)throw new IllegalStateException("FIXED_FIELD_ORDER");
         return fieldNative(slot);
     }
     /** ActivityThread.getApplication() reads mInitialApplication; it must show the same logical Application as currentApplication(). */

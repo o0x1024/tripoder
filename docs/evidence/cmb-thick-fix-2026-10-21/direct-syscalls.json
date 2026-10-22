@@ -1,0 +1,161 @@
+{
+  "runId": "86dbf28e9a844c7d9926dc28e8845018",
+  "serial": "d861a4fa",
+  "hookInstalled": false,
+  "guestExecutionVerified": false,
+  "strongIsolationVerified": false,
+  "directSyscalls": true,
+  "compile": [
+    "/opt/homebrew/share/android-commandlinetools/ndk/30.0.16248370/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android36-clang",
+    "-O2",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-fPIE",
+    "-pie",
+    "-Iandroid/runtime/native",
+    "android/runtime/native/path_policy.c",
+    "android/runtime/native/io_adapter.c",
+    "android/runtime/native/user_memory.c",
+    "android/runtime/test/native/syscall_namespace_probe.c",
+    "android/runtime/native/syscall_namespace.c",
+    "android/runtime/native/kernel_syscall_a64.S",
+    "-o",
+    "/Users/like/code/tripoder/artifacts/cmb-thick-fix/accepted-direct-syscalls/path-policy-probe"
+  ],
+  "binarySha256": "fe5681bfa7a26a0b87d2d680c8b1d4978b5a6ce6c29139f853f1546c77c3dc74",
+  "sourceSha256": {
+    "android/runtime/native/path_policy.c": "a11cc0928357e0bcc5a9b4442794e98abbbfb78ee25df4036bcbc8891f17583f",
+    "android/runtime/native/io_adapter.c": "ba3869d365925b763d543a55d0b4d7436116c34569c2329e6eb70367ade5308c",
+    "android/runtime/native/user_memory.c": "04474d502996ab441be40666beea77e0349bb77bd48a79d28170c1f0a5062a27",
+    "android/runtime/test/native/syscall_namespace_probe.c": "39e8a398fb16789f266e45070fcada8fcdeb9668d135e74c2beec5b2c7b42161",
+    "android/runtime/native/syscall_namespace.c": "d924a54e6ca2e69a83a1b74259656b933c4f8b392df15ddea4c10c96e2c58871",
+    "android/runtime/native/kernel_syscall_a64.S": "d15fbf12d986b0c2e4bdd4dc0379c041f0a707fd84e29a439a1e85aa71a20a70",
+    "android/runtime/native/path_policy.h": "3b76d137cdeda24ef0ee5d44046672e4809feffff0d009f2bf8445eb0bb776dc",
+    "android/scripts/validate-native-policy.py": "758510ad67c36fd084e1372f25da640550a4f01d17ea526321d41c98311616c4"
+  },
+  "commands": [
+    {
+      "command": [
+        "shell",
+        "getprop",
+        "ro.build.fingerprint"
+      ],
+      "exitCode": 0,
+      "stdout": "Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "id",
+        "-u"
+      ],
+      "exitCode": 0,
+      "stdout": "2000\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "push",
+        "/Users/like/code/tripoder/android/runtime-probe/build/native/syscall-namespace-probe-validated",
+        "/data/local/tmp/tripoder-policy-86dbf28e9a844c7d9926dc28e8845018"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "/Users/like/code/tripoder/android/runtime-probe/build/native/syscall-namespace-probe-validated: 1 file pushed, 0 skipped. 468.6 MB/s (47680 bytes in 0.000s)\n"
+    },
+    {
+      "command": [
+        "shell",
+        "chmod",
+        "700",
+        "/data/local/tmp/tripoder-policy-86dbf28e9a844c7d9926dc28e8845018"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "/data/local/tmp/tripoder-policy-86dbf28e9a844c7d9926dc28e8845018",
+        "/data/local/tmp/tripoder-syscall-86dbf28e9a844c7d9926dc28e8845018"
+      ],
+      "exitCode": 0,
+      "stdout": "{\"name\":\"direct-syscall-namespace-installs\",\"passed\":true}\n{\"name\":\"direct-openat-reads-verified-code-alias\",\"passed\":true}\n{\"name\":\"direct-fstatat-has-real-inode-and-size\",\"passed\":true}\n{\"name\":\"abi-native-directory-resolves-without-trailing-slash\",\"passed\":true}\n{\"name\":\"root-volume-metadata-keeps-platform-access\",\"passed\":true}\n{\"name\":\"direct-faccessat-resolves-code-alias\",\"passed\":true}\n{\"name\":\"direct-readlinkat-retains-logical-code-identity\",\"passed\":true}\n{\"name\":\"raw-kernel-error-and-thread-errno-preserved\",\"passed\":true}\n{\"name\":\"namespace-inherited-by-new-thread\",\"passed\":true}\n{\"name\":\"direct-proc-read-on-small-native-stack\",\"passed\":true}\n{\"name\":\"libc-adapter-proc-read-on-small-native-stack\",\"passed\":true}\n{\"name\":\"invalid-path-pointer-returns-kernel-efault\",\"passed\":true}\n{\"name\":\"invalid-readlink-output-returns-kernel-efault\",\"passed\":true}\n{\"name\":\"unrelated-sigsys-reaches-previous-handler\",\"passed\":true}\n{\"name\":\"all-four-direct-entry-families-observed\",\"passed\":true}\n{\"summary\":true,\"passed\":true,\"checks\":15,\"failures\":0}\n",
+      "stderr": ""
+    }
+  ],
+  "fingerprint": "Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys",
+  "executionUid": "2000",
+  "observations": [
+    {
+      "name": "direct-syscall-namespace-installs",
+      "passed": true
+    },
+    {
+      "name": "direct-openat-reads-verified-code-alias",
+      "passed": true
+    },
+    {
+      "name": "direct-fstatat-has-real-inode-and-size",
+      "passed": true
+    },
+    {
+      "name": "abi-native-directory-resolves-without-trailing-slash",
+      "passed": true
+    },
+    {
+      "name": "root-volume-metadata-keeps-platform-access",
+      "passed": true
+    },
+    {
+      "name": "direct-faccessat-resolves-code-alias",
+      "passed": true
+    },
+    {
+      "name": "direct-readlinkat-retains-logical-code-identity",
+      "passed": true
+    },
+    {
+      "name": "raw-kernel-error-and-thread-errno-preserved",
+      "passed": true
+    },
+    {
+      "name": "namespace-inherited-by-new-thread",
+      "passed": true
+    },
+    {
+      "name": "direct-proc-read-on-small-native-stack",
+      "passed": true
+    },
+    {
+      "name": "libc-adapter-proc-read-on-small-native-stack",
+      "passed": true
+    },
+    {
+      "name": "invalid-path-pointer-returns-kernel-efault",
+      "passed": true
+    },
+    {
+      "name": "invalid-readlink-output-returns-kernel-efault",
+      "passed": true
+    },
+    {
+      "name": "unrelated-sigsys-reaches-previous-handler",
+      "passed": true
+    },
+    {
+      "name": "all-four-direct-entry-families-observed",
+      "passed": true
+    },
+    {
+      "summary": true,
+      "passed": true,
+      "checks": 15,
+      "failures": 0
+    }
+  ],
+  "passed": true
+}

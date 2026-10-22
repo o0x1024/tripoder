@@ -1,0 +1,376 @@
+{
+  "runId": "89e062abca5442db8f46beac6072cf18",
+  "serial": "d861a4fa",
+  "hookInstalled": false,
+  "guestExecutionVerified": false,
+  "strongIsolationVerified": false,
+  "directSyscalls": false,
+  "compile": [
+    "/opt/homebrew/share/android-commandlinetools/ndk/30.0.16248370/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android36-clang",
+    "-O2",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-fPIE",
+    "-pie",
+    "-Iandroid/runtime/native",
+    "android/runtime/native/path_policy.c",
+    "android/runtime/native/io_adapter.c",
+    "android/runtime/native/user_memory.c",
+    "android/runtime/test/native/path_policy_probe.c",
+    "android/runtime/native/kernel_syscall_a64.S",
+    "-o",
+    "/Users/like/code/tripoder/artifacts/cmb-thick-fix/accepted-media-policy/path-policy-probe"
+  ],
+  "binarySha256": "5f2e442198f1ebf8799716eded6a07d802d1594d7def551bea4a06dc77463605",
+  "sourceSha256": {
+    "android/runtime/native/path_policy.c": "a11cc0928357e0bcc5a9b4442794e98abbbfb78ee25df4036bcbc8891f17583f",
+    "android/runtime/native/io_adapter.c": "ba3869d365925b763d543a55d0b4d7436116c34569c2329e6eb70367ade5308c",
+    "android/runtime/native/user_memory.c": "04474d502996ab441be40666beea77e0349bb77bd48a79d28170c1f0a5062a27",
+    "android/runtime/test/native/path_policy_probe.c": "9a02c73a56101ec2567dad6bc09b89defd2fee5e9924bdac61a9f981d9be9097",
+    "android/runtime/native/kernel_syscall_a64.S": "d15fbf12d986b0c2e4bdd4dc0379c041f0a707fd84e29a439a1e85aa71a20a70",
+    "android/runtime/native/path_policy.h": "3b76d137cdeda24ef0ee5d44046672e4809feffff0d009f2bf8445eb0bb776dc",
+    "android/scripts/validate-native-policy.py": "758510ad67c36fd084e1372f25da640550a4f01d17ea526321d41c98311616c4"
+  },
+  "commands": [
+    {
+      "command": [
+        "shell",
+        "getprop",
+        "ro.build.fingerprint"
+      ],
+      "exitCode": 0,
+      "stdout": "Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "id",
+        "-u"
+      ],
+      "exitCode": 0,
+      "stdout": "2000\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "push",
+        "/Users/like/code/tripoder/android/runtime-probe/build/native/path-policy-probe-validated",
+        "/data/local/tmp/tripoder-policy-89e062abca5442db8f46beac6072cf18"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "/Users/like/code/tripoder/android/runtime-probe/build/native/path-policy-probe-validated: 1 file pushed, 0 skipped. 500.1 MB/s (53688 bytes in 0.000s)\n"
+    },
+    {
+      "command": [
+        "shell",
+        "chmod",
+        "700",
+        "/data/local/tmp/tripoder-policy-89e062abca5442db8f46beac6072cf18"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "/data/local/tmp/tripoder-policy-89e062abca5442db8f46beac6072cf18",
+        "/data/local/tmp/tripoder-path-89e062abca5442db8f46beac6072cf18"
+      ],
+      "exitCode": 0,
+      "stdout": "{\"name\":\"saved-code-alias-is-not-an-elf-module-base\",\"passed\":true,\"errno\":13}\n{\"name\":\"real-elf-module-base-remains-visible\",\"passed\":true,\"errno\":13}\n{\"name\":\"saved-code-alias-keeps-physical-inode-and-offset\",\"passed\":true,\"errno\":13}\n{\"name\":\"loader-symlink-and-kernel-module-name-share-identity\",\"passed\":true,\"errno\":13}\n{\"name\":\"canonical-linker-image-remains-visible\",\"passed\":true,\"errno\":13}\n{\"name\":\"host-storage-owner-cannot-change-after-binding\",\"passed\":true,\"errno\":114}\n{\"name\":\"actual-host-webview-lock-is-owned-by-guest-data\",\"passed\":true,\"errno\":2}\n{\"name\":\"webview-preferences-use-the-bound-host-identity\",\"passed\":true,\"errno\":2}\n{\"name\":\"provider-code-cache-stays-in-guest-incarnation\",\"passed\":true,\"errno\":2}\n{\"name\":\"webview-routing-does-not-grant-host-private-files\",\"passed\":true,\"errno\":13}\n{\"name\":\"host-cache-capability-requires-a-directory-boundary\",\"passed\":true,\"errno\":13}\n{\"name\":\"explicit-gpu-device-capability\",\"passed\":true,\"errno\":13}\n{\"name\":\"gpu-capability-does-not-grant-dev-subtree\",\"passed\":true,\"errno\":13}\n{\"name\":\"gpu-capability-does-not-grant-sibling\",\"passed\":true,\"errno\":13}\n{\"name\":\"media-heap-directory-is-readable-capability\",\"passed\":true,\"errno\":13}\n{\"name\":\"media-heap-directory-is-not-writable\",\"passed\":true,\"errno\":13}\n{\"name\":\"media-heap-node-keeps-physical-device-path\",\"passed\":true,\"errno\":13}\n{\"name\":\"media-heap-sibling-is-not-a-capability\",\"passed\":true,\"errno\":13}\n{\"name\":\"media-heap-nested-path-rejected\",\"passed\":true,\"errno\":13}\n{\"name\":\"media-heap-parent-escape-rejected\",\"passed\":true,\"errno\":13}\n{\"name\":\"media-heap-capability-does-not-grant-ion\",\"passed\":true,\"errno\":13}\n{\"name\":\"ion-sibling-is-not-a-capability\",\"passed\":true,\"errno\":13}\n{\"name\":\"media-heap-open-keeps-real-inode-and-device\",\"passed\":true,\"errno\":13}\n{\"name\":\"media-heap-relative-dirfd-open-keeps-real-node\",\"passed\":true,\"errno\":13}\n{\"name\":\"logical-open-real-fd\",\"passed\":true,\"errno\":2}\n{\"name\":\"kernel-write\",\"passed\":true,\"errno\":2}\n{\"name\":\"aliases-share-actual-bytes\",\"passed\":true,\"errno\":2}\n{\"name\":\"real-directory-fd\",\"passed\":true,\"errno\":2}\n{\"name\":\"relative-dirfd-read\",\"passed\":true,\"errno\":2}\n{\"name\":\"missing-parent-not-normalized-away\",\"passed\":true,\"errno\":2}\n{\"name\":\"dirfd-parent-resolves-within-guest-root\",\"passed\":true,\"errno\":2}\n{\"name\":\"logical-root-escape-rejected\",\"passed\":true,\"errno\":13}\n{\"name\":\"artifact-write-rejected\",\"passed\":true,\"errno\":30}\n{\"name\":\"unknown-private-path-denied\",\"passed\":true,\"errno\":13}\n{\"name\":\"leaf-symlink-no-follow\",\"passed\":true,\"errno\":40}\n{\"name\":\"trailing-slash-cannot-follow-link\",\"passed\":true,\"errno\":40}\n{\"name\":\"readlinkat-reverses-physical-to-logical-path\",\"passed\":true,\"errno\":40}\n{\"name\":\"symlink-parent-not-normalized-away\",\"passed\":true,\"errno\":20}\n{\"name\":\"new-symlink-explicitly-unsupported\",\"passed\":true,\"errno\":95}\n{\"name\":\"logical-stat-real-inode\",\"passed\":true,\"errno\":95}\n{\"name\":\"dup-retains-kernel-description\",\"passed\":true,\"errno\":95}\n{\"name\":\"rename-real-dirfd\",\"passed\":true,\"errno\":2}\n{\"name\":\"open-fd-survives-rename\",\"passed\":true,\"errno\":2}\n{\"name\":\"unlink-real-dirfd\",\"passed\":true,\"errno\":2}\n{\"name\":\"unlinked-open-fd-still-valid\",\"passed\":true,\"errno\":2}\n{\"name\":\"mmap-real-file-description\",\"passed\":true,\"errno\":2}\n{\"name\":\"mapping-survives-fd-close\",\"passed\":true,\"errno\":2}\n{\"name\":\"shared-mapping-msync\",\"passed\":true,\"errno\":2}\n{\"name\":\"munmap\",\"passed\":true,\"errno\":2}\n{\"name\":\"cwd-is-guest-data\",\"passed\":true,\"errno\":2}\n{\"name\":\"readlinkat-reverses-artifact-to-logical-apk-path\",\"passed\":true,\"errno\":2}\n{\"name\":\"logical-artifact-apk-open\",\"passed\":true,\"errno\":2}\n{\"name\":\"proc-self-fd-reopen-allowed-target\",\"passed\":true,\"errno\":2}\n{\"name\":\"platform-linker-read-allowed\",\"passed\":true,\"errno\":2}\n{\"name\":\"proc-self-cmdline-virtualized\",\"passed\":true,\"errno\":2}\n{\"summary\":true,\"passed\":true,\"checks\":55,\"failures\":0,\"hookInstalled\":false,\"strongIsolationVerified\":false}\n",
+      "stderr": ""
+    }
+  ],
+  "fingerprint": "Xiaomi/madrid/madrid:17/CP2A.260605.016/OS4.0.24.0.XEOCNXM:user/release-keys",
+  "executionUid": "2000",
+  "observations": [
+    {
+      "name": "saved-code-alias-is-not-an-elf-module-base",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "real-elf-module-base-remains-visible",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "saved-code-alias-keeps-physical-inode-and-offset",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "loader-symlink-and-kernel-module-name-share-identity",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "canonical-linker-image-remains-visible",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "host-storage-owner-cannot-change-after-binding",
+      "passed": true,
+      "errno": 114
+    },
+    {
+      "name": "actual-host-webview-lock-is-owned-by-guest-data",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "webview-preferences-use-the-bound-host-identity",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "provider-code-cache-stays-in-guest-incarnation",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "webview-routing-does-not-grant-host-private-files",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "host-cache-capability-requires-a-directory-boundary",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "explicit-gpu-device-capability",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "gpu-capability-does-not-grant-dev-subtree",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "gpu-capability-does-not-grant-sibling",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "media-heap-directory-is-readable-capability",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "media-heap-directory-is-not-writable",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "media-heap-node-keeps-physical-device-path",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "media-heap-sibling-is-not-a-capability",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "media-heap-nested-path-rejected",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "media-heap-parent-escape-rejected",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "media-heap-capability-does-not-grant-ion",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "ion-sibling-is-not-a-capability",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "media-heap-open-keeps-real-inode-and-device",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "media-heap-relative-dirfd-open-keeps-real-node",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "logical-open-real-fd",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "kernel-write",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "aliases-share-actual-bytes",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "real-directory-fd",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "relative-dirfd-read",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "missing-parent-not-normalized-away",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "dirfd-parent-resolves-within-guest-root",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "logical-root-escape-rejected",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "artifact-write-rejected",
+      "passed": true,
+      "errno": 30
+    },
+    {
+      "name": "unknown-private-path-denied",
+      "passed": true,
+      "errno": 13
+    },
+    {
+      "name": "leaf-symlink-no-follow",
+      "passed": true,
+      "errno": 40
+    },
+    {
+      "name": "trailing-slash-cannot-follow-link",
+      "passed": true,
+      "errno": 40
+    },
+    {
+      "name": "readlinkat-reverses-physical-to-logical-path",
+      "passed": true,
+      "errno": 40
+    },
+    {
+      "name": "symlink-parent-not-normalized-away",
+      "passed": true,
+      "errno": 20
+    },
+    {
+      "name": "new-symlink-explicitly-unsupported",
+      "passed": true,
+      "errno": 95
+    },
+    {
+      "name": "logical-stat-real-inode",
+      "passed": true,
+      "errno": 95
+    },
+    {
+      "name": "dup-retains-kernel-description",
+      "passed": true,
+      "errno": 95
+    },
+    {
+      "name": "rename-real-dirfd",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "open-fd-survives-rename",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "unlink-real-dirfd",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "unlinked-open-fd-still-valid",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "mmap-real-file-description",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "mapping-survives-fd-close",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "shared-mapping-msync",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "munmap",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "cwd-is-guest-data",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "readlinkat-reverses-artifact-to-logical-apk-path",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "logical-artifact-apk-open",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "proc-self-fd-reopen-allowed-target",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "platform-linker-read-allowed",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "name": "proc-self-cmdline-virtualized",
+      "passed": true,
+      "errno": 2
+    },
+    {
+      "summary": true,
+      "passed": true,
+      "checks": 55,
+      "failures": 0,
+      "hookInstalled": false,
+      "strongIsolationVerified": false
+    }
+  ],
+  "passed": true
+}

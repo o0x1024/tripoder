@@ -19,7 +19,7 @@ final class RuntimeThinPolicy {
     static boolean platformService(String name){return name!=null&&SERVICES.contains(name);}
     static boolean platformHooks(FixedRuntimeHooks.Group group){
         return group==FixedRuntimeHooks.Group.TRAFFIC||group==FixedRuntimeHooks.Group.WIFI_CHANNEL
-            ||group==FixedRuntimeHooks.Group.UI||group==FixedRuntimeHooks.Group.FAILURES;
+            ||group==FixedRuntimeHooks.Group.UI||group==FixedRuntimeHooks.Group.BIOMETRICS||group==FixedRuntimeHooks.Group.FAILURES;
     }
     private RuntimeThinPolicy(){}
 }

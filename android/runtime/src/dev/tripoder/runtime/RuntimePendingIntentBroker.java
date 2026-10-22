@@ -67,7 +67,7 @@ final class RuntimePendingIntentBroker {
         synchronized(broker){
             current(install);
             boolean allowDisabled=broker.resolveMode(install.space,install.info.packageName,install.generation)==RuntimeMode.THIN;
-            if(tokenKind.equals("broadcast")){receiver=logical.getComponent()==null?null:receiver(install,logical,allowDisabled);if(receiver==null)broker.broadcastBroker.requireDynamicImplicit(install,logical);}
+            if(tokenKind.equals("broadcast"))receiver=logical.getComponent()==null?null:receiver(install,logical,allowDisabled);
             else receiver=component(install,logical,tokenKind,allowDisabled);
             ledger.requireIdle(install.generation);prior=ledger.current(key);
             atomic(()->begin(operation,install,prior==null?"":prior.version,"GET",digest));

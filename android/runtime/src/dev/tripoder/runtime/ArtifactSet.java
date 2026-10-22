@@ -186,28 +186,37 @@ public final class ArtifactSet {
         }
         r.endArray();return out;
     }
+    /** Resolve the same sealed manifest declarations for authority routing and worker descriptor publication. */
+    static List<FilterSpec> manifestFilters(ApkManifest.Component component){
+        List<FilterSpec> specs=new ArrayList<>();
+        for(ApkManifest.Element element:component.declaration.children){
+            if(!element.name.equals("intent-filter"))continue;
+            int priority=0;try{priority=Integer.parseInt(element.android("priority","0"));}catch(NumberFormatException ignored){}
+            FilterSpec spec=new FilterSpec(priority);
+            for(ApkManifest.Element child:element.children){
+                String value=child.android("name","");
+                if(child.name.equals("action")&&!value.isEmpty())spec.actions.add(value);
+                else if(child.name.equals("category")&&!value.isEmpty())spec.categories.add(value);
+                else if(child.name.equals("data")){
+                    String[] row=new String[9];int i=0;
+                    for(String key:new String[]{"scheme","host","port","path","pathPrefix","pathPattern","pathAdvancedPattern","pathSuffix","mimeType"})row[i++]=child.android(key,null);
+                    spec.data.add(row);
+                }
+            }
+            specs.add(spec);
+        }
+        return specs;
+    }
     /** The intent-filters of every component, taken from the full manifest tree (which only the authority has) for the lite descriptor. */
     private org.json.JSONArray filtersJson()throws Exception{
-        org.json.JSONArray all=new org.json.JSONArray();
-        Set<String> seen=new HashSet<>();
+        org.json.JSONArray all=new org.json.JSONArray();Set<String> seen=new HashSet<>();
         for(Part part:parts)for(ApkManifest.Component component:part.manifest.components){
             if(!seen.add(component.type+"/"+component.name))continue;
             org.json.JSONArray filters=new org.json.JSONArray();
-            for(ApkManifest.Element element:component.declaration.children){
-                if(!element.name.equals("intent-filter"))continue;
-                int priority=0;try{priority=Integer.parseInt(element.android("priority","0"));}catch(NumberFormatException ignored){}
-                org.json.JSONArray actions=new org.json.JSONArray(),categories=new org.json.JSONArray(),data=new org.json.JSONArray();
-                for(ApkManifest.Element child:element.children){
-                    String value=child.android("name","");
-                    if(child.name.equals("action")&&!value.isEmpty())actions.put(value);
-                    else if(child.name.equals("category")&&!value.isEmpty())categories.put(value);
-                    else if(child.name.equals("data")){
-                        org.json.JSONArray row=new org.json.JSONArray();
-                        for(String key:new String[]{"scheme","host","port","path","pathPrefix","pathPattern","pathAdvancedPattern","pathSuffix","mimeType"}){String v=child.android(key,null);row.put(v==null?org.json.JSONObject.NULL:v);}
-                        data.put(row);
-                    }
-                }
-                filters.put(new org.json.JSONObject().put("p",priority).put("a",actions).put("c",categories).put("d",data));
+            for(FilterSpec spec:manifestFilters(component)){
+                org.json.JSONArray data=new org.json.JSONArray();
+                for(String[] values:spec.data){org.json.JSONArray row=new org.json.JSONArray();for(String value:values)row.put(value==null?org.json.JSONObject.NULL:value);data.put(row);}
+                filters.put(new org.json.JSONObject().put("p",spec.priority).put("a",new org.json.JSONArray(spec.actions)).put("c",new org.json.JSONArray(spec.categories)).put("d",data));
             }
             if(filters.length()>0)all.put(new org.json.JSONObject().put("t",component.type).put("n",component.name).put("f",filters));
         }

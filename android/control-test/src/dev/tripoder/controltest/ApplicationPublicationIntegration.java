@@ -22,8 +22,6 @@ public final class ApplicationPublicationIntegration extends ControlTestBase {
     }
     @Override void test()throws Exception{
         report.put("scope","generic-application-attach-publication-contract");
-        java.io.File[] evidence=getTargetContext().getExternalFilesDir(null).listFiles((dir,name)->(name.startsWith("native-exit-")||name.startsWith("trace-")||name.equals("native-tracer-output.txt"))&&(name.endsWith(".txt")||name.endsWith(".bin")));
-        if(evidence!=null)for(java.io.File file:evidence)if(!file.setReadable(true,false))throw new IllegalStateException("EXIT_EVIDENCE_EXPORT_FAILED");
         AtomicReference<Throwable> failure=new AtomicReference<>();
         runOnMainSync(()->{try{
             System.loadLibrary("tripoderselfhook");
@@ -48,6 +46,19 @@ public final class ApplicationPublicationIntegration extends ControlTestBase {
             check("current-application-published-after-attach",adapter.getMethod("current").invoke(null)==guest,true);
             guest.onCreate();adapter.getMethod("check").invoke(null);
             check("on-create-runs-once-after-publication",guest.creates==1,true);
+            Method publish=adapter.getMethod("publishApplication",Application.class);
+            publish.invoke(null,guest);
+            check("same-owner-publication-preserves-identity",logical.getApplicationContext()==guest&&adapter.getMethod("current").invoke(null)==guest,true);
+            boolean rejected=false;try{publish.invoke(null,new Application());}catch(InvocationTargetException expected){rejected=expected.getCause() instanceof IllegalStateException;}
+            check("unattached-publication-rejected",rejected&&logical.getApplicationContext()==guest&&adapter.getMethod("current").invoke(null)==guest,true);
+            rejected=false;try{publish.invoke(null,host);}catch(InvocationTargetException expected){rejected=expected.getCause() instanceof IllegalStateException;}
+            check("host-publication-rejected",rejected&&logical.getApplicationContext()==guest&&adapter.getMethod("current").invoke(null)==guest,true);
+            Application delegate=Instrumentation.newApplication(Application.class,new ContextWrapper(logical));
+            publish.invoke(null,delegate);
+            check("delegate-publication-updates-context-and-current",logical.getApplicationContext()==delegate&&adapter.getMethod("current").invoke(null)==delegate,true);
+            check("delegate-publication-updates-loaded-apk",adapter.getMethod("installedApplication").invoke(null)==delegate,true);
+            adapter.getMethod("check").invoke(null);
+            check("delegate-keeps-physical-ownership",true,true);
             adapter.getMethod("closeProbeView").invoke(null);
             check("physical-host-restored",adapter.getMethod("current").invoke(null)==host,true);
         }catch(Throwable error){failure.set(error);}});

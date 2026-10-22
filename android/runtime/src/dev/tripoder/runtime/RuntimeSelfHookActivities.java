@@ -24,6 +24,10 @@ final class RuntimeSelfHookActivities {
                 case "newActivity":{Method method=(Method)target;callbacks.put(target,value.newActivity(method));value.instrumentations.add(method);break;}
                 case "performLaunchActivity":callbacks.put(target,(receiver,args,original)->{
                     Intent physical=ActivityFrameworkAccess.recordIntent(args[0]);
+                    if(RuntimeActivityCreation.physical(physical)){
+                        ClassLoader extras=RuntimeSelfHookApplication.intentExtrasLoader();
+                        if(extras!=null)physical.setExtrasClassLoader(extras);
+                    }
                     if(!RuntimeActivityCreation.physical(physical)){
                         // The record's component may be the guest-visible name the platform resolved from the
                         // ActivityInfo it was given; its lease still names this process's slot. Adopt the lease.
@@ -46,7 +50,14 @@ final class RuntimeSelfHookActivities {
                         // The instrumentation must be enrolled first so that interception (not AppComponentFactory,
                         // which would re-enter begin()) produces that RejectedActivity.
                         value.enroll(ActivityFrameworkAccess.instrumentation());
-                        if(!permit.rejected())permit.bindRecord(args[0],ActivityFrameworkAccess.recordToken(args[0]));
+                        if(!permit.rejected()){
+                            permit.bindRecord(args[0],ActivityFrameworkAccess.recordToken(args[0]));
+                            // ActivityClientRecord.state is unparcelled lazily by the framework. Guest
+                            // view states (e.g. custom View.BaseSavedState) must resolve through the
+                            // guest loader, not the boot loader, or Activity restore aborts the process.
+                            Bundle restored=ActivityFrameworkAccess.recordState(args[0]);
+                            if(restored!=null)restored.setClassLoader(permit.loader());
+                        }
                         Object result=original.call(args);
                         if(result instanceof Activity&&RuntimeBridge.owns((Activity)result))RuntimeEngine.current.activityCreated((Activity)result);
                         return result;
@@ -145,7 +156,12 @@ final class RuntimeSelfHookActivities {
             Activity activity=(Activity)receiver;
             if(name.equals("finish")){if(activity.getClass()==RuntimeRejectedActivity.class)return original.call(args);if(!RuntimeBridge.owns(activity))throw new SecurityException("RESULT_CALLER_UNSUPPORTED");RuntimeBridge.returning(activity,ActivityFrameworkAccess.resultCode(activity),ActivityFrameworkAccess.resultData(activity));return original.call(args);}
             String operation=RuntimeBridge.receiving(activity,(Integer)args[1],(Integer)args[2],(ComponentCaller)args[4]);boolean success=false;Throwable failure=null;
-            try{Object result=original.call(args);success=true;return result;}catch(Throwable error){failure=error;throw error;}
+            try{
+                // Unparcel application-defined results in the admitted receiver's current
+                // loader, including a legitimate packed/hot-fixed Application loader.
+                if(args[3] instanceof Intent data)data.setExtrasClassLoader(RuntimeEngine.current.guestLoader());
+                Object result=original.call(args);success=true;return result;
+            }catch(Throwable error){failure=error;throw error;}
             finally{try{RuntimeBridge.received(activity,operation,(Integer)args[2],success);}catch(Throwable acknowledgement){if(failure==null)throw acknowledgement;if(failure!=acknowledgement)failure.addSuppressed(acknowledgement);}}
         });installer.install(callbacks);
     }

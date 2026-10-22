@@ -103,6 +103,12 @@ void tp_signal_chain_state(bool *available,uint64_t *changes,uint64_t *modules){
 
 int tp_signal_chain_claim(int signal,bool (*handler)(int,siginfo_t *,void *)){
     if(!atomic_load_explicit(&ready,memory_order_acquire)||signal<=0||signal>=NSIG||signal==SIGKILL||signal==SIGSTOP||!handler)return -1;
-    struct special_action action={handler,0,0};add_special(signal,&action);atomic_fetch_add_explicit(&claims,1,memory_order_relaxed);return 0;
+    /* ART installs this mask before calling the special handler. An empty mask
+     * delivers signals the interrupted thread deliberately blocked (for example
+     * Android's pending SIGPIPE) before our callback even starts. Keep signals
+     * blocked during native dispatch; sigchain restores the interrupted mask.
+     * Internal syscalls use the owned gateway and need no recursive SIGSYS. */
+    struct special_action action={handler,UINT64_MAX,0};
+    add_special(signal,&action);atomic_fetch_add_explicit(&claims,1,memory_order_relaxed);return 0;
 }
 uint64_t tp_signal_chain_claims(void){return atomic_load_explicit(&claims,memory_order_relaxed);}

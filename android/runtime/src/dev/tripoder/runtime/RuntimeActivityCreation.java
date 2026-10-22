@@ -48,6 +48,10 @@ public final class RuntimeActivityCreation {
     public static Permit begin(Intent physical)throws Exception{
         if(CURRENT.get()!=null)throw new SecurityException("ACTIVITY_CREATION_NESTED_LAUNCH_UNSUPPORTED");
         if(!physical(physical))throw new SecurityException("ACTIVITY_PHYSICAL_COMPONENT_MISMATCH");
+        // The platform has already unmarshalled this Intent. Own its extras loader before the first read,
+        // otherwise the lazy Bundle caches the boot loader and guest Parcelables become unavailable.
+        ClassLoader extras=RuntimeSelfHookApplication.intentExtrasLoader();
+        if(extras!=null)physical.setExtrasClassLoader(extras);
         String rejection=RuntimeFactory.bootstrap(physical.getComponent().getClassName(),"restoreActivity",RuntimeWire.required(physical.getExtras(),"tripoder.ticket"));
         Permit permit=rejection==null?RuntimeEngine.current.claimCreation(physical):new Permit(rejection);
         CURRENT.set(permit);try{if(!permit.rejected())permit.engine.startApplication();return permit;}catch(Throwable error){CURRENT.remove();throw error;}

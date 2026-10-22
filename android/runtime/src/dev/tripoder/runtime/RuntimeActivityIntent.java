@@ -19,7 +19,7 @@ final class RuntimeActivityIntent {
         |Intent.FLAG_ACTIVITY_NO_HISTORY|Intent.FLAG_ACTIVITY_REORDER_TO_FRONT|Intent.FLAG_ACTIVITY_MULTIPLE_TASK;
     static void requireFlags(int flags){if((flags&~FLAGS)!=0)throw new IllegalArgumentException("INTENT_FLAGS_UNSUPPORTED:0x"+Integer.toHexString(flags));}
     static Intent snapshot(Intent input)throws Exception{
-        ClassLoader guest=RuntimeEngine.current==null?null:RuntimeEngine.current.loader;if(guest!=null)input.setExtrasClassLoader(guest);
+        ClassLoader guest=RuntimeEngine.current==null?null:RuntimeEngine.current.guestLoader();if(guest!=null)input.setExtrasClassLoader(guest);
         String before=digest(input);Intent snapshot;Parcel parcel=Parcel.obtain();
         try{input.writeToParcel(parcel,0);if(parcel.hasFileDescriptors()||parcel.dataSize()>64*1024)throw new IllegalArgumentException("ACTIVITY_PARCEL_UNSUPPORTED");parcel.setDataPosition(0);snapshot=Intent.CREATOR.createFromParcel(parcel);if(parcel.dataAvail()!=0)throw new IllegalArgumentException("ACTIVITY_PARCEL_TRAILING_DATA");}finally{parcel.recycle();}
         // Real platform parcel cloning also owns nested Intent objects and retains Android's
@@ -43,7 +43,7 @@ final class RuntimeActivityIntent {
         // is fingerprinted; getIntent still exposes the actual delivered flags.
         Intent comparable=new Intent(visible).setFlags(physical.getIntExtra("tripoder.flags",0));
         // Intent copies do not carry the extras class loader; the receiver's guest loader owns any package-defined Parcelable.
-        if(RuntimeEngine.current!=null&&RuntimeEngine.current.loader!=null)comparable.setExtrasClassLoader(RuntimeEngine.current.loader);
+        if(RuntimeEngine.current!=null&&RuntimeEngine.current.loader!=null)comparable.setExtrasClassLoader(RuntimeEngine.current.guestLoader());
         return digest(comparable);
     }
     static Intent visible(Intent physical,String pkg,ClassLoader loader){

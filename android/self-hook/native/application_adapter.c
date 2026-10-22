@@ -259,6 +259,17 @@ JNIEXPORT jobject JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_installe
     if(!state.roots[LOGICAL])return NULL;
     return (*env)->GetObjectField(env,state.roots[LOGICAL],state.fields[2]);
 }
+/** The guest may explicitly delegate its Application through getApplicationContext().
+ * Only an Application already attached to this exact logical LoadedApk may become the component owner. */
+JNIEXPORT void JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_publishApplicationNative(JNIEnv *env,jclass unused,jobject application){
+    (void)unused;
+    if(state.tid!=gettid()||!state.attaches||!physical(env,true)||!guest_attached(env,application)){
+        fail(env,"APPLICATION_PUBLICATION_OWNER_MISMATCH");return;
+    }
+    if(!tp_art_reflection_adopt(env,application)){fail(env,"APPLICATION_PUBLICATION_VIEW_REJECTED");return;}
+    (*env)->SetObjectField(env,state.roots[LOGICAL],state.fields[2],application);
+    if((*env)->ExceptionCheck(env)||!physical(env,true)){fail(env,"APPLICATION_PUBLICATION_FAILED");return;}
+}
 JNIEXPORT void JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_closeViewNative(JNIEnv *env,jclass unused){
     (void)unused;
     if((state.tid&&state.tid!=gettid())||!tp_art_reflection_toggle(env,false))fail(env,"APPLICATION_VIEW_CLOSE_FAILED");

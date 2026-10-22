@@ -27,6 +27,9 @@ public final class ApplicationAdapter {
     /** The Application the guest publishes on that LoadedApk; hot-fix proxies replace it during onCreate. */
     private static native Application installedApplicationNative();
     public static Application installedApplication(){return installedApplicationNative();}
+    private static native void publishApplicationNative(Application application);
+    /** Commit the Application explicitly exposed by the guest's application-context contract after onCreate. */
+    public static void publishApplication(Application application){mainThread();if(application==null)throw new IllegalArgumentException("APPLICATION_PUBLICATION_REQUIRED");publishApplicationNative(application);}
     private static native void closeViewNative();
     public static native String reportNative();
     private static void mainThread(){

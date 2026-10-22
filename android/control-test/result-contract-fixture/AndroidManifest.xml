@@ -1,0 +1,10 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tripoder.resultcontract" android:versionCode="1" android:versionName="1.0">
+    <uses-sdk android:minSdkVersion="36" android:targetSdkVersion="36"/>
+    <application android:label="Result contract" android:allowBackup="false" android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        <activity android:name=".Probe" android:exported="true">
+            <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+        </activity>
+        <activity android:name=".Child" android:exported="false"/>
+        <activity android:name=".Child$Remote" android:exported="false" android:process=":result"/>
+    </application>
+</manifest>
