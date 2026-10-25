@@ -1,0 +1,18 @@
+diff --git a/android/runtime/src/dev/tripoder/runtime/RuntimeEffectRecoveryProof.java b/android/runtime/src/dev/tripoder/runtime/RuntimeEffectRecoveryProof.java
+index 314f49a7..8f4d7d0a 100644
+--- a/android/runtime/src/dev/tripoder/runtime/RuntimeEffectRecoveryProof.java
++++ b/android/runtime/src/dev/tripoder/runtime/RuntimeEffectRecoveryProof.java
+@@ -42,7 +42,12 @@ final class RuntimeEffectRecoveryProof {
+         // acknowledged the exact inert attempt, new sessions are expected: they
+         // belong to the admitted start and cannot revive the old no-entry attempt.
+         String live=admitted?"":" AND NOT EXISTS(SELECT 1 FROM sessions s WHERE 'space/'||s.space||'/package/'||s.package=own.scope AND s.state NOT IN ('DEAD','FAILED'))";
+-        String prepared="SELECT 1 FROM operations original JOIN operation_scopes own ON own.operation=original.id WHERE original.id=? AND original.state='UNKNOWN' AND original.detail='LAUNCH_PREPARATION_UNCONFIRMED' AND own.scope=? AND own.command IN ('prepareApplicationLaunch','prepareLaunch','agentPrepareLaunch') AND NOT EXISTS(SELECT 1 FROM activity_launches l WHERE l.operation=original.id)"+live;
++        // BROKER_RECOVERY is the single-authority recovery boundary (an authority died with this launch in flight).
++        // A launch marked UNKNOWN that way is inert on exactly the same evidence as LAUNCH_PREPARATION_UNCONFIRMED:
++        // this clause already requires NO activity entry for the operation, so the launch never crossed into a
++        // delivered Activity, and the stop/dead-session evidence below proves no session of it still runs. Only
++        // launch-command scopes are discharged (own.command filter); a BROKER_RECOVERY install/stop stays fenced.
++        String prepared="SELECT 1 FROM operations original JOIN operation_scopes own ON own.operation=original.id WHERE original.id=? AND original.state='UNKNOWN' AND original.detail IN ('LAUNCH_PREPARATION_UNCONFIRMED','BROKER_RECOVERY') AND own.scope=? AND own.command IN ('prepareApplicationLaunch','prepareLaunch','agentPrepareLaunch') AND NOT EXISTS(SELECT 1 FROM activity_launches l WHERE l.operation=original.id)"+live;
+         try(var rows=db.rawQuery(prepared+" AND EXISTS(SELECT 1 FROM operations stopped JOIN operation_scopes ss ON ss.operation=stopped.id WHERE stopped.state='SUCCEEDED' AND ss.scope=own.scope AND ss.command IN ('stopApplication','agentStopApplication') AND stopped.created>=original.updated) LIMIT 1",new String[]{operation,owner})){
+             if(rows.moveToFirst())return true;
+         }
