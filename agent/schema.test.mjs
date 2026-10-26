@@ -4,14 +4,14 @@ import {tools,command,operationRoutes,contract} from './tools.mjs';
 import {cases} from './schema-fixtures.mjs';
 import {validate} from './schema-validation.mjs';
 test('all public tool contracts and nested payloads accept valid calls and reject malformed arguments',()=>{
-  assert.equal(tools.length,39);
+  assert.equal(tools.length,50);
   for(const fixture of cases){
     if(fixture.valid)assert.doesNotThrow(()=>command(fixture.name,fixture.args),JSON.stringify(fixture));
     else assert.throws(()=>command(fixture.name,fixture.args),undefined,JSON.stringify(fixture));
   }
 });
 test('model and execution share the exact published action branches',()=>{
-  assert.equal(contract.length,35);
+  assert.equal(contract.length,43);
   for(const tool of tools){assert.equal(tool.inputSchema.type,'object');if(Object.keys(tool._meta['dev.tripoder/actionSchemas']).length)assert.deepEqual(tool.inputSchema.anyOf,Object.values(tool._meta['dev.tripoder/actionSchemas']));assert.equal(tool.inputSchema.oneOf,undefined);assert.equal(tool._meta['dev.tripoder/contractVersion'],3);}
   assert.throws(()=>command('file_export',{action:'read',operationId:'op',exportId:'id'}),/INVALID_DISCRIMINATOR/);
   assert.throws(()=>command('file_query',{action:'stat',source:{kind:'path',path:'/tmp/a'},exportId:'other'}),/UNKNOWN_PROPERTY/);

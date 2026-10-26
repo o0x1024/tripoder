@@ -6,7 +6,9 @@ import java.util.function.BiFunction;
 
 /** One process/session, bounded connection lifetimes and honest completeness. */
 public final class NetworkCaptureSession {
-    private static final int CONNECTIONS=16,STREAM_BYTES=4096,TOTAL_BYTES=65536;
+    static final int DEFAULT_CONNECTIONS=16,DEFAULT_MESSAGES=32,DEFAULT_TOTAL_BYTES=65536,STREAM_BYTES=4096;
+    private final int connectionLimit,messageLimit,totalByteLimit;
+    private final long startedMillis=System.currentTimeMillis();
     private final class Connection {
         final String id;final ByteArrayOutputStream read=new ByteArrayOutputStream(),write=new ByteArrayOutputStream();
         final Set<String> reasons=new LinkedHashSet<>();final List<Map<String,Object>> segments=new ArrayList<>();int readers,writers;long chunks,retries,readOffset,writeOffset;
@@ -19,7 +21,8 @@ public final class NetworkCaptureSession {
     private final BiFunction<String,Object,Map<String,Object>> persist;
     private long sequence,created,untracked,droppedConnections,total,events;
     private boolean stopped;private String captureError="";
-    public NetworkCaptureSession(String id,BiFunction<String,Object,Map<String,Object>> persist){this.id=id;this.persist=persist;}
+    public NetworkCaptureSession(String id,BiFunction<String,Object,Map<String,Object>> persist){this(id,persist,DEFAULT_CONNECTIONS,DEFAULT_MESSAGES,DEFAULT_TOTAL_BYTES);}
+    public NetworkCaptureSession(String id,BiFunction<String,Object,Map<String,Object>> persist,int connections,int messages,int totalBytes){this.id=id;this.persist=persist;this.connectionLimit=connections;this.messageLimit=messages;this.totalByteLimit=totalBytes;}
     public synchronized void event(Map<String,Object> event){
         if(stopped)return;events++;
         try{
@@ -27,7 +30,7 @@ public final class NetworkCaptureSession {
             if(tag.equals("network.open")){
                 String pointer=(String)payload;if(pointer.equals("0"))return;
                 Connection prior=live.remove(pointer);if(prior!=null){prior.reasons.add("POINTER_REUSED_WITHOUT_CLOSE");finish(prior);}
-                if(created>=CONNECTIONS){droppedConnections++;return;}
+                if(created>=connectionLimit){droppedConnections++;return;}
                 live.put(pointer,new Connection(id+"-c"+(++created)));return;
             }
             if(tag.equals("network.close")){
@@ -54,7 +57,7 @@ public final class NetworkCaptureSession {
             byte[] bytes=HexFormat.of().parseHex((String)buffer.get("hex"));
             if(Boolean.TRUE.equals(buffer.get("truncated")))connection.reasons.add("CHUNK_TRUNCATED");
             ByteArrayOutputStream stream=read?connection.read:connection.write;
-            int allowed=(int)Math.min(bytes.length,Math.min(STREAM_BYTES-stream.size(),TOTAL_BYTES-total));
+            int allowed=(int)Math.min(bytes.length,Math.min(STREAM_BYTES-stream.size(),totalByteLimit-total));
             if(allowed<bytes.length)connection.reasons.add("CAPTURE_BYTE_LIMIT");
             stream.write(bytes,0,allowed);total+=allowed;
             connection.segments.add(Map.of("direction",direction,"offset",Long.toString(offset),"actualBytes",Long.toString(actual),"capturedBytes",(double)allowed,"state",allowed==actual?"COMPLETE":"TRUNCATED"));
@@ -78,7 +81,7 @@ public final class NetworkCaptureSession {
         completed.add(Collections.unmodifiableMap(row));
     }
     private boolean message(Map<String,Object> exchange){
-        if(messages.size()>=32)return false;
+        if(messages.size()>=messageLimit)return false;
         Map<String,Object> row=new LinkedHashMap<>(exchange);row.put("captureId",id);row.put("seq",(double)(messages.size()+1));
         try{row.put("artifact",persist.apply("network.http",new LinkedHashMap<>(row)));}
         catch(RuntimeException failure){row.put("artifact",Map.of("state","FAILED","reason","NETWORK_ARTIFACT_WRITE_FAILED"));captureError="NETWORK_ARTIFACT_WRITE_FAILED";}
@@ -90,13 +93,26 @@ public final class NetworkCaptureSession {
         while(next<messages.size()&&rows.size()<limit){var row=messages.get(next);int size=HookWire.encode(row).getBytes(java.nio.charset.StandardCharsets.UTF_8).length;if(!rows.isEmpty()&&bytes+size>40000)break;rows.add(row);bytes+=size;next++;}
         return Map.of("captureId",id,"origin","GUEST_PASSIVE_HTTP1","exchanges",rows,"nextCursor",(double)next,"lastSeq",(double)messages.size(),"hasMore",next<messages.size(),"status",status());
     }
+    /** HAR 1.2 page over retained exchanges; entries carry the same cursor as messages(). */
+    public synchronized Map<String,Object> har(long since,int limit){
+        if(since<0||since>messages.size()||limit<1||limit>16)throw new HookPreflightRejected("NETWORK_HTTP_CURSOR_OR_LIMIT");
+        String started=java.time.Instant.ofEpochMilli(startedMillis).toString();
+        List<Map<String,Object>> entries=new ArrayList<>();int next=(int)since,bytes=0;
+        while(next<messages.size()&&entries.size()<limit){
+            Map<String,Object> entry=NetworkHar.entry(messages.get(next),started);int size=HookWire.encode(entry).getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+            if(!entries.isEmpty()&&bytes+size>40000)break;entries.add(entry);bytes+=size;next++;
+        }
+        Map<String,Object> log=new LinkedHashMap<>();log.put("version","1.2");log.put("creator",Map.of("name","Tripoder","version","1"));log.put("entries",entries);
+        log.put("comment","Per-message wall-clock times were not recorded; startedDateTime is the capture session start and timings are -1. Bodies are not decompressed.");
+        return Map.of("captureId",id,"har",Map.of("log",log),"nextCursor",(double)next,"lastSeq",(double)messages.size(),"hasMore",next<messages.size(),"status",status());
+    }
     public synchronized void fail(String reason){captureError=reason;stop();}
     public synchronized void stop(){if(stopped)return;for(Connection connection:live.values()){connection.reasons.add("CAPTURE_STOPPED_BEFORE_CLOSE");finish(connection);}live.clear();stopped=true;}
     public synchronized Map<String,Object> status(){
         Map<String,Object> result=new LinkedHashMap<>(Map.of("captureId",id,"captureState",stopped?"STOPPED":"ACTIVE","liveConnections",(double)live.size(),"completedConnections",(double)completed.size(),"capturedBytes",(double)total,
             "untrackedEvents",(double)untracked,"droppedConnections",(double)droppedConnections,"events",(double)events,"captureError",captureError,"coverage",untracked==0&&droppedConnections==0&&captureError.isEmpty()?"OBSERVED_LIFETIMES_ONLY":"INCOMPLETE"));
         result.put("messages",(double)messages.size());result.put("liveHttp",live.values().stream().map(connection->Map.of("connectionId",connection.id,"http",connection.http.status())).toList());
-        result.put("limits",Map.of("connections",(double)CONNECTIONS,"bytesPerDirection",(double)STREAM_BYTES,"totalBytes",(double)TOTAL_BYTES,"segmentsPerConnection",64d,"messagesPerCapture",32d,"requestsPerConnection",16d));return result;
+        result.put("limits",Map.of("connections",(double)connectionLimit,"bytesPerDirection",(double)STREAM_BYTES,"totalBytes",(double)totalByteLimit,"segmentsPerConnection",64d,"messagesPerCapture",(double)messageLimit,"requestsPerConnection",16d));return result;
     }
     public synchronized Map<String,Object> query(long since,int limit){
         if(since<0||since>sequence||limit<1||limit>16)throw new HookPreflightRejected("NETWORK_CURSOR_OR_LIMIT");

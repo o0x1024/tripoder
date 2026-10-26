@@ -52,6 +52,16 @@ export class JavaObjectFrame {
     const value=frame.unwrap(type,ref);requireThat(value?.snapshot, 'SIMULATED_SNAPSHOT_REQUIRED', 'Provide an explicit host fixture snapshot');
     return Object.freeze(structuredClone(value.snapshot));
   }
+  /** Direct field read for simulation: looks up fieldName in the fixture's .snapshot, any className. */
+  static field(ref: JavaObjectRef, fieldName: string): unknown {
+    const frame=frames.at(-1);requireThat(frame, 'HOOK_OBJECT_OUTSIDE_INVOCATION', 'readField requires an invocation');
+    const entry=refs.get(ref);requireThat(entry, 'HOOK_OBJECT_REFERENCE_REQUIRED', 'An invocation reference is required');
+    requireThat(entry.frame === frame, 'HOOK_OBJECT_SCOPE_MISMATCH', 'Reference belongs to another invocation');
+    const value=entry.value;requireThat(value, 'HOOK_OBJECT_REFERENCE_EXPIRED', 'Object root released');
+    requireThat(value.snapshot, 'SIMULATED_SNAPSHOT_REQUIRED', 'Provide an explicit host fixture snapshot');
+    requireThat(Object.hasOwn(value.snapshot, fieldName), 'HOOK_FIELD_NOT_FOUND', fieldName);
+    return structuredClone(value.snapshot[fieldName]);
+  }
   close(): void {this.#live();this.#closed=true;for(const ref of this.#references.values()){const entry=refs.get(ref);if(entry)entry.value=undefined;}this.#references.clear();frames.pop();}
 }
 

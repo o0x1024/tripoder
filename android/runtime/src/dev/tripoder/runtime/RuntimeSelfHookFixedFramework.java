@@ -35,6 +35,7 @@ final class RuntimeSelfHookFixedFramework implements RuntimeSelfHookFrameworkCal
     public int networkCallbackFlags(ConnectivityManager.NetworkCallback callback){return ManagerFrameworkAccess.callbackFlags(callback);}
     public TelephonyManager telephonyManager(Context host){return ManagerFrameworkAccess.telephony(host);}
     public AudioManager audioManager(Context host){return ManagerFrameworkAccess.audio(host);}
+    public android.location.LocationManager locationManager(Context host,android.location.LocationManager physical){return ManagerFrameworkAccess.location(host,physical);}
     public BatteryManager batteryManager(){return ManagerFrameworkAccess.battery();}
     public PowerManager powerManager(Context host,Handler handler){return ManagerFrameworkAccess.power(host,handler);}
     public android.net.wifi.p2p.WifiP2pManager wifiP2pManager(Context host,android.net.wifi.p2p.WifiP2pManager physical){return ManagerFrameworkAccess.wifi(host,physical);}

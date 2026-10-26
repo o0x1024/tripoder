@@ -17,7 +17,8 @@ import java.util.Objects;
 /** F4/F5 fixed constructors and values. Installation admission stays with Runtime. */
 public final class ManagerFrameworkAccess {
     private static boolean attempted;private static volatile ManagerFrameworkAccess instance;
-    private final Constructor<?> activity,connectivity,telephony,audio,battery,power,history,wifi,stats,notification,shortcut;
+    private final Constructor<?> activity,connectivity,telephony,audio,battery,power,history,wifi,stats,notification,shortcut,location;
+    private final Field locationService;
     private final Field service,callbackFlags,wifiService,groupId,groupChannels;
     private final Method[] wifiFeatures=new Method[6],notificationProperties=new Method[6];
     private final Method channelId,channelGroup,preDispatchKey;
@@ -35,6 +36,8 @@ public final class ManagerFrameworkAccess {
         wifi=FixedFrameworkMembers.constructor(46,"(Landroid/net/wifi/p2p/IWifiP2pManager;)V");
         stats=FixedFrameworkMembers.constructor(36,"(Landroid/content/Context;Landroid/net/INetworkStatsService;)V");
         notification=FixedFrameworkMembers.constructor(38,"(Landroid/content/Context;Ljava/time/InstantSource;)V");
+        locationService=FixedFrameworkMembers.field(72,86,"mService","Landroid/location/ILocationManager;",false);
+        location=FixedFrameworkMembers.constructor(86,"(Landroid/content/Context;Landroid/location/ILocationManager;)V");
         shortcut=FixedFrameworkMembers.constructor(45,"(Landroid/content/Context;Landroid/content/pm/IShortcutService;)V");
         wifiService=FixedFrameworkMembers.field(21,46,"mService","Landroid/net/wifi/p2p/IWifiP2pManager;",false);
         groupId=FixedFrameworkMembers.field(22,40,"mId","Ljava/lang/String;",false);groupChannels=FixedFrameworkMembers.field(23,40,"mChannels","Ljava/util/List;",false);
@@ -66,6 +69,8 @@ public final class ManagerFrameworkAccess {
     public static android.net.wifi.p2p.WifiP2pManager wifi(Context host,android.net.wifi.p2p.WifiP2pManager physical){ManagerFrameworkAccess v=require();Object service=host==null?null:Objects.requireNonNull(FixedFrameworkMembers.get(v.wifiService,Objects.requireNonNull(physical)),"WIFI_P2P_PHYSICAL_SERVICE_REQUIRED");return (android.net.wifi.p2p.WifiP2pManager)FixedFrameworkMembers.create(v.wifi,service);}
     public static android.app.usage.NetworkStatsManager stats(){return (android.app.usage.NetworkStatsManager)FixedFrameworkMembers.create(require().stats,null,null);}
     public static android.app.NotificationManager notification(Context host){return (android.app.NotificationManager)FixedFrameworkMembers.create(require().notification,Objects.requireNonNull(host),java.time.InstantSource.system());}
+    /** The facade shares the physical manager's binder service, so observation methods the policy does not override still reach the real platform. */
+    public static android.location.LocationManager location(Context host,android.location.LocationManager physical){ManagerFrameworkAccess v=require();Object service=Objects.requireNonNull(FixedFrameworkMembers.get(v.locationService,Objects.requireNonNull(physical)),"LOCATION_PHYSICAL_SERVICE_REQUIRED");return (android.location.LocationManager)FixedFrameworkMembers.create(v.location,Objects.requireNonNull(host),service);}
     public static android.content.pm.ShortcutManager shortcut(Context context){return (android.content.pm.ShortcutManager)FixedFrameworkMembers.create(require().shortcut,Objects.requireNonNull(context),null);}
     public static boolean wifiFeature(android.net.wifi.p2p.WifiP2pManager physical,int index){if(index<0||index>=6)throw new IllegalArgumentException("WIFI_FEATURE_INDEX");return (Boolean)FixedFrameworkMembers.call(require().wifiFeatures[index],Objects.requireNonNull(physical));}
     public static Object notificationProperty(android.app.NotificationManager physical,int index){if(index<0||index>=6)throw new IllegalArgumentException("NOTIFICATION_PROPERTY_INDEX");return FixedFrameworkMembers.call(require().notificationProperties[index],Objects.requireNonNull(physical));}

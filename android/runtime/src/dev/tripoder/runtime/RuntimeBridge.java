@@ -65,6 +65,9 @@ public final class RuntimeBridge {
     public static String audioProperty(String name){return RuntimeEngine.current.audio.property(name);}
     public static void audioRegister(android.media.AudioDeviceCallback callback,android.os.Handler handler){RuntimeEngine.current.audio.register(callback,handler);}
     public static void audioUnregister(android.media.AudioDeviceCallback callback){RuntimeEngine.current.audio.unregister(callback);}
+    public static android.location.LocationManager createLocationManager(Context host){return RuntimeSelfHookManagers.locationManager(host);}
+    public static boolean ownsLocationManager(android.location.LocationManager value){return RuntimeEngine.current.location.owns(value);}
+    public static android.location.LocationManager locationPlatform(){return RuntimeEngine.current.location.platform();}
     public static android.telephony.TelephonyManager createTelephonyManager(Context host){return RuntimeSelfHookManagers.telephonyManager(host);}
     public static boolean ownsTelephonyManager(android.telephony.TelephonyManager manager){return RuntimeEngine.current!=null&&RuntimeEngine.current.telephony.owns(manager);}
     public static android.telephony.TelephonyManager telephonyPlatform(){return RuntimeEngine.current.telephony.platform();}

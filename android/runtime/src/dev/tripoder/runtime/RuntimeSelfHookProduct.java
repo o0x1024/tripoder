@@ -48,6 +48,7 @@ final class RuntimeSelfHookProduct {
         plan.put(POWER,()->value.manager(RuntimeSelfHookManagerPolicy.Family.POWER));
         plan.put(NOTIFICATIONS,()->value.manager(RuntimeSelfHookManagerPolicy.Family.NOTIFICATIONS));
         plan.put(SHORTCUTS,()->value.manager(RuntimeSelfHookManagerPolicy.Family.SHORTCUTS));
+        plan.put(LOCATION,()->value.manager(RuntimeSelfHookManagerPolicy.Family.LOCATION));
         plan.put(JOBS,()->{value.manager(RuntimeSelfHookManagerPolicy.Family.JOB_SCHEDULER);RuntimeSelfHookJobs.install(value.managed);});
         plan.put(PENDING_INTENTS,()->RuntimePendingIntents.install(value.managed));
         plan.put(UI_EFFECTS,()->{RuntimeSelfHookSystemEdges.autofill(value.managed);});

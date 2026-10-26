@@ -7,9 +7,9 @@ import java.util.concurrent.Executor;
 final class RuntimeSelfHookDeviceManagers {
     static Object battery(String key,Object[] args) {
         switch(key) {
-            case "isCharging()":return RuntimeBridge.batteryPlatform().isCharging();
+            case "isCharging()":{Boolean o=RuntimeSandboxPersona.batteryChargingOverride();return o!=null?o:RuntimeBridge.batteryPlatform().isCharging();}
             case "computeChargeTimeRemaining()":return RuntimeBridge.batteryPlatform().computeChargeTimeRemaining();
-            case "getIntProperty(int)":return RuntimeBridge.batteryIntProperty((Integer)args[0]);
+            case "getIntProperty(int)":{Integer level=RuntimeSandboxPersona.batteryLevelOverride();if(level!=null&&(Integer)args[0]==android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)return level;return RuntimeBridge.batteryIntProperty((Integer)args[0]);}
             case "getLongProperty(int)":RuntimeBridge.batteryProperty((Integer)args[0]);return RuntimeBridge.batteryPlatform().getLongProperty((Integer)args[0]);
             default:throw new UnsupportedOperationException("BATTERY_CAPABILITY_UNSUPPORTED:"+key);
         }

@@ -27,6 +27,22 @@ final class RuntimeControllerInstallationQueries {
         synchronized(broker){var current=broker.apks.row(space,pkg);if(current==null||!generation.equals(current.generation)||!"COMMITTED".equals(current.state))throw new IllegalStateException("INSTALL_GENERATION_CONFLICT");}
         result.put("target",new JSONObject().put("space",space).put("package",pkg).put("installGeneration",generation)).put("consistency","LIVE_FILES_NOT_ATOMIC_SNAPSHOT");Bundle out=new Bundle();out.putString("result",result.toString());return out;
     }
+    static Bundle walRecover(RuntimeBroker broker,Bundle input)throws Exception{
+        RuntimeControllerCommands.fields(input,"command","space","package","generation","databaseRelativePath","table","columns","rowidAliasColumn","limit");
+        String space=ControlWire.required(input,"space"),pkg=ControlWire.required(input,"package"),generation=ControlWire.required(input,"generation");
+        ApkStore.BundleInstall install=broker.apks.get(space,pkg);if(!generation.equals(install.generation))throw new IllegalStateException("INSTALL_GENERATION_CONFLICT");
+        String relative=ControlWire.required(input,"databaseRelativePath");
+        if(relative.isEmpty()||relative.indexOf('\0')>=0||relative.startsWith("/")||relative.contains(".."))throw new IllegalArgumentException("WAL_RECOVER_PATH");
+        java.io.File dbFile=new java.io.File(install.data,relative).getCanonicalFile();
+        java.io.File dataRoot=install.data.getCanonicalFile();
+        if(!dbFile.getPath().startsWith(dataRoot.getPath()+java.io.File.separator))throw new SecurityException("WAL_RECOVER_PATH_OUTSIDE_INSTALL");
+        org.json.JSONArray columnsJson=new org.json.JSONArray(input.getString("columns"));
+        java.util.List<String> columns=new java.util.ArrayList<>();for(int i=0;i<columnsJson.length();i++)columns.add(columnsJson.getString(i));
+        JSONObject result=new JSONObject(RuntimeWalRecovery.recover(dbFile,input.getString("table"),columns,input.getString("rowidAliasColumn"),Integer.parseInt(input.getString("limit"))));
+        synchronized(broker){var current=broker.apks.row(space,pkg);if(current==null||!generation.equals(current.generation)||!"COMMITTED".equals(current.state))throw new IllegalStateException("INSTALL_GENERATION_CONFLICT");}
+        result.put("target",new JSONObject().put("space",space).put("package",pkg).put("installGeneration",generation));
+        Bundle out=new Bundle();out.putString("result",result.toString());return out;
+    }
     static Bundle inspect(RuntimeBroker broker,Bundle input)throws Exception{
         RuntimeControllerCommands.fields(input,"command","space","package","generation","cursor","limit");
         String space=ControlWire.required(input,"space"),pkg=ControlWire.required(input,"package"),generation=ControlWire.required(input,"generation");

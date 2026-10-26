@@ -25,12 +25,19 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
         default List<String> searchDexClasses(String packagePrefix,int limit){return List.of();}
         default Map<String,Object> inspectDexClass(String className){return Map.of("className",className,"methods",List.of(),"fields",List.of());}
         default List<Map<String,Object>> searchNativeExports(String moduleName,String symbolPrefix,int limit){return List.of();}
-        default Map<String,Object> dumpUiHierarchy(boolean includeInvisible){return Map.of("windows",List.of());}
+        default Map<String,Object> screenshot(int maxDimension){throw new ScriptFault("HOOK_SCREENSHOT_UNSUPPORTED");}
+        default Map<String,Object> dumpUiHierarchy(boolean includeInvisible,int limit){return Map.of("windows",List.of());}
         default Map<String,Object> dispatchUiAction(Map<String,Object> action){return Map.of("dispatched",false);}
         default List<Map<String,Object>> diagnostics(){return List.of();}
         default Map<String,Object> persistNetworkCapture(String tag,Object payload,String sourceSha,String revision){throw new UnsupportedOperationException("NETWORK_CAPTURE_PERSIST_UNSUPPORTED");}
         default Map<String,Object> listNetworkTraffic(long sinceSeq,int limit){return Map.of("exchanges",List.of(),"nextCursor",(double)sinceSeq);}
         default Map<String,Object> sendHttpRequest(Map<String,Object> request){return Map.of("statusCode",0d);}
+        default Map<String,Object> personaConfigureTelephony(Map<String,Object> fields){throw new ScriptFault("HOOK_PERSONA_UNSUPPORTED");}
+        default Map<String,Object> personaConfigureLocation(Map<String,Object> fields){throw new ScriptFault("HOOK_PERSONA_UNSUPPORTED");}
+        default Map<String,Object> personaConfigureBattery(Integer level,Boolean charging){throw new ScriptFault("HOOK_PERSONA_UNSUPPORTED");}
+        default Map<String,Object> personaStatus(){throw new ScriptFault("HOOK_PERSONA_UNSUPPORTED");}
+        default Map<String,Object> sendComponent(Map<String,Object> request){throw new ScriptFault("HOOK_COMPONENT_UNSUPPORTED");}
+        default Map<String,Object> providerInteract(Map<String,Object> request){throw new ScriptFault("HOOK_PROVIDER_UNSUPPORTED");}
         default Map<String,Object> invokeGuestMethod(Map<String,Object> target){return Map.of("result",null);}
         default Map<String,Object> codeCommand(String command,Map<String,Object> params){throw new UnsupportedOperationException("CODE_OBSERVATION_UNSUPPORTED");}
         default Map<String,Object> requestCodeSnapshot(String dexId){throw new UnsupportedOperationException("CODE_SNAPSHOT_UNSUPPORTED");}
@@ -44,15 +51,16 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
         Map.entry("updateParameters",Set.of("revision","parameterVersion","parameters")),Map.entry("cancelPreparation",Set.of("token")),
         Map.entry("discard",Set.of()),Map.entry("status",Set.of()),Map.entry("events",Set.of("sinceSeq")),
         Map.entry("dexSearch",Set.of("packagePrefix","limit")),Map.entry("dexInspect",Set.of("className")),
-        Map.entry("nativeExports",Set.of("moduleName","symbolPrefix","limit")),Map.entry("uiDump",Set.of("includeInvisible")),
+        Map.entry("nativeExports",Set.of("moduleName","symbolPrefix","limit")),Map.entry("uiDump",Set.of("includeInvisible","limit")),Map.entry("uiScreenshot",Set.of("maxDimension")),
         Map.entry("uiAction",Set.of("action")),Map.entry("diagnostics",Set.of()),
 
-        Map.entry("networkInspect",Set.of("moduleName")),Map.entry("networkStart",Set.of("moduleName","buildId","profile","signatureSource")),Map.entry("networkStop",Set.of("captureId")),Map.entry("networkStatus",Set.of()),Map.entry("networkMessages",Set.of("captureId","sinceSeq","limit")),Map.entry("networkTraffic",Set.of("captureId","sinceSeq","limit")),Map.entry("httpRequest",Set.of("request")),
+        Map.entry("networkInspect",Set.of("moduleName")),Map.entry("networkStart",Set.of("moduleName","buildId","profile","signatureSource")),Map.entry("networkStop",Set.of("captureId")),Map.entry("networkStatus",Set.of()),Map.entry("networkMessages",Set.of("captureId","sinceSeq","limit")),Map.entry("networkHar",Set.of("captureId","sinceSeq","limit")),Map.entry("componentSend",Set.of("request")),Map.entry("privacyConfigureAttribution",Set.of("entries")),Map.entry("personaConfigureTelephony",Set.of("fields")),Map.entry("personaConfigureBattery",Set.of("level","charging")),Map.entry("personaConfigureLocation",Set.of("fields")),Map.entry("personaStatus",Set.of()),Map.entry("privacyMarkConsentStage",Set.of("stage","note")),Map.entry("privacyAttribution",Set.of("className")),Map.entry("privacyTimeline",Set.of("sinceSeq","limit")),Map.entry("providerInteract",Set.of("request")),Map.entry("networkConfigure",Set.of("connections","messages","totalBytes","confirmHigherLimits")),Map.entry("networkTraffic",Set.of("captureId","sinceSeq","limit")),Map.entry("httpRequest",Set.of("request")),
         Map.entry("guestInvoke",Set.of("target")),Map.entry("probeStatus",Set.of()),Map.entry("probeStop",Set.of()),Map.entry("classLoaders",Set.of()),Map.entry("classLoaderCreate",Set.of("dexId","parentClassLoaderId")),Map.entry("dexList",Set.of("classLoaderId","cursor","limit")),Map.entry("dexSnapshot",Set.of("dexId")),Map.entry("codeArtifacts",Set.of()),Map.entry("runtimeEvents",Set.of("sinceSeq","limit")),Map.entry("classInspect",Set.of("classLoaderId","className")));
     private final Map<String,Object> identity;
     private final String generation;
     private final Platform platform;
     private final NetworkCaptureControl network;
+    private final RuntimePrivacyProbeState privacy;
     private final LongSupplier clock;
     private final Supplier<String> token;
     private final AtomicBoolean commanding=new AtomicBoolean();
@@ -68,7 +76,7 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
         this.identity=(Map<String,Object>)ScriptValues.freeze(identity);this.platform=Objects.requireNonNull(platform);this.clock=Objects.requireNonNull(elapsedClock);this.token=Objects.requireNonNull(token);
         for(String key:List.of("space","installGeneration","descriptorSha256","processGeneration"))text(this.identity,key);
         Object pid=this.identity.get("pid");require(pid instanceof Double&&(Double)pid>0&&(Double)pid==Math.rint((Double)pid),"HOOK_PROCESS_ID");
-        object(this.identity.get("target"));generation=text(this.identity,"processGeneration");network=new NetworkCaptureControl(platform,this::command,generation,this::newToken);
+        object(this.identity.get("target"));generation=text(this.identity,"processGeneration");network=new NetworkCaptureControl(platform,this::command,generation,this::newToken);privacy=new RuntimePrivacyProbeState();
     }
     public SelfHookControl(Map<String,Object> identity,Platform platform,LongSupplier elapsedClock){this(identity,platform,elapsedClock,SelfHookControl::randomToken);}
     /** Lifecycle observer may invalidate preparations without waiting on a command/backend publication lock. */
@@ -105,6 +113,12 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
         switch(name){
             case "networkInspect":return withIdentity(new LinkedHashMap<>(network.inspect(text(input,"moduleName"))));
             case "networkStart":return withIdentity(new LinkedHashMap<>(network.start(text(input,"moduleName"),text(input,"buildId"),text(input,"profile"),text(input,"signatureSource"))));
+            case "networkConfigure":{
+                Object c=input.get("connections"),m=input.get("messages"),t=input.get("totalBytes"),ok=input.get("confirmHigherLimits");
+                require(c instanceof Double&&m instanceof Double&&t instanceof Double&&ok instanceof Boolean,"HOOK_NETWORK_CONFIGURE_ARG");
+                for(Object n:new Object[]{c,m,t})require((Double)n==Math.rint((Double)n),"HOOK_NETWORK_CONFIGURE_ARG");
+                return withIdentity(new LinkedHashMap<>(network.configure(((Double)c).intValue(),((Double)m).intValue(),((Double)t).intValue(),(Boolean)ok)));
+            }
             case "networkStop":return withIdentity(new LinkedHashMap<>(network.stop(text(input,"captureId"))));
             case "networkStatus":return withIdentity(new LinkedHashMap<>(network.status()));
             case "probeStatus":case "probeStop":case "classLoaders":case "classLoaderCreate":case "dexList":case "dexSnapshot":case "codeArtifacts":case "runtimeEvents":case "classInspect":{
@@ -127,7 +141,7 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
             }
             case "prepare":{
                 require(active==null&&prepared==null,"HOOK_CONTEXT_IN_USE");require(evidence!=null&&evidence.id.equals(input.get("evidenceId"))&&platform.evidenceLive(evidence),"HOOK_EVIDENCE_STALE");
-                require(activations<32,"HOOK_ACTIVATION_BUDGET");String source=text(input,"source");long epoch=invalidation.get();DraftCompiler.Plan plan=DraftCompiler.compile(source,evidence,platform::requestCodeSnapshot,platform::requestEvidenceSnapshot);
+                require(activations<32,"HOOK_ACTIVATION_BUDGET");String source=text(input,"source");long epoch=invalidation.get();DraftCompiler.Plan plan=DraftCompiler.compile(source,evidence,platform::requestCodeSnapshot,platform::requestEvidenceSnapshot,privacy::attributionOf,privacy::currentStage);
                 require(epoch==invalidation.get()&&platform.evidenceLive(evidence),"HOOK_EVIDENCE_STALE");prepared=new Prepared(newToken(),plan,now+60000,epoch);
                 return map("state","PREPARED","token",prepared.token,"sourceSha256",plan.sourceSha256(),"evidenceId",evidence.id,"rules",plan.rules().size(),"identity",identity);
             }
@@ -186,7 +200,12 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
             }
             case "uiDump":{
                 Object inc=input.get("includeInvisible");require(inc instanceof Boolean,"HOOK_UI_DUMP_ARG");
-                return withIdentity(new LinkedHashMap<>(platform.dumpUiHierarchy((Boolean)inc)));
+                Object rawLimit=input.get("limit");require(rawLimit instanceof Double&&(Double)rawLimit==Math.rint((Double)rawLimit)&&(Double)rawLimit>=1&&(Double)rawLimit<=4096,"HOOK_UI_DUMP_LIMIT");
+                return withIdentity(new LinkedHashMap<>(platform.dumpUiHierarchy((Boolean)inc,((Double)rawLimit).intValue())));
+            }
+            case "uiScreenshot":{
+                Object raw=input.get("maxDimension");require(raw instanceof Double&&(Double)raw==Math.rint((Double)raw)&&(Double)raw>=64&&(Double)raw<=2048,"HOOK_SCREENSHOT_DIMENSION");
+                return withIdentity(new LinkedHashMap<>(platform.screenshot(((Double)raw).intValue())));
             }
             case "uiAction":{
                 return withIdentity(new LinkedHashMap<>(platform.dispatchUiAction(object(input.get("action")))));
@@ -194,11 +213,47 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
             case "diagnostics":{
                 return withIdentity(map("failures",platform.diagnostics()));
             }
+            case "networkHar":{
+                Object rawSince=input.get("sinceSeq"),rawLimit=input.get("limit");
+                require(rawSince instanceof Double&&(Double)rawSince==Math.rint((Double)rawSince)&&(Double)rawSince>=0,"HOOK_TRAFFIC_SEQ");
+                require(rawLimit instanceof Double&&(Double)rawLimit==Math.rint((Double)rawLimit)&&(Double)rawLimit>=1&&(Double)rawLimit<=16,"HOOK_TRAFFIC_LIMIT");
+                return withIdentity(new LinkedHashMap<>(network.har(text(input,"captureId"),((Double)rawSince).longValue(),((Double)rawLimit).intValue())));
+            }
             case "networkMessages":case "networkTraffic":{
                 Object rawSince=input.get("sinceSeq");require(rawSince instanceof Double&&(Double)rawSince==Math.rint((Double)rawSince)&&(Double)rawSince>=0,"HOOK_TRAFFIC_SEQ");
                 Object rawLimit=input.get("limit");require(rawLimit instanceof Double&&(Double)rawLimit==Math.rint((Double)rawLimit)&&(Double)rawLimit>=1&&(Double)rawLimit<=100,"HOOK_TRAFFIC_LIMIT");
                 return withIdentity(new LinkedHashMap<>(name.equals("networkMessages")?network.messages(text(input,"captureId"),((Double)rawSince).longValue(),((Double)rawLimit).intValue()):network.query(text(input,"captureId"),((Double)rawSince).longValue(),((Double)rawLimit).intValue())));
             }
+            case "componentSend":return withIdentity(new LinkedHashMap<>(platform.sendComponent(object(input.get("request")))));
+            case "personaConfigureTelephony":{
+                Object raw=input.get("fields");require(raw instanceof Map<?,?>,"PERSONA_TELEPHONY_FIELDS_ARG");
+                return withIdentity(new LinkedHashMap<>(platform.personaConfigureTelephony(object(raw))));
+            }
+            case "personaConfigureLocation":{
+                Object raw=input.get("fields");require(raw instanceof Map<?,?>,"PERSONA_LOCATION_FIELDS_ARG");
+                return withIdentity(new LinkedHashMap<>(platform.personaConfigureLocation(object(raw))));
+            }
+            case "personaConfigureBattery":{
+                Object rawLevel=input.get("level"),rawCharging=input.get("charging");
+                require(rawLevel==null||rawLevel instanceof Double,"PERSONA_BATTERY_LEVEL_ARG");require(rawCharging==null||rawCharging instanceof Boolean,"PERSONA_BATTERY_CHARGING_ARG");
+                Integer level=rawLevel==null?null:((Double)rawLevel).intValue();Boolean charging=(Boolean)rawCharging;
+                return withIdentity(new LinkedHashMap<>(platform.personaConfigureBattery(level,charging)));
+            }
+            case "personaStatus":return withIdentity(new LinkedHashMap<>(platform.personaStatus()));
+            case "privacyConfigureAttribution":{
+                Object raw=input.get("entries");require(raw instanceof List<?>,"PRIVACY_ATTRIBUTION_LIST");
+                List<Map<String,Object>> entries=new ArrayList<>();for(Object item:(List<?>)raw){require(item instanceof Map<?,?>,"PRIVACY_ATTRIBUTION_LIST");entries.add(object(item));}
+                return withIdentity(new LinkedHashMap<>(privacy.configureAttribution(entries)));
+            }
+            case "privacyMarkConsentStage":return withIdentity(new LinkedHashMap<>(privacy.markConsentStage(text(input,"stage"),text(input,"note"),clock.getAsLong())));
+            case "privacyAttribution":return withIdentity(new LinkedHashMap<>(privacy.attributionOf(text(input,"className"))));
+            case "privacyTimeline":{
+                Object rawSince=input.get("sinceSeq"),rawLimit=input.get("limit");
+                require(rawSince instanceof Double&&(Double)rawSince==Math.rint((Double)rawSince)&&(Double)rawSince>=0,"PRIVACY_TIMELINE_SEQ");
+                require(rawLimit instanceof Double&&(Double)rawLimit==Math.rint((Double)rawLimit)&&(Double)rawLimit>=1&&(Double)rawLimit<=64,"PRIVACY_TIMELINE_LIMIT");
+                return withIdentity(new LinkedHashMap<>(privacy.timelinePage(((Double)rawSince).longValue(),((Double)rawLimit).intValue())));
+            }
+            case "providerInteract":return withIdentity(new LinkedHashMap<>(platform.providerInteract(object(input.get("request")))));
             case "httpRequest":{
                 return withIdentity(new LinkedHashMap<>(platform.sendHttpRequest(object(input.get("request")))));
             }

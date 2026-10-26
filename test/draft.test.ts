@@ -84,3 +84,55 @@ test("ctx.debug.emitEvent records structured telemetry inside callbacks and reje
   assert.equal(debugEvents[0]?.tag, "greet.called");
   assert.deepEqual({ ...(debugEvents[0]?.payload as Record<string, unknown>) }, { input: "world" });
 });
+test("ctx.privacy exposes an importable SDK attribution catalog and an independent consent timeline", () => {
+  const sim = new HookSimulator(evidence);
+  sim.configureAttribution([
+    { packagePrefix: "com.example.adsdk", sdkName: "ExampleAdSDK" },
+    { packagePrefix: "com.example.adsdk.core", sdkName: "ExampleAdSDKCore" },
+  ]);
+  sim.markConsentStage("APP_START", "boot");
+  const marked = sim.markConsentStage("CONSENT_GRANTED", "user tapped accept");
+  assert.equal(marked.seq, 2);
+  const probe = `import { definePlan } from "@abox/hook";
+export default definePlan({ id:"test", target, params:{}, setup(ctx) {
+ctx.java.method(symbols.greet.className,"greet",["java.lang.String"]).before(({args}) => {
+  ctx.debug.emitEvent("privacy.probe", { attribution: ctx.privacy.attribution("com.example.adsdk.core.Collector"), stage: ctx.privacy.consentStage() });
+  return args;
+});
+}});`;
+  sim.activate(prepareDraft(probe, evidence));
+  sim.invoke("greet", ["hi"], () => "original");
+  const event = sim.events().find(e => e.kind === "debug-event" && e.tag === "privacy.probe");
+  const payload = event?.payload as Record<string, unknown>;
+  assert.deepEqual(payload.attribution, { className: "com.example.adsdk.core.Collector", matchedPrefix: "com.example.adsdk.core", sdkName: "ExampleAdSDKCore" });
+  assert.deepEqual(payload.stage, marked);
+  // Unmatched class name: explicit nulls, not a silent guess or the nearest looser prefix.
+  const sim2 = new HookSimulator(evidence);
+  sim2.activate(prepareDraft(probe.replace("com.example.adsdk.core.Collector", "com.other.sdk.Thing"), evidence));
+  sim2.invoke("greet", ["hi"], () => "original");
+  const unmatched = (sim2.events().find(e => e.kind === "debug-event")?.payload as Record<string, unknown>).attribution;
+  assert.deepEqual(unmatched, { className: "com.other.sdk.Thing", matchedPrefix: null, sdkName: null });
+});
+test("Hex/Base64/JSON builtins round-trip and reject malformed input", () => {
+  const sim = new HookSimulator(evidence);
+  sim.activate(prepareDraft(script('return Hex.encode(String(args[0]));'), evidence));
+  assert.equal(sim.invoke("greet", ["hi"], () => "original").value, "6869");
+  const sim2 = new HookSimulator(evidence);
+  sim2.activate(prepareDraft(script('return Hex.decode("6869");'), evidence));
+  assert.equal(sim2.invoke("greet", ["x"], () => "original").value, "hi");
+  const sim3 = new HookSimulator(evidence);
+  sim3.activate(prepareDraft(script('return Base64.encode(Hex.encode(String(args[0])));'), evidence));
+  assert.equal(sim3.invoke("greet", ["hi"], () => "original").value, "aGk=");
+  const sim4 = new HookSimulator(evidence);
+  sim4.activate(prepareDraft(script('return Hex.decode(Base64.decode("aGk="));'), evidence));
+  assert.equal(sim4.invoke("greet", ["x"], () => "original").value, "hi");
+  const sim5 = new HookSimulator(evidence);
+  sim5.activate(prepareDraft(script('const obj = JSON.parse(\'{"a":1,"b":[true,null,"x"]}\'); return JSON.stringify(obj);'), evidence));
+  assert.equal(sim5.invoke("greet", ["x"], () => "original").value, '{"a":1,"b":[true,null,"x"]}');
+  const sim6 = new HookSimulator(evidence);
+  sim6.activate(prepareDraft(script('return Hex.decode("abc");'), evidence));
+  assert.throws(() => sim6.invoke("greet", ["x"], () => "original"), /even-length hex string/);
+  const sim7 = new HookSimulator(evidence);
+  sim7.activate(prepareDraft(script('return JSON.parse("{not json");'), evidence));
+  assert.throws(() => sim7.invoke("greet", ["x"], () => "original"), /Invalid JSON/);
+});

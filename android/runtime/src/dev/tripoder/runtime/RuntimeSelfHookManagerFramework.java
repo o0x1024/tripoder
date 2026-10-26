@@ -7,6 +7,7 @@ interface RuntimeSelfHookManagerFramework {
     int networkCallbackFlags(android.net.ConnectivityManager.NetworkCallback callback);
     android.telephony.TelephonyManager telephonyManager(android.content.Context host);
     android.media.AudioManager audioManager(android.content.Context host);
+    android.location.LocationManager locationManager(android.content.Context host,android.location.LocationManager physical);
     android.os.BatteryManager batteryManager();
     android.os.PowerManager powerManager(android.content.Context host,android.os.Handler handler);
     android.net.wifi.p2p.WifiP2pManager wifiP2pManager(android.content.Context host,android.net.wifi.p2p.WifiP2pManager physical);

@@ -13,7 +13,7 @@ final class RuntimeHookClaims {
     RuntimeHookClaims(RuntimeBroker broker){this.broker=broker;}
     Claim begin(String process,String project,String binding,String lease,String command){
         locked();
-        Set<String> stateless=Set.of("status","modules","events","dexSearch","dexInspect","nativeExports","uiDump","uiAction","diagnostics","networkTraffic","networkMessages","networkInspect","networkStatus","httpRequest","guestInvoke","probeStatus","probeStop","classLoaders","classLoaderCreate","dexList","dexSnapshot","codeArtifacts","runtimeEvents","classInspect");
+        Set<String> stateless=Set.of("status","modules","events","dexSearch","dexInspect","nativeExports","uiDump","uiScreenshot","uiAction","diagnostics","networkTraffic","networkMessages","networkHar","networkConfigure","networkInspect","networkStatus","httpRequest","componentSend","providerInteract","guestInvoke","privacyConfigureAttribution","privacyMarkConsentStage","privacyAttribution","privacyTimeline","personaConfigureTelephony","personaConfigureBattery","personaConfigureLocation","personaStatus","probeStatus","probeStop","classLoaders","classLoaderCreate","dexList","dexSnapshot","codeArtifacts","runtimeEvents","classInspect");
         if(!stateless.contains(command)&&!Set.of("networkStart","networkStop","observe","prepare","activate","disable","updateParameters","cancelPreparation","discard").contains(command))throw new IllegalArgumentException("HOOK_COMMAND_UNSUPPORTED");
         if(broker.contract.getSession(process).state!=ExecutionContract.ProcessState.RUNNING)throw new IllegalStateException("HOOK_PROCESS_NOT_RUNNING");
         Claim claim=claims.get(process);

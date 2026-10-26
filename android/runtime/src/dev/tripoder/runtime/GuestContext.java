@@ -98,6 +98,7 @@ public final class GuestContext extends GuestStorageContext {
         if(TELEPHONY_SERVICE.equals(name))return engine.telephony.facade();
         if(AUDIO_SERVICE.equals(name))return engine.audio.facade();
         if(BATTERY_SERVICE.equals(name))return engine.battery.facade();
+        if(LOCATION_SERVICE.equals(name))return engine.location.facade();
         if(POWER_SERVICE.equals(name))return engine.power.facade();
         if(USER_SERVICE.equals(name))return engine.users.facade();
         if(ROLE_SERVICE.equals(name))return engine.roles.facade();

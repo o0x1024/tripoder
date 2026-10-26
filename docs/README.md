@@ -15,4 +15,6 @@
 | [hardening-and-runtime-performance.md](hardening-and-runtime-performance.md) | **加壳/加固兼容与运行期性能优化方案**：商业加壳/加固应用（一代/二代壳、Dex2C/VMP、`svc #0`、SSL Pinning）无差别运行与 Hook/抓包/透明代理测试的四层纵深方案，以及运行期严重卡顿（如网易云音乐）的六大根因定位与优化路线图。 |
 | [thin-shim-transformation.md](thin-shim-transformation.md) | **薄壳化改造方案（厚重 broker → VA 式透传）**：基于真机日志+代码审计量化 30s 冷启动与长尾兼容性的结构性根因（`:authority` 独立进程坐热路径、provider 单次访问 2~3 跳 IPC、286 处 hook、~42 个重写子系统），给出逐子系统「降级为透传」的改造清单、执行顺序，以及「默认薄壳透传 / 可选厚重」双模式架构（共享核心 + 子系统双实现 + 按客体启动时选定）与落地顺序。 |
 | [agent-mcp-design.md](agent-mcp-design.md) | **AI Agent 控制面与 MCP 规范**：免认证、免配对 stdio MCP 接入，42 个当前工具（目标选择、内省、动态 Hook、主动调用、存储/网络审计、UI 驱动）及操作闭环。 |
+| [scenario-gap-analysis.md](scenario-gap-analysis.md) | **全场景能力评估与演进缺口分析**：面向 Bug Bounty/SRC 挖掘、隐私合规检测、功能测试、恶意软件分析、黑灰产对抗及移动端电子数据取证六大场景的现状匹配度、30 项缺失能力清单、MCP 工具契约暴露设计（职责分层与风险护栏）与架构演进路线图。 |
+| [task-capability-mcp-exposure.md](task-capability-mcp-exposure.md) | **能力缺口 → MCP 工具暴露任务实施文档**：对照 `scenario-gap-analysis.md` 第 3/5 节的三阶段（P0–P2）任务拆解，含涉及文件、新增工具/action、验收标准、排期依赖与整体退出标准。 |
 | [evidence/README.md](evidence/README.md) | **测试证据输出目录说明**：供 `android/scripts/` 自动化验证脚本写入本地临时运行产物（不纳入长久版本堆积）。 |

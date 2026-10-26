@@ -33,6 +33,20 @@ public final class JavaObjectSnapshots {
         Map<String,Object> out=new LinkedHashMap<>();out.put("causes",List.copyOf(causes));out.put("causesTruncated",truncated);out.put("causeCycle",cycle);
         return Collections.unmodifiableMap(out);
     }
+    /** Direct field access, never a guest-overridden getter: Field.get bypasses virtual dispatch entirely. */
+    public static Object readField(Object reference,String fieldName){
+        String name=ScriptValues.key(fieldName);Object object=JavaObjectScope.object(reference);
+        java.lang.reflect.Field field=declared(object.getClass(),name);require(field!=null,"HOOK_FIELD_NOT_FOUND:"+name);
+        JavaHookValues.requireInvocationType(field.getType(),true);
+        field.setAccessible(true);Object raw;try{raw=field.get(object);}catch(IllegalAccessException impossible){throw new AssertionError(impossible);}
+        return JavaHookValues.decode(field.getType(),raw);
+    }
+    private static java.lang.reflect.Field declared(Class<?> type,String name){
+        for(Class<?> cursor=type;cursor!=null;cursor=cursor.getSuperclass()){
+            try{return cursor.getDeclaredField(name);}catch(NoSuchFieldException missing){/* keep walking up */}
+        }
+        return null;
+    }
     private static String bounded(String value,int limit){return value.length()>limit?value.substring(0,limit):value;}
     private JavaObjectSnapshots(){}
 }

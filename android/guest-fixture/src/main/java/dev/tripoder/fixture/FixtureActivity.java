@@ -13,11 +13,14 @@ public final class FixtureActivity extends Activity {
     public static int creates, resumes, pauses, clicks, touches;
     public static volatile int frames, glError, pixelGreen;
     public static volatile String glVersion = "";
+    public static volatile String deepLink = "";
+    public static String lastDeepLink() { return deepLink; }
     private GLSurfaceView surface;
     private TextView result;
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         creates++; setContentView(R.layout.guest_screen);
+        recordDeepLink(getIntent());
         findViewById(android.R.id.content).setOnApplyWindowInsetsListener((view, insets) -> {
             if (android.os.Build.VERSION.SDK_INT >= 30) {
                 android.graphics.Insets bars = insets.getInsets(android.view.WindowInsets.Type.systemBars() | android.view.WindowInsets.Type.displayCutout() | android.view.WindowInsets.Type.ime());
@@ -26,7 +29,7 @@ public final class FixtureActivity extends Activity {
             return insets;
         });
         result = findViewById(R.id.result);
-        findViewById(R.id.action).setOnClickListener(view -> { clicks++; refresh(); });
+        findViewById(R.id.action).setOnClickListener(view -> { clicks++; handleClick(new ClickInfo(clicks)); refresh(); });
         surface = new GLSurfaceView(this); surface.setEGLContextClientVersion(2);
         surface.setRenderer(new GLSurfaceView.Renderer() {
             public void onSurfaceCreated(GL10 gl, EGLConfig config) { glVersion = GLES20.glGetString(GLES20.GL_VERSION); }
@@ -42,8 +45,17 @@ public final class FixtureActivity extends Activity {
         ((LinearLayout)findViewById(R.id.graphics)).addView(surface, new LinearLayout.LayoutParams(-1, 320));
         refresh();
     }
+    /** Plain app-owned object (not framework/hidden-API) so hook field reads have a stable, unrestricted target. */
+    public static final class ClickInfo { public final int clickCount; public ClickInfo(int clickCount) { this.clickCount = clickCount; } }
+    private static void recordDeepLink(android.content.Intent intent) { if (intent != null && intent.getData() != null) deepLink = intent.getData() + "|" + intent.getStringExtra("who"); }
+    private void handleClick(ClickInfo info) {
+        AdSdkCollector.collectDeviceId(this);
+        ForensicsFixture.openSqlCipherDb(this);
+        ForensicsFixture.openMmkv(this);
+        ForensicsFixture.openWalWithDeletedRow(this);
+    }
     private void refresh() { result.setText(GuestProbe.greet("phone") + "\nNative: " + GuestProbe.nativeDelay(3)
-        + "\nApplication: " + getApplication().getClass().getName() + "\n点击: " + clicks + " · 触摸: " + touches + "\n设备: " + android.os.Build.MODEL); }
+        + "\nApplication: " + getApplication().getClass().getName() + "\n点击: " + clicks + " · 触摸: " + touches + "\n设备: " + android.os.Build.MODEL + "\n深链: " + deepLink); }
     @Override public void onResume() { super.onResume(); resumes++; if (surface != null) surface.onResume(); }
     @Override public void onPause() { pauses++; if (surface != null) surface.onPause(); super.onPause(); }
 }

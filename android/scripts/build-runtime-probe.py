@@ -180,7 +180,7 @@ def main():
     preview = apk("preview-guest", sorted((android / "runtime-fixtures/preview").rglob("*.java")), android / "runtime-fixtures/preview/AndroidManifest.xml")
     shutil.copyfile(preview, assets / preview.name)
     (assets / "preview-fixture.json").write_text(json.dumps({"asset": preview.name, "sha256": sha(preview), "packageName": "dev.tripoder.previewguest"}, indent=2))
-    source_roots = [android / "runtime/src", android / "runtime-probe/src"]
+    source_roots = [android / "runtime/src", android / "control/src", android / "engine/src", android / "runtime-probe/src"]
     sources = sorted(p for root in source_roots for p in root.rglob("*.java"))
     self_hook_java = sorted((android / "self-hook/java").rglob("*.java"))
     sources.extend(self_hook_java)
@@ -196,7 +196,7 @@ def main():
     with zipfile.ZipFile(output) as archive:
         if sorted(name for name in archive.namelist() if name.startswith('lib/'))!=['lib/arm64-v8a/libtripoderselfhook.so']:
             raise RuntimeError('RUNTIME_NATIVE_PACKAGING_MISMATCH')
-    relevant = [repo / "src", android / "runtime/licenses", android / "runtime/src", android / "runtime/native", android / "runtime-fixtures", android / "runtime-probe/src", android / "runtime-probe/res", android / "runtime-probe/assets", android / "self-hook/native", android / "self-hook/include"]
+    relevant = [repo / "src", android / "runtime/licenses", android / "runtime/src", android / "control/src", android / "engine/src", android / "runtime/native", android / "runtime-fixtures", android / "runtime-probe/src", android / "runtime-probe/res", android / "runtime-probe/assets", android / "self-hook/native", android / "self-hook/include"]
     files = sorted(p for root in relevant for p in root.rglob("*") if p.is_file() and "build" not in p.parts)
     files += [android / "runtime/test/dev/tripoder/runtime/ProjectBindingsSourceTest.java", Path(__file__).resolve(), android / "scripts/runtime_p1_fixtures.py", android / "scripts/validate-runtime-probe.py", android / "runtime-probe/AndroidManifest.xml"]
     files.append(android / "scripts/self_hook_native.py")

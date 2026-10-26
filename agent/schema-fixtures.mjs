@@ -30,6 +30,19 @@ for(const route of operationRoutes){
 }
 const scoped=(field,value)=>({operationId:'operation-a',target,[field]:value});
 for(const [name,args,valid] of [
+  ['component_send_intent',scoped('request',{kind:'broadcast',component:'',action:'a.b.PING',extras:{n:3,who:'x',nested:{k:'v'}}}),true],
+  ['component_send_intent',scoped('request',{kind:'activity',component:'a.b/.Main',dataUri:'app://open/x',categories:['android.intent.category.BROWSABLE'],flags:0}),true],
+  ['component_send_intent',scoped('request',{kind:'service',component:'a.b/.S',extras:{deep:{too:{far:1}}}}),false],
+  ['component_send_intent',scoped('request',{kind:'receiver',component:''}),false],
+  ['component_send_intent',scoped('request',{kind:'broadcast',component:'',unknown:1}),false],
+  ['component_send_intent',scoped('request',{kind:'broadcast'}),false],
+  ['provider_interact',scoped('request',{operation:'query',uri:'content://a.b.items/items',limit:10,projection:['name'],selection:'name=?',selectionArgs:['x']}),true],
+  ['provider_interact',scoped('request',{operation:'insert',uri:'content://a.b.items/items',values:{name:'n',value:3,flag:true,none:null}}),true],
+  ['provider_interact',scoped('request',{operation:'call',uri:'content://a.b.items',method:'echo',arg:'x',extras:{k:1}}),true],
+  ['provider_interact',scoped('request',{operation:'query',uri:'file:///etc/hosts'}),false],
+  ['provider_interact',scoped('request',{operation:'drop',uri:'content://a.b.items'}),false],
+  ['provider_interact',scoped('request',{operation:'query',uri:'content://a.b.items',limit:101}),false],
+  ['provider_interact',scoped('request',{operation:'openFile',uri:'content://a.b.items/f'}),false],
   ['http_send_request',scoped('request',{}),false],
   ['http_send_request',scoped('request',{method:'GET',url:'https://example.com/',constructor:'unknown field'}),false],
   ['http_send_request',scoped('request',{method:'GET',url:'file:///etc/hosts'}),false],
@@ -72,6 +85,11 @@ cases.push({name:'probes_control',args:startup(['java.lang.Throwable'],false),va
 cases.push({name:'guest_invoke',args:scoped('invocation',{className:'owned.Probe',methodName:'call',argumentTypes:['java.lang.Throwable'],arguments:[null]}),valid:false});
 cases.push({name:'application_query',args:{action:'manifest',target:install},valid:true});
 cases.push({name:'application_query',args:{action:'manifest',target},valid:false});
+cases.push({name:'application_query',args:{action:'wal_recover',target:install,databaseRelativePath:'databases/app.db',table:'secret',columns:['id','value'],rowidAliasColumn:'id',limit:10},valid:true});
+cases.push({name:'application_query',args:{action:'wal_recover',target:install,databaseRelativePath:'../escape',table:'secret',columns:['id'],rowidAliasColumn:'',limit:10},valid:true});
+cases.push({name:'application_query',args:{action:'wal_recover',target:install,databaseRelativePath:'databases/app.db',table:'bad name',columns:['id'],rowidAliasColumn:'',limit:10},valid:false});
+cases.push({name:'application_query',args:{action:'wal_recover',target:install,databaseRelativePath:'databases/app.db',table:'secret',columns:[],rowidAliasColumn:'',limit:10},valid:false});
+cases.push({name:'application_query',args:{action:'wal_recover',target:install,databaseRelativePath:'databases/app.db',table:'secret',columns:['id'],rowidAliasColumn:'',limit:2001},valid:false});
 cases.push({name:'process_inspect',args:{action:'manifest',target},valid:false});
 cases.push({name:'process_inspect',args:{action:'storage',target},valid:false});
 

@@ -30,6 +30,8 @@ export interface PlanContext<P> {
     objectInfo(ref: JavaObjectRef): Readonly<Record<string,unknown>>;
     snapshotThread(ref: JavaObjectRef): Readonly<Record<string,unknown>>;
     snapshotThrowable(ref: JavaObjectRef, limits?: {maxFrames?: number;maxCauses?: number}): Readonly<Record<string,unknown>>;
+    /** Direct field read, never a guest-overridden getter. Returns a scalar, or a new JavaObjectRef for an object-typed field. */
+    readField(ref: JavaObjectRef, fieldName: string): HookValue | JavaObjectRef;
     method(className: string, methodName: string, argumentTypes: readonly JavaType[], options?: { classLoaderId?: string; returnType?: JavaType }): HookBuilder<P>;
   };
   readonly native: {
@@ -44,6 +46,12 @@ export interface PlanContext<P> {
     captureEvidence(tag: string, payload: unknown): Readonly<{artifactId:string;state:string}>;
     captureJavaStack(maxDepth?: number): readonly string[];
     callerModuleOffset(): string;
+  };
+  readonly privacy: {
+    /** Longest packagePrefix match against an importable catalog; sdkName is null when nothing matches. */
+    attribution(className: string): Readonly<Record<string, unknown>>;
+    /** Most recently marked consent-timeline stage for this process, independent of any active Hook. */
+    consentStage(): Readonly<Record<string, unknown>>;
   };
 }
 export interface HookPlan<S extends Parameters = Parameters> {
@@ -70,6 +78,8 @@ export interface PreparedPlan<S extends Parameters> {
     evidence?: ((tag:string,payload:unknown)=>Readonly<{artifactId:string;state:string}>) | undefined;
     stack?: ((maxDepth: number) => readonly string[]) | undefined;
     caller?: (() => string) | undefined;
+    privacyAttribution?: ((className: string) => Readonly<Record<string,unknown>>) | undefined;
+    privacyConsentStage?: (() => Readonly<Record<string,unknown>>) | undefined;
   };
 }
 
@@ -94,6 +104,8 @@ export function preparePlan<S extends Parameters>(plan: HookPlan<S>, observed: E
     evidence?: ((tag:string,payload:unknown)=>Readonly<{artifactId:string;state:string}>) | undefined;
     stack?: ((maxDepth: number) => readonly string[]) | undefined;
     caller?: (() => string) | undefined;
+    privacyAttribution?: ((className: string) => Readonly<Record<string,unknown>>) | undefined;
+    privacyConsentStage?: (() => Readonly<Record<string,unknown>>) | undefined;
   } = {};
   let collecting = true;
   function builder(symbol: HookSymbol): HookBuilder<ParameterValues<S>> {
@@ -131,6 +143,7 @@ export function preparePlan<S extends Parameters>(plan: HookPlan<S>, observed: E
       objectInfo: ref => JavaObjectFrame.info(ref),
       snapshotThread: ref => JavaObjectFrame.snapshot(ref,"java.lang.Thread"),
       snapshotThrowable: (ref,limits={}) => {requireThat(Object.keys(limits).every(k=>k==="maxFrames"||k==="maxCauses"),"HOOK_SNAPSHOT_FIELDS","Unknown snapshot option");requireThat(Number.isSafeInteger(limits.maxFrames??16)&&Number.isSafeInteger(limits.maxCauses??4)&&(limits.maxFrames??16)>=1&&(limits.maxFrames??16)<=32&&(limits.maxCauses??4)>=1&&(limits.maxCauses??4)<=6,"HOOK_SNAPSHOT_LIMIT","Snapshot exceeds limits");return JavaObjectFrame.snapshot(ref,"java.lang.Throwable");},
+      readField: (ref,fieldName) => {requireThat(typeof fieldName==="string"&&fieldName.length>0,"HOOK_FIELD_NAME","Field name must be a non-empty string");return JavaObjectFrame.field(ref,fieldName) as HookValue | JavaObjectRef;},
       method(className, methodName, argumentTypes, options = {}) {
         requireThat(evidence.capabilities.includes("java-hook"), "CAPABILITY_MISSING", "java-hook capability is unavailable");
         const norm = (t: string) => t === "byte[]" ? "[B" : t;
@@ -179,6 +192,17 @@ export function preparePlan<S extends Parameters>(plan: HookPlan<S>, observed: E
       callerModuleOffset() {
         requireThat(!collecting, "HOOK_EMIT_OUTSIDE_INVOCATION", "callerModuleOffset can only be called inside a hook callback");
         return emitSink.caller ? emitSink.caller() : "unknown+0x0";
+      },
+    },
+    privacy: {
+      attribution(className) {
+        requireThat(typeof className === "string" && className.length > 0 && className.length <= 512, "PRIVACY_CLASS_NAME", "Invalid class name");
+        requireThat(emitSink.privacyAttribution !== undefined, "PRIVACY_ATTRIBUTION_UNSUPPORTED", "An attribution backend is required");
+        return Object.freeze({ ...emitSink.privacyAttribution(className) });
+      },
+      consentStage() {
+        requireThat(emitSink.privacyConsentStage !== undefined, "PRIVACY_CONSENT_STAGE_UNSUPPORTED", "A consent-stage backend is required");
+        return Object.freeze({ ...emitSink.privacyConsentStage() });
       },
     },
   };

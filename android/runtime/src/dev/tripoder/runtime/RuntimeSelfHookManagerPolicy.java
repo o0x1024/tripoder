@@ -10,7 +10,7 @@ import java.util.Set;
 
 /** Fixed supported capabilities. Every other instance method on an owned facade is denied. */
 final class RuntimeSelfHookManagerPolicy {
-    enum Family { ACTIVITY_MANAGER,CONNECTIVITY,TELEPHONY,AUDIO,BATTERY,POWER,WIFI_P2P,NETWORK_STATS,NOTIFICATIONS,SHORTCUTS,JOB_SCHEDULER }
+    enum Family { ACTIVITY_MANAGER,CONNECTIVITY,TELEPHONY,AUDIO,BATTERY,POWER,WIFI_P2P,NETWORK_STATS,NOTIFICATIONS,SHORTCUTS,JOB_SCHEDULER,LOCATION }
     interface Route {/** Called before an explicit platform operation (e.g. require its declared permission). */default void admitObservation(Family family){}default Object platform(){throw new IllegalStateException("SYSTEM_MANAGER_PHYSICAL_ROUTE_REQUIRED");}boolean owns(Object receiver);Object execute(String signature,Object[] arguments)throws Throwable;default Object execute(Object receiver,String signature,Object[] arguments)throws Throwable{return execute(signature,arguments);}}
     @FunctionalInterface interface Callback {
         Object invoke(Object receiver,Object[] arguments,RuntimeSelfHookLifecycle.Original original)throws Throwable;
@@ -91,6 +91,12 @@ final class RuntimeSelfHookManagerPolicy {
                 "pushDynamicShortcut(android.content.pm.ShortcutInfo)","removeDynamicShortcuts(java.util.List)","removeAllDynamicShortcuts()","removeLongLivedShortcuts(java.util.List)",
                 "enableShortcuts(java.util.List)","disableShortcuts(java.util.List)","disableShortcuts(java.util.List,java.lang.CharSequence)","reportShortcutUsed(java.lang.String)",
                 "createShortcutResultIntent(android.content.pm.ShortcutInfo)");
+            case LOCATION:return Set.of("getLastKnownLocation(java.lang.String)","isProviderEnabled(java.lang.String)","isLocationEnabled()",
+                "requestLocationUpdates(java.lang.String,long,float,android.location.LocationListener)",
+                "requestLocationUpdates(java.lang.String,long,float,android.location.LocationListener,android.os.Looper)",
+                "requestLocationUpdates(java.lang.String,long,float,java.util.concurrent.Executor,android.location.LocationListener)",
+                "removeUpdates(android.location.LocationListener)",
+                "getCurrentLocation(java.lang.String,android.os.CancellationSignal,java.util.concurrent.Executor,java.util.function.Consumer)");
             case JOB_SCHEDULER:return Set.of("schedule(android.app.job.JobInfo)","enqueue(android.app.job.JobInfo,android.app.job.JobWorkItem)","cancel(int)","cancelAll()","cancelInAllNamespaces()","getAllPendingJobs()","getPendingJob(int)","getPendingJobsInAllNamespaces()","forNamespace(java.lang.String)","getNamespace()");
             default:throw new IllegalArgumentException("SYSTEM_MANAGER_FAMILY");
         }
@@ -105,7 +111,7 @@ final class RuntimeSelfHookManagerPolicy {
         // clients and Bluetooth addresses) are not among them.
         if(family==Family.AUDIO)return AUDIO_CONTROL.matcher(signature).matches();
         if(family==Family.TELEPHONY)return telephonyObservation(signature);
-        if(family!=Family.CONNECTIVITY&&family!=Family.POWER)return false;
+        if(family!=Family.CONNECTIVITY&&family!=Family.POWER&&family!=Family.LOCATION)return false;
         if(family==Family.CONNECTIVITY&&PROCESS_NETWORK.contains(signature))return true;
         return OBSERVATION.matcher(signature).matches()&&!signature.contains("Callback")&&!signature.contains("Listener");
     }

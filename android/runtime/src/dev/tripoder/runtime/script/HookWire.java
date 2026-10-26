@@ -6,7 +6,9 @@ import static dev.tripoder.runtime.script.ScriptFault.require;
 /** Strict bounded JSON for the existing Worker command envelope. No object coercion or bigint truncation. */
 public final class HookWire {
     private HookWire(){}
-    public static Map<String,Object> request(String source){require(source!=null&&source.length()<=65536,"HOOK_REQUEST_SIZE");Parser p=new Parser(source);Object value=p.value(0);p.space();require(p.position==source.length(),"HOOK_JSON_TRAILING");return HookEvidence.object(value);}
+    public static Map<String,Object> request(String source){require(source!=null&&source.length()<=65536,"HOOK_REQUEST_SIZE");return HookEvidence.object(parseValue(source));}
+    /** Any top-level JSON value (not only an object), for script-facing JSON.parse. Same bounded parser/limits as request(). */
+    public static Object parseValue(String source){require(source!=null&&source.length()<=65536,"HOOK_REQUEST_SIZE");Parser p=new Parser(source);Object value=p.value(0);p.space();require(p.position==source.length(),"HOOK_JSON_TRAILING");return value;}
     public static String encode(Object value){StringBuilder out=new StringBuilder();write(value,out,0,new IdentityHashMap<>());require(out.length()<=131072,"HOOK_RESPONSE_SIZE");return out.toString();}
     private static void write(Object value,StringBuilder out,int depth,IdentityHashMap<Object,Boolean> path){
         require(depth<40&&out.length()<=131072,"HOOK_JSON_BUDGET");

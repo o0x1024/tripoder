@@ -14,6 +14,16 @@ test('restricted source preserves opaque object identity and captures only expli
   assert.equal(sim.events().filter(e=>e.tag==='exception').length,1);
   assert.equal(sim.invokeJavaFixture('object',[null],args=>args[0]).value,null);
 });
+test('ctx.java.readField reads a named fixture field and rejects an unknown field',()=>{
+  const source=`import {definePlan} from '@abox/hook';export default definePlan({id:'objects',target,params:{},setup(ctx){ctx.java.method('owned.Fixture','call',['java.lang.Throwable']).before(({args})=>{ctx.debug.emitEvent('field',ctx.java.readField(args[0],'message'));return args;});}});`;
+  const plan=prepareDraft(source,evidence),sim=new HookSimulator(evidence);sim.activate(plan);
+  const fixture={className:'owned.Exception',assignableTo:['java.lang.Throwable','java.lang.Object'],snapshot:{message:'boom',code:7}};
+  sim.invokeJavaFixture('object',[fixture],args=>args[0]);
+  assert.equal(sim.events().filter(e=>e.tag==='field')[0]?.payload,'boom');
+  const missing=`import {definePlan} from '@abox/hook';export default definePlan({id:'objects',target,params:{},setup(ctx){ctx.java.method('owned.Fixture','call',['java.lang.Throwable']).before(({args})=>{ctx.java.readField(args[0],'nope');return args;});}});`;
+  const sim2=new HookSimulator(evidence);sim2.activate(prepareDraft(missing,evidence));
+  assert.throws(()=>sim2.invokeJavaFixture('object',[fixture],args=>args[0]),error=>(error as {code?:string}).code==='HOOK_FIELD_NOT_FOUND');
+});
 test('object references cannot be replaced with JSON or emitted as snapshots',()=>{
   for(const body of [`return [{className:'java.lang.Throwable'}];`,`ctx.debug.emitEvent('invalid',args[0]);return args;`,`return [String(args[0])];`]){
     const source=`import {definePlan} from '@abox/hook';export default definePlan({id:'objects',target,params:{},setup(ctx){ctx.java.method('owned.Fixture','call',['java.lang.Throwable']).before(({args})=>{${body}});}});`;

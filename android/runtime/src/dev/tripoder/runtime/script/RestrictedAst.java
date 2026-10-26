@@ -306,6 +306,19 @@ public final class RestrictedAst {
                 case "round":if(v!=Math.rint(v)){double floor=Math.floor(v);v=v>=-0.5&&v<0?-0.0:v-floor<0.5?floor:floor+1;}break;
                 case "abs":v=Math.abs(v);break;}
             return limit(v);
-        });out.put("Math",Collections.unmodifiableMap(math));return out;
+        });out.put("Math",Collections.unmodifiableMap(math));
+        Map<String,Object> json=new LinkedHashMap<>();
+        json.put("parse",(Callable)(a,b)->{require(a.size()==1&&a.get(0) instanceof String,"DRAFT_JSON_PARSE_ARGUMENT");return ScriptValues.freeze(HookWire.parseValue((String)a.get(0)));});
+        json.put("stringify",(Callable)(a,b)->{require(a.size()==1,"DRAFT_JSON_STRINGIFY_ARGUMENT");return limit(HookWire.encode(a.get(0)));});
+        out.put("JSON",Collections.unmodifiableMap(json));
+        Map<String,Object> hex=new LinkedHashMap<>();
+        hex.put("encode",(Callable)(a,b)->{require(a.size()==1&&a.get(0) instanceof String,"DRAFT_HEX_ENCODE_ARGUMENT");return limit(HexFormat.of().formatHex(((String)a.get(0)).getBytes(java.nio.charset.StandardCharsets.UTF_8)));});
+        hex.put("decode",(Callable)(a,b)->{require(a.size()==1&&a.get(0) instanceof String,"DRAFT_HEX_DECODE_ARGUMENT");String h=(String)a.get(0);require(h.length()%2==0&&h.matches("[0-9a-fA-F]*"),"DRAFT_HEX_VALUE");return limit(new String(HexFormat.of().parseHex(h),java.nio.charset.StandardCharsets.UTF_8));});
+        out.put("Hex",Collections.unmodifiableMap(hex));
+        Map<String,Object> base64=new LinkedHashMap<>();
+        base64.put("encode",(Callable)(a,b)->{require(a.size()==1&&a.get(0) instanceof String,"DRAFT_BASE64_ENCODE_ARGUMENT");String h=(String)a.get(0);require(h.length()%2==0&&h.matches("[0-9a-fA-F]*"),"DRAFT_HEX_VALUE");return limit(Base64.getEncoder().encodeToString(HexFormat.of().parseHex(h)));});
+        base64.put("decode",(Callable)(a,b)->{require(a.size()==1&&a.get(0) instanceof String,"DRAFT_BASE64_DECODE_ARGUMENT");try{return limit(HexFormat.of().formatHex(Base64.getDecoder().decode((String)a.get(0))));}catch(IllegalArgumentException invalid){throw new ScriptFault("DRAFT_BASE64_VALUE");}});
+        out.put("Base64",Collections.unmodifiableMap(base64));
+        return out;
     }
 }

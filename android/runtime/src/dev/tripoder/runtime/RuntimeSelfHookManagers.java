@@ -59,6 +59,7 @@ final class RuntimeSelfHookManagers {
     }
     static int networkCallbackFlags(ConnectivityManager.NetworkCallback callback){return require().framework.networkCallbackFlags(Objects.requireNonNull(callback));}
     static TelephonyManager telephonyManager(Context host){return Objects.requireNonNull(framework(host,RuntimeSelfHookManagerPolicy.Family.TELEPHONY).telephonyManager(host));}
+    static android.location.LocationManager locationManager(Context host){RuntimeSelfHookManagerFramework calls=framework(host,RuntimeSelfHookManagerPolicy.Family.LOCATION);android.location.LocationManager physical=Objects.requireNonNull(host.getSystemService(android.location.LocationManager.class),"PLATFORM_LOCATION_UNAVAILABLE");return Objects.requireNonNull(calls.locationManager(host,physical));}
     static AudioManager audioManager(Context host){return Objects.requireNonNull(framework(host,RuntimeSelfHookManagerPolicy.Family.AUDIO).audioManager(host));}
     static android.os.BatteryManager batteryManager(){RuntimeSelfHookManagers value=require();return Objects.requireNonNull(framework(value.engine.host,RuntimeSelfHookManagerPolicy.Family.BATTERY).batteryManager());}
     static android.os.PowerManager powerManager(Context host){return Objects.requireNonNull(framework(host,RuntimeSelfHookManagerPolicy.Family.POWER).powerManager(host,new Handler(Looper.getMainLooper())));}
@@ -99,6 +100,7 @@ final class RuntimeSelfHookManagers {
             case NOTIFICATIONS:owner=android.app.NotificationManager.class;break;
             case JOB_SCHEDULER:try{owner=Class.forName("android.app.JobSchedulerImpl",false,null);}catch(ClassNotFoundException error){throw new IllegalStateException(error);}break;
             case SHORTCUTS:owner=android.content.pm.ShortcutManager.class;break;
+            case LOCATION:owner=android.location.LocationManager.class;break;
             default:throw new IllegalArgumentException("SYSTEM_MANAGER_FAMILY");
         }
         return RuntimeSelfHookManagerPolicy.plan(family,owner,completeFixedInventory,new RuntimeSelfHookManagerPolicy.Route() {
@@ -119,6 +121,7 @@ final class RuntimeSelfHookManagers {
                     case ACTIVITY_MANAGER:return RuntimeBridge.ownsActivityManager((ActivityManager)receiver);
                     case CONNECTIVITY:return RuntimeBridge.ownsConnectivityManager((ConnectivityManager)receiver);
                     case TELEPHONY:return RuntimeBridge.ownsTelephonyManager((TelephonyManager)receiver);
+                    case LOCATION:return RuntimeBridge.ownsLocationManager((android.location.LocationManager)receiver);
                     case AUDIO:return RuntimeBridge.ownsAudioManager((AudioManager)receiver);
                     case BATTERY:return RuntimeBridge.ownsBatteryManager((android.os.BatteryManager)receiver);
                     case POWER:return RuntimeBridge.ownsPowerManager((android.os.PowerManager)receiver);
@@ -139,6 +142,7 @@ final class RuntimeSelfHookManagers {
                     case ACTIVITY_MANAGER:return activity(key,arguments);
                     case CONNECTIVITY:return network(key,arguments);
                     case TELEPHONY:return telephony(key,arguments);
+                    case LOCATION:return RuntimeLocation.dispatch(key,arguments);
                     case AUDIO:return audio(key,arguments);
                     case BATTERY:return RuntimeSelfHookDeviceManagers.battery(key,arguments);
                     case POWER:return RuntimeSelfHookDeviceManagers.power(key,arguments);
@@ -217,14 +221,14 @@ final class RuntimeSelfHookManagers {
             case "isVoiceCapable()":return RuntimeBridge.telephonyPlatform().isVoiceCapable();
             case "isSmsCapable()":return RuntimeBridge.telephonyPlatform().isSmsCapable();
             case "isDataCapable()":return RuntimeBridge.telephonyPlatform().isDataCapable();
-            case "getNetworkCountryIso()":return RuntimeBridge.telephonyPlatform().getNetworkCountryIso();
-            case "getSimCountryIso()":return RuntimeBridge.telephonyPlatform().getSimCountryIso();
+            case "getNetworkCountryIso()":{String o=RuntimeSandboxPersona.telephonyOverride("networkCountryIso");return o!=null?o:RuntimeBridge.telephonyPlatform().getNetworkCountryIso();}
+            case "getSimCountryIso()":{String o=RuntimeSandboxPersona.telephonyOverride("simCountryIso");return o!=null?o:RuntimeBridge.telephonyPlatform().getSimCountryIso();}
             case "getNetworkType()":return RuntimeBridge.telephonyPlatform().getNetworkType();
             case "getDataNetworkType()":return RuntimeBridge.telephonyPlatform().getDataNetworkType();
-            case "getNetworkOperator()":return RuntimeBridge.telephonyPlatform().getNetworkOperator();
-            case "getNetworkOperatorName()":return RuntimeBridge.telephonyPlatform().getNetworkOperatorName();
-            case "getSimOperator()":return RuntimeBridge.telephonyPlatform().getSimOperator();
-            case "getSimOperatorName()":return RuntimeBridge.telephonyPlatform().getSimOperatorName();
+            case "getNetworkOperator()":{String o=RuntimeSandboxPersona.telephonyOverride("networkOperator");return o!=null?o:RuntimeBridge.telephonyPlatform().getNetworkOperator();}
+            case "getNetworkOperatorName()":{String o=RuntimeSandboxPersona.telephonyOverride("networkOperatorName");return o!=null?o:RuntimeBridge.telephonyPlatform().getNetworkOperatorName();}
+            case "getSimOperator()":{String o=RuntimeSandboxPersona.telephonyOverride("simOperator");return o!=null?o:RuntimeBridge.telephonyPlatform().getSimOperator();}
+            case "getSimOperatorName()":{String o=RuntimeSandboxPersona.telephonyOverride("simOperatorName");return o!=null?o:RuntimeBridge.telephonyPlatform().getSimOperatorName();}
             case "getVoiceNetworkType()":return RuntimeBridge.telephonyPlatform().getVoiceNetworkType();
             case "getDataState()":return RuntimeBridge.telephonyPlatform().getDataState();
             case "createForSubscriptionId(int)":return RuntimeBridge.telephonyPlatform().createForSubscriptionId((Integer)args[0]);

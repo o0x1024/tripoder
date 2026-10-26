@@ -10,16 +10,16 @@ import java.util.Set;
 final class RuntimeThinPolicy {
     /** The device is not concealed: identity managers, traffic, Wi-Fi channels and mounts are the platform's own. */
     static boolean active(){return RuntimeEngine.current!=null&&!RuntimeEngine.current.mode.concealsDevice();}
-    /** Audio, battery and power are device state an app reasons about, not identity: the platform answers in both modes. */
+    /** Audio and power are device state an app reasons about, not identity: the platform answers in both modes. Battery is the platform's in THIN, but a THICK guest is answered by the battery facade so the sandbox persona (level/charging override) can apply; with no override it passes through to the real value. */
     static boolean platformManager(RuntimeSelfHookManagerPolicy.Family family){
         return switch(family){
-            case AUDIO,BATTERY,POWER->true;
-            case CONNECTIVITY,TELEPHONY,WIFI_P2P,NETWORK_STATS->active();
+            case AUDIO,POWER->true;
+            case CONNECTIVITY,TELEPHONY,WIFI_P2P,NETWORK_STATS,BATTERY,LOCATION->active();
             default->false;
         };
     }
-    private static final Set<String> STATE=Set.of(Context.AUDIO_SERVICE,Context.BATTERY_SERVICE,Context.POWER_SERVICE);
-    private static final Set<String> IDENTITY=Set.of(Context.CONNECTIVITY_SERVICE,Context.TELEPHONY_SERVICE,
+    private static final Set<String> STATE=Set.of(Context.AUDIO_SERVICE,Context.POWER_SERVICE);
+    private static final Set<String> IDENTITY=Set.of(Context.CONNECTIVITY_SERVICE,Context.TELEPHONY_SERVICE,Context.BATTERY_SERVICE,Context.LOCATION_SERVICE,
         Context.WIFI_SERVICE,Context.WIFI_P2P_SERVICE,Context.NETWORK_STATS_SERVICE);
     static boolean platformService(String name){return name!=null&&(STATE.contains(name)||active()&&IDENTITY.contains(name));}
     /** UI effects are the platform's in both modes. Traffic and Wi-Fi channels are identity; failure diagnostics stay with THICK. */

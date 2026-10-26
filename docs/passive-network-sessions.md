@@ -13,6 +13,10 @@
 5. `network_query(action=status)`：查看仍存活的连接、接入前已有连接产生的未跟踪事件、预算和错误。活动连接不会提前占用已结束连接的分页游标。
 6. `network_control(action=stop, captureId, operationId)`：停用并排空 Hook；若返回 `DRAINING`，查询状态直到 `captureState=STOPPED`。原操作回执为 UNKNOWN 时，按既有 `operation_get` / Hook 状态路径核实，不能重新派发。
 
+### HAR 导出
+
+`events_query(action=har, captureId, sinceSeq, limit=1..16)` 把已保留的 HTTP/1 交换转换为 HAR 1.2 `log.entries`，游标与 `action=http` 一致；把各页 `entries` 拼接即得完整 HAR。注意：每条消息的墙钟时间没有记录，`startedDateTime` 是采集会话开始时间，`time`/`timings` 为 -1，并带 `_tripoderTimeSource` 标记；正文不解压，非 UTF-8 或带 `Content-Encoding` 的正文以 base64 输出并注明。
+
 `events_query(action=network)` 现在只返回 `origin=GUEST_PASSIVE_TLS` 的被动采集，必须传本次 `captureId`，不返回 Agent 主动请求的旧记录。
 
 ## 连接、分段和完整性
@@ -22,6 +26,7 @@
 - 同一方向调用的 `before`/`after` 配对用于发现并发重叠；发现重叠时，记录 `CONCURRENT_SAME_DIRECTION`，不把完成顺序当作可靠字节顺序。
 - `segments` 提供方向、原始流偏移、实际返回字节数、保留字节数和状态。截断或读取失败后，仍保留缺口位置。
 - 每段最多 1 KiB、每方向最多 4 KiB、每连接最多 64 段、每会话最多 16 条连接/64 KiB。触及上限时保留明确的不完整原因，不自动切换采集方式。
+- 默认上限可在启动前用 `network_control(action=configure, connections, messages, totalBytes, confirmHigherLimits)` 调整，仅对**下一次**采集生效，采集进行中会被拒绝。范围：连接 1..64（默认 16）、保留的 HTTP 交换 1..256（默认 32）、总字节 4096..262144（默认 65536）；任一值高于默认必须显式 `confirmHigherLimits=true`，否则 `NETWORK_LIMITS_CONFIRMATION_REQUIRED`。每方向 4 KiB 与每段 1 KiB **保持不变**：每条连接记录必须落入 32 KiB 证据产物上限和 128 KiB 响应上限，放开它们需要先有更大容量的产物通道。采集状态的 `limits` 字段反映实际生效值。
 - 停止时尚未关闭的连接标记 `CAPTURE_STOPPED_BEFORE_CLOSE`。默认查询只保留当前或最后一场会话；启动新会话后，旧会话的持久化产物仍可通过 artifact 查询。
 
 `byteState=COMPLETE` 仅表示这个已观测连接生命周期的字节没有已知缺口。它不代表整个应用、所有进程或所有网络库均被覆盖。会话的最佳覆盖标记为 `OBSERVED_LIFETIMES_ONLY`，不会返回“全应用完整覆盖”。

@@ -13,7 +13,7 @@ import java.nio.channels.FileLock;
 
 /** The broker is the only owner of this connection. Guest processes never open it. */
 public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionContract.Store {
-    private static final int SCHEMA_VERSION=39;
+    private static final int SCHEMA_VERSION=40;
     private RandomAccessFile authorityFile;
     private FileLock authorityLock;
     private boolean closed;
@@ -50,6 +50,7 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
         ApplicationProjects.create(db);ApplicationProjects.createTargets(db);
         ActivityLedger.create(db);ActivityComponentLedger.create(db);ActivityAffinityLedger.create(db);ActivityEntryLedger.create(db);ActivityLaunchLedger.create(db);ServiceLedger.create(db);ProviderLedger.create(db);BroadcastLedger.create(db);ApplicationStartLedger.create(db);InstallHistory.create(db);JobLedger.create(db);JobAttemptLedger.create(db);PendingIntentLedger.create(db);
         RuntimeIsolatedSessions.migrate(db);
+        RuntimeStateCheckpoints.create(db);
     }
     @Override public void onConfigure(SQLiteDatabase db) { db.enableWriteAheadLogging();db.execSQL("PRAGMA synchronous=NORMAL");db.setForeignKeyConstraintsEnabled(true); }
     @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
@@ -112,6 +113,7 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
         if(oldVersion<37)ComponentSettingsLedger.create(db);
         if(oldVersion<38)db.execSQL("ALTER TABLE sessions ADD COLUMN componentRestartOperation TEXT");
         if(oldVersion<39)RuntimeIsolatedSessions.migrate(db);
+        if(oldVersion<40)RuntimeStateCheckpoints.create(db);
     }
     private static void recoveryTables(SQLiteDatabase db){
         db.execSQL("CREATE TABLE IF NOT EXISTS operation_scopes(operation TEXT PRIMARY KEY,scope TEXT NOT NULL,command TEXT NOT NULL,dispatch TEXT NOT NULL)");
@@ -200,6 +202,7 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
     boolean recoveryPaused(String generation){if(!RuntimeRecoveryGate.productEnabled())return false;try(Cursor c=getReadableDatabase().rawQuery("SELECT 1 FROM recovery_paused WHERE generation=?",new String[]{generation})){return c.moveToFirst();}}
     void requireProcessStart(ApkStore.BundleInstall install,String process,boolean freshApplicationOwner){
         RuntimeComponentRestart.requireCompleted(getReadableDatabase(),install.space,install.info.packageName,install.generation);
+        RuntimeStateCheckpoints.requireIdle(getReadableDatabase(),install.space,install.info.packageName);
         if(!RuntimeRecoveryGate.productEnabled()||RuntimeMutationGuard.explicitStart()||freshApplicationOwner)return;
         try(Cursor c=getReadableDatabase().rawQuery("SELECT 1 FROM recovery_paused WHERE space=? AND package=? AND installGeneration=? AND processName=? LIMIT 1",new String[]{install.space,install.info.packageName,install.generation,process})){if(c.moveToFirst())throw new IllegalStateException("RECOVERY_TARGET_PAUSED_EXPLICIT_START_REQUIRED");}
     }

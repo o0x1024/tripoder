@@ -65,6 +65,7 @@ public final class RuntimeEngine {
     final RuntimeTelephony telephony=new RuntimeTelephony(this);
     final RuntimeAudio audio=new RuntimeAudio(this);
     final RuntimeBattery battery=new RuntimeBattery(this);
+    final RuntimeLocation location=new RuntimeLocation(this);
     final RuntimePower power=new RuntimePower(this);
     final RuntimeUsers users=new RuntimeUsers(this);
     final RuntimeRoles roles=new RuntimeRoles(this);

@@ -5,6 +5,7 @@ import {PullManager} from './file-pull.mjs';
 import {verifyArtifact} from './artifact-verify.mjs';
 import {recoveryReceipt} from './recovery.mjs';
 import {auditFile} from './audit.mjs';
+import {importRuleset,listRulesets,scanTarget,exportEvidence} from './signature-scan.mjs';
 
 /** Stdio transport adapter. All shared MCP semantics and commands live on the phone. */
 export class McpServer {
@@ -18,9 +19,13 @@ export class McpServer {
         response={jsonrpc:'2.0',id:request.id,result:{content:[{type:'text',text:JSON.stringify({ok:false,state:'REJECTED',dispatched:false,errorCode:'TOOL_RETIRED',replacement:{tool:replacement.tool,action:replacement.action},recovery:{action:'Refresh tools and use the replacement action schema. No command was dispatched.',replayAllowed:false}})}],isError:true}};
       }else if(this.ready&&request.id!==undefined&&request.method==='tools/call'&&localPullTools.some(t=>t.name===request.params?.name)){
         const name=request.params.name,args=request.params.arguments??{},wire=command(name,args);const pullArgs={...args};delete pullArgs.action;
+        const signature={'local.rulesetImport':()=>importRuleset(pullArgs),'local.rulesetList':()=>listRulesets(),'local.signatureScan':()=>scanTarget(pullArgs),'local.evidenceExport':()=>exportEvidence(pullArgs)}[wire.method];
+        if(signature){let value;try{value={ok:true,result:signature()};}catch(error){value={ok:false,errorCode:error.code??'LOCAL_TOOL_FAILED',error:String(error.message)};}response={jsonrpc:'2.0',id:request.id,result:{content:[{type:'text',text:JSON.stringify(value)}],isError:!value.ok}};}
+        else{
         const result=wire.method==='local.artifactVerify'?await verifyArtifact(args,{...this.options,transport:this.transport}):wire.method==='local.filePull'?this.pulls.start(pullArgs):wire.method==='local.filePullStatus'?this.pulls.status(args.operationId):this.pulls.cancel(args.operationId);
         const ok=result.state!=='FAILED';
         response={jsonrpc:'2.0',id:request.id,result:{content:[{type:'text',text:JSON.stringify({ok,result,...(!ok&&wire.method==='local.artifactVerify'?{errorCode:'ARTIFACT_ACCEPTANCE_FAILED'}:{})})}],isError:!ok}};
+        }
       }else if(this.ready&&request.id!==undefined&&request.method==='tools/call'&&request.params?.name==='application_import'){
         let receipt;try{receipt=await this.transport.importApks(request.params.arguments??{});}catch(error){receipt={protocol:2,ok:false,state:error.dispatched?'UNKNOWN':'REJECTED',dispatched:!!error.dispatched,operationId:request.params.arguments?.operationId,error:error.message};}
         response={jsonrpc:'2.0',id:request.id,result:{content:[{type:'text',text:JSON.stringify(recoveryReceipt(receipt,'application_import',request.params.arguments??{}))}],isError:!receipt.ok}};

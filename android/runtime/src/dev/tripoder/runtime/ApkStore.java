@@ -161,6 +161,7 @@ public final class ApkStore {
         Set<String> data=new HashSet<>();try(Cursor c=store.getReadableDatabase().rawQuery("SELECT space,package,dataId FROM installs",null)){while(c.moveToNext())data.add(c.getString(0)+"/"+c.getString(1)+"/"+c.getString(2));}
         File dataRoot=new File(root,"data");for(File space:RuntimeFiles.children(dataRoot))for(File pkg:RuntimeFiles.children(space))for(File incarnation:RuntimeFiles.children(pkg))if(!data.contains(space.getName()+"/"+pkg.getName()+"/"+incarnation.getName()))RuntimeFiles.deleteTree(incarnation);
         Set<String> incarnations=new HashSet<>();for(String owner:data)incarnations.add(owner.substring(owner.lastIndexOf('/')+1));RuntimeNotificationNamespace.recover(host,incarnations);
+        RuntimeStateCheckpoints.recover(root,store);
     }
     void refreshComponentSettings(String space,String pkg,String dataId,android.os.Bundle states){
         synchronized(authority){

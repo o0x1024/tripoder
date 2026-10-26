@@ -13,7 +13,7 @@ import java.util.List;
 /** Read-only fixed boot declarations; not a caller-coverage or installer receipt. */
 public final class FixedManagerInventory {
     private static final String[] OWNERS={"android.app.ActivityManager","android.net.ConnectivityManager",
-        "android.telephony.TelephonyManager","android.media.AudioManager","android.os.BatteryManager","android.os.PowerManager","android.net.wifi.p2p.WifiP2pManager","android.app.usage.NetworkStatsManager","android.app.NotificationManager","android.content.pm.ShortcutManager","android.app.JobSchedulerImpl"};
+        "android.telephony.TelephonyManager","android.media.AudioManager","android.os.BatteryManager","android.os.PowerManager","android.net.wifi.p2p.WifiP2pManager","android.app.usage.NetworkStatsManager","android.app.NotificationManager","android.content.pm.ShortcutManager","android.app.JobSchedulerImpl","android.location.LocationManager"};
     private static boolean attempted;
     private static volatile List<Family> verified;
     private static final String[] EXPECTED={
@@ -25,7 +25,9 @@ public final class FixedManagerInventory {
         "28ce6d9bdec01b645c0518d40a2bce7f0c2c8b52e0a2d51bfe20c4ac5fa56dcc","c6de47443247423b38cf03e39683af1520c23977420af06e3d4c924a22570231","e24e976f1cbd0e8af664b8bd1cfabbcc0f7d0d7dd5db625b826b8d534654c0e8","bcd106740880155689ff59bd8600d928e9307a4cb8e46c1cedde3a034598896a","f90336bfc3697a7dc7247e4d7fd66c546cbccfb296acf034554287d29a2b5913",
         // JobSchedulerImpl (index 10): concrete getSystemService impl (abstract JobScheduler has no hookable
         // bodies). Device-pinned digest from the H4 inventory run on this Android 17/API37 platform.
-        "4e5c0e344d62d9e7de2a10354546d287bd9d5960f3404a4a11d9f94adb60617c"};
+        "4e5c0e344d62d9e7de2a10354546d287bd9d5960f3404a4a11d9f94adb60617c",
+        // LocationManager (index 11): digest pinned from a device run on this Android 17/API37 platform.
+        "0bf8b6a7177c5b68494dc91efb38b968fe54c24e1988c0a32ab274ac759f5c37"};
     private FixedManagerInventory() {}
     public static final class Family {
         public final Class<?> owner;
@@ -69,7 +71,7 @@ public final class FixedManagerInventory {
             // records. Pin the exact declared Methods/Constructors, not the
             // count of excluded records which cannot be Hook targets.
             if(!EXPECTED[family].equals(value.sha256)||abstracts!=0||natives!=0)
-                throw new IllegalStateException("FIXED_MANAGER_DECLARATIONS_CHANGED:"+owner.getName());
+                throw new IllegalStateException("FIXED_MANAGER_DECLARATIONS_CHANGED:"+owner.getName()+":"+value.sha256);
             result.add(value);
         }
         verified=List.copyOf(result);return verified;

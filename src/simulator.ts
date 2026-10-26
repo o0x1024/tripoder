@@ -45,8 +45,26 @@ export class HookSimulator<S extends Parameters> {
   readonly #history = new Map<number, Revision<S>>();
   readonly #events: SimulationEvent[] = [];
   readonly #stats = new Map<string, { hits: number; errors: number }>();
+  #attribution: readonly (readonly [string,string])[] = [];
+  readonly #timeline: Readonly<Record<string,unknown>>[] = [];
 
   constructor(evidence: EvidenceSnapshot) { this.#evidence = snapshotEvidence(evidence); }
+
+  /** Replaces the whole catalog, longest prefix wins. Mirrors RuntimePrivacyProbeState.configureAttribution. */
+  configureAttribution(entries: readonly { packagePrefix: string; sdkName: string }[]): void {
+    this.#attribution = [...entries].map(e => [e.packagePrefix, e.sdkName] as const).sort((a, b) => b[0].length - a[0].length);
+  }
+  #attributionOf(className: string): Readonly<Record<string,unknown>> {
+    for (const [prefix, sdkName] of this.#attribution) if (className === prefix || className.startsWith(prefix + ".")) return { className, matchedPrefix: prefix, sdkName };
+    return { className, matchedPrefix: null, sdkName: null };
+  }
+  markConsentStage(stage: string, note = ""): Readonly<Record<string,unknown>> {
+    requireThat(/^[A-Z][A-Z0-9_]{0,63}$/.test(stage), "PRIVACY_CONSENT_STAGE", "Invalid consent stage");
+    const row = Object.freeze({ seq: this.#timeline.length + 1, stage, note, elapsedRealtimeMillis: Date.now(), wallClockIso: new Date().toISOString() });
+    this.#timeline.push(row);
+    return row;
+  }
+  #currentStage(): Readonly<Record<string,unknown>> { return this.#timeline.at(-1) ?? { stage: null, seq: 0 }; }
 
   activate(plan: PreparedPlan<S>): number {
     requireThat(plan.evidenceKey === evidenceKey(this.#evidence), "STALE_EVIDENCE", "Process, capabilities, symbols or app version changed; prepare again");
@@ -135,6 +153,8 @@ export class HookSimulator<S extends Parameters> {
     const previousEmit = state.plan.emitSink?.fn;
     const previousStack = state.plan.emitSink?.stack;
     const previousCaller = state.plan.emitSink?.caller;
+    const previousPrivacyAttribution = state.plan.emitSink?.privacyAttribution;
+    const previousPrivacyConsentStage = state.plan.emitSink?.privacyConsentStage;
     if (state.plan.emitSink) {
       state.plan.emitSink.evidence=(tag,payload)=>{this.#record({revision:state.revision,symbolId,kind:"debug-event",tag,payload});return {artifactId:`simulated-${state.revision}-${this.#events.length}`,state:"SIMULATED"};};
       state.plan.emitSink.fn = (tag, payload) => {
@@ -146,6 +166,8 @@ export class HookSimulator<S extends Parameters> {
       state.plan.emitSink.caller = () => rule.symbol.kind === "native"
         ? `${rule.symbol.moduleName}+0x0`
         : `${rule.symbol.className}.${rule.symbol.methodName}`;
+      state.plan.emitSink.privacyAttribution = (className) => this.#attributionOf(className);
+      state.plan.emitSink.privacyConsentStage = () => this.#currentStage();
     }
     const fail = (stage: "before" | "replace" | "after", error: unknown): never => {
       const failure = error instanceof Error ? error
@@ -204,6 +226,8 @@ export class HookSimulator<S extends Parameters> {
         state.plan.emitSink.fn = previousEmit;
         state.plan.emitSink.stack = previousStack;
         state.plan.emitSink.caller = previousCaller;
+        state.plan.emitSink.privacyAttribution = previousPrivacyAttribution;
+        state.plan.emitSink.privacyConsentStage = previousPrivacyConsentStage;
       }
     }
   }

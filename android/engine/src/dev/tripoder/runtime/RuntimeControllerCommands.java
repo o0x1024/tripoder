@@ -15,6 +15,21 @@ final class RuntimeControllerCommands {
         if(input.hasFileDescriptors())throw new SecurityException("CONTROL_FILE_DESCRIPTOR_UNSUPPORTED");
         String command=ControlWire.required(input,"command");
         if("applicationStorage".equals(command))return RuntimeControllerInstallationQueries.storage(broker,input);
+        if(command.startsWith("checkpoint")&&java.util.Set.of("checkpointCreate","checkpointRestore","checkpointDelete","checkpointList").contains(command)){
+            boolean list="checkpointList".equals(command);
+            if(list)fields(input,"command","space","package","generation");else if("checkpointCreate".equals(command))fields(input,"command","space","package","generation","label");else fields(input,"command","space","package","generation","checkpointId");
+            if(!list)synchronized(broker){RuntimeControllerService.requireLease(lease);}
+            String space=ControlWire.required(input,"space"),pkg=ControlWire.required(input,"package"),generation=ControlWire.required(input,"generation");
+            org.json.JSONObject result=switch(command){
+                case "checkpointCreate"->RuntimeStateCheckpoints.createCheckpoint(broker,space,pkg,generation,input.getString("label",""));
+                case "checkpointRestore"->RuntimeStateCheckpoints.restoreCheckpoint(broker,space,pkg,generation,ControlWire.required(input,"checkpointId"));
+                case "checkpointDelete"->RuntimeStateCheckpoints.deleteCheckpoint(broker,space,pkg,generation,ControlWire.required(input,"checkpointId"));
+                default->RuntimeStateCheckpoints.list(broker,space,pkg,generation);
+            };
+            result.put("target",new org.json.JSONObject().put("space",space).put("package",pkg).put("installGeneration",generation));
+            Bundle out=new Bundle();out.putString("result",result.toString());return out;
+        }
+        if("applicationWalRecover".equals(command))return RuntimeControllerInstallationQueries.walRecover(broker,input);
         if("applicationProcessHistory".equals(command))return RuntimeControllerInstallationQueries.processHistory(broker,input);
         if("applicationManifest".equals(command))return RuntimeControllerInstallationQueries.inspect(broker,input);Bundle out=new Bundle();
         if(command.equals("catalog")){fields(input,"command");return RuntimeControllerCatalog.read(broker);}

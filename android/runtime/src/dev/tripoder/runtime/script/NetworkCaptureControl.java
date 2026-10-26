@@ -10,6 +10,7 @@ final class NetworkCaptureControl {
     private final String generation;
     private final Supplier<String> token;
     private volatile NetworkCaptureSession session;
+    private volatile int configuredConnections=NetworkCaptureSession.DEFAULT_CONNECTIONS,configuredMessages=NetworkCaptureSession.DEFAULT_MESSAGES,configuredTotalBytes=NetworkCaptureSession.DEFAULT_TOTAL_BYTES;
     private volatile String sourceSha="",revision="";private boolean stopping;private String moduleName="",moduleBuild="";
     NetworkCaptureControl(SelfHookControl.Platform platform,Function<Map<String,Object>,Map<String,Object>> command,String generation,Supplier<String> token){this.platform=platform;this.command=command;this.generation=generation;this.token=token;}
     boolean ownsHook(){return session!=null&&!session.status().get("captureState").equals("STOPPED");}
@@ -34,10 +35,20 @@ final class NetworkCaptureControl {
         @SuppressWarnings("unchecked") String evidence=(String)((Map<String,Object>)observed.get("evidence")).get("id");
         Map<String,Object> prepared=invoke("prepare",Map.of("evidenceId",evidence,"source",source(module,buildId)));
         moduleName=module;moduleBuild=buildId;sourceSha=(String)prepared.get("sourceSha256");revision="";stopping=false;
-        session=new NetworkCaptureSession(token.get(),(tag,payload)->platform.persistNetworkCapture(tag,payload,sourceSha,revision));
+        session=new NetworkCaptureSession(token.get(),(tag,payload)->platform.persistNetworkCapture(tag,payload,sourceSha,revision),configuredConnections,configuredMessages,configuredTotalBytes);
         Map<String,Object> activated=invoke("activate",Map.of("token",prepared.get("token"),"sourceSha256",sourceSha));
         revision=(String)activated.get("revision");return status();
     }
+    /** Applies to the next capture only. Values above the defaults need explicit confirmation; per-direction bytes stay fixed by the 32 KiB evidence artifact and 128 KiB response ceilings. */
+    Map<String,Object> configure(int connections,int messages,int totalBytes,boolean confirmHigherLimits){
+        if(ownsHook())throw new HookPreflightRejected("NETWORK_CAPTURE_ALREADY_ACTIVE");
+        if(connections<1||connections>64||messages<1||messages>256||totalBytes<4096||totalBytes>262144)throw new HookPreflightRejected("NETWORK_LIMITS_RANGE");
+        boolean raised=connections>NetworkCaptureSession.DEFAULT_CONNECTIONS||messages>NetworkCaptureSession.DEFAULT_MESSAGES||totalBytes>NetworkCaptureSession.DEFAULT_TOTAL_BYTES;
+        if(raised&&!confirmHigherLimits)throw new HookPreflightRejected("NETWORK_LIMITS_CONFIRMATION_REQUIRED");
+        configuredConnections=connections;configuredMessages=messages;configuredTotalBytes=totalBytes;
+        return Map.of("configured",true,"appliesTo","NEXT_CAPTURE","limits",Map.of("connections",(double)connections,"messagesPerCapture",(double)messages,"totalBytes",(double)totalBytes,"bytesPerDirection",(double)NetworkCaptureSession.STREAM_BYTES),"higherThanDefault",raised);
+    }
+    Map<String,Object> har(String id,long cursor,int limit){requireSession(id);return session.har(cursor,limit);}
     Map<String,Object> stop(String id){
         requireSession(id);if(!ownsHook())return status();
         if(!stopping){stopping=true;invoke("disable",Map.of("revision",revision));}

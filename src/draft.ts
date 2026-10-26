@@ -26,6 +26,18 @@ function keyOf(value: unknown): string {
   demand(typeof value === "string" || typeof value === "number", "Property key must be a string or number");
   const key = String(value); demand(!forbidden.has(key), "Forbidden property: " + key); return key;
 }
+// Strict JSON.stringify over an already-sandboxed value tree: explicitly rejects
+// functions/undefined/bigint rather than silently dropping them like native JSON.stringify.
+function jsonStringify(value: unknown): string {
+  if (value === null) return "null";
+  if (typeof value === "string") return JSON.stringify(value);
+  if (typeof value === "number") { demand(Number.isFinite(value), "JSON.stringify requires a finite number"); return JSON.stringify(value); }
+  if (typeof value === "boolean") return JSON.stringify(value);
+  demand(typeof value !== "function" && typeof value !== "bigint" && value !== undefined, "JSON.stringify does not accept this value");
+  if (Array.isArray(value)) return "[" + value.map(jsonStringify).join(",") + "]";
+  demand(typeof value === "object", "JSON.stringify requires a plain object, array or scalar");
+  return "{" + Object.entries(value as Record<string, unknown>).map(([k, v]) => JSON.stringify(k) + ":" + jsonStringify(v)).join(",") + "}";
+}
 
 export function prepareDraft(source: string, observed: EvidenceSnapshot): PreparedPlan<Parameters> {
   demand(typeof source === "string" && source.length <= 32768, "Source exceeds 32 KiB characters");
@@ -223,6 +235,24 @@ export function prepareDraft(source: string, observed: EvidenceSnapshot): Prepar
         demand(args.length > 0 && args.every(x => typeof x === "number"), "Math requires numeric arguments");
         return limit((math as (...values: number[]) => number)(...args as number[]));
       }])),
+    // Hex <-> UTF-8 text, and Base64 <-> hex (hex is this project's canonical raw-bytes-as-string
+    // form elsewhere, e.g. byte[] arguments), mirroring android/runtime/.../script/RestrictedAst.java.
+    Hex: {
+      encode: (text: unknown) => { demand(typeof text === "string", "Hex.encode expects a string"); return limit(Buffer.from(text, "utf8").toString("hex")); },
+      decode: (hex: unknown) => { demand(typeof hex === "string" && /^([0-9a-fA-F]{2})*$/.test(hex), "Hex.decode expects an even-length hex string"); return limit(Buffer.from(hex, "hex").toString("utf8")); },
+    },
+    Base64: {
+      encode: (hex: unknown) => { demand(typeof hex === "string" && /^([0-9a-fA-F]{2})*$/.test(hex), "Base64.encode expects an even-length hex string"); return limit(Buffer.from(hex, "hex").toString("base64")); },
+      decode: (b64: unknown) => {
+        demand(typeof b64 === "string", "Base64.decode expects a string");
+        demand(/^[A-Za-z0-9+/]*={0,2}$/.test(b64) && b64.length % 4 === 0, "Base64.decode expects valid Base64");
+        return limit(Buffer.from(b64, "base64").toString("hex"));
+      },
+    },
+    JSON: {
+      parse: (text: unknown) => { demand(typeof text === "string", "JSON.parse expects a string"); let value: unknown; try { value = JSON.parse(text); } catch { throw new Error("DRAFT: Invalid JSON"); } return expose(value); },
+      stringify: (value: unknown) => limit(jsonStringify(value)),
+    },
   })));
   const imports = expose({ definePlan, param });
   const plan = bounded(() => {

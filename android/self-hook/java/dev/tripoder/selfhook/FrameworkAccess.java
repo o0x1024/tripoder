@@ -12,7 +12,7 @@ public final class FrameworkAccess {
     private FrameworkAccess() {}
     private static boolean prepared;
     // One slot per fixed boot class root; the index space is defined by art_framework.c names[].
-    private static final Object[][] declarationCache=new Object[86][];
+    private static final Object[][] declarationCache=new Object[87][];
     private static native boolean prepareNative(Method field,Method count,Method method);
     public static native String statusNative();
     @FastNative private static native Field fieldNative(int slot);
@@ -91,8 +91,8 @@ public final class FrameworkAccess {
     /** The six fixed manager owners share the SAME native registry as Application.
      * A declared-member inventory does not authorize these methods as Hook targets. */
     static synchronized Object[] managerMembers(int family){
-        if(!prepared||family<0||family>=11)throw new IllegalStateException("FIXED_MANAGER_INVENTORY_ORDER");
-        return fixedMembers(new int[]{7,8,9,10,11,12,46,36,38,45,50}[family]);
+        if(!prepared||family<0||family>=12)throw new IllegalStateException("FIXED_MANAGER_INVENTORY_ORDER");
+        return fixedMembers(new int[]{7,8,9,10,11,12,46,36,38,45,50,86}[family]);
     }
     static synchronized Object[] fixedMembers(int owner){
         if(!prepared||owner<0||owner>=declarationCache.length)throw new IllegalStateException("FIXED_MEMBER_ORDER");
@@ -108,7 +108,7 @@ public final class FrameworkAccess {
         declarationCache[owner]=result;return result.clone();
     }
     static synchronized Field fixedField(int slot){
-        if(!prepared||slot<0||slot>=72)throw new IllegalStateException("FIXED_FIELD_ORDER");
+        if(!prepared||slot<0||slot>=73)throw new IllegalStateException("FIXED_FIELD_ORDER");
         return fieldNative(slot);
     }
     /** ActivityThread.getApplication() reads mInitialApplication; it must show the same logical Application as currentApplication(). */

@@ -32,6 +32,7 @@ Tripoder 是一个面向 Android 的**无需 Root 的免重打包应用虚拟化
 - **[Guest 兼容性分层与基线 (`docs/guest-compatibility.md`)](docs/guest-compatibility.md)**：L1–L13 兼容性矩阵、真机实测基线与已知边界。
 - **[启动性能架构 (`docs/launch-performance.md`)](docs/launch-performance.md)**：启动关键路径与六大核心性能优化细节。
 - **[AI Agent 控制面与 MCP 规范 (`docs/agent-mcp-design.md`)](docs/agent-mcp-design.md)**：免配对接入、全局工具、显式目标与实际操作闭环。
+- **[全场景能力评估与演进缺口分析 (`docs/scenario-gap-analysis.md`)](docs/scenario-gap-analysis.md)**：覆盖 Bug Bounty/SRC、隐私合规检测、功能测试、恶意软件分析、黑灰产情报与移动端电子取证六大场景的完整能力矩阵与演进路线图。
 
 ---
 

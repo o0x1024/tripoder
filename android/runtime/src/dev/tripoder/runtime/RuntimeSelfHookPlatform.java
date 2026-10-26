@@ -21,7 +21,8 @@ final class RuntimeSelfHookPlatform implements SelfHookControl.Platform {
     public List<String> searchDexClasses(String packagePrefix,int limit){try{return javaObservation.searchClasses(packagePrefix,limit);}catch(Exception error){throw new IllegalStateException(error);}}
     public Map<String,Object> inspectDexClass(String className){try{return javaObservation.inspectClass(className);}catch(Exception error){throw new IllegalStateException(error);}}
     public List<Map<String,Object>> searchNativeExports(String moduleName,String symbolPrefix,int limit){try{return nativeObservation.searchExports(moduleName,symbolPrefix,limit);}catch(Exception error){throw new IllegalStateException(error);}}
-    public Map<String,Object> dumpUiHierarchy(boolean includeInvisible){try{return RuntimeStartupDiagnostics.dumpUiHierarchy(includeInvisible);}catch(Exception error){throw new IllegalStateException(error);}}
+    public Map<String,Object> screenshot(int maxDimension){try{return RuntimeStartupDiagnostics.screenshot(maxDimension);}catch(Exception error){throw new IllegalStateException(error);}}
+    public Map<String,Object> dumpUiHierarchy(boolean includeInvisible,int limit){try{return RuntimeStartupDiagnostics.dumpUiHierarchy(includeInvisible,limit);}catch(Exception error){throw new IllegalStateException(error);}}
     public Map<String,Object> dispatchUiAction(Map<String,Object> action){try{return RuntimeStartupDiagnostics.dispatchUiAction(action);}catch(Exception error){throw new IllegalStateException(error);}}
     public List<Map<String,Object>> diagnostics(){return RuntimeStartupDiagnostics.recentFailures();}
     public Map<String,Object> persistNetworkCapture(String tag,Object payload,String sourceSha,String revision){
@@ -32,6 +33,12 @@ final class RuntimeSelfHookPlatform implements SelfHookControl.Platform {
     }
     public Map<String,Object> listNetworkTraffic(long sinceSeq,int limit){try{return RuntimeSecurityAudit.listNetworkTraffic(sinceSeq,limit);}catch(Exception error){throw new IllegalStateException(error);}}
     public Map<String,Object> sendHttpRequest(Map<String,Object> request){try{return RuntimeSecurityAudit.sendHttpRequest(request);}catch(HookPreflightRejected rejected){throw rejected;}catch(Exception error){throw new IllegalStateException(error);}}
+    public Map<String,Object> personaConfigureTelephony(Map<String,Object> fields){try{return RuntimeSandboxPersona.configureTelephony(fields);}catch(IllegalArgumentException invalid){throw new HookPreflightRejected(String.valueOf(invalid.getMessage()));}}
+    public Map<String,Object> personaConfigureLocation(Map<String,Object> fields){try{return RuntimeSandboxPersona.configureLocation(fields);}catch(IllegalArgumentException invalid){throw new HookPreflightRejected(String.valueOf(invalid.getMessage()));}}
+    public Map<String,Object> personaConfigureBattery(Integer level,Boolean charging){try{return RuntimeSandboxPersona.configureBattery(level,charging);}catch(IllegalArgumentException invalid){throw new HookPreflightRejected(String.valueOf(invalid.getMessage()));}}
+    public Map<String,Object> personaStatus(){return RuntimeSandboxPersona.status();}
+    public Map<String,Object> sendComponent(Map<String,Object> request){try{return RuntimeComponentDelivery.send(request);}catch(HookPreflightRejected rejected){throw rejected;}catch(Exception error){throw new IllegalStateException(error);}}
+    public Map<String,Object> providerInteract(Map<String,Object> request){try{return RuntimeComponentDelivery.provider(request);}catch(HookPreflightRejected rejected){throw rejected;}catch(Exception error){throw new IllegalStateException(error);}}
     public Map<String,Object> invokeGuestMethod(Map<String,Object> target){try{return RuntimeSecurityAudit.invokeGuestMethod(target);}catch(HookPreflightRejected rejected){throw rejected;}catch(Exception error){throw new IllegalStateException(error);}}
     public Map<String,Object> codeCommand(String command,Map<String,Object> params){try{return RuntimeEngine.current.codeProbes().command(command,params);}catch(Exception error){throw new IllegalStateException(error);}}
     public Map<String,Object> requestCodeSnapshot(String dexId){try{return dev.tripoder.runtime.script.HookWire.request(RuntimeEngine.current.codeProbes().capture(dexId).toString());}catch(Exception error){throw new IllegalStateException(error);}}
