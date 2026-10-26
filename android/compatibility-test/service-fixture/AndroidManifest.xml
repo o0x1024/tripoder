@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tripoder.servicecontract" android:versionCode="4" android:versionName="4">
+  <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="28" />
+  <application android:label="Owned Service Contract" android:theme="@android:style/Theme.Material.Light">
+    <activity android:name=".Main" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
+    <service android:name=".Main$Inherited" android:exported="false" />
+    <service android:name=".Main$Overridden" android:exported="false" />
+  </application>
+</manifest>

@@ -22,10 +22,13 @@ final class RuntimePackages implements InvocationHandler {
     private Resources infrastructureResources;
     private Context frameworkContext;
     private boolean activationStarted;
-    private static final java.util.concurrent.atomic.AtomicInteger ENDPOINT_MISSES=new java.util.concurrent.atomic.AtomicInteger();
     private volatile boolean active;
-    RuntimePackages(RuntimeEngine engine){this.engine=engine;}
+    private final java.util.concurrent.atomic.AtomicBoolean resourceOriginReported=new java.util.concurrent.atomic.AtomicBoolean();
+    private final java.util.concurrent.atomic.AtomicBoolean heldResourceOriginReported=new java.util.concurrent.atomic.AtomicBoolean();
+    private final RuntimePackageDiagnostics diagnostics;
+    RuntimePackages(RuntimeEngine engine){this.engine=engine;diagnostics=new RuntimePackageDiagnostics(engine);}
     boolean active(){return active;}
+    boolean suspended(String pkg)throws PackageManager.NameNotFoundException{return metadata.isPackageSuspended(pkg);}
     void captureInfrastructure(){
         if(infrastructurePackage!=null)throw new IllegalStateException("INFRASTRUCTURE_ALREADY_CAPTURED");
         infrastructurePackage=engine.host.getPackageName();
@@ -44,11 +47,15 @@ final class RuntimePackages implements InvocationHandler {
         // Any failure aborts worker construction; it never restores the physical world.
         RuntimePackageBridge.activate(root,engine.host);
         active=true;
+        traceEndpoints("PACKAGE_ACTIVATED");
     }
     synchronized PackageManager manager(Context context,Resources view){
         if(!active)throw new IllegalStateException("PACKAGE_WORLD_NOT_ACTIVE");
-        PackageManager facade=Objects.requireNonNull(RuntimePackageBridge.construct(context,RuntimePackageBridge.currentEndpoint()),"PACKAGE_FACADE_CONSTRUCTION_RETURNED_NULL");
-        resources.put(facade,view);return facade;
+        // The package world is this worker's captured authority. A guest may
+        // wrap the ambient SDK singleton; that does not select our backend.
+        Object argument=root;
+        PackageManager facade=Objects.requireNonNull(RuntimePackageBridge.construct(context,argument),"PACKAGE_FACADE_CONSTRUCTION_RETURNED_NULL");
+        resources.put(facade,view);traceEndpoint("FACADE_CONSTRUCTED",context,facade,argument);return facade;
     }
 
     void requireInfrastructure(String kind,String pkg,ComponentName component,int user){
@@ -68,16 +75,44 @@ final class RuntimePackages implements InvocationHandler {
     IBinder binder(){if(binder==null)throw new IllegalStateException("PACKAGE_ENDPOINT_NOT_READY");return binder;}
     synchronized void registerInfrastructureFacade(PackageManager value){if(root==null||active)throw new IllegalStateException("PACKAGE_WORLD_ACTIVATION_ORDER");resources.put(value,engine.resources);}
     PackageManager contextManager(Context context){
-        // Public bridge calls cannot register an arbitrary caller-supplied resource view.
         if(context==null||!context.getClass().getName().equals("android.app.ContextImpl"))throw new SecurityException("PACKAGE_PLATFORM_CONTEXT_REQUIRED");
-        // ActivityThread's exact system Context performs framework package queries
-        // before an Activity exists. It still receives the same logical package world.
-        if(context==frameworkContext)return manager(context,engine.resources);
-        if(engine.webView.owns(context.getPackageName()))return manager(context,engine.webView.contextResources(context));
+        if(context==frameworkContext)return contextualManager(context,engine.resources);
+        if(engine.webView.owns(context.getPackageName()))return contextualManager(context,engine.webView.contextResources(context));
         String pkg=context.getPackageName();if(!pkg.equals(engine.packageName)&&!pkg.equals(infrastructurePackage))throw new SecurityException("PACKAGE_CONTEXT_IDENTITY_DENIED");
         Resources view=pkg.equals(engine.packageName)?context.getResources():engine.resources;
-        if(view.getAssets()!=engine.resources.getAssets())throw new SecurityException("PACKAGE_CONTEXT_RESOURCE_ORIGIN_DENIED");
+        if(pkg.equals(engine.packageName))try{
+            dev.tripoder.selfhook.ApplicationAdapter.requireLogicalContext(context);
+            engine.webView.requireGuestResources(view);
+        }catch(SecurityException denied){resourceOriginDenied(context,view);throw denied;}
+        return contextualManager(context,view);
+    }
+    private synchronized PackageManager contextualManager(Context context,Resources view){
+        PackageManager cached=dev.tripoder.selfhook.PackageFrameworkAccess.cached(context);
+        if(cached!=null){
+            dev.tripoder.selfhook.PackageFrameworkAccess.requireContext(cached,context);
+            if(resources.containsKey(cached)){
+                if(dev.tripoder.selfhook.PackageFrameworkAccess.endpoint(cached)!=root){traceEndpoint("CACHED_ENDPOINT_CHANGED",context,cached,null);throw new SecurityException("PACKAGE_CACHED_ENDPOINT_CHANGED");}
+                resources.put(cached,view);return cached;
+            }
+        }
         return manager(context,view);
+    }
+    synchronized void traceEndpoints(String phase){
+        if(!engine.traceStartup||root==null||frameworkContext==null)return;
+        try{traceEndpoint(phase,frameworkContext,dev.tripoder.selfhook.PackageFrameworkAccess.cached(frameworkContext),null);}
+        catch(RuntimeException error){android.util.Log.w("TripoderPackageRelations","STAGE_OBSERVATION_FAILED:"+error.getClass().getName());}
+    }
+    private void traceEndpoint(String phase,Context context,PackageManager manager,Object argument){
+        diagnostics.record(phase,context,manager,root,argument,binder,manager!=null&&resources.containsKey(manager),context==frameworkContext);
+    }
+    private void resourceOriginDenied(Context context,Resources view){
+        if(!engine.traceStartup||!resourceOriginReported.compareAndSet(false,true))return;
+        try{
+            var relations=dev.tripoder.selfhook.ApplicationAdapter.resourceRelations(context,view,engine.resources);
+            relations.put("frozenAssets",engine.resourceAssets.relations(view));
+            PackageManager cached=dev.tripoder.selfhook.PackageFrameworkAccess.cached(context);relations.put("cachedManagerPresent",cached!=null);relations.put("cachedManagerRegistered",cached!=null&&registered(cached));
+            android.util.Log.i("TripoderResourceOrigin",new org.json.JSONObject(relations).toString());
+        }catch(Exception diagnostic){android.util.Log.w("TripoderResourceOrigin","RELATION_DIAGNOSTIC_FAILED:"+diagnostic.getClass().getName());}
     }
     /** Not this guest, the host, or a WebView provider: invisible to the caller, so every query about it answers "absent" in Binder's own terms (null, false, zero). */
     static final class PackageAbsent extends RuntimeException{PackageAbsent(String pkg){super("PACKAGE_ABSENT:"+pkg,null,false,false);}}
@@ -102,22 +137,25 @@ final class RuntimePackages implements InvocationHandler {
         }
         return null;
     }
-    private final Map<String,Integer> guestComponentStates=new HashMap<>();
     int componentEnabled(ComponentName component,int user){
         if(component==null)throw new IllegalArgumentException("COMPONENT_REQUIRED");
         if(engine.webView.owns(component.getPackageName()))return engine.webView.componentEnabled(component,user);
         if(infrastructurePackage!=null&&infrastructurePackage.equals(component.getPackageName()))return PackageManager.COMPONENT_ENABLED_STATE_DEFAULT;
         if(!engine.packageName.equals(component.getPackageName()))throw new PackageAbsent(component.flattenToShortString());
         if(user!=RuntimePackageBridge.userId())throw new SecurityException("PACKAGE_USER_UNSUPPORTED");
-        synchronized(this){return guestComponentStates.getOrDefault(component.getClassName(),PackageManager.COMPONENT_ENABLED_STATE_DEFAULT);}
+        try{android.os.Bundle request=engine.auth();request.putString("kind","get");request.putString("component",component.getClassName());return engine.brokerCall(RuntimeWire.COMPONENT_STATE,request).getInt("state");}
+        catch(RuntimeException error){throw error;}catch(Exception error){throw new IllegalStateException("COMPONENT_SETTINGS_QUERY_FAILED",error);}
     }
     void setComponentEnabled(ComponentName component,int newState,int flags){
         if(component==null||!engine.packageName.equals(component.getPackageName()))throw new SecurityException("COMPONENT_STATE_CHANGE_DENIED:"+component);
-        if(newState<PackageManager.COMPONENT_ENABLED_STATE_DEFAULT||newState>PackageManager.COMPONENT_ENABLED_STATE_DISABLED_UNTIL_USED)throw new IllegalArgumentException("COMPONENT_STATE_INVALID:"+newState);
-        synchronized(this){guestComponentStates.put(component.getClassName(),newState);}
+        // Only DONT_KILL_APP changes what happens to a guest component; SYNCHRONOUS and similar delivery hints are dropped.
+        if((flags&~PackageManager.DONT_KILL_APP)!=0){RuntimeFailThrough.note("component-state-flags","0x"+Integer.toHexString(flags));flags&=PackageManager.DONT_KILL_APP;}
+        if(newState<0||newState>2)throw new IllegalArgumentException("COMPONENT_STATE_INVALID:"+newState);
+        try{android.os.Bundle request=engine.auth();request.putString("kind","set");request.putString("component",component.getClassName());request.putInt("state",newState);request.putInt("flags",flags);request.putString("operation",java.util.UUID.randomUUID().toString());engine.brokerCall(RuntimeWire.COMPONENT_STATE,request);}
+        catch(RuntimeException error){throw error;}catch(Exception error){throw new IllegalStateException("COMPONENT_SETTINGS_WRITE_FAILED",error);}
     }
     @Override public Object invoke(Object proxy,Method method,Object[] input)throws Throwable{
-        try{return dispatch(proxy,method,input);}
+        try{Object result=dispatch(proxy,method,input);diagnostics.query(method,input,result);return result;}
         catch(PackageAbsent|PackageManager.NameNotFoundException absent){
             Class<?> type=method.getReturnType();
             if(type==boolean.class)return false;if(type==int.class)return 0;if(type==long.class)return 0L;
@@ -128,11 +166,13 @@ final class RuntimePackages implements InvocationHandler {
             throw t;
         }
     }
+        /** The interface method set is fixed, so each dispatch key is built once instead of per call. */
+    private static final java.util.concurrent.ConcurrentHashMap<Method,String> KEYS=new java.util.concurrent.ConcurrentHashMap<>();
     private Object dispatch(Object proxy,Method method,Object[] input)throws Throwable{
         Object[] a=input==null?new Object[0]:input;
         if(method.getDeclaringClass()==Object.class){switch(method.getName()){case "toString":return "TripoderPackageEndpoint";case "hashCode":return System.identityHashCode(proxy);case "equals":return proxy==a[0];default:throw new AssertionError(method);}}
-        String key=method.getName()+Arrays.toString(method.getParameterTypes());
-        android.util.Log.i("TripoderPackages","IPM call key="+key+" a="+Arrays.toString(a));
+        String key=KEYS.computeIfAbsent(method,m->m.getName()+Arrays.toString(m.getParameterTypes()));
+        if(android.util.Log.isLoggable("TripoderPackages",android.util.Log.DEBUG))android.util.Log.d("TripoderPackages","IPM call key="+key);
         switch(key){
             case "asBinder[]":return binder();
             case "getPackageInfo[class java.lang.String, long, int]":{
@@ -150,7 +190,6 @@ final class RuntimePackages implements InvocationHandler {
                 user(a[2]);String pkg=(String)a[0];if(engine.webView.owns(pkg))return engine.webView.applicationInfo(pkg,(Long)a[1],(Integer)a[2]);if(infrastructure(pkg))return RuntimePackageBridge.physicalApplicationInfo(pkg,(Long)a[1],(Integer)a[2]);
                 try {
                     ApplicationInfo ai = metadata.getApplicationInfo(pkg,PackageManager.ApplicationInfoFlags.of((Long)a[1]));
-                    android.util.Log.i("TripoderPackages", "getApplicationInfo returned: " + ai + " metaData=" + (ai == null ? "null" : ai.metaData));
                     return ai;
                 } catch (Throwable t) {
                     android.util.Log.w("TripoderPackages", "getApplicationInfo threw", t);
@@ -172,6 +211,7 @@ final class RuntimePackages implements InvocationHandler {
             case "resolveContentProvider[class java.lang.String, long, int]":user(a[2]);return metadata.resolveContentProvider((String)a[0],PackageManager.ComponentInfoFlags.of((Long)a[1]));
             case "hasSystemFeature[class java.lang.String, int]":return RuntimePackageBridge.physicalFeature((String)a[0],(Integer)a[1]);
             case "getSystemAvailableFeatures[]":return RuntimePackageBridge.physicalFeatures();
+            case "getSystemSharedLibraryNames[]":return RuntimePackageBridge.physicalSystemSharedLibraryNames();
             case "getSdkSandboxPackageName[]":return RuntimePackageBridge.physicalSdkSandboxPackageName();
             case "getPermissionControllerPackageName[]":return engine.brokerCall(RuntimeWire.PERMISSION_CONTROLLER,engine.auth()).getString("package");
             case "notifyPackageUse[class java.lang.String, int]":RuntimePackageBridge.notifyWebViewUse((String)a[0],(Integer)a[1]);return null;
@@ -182,15 +222,16 @@ final class RuntimePackages implements InvocationHandler {
             case "getPropertyAsUser[class java.lang.String, class java.lang.String, class java.lang.String, int]":user(a[3]);return null;
             case "queryProperty[class java.lang.String, int]":return null;
             case "getPackagesForUid[int]":
-                if(((Integer)a[0])!=android.os.Process.myUid())throw new UnsupportedOperationException("PACKAGE_UID_UNSUPPORTED");
+                if(((Integer)a[0])!=android.os.Process.myUid()){RuntimeFailThrough.note("package-endpoint","getPackagesForUid:other");return dev.tripoder.selfhook.PackageFrameworkAccess.physicalCall(method,a);}
                 // This endpoint is the platform's IPackageManager, and its callers use the answer as the UID owner
                 // (StorageManager.getVolumeList -> AppOpsManager.checkPackage). A guest name here is a package the
                 // platform has never installed for this UID, so the platform rejects the call. Guest identity belongs
                 // to the guest-visible PackageManager facade; the platform world only ever sees the installed host.
                 return new String[]{engine.host.getPackageName()};
+            // Not translated yet: the platform's endpoint answers for the host package and enforces what an ordinary app may do.
             default:{
-                if(ENDPOINT_MISSES.incrementAndGet()<=12)android.util.Log.w("TripoderPackages","ENDPOINT_UNSUPPORTED key="+key);
-                throw new UnsupportedOperationException("PACKAGE_ENDPOINT_UNSUPPORTED:"+key);
+                RuntimeFailThrough.note("package-endpoint",key);
+                return dev.tripoder.selfhook.PackageFrameworkAccess.physicalCall(method,RuntimeFailThrough.hostIdentity(a));
             }
         }
     }
@@ -199,7 +240,23 @@ final class RuntimePackages implements InvocationHandler {
         if(engine.webView.owns(pkg))return engine.webView.resources(pkg,supplied);
         try{if(infrastructure(pkg))return infrastructureResources;}catch(PackageAbsent absent){throw new Resources.NotFoundException(absent.getMessage());}
         Resources view=resources.get(manager);
-        if(view==null)throw new SecurityException("PACKAGE_RESOURCE_FACADE_UNREGISTERED");return view;
+        if(view==null)throw new SecurityException("PACKAGE_RESOURCE_FACADE_UNREGISTERED");
+        // A caller may retain a facade while its Resources gains a loader. Each
+        // resource read must prove the actual current assets, independently of getPM.
+        try{engine.webView.requireGuestResources(view);}
+        catch(SecurityException denied){heldResourceOriginDenied(manager,view);throw denied;}
+        return view;
+    }
+    private void heldResourceOriginDenied(PackageManager manager,Resources view){
+        if(!engine.traceStartup||!heldResourceOriginReported.compareAndSet(false,true))return;
+        try{
+            var relations=dev.tripoder.selfhook.PackageFrameworkAccess.resourceRelations(manager,view,engine.resources,engine.resourceAssets);
+            relations.put("boundary","HELD_MANAGER_RESOURCE_READ");relations.put("registered",registered(manager));
+            relations.put("endpointCurrent",dev.tripoder.selfhook.PackageFrameworkAccess.endpoint(manager)==root);
+            relations.put("frozenAssets",engine.resourceAssets.relations(view));relations.put("providerAssets",engine.webView.diagnosticAssetRelations(view));
+            relations.put("nativeLabelComparisons",engine.resourceAssets.nativeLabelRelations(view,engine.applicationInfo.sourceDir,engine.info.sourceDir,engine.host.getApplicationInfo().sourceDir));
+            android.util.Log.i("TripoderResourceOrigin",new org.json.JSONObject(relations).toString());
+        }catch(Exception diagnostic){android.util.Log.w("TripoderResourceOrigin","HELD_RELATION_DIAGNOSTIC_FAILED:"+diagnostic.getClass().getName());}
     }
     XmlResourceParser xml(PackageManager manager,String pkg,int id,ApplicationInfo info){try{return resources(manager,pkg,info).getXml(id);}catch(Resources.NotFoundException absent){return null;}}
     CharSequence text(PackageManager manager,String pkg,int id,ApplicationInfo info){try{return resources(manager,pkg,info).getText(id);}catch(Resources.NotFoundException absent){return null;}}
@@ -208,7 +265,9 @@ final class RuntimePackages implements InvocationHandler {
         Endpoint(IInterface root){attachInterface(root,"android.content.pm.IPackageManager");}
         @Override protected boolean onTransact(int code,Parcel data,Parcel reply,int flags)throws RemoteException{
             if(code==INTERFACE_TRANSACTION){if(reply!=null)reply.writeString("android.content.pm.IPackageManager");return true;}
-            throw new UnsupportedOperationException("PACKAGE_RAW_TRANSACTION_UNSUPPORTED:"+code);
+            // A raw parcel cannot be translated; the platform's endpoint answers it for the host package.
+            RuntimeFailThrough.note("package-raw-transaction",Integer.toString(code));
+            return dev.tripoder.selfhook.PackageFrameworkAccess.physicalBinder().transact(code,data,reply,flags);
         }
     }
 }

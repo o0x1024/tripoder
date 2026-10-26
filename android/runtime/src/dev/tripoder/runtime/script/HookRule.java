@@ -14,7 +14,7 @@ public final class HookRule {
         require(symbol!=null&&symbol.matches("[a-zA-Z][a-zA-Z0-9_-]{0,63}"),"HOOK_SYMBOL_ID");
         require(argumentTypes.size()<=16,"HOOK_ARGUMENT_COUNT");
         Set<String> supported=Set.of("boolean","byte","short","int","long","char","float","double","java.lang.String","[B","byte[]","int32","uint32","int64","uint64");
-        require(supported.containsAll(argumentTypes)&&(returnType.equals("void")||supported.contains(returnType)),"HOOK_ABI_UNSUPPORTED");
+        require(argumentTypes.stream().allMatch(t->supported.contains(t)||JavaTypes.valid(t,false))&&(returnType.equals("void")||supported.contains(returnType)||JavaTypes.valid(returnType,true)),"HOOK_ABI_UNSUPPORTED");
         require(replace!=null ? before==null&&after==null : before!=null||after!=null,"HOOK_CONFLICT_OR_EMPTY");
         this.symbol=symbol;this.argumentTypes=List.copyOf(argumentTypes);this.returnType=returnType;
         this.before=before;this.replace=replace;this.after=after;

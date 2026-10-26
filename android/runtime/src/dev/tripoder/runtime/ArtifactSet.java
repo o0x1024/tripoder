@@ -17,7 +17,7 @@ import java.util.*;
 public final class ArtifactSet {
     public static final String DESCRIPTOR="descriptor.json";
     public static final int PLATFORM=37,MAX_PARTS=64;
-    public static final long MAX_APK_BYTES=1024L*1024*1024,MAX_SET_BYTES=2L*1024*1024*1024;
+    public static final long MAX_APK_BYTES=2L*1024*1024*1024,MAX_SET_BYTES=4L*1024*1024*1024;
     public final File directory,base;
     public final String packageName,signerSha,descriptorSha,descriptorJson;
     public final long versionCode;
@@ -31,8 +31,9 @@ public final class ArtifactSet {
         public final List<String[]> data=new ArrayList<>();
         FilterSpec(int priority){this.priority=priority;}
     }
-    /** Intent filters by "type/name". Present only when the descriptor was published with them (the lite descriptor is). */
+    /** One compiled filter projection by "type/name", also carried by the existing lite descriptor. */
     public volatile Map<String,List<FilterSpec>> filterSpecs=Map.of();
+    private boolean filtersPrepared;
     public final List<String> processes,signerDigests;
     public final ApkManifest baseManifest;
 
@@ -119,7 +120,11 @@ public final class ArtifactSet {
                         org.json.JSONArray mChildren=m.getJSONArray("children");
                         for(int j=0;j<mChildren.length();j++){
                             org.json.JSONObject child=mChildren.getJSONObject(j);
-                            if("application".equals(child.optString("name")))child.put("children",new org.json.JSONArray());
+                            if("application".equals(child.optString("name"))){
+                                org.json.JSONArray dependencies=new org.json.JSONArray(),entries=child.getJSONArray("children");
+                                for(int k=0;k<entries.length();k++){var entry=entries.getJSONObject(k);if(Set.of("uses-library","uses-native-library").contains(entry.optString("name")))dependencies.put(entry);}
+                                child.put("children",dependencies);
+                            }
                         }
                     }
                 }
@@ -188,10 +193,24 @@ public final class ArtifactSet {
     }
     /** Resolve the same sealed manifest declarations for authority routing and worker descriptor publication. */
     static List<FilterSpec> manifestFilters(ApkManifest.Component component){
+        return manifestFilters(component,null);
+    }
+    private static List<FilterSpec> manifestFilters(ApkManifest.Component component,java.util.function.IntUnaryOperator integers){
         List<FilterSpec> specs=new ArrayList<>();
         for(ApkManifest.Element element:component.declaration.children){
             if(!element.name.equals("intent-filter"))continue;
-            int priority=0;try{priority=Integer.parseInt(element.android("priority","0"));}catch(NumberFormatException ignored){}
+            // Binary XML INT values retain their unsigned 32-bit spelling in
+            // the manifest tree. IntentFilter.priority interprets those same
+            // bits as signed (for example 4294967291 is -5).
+            String raw=element.android("priority","0");int priority;
+            if(raw.matches("@0x[0-9a-fA-F]{1,8}")){
+                if(integers==null)throw ApkManifest.bad("MANIFEST_FILTER_PRIORITY_RESOURCES_REQUIRED");
+                priority=integers.applyAsInt(Integer.parseUnsignedInt(raw.substring(3),16));
+            }else{
+                long encoded=ApkManifest.number(raw);
+                if(encoded<Integer.MIN_VALUE||encoded>0xffffffffL)throw ApkManifest.bad("MANIFEST_FILTER_PRIORITY_RANGE");
+                priority=(int)encoded;
+            }
             FilterSpec spec=new FilterSpec(priority);
             for(ApkManifest.Element child:element.children){
                 String value=child.android("name","");
@@ -207,13 +226,28 @@ public final class ArtifactSet {
         }
         return specs;
     }
+    /** Complete publication only; a failed resource lookup leaves no partial projection. */
+    synchronized void prepareFilters(java.util.function.IntUnaryOperator integers){
+        if(filtersPrepared)return;
+        Map<String,List<FilterSpec>> compiled=new LinkedHashMap<>();
+        for(ApkManifest.Component component:components){String key=component.type+"/"+component.name;
+            if(!compiled.containsKey(key))compiled.put(key,List.copyOf(manifestFilters(component,integers)));
+        }
+        filterSpecs=Collections.unmodifiableMap(compiled);filtersPrepared=true;
+    }
+    synchronized List<FilterSpec> filters(ApkManifest.Component component){
+        // Literal-only artifacts need no Android Resources. References require
+        // the authority's SDK projection before a selector or lite publication.
+        if(!filtersPrepared)prepareFilters(null);
+        return filterSpecs.getOrDefault(component.type+"/"+component.name,List.of());
+    }
     /** The intent-filters of every component, taken from the full manifest tree (which only the authority has) for the lite descriptor. */
     private org.json.JSONArray filtersJson()throws Exception{
         org.json.JSONArray all=new org.json.JSONArray();Set<String> seen=new HashSet<>();
-        for(Part part:parts)for(ApkManifest.Component component:part.manifest.components){
+        for(ApkManifest.Component component:components){
             if(!seen.add(component.type+"/"+component.name))continue;
             org.json.JSONArray filters=new org.json.JSONArray();
-            for(FilterSpec spec:manifestFilters(component)){
+            for(FilterSpec spec:filters(component)){
                 org.json.JSONArray data=new org.json.JSONArray();
                 for(String[] values:spec.data){org.json.JSONArray row=new org.json.JSONArray();for(String value:values)row.put(value==null?org.json.JSONObject.NULL:value);data.put(row);}
                 filters.put(new org.json.JSONObject().put("p",spec.priority).put("a",new org.json.JSONArray(spec.actions)).put("c",new org.json.JSONArray(spec.categories)).put("d",data));
@@ -223,7 +257,7 @@ public final class ArtifactSet {
         return all;
     }
     private static ArtifactSet parse(Path root,String rawJson,String descriptorSha)throws Exception{
-        Map<String,List<FilterSpec>> filters=Map.of();
+        Map<String,List<FilterSpec>> filters=Map.of();boolean projected=false;
         int schema=-1,platform=-1;String abi=null,topPkg=null,topSignerSha=null;long topVersion=-1;
         List<String> signers=new ArrayList<>();List<Part> parts=new ArrayList<>();List<FileRecord> nativeFiles=new ArrayList<>(),dexFiles=new ArrayList<>();List<ApkManifest.Component> components=new ArrayList<>();List<String> processes=new ArrayList<>();
         try(android.util.JsonReader r=new android.util.JsonReader(new StringReader(rawJson))){
@@ -319,7 +353,7 @@ public final class ArtifactSet {
                         r.endArray();
                     }
                     case "processes"->{r.beginArray();while(r.hasNext())processes.add(r.nextString());r.endArray();}
-                    case "filters"->filters=readFilters(r);
+                    case "filters"->{filters=readFilters(r);projected=true;}
                     default->r.skipValue();
                 }
             }
@@ -327,12 +361,14 @@ public final class ArtifactSet {
         }
         if(schema!=1||platform!=PLATFORM||!"arm64-v8a".equals(abi)||parts.isEmpty())throw reject("DESCRIPTOR_CONTENT_MISMATCH");
         for(int i=0;i<parts.size();i++){Part p=parts.get(i);parts.set(i,new Part(p.file,p.path,p.sha256,p.size,p.manifest,p.entries,signers));}
-        ArtifactSet set=new ArtifactSet(root.toFile(),rawJson,descriptorSha,parts,nativeFiles,dexFiles,components,processes);set.filterSpecs=filters;
+        ArtifactSet set=new ArtifactSet(root.toFile(),rawJson,descriptorSha,parts,nativeFiles,dexFiles,components,processes);set.filterSpecs=filters;set.filtersPrepared=projected;
         if(!set.packageName.equals(topPkg)||set.versionCode!=topVersion||!set.signerSha.equals(topSignerSha))throw reject("DESCRIPTOR_CONTENT_MISMATCH");
         return set;
     }
     private static ArtifactSet finishLoad(Path root,ArtifactSet set)throws Exception{
-        Set<String> expected=new TreeSet<>();expected.add(DESCRIPTOR);expected.add("lib");if(set.files.stream().anyMatch(f->f.path.startsWith("dex/")))expected.add("dex");for(FileRecord r:set.files)expected.add(r.path);Set<String> actual=new TreeSet<>();
+        // materialize publishes both directories even for a resource-only APK.
+        // Keep the worker view identical to the full publication verifier.
+        Set<String> expected=new TreeSet<>();expected.add(DESCRIPTOR);expected.add("lib");expected.add("dex");for(FileRecord r:set.files)expected.add(r.path);Set<String> actual=new TreeSet<>();
         try(var walk=Files.walk(root)){for(Iterator<Path> it=walk.iterator();it.hasNext();){Path path=it.next();if(path.equals(root))continue;String relative=root.relativize(path).toString().replace(File.separatorChar,'/');if(Files.isSymbolicLink(path))throw reject("ARTIFACT_SYMLINK");if(derivedOptimization(relative))continue;actual.add(relative);if(relative.equals("lib")||relative.equals("dex")){if(!Files.isDirectory(path,LinkOption.NOFOLLOW_LINKS))throw reject("LIB_DIRECTORY_INVALID");}else regular(path);readonly(path);}}
         if(!actual.equals(expected))throw reject("ARTIFACT_FILE_SET_MISMATCH");readonly(root);
         for(FileRecord r:set.files){Path path=root.resolve(r.path);if(Files.size(path)!=r.size)throw reject("ARTIFACT_FILE_CORRUPT:"+r.path);}
@@ -368,7 +404,7 @@ public final class ArtifactSet {
             ApkManifest manifest=ApkManifest.parse(scan.manifests.get("AndroidManifest.xml"),new ArscValues(file.toFile()));Part part=new Part(file.toFile(),scan,manifest,signers);if(bySplit.put(manifest.splitName,part)!=null)throw reject("DUPLICATE_SPLIT");
         }
         Part base=bySplit.get("");if(base==null)throw reject("BASE_MISSING");
-        if(base.manifest.featureSplit||!base.manifest.configForSplit.isEmpty()||!base.manifest.usesSplits.isEmpty())throw reject("BASE_DEPENDENCY_INVALID");
+        if(base.manifest.featureSplit||!base.manifest.configForSplit.isEmpty())throw reject("BASE_DEPENDENCY_INVALID");
         Set<String> providedTypes=new HashSet<>();for(Part p:bySplit.values())providedTypes.addAll(p.manifest.splitTypes);
         List<Part> ordered=new ArrayList<>();Set<String> done=new HashSet<>(),visiting=new HashSet<>();
         for(Part p:bySplit.values()){
@@ -393,12 +429,22 @@ public final class ArtifactSet {
                 ApkManifest.Component prior=componentNames.putIfAbsent(c.type+":"+c.name,c);
                 if(prior!=null){
                     if(prior.json().equals(c.json()))continue; // Raw declarations remain in each signed manifest.
-                    if(!c.type.equals("provider"))throw reject("COMPONENT_COLLISION");
+                    if(!c.type.equals("provider")){
+                        // ComponentResolver indexes the last declaration by component
+                        // name, while registering filters from every declaration.
+                        List<ApkManifest.Element> children=new ArrayList<>();
+                        for(var child:prior.declaration.children)if(child.name.equals("intent-filter"))children.add(child);
+                        children.addAll(c.declaration.children);
+                        var declaration=new ApkManifest.Element(c.declaration.name,c.declaration.namespace,c.declaration.attributes,children);
+                        c=new ApkManifest.Component(declaration,base.manifest,effectiveApp);
+                        components.set(components.indexOf(prior),c);componentNames.put(c.type+":"+c.name,c);continue;
+                    }
                     // Preserve all distinct Provider declarations for authority resolution.
                     // The process publication layer must validate its supported identity model.
                 }
-                components.add(c);processes.add(c.process);
+                components.add(c);
             }}
+        for(var c:components)processes.add(c.process);
         Set<String> activities=new HashSet<>();for(ApkManifest.Component c:components)if(c.type.equals("activity"))activities.add(c.name);
         for(ApkManifest.Component c:components)if(c.type.equals("activity-alias")&&!activities.contains(c.targetActivity))throw reject("ALIAS_TARGET_MISSING");
         for(Part p:ordered)for(ApkManifest.Element group:p.manifest.application.children)if(group.name.equals("processes"))for(ApkManifest.Element process:group.children)if(process.name.equals("process"))processes.add(ApkManifest.processName(base.manifest.packageName,ApkManifest.text(process.android("name",null),"PROCESS")));
@@ -407,7 +453,9 @@ public final class ArtifactSet {
     }
     private static void visit(Part p,Map<String,Part> all,Set<String> done,Set<String> visiting,List<Part> ordered)throws IOException{
         String n=p.manifest.splitName;if(done.contains(n))return;if(!visiting.add(n))throw reject("SPLIT_DEPENDENCY_CYCLE");
-        List<String> deps=new ArrayList<>(p.manifest.usesSplits);if(!n.isEmpty())deps.add("");if(!p.manifest.configForSplit.isEmpty())deps.add(p.manifest.configForSplit.equals("base")?"":p.manifest.configForSplit);
+        // Android's dependency graph gives base index 0 no parent. uses-split
+        // dependency edges belong to feature splits, never to the base APK.
+        List<String> deps=new ArrayList<>(n.isEmpty()?List.of():p.manifest.usesSplits);if(!n.isEmpty())deps.add("");if(!p.manifest.configForSplit.isEmpty())deps.add(p.manifest.configForSplit.equals("base")?"":p.manifest.configForSplit);
         for(String dep:deps){Part target=all.get(dep);if(target==null)throw reject("SPLIT_DEPENDENCY_MISSING:"+dep);if(!dep.isEmpty()&&!target.manifest.featureSplit)throw reject("SPLIT_DEPENDENCY_NOT_FEATURE");visit(target,all,done,visiting,ordered);}
         visiting.remove(n);done.add(n);ordered.add(p);
     }

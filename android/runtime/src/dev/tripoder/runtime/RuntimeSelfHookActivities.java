@@ -11,17 +11,19 @@ import java.util.*;
  * Permit and Engine ledgers; this class only owns exact interceptor bindings. */
 final class RuntimeSelfHookActivities {
     private static final RuntimeSelfHookActivities PROCESS=new RuntimeSelfHookActivities();
-    private final Set<Method> instrumentations=new HashSet<>();
+    private final Set<Class<?>> instrumentations=Collections.newSetFromMap(new IdentityHashMap<>());
     private RuntimeSelfHookActivities(){}
     private RuntimeManagedInstaller installer;
-    private static final Class<?>[] NEW_ACTIVITY={ClassLoader.class,String.class,Intent.class};
     static void creation(RuntimeManagedInstaller installer)throws Exception{
         RuntimeSelfHookActivities value=PROCESS;if(value.installer!=null)throw new IllegalStateException("ACTIVITY_CREATION_INSTALL_ALREADY_ATTEMPTED");value.installer=installer;
         Map<Executable,RuntimeManagedInstaller.Callback> callbacks=new LinkedHashMap<>();
         for(Executable target:FixedRuntimeHooks.methods(FixedRuntimeHooks.Group.ACTIVITY_CREATION)){
             if(target instanceof Constructor<?>)callbacks.put(target,(receiver,args,original)->{Object result=original.call(args);value.enroll((Instrumentation)receiver);return result;});
             else switch(target.getName()){
-                case "newActivity":{Method method=(Method)target;callbacks.put(target,value.newActivity(method));value.instrumentations.add(method);break;}
+                case "preExecute":callbacks.put(target,(receiver,args,original)->{
+                    prepareDelivery(receiver,args[0]);return original.call(args);
+                });break;
+                case "newActivity":{Method method=(Method)target;callbacks.put(target,value.newActivity(method));value.instrumentations.add(method.getDeclaringClass());break;}
                 case "performLaunchActivity":callbacks.put(target,(receiver,args,original)->{
                     Intent physical=ActivityFrameworkAccess.recordIntent(args[0]);
                     if(RuntimeActivityCreation.physical(physical)){
@@ -58,6 +60,7 @@ final class RuntimeSelfHookActivities {
                             Bundle restored=ActivityFrameworkAccess.recordState(args[0]);
                             if(restored!=null)restored.setClassLoader(permit.loader());
                         }
+                        RuntimeEngine engine=RuntimeEngine.current;if(engine!=null)engine.packages.traceEndpoints("BEFORE_FRAMEWORK_ACTIVITY_CREATE");
                         Object result=original.call(args);
                         if(result instanceof Activity&&RuntimeBridge.owns((Activity)result))RuntimeEngine.current.activityCreated((Activity)result);
                         return result;
@@ -77,10 +80,34 @@ final class RuntimeSelfHookActivities {
         }
         installer.install(callbacks);value.enroll(ActivityFrameworkAccess.instrumentation());
     }
+    /** Android calls this on its scheduling thread before the guest Handler
+     * callback can inspect the transaction. No creation permit or guest code is
+     * entered here; the later factory claim still owns admission. */
+    private static void prepareDelivery(Object item,Object client)throws Exception{
+        RuntimeEngine engine=RuntimeEngine.current;if(engine==null)return;
+        Intent physical=ActivityFrameworkAccess.launchIntent(item);
+        if(!RuntimeActivityCreation.physical(physical))return;
+        if(!ActivityFrameworkAccess.physicalClient(client))throw new SecurityException("ACTIVITY_CONSTRUCTION_CLIENT_MISMATCH");
+        Bundle view=engine.brokerCall(RuntimeWire.ACTIVITY_RECORD,RuntimeActivityConstruction.request(engine.generation,physical,engine.guestLoader()));
+        String stub=RuntimeWire.required(view,"stub");
+        if(!new ComponentName(engine.host,stub).equals(physical.getComponent()))throw new SecurityException("ACTIVITY_CONSTRUCTION_STUB_MISMATCH");
+        // Revocation has a terminal host path in the subsequent factory. It
+        // grants no guest construction metadata and is never acknowledged here.
+        if(view.getBoolean("closed"))return;
+        String target=RuntimeWire.required(view,"constructionTarget");
+        ActivityInfo projected=RuntimeActivityConstructionInfo.project(ActivityFrameworkAccess.launchInfo(item),engine.host.getPackageName(),android.os.Process.myUid(),stub,target);
+        ActivityFrameworkAccess.launchInfo(item,projected);
+        android.util.Log.i("TripoderActivityDelivery","constructionTarget="+target+";logicalAlias="+!target.equals(RuntimeWire.required(view,"component")));
+    }
     private synchronized void enroll(Instrumentation instrumentation)throws Exception{
-        Method method=instrumentation.getClass().getMethod("newActivity",NEW_ACTIVITY);if(instrumentations.contains(method))return;
+        Method method=RuntimeInstrumentationMethods.construction(instrumentation.getClass());if(instrumentations.contains(method.getDeclaringClass()))return;
         if(instrumentations.size()>=64)throw new IllegalStateException("INSTRUMENTATION_CLASS_LIMIT");
-        installer.install(Map.of(method,newActivity(method)));instrumentations.add(method);
+        // The permanent performLaunchActivity backup is interpreted. Its exact
+        // virtual descriptor enters this method, including a covariant bridge;
+        // late guest callbacks use the existing lifecycle publication policy.
+        long started=android.os.SystemClock.elapsedRealtimeNanos();
+        installer.installLifecycle(Map.of(method,newActivity(method)));instrumentations.add(method.getDeclaringClass());
+        android.util.Log.i("TripoderInstrumentation","owner="+method.getDeclaringClass().getName()+";elapsedNs="+(android.os.SystemClock.elapsedRealtimeNanos()-started));
     }
     private RuntimeManagedInstaller.Callback newActivity(Method target){return (receiver,args,original)->{
         RuntimeActivityCreation.Permit permit=RuntimeActivityCreation.current();
@@ -94,7 +121,12 @@ final class RuntimeSelfHookActivities {
         if(permit.rejected())return RuntimeActivityCreation.constructRejected((Intent)args[2]);
         boolean base=target.getDeclaringClass()==Instrumentation.class;
         if(permit.constructing())return base?RuntimeActivityCreation.constructDefault((Instrumentation)receiver,(ClassLoader)args[0],(String)args[1],(Intent)args[2]):original.call(args);
-        permit.requireArguments((String)args[1],(Intent)args[2]);permit.enter();
+        try{permit.requireArguments((String)args[1],(Intent)args[2]);}
+        catch(SecurityException rejected){
+            if("ACTIVITY_CREATION_ARGUMENTS_MISMATCH".equals(rejected.getMessage()))permit.rejectedArguments(target,receiver,(ClassLoader)args[0],(String)args[1],(Intent)args[2]);
+            throw rejected;
+        }
+        permit.enter();
         Activity result=base?RuntimeActivityCreation.constructDefault((Instrumentation)receiver,permit.loader(),permit.name(),permit.intent())
             :(Activity)original.call(permit.loader(),permit.name(),permit.intent());return permit.complete(result);
     };}
@@ -105,7 +137,12 @@ final class RuntimeSelfHookActivities {
     }
     static void attach(Activity activity){
         if(!RuntimeBridge.owns(activity))throw new SecurityException("NOT_GUEST_ACTIVITY");RuntimeBridge.requireActivityContext(activity.getBaseContext());
-        ActivityFrameworkAccess.apply(activity,RuntimeBridge.resources(),RuntimeBridge.application(),RuntimeBridge.intent(activity),RuntimeBridge.activityInfo(activity),RuntimeBridge.theme(activity));
+        // attachBaseContext may install the application's own resource wrapper
+        // (e.g. packed XML decoding). ContextThemeWrapper caches that context's
+        // resources; replacing them with the engine root erases guest behavior.
+        android.content.res.Resources resources=java.util.Objects.requireNonNull(activity.getBaseContext().getResources(),"ACTIVITY_CONTEXT_RESOURCES_REQUIRED");
+        android.util.Log.i("TripoderResources","activity="+activity.getClass().getName()+";base="+activity.getBaseContext().getClass().getName()+";resources="+resources.getClass().getName());
+        ActivityFrameworkAccess.apply(activity,resources,RuntimeBridge.application(),RuntimeBridge.intent(activity),RuntimeBridge.activityInfo(activity),RuntimeBridge.theme(activity));
     }
     static void delivery(RuntimeManagedInstaller installer)throws Exception{
         Map<Executable,RuntimeManagedInstaller.Callback> callbacks=new LinkedHashMap<>();
@@ -160,7 +197,7 @@ final class RuntimeSelfHookActivities {
                 return original.call(args);
             }
             Activity activity=(Activity)receiver;
-            if(name.equals("finish")){if(activity.getClass()==RuntimeRejectedActivity.class)return original.call(args);if(!RuntimeBridge.owns(activity))throw new SecurityException("RESULT_CALLER_UNSUPPORTED");RuntimeBridge.returning(activity,ActivityFrameworkAccess.resultCode(activity),ActivityFrameworkAccess.resultData(activity));return original.call(args);}
+            if(name.equals("finish")){if(activity.getClass()==RuntimeRejectedActivity.class)return original.call(args);if(!RuntimeBridge.owns(activity)){if(activity.isDestroyed())return original.call(args);throw new SecurityException("RESULT_CALLER_UNSUPPORTED");}RuntimeBridge.returning(activity,ActivityFrameworkAccess.resultCode(activity),ActivityFrameworkAccess.resultData(activity));return original.call(args);}
             String operation=RuntimeBridge.receiving(activity,(Integer)args[1],(Integer)args[2],(ComponentCaller)args[4]);boolean success=false;Throwable failure=null;
             try{
                 // Unparcel application-defined results in the admitted receiver's current

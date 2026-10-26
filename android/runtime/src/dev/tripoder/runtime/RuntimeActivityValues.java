@@ -7,7 +7,7 @@ import java.nio.*;
 import java.nio.charset.*;
 import java.util.*;
 
-/** Canonical, bounded data values. No Binder/FD extras, arbitrary Serializable or guest Parcelable authority. */
+/** Canonical, bounded data values. Binder authority travels only as an existing owned PendingIntent. */
 final class RuntimeActivityValues {
     static final int MAX_BYTES=48*1024;
     static void extras(DataOutputStream out,Bundle extras)throws IOException{bundle(out,extras,0,new int[]{0,0},Collections.newSetFromMap(new IdentityHashMap<>()));}
@@ -50,6 +50,17 @@ final class RuntimeActivityValues {
             try{ArrayList<?> items=(ArrayList<?>)value;out.writeByte(20);size(out,items.size());for(Object item:items)value(out,item,depth+1,count,path);}finally{path.remove(value);}
         }
         else if(value.getClass()==Intent.class){out.writeByte(21);intent(out,(Intent)value,depth+1,count,path);}
+        else if(value instanceof android.app.PendingIntent){
+            // Parcel cloning retains the real Binder token. Seal its durable authority
+            // identity rather than process-local Binder handles or marshalled Parcel bytes.
+            RuntimeEngine engine=RuntimeEngine.current;
+            if(engine==null)throw new SecurityException("ACTIVITY_PENDING_OWNER_MISSING");
+            Bundle token;
+            try{token=engine.pendingIntents.view((android.app.PendingIntent)value);}
+            catch(Exception error){throw new IOException("ACTIVITY_PENDING_IDENTITY_UNPROVEN",error);}
+            if(token==null)throw new SecurityException("ACTIVITY_PENDING_OUTSIDE_INSTALL");
+            out.writeByte(23);text(out,RuntimeWire.required(token,"version"));
+        }
         else if(value instanceof android.os.Parcelable&&guestOwned(value.getClass())){
             // A Parcelable defined by this package's own loader is application data, not authority: it travels only to components of the same
             // package. Its exact Parcel bytes join the sealed digest; descriptors never do, and the receiver re-creates it with its own loader.

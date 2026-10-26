@@ -46,6 +46,20 @@ static _Atomic uint64_t owner_comparisons,owner_lookup_ns;
 static bool attempted;
 static _Atomic bool bound;
 static const char *stage="NOT_STARTED";
+/* Only code metadata; captured before any rejection and formatted after the
+ * existing mutator scopes have resumed. Never dump the entire root table into
+ * an exception: logd can otherwise discard the causal Java frames. */
+static jint preparation_index=-1;
+static uint32_t preparation_flags;
+static bool preparation_data;
+JNIEXPORT jint JNICALL Java_dev_tripoder_selfhook_OriginalMethodStorage_preparationFailureIndexNative(JNIEnv *env,jclass cls){
+    (void)env;(void)cls;return preparation_index;
+}
+JNIEXPORT jstring JNICALL Java_dev_tripoder_selfhook_OriginalMethodStorage_preparationFailureNative(JNIEnv *env,jclass cls){
+    (void)cls;char output[256];
+    snprintf(output,sizeof(output),"stage=%s;batchIndex=%d;allocations=%u;flags=0x%x;hasData=%s",stage,preparation_index,atomic_load(&used),preparation_flags,preparation_data?"true":"false");
+    return (*env)->NewStringUTF(env,output);
+}
 static void fatal(const char *reason){android_set_abort_message(reason);abort();}
 static jobject root(JNIEnv *env,jobject local){return local?(*env)->NewGlobalRef(env,local):NULL;}
 static uintptr_t read_root(const uint32_t *value){
@@ -77,7 +91,7 @@ static jint find_owner_fast(JNIEnv *env,jclass unused,jclass owner){
 }
 JNIEXPORT jstring JNICALL Java_dev_tripoder_selfhook_OriginalMethodStorage_preparationMetrics(JNIEnv *env,jclass cls){
     (void)cls;uint64_t calls=0,ns=0;tp_art_mapping_metrics(&calls,&ns);char output[256];
-    snprintf(output,sizeof(output),"{\"mappingCalls\":%llu,\"mappingNs\":%llu,\"ownerComparisons\":%llu,\"ownerLookupNs\":%llu}",(unsigned long long)calls,(unsigned long long)ns,(unsigned long long)atomic_load(&owner_comparisons),(unsigned long long)atomic_load(&owner_lookup_ns));
+    snprintf(output,sizeof(output),"{\"refreshes\":%llu,\"mappingCalls\":%llu,\"mappingNs\":%llu,\"ownerComparisons\":%llu,\"ownerLookupNs\":%llu}",(unsigned long long)tp_art_refresh_count(),(unsigned long long)calls,(unsigned long long)ns,(unsigned long long)atomic_load(&owner_comparisons),(unsigned long long)atomic_load(&owner_lookup_ns));
     return (*env)->NewStringUTF(env,output);
 }
 static void *cached_loader_field, *cached_dex_cache_field;
@@ -152,6 +166,7 @@ static jboolean allocate_fast(JNIEnv *env,jclass unused,jint index){
 }
 
 JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_OriginalMethodStorage_bindNative(JNIEnv *env,jclass cls,jobject allocator,jobject owner_lookup){
+    TP_ART_MAPS_SCOPE;
     if(attempted)return JNI_FALSE;
     attempted=true;
     stage="STORAGE_ART_CONTRACT";
@@ -212,14 +227,20 @@ static bool rooted(struct storage_slot *s,void *thread){
 }
 JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_OriginalMethodStorage_prepareNative(JNIEnv *env,jclass cls,
     jobject target,jclass owner,jstring shorty){
+    preparation_index=0;preparation_flags=0;preparation_data=false;stage="STORAGE_INPUT";
     if(!atomic_load(&bound)||used==TP_MANAGED_ENTRY_LIMIT||!target||!owner)return JNI_FALSE;
     uintptr_t target_address;struct tp_art_method_view before;
-    if(!tp_art_method_observe(env,target,&target_address,&before)||(before.flags&0x80000400)!=0||!before.data)return JNI_FALSE;
+    stage="TARGET_OBSERVATION";
+    if(!tp_art_method_observe(env,target,&target_address,&before))return JNI_FALSE;
+    preparation_flags=before.flags;preparation_data=before.data!=0;stage="TARGET_METHOD_SHAPE";
+    if((before.flags&0x80000400)!=0||!before.data)return JNI_FALSE;
     // ArtMethods are stable LinearAlloc metadata, retained by each slot's
     // Method/Class/loader roots. Compare metadata identity without per-slot
     // Native→Runnable JNI transitions. Heap Class equality uses the FastNative
     // helper above, where JNI's own read barriers retain exact identity.
+    stage="TARGET_ALREADY_STORED";
     for(unsigned i=0;i<used;i++)if((uintptr_t)slots[i].target==target_address)return JNI_FALSE;
+    stage="OWNER_LOOKUP";
     jint previous_index=(*env)->CallStaticIntMethod(env,cls,fast_owner,owner);
     if((*env)->ExceptionCheck(env)||previous_index< -1||(unsigned)(previous_index+1)>used)return JNI_FALSE;
     struct storage_slot *previous=previous_index<0?NULL:&slots[previous_index];
@@ -268,6 +289,7 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_OriginalMethodStorage_prep
 }
 JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_OriginalMethodStorage_prepareBatchNative(JNIEnv *env,jclass cls,
     jobjectArray targets,jobjectArray owners,jobjectArray shorties){
+    preparation_index=-1;preparation_flags=0;preparation_data=false;stage="BATCH_INPUT";
     if(!atomic_load(&bound)||!targets||!owners||!shorties)return JNI_FALSE;
     jsize count=(*env)->GetArrayLength(env,targets);
     if(count<1||(unsigned)count>TP_MANAGED_ENTRY_LIMIT-used
@@ -277,15 +299,18 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_OriginalMethodStorage_prep
     static uintptr_t batch_native_originals[TP_MANAGED_ENTRY_LIMIT];
     static bool batch_new_owner[TP_MANAGED_ENTRY_LIMIT];
     for(jsize k=0;k<count;k++){
+        preparation_index=k;stage="TARGET_ADDRESS";
         jobject target=(*env)->GetObjectArrayElement(env,targets,k);
         uintptr_t addr=target?tp_art_method_address(env,target):0;
         (*env)->DeleteLocalRef(env,target);
         if(!addr)return JNI_FALSE;
+        stage="TARGET_ALREADY_STORED";
         for(unsigned i=0;i<used;i++)if((uintptr_t)slots[i].target==addr)return JNI_FALSE;
+        stage="DUPLICATE_BATCH_TARGET";
         for(jsize j=0;j<k;j++)if(batch_addresses[j]==addr)return JNI_FALSE;
         batch_addresses[k]=addr;
     }
-    if(art.access.current()==NULL)return JNI_FALSE;
+    stage="CURRENT_THREAD";if(art.access.current()==NULL)return JNI_FALSE;
     char obs_scope=0;
     art.access.suspend(&obs_scope,"tripoder-owned-method-batch-snapshot",false);
     for(jsize k=0;k<count;k++){
@@ -294,18 +319,24 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_OriginalMethodStorage_prep
         memcpy(&batch_before[k],words,sizeof(words));
     }
     art.access.resume(&obs_scope);
-    for(jsize k=0;k<count;k++)if((batch_before[k].flags&0x80000400)!=0||!batch_before[k].data)return JNI_FALSE;
+    for(jsize k=0;k<count;k++){
+        preparation_index=k;preparation_flags=batch_before[k].flags;preparation_data=batch_before[k].data!=0;stage="TARGET_METHOD_SHAPE";
+        if((batch_before[k].flags&0x80000400)!=0||!batch_before[k].data)return JNI_FALSE;
+    }
+    stage="METADATA_CLASSES";
     jclass cache_class=(*env)->FindClass(env,"java/lang/DexCache"),object_class=(*env)->FindClass(env,"java/lang/Object");
     if(!cache_class||!object_class)return JNI_FALSE;
     unsigned first=used;
     unsigned prev_unique_owners=unique_owner_count;
     bool alloc_ok=true;
     for(jsize k=0;k<count;k++){
+        preparation_index=k;stage="BATCH_TARGET_ROOTS";
+        preparation_flags=batch_before[k].flags;preparation_data=batch_before[k].data!=0;
         jobject target=(*env)->GetObjectArrayElement(env,targets,k);
         jclass owner=(*env)->GetObjectArrayElement(env,owners,k);
         jstring shorty=(*env)->GetObjectArrayElement(env,shorties,k);
         if(!target||!owner||!shorty){alloc_ok=false;break;}
-        jint previous_index=(*env)->CallStaticIntMethod(env,cls,fast_owner,owner);
+        stage="OWNER_LOOKUP";jint previous_index=(*env)->CallStaticIntMethod(env,cls,fast_owner,owner);
         if((*env)->ExceptionCheck(env)||previous_index< -1||(unsigned)(previous_index+1)>used){alloc_ok=false;break;}
         struct storage_slot *previous=previous_index<0?NULL:&slots[previous_index];
         unsigned index=used++;

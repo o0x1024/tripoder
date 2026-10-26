@@ -61,4 +61,28 @@ for(const [name,args,valid] of [
 ]){
  const migration=referenceMigrations[name];cases.push({name:migration?.tool??name,args:{...args,...(migration?.action?{action:migration.action}:{})},valid});
 }
+
+
+// Objects are Hook references, never external invocation JSON values.
+const install={space:'space-a',package:'owned.app',installGeneration:'install-a'};
+const startup=(types,enabled=true)=>({action:'configure',operationId:'object-plan',target:install,expectedRevision:'',configuration:{enabled,startupHook:{selectors:[{id:'objects',kind:'java',className:'owned.Probe',methodName:'call',argumentTypes:types}],source:'export default {};'}}});
+for(const types of [['java.lang.Thread','java.lang.Throwable'],['android.content.Context'],['[Ljava.lang.Object;','[I'],['a','[La;'],['包.对象','[L包.对象;']])cases.push({name:'probes_control',args:startup(types),valid:true});
+for(const types of [['void'],['Ljava/lang/Throwable;'],['java.lang.Throwable[]'],['java.lang.Throwable<script>']])cases.push({name:'probes_control',args:startup(types),valid:false});
+cases.push({name:'probes_control',args:startup(['java.lang.Throwable'],false),valid:false});
+cases.push({name:'guest_invoke',args:scoped('invocation',{className:'owned.Probe',methodName:'call',argumentTypes:['java.lang.Throwable'],arguments:[null]}),valid:false});
+cases.push({name:'application_query',args:{action:'manifest',target:install},valid:true});
+cases.push({name:'application_query',args:{action:'manifest',target},valid:false});
+cases.push({name:'process_inspect',args:{action:'manifest',target},valid:false});
+cases.push({name:'process_inspect',args:{action:'storage',target},valid:false});
+
+
+
+for(const url of ['https://example.com/%zz','https://example.com:99999/','https://user@example.com/','https://example.com/#','https://example.com/中文'])cases.push({name:'http_send_request',args:scoped('request',{method:'GET',url}),valid:false});
+for(const value of ['bad\r\nvalue','bad\nsecond\n','bad\u0000value'])cases.push({name:'http_send_request',args:scoped('request',{method:'GET',url:'https://example.com/',headers:{'X-Probe':value}}),valid:false});
+cases.push({name:'http_send_request',args:scoped('request',{method:'GET',url:'https://example.com/',body:'ignored'}),valid:false});
+
+
+cases.push({name:'artifact_query',args:{action:'read',processGeneration:'process-a',artifactId:'artifact-a',offset:4294967296,length:1},valid:false});
+cases.push({name:'file_query',args:{action:'manifest',exportId:'export-a',cursor:4294967296,limit:16},valid:false});
+cases.push({name:'events_query',args:{action:'hook',target,sinceSeq:9007199254740992},valid:false});
 if(process.argv[1]&&import.meta.url===new URL(process.argv[1],'file:').href)await writeFile(process.argv[2],JSON.stringify(cases));

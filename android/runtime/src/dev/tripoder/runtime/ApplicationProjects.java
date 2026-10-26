@@ -46,7 +46,9 @@ public final class ApplicationProjects {
         // A real target request verifies only its own APK, outside the metadata lock.
         return new ProjectTargetBindings(broker).resolveBinding(target.getString("project"),target.getString("bindingOperation"));
     }
-    private Bundle targetMetadata(String space,String pkg,String generation)throws Exception{
+    /** The application a project id names, or null. */
+    String packageOf(String project){synchronized(broker){try(var c=broker.store.getReadableDatabase().rawQuery("SELECT package FROM application_projects WHERE id=?",new String[]{project})){return c.moveToFirst()?c.getString(0):null;}}}
+    Bundle targetMetadata(String space,String pkg,String generation)throws Exception{
         RuntimeFiles.id(space);RuntimeFiles.id(pkg);RuntimeFiles.id(generation);
         String project;synchronized(broker){var install=broker.apks.row(space,pkg);if(install==null||!"COMMITTED".equals(install.state)||!generation.equals(install.generation))throw new IllegalStateException("INSTALL_GENERATION_CONFLICT");project=ensure(pkg);}
         var bindings=new ProjectTargetBindings(broker);
@@ -57,14 +59,6 @@ public final class ApplicationProjects {
             String operation=UUID.nameUUIDFromBytes(("application-target-v2\n"+project+"\n"+space+"\n"+generation).getBytes(StandardCharsets.UTF_8)).toString();
             bindings.bindMetadata(operation,"trusted-workbench",project,space,pkg,generation,prior);
             return bindings.resolveMetadataIn(project,space);
-        }
-    }
-    /** Repair missing/stale references using durable metadata only. Listing never opens an APK. */
-    public void reconcileMetadata()throws Exception{
-        List<String[]> installs=new ArrayList<>();synchronized(broker){try(var c=broker.store.getReadableDatabase().rawQuery("SELECT space,package,generation,state FROM installs ORDER BY space,package",null)){while(c.moveToNext())installs.add(new String[]{c.getString(0),c.getString(1),c.getString(2),c.getString(3)});}}
-        for(String[] install:installs){
-            synchronized(broker){var current=broker.apks.row(install[0],install[1]);if(current==null||!install[2].equals(current.generation))continue;ensure(install[1]);if(!"COMMITTED".equals(current.state))continue;}
-            try{targetMetadata(install[0],install[1],install[2]);}catch(Exception failure){synchronized(broker){var current=broker.apks.row(install[0],install[1]);if(current==null||!install[2].equals(current.generation))continue;if("CORRUPT".equals(current.state)){broker.catalog.invalidateProjects(install[0],install[1]);continue;}}throw failure;}
         }
     }
     public JSONArray list()throws Exception{

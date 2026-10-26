@@ -24,30 +24,61 @@ final class RuntimeProviders {
      */
     private static final ThreadLocal<Set<String>> INITIALIZING=ThreadLocal.withInitial(LinkedHashSet::new);
     private static final class Entry {
-        final String lease;final ProviderInfo info;final CompletableFuture<ContentProvider> ready=new CompletableFuture<>();volatile Thread initializing;final java.util.concurrent.atomic.AtomicBoolean claimed=new java.util.concurrent.atomic.AtomicBoolean();
-        Entry(String lease,ProviderInfo info){this.lease=lease;this.info=info;}
+        final String lease;final ProviderInfo info;final long deadline;final CompletableFuture<ContentProvider> ready=new CompletableFuture<>();volatile Thread initializing;final java.util.concurrent.atomic.AtomicBoolean claimed=new java.util.concurrent.atomic.AtomicBoolean();
+        Entry(String lease,ProviderInfo info,long deadline){this.lease=lease;this.info=info;this.deadline=deadline;}
     }
     RuntimeProviders(RuntimeEngine engine,ProviderInfo[] infos,Bundle publications,List<ApkManifest.Component> declarations){
         this.engine=engine;this.settingsObservers=new RuntimeSettingsObservers(engine.host.getContentResolver(),engine.providerIndex);
-        for(ProviderInfo info:engine.providerIndex.publications(engine.processName)){
-            info.applicationInfo=new ApplicationInfo(engine.info);
+        // The bootstrap publications are authenticated authority admissions. The
+        // raw sealed metadata still carries manifest defaults, including disabled.
+        for(String component:publications.keySet()){
+            ProviderInfo info=engine.providerIndex.component(component);
+            if(!engine.processName.equals(info.processName))throw new SecurityException("PROVIDER_PUBLICATION_PROCESS_MISMATCH");
+            info.enabled=true;info.applicationInfo=new ApplicationInfo(engine.info);
             // Android startup attaches ProviderInfo without GET_META_DATA; explicit PM queries own it.
             info.metaData=null;
-            String lease=RuntimeWire.required(publications,info.name);entries.put(lease,new Entry(lease,info));
+            String lease=RuntimeWire.required(publications,info.name);entries.put(lease,new Entry(lease,info,engine.startupDeadlineElapsed));
         }
         if(publications.size()!=entries.size())throw new SecurityException("PROVIDER_PUBLICATIONS_MISMATCH");
     }
     void initialize()throws Exception{
-        List<Entry> ordered=new ArrayList<>();synchronized(entries){for(Entry entry:entries.values())if(engine.processName.equals(entry.info.processName))ordered.add(entry);}ordered.sort(Comparator.comparingInt((Entry e)->e.info.initOrder).reversed());
-        // A same-process caller may already have installed a provider on its own thread (see ready); installation happens once.
-        for(Entry entry:ordered)if(entry.claimed.compareAndSet(false,true)){
-            // Android installs startup providers with silent=true: a provider that cannot be created is logged and
-            // skipped, and the application still starts. It becomes an error only when something asks for that
-            // authority. A guest manifest can name providers whose class exists only in artifacts the guest loads at
-            // runtime (plugin/patch dex) or that are process-pit placeholders; aborting startup for them is a
-            // divergence from the platform, not a safety property.
-            try{initialize(entry);}catch(Throwable error){android.util.Log.e("TripoderRuntime","PROVIDER_INSTALL_FAILED:"+entry.info.name,error);}
+        // The platform startup batch is silent=false. A provider failure is not
+        // an Application success; the existing FAILED future remains terminal.
+        installFromFramework(dev.tripoder.selfhook.ApplicationAdapter.providerInstallationBatch());
+    }
+    /** Validate the complete selector batch before any factory or attach callback.
+     * The authority-admitted lease and sealed metadata remain the only publication
+     * owner; a shell's mutable ProviderInfo does not create a second Android owner. */
+    void installFromFramework(List<?> batch)throws Exception{
+        List<Entry> admitted=frameworkEntries(batch);
+        if(!admitted.isEmpty()&&(engine.application==null||engine.componentFactory==null))throw new IllegalStateException("PROVIDER_INSTALL_APPLICATION_NOT_CONSTRUCTED");
+        for(Entry entry:admitted){
+            // This is the caller's explicit local framework batch, including a
+            // call made from a Binder thread. Keep Android's calling-thread
+            // initialization rather than posting it and waiting on that thread.
+            if(!entry.ready.isDone()&&entry.claimed.compareAndSet(false,true))initialize(entry);
+            ready(entry.lease);
         }
+    }
+    private List<Entry> frameworkEntries(List<?> batch){
+        if(batch.size()>1024)throw new IllegalArgumentException("PROVIDER_INSTALL_BATCH_TOO_LARGE");
+        Bundle states=RuntimeComponentState.snapshot(engine);List<Entry> admitted=new ArrayList<>();
+        synchronized(entries){
+            for(Object item:batch){
+                if(item==null||item.getClass()!=ProviderInfo.class)throw new SecurityException("PROVIDER_INSTALL_SELECTOR_MISMATCH");
+                ProviderInfo supplied=(ProviderInfo)item;
+                if(!engine.packageName.equals(supplied.packageName)||!engine.processName.equals(supplied.processName)||supplied.name==null)throw new SecurityException("PROVIDER_INSTALL_SELECTOR_MISMATCH");
+                ProviderInfo canonical=engine.providerIndex.component(supplied.name,states);
+                if(!canonical.enabled||!Objects.equals(canonical.packageName,supplied.packageName)||!Objects.equals(canonical.processName,supplied.processName)||!Objects.equals(canonical.authority,supplied.authority))throw new SecurityException("PROVIDER_INSTALL_SELECTOR_MISMATCH");
+                Entry selected=null;
+                for(Entry entry:entries.values())if(entry.info.name.equals(canonical.name)){
+                    if(selected!=null||!Objects.equals(entry.info.authority,canonical.authority)||!Objects.equals(entry.info.processName,canonical.processName))throw new SecurityException("PROVIDER_INSTALL_PUBLICATION_AMBIGUOUS");selected=entry;
+                }
+                if(selected==null)throw new SecurityException("PROVIDER_INSTALL_PUBLICATION_REQUIRED");
+                admitted.add(selected);
+            }
+        }
+        return admitted;
     }
     private void initialize(Entry entry)throws Exception{
             Set<String> stack=INITIALIZING.get();
@@ -71,18 +102,28 @@ final class RuntimeProviders {
         synchronized(entries){
             entry=entries.get(lease);
             if(entry==null){
-                ProviderInfo info=engine.providerIndex.component(component);
+                ProviderInfo info=engine.providerIndex.component(component,RuntimeComponentState.snapshot(engine));
                 if(!info.enabled||!info.multiprocess||!engine.packageName.equals(info.packageName)||engine.processName.equals(info.processName))throw new SecurityException("LOCAL_PROVIDER_DECLARATION_MISMATCH");
                 if(engine.componentFactory==null||engine.application==null)throw new IllegalStateException("LOCAL_PROVIDER_APPLICATION_NOT_ATTACHED");
-                info.applicationInfo=new ApplicationInfo(engine.info);info.metaData=null;entry=new Entry(lease,info);entries.put(lease,entry);owner=true;
+                info.applicationInfo=new ApplicationInfo(engine.info);info.metaData=null;entry=new Entry(lease,info,engine.ready?RuntimeStartupDeadline.after(SystemClock.elapsedRealtime()):engine.startupDeadlineElapsed);entries.put(lease,entry);owner=true;
             }else if(!entry.info.name.equals(component))throw new SecurityException("LOCAL_PROVIDER_COMPONENT_MISMATCH");
         }
         if(owner)initialize(entry);else if(entry.initializing==Thread.currentThread())throw new IllegalStateException("PROVIDER_INITIALIZATION_CYCLE");
     }
-    private void publish(Entry entry,String state)throws Exception{if(engine.mode==RuntimeMode.THIN)return;Bundle b=engine.auth();b.putString("lease",entry.lease);b.putString("state",state);engine.brokerCall(RuntimeWire.PROVIDER_PUBLICATION,b);}
+    private void publish(Entry entry,String state)throws Exception{if(engine.mode.routesThroughPlatform())return;Bundle b=engine.auth();b.putString("lease",entry.lease);b.putString("state",state);engine.brokerCall(RuntimeWire.PROVIDER_PUBLICATION,b);}
     boolean owns(ContentProvider provider){synchronized(instances){return instances.contains(provider);}}
     ContentProvider ready(String lease)throws Exception{
-        Entry entry;synchronized(entries){entry=entries.get(lease);}if(entry==null)throw new SecurityException("PROVIDER_LEASE_NOT_IN_PROCESS");
+        Entry entry;synchronized(entries){entry=entries.get(lease);}
+        if(entry==null){
+            Bundle describe=engine.auth();describe.putString("kind","describe");describe.putString("lease",lease);Bundle owned=engine.brokerCall(RuntimeWire.PROVIDER_PUBLICATION,describe);
+            if(!engine.generation.equals(owned.getString("target")))throw new SecurityException("PROVIDER_LEASE_NOT_IN_PROCESS");
+            ProviderInfo info=engine.providerIndex.component(RuntimeWire.required(owned,"component"),RuntimeComponentState.snapshot(engine));
+            if(!info.enabled||!engine.processName.equals(info.processName))throw new SecurityException("PROVIDER_DYNAMIC_DECLARATION_MISMATCH");
+            info.applicationInfo=new ApplicationInfo(engine.info);info.metaData=null;
+            Entry created=new Entry(lease,info,engine.ready?RuntimeStartupDeadline.after(SystemClock.elapsedRealtime()):engine.startupDeadlineElapsed);
+            synchronized(entries){entry=entries.get(lease);if(entry==null){entry=created;entries.put(lease,entry);}}
+        }
+
         // Android answers a same-process provider request with canRunHere: the requesting thread installs it, even
         // when that thread is the main thread inside Application.attach. The only cycle is this thread already being
         // inside the same provider (directly or through another provider's onCreate); the looper is not evidence.
@@ -92,13 +133,33 @@ final class RuntimeProviders {
             if(entry.claimed.compareAndSet(false,true))initialize(entry);
         }
         if(!entry.ready.isDone()&&entry.initializing==Thread.currentThread())throw new IllegalStateException("PROVIDER_INITIALIZATION_CYCLE");
+        if(!entry.ready.isDone()&&Binder.getCallingPid()!=android.os.Process.myPid()&&!entry.claimed.get()){
+            // Queueing is not initialization ownership. Bootstrap may install
+            // this entry inline before this main-thread message can execute.
+            Entry initializing=entry;new Handler(Looper.getMainLooper()).post(()->{
+                if(initializing.ready.isDone())return;
+                try{
+                    // A provider can reach the prepared worker before the
+                    // authority's START_APPLICATION transaction. Join the one
+                    // canonical main-thread Application task, never a second boot.
+                    engine.startApplication();
+                    if(!initializing.ready.isDone()&&initializing.claimed.compareAndSet(false,true))initialize(initializing);
+                }catch(Throwable error){
+                    Throwable cause=error instanceof ExecutionException&&error.getCause()!=null?error.getCause():error;
+                    initializing.ready.completeExceptionally(cause);
+                    android.util.Log.e("TripoderRuntime","PROVIDER_STARTUP_OR_INSTALL_FAILED:"+initializing.info.name,cause);
+                }
+            });
+        }
         // A cold dependency may still be installing its pre-guest hooks. Share the
         // authority's original deadline; never restart a shorter timer at each layer.
-        try{return entry.ready.get(RuntimeStartupDeadline.remaining(engine.startupDeadlineElapsed,SystemClock.elapsedRealtime()),TimeUnit.MILLISECONDS);}catch(TimeoutException error){throw new IllegalStateException("PROVIDER_INITIALIZATION_TIMEOUT",error);}
+        try{return entry.ready.get(RuntimeStartupDeadline.remaining(entry.deadline,SystemClock.elapsedRealtime()),TimeUnit.MILLISECONDS);}catch(TimeoutException error){throw new IllegalStateException("PROVIDER_INITIALIZATION_TIMEOUT",error);}
     }
     private final ConcurrentHashMap<String,ContentProvider> localAuthorities=new ConcurrentHashMap<>();
     ContentProvider findLocal(String authority){
         if(authority==null)return null;
+        ProviderInfo declared=engine.providerIndex.authority(authority);
+        if(declared==null||!RuntimeComponentState.enabled(RuntimeComponentState.snapshot(engine),declared))return null;
         ContentProvider cached=localAuthorities.get(authority);
         if(cached!=null)return cached;
         synchronized(entries){
@@ -144,7 +205,7 @@ final class RuntimeProviders {
         private boolean settings(Uri uri){return uri!=null&&"content".equals(uri.getScheme())&&"settings".equals(uri.getAuthority());}
         private String logical(Uri uri){if(uri==null||!"content".equals(uri.getScheme()))throw new IllegalArgumentException("PROVIDER_URI_INVALID");return RuntimeProviderBroker.authority(uri.getAuthority());}
         private boolean allowExternalPassthrough(String authority){
-            return engine.mode==RuntimeMode.THIN&&authority!=null&&!authority.startsWith(engine.host.getPackageName())&&!authority.startsWith("dev.tripoder.");
+            return engine.mode.routesThroughPlatform()&&authority!=null&&engine.providerIndex.authority(authority)==null&&!authority.startsWith(engine.host.getPackageName())&&!authority.startsWith("dev.tripoder.");
         }
         private Bundle localCaller(){
             Bundle caller=new Bundle();
@@ -275,6 +336,7 @@ final class RuntimeProviders {
             }
         }
         @Override public int bulkInsert(Uri uri,ContentValues[] values){
+            if(settings(uri))return engine.settingsProvider().bulkInsert(uri,values);
             String auth=logical(uri);
             ContentProvider local=findLocal(auth);
             if(local!=null){
@@ -292,6 +354,7 @@ final class RuntimeProviders {
             }
         }
         @Override public ContentProviderResult[] applyBatch(String authority,ArrayList<ContentProviderOperation> operations)throws OperationApplicationException{
+            if("settings".equals(authority))return engine.settingsProvider().applyBatch(authority,operations);
             String auth=RuntimeProviderBroker.authority(authority);
             ContentProvider local=findLocal(auth);
             if(local!=null){

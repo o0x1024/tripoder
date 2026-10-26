@@ -18,7 +18,9 @@ final class RuntimeWebViewServices {
     private final RuntimeWebView provider;
     private final Set<ServiceConnection> connections=Collections.newSetFromMap(new IdentityHashMap<>());
     RuntimeWebViewServices(RuntimeEngine engine,RuntimeWebView provider){this.engine=engine;this.provider=provider;}
-    boolean targets(Intent intent){return intent!=null&&intent.getComponent()!=null&&provider.owns(intent.getComponent().getPackageName());}
+    /** A guest whose own logical package is the selected WebView provider (Chrome) binds its own services
+     * through the engine like any guest; only another package's provider services are the platform's. */
+    boolean targets(Intent intent){return intent!=null&&intent.getComponent()!=null&&!engine.packageName.equals(intent.getComponent().getPackageName())&&provider.owns(intent.getComponent().getPackageName());}
     synchronized boolean owns(ServiceConnection connection){return connections.contains(connection);}
     synchronized boolean bind(Intent supplied,ServiceConnection connection,long flags,Executor executor,String instance){
         if(!targets(supplied))throw new SecurityException("WEBVIEW_SERVICE_TARGET_REQUIRED");
@@ -29,6 +31,7 @@ final class RuntimeWebViewServices {
         if(!connections.add(connection))throw new IllegalStateException("WEBVIEW_CONNECTION_ALREADY_REGISTERED");
         // Retain registration on an exceptional/unknown platform outcome. Only
         // false or a successful unbind confirms release; never replay a bind.
+        android.util.Log.i("TripoderService","webViewBind: "+intent.getComponent()+" flags=0x"+Long.toHexString(flags)+(instance==null?"":" instance="+instance));
         boolean bound;
         if(instance!=null){
             // ContextWrapper exposes only the int isolated overload; its ContextImpl applies the same BIND_EXTERNAL_SERVICE long mapping.

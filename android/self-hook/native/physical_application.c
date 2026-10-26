@@ -2,10 +2,11 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include "physical_application.h"
 
 /* Ordinary JNI only. No ArtMethod pointer, managed getter, field mutation or local-ref retention. */
 enum phase { UNPREPARED, PREPARING, READY, FAILED };
-enum root { THREAD_CLASS, HOST, THREAD, APK, ROOT_COUNT };
+enum root { THREAD_CLASS, HOST, THREAD, APK, LOGICAL, ROOT_COUNT };
 enum field { INITIAL_APPLICATION, LOADED_APK, APK_APPLICATION, CURRENT_THREAD, FIELD_COUNT };
 static pthread_mutex_t physical_lock=PTHREAD_MUTEX_INITIALIZER;
 static struct {
@@ -47,7 +48,13 @@ static bool observe(JNIEnv *env,jobject expected_host){
     if(!same(env,thread,physical.roots[THREAD])){reject(env,"PHYSICAL_APPLICATION_THREAD_CHANGED");goto done;}
     jobject initial=(*env)->GetObjectField(env,thread,physical.fields[INITIAL_APPLICATION]);
     if(pending(env))goto done;
-    if(!same(env,initial,physical.roots[HOST])){reject(env,"PHYSICAL_APPLICATION_INITIAL_CHANGED");goto done;}
+    if(!same(env,initial,physical.roots[HOST])){
+        // A hot-fix Application may become ActivityThread's initial application.
+        // It must be attached to the exact logical LoadedApk registered by this
+        // process's sole ApplicationAdapter; the physical host APK stays fixed.
+        jobject logical=initial&&physical.roots[LOGICAL]?(*env)->GetObjectField(env,initial,physical.fields[LOADED_APK]):NULL;
+        if(pending(env)||!same(env,logical,physical.roots[LOGICAL])){reject(env,"PHYSICAL_APPLICATION_INITIAL_CHANGED");goto done;}
+    }
     jobject apk=(*env)->GetObjectField(env,physical.roots[HOST],physical.fields[LOADED_APK]);
     if(pending(env))goto done;
     if(!same(env,apk,physical.roots[APK])){reject(env,"PHYSICAL_APPLICATION_APK_CHANGED");goto done;}
@@ -57,6 +64,13 @@ static bool observe(JNIEnv *env,jobject expected_host){
     valid=true;physical.checks++;physical.reason="READY";
 done:
     (*env)->PopLocalFrame(env,NULL);return valid;
+}
+bool tp_physical_bind_logical(JNIEnv *env,jobject host,jobject logical){
+    bool valid=false;pthread_mutex_lock(&physical_lock);
+    if(physical.phase!=READY||!same(env,host,physical.roots[HOST])||!logical||same(env,logical,physical.roots[APK]))reject(env,"PHYSICAL_LOGICAL_BINDING_INVALID");
+    else if(physical.roots[LOGICAL]){valid=same(env,logical,physical.roots[LOGICAL]);if(!valid)reject(env,"PHYSICAL_LOGICAL_BINDING_CHANGED");}
+    else valid=retain(env,LOGICAL,logical);
+    pthread_mutex_unlock(&physical_lock);return valid;
 }
 
 JNIEXPORT void JNICALL Java_dev_tripoder_selfhook_PhysicalApplication_prepareNative(JNIEnv *env,jclass ignored,

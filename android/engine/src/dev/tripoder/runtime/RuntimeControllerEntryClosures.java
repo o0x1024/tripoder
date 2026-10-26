@@ -12,9 +12,17 @@ final class RuntimeControllerEntryClosures {
         RuntimeControllerCommands.targetFields(input,"command","project","operation");String operation=ControlWire.required(input,"operation"),project=ControlWire.required(input,"project");RuntimeFiles.id(operation);
         synchronized(broker){
             String root=ActivityEntryFences.controllerTicket(broker.store,operation);var original=broker.contract.query(operation);
-            if(root==null)return preparationRecovery(broker,ControlWire.request("launchRecovery","operation",operation));
-            if(original==null||!ControllerTrust.OPERATIONS.equals(original.callerIdentity)||original.state!=ExecutionContract.OperationState.UNKNOWN)throw new SecurityException("UNKNOWN_PROJECT_LAUNCH_REQUIRED");
             Bundle target=input.containsKey("bindingOperation")?new ProjectTargetBindings(broker).resolveBinding(project,input.getString("bindingOperation")):new ProjectTargetBindings(broker).resolve(project);
+            if(root==null){
+                String scope=null;
+                try(var row=broker.store.getReadableDatabase().rawQuery("SELECT scope FROM operation_scopes WHERE operation=?",new String[]{operation})){if(row.moveToFirst())scope=row.getString(0);}
+                RuntimeRecoveryIdentity.requireScope(scope,target.getString("space"),target.getString("package"));
+                Bundle proof=preparationRecovery(broker,ControlWire.request("launchRecovery","operation",operation));
+                // The old no-entry journal does not record an installation
+                // generation. Matching ownership scope is not generation proof.
+                proof.putBoolean("targetVerified",false);proof.putString("targetVerification","SCOPE_ONLY_ORIGINAL_INSTALLATION_IDENTITY_REQUIRED");return proof;
+            }
+            if(original==null||!ControllerTrust.OPERATIONS.equals(original.callerIdentity)||original.state!=ExecutionContract.OperationState.UNKNOWN)throw new SecurityException("UNKNOWN_PROJECT_LAUNCH_REQUIRED");
             var ticket=broker.activities.get(root);
             if(!ticket.space.equals(target.getString("space"))||!ticket.pkg.equals(target.getString("package"))||!ticket.install.equals(target.getString("generation")))throw new SecurityException("LAUNCH_RECOVERY_BINDING_STALE");boolean inert=Set.of("FINISHED","REVOKED","RETIRED").contains(ticket.state)||ActivityEntryFences.closed(broker.store,ticket.id);
             int open,live;var db=broker.store.getReadableDatabase();
@@ -35,7 +43,7 @@ final class RuntimeControllerEntryClosures {
                 throw new SecurityException("UNKNOWN_LAUNCH_PREPARATION_REQUIRED");
             if(ActivityEntryFences.controllerTicket(broker.store,id)!=null)throw new IllegalStateException("LAUNCH_ENTRY_ALREADY_ISSUED");
             Bundle proof=new Bundle();proof.putString("operation",id);proof.putString("state","UNKNOWN");proof.putString("detail",operation.detail);
-            proof.putBoolean("entryIssued",false);proof.putBoolean("entryInert",true);proof.putBoolean("canAcknowledge",true);proof.putBoolean("resourcesRetired",false);return proof;
+            proof.putBoolean("entryIssued",false);proof.putBoolean("entryInert",true);proof.putBoolean("canAcknowledge",false);proof.putString("recoveryState","NO_ENTRY_TO_FENCE_OUTCOME_UNKNOWN");proof.putBoolean("resourcesRetired",false);return proof;
         }
     }
     static Bundle receipt(RuntimeBroker broker,Bundle input)throws Exception{
@@ -57,8 +65,8 @@ final class RuntimeControllerEntryClosures {
             try(var c=broker.store.getReadableDatabase().rawQuery("SELECT l.operation,t.ticket,t.generation,t.state,t.taskId,s.state,o.state,o.detail FROM activity_launches l JOIN activity_tickets t ON t.ticket=l.candidate JOIN sessions s ON s.generation=t.generation JOIN operations o ON o.id=l.operation WHERE t.space=? AND t.package=? AND t.installGeneration=? AND l.callerKind='CONTROLLER' AND t.entryFenceOperation IS NULL AND t.taskId<0 AND t.state IN ('PREPARED','CLAIMED') AND s.state='DEAD' AND o.state='UNKNOWN' ORDER BY l.operation LIMIT 129",new String[]{target.getString("space"),target.getString("package"),target.getString("generation")})){
                 while(c.moveToNext())entries.put(new JSONObject().put("operation",c.getString(0)).put("ticket",c.getString(1)).put("processGeneration",c.getString(2)).put("ticketState",c.getString(3)).put("taskId",c.getInt(4)).put("processState",c.getString(5)).put("outcome",c.getString(6)).put("detail",c.getString(7)).put("resourcesRetained",true));
             }
-            try(var c=broker.store.getReadableDatabase().rawQuery("SELECT l.operation,t.ticket,t.generation,t.state,t.taskId,s.state,o.state,t.component,l.sourceTicket,o.detail FROM activity_launches l JOIN activity_tickets t ON t.ticket=l.candidate JOIN sessions s ON s.generation=t.generation JOIN operations o ON o.id=l.operation WHERE t.space=? AND t.package=? AND t.installGeneration=? AND l.callerKind='ACTIVITY' AND l.sourceTicket IS NOT NULL AND l.sourceInstance IS NOT NULL AND l.payloadDigest IS NOT NULL AND l.state='UNKNOWN' AND t.entryFenceOperation IS NULL AND t.taskId<0 AND t.state IN ('PREPARED','CLAIMED') AND s.state='DEAD' AND o.state='UNKNOWN' ORDER BY l.operation LIMIT 129",new String[]{target.getString("space"),target.getString("package"),target.getString("generation")})){
-                while(c.moveToNext())entries.put(new JSONObject().put("operation",c.getString(0)).put("ticket",c.getString(1)).put("processGeneration",c.getString(2)).put("ticketState",c.getString(3)).put("taskId",c.getInt(4)).put("processState",c.getString(5)).put("outcome",c.getString(6)).put("component",c.getString(7)).put("sourceTicket",c.getString(8)).put("kind","ACTIVITY_ROUTE").put("detail",c.getString(9)).put("resourcesRetained",true));
+            try(var c=broker.store.getReadableDatabase().rawQuery("SELECT l.operation,t.ticket,t.generation,t.state,t.taskId,s.state,o.state,t.component,l.sourceTicket,o.detail,l.callerKind FROM activity_launches l JOIN activity_tickets t ON t.ticket=l.candidate JOIN sessions s ON s.generation=t.generation JOIN operations o ON o.id=l.operation WHERE t.space=? AND t.package=? AND t.installGeneration=? AND ((l.callerKind='ACTIVITY' AND l.sourceTicket IS NOT NULL AND l.sourceInstance IS NOT NULL) OR (l.callerKind='CONTEXT' AND l.sourceTicket IS NULL AND l.sourceInstance IS NULL AND l.callerComponent IS NULL AND l.expectsResult=0 AND (l.requestFlags & 268435456)!=0)) AND l.payloadDigest IS NOT NULL AND l.state='UNKNOWN' AND t.entryFenceOperation IS NULL AND t.taskId<0 AND t.state IN ('PREPARED','CLAIMED') AND s.state='DEAD' AND o.state='UNKNOWN' ORDER BY l.operation LIMIT 129",new String[]{target.getString("space"),target.getString("package"),target.getString("generation")})){
+                while(c.moveToNext())entries.put(new JSONObject().put("operation",c.getString(0)).put("ticket",c.getString(1)).put("processGeneration",c.getString(2)).put("ticketState",c.getString(3)).put("taskId",c.getInt(4)).put("processState",c.getString(5)).put("outcome",c.getString(6)).put("component",c.getString(7)).put("sourceTicket",c.getString(8)).put("kind",c.getString(10)+"_ROUTE").put("detail",c.getString(9)).put("resourcesRetained",true));
             }
         }
         if(entries.length()>128)throw new IllegalStateException("LAUNCH_ENTRY_PAGE_REQUIRED");target.putString("entries",entries.toString());return target;
@@ -75,7 +83,7 @@ final class RuntimeControllerEntryClosures {
                 try(var c=broker.store.getReadableDatabase().rawQuery("SELECT 1 FROM project_refs WHERE id=? AND operation=? AND generation=? AND space=? AND package=? AND kind='DIRECT'",new String[]{project,binding,install,root.space,root.pkg})){if(!c.moveToFirst()||!install.equals(root.install))throw new SecurityException("LAUNCH_ENTRY_BINDING_MISMATCH");}
                 ticket=controller;
             }
-            else try(var c=broker.store.getReadableDatabase().rawQuery("SELECT t.ticket FROM activity_launches l JOIN activity_tickets t ON t.ticket=l.candidate JOIN project_refs p ON p.space=t.space AND p.package=t.package AND p.generation=t.installGeneration WHERE l.operation=? AND l.callerKind='ACTIVITY' AND p.id=? AND p.operation=? AND p.generation=? AND p.kind='DIRECT' AND p.state='COMMITTED'",new String[]{launch,project,binding,install})){
+            else try(var c=broker.store.getReadableDatabase().rawQuery("SELECT t.ticket FROM activity_launches l JOIN activity_tickets t ON t.ticket=l.candidate JOIN project_refs p ON p.space=t.space AND p.package=t.package AND p.generation=t.installGeneration WHERE l.operation=? AND l.callerKind IN ('ACTIVITY','CONTEXT') AND p.id=? AND p.operation=? AND p.generation=? AND p.kind='DIRECT' AND p.state='COMMITTED'",new String[]{launch,project,binding,install})){
                 if(!c.moveToFirst())throw new SecurityException("LAUNCH_ENTRY_BINDING_MISMATCH");ticket=c.getString(0);if(c.moveToNext())throw new SecurityException("ACTIVITY_ROUTE_ENTRY_AMBIGUOUS");
             }
             var db=broker.store.getWritableDatabase();db.beginTransaction();try{

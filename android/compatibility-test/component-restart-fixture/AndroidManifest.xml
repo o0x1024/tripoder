@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tripoder.componentrestartfixture" android:versionCode="3" android:versionName="3">
+    <uses-sdk android:minSdkVersion="37" android:targetSdkVersion="37"/>
+    <application android:label="Owned component restart" android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        <activity android:name=".Main" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
+        <activity android:name=".Toggle" android:enabled="false" android:exported="false"/>
+        <service android:name=".Remote" android:exported="false" android:process=":remote"/>
+    </application>
+</manifest>

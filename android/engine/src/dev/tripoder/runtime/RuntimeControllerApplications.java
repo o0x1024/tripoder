@@ -8,7 +8,7 @@ import org.json.JSONObject;
 
 /** Application-level lifecycle never manufactures or selects a project; only the user's explicit application deletion removes the projects bound to it. */
 final class RuntimeControllerApplications {
-    static String stopDigest(String space,String pkg,String generation)throws Exception{return ApkStore.textDigest(new JSONObject().put("kind","controller-stop-v1").put("space",space).put("package",pkg).put("generation",generation).toString());}
+    static String stopDigest(String space,String pkg,String generation)throws Exception{return RuntimeControllerOperationIdentity.stopDigest(space,pkg,generation);}
     static Bundle stop(RuntimeBroker broker,Bundle input,String lease)throws Exception{
         RuntimeControllerCommands.fields(input,"command","operation","space","package","generation");
         String operation=ControlWire.required(input,"operation"),space=ControlWire.required(input,"space"),pkg=ControlWire.required(input,"package"),generation=ControlWire.required(input,"generation");
@@ -80,6 +80,7 @@ final class RuntimeControllerApplications {
                 try{
                     RuntimeControllerService.requireLease(lease);
                     try(Cursor c=db.rawQuery("SELECT 1 FROM installs WHERE package=? LIMIT 1",new String[]{pkg})){if(c.moveToFirst())throw new IllegalStateException("APPLICATION_INSTALLATIONS_CONFLICT");}
+                    for(String[] install:installs)RuntimeMutationGuard.retireDeleted(db,install[0],pkg,operation);
                     projects=new org.json.JSONArray();try(Cursor c=db.rawQuery("SELECT id FROM application_projects WHERE package=? UNION SELECT id FROM project_aliases WHERE package=?",new String[]{pkg,pkg})){while(c.moveToNext())projects.put(c.getString(0));}
                     removeBindings(db,"package=?",pkg);db.delete("application_projects","package=?",new String[]{pkg});db.delete("project_aliases","package=?",new String[]{pkg});
                     broker.contract.succeed(operation,new JSONObject().put("installs",removed).put("deletedProjects",projects).toString());
@@ -101,6 +102,7 @@ final class RuntimeControllerApplications {
         db.delete("project_refs",where,args);return projects;
     }
     static Bundle uninstallOne(RuntimeBroker broker,String operation,String space,String pkg,String generation,String lease)throws Exception{
+        RuntimeMutationGuard.requireCovers(space,pkg);
         String digest=ApkStore.textDigest(new JSONObject().put("kind","controller-uninstall-v1").put("space",space).put("package",pkg).put("generation",generation).toString());
         synchronized(broker){if(!broker.contract.accept(operation,ControllerTrust.OPERATIONS,digest).created)throw new IllegalStateException("UNINSTALL_ALREADY_ACCEPTED_QUERY_REQUIRED");broker.contract.start(operation);}
         boolean stopping=false,committing=false;int retired=0;

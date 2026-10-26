@@ -17,6 +17,7 @@ final class RuntimeProbePlans {
             .put("maxDexBytes",number(raw,"maxDexBytes",16*1024*1024,112,64*1024*1024)).put("maxTotalBytes",number(raw,"maxTotalBytes",64*1024*1024,112,256*1024*1024)).put("maxArtifacts",number(raw,"maxArtifacts",32,1,128));
         String process=raw.optString("processName","");if(process.length()>256||process.contains("\n"))throw new IllegalArgumentException("PROBE_PROCESS_NAME");out.put("processName",process);
         if(raw.has("startupHook")){
+            if(!raw.has("enabled")||!raw.getBoolean("enabled"))throw new IllegalArgumentException("STARTUP_HOOK_REQUIRES_ENABLED_TRUE");
             JSONObject hook=raw.getJSONObject("startupHook");if(hook.length()!=2||!hook.has("selectors")||!hook.has("source"))throw new IllegalArgumentException("PROBE_STARTUP_HOOK_FIELDS");
             JSONArray selectors=hook.getJSONArray("selectors");String source=hook.getString("source");if(selectors.length()<1||selectors.length()>32||source.isEmpty()||source.length()>24000)throw new IllegalArgumentException("PROBE_STARTUP_HOOK_SIZE");
             out.put("startupHook",new JSONObject(hook.toString()));

@@ -1,0 +1,16 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tripoder.launchcontract" android:versionCode="5">
+    <uses-sdk android:minSdkVersion="36" android:targetSdkVersion="36"/>
+    <uses-permission android:name="android.permission.BROADCAST_STICKY"/>
+    <application android:label="Owned launch contract" android:allowBackup="false" android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        <activity android:name=".Main" android:exported="true"/>
+        <activity-alias android:name=".InfoWithData" android:targetActivity=".Main" android:exported="true"><intent-filter android:priority="999"><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.INFO"/><data android:scheme="owned-launch-contract"/></intent-filter></activity-alias>
+        <activity-alias android:name=".Info" android:targetActivity=".Main" android:exported="true"><intent-filter android:priority="@integer/info_priority"><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.INFO"/></intent-filter></activity-alias>
+        <activity-alias android:name=".PreferredInfo" android:targetActivity=".Main" android:exported="true" android:enabled="false"><intent-filter android:priority="100"><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.INFO"/></intent-filter></activity-alias>
+        <activity-alias android:name=".PrivateInfo" android:targetActivity=".Main" android:exported="false" android:enabled="false"><intent-filter android:priority="300"><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.INFO"/></intent-filter></activity-alias>
+        <activity-alias android:name=".PermissionInfo" android:targetActivity=".Main" android:exported="true" android:enabled="false" android:permission="android.permission.MANAGE_DOCUMENTS"><intent-filter android:priority="200"><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.INFO"/></intent-filter></activity-alias>
+        <activity-alias android:name=".LaunchLow" android:targetActivity=".Main" android:exported="true"><intent-filter android:priority="@integer/launcher_priority"><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity-alias>
+        <activity-alias android:name=".LaunchHigh" android:targetActivity=".Main" android:exported="true"><intent-filter android:priority="10"><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity-alias>
+        <service android:name=".PriorityService" android:exported="false"><intent-filter android:priority="@integer/service_priority"><action android:name="owned.launch.PRIORITY_SERVICE"/></intent-filter></service>
+        <receiver android:name=".PriorityReceiver" android:exported="false"><intent-filter android:priority="@integer/receiver_priority"><action android:name="owned.launch.PRIORITY_RECEIVER"/></intent-filter></receiver>
+    </application>
+</manifest>

@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 import subprocess
 
@@ -10,6 +11,21 @@ import subprocess
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
+
+def fixed_registry_shape(repo):
+    """The native class/field tables and their Java mirrors are one index space; a size drift
+    turns every new slot into a silent FIXED_*_ORDER failure on the device only."""
+    native=(repo/'android/self-hook/native/art_framework.c').read_text()
+    selfhook=repo/'android/self-hook/java/dev/tripoder/selfhook'
+    access=(selfhook/'FrameworkAccess.java').read_text();members=(selfhook/'FixedFrameworkMembers.java').read_text()
+    native_names=re.search(r'static const char \*names\[\]=\{(.*?)\};',native,re.S)[1].count('"')//2
+    native_fields=len(re.findall(r'\{\d+,"[^"]+","[^"]+"\}',re.search(r'fields\[\]=\{(.*?)\};',native,re.S)[1]))
+    shape={'nativeClasses':native_names,'nativeClassRoots':int(re.search(r'jclass classes\[(\d+)\];',native)[1]),
+        'javaNames':re.search(r'NAMES=\{(.*?)\};',members,re.S)[1].count('"')//2,
+        'javaDeclarationCache':int(re.search(r'declarationCache=new Object\[(\d+)\]\[\]',access)[1])}
+    field_bound=int(re.search(r'slot>=(\d+)\)throw new IllegalStateException\("FIXED_FIELD_ORDER"\)',access)[1])
+    if len(set(shape.values()))!=1 or field_bound!=native_fields:raise RuntimeError('FIXED_REGISTRY_SHAPE_DRIFT:'+json.dumps({**shape,'nativeFields':native_fields,'javaFieldBound':field_bound}))
+    return f'fixed registry shape classes={native_names} fields={native_fields}'
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
@@ -32,11 +48,12 @@ def main():
         return result.stdout.strip()
     inputs=[runtime/name for name in ['RuntimeSelfHookBootstrap.java','RuntimeSelfHookLoaders.java',
         'RuntimeSelfHookLifecycle.java','RuntimeSelfHookProviderCalls.java','RuntimeSelfHookSelection.java','RuntimeSelfHookBoundaries.java',
-        'RuntimeSelfHookManagerPolicy.java','RuntimeFixedPassthrough.java','RuntimeStartupDeadline.java','RuntimePendingIntentPolicy.java','PreferencesWait.java','ServiceRecoveryPolicy.java']]
+        'RuntimeSelfHookManagerPolicy.java','RuntimeFixedPassthrough.java','RuntimeStartupDeadline.java','RuntimePendingIntentPolicy.java','PreferencesWait.java','ServiceRecoveryPolicy.java','ProcessStopDispatch.java']]
     inputs+=sorted((here/'src/dev').rglob('*.java'))+sorted((here/'src/fixture').rglob('*.java'))
     before={str(path.relative_to(repo)):digest(path) for path in inputs}
-    run(javac,'--release','17','-d',fixture,here/'src/fixture/OwnedApplication.java')
-    run(javac,'--release','17','-d',classes,*[path for path in inputs if path.name!='OwnedApplication.java'])
+    fixture_sources=here/'src/fixture'
+    run(javac,'--release','17','-d',fixture,*sorted(fixture_sources.glob('*.java')))
+    run(javac,'--release','17','-d',classes,*[path for path in inputs if path.parent!=fixture_sources])
     outputs=[run(java,'-cp',classes,'dev.tripoder.runtime.BootstrapTest'),
              run(java,'-cp',classes,'dev.tripoder.runtime.LoaderTest',fixture),
              run(java,'-cp',classes,'dev.tripoder.runtime.ComponentTest'),
@@ -46,7 +63,9 @@ def main():
              run(java,'-cp',classes,'dev.tripoder.runtime.StartupDeadlineTest'),
              run(java,'-cp',classes,'dev.tripoder.runtime.PendingIntentPolicyTest'),
              run(java,'-cp',classes,'dev.tripoder.runtime.PreferencesWaitTest'),
-             run(java,'-cp',classes,'dev.tripoder.runtime.ServiceRecoveryPolicyTest')]
+             run(java,'-cp',classes,'dev.tripoder.runtime.ServiceRecoveryPolicyTest'),
+             run(java,'-cp',classes,'dev.tripoder.runtime.ProcessStopDispatchTest')]
+    outputs.append(fixed_registry_shape(repo))
     if before!={str(path.relative_to(repo)):digest(path) for path in inputs}:raise RuntimeError('HOST_SOURCES_CHANGED_DURING_CHECK')
     report={'schema':1,'hostOutputs':outputs,'sourceSha256':before,'runnerSha256':digest(Path(__file__).resolve()),
             'deviceExecuted':False,'productAccepted':False}

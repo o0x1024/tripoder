@@ -22,7 +22,7 @@ public final class HookEvidence {
             Set<String> types;
             if(kind.equals("java")){text(symbol,"className");text(symbol,"methodName");text(symbol,"classLoaderId");types=Set.of("boolean","byte","short","int","long","char","float","double","java.lang.String","[B","byte[]");}
             else {require(kind.equals("native"),"HOOK_SYMBOL_KIND");text(symbol,"moduleName");text(symbol,"symbol");text(symbol,"buildId");require(Set.of("debug-info","confirmed","unknown").contains(text(symbol,"signatureSource")),"HOOK_SIGNATURE_SOURCE");types=Set.of("int32","uint32","int64","uint64","float","double");}
-            require(types.containsAll(arguments)&&(types.contains(text(symbol,"returnType"))||"void".equals(symbol.get("returnType"))),"HOOK_ABI_UNSUPPORTED");selected.add(symbol);
+            require((kind.equals("java")?arguments.stream().allMatch(t->JavaTypes.valid(t,false))&&JavaTypes.valid(text(symbol,"returnType"),true):types.containsAll(arguments)&&(types.contains(text(symbol,"returnType"))||"void".equals(symbol.get("returnType")))),"HOOK_ABI_UNSUPPORTED");selected.add(symbol);
         }
         symbols=List.copyOf(selected);
     }

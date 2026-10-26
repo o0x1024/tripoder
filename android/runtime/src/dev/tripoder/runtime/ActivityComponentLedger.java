@@ -15,6 +15,14 @@ final class ActivityComponentLedger {
         db.execSQL("CREATE TABLE activity_components(stub TEXT PRIMARY KEY, space TEXT NOT NULL, package TEXT NOT NULL, installGeneration TEXT NOT NULL, processName TEXT NOT NULL, processStub TEXT NOT NULL, component TEXT NOT NULL, generation TEXT NOT NULL, lease TEXT NOT NULL UNIQUE, affinityLease TEXT, profile TEXT, UNIQUE(space,package,installGeneration,component))");
     }
     static String canonical(android.content.pm.ActivityInfo info){return info.targetActivity==null?info.name:info.targetActivity;}
+    /** Read-only rejection before guest Application code can run; acquire rechecks atomically. */
+    void requireCapacity(ApkStore.BundleInstall install,String requested){
+        var info=RuntimeComponents.activity(install,requested);String component=canonical(info);
+        try(Cursor c=store.getReadableDatabase().rawQuery("SELECT lease FROM activity_components WHERE space=? AND package=? AND installGeneration=? AND component=?",new String[]{install.space,install.info.packageName,install.generation,component})){
+            if(c.moveToFirst())entries.requireCapacity(c.getString(0),component,requested);
+        }
+        affinities.requireCapacity(install.space,install.info.packageName,info.taskAffinity);
+    }
     String acquire(RuntimeBroker.Slot slot,String requested){
         var i=slot.allocation.session.identity;var info=RuntimeComponents.activity(slot.install,requested);boolean reparent=RuntimeComponents.reparents(info);String component=canonical(info),profile=info.launchMode+":"+info.taskAffinity+":"+reparent;
         try(Cursor c=store.getReadableDatabase().rawQuery("SELECT stub,processStub,processName,lease,profile FROM activity_components WHERE space=? AND package=? AND installGeneration=? AND component=?",new String[]{i.spaceId,i.packageName,i.installGeneration,component})){
@@ -25,8 +33,9 @@ final class ActivityComponentLedger {
                 return entries.acquire(c.getString(0),c.getString(3),component,requested);
             }
         }
-        int aliasCount=0;for(var declared:slot.install.activityIndex().values())if(declared.enabled&&component.equals(declared.targetActivity))aliasCount++;
-        if(aliasCount>RuntimeActivitySlots.ALIASES)throw new IllegalStateException("ACTIVITY_DECLARED_ALIAS_CAPACITY_EXHAUSTED");
+        int aliasCount=0;for(var declared:slot.install.activityIndex().values())if(component.equals(declared.targetActivity))aliasCount++;
+        // Declarations do not consume physical entries. Only aliases actually
+        // requested through entries.acquire need distinct, retained Android identities.
         // Reserve an alias-capable family even when the canonical target is launched
         // first. Non-alias components cannot consume this separate finite resource.
         int first=aliasCount>0?0:RuntimeActivitySlots.ALIAS_COMPONENTS;
@@ -40,11 +49,15 @@ final class ActivityComponentLedger {
     }
     String lease(String stub){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT lease FROM activity_components WHERE stub=?",new String[]{RuntimeActivitySlots.target(stub)})){if(!c.moveToFirst())throw new SecurityException("ACTIVITY_COMPONENT_LEASE_MISSING");return c.getString(0);}}
     void require(ActivityLedger.Ticket ticket,RuntimeBroker.Slot slot){
+        requireIdentity(ticket,slot);String target=RuntimeActivitySlots.target(ticket.stub);
+        ContentValues row=new ContentValues();row.put("generation",slot.allocation.session.processGeneration);store.getWritableDatabase().update("activity_components",row,"stub=?",new String[]{target});
+    }
+    /** Same ownership proof without publishing a new component generation. */
+    void requireIdentity(ActivityLedger.Ticket ticket,RuntimeBroker.Slot slot){
         String canonical=canonical(RuntimeComponents.activity(slot.install,ticket.component));entries.require(ticket);String target=RuntimeActivitySlots.target(ticket.stub);
         try(Cursor c=store.getReadableDatabase().rawQuery("SELECT space,package,installGeneration,processName,processStub,component,lease FROM activity_components WHERE stub=?",new String[]{target})){
             if(!c.moveToFirst()||!c.getString(0).equals(ticket.space)||!c.getString(1).equals(ticket.pkg)||!c.getString(2).equals(ticket.install)||!c.getString(3).equals(ticket.process)||!c.getString(4).equals(slot.activityStub)||!c.getString(5).equals(canonical)||!c.getString(6).equals(ticket.componentLease))throw new SecurityException("ACTIVITY_COMPONENT_LEASE_MISMATCH");
         }
-        ContentValues row=new ContentValues();row.put("generation",slot.allocation.session.processGeneration);store.getWritableDatabase().update("activity_components",row,"stub=?",new String[]{target});
     }
     void releaseUnused(){
         if(store.getWritableDatabase().inTransaction())throw new IllegalStateException("ACTIVITY_OBSERVATION_DURING_TRANSACTION");
@@ -103,6 +116,7 @@ final class ActivityComponentLedger {
             }
         }
     }
+    android.content.Context contextForObservation(){return context;}
     void requireOwnTask(int taskId){if(taskId<0||!RuntimeTaskReferences.observe(context).owned.contains(taskId))throw new SecurityException("ACTIVITY_EXTERNAL_TASK_UNSUPPORTED");}
     String retainedStub(String space,String pkg,String install,String process){
         releaseUnused();String found=null;

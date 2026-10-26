@@ -1,11 +1,11 @@
 #define _GNU_SOURCE
 #include "kernel_syscall.h"
-#include "tripoder_fixed_libc.h"
 #include "tripoder_thread_park.h"
 #include "path_policy.h"
 #include "io_adapter.h"
 #include "syscall_namespace.h"
 #include "signal_chain.h"
+#include "signal_user_delivery.h"
 #include <fcntl.h>
 #include <jni.h>
 #include <stdatomic.h>
@@ -23,6 +23,11 @@
 #define syscall tp_kernel_syscall
 
 static _Atomic bool attempted;
+static int reserve_signal_delivery(void){
+    uintptr_t base,libc,real_mask;
+    if(!tp_signal_chain_platform(&base,&libc,&real_mask))return -1;
+    return tp_signal_user_delivery_reserve(base,libc,real_mask)==TP_SIGNAL_DELIVERY_OK?0:-1;
+}
 static void fail(JNIEnv *env,const char *reason){
     if((*env)->ExceptionCheck(env))return;
     jclass type=(*env)->FindClass(env,"java/lang/IllegalStateException");
@@ -50,7 +55,7 @@ JNIEXPORT jstring JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_physi
     if(size<=0||size>=(ssize_t)sizeof(actual)-1){fail_io(env,"ARTIFACT_PHYSICAL_IDENTITY_FAILED");return NULL;}
     actual[size]=0;return (*env)->NewStringUTF(env,actual);
 }
-JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_installNative(JNIEnv *env,jclass unused,jobjectArray input,jboolean thin){
+JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_installNative(JNIEnv *env,jclass unused,jobjectArray input,jboolean thin,jboolean diagnostics){
     (void)unused;bool expected=false;
     if(!atomic_compare_exchange_strong(&attempted,&expected,true)){fail(env,"NATIVE_STORAGE_ALREADY_ATTEMPTED");return;}
     jsize count=input?(*env)->GetArrayLength(env,input):0;
@@ -70,27 +75,14 @@ JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_installN
     if(tp_configure_process(count>=6?paths[5]:paths[4])!=0){fail(env,"NATIVE_STORAGE_PROCESS_CONFIGURATION_FAILED");return;}
     if(count==9&&tp_configure_host_storage(paths[6],paths[7],paths[8])!=0){fail(env,"NATIVE_HOST_STORAGE_CONFIGURATION_FAILED");return;}
     tp_configure_thin(thin);
+    tp_syscall_namespace_trace_debugger(diagnostics);
     if(tp_park_prepare_process()!=TP_PARK_OK){fail(env,"NATIVE_STORAGE_THREAD_RESERVATION_FAILED");return;}
-    const struct tp_fixed_libc_replacements replacements={tp_openat,tp_fstatat,tp_unlinkat,tp_mkdirat,tp_renameat2,
-        tp_faccessat,tp_readlinkat,tp_chdir,tp_symlinkat,tp_linkat};
-    enum tp_fixed_libc_status prepared=tp_fixed_libc_prepare(&replacements);
-    enum tp_fixed_libc_status activated=prepared==TP_FIXED_LIBC_OK?tp_fixed_libc_activate():TP_FIXED_LIBC_STATE;
-    if(prepared!=TP_FIXED_LIBC_OK||activated!=TP_FIXED_LIBC_OK){
-        struct tp_fixed_libc_report report;tp_fixed_libc_report(&report);char reason[600];
-        snprintf(reason,sizeof(reason),"NATIVE_STORAGE_PUBLICATION_FAILED:prepare=%d:activate=%d:pause=%d:observed=%u:parked=%u:pendingTid=%d:maskValid=%d:mask=%llx:errno=%d:absolute=%u:changed=%u:admission=%u:attempts=%u:elapsedNs=%llu:contextStatus=%d:contextIndex=%d:unsafeTid=%d:unsafePc=%llx:quiescenceRejections=%u",
-            prepared,activated,report.pause_status,report.pause.observed,report.pause.parked,report.pause.pending_tid,
-            report.pause.pending_mask_valid,(unsigned long long)report.pause.pending_signal_mask,report.pause.system_error,
-            report.absolute_entries,report.changed_words,report.admission_outcome,report.admission_attempts,
-            (unsigned long long)report.admission_elapsed_ns,report.context_status,report.context_index,report.unsafe_tid,
-            (unsigned long long)report.unsafe_pc,report.quiescence_rejections);
-        fail(env,reason);return;
-    }
-    struct tp_fixed_libc_report report;tp_fixed_libc_report(&report);
-    if(!report.ready||!report.enabled||report.validated_entries!=10||report.changed_words!=40||report.absolute_entries!=10||report.publications!=2||
-       report.restorations||!report.source_bti||!report.lease_held)
-        fail(env,"NATIVE_STORAGE_PUBLICATION_UNCONFIRMED");
+    /* All libc and direct-SVC filesystem calls share the syscall namespace. */
     if(!tp_signal_chain_prepare()){fail(env,"ART_SIGNAL_CHAIN_UNAVAILABLE");return;}
-    if(tp_syscall_namespace_install_with_signal_chain(tp_signal_chain_claim)!=0)fail(env,"NATIVE_SYSCALL_NAMESPACE_UNAVAILABLE");
+    if(tp_syscall_namespace_install_with_signal_chain(tp_signal_chain_claim,reserve_signal_delivery,tp_signal_chain_user_action)!=0){
+        bool ready;unsigned status;uint64_t roles,other;tp_signal_user_delivery_state(&ready,&status,&roles,&other);
+        char reason[128];snprintf(reason,sizeof(reason),"NATIVE_SYSCALL_NAMESPACE_UNAVAILABLE:userDeliveryStatus=%u",status);fail(env,reason);
+    }
 }
 JNIEXPORT jstring JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_syscallNamespaceNative(JNIEnv *env,jclass type){
     (void)type;uint64_t counts[4];tp_syscall_namespace_counts(counts);char value[256];
@@ -125,5 +117,7 @@ JNIEXPORT jbyteArray JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_re
 }
 
 JNIEXPORT jstring JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_signalChainNative(JNIEnv *env,jclass type){
-    (void)type;bool available;uint64_t changes,modules;tp_signal_chain_state(&available,&changes,&modules);char result[200];snprintf(result,sizeof(result),"{\"ready\":%s,\"patched\":%llu,\"modules\":%llu,\"claims\":%llu}",available?"true":"false",(unsigned long long)changes,(unsigned long long)modules,(unsigned long long)tp_signal_chain_claims());return (*env)->NewStringUTF(env,result);
+    (void)type;bool available,delivery;unsigned status;uint64_t changes,modules,roles,other;
+    tp_signal_chain_state(&available,&changes,&modules);tp_signal_user_delivery_state(&delivery,&status,&roles,&other);
+    char result[360];snprintf(result,sizeof(result),"{\"ready\":%s,\"patched\":%llu,\"modules\":%llu,\"claims\":%llu,\"userDeliveryReady\":%s,\"userDeliveryStatus\":%u,\"userDeliveryCalls\":%llu,\"otherMaskCalls\":%llu}",available?"true":"false",(unsigned long long)changes,(unsigned long long)modules,(unsigned long long)tp_signal_chain_claims(),delivery?"true":"false",status,(unsigned long long)roles,(unsigned long long)other);return (*env)->NewStringUTF(env,result);
 }

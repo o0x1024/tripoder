@@ -14,6 +14,7 @@ public final class ActivityFrameworkAccess {
     private final Field instrumentation,boundThread,recordIntent,recordToken,recordState,savedInstanceState,resources,theme,themeId,application,component,info,resultCode,resultData;
     private final Method view;
     private final Field autofillActivity;
+    private final Field launchIntent,launchInfo;
     private ActivityFrameworkAccess()throws Exception{
         instrumentation=FixedFrameworkMembers.field(3,1,"mInstrumentation","Landroid/app/Instrumentation;",false);
         boundThread=FixedFrameworkMembers.field(24,29,"mThread","Landroid/app/ActivityThread;",false);
@@ -25,6 +26,8 @@ public final class ActivityFrameworkAccess {
         resultCode=FixedFrameworkMembers.field(33,27,"mResultCode","I",false);resultData=FixedFrameworkMembers.field(34,27,"mResultData","Landroid/content/Intent;",false);
         view=FixedFrameworkMembers.method(31,"getView","()Landroid/view/View;",false);
         autofillActivity=FixedFrameworkMembers.field(42,60,"mActivity","Landroid/app/Activity;",false);
+        launchIntent=FixedFrameworkMembers.field(67,83,"mIntent","Landroid/content/Intent;",false);
+        launchInfo=FixedFrameworkMembers.field(68,83,"mInfo","Landroid/content/pm/ActivityInfo;",false);
     }
     public static synchronized void prepare()throws Exception{if(attempted)throw new IllegalStateException("ACTIVITY_FRAMEWORK_ALREADY_ATTEMPTED");attempted=true;instance=new ActivityFrameworkAccess();}
     private static ActivityFrameworkAccess require(){if(instance==null)throw new IllegalStateException("ACTIVITY_FRAMEWORK_NOT_READY");return instance;}
@@ -33,6 +36,11 @@ public final class ActivityFrameworkAccess {
     public static Intent recordIntent(Object record){return (Intent)FixedFrameworkMembers.get(require().recordIntent,Objects.requireNonNull(record));}
     public static IBinder recordToken(Object record){return (IBinder)Objects.requireNonNull(FixedFrameworkMembers.get(require().recordToken,Objects.requireNonNull(record)),"ACTIVITY_RECORD_TOKEN_REQUIRED");}
     public static Bundle recordState(Object record){return (Bundle)FixedFrameworkMembers.get(require().recordState,Objects.requireNonNull(record));}
+    public static boolean launchItem(Object item){return item!=null&&item.getClass()==require().launchIntent.getDeclaringClass();}
+    public static boolean physicalClient(Object client){return client==PhysicalApplication.thread();}
+    public static Intent launchIntent(Object item){if(!launchItem(item))throw new SecurityException("ACTIVITY_LAUNCH_ITEM_IDENTITY");return (Intent)FixedFrameworkMembers.get(require().launchIntent,item);}
+    public static ActivityInfo launchInfo(Object item){if(!launchItem(item))throw new SecurityException("ACTIVITY_LAUNCH_ITEM_IDENTITY");return (ActivityInfo)FixedFrameworkMembers.get(require().launchInfo,item);}
+    public static void launchInfo(Object item,ActivityInfo info){if(!launchItem(item))throw new SecurityException("ACTIVITY_LAUNCH_ITEM_IDENTITY");FixedFrameworkMembers.set(require().launchInfo,item,Objects.requireNonNull(info));}
     /** Android 16+ boot frameworks no longer declare Activity.mSavedInstanceState; callers get null there. */
     public static Bundle savedState(Activity activity){Field field=require().savedInstanceState;return field==null?null:(Bundle)FixedFrameworkMembers.get(field,Objects.requireNonNull(activity));}
     public static void apply(Activity value,Resources resources,Application application,Intent visible,ActivityInfo info,int theme){

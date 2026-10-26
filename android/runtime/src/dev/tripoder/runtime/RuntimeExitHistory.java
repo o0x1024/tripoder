@@ -35,8 +35,9 @@ final class RuntimeExitHistory {
                 byte[] summary=physical.getProcessStateSummary();
                 if(summary==null||summary.length!=68||!Arrays.equals(MAGIC,Arrays.copyOfRange(summary,0,4))||!MessageDigest.isEqual(data,Arrays.copyOfRange(summary,36,68)))continue;
                 String generation=HexFormat.of().formatHex(summary,4,36);
-                try(var session=broker.store.getReadableDatabase().rawQuery("SELECT space,package,installGeneration,pid,state,processName,activityStub FROM sessions WHERE generation=?",new String[]{generation})){
+                try(var session=broker.store.getReadableDatabase().rawQuery("SELECT space,package,installGeneration,pid,state,processName,activityStub,processKind FROM sessions WHERE generation=?",new String[]{generation})){
                     if(!session.moveToFirst()||!install.space.equals(session.getString(0))||!install.info.packageName.equals(session.getString(1))||!install.generation.equals(session.getString(2))||physical.getPid()!=session.getInt(3)||!"DEAD".equals(session.getString(4)))continue;
+                    if(!"ORDINARY".equals(session.getString(7)))throw new UnsupportedOperationException("ISOLATED_EXIT_STAMP_NOT_IMPLEMENTED");
                     String expected=broker.host.getPackageName()+":slot"+RuntimeSlot.index(session.getString(6));
                     if(physical.getRealUid()!=uid||physical.getPackageUid()!=uid||!expected.equals(physical.getProcessName()))throw new SecurityException("EXIT_SYSTEM_IDENTITY_MISMATCH");
                     Bundle row=new Bundle();row.putParcelable("info",physical);row.putString("processName",session.getString(5));rows.add(row);

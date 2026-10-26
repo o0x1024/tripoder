@@ -6,11 +6,11 @@ import java.util.*;
 /** Remaining Runtime target groups from pinned boot declarations. Inspection
  * alone grants no admission; only these exact concrete member identities do. */
 public final class FixedRuntimeHooks {
-    public enum Group { ACTIVITY_CREATION,ACTIVITY_DELIVERY,ACTIVITY_ROUTING,PACKAGES,TRAFFIC,WIFI_CHANNEL,UI,BIOMETRICS,FAILURES }
-    private static final int[] OWNERS={27,28,29,30,31,33,34,35,37,41,42,44,47,60,61};
-    private static final String[] HASHES={"e267e4418772a5e8b79faba68f1b75dad2e4b9ae15943538de2e16d41f9d77bf","2e854397afd2aee6a81e372ed4398d1a5e6413c9ac2bc4a6180d5fa192ea781f","6a96bd5a88b4f92bfda9955f8d6e57ab0f4d8328052dfc3241d384eee2c3bd17","4356ca2e7fc8608b7fdafc2d9c0a45eca665cc98aced63aff8cf44f7f9d03d64","66a5dfae818de4bcc07c3edba87f70cec94f926a6dd2def79b9e55d1b902e629","c6fb2511844b76ee5e36518335fdbb82cb50827a6fdb0e2204849e87a1090ace","2af2c8f27b80686a4981361109712276dbcb927ed9a39223ca8b69eb59b76f49","e376db2bea9747d796291a53241f099a58b4922d73b1707fb616af28ef4840d6","161485fa2d9c2fea14649387f0974f1d90279fa2ac5c718df1c8145a0300e598","e814e31f8e15f2de0118e54669ffc1362657b571b574c310926b5e4459b7c896","e77c6f944a3a7563e907c5674dbe292475481c2db90032fd403d92bbad190d22","d6afeda127517070513b8357a49689470c1b3cbb4de9a126ee0b7553aece6874","f475b4485ad8aeb38f19b10276944f878a0ac95ddc3c52f9ffa4141015b5084b","10696921fae0ba8311a8113caf07c3caccebbaa967a455494e4602e31a606f25","679eb989f370e10eac0e0204c99135b6aab839db47253d108f412b1cc89013c0"};
+    public enum Group { ACTIVITY_CREATION,ACTIVITY_DELIVERY,ACTIVITY_ROUTING,PACKAGES,TRAFFIC,WIFI_CHANNEL,UI,BIOMETRICS,FAILURES,CONTEXT_RECEIVERS,PROVIDER_INSTALLATION,RESOURCE_REGISTRATION,CONTEXT_SERVICES }
+    private static final int[] OWNERS={27,28,29,30,31,33,34,35,37,41,42,44,47,60,61,83};
+    private static final String[] HASHES={"e267e4418772a5e8b79faba68f1b75dad2e4b9ae15943538de2e16d41f9d77bf","2e854397afd2aee6a81e372ed4398d1a5e6413c9ac2bc4a6180d5fa192ea781f","6a96bd5a88b4f92bfda9955f8d6e57ab0f4d8328052dfc3241d384eee2c3bd17","4356ca2e7fc8608b7fdafc2d9c0a45eca665cc98aced63aff8cf44f7f9d03d64","66a5dfae818de4bcc07c3edba87f70cec94f926a6dd2def79b9e55d1b902e629","c6fb2511844b76ee5e36518335fdbb82cb50827a6fdb0e2204849e87a1090ace","2af2c8f27b80686a4981361109712276dbcb927ed9a39223ca8b69eb59b76f49","e376db2bea9747d796291a53241f099a58b4922d73b1707fb616af28ef4840d6","161485fa2d9c2fea14649387f0974f1d90279fa2ac5c718df1c8145a0300e598","e814e31f8e15f2de0118e54669ffc1362657b571b574c310926b5e4459b7c896","e77c6f944a3a7563e907c5674dbe292475481c2db90032fd403d92bbad190d22","d6afeda127517070513b8357a49689470c1b3cbb4de9a126ee0b7553aece6874","f475b4485ad8aeb38f19b10276944f878a0ac95ddc3c52f9ffa4141015b5084b","10696921fae0ba8311a8113caf07c3caccebbaa967a455494e4602e31a606f25","679eb989f370e10eac0e0204c99135b6aab839db47253d108f412b1cc89013c0","5d15f7da3a2acbfb49e07002fbd954758496be9ad7a2187ea6abf80f6304cd72"};
     private static final EnumMap<Group,List<Executable>> groups=new EnumMap<>(Group.class);
-    private static final int[] EXPECTED={5,11,10,514,62,1,2,2,4};
+    private static final int[] EXPECTED={6,11,10,517,62,1,2,2,4,5,1,1,2};
     private static Set<Executable> admitted=Set.of();private static boolean attempted,prepared;
     private FixedRuntimeHooks(){}
     public static synchronized void prepare()throws Exception{
@@ -28,6 +28,17 @@ public final class FixedRuntimeHooks {
         }
         selected.get(Group.ACTIVITY_CREATION).add(FixedFrameworkMembers.method(1,"performLaunchActivity","(Landroid/app/ActivityThread$ActivityClientRecord;Landroid/content/Intent;)Landroid/app/Activity;",false));
         selected.get(Group.PACKAGES).add(FixedFrameworkMembers.method(3,"getPackageManager","()Landroid/content/pm/PackageManager;",false));
+        selected.get(Group.PACKAGES).add(FixedFrameworkMembers.method(3,"getContentResolver","()Landroid/content/ContentResolver;",false));
+        selected.get(Group.PACKAGES).add(FixedFrameworkMembers.method(3,"createPackageContext","(Ljava/lang/String;I)Landroid/content/Context;",false));
+        selected.get(Group.PACKAGES).add(FixedFrameworkMembers.method(3,"createPackageContextAsUser","(Ljava/lang/String;ILandroid/os/UserHandle;)Landroid/content/Context;",false));
+        for(String signature:new String[]{"(Landroid/content/BroadcastReceiver;Landroid/content/IntentFilter;)Landroid/content/Intent;","(Landroid/content/BroadcastReceiver;Landroid/content/IntentFilter;I)Landroid/content/Intent;","(Landroid/content/BroadcastReceiver;Landroid/content/IntentFilter;Ljava/lang/String;Landroid/os/Handler;)Landroid/content/Intent;","(Landroid/content/BroadcastReceiver;Landroid/content/IntentFilter;Ljava/lang/String;Landroid/os/Handler;I)Landroid/content/Intent;"})
+            selected.get(Group.CONTEXT_RECEIVERS).add(FixedFrameworkMembers.method(3,"registerReceiver",signature,false));
+        selected.get(Group.CONTEXT_RECEIVERS).add(FixedFrameworkMembers.method(3,"unregisterReceiver","(Landroid/content/BroadcastReceiver;)V",false));
+        // Applications unwrap every ContextWrapper to the raw ContextImpl and bind through it by reflection (Chrome does, for its GPU process).
+        selected.get(Group.CONTEXT_SERVICES).add(FixedFrameworkMembers.method(3,"bindServiceAsUser","(Landroid/content/Intent;Landroid/content/ServiceConnection;ILandroid/os/Handler;Landroid/os/UserHandle;)Z",false));
+        selected.get(Group.CONTEXT_SERVICES).add(FixedFrameworkMembers.method(3,"bindServiceAsUser","(Landroid/content/Intent;Landroid/content/ServiceConnection;Landroid/content/Context$BindServiceFlags;Landroid/os/Handler;Landroid/os/UserHandle;)Z",false));
+        selected.get(Group.PROVIDER_INSTALLATION).add(FixedFrameworkMembers.method(1,"installContentProviders","(Landroid/content/Context;Ljava/util/List;)V",false));
+        selected.get(Group.RESOURCE_REGISTRATION).add(FixedFrameworkMembers.method(77,"registerResourcePaths","(Ljava/lang/String;Landroid/content/pm/ApplicationInfo;)V",false));
         Set<Executable> all=new HashSet<>();
         for(Group group:Group.values()){
             List<Executable> members=selected.get(group);members.sort(Comparator.comparing(m->m.getDeclaringClass().getName()+"."+key(m)));
@@ -66,6 +77,7 @@ public final class FixedRuntimeHooks {
             case 44:if(Modifier.isStatic(flags)&&method.getParameterCount()>0&&method.getParameterTypes()[0]==String.class)return Group.PACKAGES;break;
             case 47:if(key.equals("close()V"))return Group.WIFI_CHANNEL;break;
             case 60:if(key.equals("autofillClientGetComponentName()Landroid/content/ComponentName;"))return Group.UI;break;
+            case 83:if(key.equals("preExecute(Landroid/app/ClientTransactionHandler;)V"))return Group.ACTIVITY_CREATION;break;
             case 61:if(key.equals("authenticateInternal(JLandroid/os/CancellationSignal;Ljava/util/concurrent/Executor;Landroid/hardware/biometrics/BiometricPrompt$AuthenticationCallback;I)J"))return Group.BIOMETRICS;break;
             default:throw new IllegalStateException("FIXED_RUNTIME_OWNER_UNHANDLED");
         }

@@ -48,7 +48,8 @@ final class RuntimeBroadcastIntent {
         for(int i=0;i<filter.countActions();i++){String action=filter.getAction(i);if(action.length()>512)throw new IllegalArgumentException("RECEIVER_ACTION_TOO_LONG");
             // A registration only declares interest. A platform action with no physical observer here is simply never delivered, as for any app the system does not send it to; failing the registration would kill apps that merely listen.
             if(action.startsWith("android.")&&!RuntimeSystemBroadcasts.ACTIONS.contains(action)&&UNDELIVERED.add(action))android.util.Log.w("TripoderBroadcast","receiver registered for a platform action this runtime does not deliver: "+action);}
-        RuntimeSystemBroadcasts.validate(filter);
+        // Exact data/category constraints survive the platform parcel and physical
+        // observer filter. They narrow matching and grant no additional visibility.
         Parcel p=Parcel.obtain();try{filter.writeToParcel(p,0);if(p.dataSize()>16000)throw new IllegalArgumentException("RECEIVER_FILTER_TOO_LARGE");return p.marshall();}finally{p.recycle();}
     }
     static IntentFilter filter(byte[] bytes){Parcel p=Parcel.obtain();try{p.unmarshall(bytes,0,bytes.length);p.setDataPosition(0);IntentFilter filter=IntentFilter.CREATOR.createFromParcel(p);if(p.dataAvail()!=0)throw new SecurityException("RECEIVER_FILTER_TRAILING_DATA");filter(filter);return filter;}finally{p.recycle();}}

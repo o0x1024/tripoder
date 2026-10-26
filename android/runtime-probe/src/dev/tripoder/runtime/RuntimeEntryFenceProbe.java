@@ -23,7 +23,7 @@ public final class RuntimeEntryFenceProbe {
                 broker.contract.accept(operation,"owned-entry-fixture",ApkStore.textDigest(operation));broker.contract.start(operation);
                 String ticket=broker.activities.prepare(slot,component,null,operation,broker.host.getPackageName(),null,null);
                 // The fixture starts the entry for a result inside its own task, so the launcher-style task flags are cleared.
-                Intent intent=broker.activities.controllerEntry(broker.host,ticket,false).setFlags(0);
+                Intent intent=broker.activities.controllerEntry(broker.host,ticket,null).setFlags(0);
                 out.putParcelable("intent",intent);out.putString("operation",operation);out.putString("generation",slot.allocation.session.processGeneration);out.putInt("pid",broker.contract.getSession(slot.allocation.session.processGeneration).pid);return out;
             }
         }

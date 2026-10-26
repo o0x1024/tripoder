@@ -8,7 +8,7 @@ import static dev.tripoder.runtime.script.HookEvidence.*;
 
 /** The only compilation entry accepts the original source snapshot, never a caller-supplied AST. */
 public final class DraftCompiler {
-    public static final String VERSION="tripoder-restricted-source-v1";
+    public static final String VERSION="tripoder-restricted-source-v2";
     public record Plan(String id,String sourceSha256,String compilerVersion,HookEvidence evidence,
                        Map<String,ParameterSpec> specs,Map<String,Object> parameters,List<HookRule> rules,
                        List<Map<String,Object>> bindings) {}
@@ -22,15 +22,19 @@ public final class DraftCompiler {
     private final IdentityHashMap<Object,ParameterSpec> schemas=new IdentityHashMap<>();
     private boolean collecting;
     private final java.util.function.Function<String,Map<String,Object>> codeSnapshot;
-    private DraftCompiler(HookEvidence evidence,java.util.function.Function<String,Map<String,Object>> codeSnapshot){this.evidence=evidence;this.codeSnapshot=codeSnapshot;}
+    private final java.util.function.BiFunction<String,Object,Map<String,Object>> evidenceSnapshot;
+    private DraftCompiler(HookEvidence evidence,java.util.function.Function<String,Map<String,Object>> codeSnapshot,java.util.function.BiFunction<String,Object,Map<String,Object>> evidenceSnapshot){this.evidence=evidence;this.codeSnapshot=codeSnapshot;this.evidenceSnapshot=evidenceSnapshot;}
     public static Plan compile(String source,HookEvidence evidence){
         return compile(source,evidence,id->{throw new UnsupportedOperationException("CODE_SNAPSHOT_UNSUPPORTED");});
     }
     public static Plan compile(String source,HookEvidence evidence,java.util.function.Function<String,Map<String,Object>> codeSnapshot){
+        return compile(source,evidence,codeSnapshot,(tag,value)->{throw new UnsupportedOperationException("EVIDENCE_CAPTURE_UNSUPPORTED");});
+    }
+    public static Plan compile(String source,HookEvidence evidence,java.util.function.Function<String,Map<String,Object>> codeSnapshot,java.util.function.BiFunction<String,Object,Map<String,Object>> evidenceSnapshot){
         require(source!=null&&source.length()<=24000,"HOOK_SOURCE_SIZE");
         for(int i=0;i<source.length();i++){char c=source.charAt(i);if(Character.isHighSurrogate(c)){require(i+1<source.length()&&Character.isLowSurrogate(source.charAt(++i)),"DRAFT_SOURCE_SURROGATE");}else require(!Character.isLowSurrogate(c),"DRAFT_SOURCE_SURROGATE");}
         String snapshot=source;String sha=digest(snapshot);
-        return new DraftCompiler(Objects.requireNonNull(evidence),Objects.requireNonNull(codeSnapshot)).prepare(snapshot,sha);
+        return new DraftCompiler(Objects.requireNonNull(evidence),Objects.requireNonNull(codeSnapshot),Objects.requireNonNull(evidenceSnapshot)).prepare(snapshot,sha);
     }
     private Plan prepare(String source,String sha){
         List<Map<String,Object>> program=new DraftParser(source).program();DraftSyntax.check(program);
@@ -71,7 +75,23 @@ public final class DraftCompiler {
             Map<String,Object> holder=Collections.singletonMap("schema",Collections.unmodifiableMap(schema));schemas.put(holder,spec);return holder;
         }));return Collections.unmodifiableMap(out);
     }
-    private Map<String,Object> context(){return Map.of("java",Map.of("method",RestrictedAst.capability(this::javaMethod)),"native",Map.of("function",RestrictedAst.capability(this::nativeFunction)),"code",Map.of("snapshotDex",RestrictedAst.capability(args->{require(!collecting,"CODE_CAPTURE_OUTSIDE_INVOCATION");arity(args,1,1);String id=string(args.get(0));require(id.matches("[A-Za-z0-9_-]{1,80}"),"DEX_REFERENCE");return ScriptValues.freeze(codeSnapshot.apply(id));})),"debug",Map.of("emitEvent",RestrictedAst.capability(this::emitEvent),"captureJavaStack",RestrictedAst.capability(this::captureJavaStack),"callerModuleOffset",RestrictedAst.capability(this::callerModuleOffset)));}
+    private Map<String,Object> context(){return Map.of("java",Map.of("method",RestrictedAst.capability(this::javaMethod),"objectInfo",RestrictedAst.capability(args->{objectInvocation(args);arity(args,1,1);return ScriptValues.freeze(JavaObjectScope.info(args.get(0)));}),"snapshotThread",RestrictedAst.capability(args->{objectInvocation(args);arity(args,1,1);return ScriptValues.freeze(JavaObjectSnapshots.thread(args.get(0)));}),"snapshotThrowable",RestrictedAst.capability(this::snapshotThrowable)),"native",Map.of("function",RestrictedAst.capability(this::nativeFunction),"captureBuffer",RestrictedAst.capability(this::captureNativeBuffer)),"code",Map.of("snapshotDex",RestrictedAst.capability(args->{require(!collecting,"CODE_CAPTURE_OUTSIDE_INVOCATION");arity(args,1,1);String id=string(args.get(0));require(id.matches("[A-Za-z0-9_-]{1,80}"),"DEX_REFERENCE");return ScriptValues.freeze(codeSnapshot.apply(id));})),"debug",Map.of("emitEvent",RestrictedAst.capability(this::emitEvent),"captureEvidence",RestrictedAst.capability(this::captureEvidence),"captureJavaStack",RestrictedAst.capability(this::captureJavaStack),"callerModuleOffset",RestrictedAst.capability(this::callerModuleOffset)));}
+    private Object captureNativeBuffer(List<Object> args){
+        require(!collecting,"NATIVE_BUFFER_OUTSIDE_INVOCATION");arity(args,3,3);
+        int[] values=new int[3];for(int i=0;i<3;i++){Object value=args.get(i);require(value instanceof Double&&(Double)value==Math.rint((Double)value)&&(Double)value>=0&&(Double)value<=1024,"NATIVE_BUFFER_ARGUMENT");values[i]=((Double)value).intValue();}
+        return ScriptValues.freeze(NativeBufferScope.capture(values[0],values[1],values[2]));
+    }
+    private void objectInvocation(List<Object> args){require(!collecting,"HOOK_OBJECT_OUTSIDE_INVOCATION");}
+    private Object snapshotThrowable(List<Object> args){
+        objectInvocation(args);arity(args,1,2);Map<String,Object> options=args.size()==2?object(args.get(1)):Map.of();require(Set.of("maxFrames","maxCauses").containsAll(options.keySet()),"HOOK_SNAPSHOT_FIELDS");
+        int frames=limitOption(options,"maxFrames",16,32),causes=limitOption(options,"maxCauses",4,6);
+        return ScriptValues.freeze(JavaObjectSnapshots.throwable(args.get(0),frames,causes));
+    }
+    private int limitOption(Map<String,Object> options,String key,int initial,int max){Object value=options.getOrDefault(key,(double)initial);require(value instanceof Double&&(Double)value==Math.rint((Double)value)&&(Double)value>=1&&(Double)value<=max,"HOOK_SNAPSHOT_LIMIT:"+key);return ((Double)value).intValue();}
+    private Object captureEvidence(List<Object> args){
+        require(!collecting,"HOOK_EMIT_OUTSIDE_INVOCATION");arity(args,2,2);String tag=string(args.get(0));require(tag.matches("[a-zA-Z0-9_.:-]{1,64}"),"HOOK_EVENT_TAG");
+        Object snapshot=ScriptValues.freeze(args.get(1));return ScriptValues.freeze(evidenceSnapshot.apply(tag,snapshot));
+    }
     private Object emitEvent(List<Object> args){
         require(!collecting,"HOOK_EMIT_OUTSIDE_INVOCATION");arity(args,1,2);
         String tag=string(args.get(0));require(tag.matches("[a-zA-Z0-9_.:-]{1,64}"),"HOOK_EVENT_TAG");

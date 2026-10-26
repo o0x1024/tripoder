@@ -1,9 +1,10 @@
 #include "art_reflection_view.h"
+#include "physical_application.h"
 #include <stdatomic.h>
 #include <stdio.h>
 #include <unistd.h>
 
-enum { HOST,GUEST,INFO,LOADER,OWNER,FACTORY,RESOURCES,THREAD,PHYSICAL,LOGICAL,CONTEXT,DECLARED,ROOTS };
+enum { HOST,GUEST,INFO,LOADER,OWNER,FACTORY,RESOURCES,THREAD,PHYSICAL,LOGICAL,CONTEXT,DECLARED,PREPARED_FACTORY,ROOTS };
 static struct {
     jclass classes[7];jfieldID fields[12];jmethodID methods[10];jobject roots[ROOTS];
     unsigned retained,checks,constructs,attaches;
@@ -11,7 +12,7 @@ static struct {
     const char *stage;
     const char *broken;
 } state={.stage="NOT_STARTED"};
-static _Atomic bool attempted,ownership_ready,view_attempted,begun,creation_attempted;
+static _Atomic bool attempted,ownership_ready,view_attempted,begun,package_attempted,creation_attempted;
 static const char *class_names[]={"android/app/Application","android/app/ActivityThread","android/app/LoadedApk",
     "android/app/ContextImpl","android/content/pm/ApplicationInfo","android/app/QueuedWork","android/content/ContextWrapper"};
 
@@ -38,7 +39,7 @@ static bool keep(JNIEnv *env,unsigned slot,jobject value){
  * the DEX sequence accepts every loader that can only resolve this guest's classes, while a loader from another
  * installation never reaches this root.
  */
-static bool owned_loader(JNIEnv *env,jobject candidate){
+static bool rooted_loader(JNIEnv *env,jobject candidate){
     if(!candidate||!state.roots[OWNER])return false;
     if(same(env,candidate,state.roots[OWNER]))return true;
     jclass type=(*env)->FindClass(env,"java/lang/ClassLoader");
@@ -52,6 +53,25 @@ static bool owned_loader(JNIEnv *env,jobject candidate){
         candidate=next;
     }
     return false;
+}
+static bool owned_loader(JNIEnv *env,jobject candidate){
+    if(rooted_loader(env,candidate))return true;
+    if(!candidate||!state.roots[GUEST]||(*env)->ExceptionCheck(env))return false;
+    jclass class_type=(*env)->FindClass(env,"java/lang/Class"),loader_type=(*env)->FindClass(env,"java/lang/ClassLoader");
+    if(!class_type||!loader_type)return false;
+    jmethodID defining=(*env)->GetMethodID(env,class_type,"getClassLoader","()Ljava/lang/ClassLoader;"),
+        name=(*env)->GetMethodID(env,class_type,"getName","()Ljava/lang/String;"),
+        load=(*env)->GetMethodID(env,loader_type,"loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
+    if(!defining||!name||!load)return false;
+    jobject candidate_class=(*env)->GetObjectClass(env,candidate),application_class=(*env)->GetObjectClass(env,state.roots[GUEST]);
+    jobject loader_owner=(*env)->CallObjectMethod(env,candidate_class,defining);
+    if((*env)->ExceptionCheck(env)||!rooted_loader(env,loader_owner))return false;
+    jobject application_owner=(*env)->CallObjectMethod(env,application_class,defining);
+    if((*env)->ExceptionCheck(env)||!rooted_loader(env,application_owner))return false;
+    jobject application_name=(*env)->CallObjectMethod(env,application_class,name);
+    if((*env)->ExceptionCheck(env))return false;
+    jobject resolved=(*env)->CallObjectMethod(env,candidate,load,application_name);
+    return !(*env)->ExceptionCheck(env)&&same(env,resolved,application_class);
 }
 /** A guest-owned Application is one the guest attached to its own LoadedApk: the structural fact a hot-fix proxy creates. */
 static bool guest_attached(JNIEnv *env,jobject application){
@@ -85,7 +105,7 @@ static bool physical(JNIEnv *env,bool attached){
         // The class loader pair belongs to the guest, exactly as its resources do: platform hot-fix and plugin runtimes
         // replace it during attachBaseContext to publish patch/plugin DEX. Accept any replacement that still resolves
         // inside this installation's verified DEX sequence, and reject one that would escape it.
-        const unsigned expected[]={OWNER,OWNER,RESOURCES,FACTORY,DECLARED};
+        const unsigned expected[]={OWNER,OWNER,RESOURCES,state.roots[FACTORY]?FACTORY:PREPARED_FACTORY,DECLARED};
         const char *names[]={"logical.mClassLoader","logical.mDefaultClassLoader","logical.mResources","logical.mAppComponentFactory","logical.mApplicationInfo"};
         for(unsigned i=0;valid&&i<5;i++){
             jobject value=(*env)->GetObjectField(env,state.roots[LOGICAL],state.fields[4+i]);
@@ -97,7 +117,7 @@ static bool physical(JNIEnv *env,bool attached){
             if(expected[i]==OWNER){
                 if(!owned_loader(env,value)){valid=false;state.broken=names[i];}
             }else{
-                valid=same(env,value,state.roots[expected[i]]);
+                valid=(!value&&!state.roots[expected[i]])||same(env,value,state.roots[expected[i]]);
                 if(!valid)state.broken=names[i];
             }
         }
@@ -153,24 +173,22 @@ JNIEXPORT jobject JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_current(
     (void)unused;if(!atomic_load_explicit(&begun,memory_order_acquire)){fail(env,"APPLICATION_NOT_BEGUN");return NULL;}
     return tp_art_reflection_value(env);
 }
-JNIEXPORT jobject JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_createNative(JNIEnv *env,jclass unused,
-    jobject host,jobject guest,jobject info,jobject loader,jobject owner,jobject factory,jobject resources){
+JNIEXPORT void JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_preparePackageNative(JNIEnv *env,jclass unused,
+    jobject host,jobject info,jobject loader,jobject owner,jobject resources){
     (void)unused;bool expected=false;
-    if(!atomic_load_explicit(&begun,memory_order_acquire)||!atomic_compare_exchange_strong(&creation_attempted,&expected,true)
-        ||!same(env,host,state.roots[HOST])){fail(env,"APPLICATION_CREATE_STATE");return NULL;}
+    if(!atomic_load_explicit(&begun,memory_order_acquire)||!atomic_compare_exchange_strong(&package_attempted,&expected,true)
+        ||!same(env,host,state.roots[HOST])){fail(env,"APPLICATION_PACKAGE_STATE");return;}
     state.tid=gettid();
-    if(!keep(env,GUEST,guest)||!keep(env,INFO,info)||!keep(env,LOADER,loader)||!keep(env,OWNER,owner)||
-       !keep(env,FACTORY,factory)||!keep(env,RESOURCES,resources))goto error;
-    state.stage="LOADER_OWNERSHIP";
-    if(!owned_loader(env,loader))goto error;
-    if(!physical(env,false)||!tp_art_reflection_promote(env,guest))goto error;
+    if(!keep(env,INFO,info)||!keep(env,LOADER,loader)||!keep(env,OWNER,owner)||!keep(env,RESOURCES,resources))goto error;
+    state.stage="PACKAGE_LOADER_OWNERSHIP";
+    if(!owned_loader(env,loader)||!physical(env,false))goto error;
     jobject thread=state.roots[THREAD],apk=state.roots[PHYSICAL];
     state.stage="LOGICAL_LOADED_APK";
     jmethodID copy=(*env)->GetMethodID(env,state.classes[4],"<init>","(Landroid/content/pm/ApplicationInfo;)V");
     jfieldID data_dir=(*env)->GetFieldID(env,state.classes[4],"dataDir","Ljava/lang/String;");
     jfieldID component_factory=(*env)->GetFieldID(env,state.classes[4],"appComponentFactory","Ljava/lang/String;");
     if(!copy||!data_dir||!component_factory)goto error;
-    jobject declared=(*env)->NewObject(env,state.classes[4],copy,info);
+    jobject declared=info;
     jobject construction=(*env)->NewObject(env,state.classes[4],copy,info);
     jobject data=(*env)->GetObjectField(env,info,data_dir);
     if(!declared||!construction||!data||(*env)->ExceptionCheck(env))goto error;
@@ -178,16 +196,10 @@ JNIEXPORT jobject JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_createNa
     (*env)->SetObjectField(env,construction,state.fields[9],data);
     (*env)->SetObjectField(env,construction,component_factory,NULL);
     jfieldID primary_cpu_abi=(*env)->GetFieldID(env,state.classes[4],"primaryCpuAbi","Ljava/lang/String;");
-    if(!primary_cpu_abi){(*env)->ExceptionClear(env);}
-    else{
-        jobject abi=(*env)->GetObjectField(env,info,primary_cpu_abi);
-        if(!abi)abi=(*env)->NewStringUTF(env,"arm64-v8a");
-        if(abi){
-            (*env)->SetObjectField(env,declared,primary_cpu_abi,abi);
-            (*env)->SetObjectField(env,construction,primary_cpu_abi,abi);
-            (*env)->DeleteLocalRef(env,abi);
-        }
-    }
+    if(!primary_cpu_abi)goto error;
+    jobject abi=(*env)->NewStringUTF(env,"arm64-v8a");if(!abi)goto error;
+    (*env)->SetObjectField(env,declared,primary_cpu_abi,abi);
+    (*env)->SetObjectField(env,construction,primary_cpu_abi,abi);(*env)->DeleteLocalRef(env,abi);
     jobject compatibility=(*env)->CallObjectMethod(env,apk,state.methods[3]);
     if(!compatibility||(*env)->ExceptionCheck(env))goto error;
     jobject logical=(*env)->NewObject(env,state.classes[2],state.methods[2],thread,construction,compatibility,NULL,
@@ -198,8 +210,44 @@ JNIEXPORT jobject JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_createNa
     (*env)->SetObjectField(env,logical,state.fields[4],loader);
     (*env)->SetObjectField(env,logical,state.fields[5],loader);
     (*env)->SetObjectField(env,logical,state.fields[6],resources);
-    (*env)->SetObjectField(env,logical,state.fields[7],factory);
+    // The real constructor selected its SDK factory without executing a guest
+    // selector. Retain it during the later declared factory's initializer,
+    // exactly as createOrUpdateClassLoaderLocked does before assignment.
+    jobject prepared_factory=(*env)->GetObjectField(env,logical,state.fields[7]);
+    if(!prepared_factory||(*env)->ExceptionCheck(env)||!keep(env,PREPARED_FACTORY,prepared_factory))goto error;
     if((*env)->ExceptionCheck(env)||!keep(env,LOGICAL,logical)||!keep(env,DECLARED,declared))goto error;
+    if(!tp_physical_bind_logical(env,host,logical))goto error;
+    if(!physical(env,false))goto error;
+    state.stage="PACKAGE_PREPARED_BEFORE_FACTORY";return;
+error:
+    fail(env,state.stage);
+}
+JNIEXPORT void JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_publishFactoryNative(JNIEnv *env,jclass unused,jobject factory){
+    (void)unused;
+    if(state.tid!=gettid()||!state.roots[LOGICAL]||state.roots[GUEST]||state.roots[FACTORY]||!factory||!physical(env,false)){fail(env,"APPLICATION_FACTORY_ORDER");return;}
+    if(!keep(env,FACTORY,factory)){fail(env,"APPLICATION_FACTORY_ROOT");return;}
+    (*env)->SetObjectField(env,state.roots[LOGICAL],state.fields[7],factory);
+    if((*env)->ExceptionCheck(env)||!physical(env,false)){fail(env,"APPLICATION_FACTORY_PUBLICATION");return;}
+    state.stage="FACTORY_PUBLISHED";
+}
+JNIEXPORT void JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_publishLoaderNative(JNIEnv *env,jclass unused,jobject loader){
+    (void)unused;
+    if(state.tid!=gettid()||!state.roots[FACTORY]||state.roots[GUEST]||!physical(env,false)||!owned_loader(env,loader)){fail(env,"APPLICATION_LOADER_ORDER");return;}
+    jobject selected=(*env)->NewGlobalRef(env,loader);if(!selected){fail(env,"APPLICATION_LOADER_ROOT");return;}
+    (*env)->DeleteGlobalRef(env,state.roots[LOADER]);state.roots[LOADER]=selected;
+    (*env)->SetObjectField(env,state.roots[LOGICAL],state.fields[4],loader);
+    if((*env)->ExceptionCheck(env)||!physical(env,false)){fail(env,"APPLICATION_LOADER_PUBLICATION");return;}
+    state.stage="LOADER_PUBLISHED";
+}
+JNIEXPORT jobject JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_createNative(JNIEnv *env,jclass unused,
+    jobject host,jobject guest,jobject info,jobject loader,jobject owner,jobject factory,jobject resources){
+    (void)unused;bool expected=false;
+    if(!atomic_load_explicit(&begun,memory_order_acquire)||!atomic_compare_exchange_strong(&creation_attempted,&expected,true)
+        ||!same(env,host,state.roots[HOST])||!same(env,info,state.roots[INFO])||!same(env,loader,state.roots[LOADER])
+        ||!same(env,owner,state.roots[OWNER])||!same(env,factory,state.roots[FACTORY])){fail(env,"APPLICATION_CREATE_STATE");return NULL;}
+    (void)resources;
+    if(!keep(env,GUEST,guest)||!physical(env,false)||!tp_art_reflection_promote(env,guest))goto error;
+    jobject thread=state.roots[THREAD],logical=state.roots[LOGICAL];
     state.stage="LOGICAL_CONTEXT";
     jclass context_type=(*env)->FindClass(env,"android/content/Context");
     jmethodID package_name=context_type?(*env)->GetMethodID(env,context_type,"getPackageName","()Ljava/lang/String;"):NULL;

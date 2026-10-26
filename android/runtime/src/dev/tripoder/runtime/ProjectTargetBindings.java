@@ -76,7 +76,14 @@ public final class ProjectTargetBindings {
         try{
             synchronized(broker){
 
-                Row prior=space==null?row(project):rowIn(project,space);if(prior==null)throw new IllegalStateException("PROJECT_NOT_BOUND");
+                Row prior=space==null?row(project):rowIn(project,space);
+                // An installed application that was never launched has no direct binding yet and shows the default mode. Bind the exact
+                // generation the caller named, as a launch would, so the mode can be chosen before the first run.
+                if(prior==null&&space!=null&&expectedGeneration!=null){
+                    ApplicationProjects projects=new ApplicationProjects(broker);String pkg=projects.packageOf(project);
+                    if(pkg!=null){projects.targetMetadata(space,pkg,expectedGeneration);prior=rowIn(project,space);}
+                }
+                if(prior==null)throw new IllegalStateException("PROJECT_NOT_BOUND");
                 if(expectedGeneration!=null&&!expectedGeneration.equals(prior.generation))throw new IllegalStateException("INSTALL_GENERATION_CONFLICT");
                 broker.hookClaims.requireUnclaimedBinding(project,prior.operation);
                 if(!"DIRECT".equals(prior.kind))throw new IllegalStateException("PROJECT_BINDING_KIND_MISMATCH");

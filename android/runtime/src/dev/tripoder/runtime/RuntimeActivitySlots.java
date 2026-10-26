@@ -6,9 +6,9 @@ import java.util.regex.*;
 final class RuntimeActivitySlots {
     static final int AFFINITIES=8,NO_AFFINITY=8,ALIASES=2,ALIAS_COMPONENTS=2;
     private static final String PREFIX="dev.tripoder.runtime.generated."+RuntimeComponentBuild.ACTIVITY_POOL_PREFIX;
-    private static final String SUFFIX="([0-7])\\$F([0-8])M([0-3])C([0-9]+)(R1)?(?:E([0-1]))?";
+    private static final String SUFFIX="([0-7])\\$F([0-8])M([0-4])C([0-9]+)(R1)?(?:E([0-1]))?";
     private static final Pattern NAME=Pattern.compile(Pattern.quote(PREFIX)+SUFFIX);
-    static int capacity(int mode){if(mode<0||mode>3)throw new IllegalArgumentException("ACTIVITY_LAUNCH_MODE_UNSUPPORTED");return mode<2?16:8;}
+    static int capacity(int mode){if(mode<0||mode>4)throw new IllegalArgumentException("ACTIVITY_LAUNCH_MODE_UNSUPPORTED");return mode<2?16:8;}
     static String name(int process,int component,int mode,int affinity,boolean reparent){
         if(process<0||process>=RuntimeSlot.CAPACITY||component<0||component>=capacity(mode)||affinity<0||affinity>NO_AFFINITY||(reparent&&mode>=2))throw new IllegalArgumentException("ACTIVITY_STUB_INVALID");
         return PREFIX+process+"$F"+affinity+"M"+mode+"C"+component+(reparent?"R1":"");

@@ -13,6 +13,7 @@ final class RuntimeSelfHookLifecycle {
     interface ReceiverRoute {
         boolean owns(Object receiver);
         Object pending(Object receiver);
+        boolean platformContext(Object context);
         Object before(Object receiver,Object intent,Object pending);
         Object context(Object original);
         void after(Object receiver,boolean success)throws Throwable;
@@ -34,7 +35,7 @@ final class RuntimeSelfHookLifecycle {
         // onReceive is also an ordinary public Java method. A local call has
         // no Android delivery token and must neither claim a ticket nor invent
         // receiver lifecycle receipts. Real system deliveries retain every guard.
-        if(pending==null)return original.call(arguments);
+        if(pending==null||!route.platformContext(arguments[0]))return original.call(arguments);
         Object logical=route.before(receiver,arguments[1],pending);
         if(logical==null)return null;
         boolean success=false;Throwable failure=null;

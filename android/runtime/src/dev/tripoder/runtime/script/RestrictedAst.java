@@ -43,8 +43,8 @@ public final class RestrictedAst {
         private Handler(Callable function) { this.function = function; }
         public Object invoke(Map<String,Object> call) { return invoke(call, new Budget()); }
         Object invoke(Map<String,Object> call, Budget budget) {
-            Object input = freeze(call);
-            return freeze(function.call(Collections.singletonList(input), budget));
+            Object input = ScriptValues.freezeInvocation(call);
+            return ScriptValues.freezeInvocation(function.call(Collections.singletonList(input), budget));
         }
     }
     private static final class Returned {
@@ -177,7 +177,7 @@ public final class RestrictedAst {
                 throw new ScriptFault("DRAFT_LOGICAL_OPERATOR");
             }
             case "UnaryExpression": {
-                Object v=eval(node(n.get("argument")),s,b); require(scalar(v),"DRAFT_SCALAR_REQUIRED");
+                Object v=eval(node(n.get("argument")),s,b); if(v instanceof JavaObjectScope.Ref){JavaObjectScope.invocationValue(v);String op=string(n.get("operator"));require(op.equals("!")||op.equals("typeof"),"HOOK_OBJECT_OPERATION_UNSUPPORTED");return op.equals("typeof")?"object":false;} require(scalar(v),"DRAFT_SCALAR_REQUIRED");
                 switch(string(n.get("operator"))) {
                     case "!": return !truth(v);
                     case "-": return limit(v instanceof BigInteger?((BigInteger)v).negate():-number(v));
@@ -249,6 +249,7 @@ public final class RestrictedAst {
         if(negative&&d<0)d+=length;return (int)Math.max(0,Math.min(length,d));
     }
     private static Object binary(String op,Object a,Object b) {
+        if(a instanceof JavaObjectScope.Ref||b instanceof JavaObjectScope.Ref){require(op.equals("===")||op.equals("!=="),"HOOK_OBJECT_OPERATION_UNSUPPORTED");JavaObjectScope.invocationValue(a);JavaObjectScope.invocationValue(b);return op.equals("===")?a==b:a!=b;}
         require(scalar(a)&&scalar(b),"DRAFT_SCALAR_REQUIRED");
         if(op.equals("===")||op.equals("!==")) {
             boolean eq=a==b||(a!=null&&b!=null&&a.getClass()==b.getClass()&&(a instanceof Double?(double)(Double)a==(double)(Double)b:a.equals(b)));

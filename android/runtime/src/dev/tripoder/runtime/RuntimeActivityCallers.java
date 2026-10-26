@@ -28,6 +28,10 @@ final class RuntimeActivityCallers {
             if(physical!=null&&!physical.getPackageName().equals(origin.pkg))throw new SecurityException("ACTIVITY_CONTROLLER_CALLER_MISMATCH");
             return physical;
         }
+        if(origin.kind.equals("CONTEXT")){
+            if(origin.expectsResult||origin.component!=null||origin.physical!=null||physical!=null)throw new SecurityException("ACTIVITY_CONTEXT_RESULT_OWNER_MISMATCH");
+            return null;
+        }
         if(!origin.kind.equals("ACTIVITY"))throw new SecurityException("ACTIVITY_SOURCE_UNRECORDED");
         if(!origin.expectsResult){if(physical!=null)throw new SecurityException("UNEXPECTED_ANDROID_RESULT_OWNER");return null;}
         if(physical==null||!physical.getPackageName().equals(RuntimeEngine.current.host.getPackageName())||!physical.getClassName().equals(origin.physical))throw new SecurityException("ANDROID_RESULT_OWNER_MISMATCH:"+physical);

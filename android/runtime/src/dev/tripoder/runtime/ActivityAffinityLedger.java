@@ -11,6 +11,11 @@ final class ActivityAffinityLedger {
     ActivityAffinityLedger(RuntimeStore store){this.store=store;}
     static void create(SQLiteDatabase db){db.execSQL("CREATE TABLE activity_affinities(lease TEXT PRIMARY KEY,space TEXT NOT NULL,uidDomain TEXT NOT NULL,logical TEXT NOT NULL,slot INTEGER UNIQUE NOT NULL,UNIQUE(space,uidDomain,logical))");}
     static final class Affinity {final String lease;final int slot;Affinity(String lease,int slot){this.lease=lease;this.slot=slot;}}
+    void requireCapacity(String space,String pkg,String logical){
+        if(logical==null)return;
+        try(Cursor c=store.getReadableDatabase().rawQuery("SELECT 1 FROM activity_affinities WHERE space=? AND uidDomain=? AND logical=?",new String[]{space,pkg,logical})){if(c.moveToFirst())return;}
+        try(Cursor c=store.getReadableDatabase().rawQuery("SELECT COUNT(*) FROM activity_affinities",null)){if(!c.moveToFirst()||c.getInt(0)>=RuntimeActivitySlots.AFFINITIES)throw new IllegalStateException("ACTIVITY_AFFINITY_CAPACITY_EXHAUSTED");}
+    }
     Affinity acquire(String space,String pkg,String logical){
         if(logical==null)return new Affinity(null,RuntimeActivitySlots.NO_AFFINITY);
         try(Cursor c=store.getReadableDatabase().rawQuery("SELECT lease,slot FROM activity_affinities WHERE space=? AND uidDomain=? AND logical=?",new String[]{space,pkg,logical})){if(c.moveToFirst())return new Affinity(c.getString(0),c.getInt(1));}

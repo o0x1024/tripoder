@@ -11,12 +11,14 @@ final class GuestActivityInfo {
         if(!engine.packageName.equals(component.getPackageName()))throw new PackageManager.NameNotFoundException(component.flattenToString());
         if((flags&~0xFFFFFFFFL)!=0)throw new UnsupportedOperationException("ACTIVITY_INFO_FLAGS_UNSUPPORTED:0x"+Long.toHexString(flags));
         ActivityInfo selected=null;if(engine.packageArchive.activities!=null)for(ActivityInfo value:engine.packageArchive.activities)if(value.name.equals(component.getClassName())){selected=value;break;}
+        android.os.Bundle states=RuntimeComponentState.snapshot(engine);
+        boolean enabled=selected!=null&&RuntimeComponentState.enabled(states,selected);
         long direct=flags&(PackageManager.MATCH_DIRECT_BOOT_AWARE|PackageManager.MATCH_DIRECT_BOOT_UNAWARE);
         // ApplicationPackageManager normally expands AUTO before IPC. A direct local
         // endpoint query still uses the actual user unlock state, never a fixed value.
         if(direct==0&&(flags&PackageManager.MATCH_DIRECT_BOOT_AUTO)!=0)direct=PackageManager.MATCH_DIRECT_BOOT_AWARE|(engine.host.getSystemService(android.os.UserManager.class).isUserUnlocked()?PackageManager.MATCH_DIRECT_BOOT_UNAWARE:0);
-        if(selected==null||(!selected.enabled||!engine.info.enabled)&&(flags&PackageManager.MATCH_DISABLED_COMPONENTS)==0||direct!=0&&(direct&(selected.directBootAware?PackageManager.MATCH_DIRECT_BOOT_AWARE:PackageManager.MATCH_DIRECT_BOOT_UNAWARE))==0)throw new PackageManager.NameNotFoundException(component.flattenToString());
-        ActivityInfo result=new ActivityInfo(selected);
+        if(selected==null||(!enabled||!engine.info.enabled)&&(flags&PackageManager.MATCH_DISABLED_COMPONENTS)==0||direct!=0&&(direct&(selected.directBootAware?PackageManager.MATCH_DIRECT_BOOT_AWARE:PackageManager.MATCH_DIRECT_BOOT_UNAWARE))==0)throw new PackageManager.NameNotFoundException(component.flattenToString());
+        ActivityInfo result=new ActivityInfo(selected);result.enabled=RuntimeComponentState.enabled(states,selected.name,selected.enabled);
         result.applicationInfo=GuestPackageManager.copyApplicationInfo(engine.info,(flags&PackageManager.GET_META_DATA)!=0);
         if((flags&PackageManager.GET_META_DATA)==0)result.metaData=null;
         else if(selected.metaData!=null)result.metaData=selected.metaData.deepCopy();

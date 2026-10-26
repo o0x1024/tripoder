@@ -40,7 +40,7 @@ final class WorkbenchImports {
         }catch(Exception error){operations.inform("读取手机应用失败："+UiText.error(error));if(completion!=null)completion.complete(false,error);}
     }
     private void prepare(List<Input> sources,String space,String suggestedLabel,boolean autoBind,String operation,Prepared completion){
-        if(preparing||operations.busyUnscoped()){operations.inform("上一个导入仍在提交");if(completion!=null)completion.complete(false,new IllegalStateException("上一个导入仍在提交"));return;}
+        if(preparing||operations.busyImport()){operations.inform("上一个导入仍在提交");if(completion!=null)completion.complete(false,new IllegalStateException("上一个导入仍在提交"));return;}
         if(sources.isEmpty()||sources.size()>64){operations.inform("安装包集合需要 1–64 个 APK");if(completion!=null)completion.complete(false,new IllegalArgumentException("安装包集合需要 1–64 个 APK"));return;}
         preparing=true;operations.inform("正在读取安装包…");
         io.execute(()->{
@@ -53,7 +53,7 @@ final class WorkbenchImports {
                     File file=new File(root,UUID.randomUUID()+".apk");files.add(file);MessageDigest digest=MessageDigest.getInstance("SHA-256");long bytes=0;
                     try(InputStream input=sources.get(index).open();FileOutputStream output=new FileOutputStream(file)){
                         if(input==null)throw new IOException("无法读取所选文件");byte[] buffer=new byte[65536];int count;
-                        while((count=input.read(buffer))!=-1){bytes+=count;total+=count;if(bytes>1024L*1024*1024)throw new IOException("单个 APK 超过 1 GiB 导入限额");if(total-lastSpaceCheck>=4L*1024*1024){if(root.getUsableSpace()<68L*1024*1024)throw new IOException("可用空间不足，至少需要保留 64 MiB");lastSpaceCheck=total;}
+                        while((count=input.read(buffer))!=-1){bytes+=count;total+=count;if(bytes>dev.tripoder.runtime.ArtifactSet.MAX_APK_BYTES)throw new IOException("单个 APK 超过 2 GiB 导入限额");if(total>dev.tripoder.runtime.ArtifactSet.MAX_SET_BYTES)throw new IOException("APK 集合超过 4 GiB 导入限额");if(total-lastSpaceCheck>=4L*1024*1024){if(root.getUsableSpace()<68L*1024*1024)throw new IOException("可用空间不足，至少需要保留 64 MiB");lastSpaceCheck=total;}
                             output.write(buffer,0,count);digest.update(buffer,0,count);if(total-notified>=4*1024*1024){notified=total;long copied=total;main.post(()->operations.inform("正在读取安装包 · "+copied/(1024*1024)+" MiB"));}
                         }output.getFD().sync();
                     }

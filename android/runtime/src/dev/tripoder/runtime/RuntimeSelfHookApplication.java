@@ -89,6 +89,11 @@ final class RuntimeSelfHookApplication {
         if(Looper.myLooper()!=Looper.getMainLooper())throw new IllegalStateException("APPLICATION_MAIN_THREAD_REQUIRED");
     }
 
+    static void preparePackage(ApplicationInfo info,ClassLoader loader,Resources resources,String process,java.util.List<android.content.pm.ProviderInfo> providers){
+        mainThread();RuntimeSelfHookApplication value=require();
+        if(info!=value.engine.applicationInfo||loader!=value.engine.loader||resources!=value.engine.resources||!process.equals(value.engine.processName))throw new SecurityException("SELF_APPLICATION_PACKAGE_IDENTITY_MISMATCH");
+        ApplicationAdapter.preparePackage(value.host,info,loader,value.engine.artifactLoader(),resources,process,providers);
+    }
     static Context create(Context physical,Application guest,ApplicationInfo info,ClassLoader loader,
                           AppComponentFactory factory,Resources resources) {
         mainThread();RuntimeSelfHookApplication value=require();

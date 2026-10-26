@@ -15,6 +15,12 @@ struct tp_art_access {
 int tp_art_access_bind(struct tp_art_access *result);
 int tp_art_validate_code(const struct tp_art_access *access,uintptr_t rva,const void *bytes,unsigned size);
 int tp_art_readable(uintptr_t address, unsigned bytes);
+uint64_t tp_art_refresh_count(void);
+void tp_art_maps_session_begin(void);
+void tp_art_maps_session_end(void);
+static inline void tp_art_maps_scope_end(int *unused){(void)unused;tp_art_maps_session_end();}
+/* Declares a scope in which validation checks share one live maps observation. */
+#define TP_ART_MAPS_SCOPE int tp_maps_scope __attribute__((cleanup(tp_art_maps_scope_end),unused))=(tp_art_maps_session_begin(),0)
 void tp_art_mapping_metrics(uint64_t *calls,uint64_t *nanoseconds);
 uintptr_t tp_art_method_address(JNIEnv *env, jobject method);
 struct tp_art_method_view { uint32_t owner, flags, dex_index, indices; uintptr_t data, quick; };

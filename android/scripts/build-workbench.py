@@ -17,22 +17,27 @@ from self_hook_native import build_native, add_platform_inputs
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--build-dir', type=Path, help='Explicit isolated output directory for concurrent builds')
     parser.add_argument('--sdk', required=True, type=Path)
     parser.add_argument('--platform', required=True)
     parser.add_argument('--build-tools', required=True)
     parser.add_argument('--java-home', required=True, type=Path)
     parser.add_argument('--ndk', required=True, type=Path)
     parser.add_argument('--recovery-acceptance',action='store_true',help='Include owned fault fixture ONLY in a separate QA package')
+    parser.add_argument('--startup-diagnostics',action='store_true',help='Record bounded early Application thread samples ONLY in a separate QA package')
+    parser.add_argument('--mcp-port',type=int,help='Explicit MCP port for a separate QA package; production port is unchanged')
     parser.add_argument('--package', default='dev.tripoder.engine',
                         help='Application id. A second id installs alongside the original, which is the only way to '
                              'validate a build on a device signed with a key this machine does not hold.')
     add_platform_inputs(parser)
     args=parser.parse_args()
     package=args.package
+    if args.mcp_port is not None and (package=='dev.tripoder.engine' or not 1024<=args.mcp_port<=65535):raise SystemExit('MCP_PORT_REQUIRES_SEPARATE_QA_PACKAGE_AND_VALID_PORT')
     if args.recovery_acceptance and package=='dev.tripoder.engine':raise SystemExit('RECOVERY_FIXTURE_REQUIRES_SEPARATE_QA_PACKAGE')
+    if args.startup_diagnostics and package=='dev.tripoder.engine':raise SystemExit('STARTUP_DIAGNOSTICS_REQUIRES_SEPARATE_QA_PACKAGE')
     if not package or any(part=='' or not part.replace('_','a').isalnum() for part in package.split('.')) or '.' not in package:
         raise SystemExit('INVALID_PACKAGE:'+repr(package))
-    android=Path(__file__).resolve().parents[1];repo=android.parent;build=android/'product/build'
+    android=Path(__file__).resolve().parents[1];repo=android.parent;build=args.build_dir.resolve() if args.build_dir else android/'product/build'
     source_roots=[android/name for name in ['runtime/src','runtime/native','runtime/licenses','control','control-test','engine','workbench','self-hook/java','self-hook/native','self-hook/include']]
     source_roots.append(repo/'src')
     if args.recovery_acceptance:source_roots.append(android/'recovery-test/src')
@@ -40,7 +45,7 @@ def main():
     files += [Path(__file__).resolve(),android/'scripts/runtime_apk_builder.py',android/'scripts/runtime_activity_slots.py',android/'scripts/runtime_job_slots.py',android/'scripts/self_hook_native.py']
     self_hook_java=sorted((android/'self-hook/java').rglob('*.java'))
     files += self_hook_java
-    files += [repo/'agent/tools.mjs',repo/'agent/tool-groups.mjs',repo/'agent/tool-schema.mjs',repo/'agent/export-contract.mjs']
+    files += sorted((repo/'agent').glob('*.mjs'))
     fixture_base=android/'runtime-probe/build/a.apk';fixture_upgrade=android/'runtime-probe/build/assets/a-upgrade.apk'
     fixture_preview=android/'runtime-probe/build/preview-guest.apk'
     fixture_receipt=json.loads((android/'runtime-probe/build/build-receipt.json').read_text())
@@ -89,8 +94,10 @@ def main():
         for service in range(16):entries.append(f'<service android:name="dev.tripoder.runtime.RuntimeServiceSlots$S{slot}_{service}" android:exported="false" android:process=":slot{slot}"/>')
         entries.append(f'<provider android:name="dev.tripoder.runtime.RuntimeProviderTransport$P{slot}" android:authorities="{package}.runtime.provider.{slot}" android:exported="false" android:process=":slot{slot}"/>')
         entries.append(f'<receiver android:name="dev.tripoder.runtime.RuntimeReceiverSlots$R{slot}" android:exported="false" android:process=":slot{slot}"/>')
+    entries.append('<service android:name="dev.tripoder.runtime.RuntimeIsolatedService" android:exported="false" android:isolatedProcess="true" android:process=":isolated"/>')
     manifest=generated/'EngineManifest.xml';text=(android/'engine/AndroidManifest.xml').read_text()
     if args.recovery_acceptance:text=text.replace('<!-- PROCESS_COMPONENT_POOL -->','<service android:name="dev.tripoder.runtime.RecoveryFaultService" android:process=":authority" android:exported="false"/><!-- PROCESS_COMPONENT_POOL -->')
+    if args.startup_diagnostics:text=text.replace('<!-- PROCESS_COMPONENT_POOL -->','<meta-data android:name="tripoder.diagnostics.startup" android:value="true"/><!-- PROCESS_COMPONENT_POOL -->')
     if text.count('<!-- PROCESS_COMPONENT_POOL -->')!=1:raise RuntimeError('PROCESS_COMPONENT_POOL_MARKER_REQUIRED')
     # One pass for every place the id is embedded (manifest package, provider authorities, task affinity), so a renamed
     # build can never share an authority or affinity with the install it sits next to.
@@ -109,6 +116,14 @@ def main():
     slot_sources+=job_sources
     core=sorted(p for p in (android/'runtime/src').rglob('*.java') if p.name!='RuntimeAuthorityService.java')
     sources=core+self_hook_java+common+sorted((android/'engine/src').rglob('*.java'))+sorted((android/'workbench/src').rglob('*.java'))+slot_sources
+    if args.mcp_port is not None:
+        import re
+        identity=android/'workbench/src/dev/tripoder/hooklab/AgentNetworkIdentity.java'
+        override=generated/'AgentNetworkIdentity.java'
+        replaced,count=re.subn(r'\bPORT\s*=\s*\d+', 'PORT='+str(args.mcp_port), identity.read_text())
+        if count!=1:raise RuntimeError('QA_MCP_PORT_SOURCE_CONTRACT')
+        override.write_text(replaced)
+        sources=[path for path in sources if path!=identity]+[override]
     if args.recovery_acceptance:sources+=sorted((android/'recovery-test/src').rglob('*.java'))
     engine=builder.apk('tripoder' if package=='dev.tripoder.engine' else 'tripoder-'+package.rsplit('.',1)[-1],sources,manifest,assets=assets,libraries=[self_hook],jars=[builder.apksig()])
     with zipfile.ZipFile(engine) as archive:
@@ -131,6 +146,8 @@ def main():
     receipt['artifacts']['controlTest']={'path':str(control_test),'sha256':sha(control_test),'package':'dev.tripoder.controltest','testOnly':True}
     receipt['installFixtures']=fixture_info
     receipt['recoveryAcceptanceFixture']=args.recovery_acceptance
+    receipt['startupDiagnostics']=args.startup_diagnostics
+    receipt['mcpPortOverride']=args.mcp_port
     (build/'build-receipt.json').write_text(json.dumps(receipt,indent=2))
 
 

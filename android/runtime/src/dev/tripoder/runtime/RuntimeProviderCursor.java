@@ -16,18 +16,19 @@ final class RuntimeProviderCursor implements InvocationHandler {
     @Override public Object invoke(Object proxy,Method method,Object[] args)throws Throwable{
         if(method.getDeclaringClass()==Object.class){switch(method.getName()){case "equals":return proxy==args[0];case "hashCode":return System.identityHashCode(proxy);case "toString":return "TripoderCursor["+claim.getString("operation")+"]";default:throw new IllegalStateException("CURSOR_OBJECT_METHOD");}}
         int pid=Binder.getCallingPid(),uid=Binder.getCallingUid();Bundle identity;
+        boolean cleanup=method.getName().equals("close")||method.getName().equals("unregisterContentObserver");
         if(pid==claim.getInt("callerPid")&&uid==claim.getInt("callerUid")){
-            if(!claim.getBoolean("thin")){
+            // The fixed original caller may release an existing local resource
+            // after closing starts. Data methods still require current admission.
+            if(cleanup)identity=claim;
+            else if(claim.getBoolean("thin"))identity=RuntimeProviderTransport.thinCursorAccess(claim,pid,uid);
+            else{
                 RuntimeEngine engine=RuntimeEngine.current;Bundle request=engine.auth();request.putString("cap",claim.getString("cap"));request.putString("operation",claim.getString("operation"));request.putInt("callerPid",pid);request.putInt("callerUid",uid);
                 long token=Binder.clearCallingIdentity();
-                try{engine.brokerCall(RuntimeWire.PROVIDER_CURSOR_ACCESS,request);}
-                catch(Exception refused){
-                    // Closing a cursor whose provider reference is already gone (the app leaked it and the finalizer closes it later) only releases local resources; it must not raise.
-                    if(!(method.getName().equals("close")&&String.valueOf(refused.getMessage()).contains("PROVIDER_REFERENCE_CLOSED")))throw refused;
-                }finally{Binder.restoreCallingIdentity(token);}
+                try{engine.brokerCall(RuntimeWire.PROVIDER_CURSOR_ACCESS,request);}finally{Binder.restoreCallingIdentity(token);}
+                identity=claim;
             }
-            identity=claim;
-        }else if(pid==android.os.Process.myPid()&&uid==android.os.Process.myUid()&&(method.getName().equals("close")||method.getName().equals("unregisterContentObserver"))){
+        }else if(pid==android.os.Process.myPid()&&uid==android.os.Process.myUid()&&cleanup){
             // Android binder-death / construction-failure cleanup is not a new request by the source.
             identity=new Bundle();
         }else throw new SecurityException("PROVIDER_CURSOR_CALLER_MISMATCH");

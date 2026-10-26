@@ -12,6 +12,7 @@ import java.util.*;
 
 /** One project in three places: the script, its run target with deployment, and external Agent control. Activation needs a worker ACK. */
 public final class WorkbenchProjectActivity extends Activity implements EngineConnection.Listener {
+    @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] results){super.onRequestPermissionsResult(request,permissions,results);AgentNetworkAccess.permissionResult(this,request);}
     private static final String[] TABS={"脚本","运行与部署"};
     private WorkbenchApplication app;private String id,name="",savedSource="",lease="";private EditText editor;
     private TextView binding,meta,saveNote,recoveryText,title;private Button bind,modeButton,save,launch;private LinearLayout tabBar,recovery;private View[] pages;private ProductUi.Status status;

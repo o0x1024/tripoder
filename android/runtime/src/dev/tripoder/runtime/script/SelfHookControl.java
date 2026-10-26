@@ -28,13 +28,13 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
         default Map<String,Object> dumpUiHierarchy(boolean includeInvisible){return Map.of("windows",List.of());}
         default Map<String,Object> dispatchUiAction(Map<String,Object> action){return Map.of("dispatched",false);}
         default List<Map<String,Object>> diagnostics(){return List.of();}
-        default Map<String,Object> inspectManifest(){return Map.of("activities",List.of(),"services",List.of(),"receivers",List.of(),"providers",List.of());}
-        default Map<String,Object> inspectStorage(String category,int limit){return Map.of("category",category);}
+        default Map<String,Object> persistNetworkCapture(String tag,Object payload,String sourceSha,String revision){throw new UnsupportedOperationException("NETWORK_CAPTURE_PERSIST_UNSUPPORTED");}
         default Map<String,Object> listNetworkTraffic(long sinceSeq,int limit){return Map.of("exchanges",List.of(),"nextCursor",(double)sinceSeq);}
         default Map<String,Object> sendHttpRequest(Map<String,Object> request){return Map.of("statusCode",0d);}
         default Map<String,Object> invokeGuestMethod(Map<String,Object> target){return Map.of("result",null);}
         default Map<String,Object> codeCommand(String command,Map<String,Object> params){throw new UnsupportedOperationException("CODE_OBSERVATION_UNSUPPORTED");}
         default Map<String,Object> requestCodeSnapshot(String dexId){throw new UnsupportedOperationException("CODE_SNAPSHOT_UNSUPPORTED");}
+        default Map<String,Object> requestEvidenceSnapshot(String tag,Object payload){throw new UnsupportedOperationException("EVIDENCE_CAPTURE_UNSUPPORTED");}
         default Map<String,Object> invocationContext(){return Map.of();}
     }
     private record Prepared(String token,DraftCompiler.Plan plan,long deadline,long evidenceEpoch) {}
@@ -46,12 +46,13 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
         Map.entry("dexSearch",Set.of("packagePrefix","limit")),Map.entry("dexInspect",Set.of("className")),
         Map.entry("nativeExports",Set.of("moduleName","symbolPrefix","limit")),Map.entry("uiDump",Set.of("includeInvisible")),
         Map.entry("uiAction",Set.of("action")),Map.entry("diagnostics",Set.of()),
-        Map.entry("manifestInspect",Set.of()),Map.entry("storageInspect",Set.of("category","limit")),
-        Map.entry("networkTraffic",Set.of("sinceSeq","limit")),Map.entry("httpRequest",Set.of("request")),
+
+        Map.entry("networkInspect",Set.of("moduleName")),Map.entry("networkStart",Set.of("moduleName","buildId","profile","signatureSource")),Map.entry("networkStop",Set.of("captureId")),Map.entry("networkStatus",Set.of()),Map.entry("networkMessages",Set.of("captureId","sinceSeq","limit")),Map.entry("networkTraffic",Set.of("captureId","sinceSeq","limit")),Map.entry("httpRequest",Set.of("request")),
         Map.entry("guestInvoke",Set.of("target")),Map.entry("probeStatus",Set.of()),Map.entry("probeStop",Set.of()),Map.entry("classLoaders",Set.of()),Map.entry("classLoaderCreate",Set.of("dexId","parentClassLoaderId")),Map.entry("dexList",Set.of("classLoaderId","cursor","limit")),Map.entry("dexSnapshot",Set.of("dexId")),Map.entry("codeArtifacts",Set.of()),Map.entry("runtimeEvents",Set.of("sinceSeq","limit")),Map.entry("classInspect",Set.of("classLoaderId","className")));
     private final Map<String,Object> identity;
     private final String generation;
     private final Platform platform;
+    private final NetworkCaptureControl network;
     private final LongSupplier clock;
     private final Supplier<String> token;
     private final AtomicBoolean commanding=new AtomicBoolean();
@@ -67,7 +68,7 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
         this.identity=(Map<String,Object>)ScriptValues.freeze(identity);this.platform=Objects.requireNonNull(platform);this.clock=Objects.requireNonNull(elapsedClock);this.token=Objects.requireNonNull(token);
         for(String key:List.of("space","installGeneration","descriptorSha256","processGeneration"))text(this.identity,key);
         Object pid=this.identity.get("pid");require(pid instanceof Double&&(Double)pid>0&&(Double)pid==Math.rint((Double)pid),"HOOK_PROCESS_ID");
-        object(this.identity.get("target"));generation=text(this.identity,"processGeneration");
+        object(this.identity.get("target"));generation=text(this.identity,"processGeneration");network=new NetworkCaptureControl(platform,this::command,generation,this::newToken);
     }
     public SelfHookControl(Map<String,Object> identity,Platform platform,LongSupplier elapsedClock){this(identity,platform,elapsedClock,SelfHookControl::randomToken);}
     /** Lifecycle observer may invalidate preparations without waiting on a command/backend publication lock. */
@@ -76,14 +77,14 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
     public void invalidateActiveTarget(Throwable cause){invalidation.incrementAndGet();HookInvocationSession session=active;if(session!=null)session.invalidateTarget(cause);}
     @Override public String handle(String raw){
         require(commanding.compareAndSet(false,true),"HOOK_CONTROL_BUSY");
-        boolean dispatched=false;
+        boolean dispatched=false,query=false;
         try {
             Map<String,Object> input=HookWire.request(raw);
-            validateInput(input);
+            validateInput(input);query=HookCommands.readOnly(text(input,"command"));
             dispatched=true;
             return HookWire.encode(Map.of("ok",true,"result",command(input)));
         }
-        catch(Exception error){String message=String.valueOf(error);return HookWire.encode(Map.of("ok",false,"outcome",dispatched?"UNKNOWN":"REJECTED","error",message.substring(0,Math.min(1000,message.length()))));}
+        catch(Exception error){String message=String.valueOf(error);return HookWire.encode(Map.of("ok",false,"outcome",error instanceof HookPreflightRejected?"REJECTED":dispatched?(query?"UNAVAILABLE":"UNKNOWN"):"REJECTED","error",message.substring(0,Math.min(1000,message.length()))));}
         finally {commanding.set(false);}
     }
     /** Only this phase may certify rejection without executing a command. */
@@ -91,6 +92,8 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
         String name=text(input,"command");Set<String> fields=FIELDS.get(name);require(fields!=null,"HOOK_COMMAND_UNSUPPORTED");
         Set<String> expected=new HashSet<>(fields);expected.add("command");expected.add("processGeneration");require(input.keySet().equals(expected),"HOOK_COMMAND_FIELDS");
         require(generation.equals(input.get("processGeneration"))&&identity.equals(platform.identity()),"HOOK_PROCESS_STALE");
+        if(name.equals("networkStart")&&(active!=null||prepared!=null))throw new HookPreflightRejected("HOOK_CONTEXT_IN_USE");
+        if(network.ownsHook()&&Set.of("observe","prepare","activate","disable","discard","updateParameters","cancelPreparation").contains(name))throw new HookPreflightRejected("NETWORK_CAPTURE_OWNS_HOOK");
         if(name.equals("observe"))selectors(input.get("selectors"));
     }
     private Map<String,Object> command(Map<String,Object> input){
@@ -100,6 +103,10 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
         if(prepared!=null&&(now>prepared.deadline||prepared.evidenceEpoch!=invalidation.get()))prepared=null;
         if(evidence!=null&&observedEpoch!=invalidation.get())evidence=null;
         switch(name){
+            case "networkInspect":return withIdentity(new LinkedHashMap<>(network.inspect(text(input,"moduleName"))));
+            case "networkStart":return withIdentity(new LinkedHashMap<>(network.start(text(input,"moduleName"),text(input,"buildId"),text(input,"profile"),text(input,"signatureSource"))));
+            case "networkStop":return withIdentity(new LinkedHashMap<>(network.stop(text(input,"captureId"))));
+            case "networkStatus":return withIdentity(new LinkedHashMap<>(network.status()));
             case "probeStatus":case "probeStop":case "classLoaders":case "classLoaderCreate":case "dexList":case "dexSnapshot":case "codeArtifacts":case "runtimeEvents":case "classInspect":{
                 Map<String,Object> params=new LinkedHashMap<>(input);params.remove("command");params.remove("processGeneration");
                 if(name.equals("dexList")){require(params.get("classLoaderId") instanceof String&&((String)params.get("classLoaderId")).length()<=80&&params.get("cursor") instanceof String&&((String)params.get("cursor")).length()<=80,"CLASS_LOADER_REFERENCE");Object limit=params.get("limit");require(limit instanceof Double&&(Double)limit>=1&&(Double)limit<=128&&(Double)limit==Math.rint((Double)limit),"DEX_PAGE_LIMIT");}
@@ -120,7 +127,7 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
             }
             case "prepare":{
                 require(active==null&&prepared==null,"HOOK_CONTEXT_IN_USE");require(evidence!=null&&evidence.id.equals(input.get("evidenceId"))&&platform.evidenceLive(evidence),"HOOK_EVIDENCE_STALE");
-                require(activations<32,"HOOK_ACTIVATION_BUDGET");String source=text(input,"source");long epoch=invalidation.get();DraftCompiler.Plan plan=DraftCompiler.compile(source,evidence,platform::requestCodeSnapshot);
+                require(activations<32,"HOOK_ACTIVATION_BUDGET");String source=text(input,"source");long epoch=invalidation.get();DraftCompiler.Plan plan=DraftCompiler.compile(source,evidence,platform::requestCodeSnapshot,platform::requestEvidenceSnapshot);
                 require(epoch==invalidation.get()&&platform.evidenceLive(evidence),"HOOK_EVIDENCE_STALE");prepared=new Prepared(newToken(),plan,now+60000,epoch);
                 return map("state","PREPARED","token",prepared.token,"sourceSha256",plan.sourceSha256(),"evidenceId",evidence.id,"rules",plan.rules().size(),"identity",identity);
             }
@@ -129,7 +136,8 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
                 Prepared candidate=prepared;prepared=null;require(platform.evidenceLive(candidate.plan.evidence())&&candidate.evidenceEpoch==invalidation.get(),"HOOK_EVIDENCE_STALE");
                 HookInvocationSession.PreparedBackend backend=platform.prepare(candidate.plan);
                 require(candidate.evidenceEpoch==invalidation.get()&&platform.evidenceLive(candidate.plan.evidence()),"HOOK_EVIDENCE_STALE");
-                activePlan=candidate.plan;active=new HookInvocationSession(generation,newToken(),candidate.plan.rules(),candidate.plan.specs(),candidate.plan.parameters(),backend,platform::invocationContext);activations++;
+                activePlan=candidate.plan;active=new HookInvocationSession(generation,newToken(),candidate.plan.rules(),candidate.plan.specs(),candidate.plan.parameters(),backend,platform::invocationContext,candidate.plan.sourceSha256());activations++;
+                active.observeEvents(network::event);
                 try{active.activate(generation,active.status().revision());}
                 catch(IllegalStateException failure){
                     if(failure.getCause() instanceof HookPublicationRejected){
@@ -164,7 +172,7 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
             case "dexSearch":{
                 Object rawPrefix=input.get("packagePrefix");require(rawPrefix instanceof String&&((String)rawPrefix).length()<=256,"HOOK_DEX_PREFIX");
                 Object rawLimit=input.get("limit");require(rawLimit instanceof Double&&(Double)rawLimit==Math.rint((Double)rawLimit)&&(Double)rawLimit>=1&&(Double)rawLimit<=200,"HOOK_DEX_LIMIT");
-                return withIdentity(map("classes",platform.searchDexClasses((String)rawPrefix,((Double)rawLimit).intValue())));
+                int limit=((Double)rawLimit).intValue();List<String> classes=platform.searchDexClasses((String)rawPrefix,limit+1);return withIdentity(map("classes",classes.subList(0,Math.min(limit,classes.size())),"truncated",classes.size()>limit,"source","LIVE_GUEST_CLASS_VIEW_AND_APK_SET"));
             }
             case "dexInspect":{
                 String cls=text(input,"className");require(cls.length()<=512,"HOOK_CLASS_NAME");
@@ -186,18 +194,10 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
             case "diagnostics":{
                 return withIdentity(map("failures",platform.diagnostics()));
             }
-            case "manifestInspect":{
-                return withIdentity(new LinkedHashMap<>(platform.inspectManifest()));
-            }
-            case "storageInspect":{
-                String cat=text(input,"category");require(Set.of("all","shared_prefs","databases","files").contains(cat),"HOOK_STORAGE_CATEGORY");
-                Object rawLimit=input.get("limit");require(rawLimit instanceof Double&&(Double)rawLimit==Math.rint((Double)rawLimit)&&(Double)rawLimit>=1&&(Double)rawLimit<=100,"HOOK_STORAGE_LIMIT");
-                return withIdentity(new LinkedHashMap<>(platform.inspectStorage(cat,((Double)rawLimit).intValue())));
-            }
-            case "networkTraffic":{
+            case "networkMessages":case "networkTraffic":{
                 Object rawSince=input.get("sinceSeq");require(rawSince instanceof Double&&(Double)rawSince==Math.rint((Double)rawSince)&&(Double)rawSince>=0,"HOOK_TRAFFIC_SEQ");
                 Object rawLimit=input.get("limit");require(rawLimit instanceof Double&&(Double)rawLimit==Math.rint((Double)rawLimit)&&(Double)rawLimit>=1&&(Double)rawLimit<=100,"HOOK_TRAFFIC_LIMIT");
-                return withIdentity(new LinkedHashMap<>(platform.listNetworkTraffic(((Double)rawSince).longValue(),((Double)rawLimit).intValue())));
+                return withIdentity(new LinkedHashMap<>(name.equals("networkMessages")?network.messages(text(input,"captureId"),((Double)rawSince).longValue(),((Double)rawLimit).intValue()):network.query(text(input,"captureId"),((Double)rawSince).longValue(),((Double)rawLimit).intValue())));
             }
             case "httpRequest":{
                 return withIdentity(new LinkedHashMap<>(platform.sendHttpRequest(object(input.get("request")))));

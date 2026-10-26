@@ -31,9 +31,37 @@ static int find(struct dl_phdr_info *info, size_t size, void *data) {
     *(uintptr_t *)data = info->dlpi_addr;
     return 1;
 }
+/* One live /proc/self/maps observation shared by the checks of a single bind call. The kernel generates the file
+ * (about 10 ms in a large process) on every open, so a session reads it once and every check in the call parses that
+ * observation. Nothing outlives the call and no later call reuses it. */
+static __thread char *session_text;
+static __thread size_t session_size;
+static __thread unsigned session_depth;
+void tp_art_maps_session_begin(void) {
+    if (session_depth++) return;
+    FILE *stream = raw_maps_open();
+    if (!stream) return;
+    size_t capacity = 1 << 20, size = 0;
+    char *text = malloc(capacity);
+    while (text) {
+        size_t got = fread(text + size, 1, capacity - size, stream);
+        size += got;
+        if (size < capacity) break;
+        char *grown = realloc(text, capacity *= 2);
+        if (!grown) { free(text); text = NULL; break; }
+        text = grown;
+    }
+    int failed = ferror(stream);
+    fclose(stream);
+    if (text && !failed) { session_text = text; session_size = size; } else free(text);
+}
+void tp_art_maps_session_end(void) {
+    if (!session_depth || --session_depth) return;
+    free(session_text); session_text = NULL; session_size = 0;
+}
 static int mapped_inner(uintptr_t address, unsigned bytes, uintptr_t rva, const struct stat *file) {
     if (address == 0 || address > UINTPTR_MAX - bytes) return 0;
-    FILE *stream = raw_maps_open();
+    FILE *stream = session_text ? fmemopen(session_text, session_size, "r") : raw_maps_open();
     if (stream == NULL) return 0;
     char line[2048], mode[5];
     unsigned long start, end, offset, inode;
@@ -61,18 +89,20 @@ static int mapped_inner(uintptr_t address, unsigned bytes, uintptr_t rva, const 
     fclose(stream);
     return result;
 }
-static _Atomic uint64_t mapping_calls,mapping_ns;
+static _Atomic uint64_t mapping_calls,mapping_ns,refresh_count;
+uint64_t tp_art_refresh_count(void){return atomic_load(&refresh_count);}
 static uint64_t monotonic_ns(void){struct timespec value;return clock_gettime(CLOCK_MONOTONIC,&value)==0?(uint64_t)value.tv_sec*1000000000u+(uint64_t)value.tv_nsec:0;}
 static int mapped(uintptr_t address,unsigned bytes,uintptr_t rva,const struct stat *file){
     uint64_t start=monotonic_ns();int result=mapped_inner(address,bytes,rva,file);uint64_t end=monotonic_ns();
     atomic_fetch_add(&mapping_calls,1);if(start&&end>=start)atomic_fetch_add(&mapping_ns,end-start);return result;
 }
-void tp_art_mapping_metrics(uint64_t *calls,uint64_t *nanoseconds){*calls=atomic_load(&mapping_calls);*nanoseconds=atomic_load(&mapping_ns);}
+void tp_art_mapping_metrics(uint64_t *calls,uint64_t *nanoseconds){*calls=atomic_load(&mapping_calls);*nanoseconds=0;*nanoseconds=atomic_load(&mapping_ns);}
 struct tp_readable_range { uintptr_t begin, end; };
 static pthread_mutex_t readable_lock = PTHREAD_MUTEX_INITIALIZER;
-static struct tp_readable_range readable_ranges[2048];
+static struct tp_readable_range readable_ranges[32768];
 static unsigned readable_count;
 static int refresh_readable_ranges_locked(uintptr_t address, unsigned bytes) {
+    atomic_fetch_add(&refresh_count,1);
     FILE *maps = raw_maps_open();
     if (!maps) return 0;
     readable_count = 0;
@@ -87,14 +117,13 @@ static int refresh_readable_ranges_locked(uintptr_t address, unsigned bytes) {
         if (limit_end == sep + 1 || *limit_end != ' ') continue;
         if (limit_end[1] != 'r') continue;
         (void)mode;
+        // The bounded cache only accelerates later lookups. Its capacity must
+        // not discard the result of this complete kernel mapping observation.
+        if (start <= address && address + bytes <= end) found = 1;
         if (readable_count && readable_ranges[readable_count - 1].end == start) {
             readable_ranges[readable_count - 1].end = end;
-        } else if (readable_count < 2048) {
+        } else if (readable_count < 32768) {
             readable_ranges[readable_count++] = (struct tp_readable_range){start, end};
-        }
-        if (readable_count && readable_ranges[readable_count - 1].begin <= address
-            && address + bytes <= readable_ranges[readable_count - 1].end) {
-            found = 1;
         }
     }
     fclose(maps);
@@ -108,12 +137,13 @@ int tp_art_readable(uintptr_t address, unsigned bytes) {
     uint64_t start = monotonic_ns();
     int result = 0;
     pthread_mutex_lock(&readable_lock);
-    for (unsigned i = 0; i < readable_count; i++) {
-        if (readable_ranges[i].begin <= address && address + bytes <= readable_ranges[i].end) {
-            result = 1;
-            break;
-        }
+    // /proc/self/maps is address-ordered and the cache keeps that order, so the containing range is found by bisection.
+    unsigned low = 0, high = readable_count;
+    while (low < high) {
+        unsigned mid = low + (high - low) / 2;
+        if (readable_ranges[mid].begin <= address) low = mid + 1; else high = mid;
     }
+    if (low && address + bytes <= readable_ranges[low - 1].end) result = 1;
     if (!result) result = refresh_readable_ranges_locked(address, bytes);
     pthread_mutex_unlock(&readable_lock);
     uint64_t end = monotonic_ns();

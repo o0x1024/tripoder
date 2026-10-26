@@ -6,7 +6,7 @@ import android.net.*;
 import android.os.Handler;
 import java.util.*;
 
-/** Passive platform network observations, scoped callback ownership, no synthetic events. */
+/** Platform network observations and requests, with scoped callback ownership and real permissions. */
 final class RuntimeConnectivity {
     private final RuntimeEngine engine;
     private volatile ConnectivityManager facade;
@@ -39,6 +39,21 @@ final class RuntimeConnectivity {
     synchronized void unregister(ConnectivityManager.NetworkCallback callback){
         Registration registration=callbacks.get(callback);if(registration==null)throw new IllegalArgumentException("NETWORK_CALLBACK_NOT_REGISTERED");
         registration.active=false;physical().unregisterNetworkCallback(registration);callbacks.remove(callback);
+    }
+    synchronized void request(NetworkRequest request,ConnectivityManager.NetworkCallback callback,Handler handler,Integer timeout){
+        if(!engine.requestedPermissions.contains(Manifest.permission.CHANGE_NETWORK_STATE)
+                &&!(engine.requestedPermissions.contains(Manifest.permission.WRITE_SETTINGS)&&android.provider.Settings.System.canWrite(engine.host)))throw new SecurityException("GUEST_NETWORK_REQUEST_PERMISSION_NOT_GRANTED");
+        Objects.requireNonNull(request,"NETWORK_REQUEST_REQUIRED");
+        if(callback==null||!engine.ownsReceiverLoader(callback.getClass().getClassLoader()))throw new SecurityException("NETWORK_CALLBACK_OWNER_INVALID");
+        if(RuntimeBridge.networkCallbackFlags(callback)!=0)throw new UnsupportedOperationException("NETWORK_LOCATION_CALLBACK_UNSUPPORTED");
+        if(callbacks.containsKey(callback))throw new IllegalStateException("NETWORK_CALLBACK_ALREADY_REGISTERED");
+        if(callbacks.size()>=32)throw new IllegalStateException("NETWORK_CALLBACK_LIMIT");
+        Registration registration=new Registration(callback);registration.active=true;callbacks.put(callback,registration);
+        try{
+            ConnectivityManager system=physical();
+            if(timeout==null){if(handler==null)system.requestNetwork(request,registration);else system.requestNetwork(request,registration,handler);}
+            else{if(handler==null)system.requestNetwork(request,registration,timeout);else system.requestNetwork(request,registration,handler,timeout);}
+        }catch(RuntimeException|Error failure){registration.active=false;registration.failed=true;callbacks.remove(callback);throw failure;}
     }
     private final class Registration extends ConnectivityManager.NetworkCallback {
         final ConnectivityManager.NetworkCallback guest;boolean active,failed;

@@ -4,7 +4,7 @@ from pathlib import Path
 AFFINITIES = 8
 ALIASES = 2
 ALIAS_COMPONENTS = 2
-MODES = (('standard', 16), ('singleTop', 16), ('singleTask', 8), ('singleInstance', 8))
+MODES = (('standard', 16), ('singleTop', 16), ('singleTask', 8), ('singleInstance', 8), ('singleInstancePerTask', 8))
 
 
 def generate_activity_slots(build: Path, manifest: Path, class_prefix: str):

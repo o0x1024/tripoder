@@ -31,23 +31,25 @@ public final class ScriptValues {
         return value;
     }
     /** Deep copy checks identity cycles and total size before publishing an immutable snapshot. */
-    public static Object freeze(Object value) { return freeze(value, new IdentityHashMap<>(), new int[]{0}, 0); }
-    private static Object freeze(Object value, IdentityHashMap<Object,Boolean> path, int[] count, int depth) {
+    public static Object freeze(Object value) { return freeze(value, new IdentityHashMap<>(), new int[]{0}, 0, false); }
+    public static Object freezeInvocation(Object value){return freeze(value,new IdentityHashMap<>(),new int[]{0},0,true);}
+    private static Object freeze(Object value, IdentityHashMap<Object,Boolean> path, int[] count, int depth,boolean invocation) {
         ScriptFault.require(++count[0] <= 8000 && depth < 80, "DRAFT_VALUE_BUDGET");
         if (scalar(value)) return limit(value);
+        if(invocation&&value instanceof JavaObjectScope.Ref)return JavaObjectScope.invocationValue(value);
         ScriptFault.require(value instanceof List || value instanceof Map, "DRAFT_HOST_OBJECT");
         ScriptFault.require(path.put(value, Boolean.TRUE) == null, "DRAFT_CYCLIC_VALUE");
         limit(value);
         try {
             if (value instanceof List) {
                 List<Object> out = new ArrayList<>();
-                for (Object element : (List<?>)value) out.add(freeze(element, path, count, depth + 1));
+                for (Object element : (List<?>)value) out.add(freeze(element, path, count, depth + 1, invocation));
                 return Collections.unmodifiableList(out);
             }
             Map<String,Object> out = new LinkedHashMap<>();
             for (Map.Entry<?,?> e : ((Map<?,?>)value).entrySet()) {
                 ScriptFault.require(e.getKey() instanceof String, "DRAFT_PROPERTY_KEY");
-                out.put(key(e.getKey()), freeze(e.getValue(), path, count, depth + 1));
+                out.put(key(e.getKey()), freeze(e.getValue(), path, count, depth + 1, invocation));
             }
             return Collections.unmodifiableMap(out);
         } finally { path.remove(value); }
@@ -138,7 +140,7 @@ public final class ScriptValues {
             case "short": valid = numberRange(value, -32768, 32767); break;
             case "int": case "int32": valid = numberRange(value, -2147483648d, 2147483647d); break;
             case "uint32": valid = numberRange(value, 0, 4294967295d); break;
-            default: throw new ScriptFault("HOOK_ABI_UNSUPPORTED:" + type);
+            default: if(JavaTypes.reference(type))return JavaObjectScope.checked(type,value);throw new ScriptFault("HOOK_ABI_UNSUPPORTED:" + type);
         }
         ScriptFault.require(valid, "HOOK_TYPE:" + type);
         // Conversion is at the ABI boundary, preserving IEEE negative zero and float rounding.

@@ -16,6 +16,24 @@ final class RuntimeNotifications {
     synchronized NotificationManager facade(){if(facade==null){facade=RuntimeBridge.createNotificationManager(engine.host);if(facade==null||facade==platform())throw new SecurityException("NOTIFICATION_FACADE_IDENTITY_INVALID");}return facade;}
     boolean owns(NotificationManager manager){return manager!=null&&manager==facade;}
     NotificationManager platform(){return Objects.requireNonNull(engine.host.getSystemService(NotificationManager.class),"PLATFORM_NOTIFICATION_UNAVAILABLE");}
+    private android.content.SharedPreferences delegation(){return engine.storage.preferences("tripoder-notification-policy",Context.MODE_PRIVATE);}
+    void delegate(String target){
+        // Android's NMS changes the record only for an installed delegate; an
+        // absent package leaves the existing record unchanged. The guest package
+        // world exposes this installation, never the host's GMS installation.
+        if(target!=null&&!target.equals(engine.packageName)){
+            if(target.equals(engine.host.getPackageName())||engine.webView.owns(target))throw new SecurityException("NOTIFICATION_DELEGATE_INFRASTRUCTURE_DENIED");
+            return;
+        }
+        var edit=delegation().edit();if(target==null)edit.remove("delegate");else edit.putString("delegate",target);
+        if(!edit.commit())throw new IllegalStateException("NOTIFICATION_DELEGATE_PERSIST_FAILED");
+    }
+    String delegate(){
+        String value=delegation().getString("delegate",null);
+        if(value!=null&&!value.equals(engine.packageName))throw new SecurityException("NOTIFICATION_DELEGATE_OWNER_MISMATCH");return value;
+    }
+    boolean canNotify(String target){return engine.packageName.equals(target);}
+    void postAs(String target,String tag,int id,Notification value){if(!canNotify(target))throw new SecurityException("NOTIFICATION_TARGET_NOT_AUTHORIZED");post(tag,id,value);}
     private RuntimeNotificationNamespace scope(){return new RuntimeNotificationNamespace(engine.storage.dataId);}
     private static <T extends Parcelable>T copy(T value,Parcelable.Creator<T> creator){Parcel p=Parcel.obtain();try{value.writeToParcel(p,0);if(p.hasFileDescriptors()||p.dataSize()>32768)throw new IllegalArgumentException("NOTIFICATION_PAYLOAD_UNSUPPORTED");p.setDataPosition(0);return creator.createFromParcel(p);}finally{p.recycle();}}
     private static void text(CharSequence value){if(value!=null&&(!(value instanceof String)||value.length()>1000))throw new IllegalArgumentException("NOTIFICATION_TEXT_UNSUPPORTED");}
@@ -100,6 +118,18 @@ final class RuntimeNotifications {
         android.graphics.Bitmap bitmap=android.graphics.Bitmap.createBitmap(width,height,android.graphics.Bitmap.Config.ARGB_8888);
         android.graphics.Canvas canvas=new android.graphics.Canvas(bitmap);drawable.setBounds(0,0,width,height);drawable.draw(canvas);
         return Icon.createWithBitmap(bitmap);
+    }
+    android.service.notification.StatusBarNotification[] active(){
+        var observed=platform().getActiveNotifications();if(observed==null)throw new IllegalStateException("NOTIFICATION_STATUS_OBSERVATION_UNAVAILABLE");
+        var owner=new RuntimeNotificationCancellation(engine.storage.dataId);List<android.service.notification.StatusBarNotification> result=new ArrayList<>();
+        for(var item:observed){
+            if(item==null)throw new IllegalStateException("NOTIFICATION_STATUS_OBSERVATION_INVALID");
+            if(!engine.host.getPackageName().equals(item.getPackageName())||!owner.owns(item.getTag()))continue;
+            Notification notification=item.getNotification().clone();String channel=notification.getChannelId();
+            if(channel!=null)notification=Notification.Builder.recoverBuilder(engine.host,notification).setChannelId(scope().logical(channel)).build();
+            result.add(dev.tripoder.selfhook.StatusNotificationFrameworkAccess.project(item,engine.packageName,owner.logical(item.getTag()),notification));
+        }
+        return result.toArray(new android.service.notification.StatusBarNotification[0]);
     }
     void cancel(String tag,int id){new RuntimeNotificationCancellation(engine.storage.dataId).cancel(platform(),tag,id);}
     void cancelAll(){new RuntimeNotificationCancellation(engine.storage.dataId).cancelAll(platform());}

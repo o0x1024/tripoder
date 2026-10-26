@@ -16,7 +16,11 @@ final class RuntimeSelfHookJobs {
                 if(method.getName().equals("jobFinished")){jobs.finish((JobService)receiver,(JobParameters)args[0],(Boolean)args[1]);return null;}
                 throw new UnsupportedOperationException("JOB_SERVICE_CAPABILITY_UNSUPPORTED:"+method.getName());
             }
-            if(method.getDeclaringClass()==JobParameters.class&&jobs.ownsParameters(receiver))throw new UnsupportedOperationException("JOB_PARAMETER_CAPABILITY_UNSUPPORTED:"+method.getName());
+            if(method.getDeclaringClass()==JobParameters.class&&jobs.ownsParameters(receiver)){
+                if(method.getName().equals("dequeueWork"))return jobs.dequeue((JobParameters)receiver);
+                if(method.getName().equals("completeWork")){jobs.complete((JobParameters)receiver,(JobWorkItem)args[0]);return null;}
+                throw new UnsupportedOperationException("JOB_PARAMETER_CAPABILITY_UNSUPPORTED:"+method.getName());
+            }
             if(receiver instanceof IInterface&&method.getDeclaringClass().getName().equals("android.app.job.IJobCallback$Stub$Proxy")){
                 Object result=original.call(args);jobs.rpcReturned(((IInterface)receiver).asBinder(),method.getName(),(Integer)args[0],(Boolean)args[1]);return result;
             }

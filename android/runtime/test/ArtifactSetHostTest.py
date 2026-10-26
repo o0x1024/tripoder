@@ -82,7 +82,11 @@ def main():
     apk('repeated', application='''<activity android:name=".Repeated"/><activity android:name=".Repeated"/>
 <provider android:name=".SharedProvider" android:authorities="dev.tripoder.first"/>
 <provider android:name=".SharedProvider" android:authorities="dev.tripoder.second"/>''')
-    apk('conflicting-activity', application='<activity android:name=".Conflict" android:exported="false"/><activity android:name=".Conflict" android:exported="true"/>')
+    apk('conflicting-activity', application='''<activity android:name=".Conflict" android:exported="false" android:process=":old"><intent-filter><action android:name="dev.tripoder.FIRST"/></intent-filter></activity>
+<activity android:name=".Conflict" android:exported="true" android:process=":last"><intent-filter><action android:name="dev.tripoder.LAST"/></intent-filter></activity>
+<service android:name=".RepeatedService" android:enabled="false"/><service android:name=".RepeatedService" android:enabled="true"/>
+<receiver android:name=".RepeatedReceiver" android:exported="false"/><receiver android:name=".RepeatedReceiver" android:exported="true"/>''')
+    apk('base-split-hint', children='<uses-split android:name="video"/>')
     apk('resource-flags',application='<service android:name=".Allowed" android:enabled="@bool/allowed" android:exported="@bool/denied"/>',resources='<resources><bool name="allowed">true</bool><bool name="denied">false</bool></resources>')
     shutil.copyfile(fixtures / 'base.apk', fixtures / 'basecopy.apk')
     apk('feature', split='feature', attributes='android:isFeatureSplit="true"', application='<activity android:name=".Feature" android:exported="false"/>')
@@ -104,6 +108,12 @@ def main():
     apk('wrongabi', libs={'lib/x86_64/libbad.so': b'bad'})
     apk('fakeelf', libs={'lib/arm64-v8a/libbad.so': b'\x7fELF' + bytes(16)})
     apk('opaque-native-resource', libs={'lib/arm64-v8a/libpacked.so': b'owned compressed-data fixture'})
+    apk('non-native-lib-resources', libs={'lib/Windows/helper.dll': b'windows resource',
+                                        'lib/arm64-v8a/test.so': b'non-extracted resource',
+                                        'lib/arm64-v8a/nested/libnested.so': b'nested resource'})
+    apk('native-with-resources', libs={'lib/arm64-v8a/libowned.so': owned_elf,
+                                     'lib/Windows/helper.dll': b'windows resource',
+                                     'lib/arm64-v8a/test.so': b'non-extracted resource'})
     shutil.copyfile(fixtures / 'base.apk', fixtures / 'tampered.apk')
     with zipfile.ZipFile(fixtures / 'tampered.apk', 'a') as archive:
         archive.writestr('tampered.txt', 'changed after signing')

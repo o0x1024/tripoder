@@ -36,6 +36,10 @@ final class RuntimeSelfHookManagerPolicy {
                 "registerDefaultNetworkCallback(android.net.ConnectivityManager$NetworkCallback,android.os.Handler)",
                 "registerNetworkCallback(android.net.NetworkRequest,android.net.ConnectivityManager$NetworkCallback)",
                 "registerNetworkCallback(android.net.NetworkRequest,android.net.ConnectivityManager$NetworkCallback,android.os.Handler)",
+                "requestNetwork(android.net.NetworkRequest,android.net.ConnectivityManager$NetworkCallback)",
+                "requestNetwork(android.net.NetworkRequest,android.net.ConnectivityManager$NetworkCallback,android.os.Handler)",
+                "requestNetwork(android.net.NetworkRequest,android.net.ConnectivityManager$NetworkCallback,int)",
+                "requestNetwork(android.net.NetworkRequest,android.net.ConnectivityManager$NetworkCallback,android.os.Handler,int)",
                 "unregisterNetworkCallback(android.net.ConnectivityManager$NetworkCallback)");
             case TELEPHONY:return Set.of("getPhoneType()","getSimState()","getSimState(int)","getPhoneCount()","getActiveModemCount()",
                 "getSupportedModemCount()","isVoiceCapable()","isSmsCapable()","isDataCapable()",
@@ -75,7 +79,8 @@ final class RuntimeSelfHookManagerPolicy {
                 "removeThermalHeadroomListener(android.os.PowerManager$OnThermalHeadroomChangedListener)");
             case WIFI_P2P:return Set.of("initialize(android.content.Context,android.os.Looper,android.net.wifi.p2p.WifiP2pManager$ChannelListener)","isChannelConstrainedDiscoverySupported()","isGroupClientRemovalSupported()","isGroupOwnerIPv6LinkLocalAddressProvided()","isPccModeSupported()","isSetVendorElementsSupported()","isWiFiDirectR2Supported()");
             case NETWORK_STATS:return Set.of();
-            case NOTIFICATIONS:return Set.of("areNotificationsEnabled()","areNotificationsPaused()","getImportance()","getCurrentInterruptionFilter()","shouldHideSilentStatusBarIcons()",
+            case NOTIFICATIONS:return Set.of("areNotificationsEnabled()","areNotificationsPaused()","getImportance()","getCurrentInterruptionFilter()","shouldHideSilentStatusBarIcons()","isNotificationPolicyAccessGranted()",
+                "setNotificationDelegate(java.lang.String)","getNotificationDelegate()","getActiveNotifications()","canNotifyAsPackage(java.lang.String)","notifyAsPackage(java.lang.String,java.lang.String,int,android.app.Notification)",
                 "notify(int,android.app.Notification)","notify(java.lang.String,int,android.app.Notification)","cancel(int)","cancel(java.lang.String,int)","cancelAll()","createNotificationChannel(android.app.NotificationChannel)","createNotificationChannels(java.util.List)",
                 "createNotificationChannelGroup(android.app.NotificationChannelGroup)","createNotificationChannelGroups(java.util.List)","getNotificationChannel(java.lang.String)",
                 "getNotificationChannel(java.lang.String,java.lang.String)","getNotificationChannels()","getNotificationChannelGroup(java.lang.String)","getNotificationChannelGroups()",
@@ -86,7 +91,7 @@ final class RuntimeSelfHookManagerPolicy {
                 "pushDynamicShortcut(android.content.pm.ShortcutInfo)","removeDynamicShortcuts(java.util.List)","removeAllDynamicShortcuts()","removeLongLivedShortcuts(java.util.List)",
                 "enableShortcuts(java.util.List)","disableShortcuts(java.util.List)","disableShortcuts(java.util.List,java.lang.CharSequence)","reportShortcutUsed(java.lang.String)",
                 "createShortcutResultIntent(android.content.pm.ShortcutInfo)");
-            case JOB_SCHEDULER:return Set.of("schedule(android.app.job.JobInfo)","cancel(int)","cancelAll()","cancelInAllNamespaces()","getAllPendingJobs()","getPendingJob(int)","getPendingJobsInAllNamespaces()","forNamespace(java.lang.String)","getNamespace()");
+            case JOB_SCHEDULER:return Set.of("schedule(android.app.job.JobInfo)","enqueue(android.app.job.JobInfo,android.app.job.JobWorkItem)","cancel(int)","cancelAll()","cancelInAllNamespaces()","getAllPendingJobs()","getPendingJob(int)","getPendingJobsInAllNamespaces()","forNamespace(java.lang.String)","getNamespace()");
             default:throw new IllegalArgumentException("SYSTEM_MANAGER_FAMILY");
         }
     }

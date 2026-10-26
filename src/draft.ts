@@ -1,3 +1,4 @@
+import {isJavaObjectRef,liveJavaObjectRef} from "./java-objects.js";
 import { parse } from "@babel/parser";
 import { definePlan, preparePlan } from "./plan.js";
 import type { HookPlan, PreparedPlan } from "./plan.js";
@@ -66,6 +67,7 @@ export function prepareDraft(source: string, observed: EvidenceSnapshot): Prepar
   function mark(fn: (...args: any[]) => unknown) { callable.add(fn); return fn; }
   function expose(value: any): any {
     if (scalar(value)) return limit(value);
+    if(isJavaObjectRef(value))return liveJavaObjectRef(value);
     if (wrapped.has(value)) return wrapped.get(value);
     if (typeof value === "function") {
       if (callable.has(value)) return value;
@@ -149,7 +151,7 @@ export function prepareDraft(source: string, observed: EvidenceSnapshot): Prepar
         throw new Error("DRAFT: Unsupported logical operator");
       }
       case "UnaryExpression": {
-        const value = evaluate(node.argument, scope); demand(scalar(value), "Unary operand must be scalar");
+        const value = evaluate(node.argument, scope); if(isJavaObjectRef(value)){liveJavaObjectRef(value);demand(node.operator==="!"||node.operator==="typeof","Unsupported object operation");return node.operator==="typeof"?"object":false;} demand(scalar(value), "Unary operand must be scalar");
         if (node.operator === "!") return !value;
         if (node.operator === "-") return limit(typeof value === "bigint" ? -value : -Number(value));
         if (node.operator === "+") { demand(typeof value !== "bigint", "Unary plus does not accept BigInt"); return limit(Number(value)); }
@@ -157,7 +159,7 @@ export function prepareDraft(source: string, observed: EvidenceSnapshot): Prepar
         throw new Error("DRAFT: Unsupported unary operator");
       }
       case "BinaryExpression": {
-        const a = evaluate(node.left, scope), b = evaluate(node.right, scope); demand(scalar(a) && scalar(b), "Binary operands must be scalar");
+        const a = evaluate(node.left, scope), b = evaluate(node.right, scope); if(isJavaObjectRef(a)||isJavaObjectRef(b)){if(isJavaObjectRef(a))liveJavaObjectRef(a);if(isJavaObjectRef(b))liveJavaObjectRef(b);demand(node.operator==="==="||node.operator==="!==","Unsupported object operation");return node.operator==="==="?a===b:a!==b;} demand(scalar(a) && scalar(b), "Binary operands must be scalar");
         if ((typeof a === "bigint" || typeof b === "bigint") && ["+", "-", "*", "/", "%"].includes(node.operator)
           && !(node.operator === "+" && (typeof a === "string" || typeof b === "string"))) {
           demand(typeof a === "bigint" && typeof b === "bigint", "BigInt arithmetic needs two BigInt operands");

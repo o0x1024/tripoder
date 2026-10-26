@@ -11,7 +11,8 @@ import java.util.*;
 /** Single durable mutation owner per installation. Platform RPCs never run under the broker lock. */
 final class RuntimeJobBroker {
     interface Platform {
-    int schedule(String namespace,JobInfo job);
+        int schedule(String namespace,JobInfo job);
+        int enqueue(String namespace,JobInfo job,android.app.job.JobWorkItem work);
         void cancel(String namespace,int jobId);
         Map<String,List<JobInfo>> pending();
     }
@@ -19,12 +20,17 @@ final class RuntimeJobBroker {
         private final JobScheduler scheduler;
         AndroidPlatform(Context host){scheduler=Objects.requireNonNull(host.getSystemService(JobScheduler.class),"JOB_PLATFORM_UNAVAILABLE");}
         public int schedule(String namespace,JobInfo job){return scheduler.forNamespace(namespace).schedule(job);}
+        public int enqueue(String namespace,JobInfo job,android.app.job.JobWorkItem work){return scheduler.forNamespace(namespace).enqueue(job,work);}
         public void cancel(String namespace,int jobId){scheduler.forNamespace(namespace).cancel(jobId);}
         public Map<String,List<JobInfo>> pending(){return Objects.requireNonNull(scheduler.getPendingJobsInAllNamespaces(),"JOB_SYSTEM_QUERY_UNAVAILABLE");}
     }
     private final RuntimeBroker broker;
     private final JobLedger ledger;
     private final Platform platform;
+    /** Physical mutation bodies that can still issue an RPC in this authority. Guarded by broker. */
+    private final Set<String> inFlightMutations=new HashSet<>();
+    boolean mutationInFlight(String operation){if(!Thread.holdsLock(broker))throw new IllegalStateException("JOB_MUTATION_OBSERVATION_OUTSIDE_BROKER");return inFlightMutations.contains(operation);}
+
     RuntimeJobBroker(RuntimeBroker broker){this(broker,new AndroidPlatform(broker.host));}
     RuntimeJobBroker(RuntimeBroker broker,Platform platform){this.broker=broker;ledger=broker.jobs;this.platform=Objects.requireNonNull(platform);}
 
@@ -34,6 +40,11 @@ final class RuntimeJobBroker {
         String kind=RuntimeWire.required(request,"kind"),namespace=request.getString("namespace");Bundle out=new Bundle();
         switch(kind){
             case "schedule":out.putInt("result",schedule(install,namespace,RuntimeJobInfo.decode(request.getByteArray("job")),request.getBoolean("early"),request.getBoolean("late"),RuntimeWire.required(request,"operation")));return out;
+            case "enqueue":{
+                byte[] job=request.getByteArray("job"),work=request.getByteArray("work");
+                if(job==null||work==null||job.length+work.length>48*1024)throw new IllegalArgumentException("JOB_ENQUEUE_PAYLOAD_LIMIT");
+                out.putInt("result",enqueue(install,namespace,RuntimeJobInfo.decode(job),request.getBoolean("early"),request.getBoolean("late"),RuntimeJobWork.decode(work),RuntimeWire.required(request,"operation")));return out;
+            }
             case "cancel":cancel(install,namespace,request.containsKey("id")?request.getInt("id"):null,request.getBoolean("allNamespaces"),RuntimeWire.required(request,"operation"));return out;
             case "query":{
                 reconcileSchedules();
@@ -50,42 +61,60 @@ final class RuntimeJobBroker {
     Bundle beginAttempt(Bundle input,RuntimeBroker.Slot slot){return broker.jobAttempts.begin(input,slot);}
     Bundle attemptEvent(Bundle input,RuntimeBroker.Slot slot){return broker.jobAttempts.event(input,slot);}
 
-    int schedule(ApkStore.BundleInstall install,String namespace,JobInfo input,boolean early,boolean late,String operation)throws Exception{
+    int schedule(ApkStore.BundleInstall install,String namespace,JobInfo input,boolean early,boolean late,String operation)throws Exception{return submit(install,namespace,input,early,late,null,operation);}
+    int enqueue(ApkStore.BundleInstall install,String namespace,JobInfo input,boolean early,boolean late,android.app.job.JobWorkItem work,String operation)throws Exception{return submit(install,namespace,input,early,late,Objects.requireNonNull(work),operation);}
+    private int submit(ApkStore.BundleInstall install,String namespace,JobInfo input,boolean early,boolean late,android.app.job.JobWorkItem work,String operation)throws Exception{
         outsideLock();RuntimeJobRetirement.reconcile(broker);namespace=RuntimeJobNamespace.logical(namespace);
         JobInfo logical=RuntimeJobInfo.decode(RuntimeJobInfo.encode(input));
-        String digest=ApkStore.textDigest("job-schedule-v1"+RuntimeJobNamespace.part(install.generation)+RuntimeJobNamespace.part(namespace)+early+":"+late+":"+Base64.getEncoder().encodeToString(RuntimeJobInfo.encode(logical)));
-        JobLedger.Version prepared;
+        String digest=ApkStore.textDigest((work==null?"job-schedule-v1":"job-enqueue-v1"+RuntimeJobNamespace.part(Base64.getEncoder().encodeToString(RuntimeJobWork.encode(work))))+RuntimeJobNamespace.part(install.generation)+RuntimeJobNamespace.part(namespace)+early+":"+late+":"+Base64.getEncoder().encodeToString(RuntimeJobInfo.encode(logical)));
+        JobLedger.Version prepared;boolean newVersion;
         synchronized(broker){
             current(install);ServiceInfo declaration=declaration(install,logical.getService());
+            if(logical.isPersisted()&&(install.info.requestedPermissions==null||!Arrays.asList(install.info.requestedPermissions).contains("android.permission.RECEIVE_BOOT_COMPLETED")))throw new SecurityException("JOB_PERSIST_PERMISSION_REQUIRED");
             ledger.requireIdle(install.generation);
             String version=randomVersion();
+            JobLedger.Version existing=work==null?null:ledger.current(install.generation,namespace,logical.getId());
+            if(existing!=null&&!Arrays.equals(existing.logical,RuntimeJobInfo.encode(logical)))existing=null;
+            if(existing!=null&&existing.hookGeneration!=null){var live=broker.findProcess(install.space,install.info.packageName,declaration.processName);if(live==null||!existing.hookGeneration.equals(live.allocation.session.processGeneration))existing=null;}
+            newVersion=existing==null;
             // Validate the complete shape before selecting resources. Existing component
             // reconciliation observes Android and must run outside the SQLite transaction.
             RuntimeJobInfo.physical(logical,early,late,logical.getService(),version);
             String processStub=broker.processes.jobProcessStub(install,declaration.processName);
             var db=broker.store.getWritableDatabase();db.beginTransaction();try{
-                begin(operation,install,digest,"SCHEDULE");
-                JobComponentLedger.Lease lease=ledger.components.reserve(install,declaration.processName,declaration.name,processStub);
-                JobInfo physical=RuntimeJobInfo.physical(logical,early,late,new ComponentName(broker.host,lease.stub),version);
-                String hookGeneration=null,hookOperation=null;
-                var live=broker.findProcess(install.space,install.info.packageName,declaration.processName);
-                if(live!=null&&broker.store.hookRecoveryBlocked(live.allocation.session.processGeneration)){
-                    hookGeneration=live.allocation.session.processGeneration;hookOperation=broker.store.hookOperation(hookGeneration);
-                }
-                ledger.prepared(version,lease,namespace,logical,physical,operation,hookGeneration,hookOperation);
-                prepared=ledger.get(version);db.setTransactionSuccessful();
+                begin(operation,install,digest,work==null?"SCHEDULE":"ENQUEUE");
+                if(existing!=null){
+                    // enqueue appends work to an unchanged logical JobInfo. Keep
+                    // its real platform identity instead of replacing the job for
+                    // every item; the new work mutation still has its own receipt.
+                    prepared=existing;ledger.target(operation,existing.version);
+                }else{
+                    JobComponentLedger.Lease lease=ledger.components.reserve(install,declaration.processName,declaration.name,processStub);
+                    JobInfo physical=RuntimeJobInfo.physical(logical,early,late,new ComponentName(broker.host,lease.stub),version);
+                    String hookGeneration=null,hookOperation=null;
+                    var live=broker.findProcess(install.space,install.info.packageName,declaration.processName);
+                    if(live!=null&&broker.store.hookRecoveryBlocked(live.allocation.session.processGeneration)){
+                        hookGeneration=live.allocation.session.processGeneration;hookOperation=broker.store.hookOperation(hookGeneration);
+                    }
+                    ledger.prepared(version,lease,namespace,logical,physical,operation,hookGeneration,hookOperation);prepared=ledger.get(version);
+                }db.setTransactionSuccessful();
             }finally{db.endTransaction();}
+            inFlightMutations.add(operation);
         }
         try{
-            int result=platform.schedule(prepared.physicalNamespace,prepared.physical());
+            int result=work==null?platform.schedule(prepared.physicalNamespace,prepared.physical()):platform.enqueue(prepared.physicalNamespace,prepared.physical(),work);
             if(result!=JobScheduler.RESULT_SUCCESS&&result!=JobScheduler.RESULT_FAILURE)throw new IllegalStateException("JOB_PLATFORM_RESULT_UNKNOWN");
             synchronized(broker){atomic(()->{
                 if(result==JobScheduler.RESULT_SUCCESS){ledger.accepted(prepared);broker.contract.succeed(operation,"PLATFORM_ACCEPTED:"+prepared.version);}
-                else{if(ledger.get(prepared.version).state.equals("ACCEPTED"))throw new IllegalStateException("JOB_PLATFORM_ACK_CONTRADICTS_CALLBACK");ledger.state(prepared.version,"REJECTED");ledger.fence(prepared.version);broker.contract.fail(operation,"JOB_PLATFORM_REJECTED");}
+                else{
+                    if(newVersion){if(ledger.get(prepared.version).state.equals("ACCEPTED"))throw new IllegalStateException("JOB_PLATFORM_ACK_CONTRADICTS_CALLBACK");ledger.state(prepared.version,"REJECTED");ledger.fence(prepared.version);}
+                    broker.contract.fail(operation,"JOB_PLATFORM_REJECTED");
+                }
                 ledger.close(operation);
             });}
             return result;
         }catch(Exception error){unknown(operation,error);throw error;}
+        finally{synchronized(broker){inFlightMutations.remove(operation);}}
     }
 
     /** Null id means all jobs in namespace; allNamespaces covers only this install. */
@@ -101,6 +130,7 @@ final class RuntimeJobBroker {
                 begin(operation,install.generation,digest,"CANCEL");
                 for(var version:selected){ledger.target(operation,version.version);ledger.fence(version.version);}
             });
+            inFlightMutations.add(operation);
         }
         try{
             Set<String> cancelled=new HashSet<>();
@@ -110,21 +140,25 @@ final class RuntimeJobBroker {
                 broker.contract.succeed(operation,"CANCEL_RPC_RETURNED");ledger.close(operation);
             });}
         }catch(Exception error){unknown(operation,error);throw error;}
+        finally{synchronized(broker){inFlightMutations.remove(operation);}}
     }
 
     /** Cancels all scheduled jobs of an installation being removed, without requiring CORRUPT or schema-migrated artifacts to re-verify. */
     void cancelForUninstall(String space,String pkg,String generation,String operation)throws Exception{
-        outsideLock();
+        outsideLock();reconcileSchedules();
         String digest=ApkStore.textDigest("job-cancel-v1"+RuntimeJobNamespace.part(generation)+RuntimeJobNamespace.part("")+":null:true");
         List<JobLedger.Version> selected=new ArrayList<>();
         synchronized(broker){
             var row=broker.apks.row(space,pkg);if(row==null||!generation.equals(row.generation))throw new SecurityException("JOB_INSTALL_STALE");
             ledger.requireIdle(generation);
-            for(var version:ledger.versions(generation))if(!version.fenced&&!version.state.equals("REJECTED"))selected.add(version);
+            // Death fences callback admission before this explicit cancellation. A fence
+            // does not cancel Android state; include those physical jobs and keep history.
+            for(var version:ledger.versions(generation))if(!version.state.equals("REJECTED"))selected.add(version);
             atomic(()->{
                 begin(operation,generation,digest,"CANCEL");
                 for(var version:selected){ledger.target(operation,version.version);ledger.fence(version.version);}
             });
+            inFlightMutations.add(operation);
         }
         try{
             Set<String> cancelled=new HashSet<>();
@@ -134,6 +168,7 @@ final class RuntimeJobBroker {
                 broker.contract.succeed(operation,"CANCEL_RPC_RETURNED");ledger.close(operation);
             });}
         }catch(Exception error){unknown(operation,error);throw error;}
+        finally{synchronized(broker){inFlightMutations.remove(operation);}}
     }
 
     /** Always queries Android. Saved JobInfo restores the logical view, never substitutes for system state. */
@@ -162,7 +197,7 @@ final class RuntimeJobBroker {
 
     /** Positive pending-version evidence resolves schedule ACK loss. Absence proves no outcome. */
     void reconcileSchedules()throws Exception{
-        outsideLock();List<String> operations;
+        outsideLock();RuntimeJobCancellationRecovery.reconcile(broker);List<String> operations;
         synchronized(broker){operations=ledger.openSchedules();}
         if(operations.isEmpty())return;
         Map<String,List<JobInfo>> observed=platform.pending();

@@ -36,9 +36,12 @@ final class ActivityEntryFences {
     /** An admitted guest-to-guest route owns its own candidate. */
     static void closeRoute(RuntimeBroker broker,String candidate,String launchOperation,String operation){
         var ticket=broker.activities.get(candidate);var launch=broker.activities.launches.get(broker.activities.launches.forTicket(candidate));
-        if(!launchOperation.equals(launch.operation)||!"ACTIVITY".equals(launch.callerKind)||launch.sourceTicket==null||launch.sourceInstance==null||launch.payloadDigest==null||!"UNKNOWN".equals(launch.state)||!ticket.generation.equals(launch.generation))throw new SecurityException("ACTIVITY_ROUTE_ENTRY_IDENTITY_MISMATCH");
-        var source=broker.activities.get(launch.sourceTicket);
-        if(!source.space.equals(ticket.space)||!source.pkg.equals(launch.callerPackage))throw new SecurityException("ACTIVITY_ROUTE_ENTRY_SOURCE_MISMATCH");
+        if(!launchOperation.equals(launch.operation)||launch.payloadDigest==null||!"UNKNOWN".equals(launch.state)||!ticket.generation.equals(launch.generation))throw new SecurityException("ACTIVITY_ROUTE_ENTRY_IDENTITY_MISMATCH");
+        if("ACTIVITY".equals(launch.callerKind)){
+            if(launch.sourceTicket==null||launch.sourceInstance==null)throw new SecurityException("ACTIVITY_ROUTE_ENTRY_IDENTITY_MISMATCH");var source=broker.activities.get(launch.sourceTicket);
+            if(!source.space.equals(ticket.space)||!source.pkg.equals(launch.callerPackage))throw new SecurityException("ACTIVITY_ROUTE_ENTRY_SOURCE_MISMATCH");
+        }else if("CONTEXT".equals(launch.callerKind))ActivityContextSource.requireRecorded(broker,launch,ticket);
+        else throw new SecurityException("ACTIVITY_ROUTE_ENTRY_IDENTITY_MISMATCH");
         closeUnattached(broker,ticket,launchOperation,operation);
     }
     private static void closeUnattached(RuntimeBroker broker,ActivityLedger.Ticket ticket,String launchOperation,String operation){

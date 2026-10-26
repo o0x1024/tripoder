@@ -77,6 +77,7 @@ public final class EngineRecoveryService extends Service {
         long deadline=Math.min(policy.startedAt+EngineRecoveryPolicy.START_MS,SystemClock.elapsedRealtime()+15000);
         while(true){boolean live=false;var rows=getSystemService(ActivityManager.class).getRunningAppProcesses();if(rows==null)throw new IllegalStateException("PROCESS_OBSERVATION_UNAVAILABLE");
             for(var row:rows)if(row.uid==android.os.Process.myUid()&&row.processName.startsWith(getPackageName()+":slot"))live=true;
+            for(var row:rows)if(row.processName.startsWith(getPackageName()+":isolated"))live=true;
             if(!live)return;if(SystemClock.elapsedRealtime()>=deadline)throw new IllegalStateException("ORPHAN_PROCESS_STILL_LIVE");Thread.sleep(50);
         }
     }

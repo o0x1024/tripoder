@@ -47,8 +47,14 @@ class ApkBuilder:
         classpath = os.pathsep.join(map(str, [self.platform, *jars]))
         self.run(self.java / 'bin/javac', '--release', '17', '-classpath', classpath,
                  '-d', classes, *sources)
+        # A generated component pool can exceed macOS ARG_MAX when an isolated
+        # output path is long. D8 consumes the same class bytes in one archive.
+        compiled_classes = directory / 'compiled-classes.jar'
+        with zipfile.ZipFile(compiled_classes, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
+            for path in sorted(classes.rglob('*.class')):
+                archive.write(path, path.relative_to(classes).as_posix())
         self.run(self.tools / 'd8', '--release', '--min-api', '36', '--lib', self.platform,
-                 '--output', dex, *sorted(classes.rglob('*.class')), *jars)
+                 '--output', dex, compiled_classes, *jars)
         unsigned = directory / 'unsigned.apk'
         args = [self.tools / 'aapt2', 'link', '-I', self.platform, '--manifest', manifest, '-o', unsigned]
         if resources:

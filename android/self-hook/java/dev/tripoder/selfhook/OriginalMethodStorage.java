@@ -17,6 +17,21 @@ public final class OriginalMethodStorage {
     private static native boolean prepareBatchNative(Object[] targets, Class<?>[] owners, Object[] shorties);
     public static native String report();
     public static native String preparationMetrics();
+    private static native String preparationFailureNative();
+    private static native int preparationFailureIndexNative();
+    private static String lastPreparationFailure="NOT_ATTEMPTED";
+    public static synchronized String preparationFailure(){return lastPreparationFailure;}
+
+    private static boolean prepared(boolean result,Executable[] targets){
+        if(!result){
+            int index=preparationFailureIndexNative();
+            String target=index>=0&&index<targets.length
+                ?targets[index].getDeclaringClass().getName()+"."+targets[index].getName():"NO_TARGET";
+            if(target.length()>240)target=target.substring(0,240);
+            lastPreparationFailure=preparationFailureNative()+";target="+target;
+        }
+        return result;
+    }
 
     public static synchronized boolean prepare(Executable target) throws Exception {
         return prepareBatch(new Executable[]{target}, new String[]{null});
@@ -46,11 +61,11 @@ public final class OriginalMethodStorage {
             if (Modifier.isNative(target.getModifiers())) hasNative = true;
         }
         if (!bound) {
-            if (!bindNative(OriginalMethodStorage.class.getDeclaredMethod("allocateNative", int.class),OriginalMethodStorage.class.getDeclaredMethod("findOwnerNative",Class.class))) return false;
+            if (!bindNative(OriginalMethodStorage.class.getDeclaredMethod("allocateNative", int.class),OriginalMethodStorage.class.getDeclaredMethod("findOwnerNative",Class.class))) return prepared(false,targets);
             bound = true;
         }
         if (hasNative) NativeMethodOriginal.initialize();
-        if (targets.length == 1) return prepareNative(targets[0], owners[0], resolvedShorties[0]);
-        return prepareBatchNative(targets, owners, resolvedShorties);
+        if (targets.length == 1) return prepared(prepareNative(targets[0], owners[0], resolvedShorties[0]),targets);
+        return prepared(prepareBatchNative(targets, owners, resolvedShorties),targets);
     }
 }

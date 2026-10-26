@@ -7,11 +7,12 @@ import java.util.*;
 /** UI snapshot only; mutation admission always rechecks the authority. */
 final class WorkbenchCatalog {
     final List<String> spaces=new ArrayList<>();final List<JSONObject> installs=new ArrayList<>();
-    final JSONArray applicationsMeta;
+    final JSONArray applicationsMeta;final List<JSONObject> running=new ArrayList<>();
     final Map<String,JSONObject> bindings=new LinkedHashMap<>();
     private final List<JSONObject> targets=new ArrayList<>();
     WorkbenchCatalog(Bundle bundle)throws Exception{
         applicationsMeta=new JSONArray(bundle.getString("applications","[]"));
+        JSONArray live=new JSONArray(bundle.getString("running","[]"));for(int i=0;i<live.length();i++)running.add(live.getJSONObject(i));
         JSONArray values=new JSONArray(bundle.getString("spaces"));for(int i=0;i<values.length();i++)spaces.add(values.getString(i));
         values=new JSONArray(bundle.getString("installs"));for(int i=0;i<values.length();i++)installs.add(values.getJSONObject(i));
         values=new JSONArray(bundle.getString("projects"));for(int i=0;i<values.length();i++){JSONObject value=values.getJSONObject(i);targets.add(value);String id=value.getString("project");JSONObject prior=bindings.get(id);String selected="";for(int j=0;j<applicationsMeta.length();j++)if(id.equals(applicationsMeta.getJSONObject(j).optString("project")))selected=applicationsMeta.getJSONObject(j).optString("selectedSpace");if(prior==null||selected.equals(value.optString("space")))bindings.put(id,value);}
@@ -22,6 +23,15 @@ final class WorkbenchCatalog {
     List<String> applications(){return applications(null);}
     List<String> applications(String space){Set<String> packages=new TreeSet<>();for(JSONObject value:installs)if(space==null||space.isEmpty()||space.equals(value.optString("space")))packages.add(value.optString("package"));if(space==null||space.isEmpty())for(int i=0;i<applicationsMeta.length();i++)packages.add(applicationsMeta.optJSONObject(i).optString("package"));return new ArrayList<>(packages);}
     List<JSONObject> installations(String pkg){List<JSONObject> out=new ArrayList<>();for(JSONObject value:committed())if(pkg.equals(value.optString("package")))out.add(value);return out;}
+    /** "": nothing of the application is running; "运行中": its main process is; "后台运行": only other processes of it are. */
+    String runState(String pkg,String space){
+        boolean main=false,other=false;
+        for(JSONObject live:running){
+            if(!pkg.equals(live.optString("package"))||space!=null&&!space.isEmpty()&&!space.equals(live.optString("space")))continue;
+            if(pkg.equals(live.optString("process")))main=true;else other=true;
+        }
+        return main?"运行中":other?"后台运行":"";
+    }
     /** Mode is fixed for a live process; committed target metadata is also the next launch's mode. */
     String modeLabel(String pkg,String space){
         Set<String> modes=new HashSet<>();

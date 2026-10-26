@@ -7,6 +7,21 @@ import org.json.*;
 /** Bounded stack evidence on an actual startup timeout; never changes the outcome. */
 final class RuntimeStartupDiagnostics {
     private static final ArrayDeque<Map<String,Object>> RECENT_FAILURES=new ArrayDeque<>();
+    /** QA opt-in only: observe a stalled constructor/native initializer before an
+     * application watchdog can end the process. Never change its deadline or exit. */
+    static Thread watchStartup(java.util.function.Supplier<String> stage){
+        Thread main=android.os.Looper.getMainLooper().getThread();long started=android.os.SystemClock.elapsedRealtime();
+        Thread observer=new Thread(()->{
+            for(long milestone:new long[]{2000,5000,8000,15000,22000,27000}){
+                long remaining=milestone-(android.os.SystemClock.elapsedRealtime()-started);
+                if(remaining>0)try{Thread.sleep(remaining);}catch(InterruptedException finished){return;}
+                if(Thread.currentThread().isInterrupted())return;
+                StackTraceElement[] frames=main.getStackTrace();int limit=Math.min(frames.length,32);
+                Log.i("TripoderStartupSample","elapsedMs="+(android.os.SystemClock.elapsedRealtime()-started)+";stage="+stage.get()+";state="+main.getState());
+                for(int offset=0;offset<limit;offset+=4)Log.i("TripoderStartupSample","frames="+Arrays.toString(Arrays.copyOfRange(frames,offset,Math.min(offset+4,limit))));
+            }
+        },"Tripoder-StartupEvidence");observer.setDaemon(true);observer.start();return observer;
+    }
     static void failure(String stage,Throwable error){
         if(RuntimeEngine.current==null)return;
         try{
@@ -15,7 +30,10 @@ final class RuntimeStartupDiagnostics {
                 JSONArray frames=new JSONArray();List<String> frameList=new ArrayList<>();StackTraceElement[] trace=current.getStackTrace();
                 for(int i=0;i<Math.min(24,trace.length);i++){frames.put(trace[i].toString());frameList.add(trace[i].toString());}
                 String message=current.getMessage();if(message!=null&&message.length()>400)message=message.substring(0,400);
-                causes.put(new JSONObject().put("type",current.getClass().getName()).put("message",message==null?JSONObject.NULL:message).put("frames",frames));
+                causes.put(new JSONObject().put("type",current.getClass().getName()).put("message",message==null?JSONObject.NULL:message));
+                // logd truncates a long entry near 4 KiB. Keep the causal summary
+                // separate so a deep wrapper stack cannot erase the actual cause.
+                for(int offset=0;offset<frameList.size();offset+=4)Log.e("TripoderStartupFrames",stage+" cause="+causes.length()+" "+frameList.subList(offset,Math.min(offset+4,frameList.size())));
                 Map<String,Object> c=new LinkedHashMap<>();c.put("type",current.getClass().getName());c.put("message",message);c.put("frames",List.copyOf(frameList));causeList.add(Collections.unmodifiableMap(c));
             }
             synchronized(RECENT_FAILURES){

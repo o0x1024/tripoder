@@ -19,6 +19,17 @@ final class RuntimeWebView {
     private final RuntimeEngine engine;
     private PackageInfo provider;
     private Resources resources;
+    private dev.tripoder.selfhook.ResourceFrameworkAccess.AssetSnapshot diagnosticAssets;
+    private dev.tripoder.selfhook.ResourceFrameworkAccess.AssetSnapshot diagnosticSharedAssets;
+    private dev.tripoder.selfhook.ResourceFrameworkAccess.AssetSnapshot diagnosticExtendedAssets;
+    private String diagnosticAssetStatus="NOT_CAPTURED";
+    private String diagnosticSharedAssetStatus="NOT_CAPTURED";
+    private String diagnosticExtendedAssetStatus="NOT_CAPTURED";
+    private dev.tripoder.selfhook.ResourceDependencyAccess.RegistrationPlan resourcePlan;
+    private enum ResourceState { PREPARED,REGISTERING,REGISTERED,FAILED }
+    private volatile ResourceState resourceState=ResourceState.PREPARED;
+    private final java.util.concurrent.CompletableFuture<Void> resourceRegistration=new java.util.concurrent.CompletableFuture<>();
+    private volatile Thread resourceRegistrar;
     private Object updater;
     private final java.util.Set<android.content.ComponentName> components=new java.util.HashSet<>();
     private boolean captured;
@@ -33,6 +44,12 @@ final class RuntimeWebView {
                 ||!selected.packageName.equals(provider.packageName)||selected.getLongVersionCode()!=provider.getLongVersionCode())
             throw new SecurityException("WEBVIEW_PROVIDER_CAPTURE_CHANGED");
         resources=engine.host.getPackageManager().getResourcesForApplication(provider.applicationInfo);
+        resourcePlan=dev.tripoder.selfhook.ResourceDependencyAccess.plan(engine.resources,provider.applicationInfo,engine.applicationInfo);
+        if(engine.traceStartup)try{diagnosticAssets=dev.tripoder.selfhook.ResourceFrameworkAccess.snapshot(resources);diagnosticAssetStatus="CAPTURED_BEFORE_GUEST";}
+        catch(Exception unavailable){diagnosticAssetStatus="UNAVAILABLE:"+unavailable.getClass().getName();}
+        if(engine.traceStartup)try{diagnosticSharedAssets=dev.tripoder.selfhook.ResourceDependencyAccess.sharedLibrarySnapshot(provider.applicationInfo,engine.applicationInfo);diagnosticSharedAssetStatus="CANONICAL_SHARED_CAPTURED_BEFORE_GUEST";}
+        catch(Exception unavailable){diagnosticSharedAssetStatus="UNAVAILABLE:"+unavailable.getClass().getName();}
+        if(engine.traceStartup){diagnosticExtendedAssets=resourcePlan.layout();diagnosticExtendedAssetStatus="CANONICAL_EXTENDED_CAPTURED_BEFORE_GUEST";}
         for(android.content.pm.ComponentInfo[] group:new android.content.pm.ComponentInfo[][]{provider.activities,provider.receivers,provider.services,provider.providers})
             if(group!=null)for(var component:group)components.add(new android.content.ComponentName(component.packageName,component.name));
         updater=Objects.requireNonNull(engine.host.getSystemService("webviewupdate"),"WEBVIEW_UPDATE_SERVICE_UNAVAILABLE");
@@ -43,6 +60,48 @@ final class RuntimeWebView {
         WebView.setDataDirectorySuffix("tripoder-"+suffix);
     }
     boolean owns(String name){return provider!=null&&provider.packageName.equals(name);}
+    void requireGuestResources(Resources view){
+        ResourceState state=resourceState;
+        boolean registered=state==ResourceState.REGISTERING||state==ResourceState.REGISTERED;
+        engine.resourceAssets.requireOwnedLayout(view,registered?resourcePlan.layout():null);
+    }
+    Object registerResources(Object receiver,String name,ApplicationInfo supplied,RuntimeManagedInstaller.Original original)throws Throwable{
+        boolean owner;
+        synchronized(this){
+            if(!owns(name)||resourcePlan==null)throw new SecurityException("RESOURCE_DEPENDENCY_OWNER_REQUIRED");
+            resourcePlan.requireEntry(receiver);
+            if(engine.application==null)throw new IllegalStateException("RESOURCE_DEPENDENCY_APPLICATION_REQUIRED");
+            if(resourceState==ResourceState.FAILED)throw new IllegalStateException("RESOURCE_DEPENDENCY_REGISTRATION_FAILED");
+            if(resourceState==ResourceState.REGISTERING&&resourceRegistrar==Thread.currentThread())throw new IllegalStateException("RESOURCE_DEPENDENCY_REGISTRATION_CYCLE");
+            packageInfo(name,QUERY_FLAGS,RuntimePackageBridge.userId());identity(supplied);resourcePlan.requireInputs(supplied,engine.applicationInfo);
+            requireGuestResources(engine.resources);owner=resourceState==ResourceState.PREPARED;
+            if(owner){resourceRegistrar=Thread.currentThread();resourceState=ResourceState.REGISTERING;}
+        }
+        if(!owner){
+            // Same dependency, same real registration: concurrent/repeated
+            // requests share its completion rather than a second owner/effect.
+            try{resourceRegistration.get();}catch(java.util.concurrent.ExecutionException failure){throw failure.getCause();}
+            packageInfo(name,QUERY_FLAGS,RuntimePackageBridge.userId());resourcePlan.requireInputs(supplied,engine.applicationInfo);resourcePlan.requireRecorded();requireGuestResources(engine.resources);return null;
+        }
+        try{
+            // The platform consumes a trusted copy. Mutable caller Bundles and
+            // arrays cannot alter the already compiled resource dependency.
+            Object result=original.call(new Object[]{name,resourcePlan.canonicalInput()});
+            packageInfo(name,QUERY_FLAGS,RuntimePackageBridge.userId());resourcePlan.requireInputs(supplied,engine.applicationInfo);
+            resourcePlan.requireRecorded();requireGuestResources(engine.resources);
+            resourceState=ResourceState.REGISTERED;
+            resourceRegistration.complete(null);
+            if(engine.traceStartup)android.util.Log.i("TripoderResourceDependency","SELECTED_PROVIDER_REGISTERED_WITH_PRECOMPILED_LAYOUT");
+            return result;
+        }catch(Throwable failure){resourceState=ResourceState.FAILED;resourceRegistration.completeExceptionally(failure);throw failure;}
+        finally{resourceRegistrar=null;}
+    }
+    java.util.Map<String,Object> diagnosticAssetRelations(Resources view){
+        java.util.Map<String,Object> result=new java.util.LinkedHashMap<>();result.put("status",diagnosticAssetStatus);
+        if(diagnosticAssets!=null)result.put("relations",diagnosticAssets.relations(view));
+        result.put("canonicalSharedStatus",diagnosticSharedAssetStatus);if(diagnosticSharedAssets!=null)result.put("canonicalSharedRelations",diagnosticSharedAssets.relations(view));
+        result.put("canonicalExtendedStatus",diagnosticExtendedAssetStatus);if(diagnosticExtendedAssets!=null)result.put("canonicalExtendedRelations",diagnosticExtendedAssets.relations(view));return result;
+    }
     /** The provider loads its code in a loader whose complete dex path is exactly the captured provider APK set. */
     boolean ownsProviderLoader(ClassLoader candidate){
         if(provider==null||!(candidate instanceof dalvik.system.PathClassLoader))return false;
@@ -123,6 +182,8 @@ final class RuntimeWebView {
                 ||!Arrays.equals(expected.splitSourceDirs,actual.splitSourceDirs)
                 ||!Arrays.equals(expected.sharedLibraryFiles,actual.sharedLibraryFiles))
             throw new SecurityException("WEBVIEW_PROVIDER_CODE_IDENTITY_CHANGED");
+        try{if(!Arrays.equals(dev.tripoder.selfhook.ResourceDependencyAccess.apkPaths(expected),dev.tripoder.selfhook.ResourceDependencyAccess.apkPaths(actual)))throw new SecurityException("WEBVIEW_PROVIDER_RESOURCE_PROFILE_CHANGED");}
+        catch(RuntimeException failure){throw failure;}catch(Exception failure){throw new IllegalStateException("WEBVIEW_PROVIDER_RESOURCE_PROFILE_UNAVAILABLE",failure);}
     }
     PackageInfo packageInfo(String name,long flags,int user){
         require(name,flags,user);

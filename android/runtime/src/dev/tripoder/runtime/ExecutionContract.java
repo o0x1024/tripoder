@@ -20,6 +20,7 @@ import java.util.function.LongSupplier;
  */
 public final class ExecutionContract {
     public enum ProcessState { ALLOCATED, ATTACHED, RUNNING, DEAD, FAILED }
+    public enum ProcessKind { ORDINARY, ISOLATED_SERVICE }
     public enum OperationState { ACCEPTED, RUNNING, SUCCEEDED, FAILED, UNKNOWN }
 
     /** Writes must durably commit before returning. Reads return full records. */
@@ -64,11 +65,14 @@ public final class ExecutionContract {
         public final ProcessState state;
         public final int pid, uid, expectedUid;
         public final String failureReason;
+        public final ProcessKind kind;
+        public final String instance;
         private Session(Identity identity, ProcessState state, int pid, int uid,
-                        int expectedUid, String failureReason) {
+                        int expectedUid, String failureReason,ProcessKind kind,String instance) {
             this.identity = identity; this.processGeneration = identity.processGeneration;
             this.state = state; this.pid = pid; this.uid = uid;
             this.expectedUid = expectedUid; this.failureReason = failureReason;
+            this.kind=kind;this.instance=instance;
         }
     }
 
@@ -202,16 +206,22 @@ public final class ExecutionContract {
 
     public synchronized Allocation allocate(String spaceId, String packageName, String installGeneration,
                                             String processName, int expectedUid) {
+        if(expectedUid<0)throw error("INVALID_ARGUMENT","Expected UID must be non-negative");
+        return allocate(spaceId,packageName,installGeneration,processName,expectedUid,ProcessKind.ORDINARY,"");
+    }
+    public synchronized Allocation allocateIsolated(String spaceId,String packageName,String installGeneration,String processName,String instance){
+        return allocate(spaceId,packageName,installGeneration,processName,-1,ProcessKind.ISOLATED_SERVICE,identifier(instance,"isolatedInstance"));
+    }
+    private Allocation allocate(String spaceId,String packageName,String installGeneration,String processName,int expectedUid,ProcessKind kind,String instance){
         writable();
-        if (expectedUid < 0) throw error("INVALID_ARGUMENT", "Expected UID must be non-negative");
         Identity identity = new Identity(spaceId, packageName, installGeneration, processName, randomToken());
         for (Session existing : sessions.values()) {
             Identity prior = existing.identity;
-            if (!ended(existing) && prior.spaceId.equals(identity.spaceId)
+            if ((existing.kind==ProcessKind.ISOLATED_SERVICE?existing.state!=ProcessState.DEAD:!ended(existing)) && existing.kind==kind&&existing.instance.equals(instance)&&prior.spaceId.equals(identity.spaceId)
                     && prior.packageName.equals(identity.packageName) && prior.processName.equals(identity.processName))
                 throw error("PROCESS_ALREADY_ACTIVE", "Stop the existing application process before allocating another generation");
         }
-        Session session = new Session(identity, ProcessState.ALLOCATED, -1, -1, expectedUid, "");
+        Session session = new Session(identity, ProcessState.ALLOCATED, -1, -1, expectedUid, "",kind,instance);
         String bootstrap = randomToken();
         sessions.put(identity.processGeneration, session); bootstraps.put(bootstrap, identity.processGeneration);
         return new Allocation(session, bootstrap);
@@ -223,12 +233,12 @@ public final class ExecutionContract {
         if (generation == null) throw error("BOOTSTRAP_INVALID", "Bootstrap capability is missing or already consumed");
         Session session = session(generation);
         if (session.state != ProcessState.ALLOCATED) throw error("PROCESS_STATE", "Session is not allocated");
-        if (uid != session.expectedUid) throw error("CALLER_MISMATCH", "Unexpected real UID");
+        if (session.kind==ProcessKind.ISOLATED_SERVICE?uid%100000<99000||uid%100000>99999:uid!=session.expectedUid)throw error("CALLER_MISMATCH","Unexpected real UID");
         for (Session active : sessions.values()) {
             if (authenticated(active) && active.pid == pid)
                 throw error("PID_ALREADY_ATTACHED", "PID is already bound to another session");
         }
-        Session attached = new Session(session.identity, ProcessState.ATTACHED, pid, uid, session.expectedUid, "");
+        Session attached = new Session(session.identity, ProcessState.ATTACHED, pid, uid, session.kind==ProcessKind.ISOLATED_SERVICE?uid:session.expectedUid, "",session.kind,session.instance);
         sessions.put(generation, attached); bootstraps.remove(bootstrapToken);
         return attached;
     }
@@ -244,14 +254,14 @@ public final class ExecutionContract {
     public synchronized Session markRunning(String generation, int pid, int uid) {
         Session session = authenticate(generation, pid, uid);
         if (session.state == ProcessState.RUNNING) return session;
-        Session running = new Session(session.identity, ProcessState.RUNNING, pid, uid, session.expectedUid, "");
+        Session running = new Session(session.identity, ProcessState.RUNNING, pid, uid, session.expectedUid, "",session.kind,session.instance);
         sessions.put(generation, running); return running;
     }
 
     public synchronized Session getSession(String generation) { return session(generation); }
     public synchronized Session markDead(String generation) {
         writable(); Session session = session(generation);
-        return ended(session) ? session : end(session, ProcessState.DEAD, "");
+        return session.state==ProcessState.DEAD||session.kind==ProcessKind.ORDINARY&&session.state==ProcessState.FAILED ? session : end(session, ProcessState.DEAD, "");
     }
     public synchronized Session markFailed(String generation, String reason) {
         writable(); reason = text(reason, 2048, false, "reason"); Session session = session(generation);
@@ -409,7 +419,7 @@ public final class ExecutionContract {
     }
     private Session end(Session session, ProcessState state, String reason) {
         String generation = session.processGeneration;
-        Session ended = new Session(session.identity, state, session.pid, session.uid, session.expectedUid, reason);
+        Session ended = new Session(session.identity, state, session.pid, session.uid, session.expectedUid, reason,session.kind,session.instance);
         sessions.put(generation, ended); owners.remove(generation);
         bootstraps.entrySet().removeIf(entry -> entry.getValue().equals(generation));
         callbacks.entrySet().removeIf(entry -> entry.getValue().sourceGeneration.equals(generation)

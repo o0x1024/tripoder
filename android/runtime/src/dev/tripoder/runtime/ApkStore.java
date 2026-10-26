@@ -72,12 +72,16 @@ public final class ApkStore {
         if(row==null)throw new ActivityNotFoundException("PACKAGE_NOT_IN_SPACE:"+pkg);
         if(!"COMMITTED".equals(row.state))throw new SecurityException("INSTALL_CORRUPT:"+row.reason);
         try{
-            File directory=new File(root,"artifacts/"+RuntimeFiles.id(row.generation));long g1=android.os.SystemClock.elapsedRealtime();ArtifactSet set=integrity.get(directory,row.descriptorSha,mode==RuntimeMode.THIN);long g2=android.os.SystemClock.elapsedRealtime();if(g2-g1>500||g1-g0>500)android.util.Log.w("TripoderBoot","ApkStore.get slow row="+(g1-g0)+"ms integrity="+(g2-g1)+"ms mode="+mode.wire+" thread="+Thread.currentThread().getName()+" pkg="+pkg);
+            File directory=new File(root,"artifacts/"+RuntimeFiles.id(row.generation));long g1=android.os.SystemClock.elapsedRealtime();ArtifactSet set=integrity.get(directory,row.descriptorSha,mode.routesThroughPlatform());long g2=android.os.SystemClock.elapsedRealtime();if(g2-g1>500||g1-g0>500)android.util.Log.w("TripoderBoot","ApkStore.get slow row="+(g1-g0)+"ms integrity="+(g2-g1)+"ms mode="+mode.wire+" thread="+Thread.currentThread().getName()+" pkg="+pkg);
             if(!set.packageName.equals(pkg)||!set.signerSha.equals(row.signer)||set.versionCode!=row.version||!set.base.equals(new File(row.apk))||!set.parts.get(0).sha256.equals(row.sha))throw new SecurityException("INSTALL_METADATA_MISMATCH");
             BundleInstall install=reuse(space,row.generation,row.dataId,set);
             synchronized(authority){Row current=row(space,pkg);if(current==null||!row.generation.equals(current.generation)||!row.dataId.equals(current.dataId)||!"COMMITTED".equals(current.state))throw new IllegalStateException("STALE_INSTALL");InstallHistory.resolve(store,contract,install);}
             installedCache.put(cacheKey,install);
             return install;
+        }catch(RuntimeManifestFilters.ResourcesUnavailable unavailable){
+            // A framework lookup failure does not prove the authenticated APK
+            // bytes corrupt. Keep the installation and its history unchanged.
+            throw unavailable;
         }catch(ArtifactIntegrityCache.VerificationUnstable unstable){
             // A concurrent touch of the immutable tree, not proof the committed bytes are bad.
             // Latching CORRUPT here would permanently brick an intact install (the read path never
@@ -119,7 +123,9 @@ public final class ApkStore {
         PackageInfo info=host.getPackageManager().getPackageArchiveInfo(set.base.toString(),PackageManager.GET_ACTIVITIES|PackageManager.GET_SERVICES|PackageManager.GET_PROVIDERS|PackageManager.GET_RECEIVERS|PackageManager.GET_SIGNING_CERTIFICATES|PackageManager.GET_PERMISSIONS|PackageManager.MATCH_DISABLED_COMPONENTS);
         if(info==null||!set.packageName.equals(info.packageName))throw new SecurityException("BASE_PLATFORM_PARSE_FAILED");
         RuntimeManifestIndex.includeSplits(set,info);
-        return new BundleInstall(space,generation,set.base,set.parts.get(0).sha256,info,new File(root,"data/"+space+"/"+set.packageName+"/"+RuntimeFiles.id(dataId)),set);
+        RuntimeManifestFilters.prepare(host,set,info);
+        BundleInstall install=new BundleInstall(space,generation,set.base,set.parts.get(0).sha256,info,new File(root,"data/"+space+"/"+set.packageName+"/"+RuntimeFiles.id(dataId)),set);
+        synchronized(authority){install.applyComponentSettings(ComponentSettingsLedger.snapshot(store.getReadableDatabase(),space,set.packageName,dataId));}return install;
     }
     synchronized void retainPaths(File stage,File destination){activePaths.add(stage);activePaths.add(destination);}
     synchronized void releasePaths(File stage,File destination){activePaths.remove(stage);activePaths.remove(destination);}
@@ -137,7 +143,7 @@ public final class ApkStore {
         Row old=row(space,pkg);if(old==null||!old.generation.equals(expectedGeneration)){contract.fail(operation,"INSTALL_GENERATION_CONFLICT");throw new IllegalStateException("INSTALL_GENERATION_CONFLICT");}
         synchronized(reusable){reusable.keySet().removeIf(k->k.startsWith(space+'|'+expectedGeneration+'|'));}
         var db=store.getWritableDatabase();db.beginTransaction();
-        try{catalog.invalidateProjects(space,pkg);db.delete("installs","space=? AND package=?",new String[]{space,pkg});fault.at("UNINSTALL_BEFORE_COMMIT");contract.succeed(operation,expectedGeneration);db.setTransactionSuccessful();}finally{db.endTransaction();}
+        try{catalog.invalidateProjects(space,pkg);ComponentSettingsLedger.remove(db,space,pkg,old.dataId);db.delete("installs","space=? AND package=?",new String[]{space,pkg});fault.at("UNINSTALL_BEFORE_COMMIT");contract.succeed(operation,expectedGeneration);db.setTransactionSuccessful();}finally{db.endTransaction();}
         fault.at("UNINSTALL_AFTER_COMMIT");File pres=new File(root,"presentations");new File(pres,expectedGeneration+".meta").delete();new File(pres,expectedGeneration+".png").delete();recover();
     }
     synchronized void removeRecord(String space,String pkg){try{Row row=row(space,pkg);if(row==null)throw new ActivityNotFoundException("PACKAGE_NOT_IN_SPACE:"+pkg);uninstall(UUID.randomUUID().toString(),space,pkg,row.generation,NO_FAULT);}catch(RuntimeException e){throw e;}catch(Exception e){throw new IllegalStateException(e);}}
@@ -156,6 +162,12 @@ public final class ApkStore {
         File dataRoot=new File(root,"data");for(File space:RuntimeFiles.children(dataRoot))for(File pkg:RuntimeFiles.children(space))for(File incarnation:RuntimeFiles.children(pkg))if(!data.contains(space.getName()+"/"+pkg.getName()+"/"+incarnation.getName()))RuntimeFiles.deleteTree(incarnation);
         Set<String> incarnations=new HashSet<>();for(String owner:data)incarnations.add(owner.substring(owner.lastIndexOf('/')+1));RuntimeNotificationNamespace.recover(host,incarnations);
     }
+    void refreshComponentSettings(String space,String pkg,String dataId,android.os.Bundle states){
+        synchronized(authority){
+            for(BundleInstall install:installedCache.values())if(install.space.equals(space)&&install.info.packageName.equals(pkg)&&install.data.getName().equals(dataId))install.applyComponentSettings(states);
+            synchronized(reusable){for(BundleInstall install:reusable.values())if(install.space.equals(space)&&install.info.packageName.equals(pkg)&&install.data.getName().equals(dataId))install.applyComponentSettings(states);}
+        }
+    }
     RuntimeMode resolveMode(String space,String pkg){
         List<String> modes=new ArrayList<>();
         try(Cursor c=store.getReadableDatabase().rawQuery("SELECT mode FROM project_refs WHERE space=? AND package=? AND state='COMMITTED' ORDER BY id",new String[]{space,pkg})){while(c.moveToNext())modes.add(c.getString(0));}
@@ -170,8 +182,17 @@ public final class ApkStore {
         public final String space,generation,sha256;public final File apk,data;public final PackageInfo info;public final ArtifactSet artifacts;
         private java.util.Map<String,android.content.pm.ActivityInfo> activities;
         private List<ApkManifest.Component> effectiveComponents;
+        private final java.util.Map<android.content.pm.ComponentInfo,Boolean> declaredEnabled=new java.util.IdentityHashMap<>();
+        private java.util.Map<String,Integer> appliedStates=java.util.Map.of();
+        synchronized void applyComponentSettings(android.os.Bundle states){
+            java.util.Map<String,Integer> next=new java.util.HashMap<>();for(String name:states.keySet())next.put(name,states.getInt(name));if(appliedStates.equals(next))return;
+            for(var entry:declaredEnabled.entrySet())entry.getKey().enabled=RuntimeComponentState.enabled(states,entry.getKey().name,entry.getValue());
+            appliedStates=java.util.Map.copyOf(next);activities=null;effectiveComponents=null;
+        }
         public synchronized List<ApkManifest.Component> components(){if(effectiveComponents==null)effectiveComponents=RuntimeManifestIndex.resolve(artifacts,info);return effectiveComponents;}
-        BundleInstall(String space,String generation,File apk,String sha,PackageInfo info,File data,ArtifactSet artifacts){this.space=space;this.generation=generation;this.apk=apk;sha256=sha;this.info=info;this.data=data;this.artifacts=artifacts;}
+        BundleInstall(String space,String generation,File apk,String sha,PackageInfo info,File data,ArtifactSet artifacts){this.space=space;this.generation=generation;this.apk=apk;sha256=sha;this.info=info;this.data=data;this.artifacts=artifacts;
+            for(android.content.pm.ComponentInfo[] group:new android.content.pm.ComponentInfo[][]{info.activities,info.receivers,info.services,info.providers})if(group!=null)for(var component:group)declaredEnabled.put(component,component.enabled);
+        }
         synchronized java.util.Map<String,android.content.pm.ActivityInfo> activityIndex(){RuntimeComponents.requireExecutable(this);if(activities==null)activities=RuntimeActivityIndex.create(artifacts,info);return activities;}
         public android.os.Bundle wire(){
             RuntimeComponents.requireExecutable(this);

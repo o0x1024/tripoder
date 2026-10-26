@@ -44,7 +44,7 @@ final class RuntimeJobBootstrap {
         Bundle bootstrap=host.getContentResolver().call(Uri.parse("content://"+host.getPackageName()+".runtime.bootstrap"),"restoreJob",null,request);
         android.util.Log.i("TripoderJobs","BOOTSTRAP_RETURN");
         if(bootstrap==null)throw new IllegalStateException("JOB_BOOTSTRAP_RESPONSE_MISSING");
-        if(bootstrap.containsKey("rejectedJob")){android.util.Log.i("TripoderJobs","REJECTED:"+version+":"+bootstrap.getString("rejectedJob"));return false;}
+        if(bootstrap.containsKey("rejectedJob")){android.util.Log.i("TripoderJobs","REJECTED:"+version+":"+bootstrap.getString("rejectedJob"));if(RuntimeRecoveryGate.productEnabled())control.retireUnclaimed();return false;}
         if(bootstrap.getBoolean("awaitExisting"))RuntimeEngine.awaitConstructed();
         else{control.configureAbort(bootstrap.getString("bootstrap"));control.claim(bootstrap.getInt("authorityPid"));android.util.Log.i("TripoderJobs","ENGINE_CONSTRUCT");new RuntimeEngine(host,bootstrap);}
         return true;

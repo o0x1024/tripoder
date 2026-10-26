@@ -1,0 +1,37 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tripoder.closurefixture" android:versionCode="56">
+    <uses-sdk android:minSdkVersion="36" android:targetSdkVersion="36"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <application android:name=".ThemeApplication" android:appComponentFactory=".OwnedFactory" android:label="Tripoder contract fixture">
+        <uses-library android:name="org.apache.http.legacy" android:required="false"/>
+        <uses-library android:name="micloud-sdk" android:required="true"/>
+        <uses-library android:name="com.miui.system" android:required="true"/>
+        <uses-library android:name="libOpenCL.so" android:required="false"/>
+        <uses-native-library android:name="libOpenCL.so" android:required="false"/>
+        <activity android:name=".Main" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
+        <activity android:name=".ToggleActivity" android:exported="false" android:enabled="false"/>
+        <activity android:name=".ContextTarget" android:exported="false" android:taskAffinity="dev.tripoder.closurefixture.context"/>
+        <activity-alias android:name=".DisabledAlias" android:targetActivity=".ToggleActivity" android:enabled="false" android:exported="false"/>
+        <provider android:name=".ProbeProvider" android:authorities="dev.tripoder.closurefixture.enabled" android:enabled="false" android:exported="false"/>
+        <provider android:name=".CanonicalProvider" android:authorities="dev.tripoder.closurefixture.canonical" android:initOrder="100" android:exported="false"/>
+        <provider android:name=".TailProvider" android:authorities="dev.tripoder.closurefixture.tail" android:initOrder="200" android:exported="false"/>
+        <provider android:name=".FailedProvider" android:authorities="dev.tripoder.closurefixture.failed" android:exported="false"/>
+        <provider android:name=".DeferredProvider" android:authorities="dev.tripoder.closurefixture.deferred" android:exported="false"/>
+        <provider android:name=".OwnedDocumentsProvider" android:authorities="dev.tripoder.closurefixture.documents" android:exported="false"/>
+        <provider android:name=".OwnedDocumentsProvider$Forged" android:authorities="dev.tripoder.closurefixture.documents-forged" android:exported="false"/>
+        <provider android:name=".PeerProviders$Open" android:authorities="dev.tripoder.closurefixture.peer-open" android:exported="true"/>
+        <provider android:name=".ColdOwnedProvider" android:authorities="dev.tripoder.closurefixture.cold-owned" android:process=":coldowned" android:exported="false"/>
+        <provider android:name=".PeerProviders$Protected" android:authorities="dev.tripoder.closurefixture.peer-protected" android:exported="true" android:readPermission="android.permission.MANAGE_DOCUMENTS" android:writePermission="android.permission.MANAGE_DOCUMENTS"/>
+        <provider android:name=".PeerProviders$Path" android:authorities="dev.tripoder.closurefixture.peer-path" android:exported="true"><path-permission android:pathPrefix="/private" android:readPermission="android.permission.MANAGE_DOCUMENTS"/></provider>
+        <provider android:name=".CanonicalProvider$Disabled" android:authorities="dev.tripoder.closurefixture.canonical-disabled" android:enabled="false" android:exported="false"/>
+        <provider android:name=".CanonicalProvider$Remote" android:authorities="dev.tripoder.closurefixture.canonical-remote" android:process=":remote" android:exported="false"/>
+        <provider android:name=".RemoteProvider" android:authorities="dev.tripoder.closurefixture.remote-enabled" android:enabled="false" android:exported="false" android:process=":remote"/>
+        <service android:name=".ToggleJob" android:exported="true" android:enabled="false" android:permission="android.permission.BIND_JOB_SERVICE"/>
+        <activity android:name=".PerTask" android:exported="false" android:launchMode="singleInstancePerTask"/>
+        <service android:name=".RemoteService" android:exported="false" android:process=":remote"/>
+    <service android:name=".QueuedJob" android:exported="true" android:permission="android.permission.BIND_JOB_SERVICE"/>
+    <service android:name=".ReplacedJob" android:exported="true" android:permission="android.permission.BIND_JOB_SERVICE"/>
+    <service android:name=".OwnedJob" android:exported="true" android:permission="android.permission.BIND_JOB_SERVICE"/></application>
+</manifest>

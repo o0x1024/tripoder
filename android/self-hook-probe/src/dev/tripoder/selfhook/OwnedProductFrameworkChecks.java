@@ -35,7 +35,14 @@ public final class OwnedProductFrameworkChecks {
         public int update(Uri uri,ContentValues values,String where,String[] args){return 0;}
     }
     public static JSONObject run(Context context,String run) throws Exception {
-        FrameworkAccess.Members members=FrameworkAccess.prepare();PhysicalApplication.prepare((android.app.Application)context,members);ComponentFrameworkAccess.prepare();ManagerFrameworkAccess.prepare();ActivityFrameworkAccess.prepare();PackageFrameworkAccess.prepare();
+        android.util.Log.i("TripoderFixedStage","FRAMEWORK_PREPARE");
+        FrameworkAccess.Members members=FrameworkAccess.prepare();
+        android.util.Log.i("TripoderFixedStage","PHYSICAL_APPLICATION_PREPARE");PhysicalApplication.prepare((android.app.Application)context,members);
+        android.util.Log.i("TripoderFixedStage","COMPONENT_FRAMEWORK_PREPARE");ComponentFrameworkAccess.prepare();
+        android.util.Log.i("TripoderFixedStage","MANAGER_FRAMEWORK_PREPARE");ManagerFrameworkAccess.prepare();
+        android.util.Log.i("TripoderFixedStage","ACTIVITY_FRAMEWORK_PREPARE");ActivityFrameworkAccess.prepare();
+        android.util.Log.i("TripoderFixedStage","PACKAGE_FRAMEWORK_PREPARE");PackageFrameworkAccess.prepare();
+        android.util.Log.i("TripoderFixedStage","PREPARE_COMPLETE");
         long[] values={0,1,1L<<32,9007199254740993L,Long.MAX_VALUE&~(1L<<31)};
         for(long value:values)check(ComponentFrameworkAccess.bindFlags(Context.BindServiceFlags.of(value))==value,"BIND_FLAGS_EXACT_LONG");
         boolean invalidFlags=false;try{Context.BindServiceFlags.of(1L<<31);}catch(IllegalArgumentException expected){invalidFlags=true;}
@@ -111,7 +118,7 @@ public final class OwnedProductFrameworkChecks {
         check(facade!=context.getPackageManager()&&PackageFrameworkAccess.endpoint(facade)==endpoint,"FIXED_PACKAGE_FACADE_CONSTRUCTOR");
         check(PackageFrameworkAccess.systemContext().getPackageName().equals("android"),"EXACT_PHYSICAL_SYSTEM_CONTEXT");
         JSONObject boundaryInventory=new JSONObject();
-        for(int owner:new int[]{13,15,18,24,25,26}){
+        for(int owner:new int[]{13,15,18,24,25,26,80,81,82}){
             java.util.List<String> entries=new java.util.ArrayList<>();
             for(Object candidate:FrameworkAccess.fixedMembers(owner))if(candidate instanceof java.lang.reflect.Method){
                 java.lang.reflect.Method method=(java.lang.reflect.Method)candidate;
@@ -122,8 +129,10 @@ public final class OwnedProductFrameworkChecks {
             boundaryInventory.put(FixedFrameworkMembers.owner(owner).getName(),new JSONObject().put("owner",owner).put("methods",new org.json.JSONArray(entries)).put("sha256",digest));
         }
         String wrapped=android.content.ContentResolver.wrap(provider).getClass().getName();
-        JSONObject remainingInventory=OwnedRemainingInventoryChecks.run();
+        android.util.Log.i("TripoderFixedStage","REMAINING_INVENTORY");JSONObject remainingInventory=OwnedRemainingInventoryChecks.run();
+        android.util.Log.i("TripoderFixedStage","COMPONENT_INSTALLER");
         JSONObject componentInstall=dev.tripoder.runtime.OwnedComponentInstallerChecks.run(context,members,run);
+        android.util.Log.i("TripoderFixedStage","FRAMEWORK_COMPLETE");
         return new JSONObject().put("checks",checks).put("managerFacades",10).put("ownedBroadcast",true).put("nativeLongPrecision",true)
             .put("providerHandleIdentity",true).put("wrappedResolverClass",wrapped).put("boundaryInventory",boundaryInventory).put("remainingInventory",remainingInventory).put("componentInstall",componentInstall).put("hookInstalled",true).put("productCallbacksInstalled",false).put("productAccepted",false);
     }

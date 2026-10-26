@@ -31,7 +31,7 @@ struct string_view { const char *data; size_t size; };
 struct range { uintptr_t begin,end; };
 static struct {
     struct tp_art_access access;
-    jclass classes[62];
+    jclass classes[86];
     struct range ranges[2048];
     unsigned range_count;
     void *manager;
@@ -89,7 +89,7 @@ static const char *names[]={"android/app/Application","android/app/ActivityThrea
     "android/app/ActivityThread$ActivityClientRecord","android/os/UserHandle",
     "android/app/JobSchedulerImpl","android/app/job/JobInfo","android/app/job/JobParameters","android/app/job/JobService","android/app/job/IJobCallback$Stub$Proxy",
     "android/app/PendingIntent","android/content/IntentSender","android/app/AlarmManager","android/app/ApplicationExitInfo",
-    "android/appwidget/AppWidgetManager","android/view/autofill/AutofillClientController","android/hardware/biometrics/BiometricPrompt"};
+    "android/appwidget/AppWidgetManager","android/view/autofill/AutofillClientController","android/hardware/biometrics/BiometricPrompt","android/content/pm/SharedLibraryInfo","android/content/res/Resources","android/os/UserManager","android/util/Xml","android/app/ActivityThread$AppBindData","android/service/notification/StatusBarNotification","com/android/internal/os/ClassLoaderFactory","android/content/res/AssetManager","android/content/res/ApkAssets","android/provider/Settings$System","android/provider/Settings$Secure","android/provider/Settings$Global","android/provider/Settings$Config","android/provider/Settings$NameValueCache","android/provider/Settings$ContentProviderHolder","android/app/ResourcesManager","android/app/ResourcesManager$SharedLibraryAssets","android/app/IntentService","android/net/http/internal/org/chromium/net/NetworkChangeNotifierAutoDetect","android/net/http/internal/org/chromium/net/ProxyBroadcastReceiver","android/net/http/internal/org/chromium/net/ProxyChangeListener$ProxyReceiver","android/app/servertransaction/LaunchActivityItem","android/app/role/RoleManager","dalvik/system/BaseDexClassLoader"};
 _Static_assert(sizeof(names)/sizeof(names[0])==sizeof(registry.classes)/sizeof(registry.classes[0]),"fixed boot class roots");
 static const struct { unsigned owner;const char *name,*type; } fields[]={
     {1,"mInitialApplication","Landroid/app/Application;"},{0,"mLoadedApk","Landroid/app/LoadedApk;"},
@@ -120,9 +120,24 @@ static const struct { unsigned owner;const char *name,*type; } fields[]={
     {3,"mPackageManager","Landroid/content/pm/PackageManager;"},
     {52,"callback","Landroid/os/IBinder;"},{52,"extras","Landroid/os/PersistableBundle;"},{52,"mJobNamespace","Ljava/lang/String;"},{60,"mActivity","Landroid/app/Activity;"},
     {61,"mContext","Landroid/content/Context;"},{48,"state","Landroid/os/Bundle;"},
-    {27,"mSavedInstanceState","Landroid/os/Bundle;"}};
-static const bool field_static[]={false,false,false,false,false,false,false,false,false,false,false,true,
-    false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false};
+    {27,"mSavedInstanceState","Landroid/os/Bundle;"},{64,"mService","Landroid/os/IUserManager;"},
+    {1,"mBoundApplication","Landroid/app/ActivityThread$AppBindData;"},
+    {66,"appInfo","Landroid/content/pm/ApplicationInfo;"},{66,"info","Landroid/app/LoadedApk;"},
+    {66,"processName","Ljava/lang/String;"},{66,"providers","Ljava/util/List;"},{1,"mPackages","Landroid/util/ArrayMap;"},{4,"sharedLibraryInfos","Ljava/util/List;"},
+    {3,"mPackageInfo","Landroid/app/LoadedApk;"},{3,"mMainThread","Landroid/app/ActivityThread;"},{41,"mContext","Landroid/app/ContextImpl;"},
+    {71,"sNameValueCache","Landroid/provider/Settings$NameValueCache;"},{72,"sNameValueCache","Landroid/provider/Settings$NameValueCache;"},
+    {73,"sNameValueCache","Landroid/provider/Settings$NameValueCache;"},{74,"sNameValueCache","Landroid/provider/Settings$NameValueCache;"},
+    {75,"mProviderHolder","Landroid/provider/Settings$ContentProviderHolder;"},{76,"mLock","Ljava/lang/Object;"},{76,"mContentProvider","Landroid/content/IContentProvider;"},
+    {77,"mLock","Ljava/lang/Object;"},{77,"mSharedLibAssetsMap","Landroid/util/ArrayMap;"},
+    {25,"mType","I"},{83,"mIntent","Landroid/content/Intent;"},{83,"mInfo","Landroid/content/pm/ActivityInfo;"},{84,"mService","Landroid/app/role/IRoleManager;"},
+    {85,"sharedLibraryLoaders","[Ljava/lang/ClassLoader;"},{85,"sharedLibraryLoadersAfter","[Ljava/lang/ClassLoader;"}};
+static const bool field_static[]={
+    false,false,false,false,false,false,false,false,false,false,false,true,
+    false,false,false,false,false,false,false,true,true,false,false,false,
+    false,false,false,false,false,false,false,false,false,false,false,false,
+    true,true,false,false,false,false,false,false,false,false,false,false,
+    false,false,false,false,false,false,false,false,false,true,true,true,
+    true,false,false,false,false,false,false,false,false,false,false,false};
 _Static_assert(sizeof(field_static)/sizeof(field_static[0])==sizeof(fields)/sizeof(fields[0]),"fixed field storage kinds");
 
 static bool readable(uintptr_t address,size_t bytes) {
@@ -215,6 +230,7 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_FrameworkAccess_prepareNat
         if((views[i].flags&UINT32_C(0x108))!=UINT32_C(0x108))return JNI_FALSE;
     }
     stage="BASE_ART_CONTRACT";
+    TP_ART_MAPS_SCOPE;
     if(!tp_art_access_bind(&registry.access))return JNI_FALSE;
 #define VERIFY(name,NAME) stage=#NAME; if(!tp_art_validate_code(&registry.access,TP_FRAMEWORK_##NAME##_RVA,tp_framework_##name##_bytes,sizeof(tp_framework_##name##_bytes)))return JNI_FALSE
     VERIFY(decode_object,DECODE_OBJECT);VERIFY(find_field,FIND_FIELD);

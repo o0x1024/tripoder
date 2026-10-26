@@ -6,10 +6,13 @@ import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.PackageInfo;
 import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
 import android.os.PatternMatcher;
 import java.util.*;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Intent resolution over the one package world the guest can see: its own manifest. Android resolves an intent by matching it against every
@@ -30,20 +33,26 @@ final class GuestIntentResolver {
         final Map<String,Map<String,IndexedComponent>> explicitByKind=new HashMap<>();
         final Map<String,Map<String,List<IndexedComponent>>> byKindAndAction=new HashMap<>();
         final Map<String,ActivityInfo> activities=new HashMap<>(),receivers=new HashMap<>();
-        Index(RuntimeEngine engine){
+        Index(RuntimeEngine engine){this(engine.packageArchive,engine.manifestDeclarations,component->filters(engine,component));}
+        Index(PackageInfo archive,List<ApkManifest.Component> declarations,Function<ApkManifest.Component,List<IntentFilter>> declaredFilters){
             for(String k:new String[]{"activity","receiver","service"}){
                 byKind.put(k,new ArrayList<>());explicitByKind.put(k,new HashMap<>());byKindAndAction.put(k,new HashMap<>());
             }
-            if(engine.packageArchive!=null){
-                if(engine.packageArchive.activities!=null)for(ActivityInfo a:engine.packageArchive.activities)if(a!=null&&a.name!=null)activities.putIfAbsent(a.name,a);
-                if(engine.packageArchive.receivers!=null)for(ActivityInfo a:engine.packageArchive.receivers)if(a!=null&&a.name!=null)receivers.putIfAbsent(a.name,a);
+            if(archive!=null){
+                if(archive.activities!=null)for(ActivityInfo a:archive.activities)if(a!=null&&a.name!=null)activities.putIfAbsent(a.name,a);
+                if(archive.receivers!=null)for(ActivityInfo a:archive.receivers)if(a!=null&&a.name!=null)receivers.putIfAbsent(a.name,a);
             }
             int order=0;
-            for(ApkManifest.Component component:engine.manifestDeclarations){
+            for(ApkManifest.Component component:declarations){
                 String kind=component.type.equals("activity-alias")?"activity":component.type;
                 List<IndexedComponent> list=byKind.get(kind);if(list==null)continue;
                 order++;
-                List<IntentFilter> compFilters=filters(engine,component);
+                List<IntentFilter> compFilters=declaredFilters.apply(component);
+                if(kind.equals("activity")){
+                    // Virtual APKs have no platform privileged installation.
+                    // Apply the ordinary-app Activity priority policy in both worlds.
+                    List<IntentFilter> admitted=new ArrayList<>();for(IntentFilter raw:compFilters){IntentFilter filter=new IntentFilter(raw);if(filter.getPriority()>0)filter.setPriority(0);admitted.add(filter);}compFilters=admitted;
+                }
                 IndexedComponent indexed=new IndexedComponent(component,order,compFilters);
                 list.add(indexed);
                 explicitByKind.get(kind).putIfAbsent(component.name,indexed);
@@ -90,21 +99,23 @@ final class GuestIntentResolver {
         if(mime!=null&&!mime.startsWith("@"))try{filter.addDataType(mime);}catch(IntentFilter.MalformedMimeTypeException ignored){}
     }
 
-    /** Matches in Android's order: explicit component first, then filters by priority (higher first) and declaration order. */
-    static List<ResolveInfo> query(RuntimeEngine engine,String kind,Intent intent,long flags){
-        List<ResolveInfo> out=new ArrayList<>();
-        if(intent==null)return out;
-        String pkg=intent.getPackage();ComponentName explicit=intent.getComponent();
-        if(explicit!=null&&!engine.packageName.equals(explicit.getPackageName()))return out;
-        if(pkg!=null&&!engine.packageName.equals(pkg))return out;
-        boolean defaultOnly=(flags&PackageManager.MATCH_DEFAULT_ONLY)!=0,disabled=(flags&PackageManager.MATCH_DISABLED_COMPONENTS)!=0;
-        class Candidate{final ApkManifest.Component component;final IntentFilter filter;final int match,order;Candidate(ApkManifest.Component c,IntentFilter f,int m,int o){component=c;filter=f;match=m;order=o;}}
+    private static final class Candidate {
+        final ApkManifest.Component component;final IntentFilter filter;final int match,order;
+        Candidate(ApkManifest.Component c,IntentFilter f,int m,int o){component=c;filter=f;match=m;order=o;}
+    }
+    private static boolean visible(String packageName,Intent intent){
+        if(intent==null)return false;ComponentName explicit=intent.getComponent();String pkg=intent.getPackage();
+        return (explicit==null||packageName.equals(explicit.getPackageName()))&&(pkg==null||packageName.equals(pkg));
+    }
+    /** The same matcher serves worker queries and authority application selection. */
+    private static List<Candidate> candidates(Index idx,String packageName,String kind,Intent intent,long flags,Predicate<String> enabled){
         List<Candidate> found=new ArrayList<>();
-        Index idx=index(engine);
+        if(!visible(packageName,intent))return found;ComponentName explicit=intent.getComponent();
+        boolean defaultOnly=(flags&PackageManager.MATCH_DEFAULT_ONLY)!=0,disabled=(flags&PackageManager.MATCH_DISABLED_COMPONENTS)!=0;
         if(explicit!=null){
             Map<String,IndexedComponent> explicitMap=idx.explicitByKind.get(kind);
             IndexedComponent indexed=explicitMap==null?null:explicitMap.get(explicit.getClassName());
-            if(indexed!=null&&(disabled||!Boolean.FALSE.equals(indexed.component.enabled))){
+            if(indexed!=null&&(disabled||enabled.test(indexed.component.name))){
                 found.add(new Candidate(indexed.component,null,IntentFilter.MATCH_CATEGORY_EMPTY,indexed.order));
             }
         }else{
@@ -121,7 +132,7 @@ final class GuestIntentResolver {
             Set<String> categories=intent.getCategories();
             for(IndexedComponent indexed:pool){
                 ApkManifest.Component component=indexed.component;
-                if(!disabled&&Boolean.FALSE.equals(component.enabled))continue;
+                if(!disabled&&!enabled.test(component.name))continue;
                 for(IntentFilter filter:indexed.filters){
                     if(defaultOnly&&!filter.hasCategory(Intent.CATEGORY_DEFAULT))continue;
                     int match=filter.match(action,type,scheme,dataUri,categories,"TripoderResolve");
@@ -130,10 +141,18 @@ final class GuestIntentResolver {
             }
         }
         if(found.size()>1)found.sort((a,b)->{int p=Integer.compare(b.filter==null?0:b.filter.getPriority(),a.filter==null?0:a.filter.getPriority());return p!=0?p:Integer.compare(a.order,b.order);});
+        return found;
+    }
+    /** Matches explicit components, then filters by priority and declaration order. */
+    static List<ResolveInfo> query(RuntimeEngine engine,String kind,Intent intent,long flags){
+        if(!visible(engine.packageName,intent))return new ArrayList<>();
+        android.os.Bundle states=RuntimeComponentState.snapshot(engine);Index idx=index(engine);
+        List<Candidate> found=candidates(idx,engine.packageName,kind,intent,flags,name->enabled(engine,idx,kind,name,states));
+        List<ResolveInfo> out=new ArrayList<>();
         ApplicationInfo sharedAppInfo=found.isEmpty()?null:GuestPackageManager.copyApplicationInfo(engine.info,false);
         for(Candidate candidate:found){
             ResolveInfo info=new ResolveInfo();
-            info.priority=candidate.filter==null?0:candidate.filter.getPriority();info.match=candidate.match;info.filter=candidate.filter;
+            info.priority=candidate.filter==null?0:candidate.filter.getPriority();info.match=candidate.match;info.filter=candidate.filter!=null&&(flags&PackageManager.GET_RESOLVED_FILTER)!=0?new IntentFilter(candidate.filter):null;
             info.isDefault=candidate.filter!=null&&candidate.filter.hasCategory(Intent.CATEGORY_DEFAULT);
             switch(kind){
                 case "activity":info.activityInfo=copyActivity(idx.activities.get(candidate.component.name),sharedAppInfo);break;
@@ -141,9 +160,50 @@ final class GuestIntentResolver {
                 case "service":info.serviceInfo=copyService(engine,candidate.component.name,sharedAppInfo);break;
                 default:break;
             }
+            if(info.activityInfo!=null)info.activityInfo.enabled=RuntimeComponentState.enabled(states,info.activityInfo.name,info.activityInfo.enabled);
+            if(info.serviceInfo!=null)info.serviceInfo.enabled=RuntimeComponentState.enabled(states,info.serviceInfo.name,info.serviceInfo.enabled);
             if(info.activityInfo!=null||info.serviceInfo!=null)out.add(info);
         }
         return out;
+    }
+    /** SDK application entry recipe: INFO first, otherwise LAUNCHER; TV uses LEANBACK only. */
+    private static Intent launchIntent(String pkg,boolean leanback,Function<Intent,ComponentName> resolve){
+        String[] categories=leanback?new String[]{Intent.CATEGORY_LEANBACK_LAUNCHER}:new String[]{Intent.CATEGORY_INFO,Intent.CATEGORY_LAUNCHER};
+        for(String category:categories){
+            Intent selector=new Intent(Intent.ACTION_MAIN).addCategory(category).setPackage(pkg);ComponentName chosen=resolve.apply(selector);
+            if(chosen!=null)return new Intent(selector).setComponent(chosen).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        }
+        return null;
+    }
+    private static ComponentName first(Index idx,String pkg,Intent selector,Predicate<String> enabled){
+        List<Candidate> found=candidates(idx,pkg,"activity",selector,0,enabled);return found.isEmpty()?null:new ComponentName(pkg,found.get(0).component.name);
+    }
+    static Intent launchIntent(RuntimeEngine engine,boolean leanback){
+        android.os.Bundle states=RuntimeComponentState.snapshot(engine);Index idx=index(engine);
+        return launchIntent(engine.packageName,leanback,selector->first(idx,engine.packageName,selector,name->enabled(engine,idx,"activity",name,states)));
+    }
+    private static Index installationIndex(ApkStore.BundleInstall install){
+        Index idx=new Index(install.info,install.artifacts.components,component->build(install.artifacts.filters(component)));
+        idx.activities.clear();idx.activities.putAll(install.activityIndex());return idx;
+    }
+    private static boolean enabled(Index idx,String name){ActivityInfo info=idx.activities.get(name);return info!=null&&info.enabled&&info.applicationInfo!=null&&info.applicationInfo.enabled;}
+    static Intent launchIntent(ApkStore.BundleInstall install,boolean leanback){
+        synchronized(install){Index idx=installationIndex(install);return launchIntent(install.info.packageName,leanback,selector->first(idx,install.info.packageName,selector,name->enabled(idx,name)));}
+    }
+    /** Request-local classification, using the same effective state and actual filter matching. */
+    static Map<String,String> entryCategories(ApkStore.BundleInstall install){
+        synchronized(install){
+            Index idx=installationIndex(install);Map<String,String> result=new LinkedHashMap<>();
+            for(String category:new String[]{Intent.CATEGORY_INFO,Intent.CATEGORY_LAUNCHER}){
+                Intent selector=new Intent(Intent.ACTION_MAIN).addCategory(category).setPackage(install.info.packageName);
+                for(Candidate match:candidates(idx,install.info.packageName,"activity",selector,0,name->enabled(idx,name)))result.putIfAbsent(match.component.name,category);
+            }
+            return Collections.unmodifiableMap(result);
+        }
+    }
+    private static boolean enabled(RuntimeEngine engine,Index index,String kind,String name,android.os.Bundle states){
+        android.content.pm.ComponentInfo raw=kind.equals("activity")?index.activities.get(name):kind.equals("receiver")?index.receivers.get(name):engine.serviceIndex.get(name);
+        return raw!=null&&RuntimeComponentState.enabled(states,raw)&&engine.info.enabled;
     }
     /** The component a start of this implicit intent resolves to inside the guest, or null if nothing in the guest declares it. */
     static ComponentName resolveActivity(RuntimeEngine engine,Intent intent){

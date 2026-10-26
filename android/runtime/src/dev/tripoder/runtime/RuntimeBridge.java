@@ -51,7 +51,13 @@ public final class RuntimeBridge {
     public static void notificationDeleteGroup(String id){RuntimeEngine.current.notifications.deleteGroup(id);}
     public static void notificationPost(String tag,int id,android.app.Notification notification){RuntimeEngine.current.notifications.post(tag,id,notification);}
     public static void notificationCancel(String tag,int id){RuntimeEngine.current.notifications.cancel(tag,id);}
+    public static android.service.notification.StatusBarNotification[] notificationActive(){return RuntimeEngine.current.notifications.active();}
     public static void notificationCancelAll(){RuntimeEngine.current.notifications.cancelAll();}
+    public static void notificationDelegate(String target){RuntimeEngine.current.notifications.delegate(target);}
+    public static String notificationDelegate(){return RuntimeEngine.current.notifications.delegate();}
+    public static boolean notificationCanPost(String target){return RuntimeEngine.current.notifications.canNotify(target);}
+    public static void notificationPostAs(String target,String tag,int id,android.app.Notification value){RuntimeEngine.current.notifications.postAs(target,tag,id,value);}
+    public static void networkRequest(android.net.NetworkRequest request,android.net.ConnectivityManager.NetworkCallback callback,android.os.Handler handler,Integer timeout){RuntimeEngine.current.connectivity.request(request,callback,handler,timeout);}
     private RuntimeBridge(){}
     public static android.media.AudioManager createAudioManager(Context host){return RuntimeSelfHookManagers.audioManager(host);}
     public static boolean ownsAudioManager(android.media.AudioManager manager){return RuntimeEngine.current!=null&&RuntimeEngine.current.audio.owns(manager);}
@@ -89,6 +95,7 @@ public final class RuntimeBridge {
     public static void attachedActivity(Activity activity){RuntimeEngine.current.activityAttached(activity);}
     public static void attachApplication(Application application,Context context){RuntimeSelfHookApplication.attach(application,context);}
     public static void observeApplicationOwnership(String stage,Context host,Application guest){RuntimeSelfHookApplication.observe(stage,host,guest);}
+    public static void prepareApplicationPackage(android.content.pm.ApplicationInfo info,ClassLoader loader,Resources resources,String process,java.util.List<android.content.pm.ProviderInfo> providers){RuntimeSelfHookApplication.preparePackage(info,loader,resources,process,providers);}
     public static Context createApplicationContext(Context host,Application guest,android.content.pm.ApplicationInfo info,ClassLoader loader,AppComponentFactory factory,Resources resources){return RuntimeSelfHookApplication.create(host,guest,info,loader,factory,resources);}
     public static void checkApplicationOwnership(Context host,Application guest){RuntimeSelfHookApplication.check(host,guest);}
     public static boolean ownsService(Service service){return RuntimeEngine.current!=null&&RuntimeEngine.current.services.owns(service);}
@@ -151,7 +158,7 @@ public final class RuntimeBridge {
                 Integer id=FOREGROUND.get(service);if(id!=null&&remove){engine.notifications.facade().cancel(id);}if(remove)FOREGROUND.remove(service);return null;
             }
             case "getForegroundServiceType":return 0;
-            default:throw new UnsupportedOperationException("FOREGROUND_SERVICE_CALL_UNSUPPORTED:"+name);
+            default:RuntimeFailThrough.note("foreground-service",name);return null;
         }
     }
     public static void noteSystemResult(Activity caller,int requestCode)throws Exception{RuntimeEngine.current.noteSystemResult(caller,requestCode);}

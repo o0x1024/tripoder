@@ -15,8 +15,8 @@ public class RuntimeProviderTransport extends RuntimeProviderBase {
     @Override public String getType(Uri uri){throw new SecurityException("PROVIDER_OPERATION_CAPABILITY_REQUIRED");}
     @Override public Cursor query(Uri uri,String[] projection,Bundle args,CancellationSignal signal){
         if(signal!=null)throw unsupported();List<String> path=uri.getPathSegments();
-        if("content".equals(uri.getScheme())&&physical.equals(uri.getAuthority())&&path.size()==2&&"v1-thin".equals(path.get(0))&&uri.getQueryParameterNames().equals(Set.of("uri","callerPackage"))&&uri.getQueryParameters("uri").size()==1&&uri.getQueryParameters("callerPackage").size()==1&&uri.getFragment()==null){
-            Bundle envelope=new Bundle();envelope.putString("lease",path.get(1));envelope.putString("kind","query");envelope.putString("uri",uri.getQueryParameter("uri"));envelope.putString("callerPackage",uri.getQueryParameter("callerPackage"));envelope.putBundle("payload",RuntimeProviderFacade.primitive(args));envelope.putStringArray("projection",projection);
+        if("content".equals(uri.getScheme())&&physical.equals(uri.getAuthority())&&path.size()==2&&"v2-thin".equals(path.get(0))&&uri.getQueryParameterNames().equals(Set.of("uri","source"))&&uri.getQueryParameters("uri").size()==1&&uri.getQueryParameters("source").size()==1&&uri.getFragment()==null){
+            Bundle envelope=new Bundle();envelope.putString("lease",path.get(1));envelope.putString("kind","query");envelope.putString("uri",uri.getQueryParameter("uri"));envelope.putString("authority",Uri.parse(uri.getQueryParameter("uri")).getAuthority());envelope.putString("source",uri.getQueryParameter("source"));envelope.putBundle("payload",RuntimeProviderFacade.primitive(args));envelope.putStringArray("projection",projection);
             return (Cursor)dispatchThin(envelope);
         }
         if(!"content".equals(uri.getScheme())||!physical.equals(uri.getAuthority())||path.size()!=3||!path.get(0).equals("v1")||!uri.getQueryParameterNames().equals(Set.of("uri"))||uri.getQueryParameters("uri").size()!=1||uri.getFragment()!=null)throw new SecurityException("PROVIDER_ENVELOPE_INVALID");
@@ -25,7 +25,7 @@ public class RuntimeProviderTransport extends RuntimeProviderBase {
     }
     @Override public Bundle call(String authority,String method,String arg,Bundle extras){if(!physical.equals(authority))throw new SecurityException("PROVIDER_PHYSICAL_AUTHORITY_MISMATCH");return call(method,arg,extras);}
     @Override public Bundle call(String method,String arg,Bundle extras){
-        if("tripoder.thin".equals(method)){
+        if("tripoder.thin.v2".equals(method)){
             if(arg!=null||extras==null)throw new SecurityException("PROVIDER_ENVELOPE_INVALID");
             return (Bundle)dispatchThin(extras);
         }
@@ -33,26 +33,38 @@ public class RuntimeProviderTransport extends RuntimeProviderBase {
         return (Bundle)dispatch(extras);
     }
     private Object dispatchThin(Bundle envelope){
-        RuntimeEngine engine=RuntimeEngine.current;if(engine==null||engine.mode!=RuntimeMode.THIN)throw new SecurityException("PROVIDER_PROCESS_NOT_AUTHENTICATED");
-        if(Binder.getCallingUid()!=android.os.Process.myUid())throw new SecurityException("PROVIDER_CALLER_UID_MISMATCH");
-        String kind=RuntimeWire.required(envelope,"kind"),lease=RuntimeWire.required(envelope,"lease"),logical=RuntimeWire.required(envelope,"uri"),callerPackage=RuntimeWire.required(envelope,"callerPackage");
-        String authority=envelope.getString("authority",Uri.parse(logical).getAuthority());
-        Bundle payload=envelope.getBundle("payload");String[] projection=envelope.getStringArray("projection");
-        Bundle caller=new Bundle();caller.putString("callerPackage",callerPackage);caller.putInt("callerPid",Binder.getCallingPid());caller.putInt("callerUid",Binder.getCallingUid());caller.putBoolean("thin",true);
+        RuntimeEngine engine=RuntimeEngine.current;if(engine==null||!engine.mode.routesThroughPlatform())throw new SecurityException("PROVIDER_PROCESS_NOT_AUTHENTICATED");
+        int callerPid=Binder.getCallingPid(),callerUid=Binder.getCallingUid();
+        if(callerUid!=android.os.Process.myUid())throw new SecurityException("PROVIDER_CALLER_UID_MISMATCH");
+        if(!envelope.keySet().equals(Set.of("lease","source","kind","uri","authority","payload","projection")))throw new SecurityException("PROVIDER_ENVELOPE_INVALID");
+        String kind=RuntimeWire.required(envelope,"kind"),logical=RuntimeWire.required(envelope,"uri"),selected=RuntimeWire.required(envelope,"authority");Uri uri=Uri.parse(logical);
+        if(!selected.equals(uri.getAuthority()))throw new SecurityException("PROVIDER_URI_MISMATCH");
+        Bundle payload=RuntimeProviderFacade.primitive(envelope.getBundle("payload"));String[] projection=envelope.getStringArray("projection");if(projection!=null)projection=projection.clone();
         try{
-            ContentProvider target=engine.providers.ready(lease);
+            ArrayList<ContentProviderOperation> operations=kind.equals("applyBatch")?RuntimeProviderBatch.decode(payload.getByteArray("batch"),selected):null;
+            Bundle input=thinRequest(engine,envelope,kind,callerPid,callerUid);
+            if(operations!=null)RuntimeProviderBatch.summary(input,operations);
+            Bundle caller=authority(engine,RuntimeWire.PROVIDER_THIN_ACCESS,input);
+            ContentProvider target=engine.providers.ready(caller.getString("lease"));
             try(RuntimeProviderIdentity.Scope scope=RuntimeProviderIdentity.enter(target,caller)){
                 switch(kind){
                     case "ready":return new Bundle();
-                    case "query":return RuntimeProviderCursor.wrap(target,target.query(Uri.parse(logical),projection,payload,null),caller);
-                    case "getType":{Bundle b=new Bundle();b.putString("type",target.getType(Uri.parse(logical)));return b;}
-                    case "call":return RuntimeProviderFacade.primitive(target.call(authority,RuntimeWire.required(payload,"method"),payload.getString("arg"),RuntimeProviderFacade.primitive(payload.getBundle("extras"))));
-                    case "insert":case "update":case "delete":case "bulkInsert":return write(target,kind,Uri.parse(logical),payload);
-                    case "applyBatch":{ArrayList<ContentProviderOperation> operations=RuntimeProviderBatch.decode(payload.getByteArray("batch"),authority);return RuntimeProviderBatch.result(target.applyBatch(authority,operations),operations.size(),authority);}
+                    case "query":return RuntimeProviderCursor.wrap(target,target.query(uri,projection,payload,null),caller);
+                    case "getType":{Bundle b=new Bundle();b.putString("type",target.getType(uri));return b;}
+                    case "call":return RuntimeProviderFacade.primitive(target.call(caller.getString("authority"),RuntimeWire.required(payload,"method"),payload.getString("arg"),RuntimeProviderFacade.primitive(payload.getBundle("extras"))));
+                    case "insert":case "update":case "delete":case "bulkInsert":return write(target,kind,uri,payload);
+                    case "applyBatch":return RuntimeProviderBatch.result(target.applyBatch(caller.getString("authority"),operations),operations.size(),caller.getString("authority"));
                     default:throw new UnsupportedOperationException("PROVIDER_OPERATION_UNSUPPORTED");
                 }
             }
         }catch(RuntimeException error){throw error;}catch(Exception error){throw new IllegalStateException("PROVIDER_DISPATCH_FAILED:"+error.getClass().getName()+":"+error.getMessage(),error);}
+    }
+    private static Bundle thinRequest(RuntimeEngine engine,Bundle claim,String kind,int pid,int uid){
+        Bundle request=engine.auth();request.putString("source",RuntimeWire.required(claim,"source"));request.putString("lease",RuntimeWire.required(claim,"lease"));request.putString("uri",RuntimeWire.required(claim,"uri"));request.putString("kind",kind);request.putInt("callerPid",pid);request.putInt("callerUid",uid);return request;
+    }
+    static Bundle thinCursorAccess(Bundle claim,int pid,int uid)throws Exception{
+        RuntimeEngine engine=RuntimeEngine.current;if(engine==null||!engine.mode.routesThroughPlatform())throw new SecurityException("PROVIDER_PROCESS_NOT_AUTHENTICATED");
+        return authority(engine,RuntimeWire.PROVIDER_THIN_ACCESS,thinRequest(engine,claim,"query",pid,uid));
     }
     private Object dispatch(Bundle envelope){
         RuntimeEngine engine=RuntimeEngine.current;if(engine==null)throw new SecurityException("PROVIDER_PROCESS_NOT_AUTHENTICATED");

@@ -27,12 +27,14 @@ final class RuntimeJobInfo {
     }
     private static JobInfo copy(JobInfo input,boolean early,boolean late,ComponentName service,PersistableBundle extras){
         JobInfo.Builder out=new JobInfo.Builder(input.getId(),service)
-            .setExtras(extras).setTransientExtras(input.getTransientExtras())
+            .setExtras(extras).setTransientExtras(input.getTransientExtras()).setPersisted(input.isPersisted())
             .setRequiresCharging(input.isRequireCharging()).setRequiresBatteryNotLow(input.isRequireBatteryNotLow())
             .setRequiresStorageNotLow(input.isRequireStorageNotLow()).setRequiresDeviceIdle(input.isRequireDeviceIdle())
             .setPriority(input.getPriority()).setRequiredNetwork(input.getRequiredNetwork())
             .setEstimatedNetworkBytes(input.getEstimatedNetworkDownloadBytes(),input.getEstimatedNetworkUploadBytes())
             .setMinimumNetworkChunkBytes(input.getMinimumNetworkChunkBytes());
+        // Preserve expedited admission and real Android quota/priority enforcement.
+        if(input.isExpedited())out.setExpedited(true);
         if(input.isPeriodic())out.setPeriodic(input.getIntervalMillis(),input.getFlexMillis());
         else{if(early)out.setMinimumLatency(input.getMinLatencyMillis());if(late)out.setOverrideDeadline(input.getMaxExecutionDelayMillis());}
         // Android prohibits explicitly selecting backoff together with idle constraints.
@@ -43,9 +45,11 @@ final class RuntimeJobInfo {
     }
     private static void validate(JobInfo input){
         Objects.requireNonNull(input,"JOB_REQUIRED");
-        if(input.getService()==null||input.isPersisted()||input.isExpedited()||input.isUserInitiated()||input.isPrefetch()||input.isImportantWhileForeground()||input.getClipData()!=null||input.getClipGrantFlags()!=0||input.getTriggerContentUris()!=null||input.getTriggerContentUpdateDelay()!=-1||input.getTriggerContentMaxDelay()!=-1)throw new UnsupportedOperationException("JOB_KIND_UNSUPPORTED");
+        if(input.getService()==null||input.isUserInitiated()||input.isPrefetch()||input.isImportantWhileForeground()||input.getClipData()!=null||input.getClipGrantFlags()!=0||input.getTriggerContentUris()!=null||input.getTriggerContentUpdateDelay()!=-1||input.getTriggerContentMaxDelay()!=-1)
+            throw new UnsupportedOperationException("JOB_KIND_UNSUPPORTED:serviceMissing="+(input.getService()==null)+";persisted="+input.isPersisted()+";expedited="+input.isExpedited()+";userInitiated="+input.isUserInitiated()+";prefetch="+input.isPrefetch()+";importantWhileForeground="+input.isImportantWhileForeground()+";clip="+(input.getClipData()!=null)+";clipGrantFlags="+input.getClipGrantFlags()+";contentTriggers="+(input.getTriggerContentUris()==null?0:input.getTriggerContentUris().length)+";triggerUpdateDelay="+input.getTriggerContentUpdateDelay()+";triggerMaxDelay="+input.getTriggerContentMaxDelay());
         int[] count={0};bundle(input.getExtras(),0,count);bundle(input.getTransientExtras(),0,count);encode(input);
     }
+    static void workExtras(PersistableBundle extras){bundle(extras,0,new int[]{0});}
     private static void bundle(BaseBundle bundle,int depth,int[] count){
         if(bundle==null||depth>8)throw new IllegalArgumentException("JOB_EXTRAS_DEPTH");
         for(String key:bundle.keySet()){

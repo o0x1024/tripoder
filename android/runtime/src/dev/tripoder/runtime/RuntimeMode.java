@@ -26,6 +26,12 @@ enum RuntimeMode {
         for(RuntimeMode mode:values())if(mode.wire.equals(value))return mode;
         throw new IllegalArgumentException("RUNTIME_MODE_UNKNOWN:"+(value.length()>32?value.substring(0,32):value));
     }
+    /** Components, storage, file modes and startup trust go to the real framework with translated identity in BOTH modes.
+     *  A reimplemented framework subsystem never converges on the platform's semantics; every gap is a guest crash
+     *  (docs/thin-shim-transformation.md §9). The broker stays the control plane and observes, it does not mediate. */
+    boolean routesThroughPlatform(){return true;}
+    /** THICK keeps one layer THIN drops: device identity (connectivity, telephony, Wi-Fi, traffic) is answered by virtual managers. */
+    boolean concealsDevice(){return this==THICK;}
     /** Whether this mode is runnable in slot processes (THIN subsystems roll out from S5 onward). */
     boolean implemented(){return this==THICK||this==THIN;}
     /** Fail closed: never run a process labelled with an unimplemented mode. */

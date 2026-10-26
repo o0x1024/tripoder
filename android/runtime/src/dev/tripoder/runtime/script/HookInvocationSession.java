@@ -24,7 +24,7 @@ public final class HookInvocationSession {
     }
     private record ActiveContext(HookInvocationSession session,String symbol) {}
     private static final ThreadLocal<Deque<ActiveContext>> ACTIVE_CONTEXT=ThreadLocal.withInitial(ArrayDeque::new);
-    private final String generation,revision;
+    private final String generation,revision,sourceSha256;
     private final Map<String,HookRule> rules;
     private final Map<String,ParameterSpec> specs;
     private final PreparedBackend backend;
@@ -45,6 +45,10 @@ public final class HookInvocationSession {
     public HookInvocationSession(String generation,String revision,List<HookRule> ruleList,
                                  Map<String,ParameterSpec> specs,Map<String,Object> input,PreparedBackend backend,
                                  java.util.function.Supplier<Map<String,Object>> invocationContext) {
+        this(generation,revision,ruleList,specs,input,backend,invocationContext,"");
+    }
+    public HookInvocationSession(String generation,String revision,List<HookRule> ruleList,Map<String,ParameterSpec> specs,Map<String,Object> input,PreparedBackend backend,java.util.function.Supplier<Map<String,Object>> invocationContext,String sourceSha256) {
+        this.sourceSha256=sourceSha256;
         require(generation!=null&&!generation.isBlank()&&revision!=null&&!revision.isBlank(),"HOOK_IDENTITY");
         require(!ruleList.isEmpty()&&ruleList.size()<=32&&backend!=null,"HOOK_RULE_BUDGET");
         Map<String,HookRule> selected=new LinkedHashMap<>();
@@ -53,7 +57,10 @@ public final class HookInvocationSession {
         this.specs=Map.copyOf(specs);this.parameters=ParameterSpec.resolve(this.specs,input);this.backend=backend;
         this.invocationContext=Objects.requireNonNull(invocationContext);
     }
+    private java.util.function.Consumer<Map<String,Object>> eventObserver=event->{};
+    public synchronized void observeEvents(java.util.function.Consumer<Map<String,Object>> observer){require(state==State.PREPARED,"HOOK_OBSERVER_STATE");eventObserver=Objects.requireNonNull(observer);}
     public synchronized Map<String,Object> firstInvocation(){return firstInvocation;}
+    public static Map<String,Object> evidenceContext(){ActiveContext current=ACTIVE_CONTEXT.get().peek();require(current!=null,"HOOK_EMIT_OUTSIDE_INVOCATION");return Map.of("processGeneration",current.session.generation,"revision",current.session.revision,"sourceSha256",current.session.sourceSha256,"symbol",current.symbol,"monotonicNanos",Long.toString(System.nanoTime()));}
     static void recordEvent(String tag,Object payload) {
         ActiveContext current=ACTIVE_CONTEXT.get().peek();
         if(current==null)return;
@@ -76,6 +83,10 @@ public final class HookInvocationSession {
         if(frames.isEmpty())frames.add(current.symbol);
         return List.copyOf(frames);
     }
+    static boolean nativeObservationSymbol(String symbol){
+        ActiveContext current=ACTIVE_CONTEXT.get().peek();
+        return current!=null&&current.symbol.equals(symbol)&&current.session.backend.nativeSymbol(symbol);
+    }
     static String callerModuleOffset() {
         ActiveContext current=ACTIVE_CONTEXT.get().peek();
         if(current==null)return "unknown+0x0";
@@ -86,7 +97,7 @@ public final class HookInvocationSession {
         if(value instanceof java.math.BigInteger)return value.toString();
         if(value instanceof List<?> list){List<Object> out=new ArrayList<>(list.size());for(Object item:list)out.add(toJsonSafe(item));return Collections.unmodifiableList(out);}
         if(value instanceof Map<?,?> map){Map<String,Object> out=new LinkedHashMap<>();for(var e:map.entrySet())out.put(String.valueOf(e.getKey()),toJsonSafe(e.getValue()));return Collections.unmodifiableMap(out);}
-        return String.valueOf(value);
+        throw new ScriptFault("HOOK_EVENT_VALUE_UNSUPPORTED");
     }
     private synchronized void appendEvent(String symbol,String tag,Object payload) {
         if(state!=State.INSTALLING&&state!=State.ACTIVE)return;
@@ -95,6 +106,7 @@ public final class HookInvocationSession {
         entry.put("seq",(double)seq);entry.put("revision",revision);entry.put("symbol",symbol);entry.put("tag",tag);entry.put("payload",payload);
         if(events.size()>=256){events.pollFirst();droppedEvents++;}
         events.addLast(Collections.unmodifiableMap(entry));
+        eventObserver.accept(Collections.unmodifiableMap(entry));
     }
     public synchronized EventSnapshot events(long sinceSeq) {
         List<Map<String,Object>> selected=new ArrayList<>();

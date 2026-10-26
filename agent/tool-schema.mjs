@@ -1,9 +1,12 @@
+import {argumentError} from './schema-validation.mjs';
+import {invocationJavaTypes} from './java-types.mjs';
+export {validate} from './schema-validation.mjs';
 // Shared schema vocabulary. The APK exports these exact schemas to HTTP clients.
 export const object=(properties,required=Object.keys(properties))=>({type:'object',properties,required,additionalProperties:false});
 const string=(description,maxLength=32000,minLength=0)=>({type:'string',description,minLength,maxLength});
 const number={type:'number',description:'Finite JSON number.'};
 export const scalar={description:'Script-defined scalar value (string, number or boolean).',anyOf:[string('String value.'),number,{type:'boolean',description:'Boolean value.'}]};
-export const javaTypes=['boolean','byte','short','int','long','char','float','double','java.lang.String','[B','byte[]'];
+export const javaTypes=invocationJavaTypes;
 export const uiAction={description:'One guest view action. Coordinates are pixels relative to its decor view, not device screen coordinates.',anyOf:[
   object({kind:{type:'string',enum:['tap']},x:number,y:number}),
   object({kind:{type:'string',enum:['swipe']},startX:number,startY:number,endX:number,endY:number}),
@@ -17,8 +20,8 @@ uiAction.anyOf.push(...uiAction.anyOf.map(branch=>object({type:branch.properties
 export const httpRequest={...object({
   method:{type:'string',enum:['GET','POST','PUT','DELETE','PATCH','HEAD','OPTIONS'],description:'HTTP method, uppercase.'},
   url:{...string('Absolute HTTP(S) URL resolved from the guest network context. Redirects are not followed.',2048,1),pattern:'^[Hh][Tt][Tt][Pp][Ss]?://[^\\s/]+'},
-  headers:{type:'object',description:'Header names mapped to string values. At most 32 entries.',maxProperties:32,propertyNames:{type:'string',minLength:1,maxLength:128},additionalProperties:string('Header value.',2048)},
-  body:string('Raw request body. For JSON, stringify the JSON and set Content-Type explicitly.',16384),
+  headers:{type:'object',description:'Header names mapped to string values. At most 32 entries.',maxProperties:32,propertyNames:{type:'string',minLength:1,maxLength:128,pattern:"^[!#$%&'*+.^_`|~0-9A-Za-z-]+$(?![\\s\\S])"},additionalProperties:{...string('Header value; control characters and CR/LF are forbidden.',2048),pattern:'^(?![\\s\\S]*[\\x00-\\x08\\x0a-\\x1f\\x7f])[\\s\\S]*$'}},
+  body:string('Raw request body. Omit for GET/HEAD; these methods reject a body. For JSON, stringify and set Content-Type explicitly.',16384),
   timeoutMs:{type:'integer',minimum:100,maximum:10000,default:5000,description:'Connect and read timeout in milliseconds, each; default 5000.'},
 },['method','url']),description:'Explicit guest HTTP request. Only method and url are required.',examples:[{method:'GET',url:'https://example.com/',timeoutMs:5000}]};
 export const invocation={...object({
@@ -30,6 +33,7 @@ export const invocation={...object({
 export const parameters={type:'object',description:'Patch script-defined scalar parameters. Read hook_status for current values/revision/version and the project source for parameter declarations; omitted names retain their values. Runtime enforces the compiled plan and an 8192-character total budget.',maxProperties:64,propertyNames:{type:'string',maxLength:8192},additionalProperties:scalar,examples:[{enabled:true,label:'example',count:3}]};
 
 const meanings={
+  captureId:'Exact passive capture ID returned by network_control(action=start). A cursor belongs to this capture only.',
   exportId:'Exact export ID returned by file_export_begin. It also identifies the original export operation.',
   entryId:'Exact file entry ID from file_export_manifest; never a phone or computer path.',
   path:'Absolute phone path for kind=path, or a relative path below the selected guest root.',
@@ -103,6 +107,7 @@ const meanings={
 export function describeSchema(schema,key){
   const copy={...schema};
   if(!copy.description&&meanings[key])copy.description=meanings[key];
+  if(copy.type==='integer'){copy.maximum=Math.min(copy.maximum??Number.MAX_SAFE_INTEGER,Number.MAX_SAFE_INTEGER);if(key==='cursor')copy.maximum=Math.min(copy.maximum,2147483647);}
   if(copy.type==='string'&&copy.maxLength===undefined)copy.maxLength=32000;
   if(copy.type==='string'&&key==='package')copy.maxLength=256;
   if(copy.type==='string'&&['space','installGeneration','processGeneration','parentClassLoaderId','dexId','artifactId','archiveId','evidenceId','token','revision'].includes(key))copy.maxLength=80;
@@ -113,38 +118,8 @@ export function describeSchema(schema,key){
   return copy;
 }
 
-export function validate(value,schema,path){
-  const reject=reason=>{throw Error('TOOL_ARGUMENT_TYPE:'+path+': '+reason);};
-  if(schema.anyOf){
-    for(const branch of schema.anyOf){try{validate(value,branch,path);return;}catch{}}
-    reject('does not match any supported variant; inspect required fields and discriminator');
-  }
-  if(schema.enum&&!schema.enum.includes(value))reject('expected '+schema.enum.join(' | '));
-  switch(schema.type){
-    case 'null':if(value!==null)reject('expected null');break;
-    case 'string':if(typeof value!=='string'||value.length<(schema.minLength??0)||value.length>(schema.maxLength??Infinity)||schema.pattern&&!new RegExp(schema.pattern).test(value))reject('invalid string');break;
-    case 'number':case 'integer':if(typeof value!=='number'||!Number.isFinite(value)||schema.type==='integer'&&!Number.isSafeInteger(value)||value<(schema.minimum??-Infinity)||value>(schema.maximum??Infinity))reject('number outside supported range');break;
-    case 'boolean':if(typeof value!=='boolean')reject('expected boolean');break;
-    case 'object':{
-      if(!value||typeof value!=='object'||Array.isArray(value))reject('expected object');
-      const keys=Object.keys(value),missing=(schema.required??[]).filter(key=>!Object.hasOwn(value,key));
-      if(missing.length)reject('missing '+missing.join(', '));
-      if(keys.length>(schema.maxProperties??Infinity))reject('too many properties');
-      for(const key of keys){
-        if(schema.propertyNames)validate(key,schema.propertyNames,path+' key');
-        const child=Object.hasOwn(schema.properties??{},key)?schema.properties[key]:undefined;
-        if(child)validate(value[key],child,path+'.'+key);
-        else if(schema.additionalProperties===false)reject('unsupported '+key);
-        else if(typeof schema.additionalProperties==='object')validate(value[key],schema.additionalProperties,path+'.'+key);
-      }
-      break;
-    }
-    case 'array':if(!Array.isArray(value)||value.length<(schema.minItems??0)||value.length>(schema.maxItems??Infinity))reject('invalid array length');value.forEach((item,index)=>validate(item,schema.items,path+'['+index+']'));break;
-  }
-}
-
 export function validateInvocation(call){
-  if(call.argumentTypes.length!==call.arguments.length)throw Error('TOOL_ARGUMENT_TYPE:invocation.arguments: count must match argumentTypes');
+  if(call.argumentTypes.length!==call.arguments.length)throw argumentError('/invocation/arguments','ARGUMENT_COUNT_MISMATCH','one value per declared argument');
   call.argumentTypes.forEach((type,index)=>{
     const value=call.arguments[index];let valid=false;
     if(type==='java.lang.String')valid=value===null||typeof value==='string';
@@ -154,6 +129,6 @@ export function validateInvocation(call){
     else if(type==='long')valid=typeof value==='string'&&/^-?[0-9]{1,20}$/.test(value)&&BigInt(value)>=-(1n<<63n)&&BigInt(value)<(1n<<63n);
     else if(type==='float'||type==='double')valid=typeof value==='number'&&Number.isFinite(value)&&(type==='double'||Number.isFinite(Math.fround(value)));
     else {const bounds={byte:[-128,127],short:[-32768,32767],int:[-2147483648,2147483647]}[type];valid=!!bounds&&Number.isInteger(value)&&value>=bounds[0]&&value<=bounds[1];}
-    if(!valid)throw Error('TOOL_ARGUMENT_TYPE:invocation.arguments['+index+']: invalid '+type+' value');
+    if(!valid)throw argumentError('/invocation/arguments/'+index,'INVOCATION_VALUE_INVALID',type);
   });
 }

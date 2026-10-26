@@ -11,6 +11,7 @@ import java.util.zip.*;
 /** Bounded ZIP inspection, including Unix symlink types that java.util.zip hides. */
 final class ArtifactSetZip {
     static final int MAX_ENTRIES=65534;
+    private static final java.util.regex.Pattern NATIVE=java.util.regex.Pattern.compile("lib/(arm64-v8a|armeabi-v7a|armeabi|x86|x86_64|mips|mips64|riscv64)/lib[a-zA-Z0-9_+.$-]+\\.so");
     static final long MAX_EXPANDED=3L*1024*1024*1024,MAX_ENTRY=512L*1024*1024;
     static final class Scan {
         final List<ArtifactSet.FileRecord> entries=new ArrayList<>();
@@ -33,14 +34,13 @@ final class ArtifactSetZip {
                 if(e.isDirectory()){if(e.getSize()!=0)throw fail("ZIP_DIRECTORY_CONTENT");continue;}
                 if(e.getSize()<0||e.getSize()>MAX_ENTRY||e.getCompressedSize()<0)throw fail("ZIP_ENTRY_SIZE");
                 boolean manifest=path.equals("AndroidManifest.xml");if(manifest&&e.getSize()>4*1024*1024)throw fail("MANIFEST_SIZE");
-                if(path.startsWith("lib/")&&!path.matches("lib/(arm64-v8a|armeabi-v7a|armeabi|x86|x86_64|mips|mips64|riscv64)/lib[a-zA-Z0-9_+.$-]+\\.so"))throw fail("ABI_OR_LIBRARY_UNSUPPORTED");
                 work.add(java.util.concurrent.CompletableFuture.supplyAsync(()->{try{return entry(zip,e,path,manifest,expanded);}catch(Exception error){throw new java.util.concurrent.CompletionException(error);}}));
             }
             try{
                 for(var future:work){
                     Result r;try{r=future.join();}catch(java.util.concurrent.CompletionException error){Throwable cause=error.getCause();if(cause instanceof Exception)throw (Exception)cause;throw error;}
                     out.entries.add(r.record);if(r.manifest!=null)out.manifests.put(r.path,r.manifest);
-                    if(r.path.startsWith("lib/")){
+                    if(NATIVE.matcher(r.path).matches()){
                         out.containsNative=true;
                         // All entries remain signature/CRC/digest checked. Execution
                         // selects ARM64 once; other ABIs are never extracted or loaded.
@@ -59,7 +59,7 @@ final class ArtifactSetZip {
         try(InputStream in=zip.getInputStream(e)){byte[] b=new byte[65536];int n;while((n=in.read(b))!=-1){size+=n;if(size>MAX_ENTRY||expanded.addAndGet(n)>MAX_EXPANDED)throw fail("ZIP_EXPANDED_LIMIT");md.update(b,0,n);crc.update(b,0,n);if(bytes!=null)bytes.write(b,0,n);}}
         if(size!=e.getSize()||crc.getValue()!=e.getCrc())throw fail("ZIP_CONTENT_MISMATCH");
         ArtifactSet.FileRecord record=new ArtifactSet.FileRecord(path,ArtifactSet.hex(md.digest()),size);
-        boolean library=path.startsWith("lib/arm64-v8a/");
+        boolean library=path.startsWith("lib/arm64-v8a/")&&NATIVE.matcher(path).matches();
         // Every file in the selected ABI directory is kept as an authenticated entry,
         // whatever its bytes. Apps routinely ship a foreign-ABI straggler (a 32-bit ARM
         // or x86/x86_64 ".so", e.g. 今日头条's libcvt.so, 网易云's libnesec-x86.so) or a

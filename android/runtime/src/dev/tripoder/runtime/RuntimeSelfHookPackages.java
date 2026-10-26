@@ -15,14 +15,23 @@ final class RuntimeSelfHookPackages {
             if(!RuntimeThinPolicy.active()&&RuntimeFixedPassthrough.packageMethod(method.getDeclaringClass().getName(),method.getName(),method.getParameterCount()))continue;
             if(method.getDeclaringClass().getName().equals("android.app.ContextImpl"))callbacks.put(method,(receiver,args,original)->{
                 if(!RuntimePackageBridge.active())return original.call(args);
-                Context context=(Context)receiver;PackageManager cached=PackageFrameworkAccess.cached(context);
-                if(cached!=null&&RuntimePackageBridge.registered(cached))return cached;
+                Context context=(Context)receiver;
+                if(!method.getName().equals("getPackageManager")){
+                    RuntimeEngine engine=RuntimeEngine.current;
+                    // Physical framework/provider contexts retain their existing
+                    // platform route. A guest receiver uses the one owned seam.
+                    if(!engine.packageName.equals(context.getPackageName()))return original.call(args);
+                    if(method.getName().equals("getContentResolver")){
+                        dev.tripoder.selfhook.ApplicationAdapter.requireLogicalContext(context);return engine.settingsResolver();
+                    }
+                    return engine.packageContexts.createFromPlatform(context,(String)args[0],(Integer)args[1],args.length==3?(android.os.UserHandle)args[2]:null);
+                }
                 PackageManager value=RuntimePackageBridge.contextManager(context);PackageFrameworkAccess.cache(context,value);return value;
             });
             else if(method.getDeclaringClass().getName().equals("android.os.ServiceManager"))callbacks.put(method,(receiver,args,original)->{
                 if(!RuntimePackageBridge.active()||!"package".equals(args[0]))return original.call(args);
                 if(args.length==1&&Set.of("getService","getServiceOrThrow","checkService","waitForService","waitForDeclaredService").contains(method.getName()))return RuntimePackageBridge.localBinder();
-                throw new UnsupportedOperationException("PACKAGE_SERVICE_ENTRY_UNSUPPORTED:"+method.getName());
+                RuntimeFailThrough.note("package-service-entry",method.getName()+"/"+args.length);return original.call(args);
             });
             else callbacks.put(method,(receiver,args,original)->RuntimePackageBridge.active()&&!(method.getName().equals("getSystemAvailableFeatures")&&args.length==0)?route((PackageManager)receiver,method,args,original):original.call(args));
         }
@@ -58,6 +67,8 @@ final class RuntimeSelfHookPackages {
             case "hasSystemFeature(java.lang.String,int)":return PackageFrameworkAccess.query(manager,"hasSystemFeature",args);
             case "isInstantApp()":return PackageFrameworkAccess.query(manager,"isInstantApp",RuntimePackageBridge.packageName(),user);
             case "isInstantApp(java.lang.String)":return PackageFrameworkAccess.query(manager,"isInstantApp",args[0],user);
+            case "isPackageSuspended()":return RuntimePackageBridge.suspended(RuntimePackageBridge.packageName());
+            case "isPackageSuspended(java.lang.String)":return RuntimePackageBridge.suspended((String)args[0]);
             case "getPackagesForUid(int)":return PackageFrameworkAccess.query(manager,"getPackagesForUid",args);
             case "getSdkSandboxPackageName()":return PackageFrameworkAccess.query(manager,"getSdkSandboxPackageName");
             case "getComponentEnabledSetting(android.content.ComponentName)":return PackageFrameworkAccess.query(manager,"getComponentEnabledSetting",args[0],user);
@@ -151,7 +162,8 @@ final class RuntimeSelfHookPackages {
             case "addPackageToPreferred":case "removePackageFromPreferred":case "extendVerificationTimeout":case "verifyPendingInstall":case "addPermission":case "addPermissionAsync":
             case "removePermission":case "updateInstantAppCookie":case "clearInstantAppCookie":
                 throw new SecurityException("PACKAGE_MUTATION_DENIED:"+name);
-            default:throw new UnsupportedOperationException("PACKAGE_MANAGER_OPERATION_UNSUPPORTED:"+RuntimeSelfHookManagerPolicy.signature(method));
+            // No translation yet: the platform answers for the host package, and refuses what an ordinary app may not do.
+            default:RuntimeFailThrough.note("package",RuntimeSelfHookManagerPolicy.signature(method));return original.call(RuntimeFailThrough.hostIdentity(args));
         }
     }
 }

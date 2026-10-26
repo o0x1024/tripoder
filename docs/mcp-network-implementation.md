@@ -1,19 +1,21 @@
 # stdio / HTTP MCP 网络接入交付
 
-日期：2026-10-22（Asia/Shanghai）。代码已实施；独立真机安装已完成两种入口的实际工具调用。
+更新日期：2026-10-25（Asia/Shanghai）。当前 MCP 已改为 HTTP；主应用部署、权限流程、双入口实际模型调用及 MCP 下载验收见 [HTTP 真机交付证据](evidence/mcp-http-only-2026-10-25/README.md)。下方历史 TLS/认证证据保留归档，不代表 HTTP 版真机验收。
 
-## 架构
+## 当前架构（2026-10-25 HTTP 版）
 
-stdio 客户端 → Node 适配器 → 手机 HTTPS `/mcp`；HTTP 客户端直接访问同一入口。手机统一校验工具契约，再进入现有 `WorkbenchAgentControl → Binder → authority`。不使用 ADB 传输、旧连接配置兼容或自动切换。
+stdio 客户端 → Node 适配器 → 手机 HTTP `/mcp`；HTTP 客户端直接访问同一入口。手机严格校验工具契约，再进入 `WorkbenchAgentControl → Binder → authority`。不使用 ADB 传输、HTTPS 降级或旧证书配置兼容。
 
-- 工具定义：`agent/tools.mjs` → 构建生成 APK asset `mcp-contract.json`。
-- `AgentMcp`：单一手机 MCP 分派、会话就绪状态、严格参数校验。
-- `AgentHttp` / `AgentControlService`：有界 HTTP 请求、TLS 1.3、令牌与 Host/Origin 校验、前台服务和网络变化关闭。
-- `AgentNetworkIdentity` / `AgentCertificate`：AndroidKeyStore 非导出私钥、当前 LAN IP SAN 证书、安装级可重置随机令牌。显式授权 TLS 所需的 NONE/SHA-256 digest，并在启动时校验密钥策略。
-- `AgentConnectionActivity` / 设置卡片：首次默认关闭、开启/停止、系统文件选择器导出配置、重置凭证。
-- Node stdio：只转发共同 MCP 消息，另外提供电脑本地 APK 导入便利工具，内部使用手机共享的 begin/write/commit 上传。
+- `AgentHttp` / `AgentControlService` 使用普通 Socket/ServerSocket，保留有界请求、Host/Origin、协议和会话校验。
+- `AgentNetworkIdentity` 只选择明确 LAN 地址，导出 `{"url":"http://IP:29731/mcp"}`。不生成/导出/校验证书，TLS 证书实现已删除。
+- Node/Python 只接受 URL-only HTTP 配置；旧 HTTPS 地址和 certificatePem 字段明确拒绝，不自动切换。
+- Sentinel 使用现有通用 HTTP MCP 客户端连接此地址，证书字段为空；无需关闭其通用 TLS 校验。
+- Android 37 本地网络权限必须获准后才启动网络入口；点击“开启网络 MCP”会请求系统授权，拒绝时明确提示且不宣告就绪。该权限保护 TCP/UDP 的局域网访问，参见 [Android 本地网络权限](https://developer.android.com/privacy-and-security/local-network-permission)。
+- 电脑侧 MCP 负责导入、下载与产物验收；手机保留统一执行管线，UNKNOWN 不重放。
 
-## 验证结果
+## 历史验证结果（以下非本次 HTTP 验收）
+
+
 
 | 层级 | 结果 | 证据 |
 | --- | --- | --- |
@@ -42,13 +44,13 @@ stdio 客户端 → Node 适配器 → 手机 HTTPS `/mcp`；HTTP 客户端直�
 
 密钥授权依据：[Android KeyGenParameterSpec.Builder.setDigests](https://developer.android.com/reference/android/security/keystore/KeyGenParameterSpec.Builder#setDigests(java.lang.String...))；MCP HTTP 语义依据：[Streamable HTTP](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports)。
 
-## 使用与边界
+## 历史使用与边界（已由当前 HTTP 说明替代）
 
-见 [使用说明](../agent/README.md)。安装正式 APK 后在“设置 → 外部 Agent”开启入口并导出配置，用户选择 stdio 或 HTTP。HTTP 客户端需支持自定义 Bearer 请求头及本地证书信任；没有实现 OAuth 自动授权或公网中继。
+见 [使用说明](../agent/README.md)。安装正式 APK 后在“设置 → 外部 Agent”开启入口并导出配置，用户选择 stdio 或 HTTP。HTTP 客户端无需认证请求头，需支持本地证书信任；没有实现 OAuth 自动授权或公网中继。
 
 后续已完成 Sentinel 桌面接入：为每个 MCP 服务器配置独立受信公共证书，保留 TLS 校验，实际发现 69 个工具，并通过桌面调用 `runtime_capabilities`。按用户要求卸载 `globaltest` 及配套测试包后，再次停止 ADB 服务、在 Sentinel 断开并重新连接主应用，工具调用返回 `ok=true`、`is_error=false`，requestId=`bcfbe4ea-13bf-4ce4-b470-d53e74d3bad8`。完整桌面证据保存在 Sentinel 仓库的 `docs/evidence/mcp-trusted-certificates-2026-10-22-01/`。
 
-尚未覆盖云端客户端接入、长时间锁屏运行、真机凭证重置界面和派发后丢失回执的网络故障注入；主机侧已验证 UNKNOWN 不自动重放。下一步建议验证长时间锁屏和网络切换后的明确恢复流程。
+尚未覆盖云端客户端接入、长时间锁屏运行和派发后丢失回执的网络故障注入；主机侧已验证 UNKNOWN 不自动重放。下一步建议验证长时间锁屏和网络切换后的明确恢复流程。
 
 ## 2026-10-22：schema 与执行等待修复
 
@@ -60,3 +62,12 @@ stdio 客户端 → Node 适配器 → 手机 HTTPS `/mcp`；HTTP 客户端直�
 验证：70 份 schema 通过标准 JSON Schema 编译；生产 Java 校验器通过 320 个共享参数案例及阻塞查询/修改、服务发现、会话撤销和执行槽耗尽检查；HTTP/stdio 主机测试 19 项通过。Sentinel 数据库回归 3 项、MCP 适配器回归 4 项、工具卡片测试 12 项通过，`cargo check -p sentinel-ai --lib` 与 `vue-tsc --noEmit` 通过。
 
 最终 APK 已构建，SHA-256 为 `17d483973dbd1667380773494bfb8e5b81361d80aff9a82dd32e01d47813e3a0`；包内契约与源码一致，相关生产输入摘要已核对。本轮没有安装手机或重启 Sentinel，也没有改写用户现有对话数据库；以上结果属于构建与主机验证，尚不代表更新后的真机/桌面端验收。需要更新手机 APK、运行新的 Sentinel 构建，并重连 MCP 以读取新工具契约。
+
+
+## 2026-10-25：移除连接凭证
+
+手机不再生成、导出、校验或重置 MCP Bearer 令牌，Node 与 Python 客户端不再读取或发送连接令牌。新连接配置严格只接受 `url`、`certificatePem`，不兼容含 token 的旧配置；重新导出即可。连接配置不再要求 0600 权限。TLS 1.3、证书信任、Host/Origin、MCP 会话和业务目标/操作回执继续使用现有路径。
+
+主机验证：生产 Java schema 443 个案例、查询/修改超时和会话生命周期检查，以及 HTTP/stdio/文件 pull 等 25 项 Node 测试通过。Android 与 Sentinel 桌面无凭证连接尚未真机验收；更新手机 APK、重新导出配置并配置 stdio 的 `--connection` 参数后进行验证。
+
+2026-10-25 后续交付：已覆盖安装现有 `dev.tripoder.cmbqa`，更新本机连接配置与 Sentinel 保存配置；ADB 停止期间 stdio/HTTP 只读真机验证 9 项通过。安装后恢复中断及最终显式重连证据见 [本轮验收](evidence/mcp-no-credentials-2026-10-25/README.md)。Sentinel 桌面重连尚未验证。

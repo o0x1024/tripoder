@@ -12,10 +12,10 @@ final class RuntimeProcessView {
         if(uid!=android.os.Process.myUid()||input==null||!input.keySet().equals(Set.of("generation")))throw new SecurityException("PROCESS_VIEW_CALLER_OR_SHAPE_REJECTED");
         String generation=RuntimeWire.required(input,"generation");List<Candidate> scope=new ArrayList<>();
         synchronized(broker){
-            var owner=broker.contract.authenticate(generation,pid,uid);broker.requiredSlot(generation);
+            var owner=broker.contract.authenticate(generation,pid,uid);broker.slotForReceipt(generation);
             for(var slot:broker.processSlots()){
                 var current=broker.contract.getSession(slot.allocation.session.processGeneration);var identity=current.identity;
-                if(!slot.closing&&(current.state==ExecutionContract.ProcessState.ATTACHED||current.state==ExecutionContract.ProcessState.RUNNING)
+                if((current.state==ExecutionContract.ProcessState.ATTACHED||current.state==ExecutionContract.ProcessState.RUNNING)
                     &&identity.spaceId.equals(owner.identity.spaceId)&&identity.packageName.equals(owner.identity.packageName)&&identity.installGeneration.equals(owner.identity.installGeneration))scope.add(new Candidate(slot,current));
             }
         }
@@ -25,13 +25,14 @@ final class RuntimeProcessView {
         if(observed==null)throw new IllegalStateException("PLATFORM_PROCESS_OBSERVATION_UNAVAILABLE");
         ArrayList<ActivityManager.RunningAppProcessInfo> result=new ArrayList<>();
         synchronized(broker){
-            broker.contract.authenticate(generation,pid,uid);broker.requiredSlot(generation);
+            broker.contract.authenticate(generation,pid,uid);broker.slotForReceipt(generation);
             for(var candidate:scope){
                 var current=broker.contract.getSession(candidate.session.processGeneration);
-                if(candidate.slot.closing||current.pid!=candidate.session.pid||current.uid!=candidate.session.uid
+                if(current.pid!=candidate.session.pid||current.uid!=candidate.session.uid
                     ||current.state!=ExecutionContract.ProcessState.ATTACHED&&current.state!=ExecutionContract.ProcessState.RUNNING)continue;
-                String physical=broker.host.getPackageName()+":slot"+RuntimeSlot.index(candidate.slot.activityStub);
-                for(var actual:observed)if(actual.pid==current.pid&&actual.uid==current.uid&&physical.equals(actual.processName)){
+                boolean isolated=current.kind==ExecutionContract.ProcessKind.ISOLATED_SERVICE;
+                String physical=broker.host.getPackageName()+(isolated?":isolated":":slot"+RuntimeSlot.index(candidate.slot.activityStub));
+                for(var actual:observed)if(actual.pid==current.pid&&actual.uid==current.uid&&(isolated?actual.processName.startsWith(physical):physical.equals(actual.processName))){
                     var copy=new ActivityManager.RunningAppProcessInfo(current.identity.processName,actual.pid,new String[]{current.identity.packageName});
                     copy.uid=actual.uid;copy.importance=actual.importance;copy.lastTrimLevel=actual.lastTrimLevel;copy.lru=actual.lru;
                     // Physical components and reason PIDs have no logical authority mapping in this capability.

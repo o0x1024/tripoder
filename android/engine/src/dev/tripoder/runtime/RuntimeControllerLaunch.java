@@ -17,13 +17,16 @@ final class RuntimeControllerLaunch {
     static Bundle targets(RuntimeBroker broker,Bundle input)throws Exception{
         RuntimeControllerCommands.targetFields(input,"command","project");Bundle target=(input.containsKey("bindingOperation")?new ProjectTargetBindings(broker).resolveBinding(ControlWire.required(input,"project"),input.getString("bindingOperation")):new ProjectTargetBindings(broker).resolve(ControlWire.required(input,"project")));
         var install=broker.apks.get(target.getString("space"),target.getString("package"));if(!install.generation.equals(target.getString("generation")))throw new IllegalStateException("LAUNCH_BINDING_STALE");
-        JSONArray list=new JSONArray();for(var info:install.activityIndex().values()){
+        target.putString("targets",entries(install).toString());return target;
+    }
+    static JSONArray entries(ApkStore.BundleInstall install)throws Exception{
+        synchronized(install){var categories=GuestIntentResolver.entryCategories(install);JSONArray list=new JSONArray();for(var info:install.activityIndex().values()){
             if(!info.exported||!info.enabled||!info.applicationInfo.enabled||info.permission!=null&&!info.permission.isEmpty())continue;
             // UI lists actual declarations, including ones whose task policy is not implemented.
             String unsupported="";try{RuntimeComponents.activity(install,info.name);}catch(UnsupportedOperationException|IllegalStateException error){unsupported=error.getMessage();}
-            list.put(new JSONObject().put("component",info.name).put("launcher",launcher(install,info.name)).put("supported",unsupported.isEmpty()).put("reason",unsupported));
+            list.put(new JSONObject().put("component",info.name).put("launcher",categories.containsKey(info.name)).put("entryCategory",categories.containsKey(info.name)?categories.get(info.name):JSONObject.NULL).put("supported",unsupported.isEmpty()).put("reason",unsupported));
         }
-        if(list.length()>2048)throw new IllegalStateException("ACTIVITY_TARGET_PAGE_REQUIRED");target.putString("targets",list.toString());return target;
+        if(list.length()>2048)throw new IllegalStateException("ACTIVITY_TARGET_PAGE_REQUIRED");return list;}
     }
     static Bundle prepare(RuntimeBroker broker,Bundle input,String lease)throws Exception{
         boolean application="prepareApplicationLaunch".equals(input.getString("command"));
@@ -45,10 +48,16 @@ final class RuntimeControllerLaunch {
             else target=new ProjectTargetBindings(broker).resolveBinding(project,binding);
             if(!binding.equals(target.getString("bindingOperation"))||!generation.equals(target.getString("generation")))throw new IllegalStateException("LAUNCH_BINDING_STALE");
             var install=broker.apks.get(target.getString("space"),target.getString("package"));if(!generation.equals(install.generation))throw new IllegalStateException("LAUNCH_BINDING_STALE");
-            String component=application?launcherComponent(install):input.getString("component");
-            ActivityInfo activity=RuntimeComponents.activity(install,component);RuntimeComponents.authorize(activity,ControllerTrust.workbenchCaller(broker.host));
+            final String component,category;final ActivityInfo activity;
+            synchronized(install){
+                Intent selected=application?applicationEntry(install):null;
+                component=application?selected.getComponent().getClassName():input.getString("component");
+                category=application?selected.getCategories().iterator().next():GuestIntentResolver.entryCategories(install).get(component);
+                activity=RuntimeComponents.activity(install,component);RuntimeComponents.authorize(activity,ControllerTrust.workbenchCaller(broker.host));
+            }
             // Retire authenticated empty tasks before deciding whether a root remains
             // open. The same proof-based maintenance is used by ProcessSupervisor.
+            closeOrphanedProcesses(broker,install.space,install.info.packageName,generation);
             RuntimeEmptyTasks.reclaim(broker,null);
             boolean hasLiveSession;
             synchronized(broker){
@@ -66,8 +75,8 @@ final class RuntimeControllerLaunch {
             expireEntries(broker);
             Bundle woken=RuntimeControllerWake.wake(broker,install.space,install.info.packageName,generation,operation);
             if(woken!=null)return woken;
-            synchronized(broker){ActivityEntryFences.requireNoOpenRoot(broker.store,install.space,install.info.packageName,generation);}
-            started=true;var slot=broker.processes.begin(install.space,install.info.packageName,activity.processName);
+            synchronized(broker){ActivityEntryFences.requireNoOpenRoot(broker.store,install.space,install.info.packageName,generation);broker.activities.requireCapacity(install,component);}
+            var slot=broker.processes.begin(install.space,install.info.packageName,activity.processName);started=true;
             // The caller's Binder thread waits for the guest Application under the launch's one startup deadline.
             broker.processes.awaitReady(slot.allocation.session.processGeneration);
             synchronized(broker){
@@ -78,10 +87,25 @@ final class RuntimeControllerLaunch {
                 // Checked again in the transaction that creates the root, so concurrent launches of one installation open one root.
                 ActivityEntryFences.requireNoOpenRoot(broker.store,install.space,install.info.packageName,generation);
                 String ticket=broker.activities.prepare(slot,component,null,operation,ControllerTrust.workbenchCaller(broker.host),null,null);
-                Intent intent=broker.activities.controllerEntry(broker.host,ticket,launcher(install,component));issued.put(operation,android.os.SystemClock.elapsedRealtime());
+                Intent intent=broker.activities.controllerEntry(broker.host,ticket,category);issued.put(operation,android.os.SystemClock.elapsedRealtime());
                 Bundle out=broker.processEvidence(slot);out.putString("operation",operation);out.putString("component",component);out.putParcelable("intent",intent);return out;
             }
         }catch(Exception error){boolean modeRejected=String.valueOf(error.getMessage()).startsWith("RUNTIME_MODE_NOT_IMPLEMENTED:");synchronized(broker){if(broker.contract.query(operation).state==ExecutionContract.OperationState.RUNNING){if(started&&!modeRejected)broker.contract.markUnknown(operation,"LAUNCH_PREPARATION_UNCONFIRMED");else broker.contract.fail(operation,modeRejected?"RUNTIME_MODE_NOT_IMPLEMENTED":"LAUNCH_TARGET_REJECTED");}}throw error;}
+    }
+    /** A relaunch is the user's word that the application is not in use. When an open root belongs only to dead processes,
+     *  sibling processes that no open root belongs to (a crashed app's background service process) are closed first, so
+     *  their sessions cannot keep the dead root from being retired. A live root is never touched. */
+    private static void closeOrphanedProcesses(RuntimeBroker broker,String space,String pkg,String generation)throws Exception{
+        java.util.List<String> orphans=new java.util.ArrayList<>();
+        synchronized(broker){
+            var db=broker.store.getReadableDatabase();boolean deadRoot=false,liveRoot=false;
+            try(Cursor c=db.rawQuery("SELECT s.state FROM activity_tickets t LEFT JOIN sessions s ON s.generation=t.generation WHERE t.space=? AND t.package=? AND t.installGeneration=? AND t.entryFenceOperation IS NULL AND t.state NOT IN ('FINISHED','REVOKED','RETIRED')",new String[]{space,pkg,generation})){
+                while(c.moveToNext()){String state=c.getString(0);if(state==null||"DEAD".equals(state)||"FAILED".equals(state))deadRoot=true;else liveRoot=true;}
+            }
+            if(!deadRoot||liveRoot)return;
+            try(Cursor c=db.rawQuery("SELECT generation FROM sessions WHERE space=? AND package=? AND installGeneration=? AND state NOT IN ('DEAD','FAILED')",new String[]{space,pkg,generation})){while(c.moveToNext())orphans.add(c.getString(0));}
+        }
+        for(String process:orphans){android.util.Log.i("TripoderLaunch","CLOSE_ORPHAN generation="+process);broker.processes.close(process);}
     }
     /** Entries issued by this authority, by launch operation, with their issue time. An authority restart kills every worker, after which the stale-entry path applies. */
     private static final java.util.Map<String,Long> issued=new java.util.concurrent.ConcurrentHashMap<>();
@@ -116,16 +140,8 @@ final class RuntimeControllerLaunch {
         }finally{db.endTransaction();}
         broker.activities.releaseUnused();return ticket;
     }
-    private static String launcherComponent(ApkStore.BundleInstall install){
-        String selected=null;
-        for(var info:install.activityIndex().values())if(info.enabled&&info.applicationInfo.enabled&&info.exported&&(info.permission==null||info.permission.isEmpty())&&launcher(install,info.name)){
-            if(selected!=null)throw new IllegalStateException("APPLICATION_HAS_MULTIPLE_LAUNCHERS");selected=info.name;
-        }
+    static Intent applicationEntry(ApkStore.BundleInstall install){
+        Intent selected=GuestIntentResolver.launchIntent(install,false);
         if(selected==null)throw new IllegalStateException("APPLICATION_HAS_NO_LAUNCHER");return selected;
-    }
-    private static boolean launcher(ApkStore.BundleInstall install,String name){
-        for(var component:install.artifacts.components)if(component.name.equals(name))for(var filter:component.declaration.children)if(filter.name.equals("intent-filter")){
-            boolean main=false,launcher=false;for(var child:filter.children){if(child.name.equals("action")&&Intent.ACTION_MAIN.equals(child.android("name","")))main=true;if(child.name.equals("category")&&Intent.CATEGORY_LAUNCHER.equals(child.android("name","")))launcher=true;}if(main&&launcher)return true;
-        }return false;
     }
 }

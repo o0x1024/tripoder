@@ -37,7 +37,7 @@ final class EngineConnection implements ServiceConnection {
         try{
             // Called from a workbench page, so the authority's foreground service start is user-initiated.
             Intent intent=new Intent().setClassName(host,RecoveryWire.SERVICE);
-            synchronized(this){life=new ControlWire.Owner();if(explicit)intent.setAction(recoveryState.equals("OPEN")||recoveryState.equals("BLOCKED")?"retry-once":"activate");}
+            synchronized(this){life=new ControlWire.Owner();if(explicit)intent.setAction("retry-once");}
             if(page.startForegroundService(intent)==null)throw new IllegalStateException("ENGINE_START_REJECTED");
             synchronized(this){if(bound){host.unbindService(this);bound=false;}bound=host.bindService(intent,this,Context.BIND_AUTO_CREATE);if(!bound)throw new IllegalStateException("ENGINE_BIND_REJECTED");}
         }catch(Exception error){failed(error);}

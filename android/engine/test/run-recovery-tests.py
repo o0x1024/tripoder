@@ -14,7 +14,9 @@ with tempfile.TemporaryDirectory(prefix='tripoder-recovery-tests-') as tmp:
         'android/runtime/test/dev/tripoder/runtime/ExecutionContractTest.java',
         'android/runtime/src/dev/tripoder/runtime/ServiceRecoveryPolicy.java',
         'android/runtime/self-hook-tests/src/dev/tripoder/runtime/ServiceRecoveryPolicyTest.java',
+        'android/runtime/src/dev/tripoder/runtime/RuntimeOperationScope.java',
+        'android/runtime/test/dev/tripoder/runtime/RuntimeOperationScopeTest.java',
     ]
     subprocess.run([str(JAVA/'javac'), '-d', tmp, *[str(ROOT/p) for p in sources]], check=True)
-    for name in ['EngineRecoveryPolicyTest', 'ExecutionContractTest', 'ServiceRecoveryPolicyTest']:
+    for name in ['EngineRecoveryPolicyTest', 'ExecutionContractTest', 'ServiceRecoveryPolicyTest', 'RuntimeOperationScopeTest']:
         subprocess.run([str(JAVA/'java'), '-cp', tmp, 'dev.tripoder.runtime.'+name, str(Path(tmp)/'policy')], check=True)

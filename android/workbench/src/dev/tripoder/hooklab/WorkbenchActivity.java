@@ -14,6 +14,7 @@ import java.util.*;
 
 /** Application library and project index are distinct views over the existing authority. */
 public final class WorkbenchActivity extends Activity implements EngineConnection.Listener {
+    @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] results){super.onRequestPermissionsResult(request,permissions,results);AgentNetworkAccess.permissionResult(this,request);}
     private WorkbenchApplication app;private EngineConnection engine;private WorkbenchCatalog catalog;private WorkbenchAppActions appActions;
     private WorkbenchAgentPanel globalAgent;
     private LinearLayout body,nav;private ScrollView scroll;private TextView title,spaceChip;private ProductUi.Status status;
@@ -35,7 +36,10 @@ public final class WorkbenchActivity extends Activity implements EngineConnectio
         app.operations.observe(operationObserver);engine.observe(this);operationChanged();render();if(saved==null)engine.connectInitially(this);
     }
     private int d(int value){return ProductUi.dp(this,value);}
-    @Override protected void onResume(){super.onResume();if(engine!=null&&engine.ready()){app.operations.query();refresh();}else if(body!=null)render();}
+    /** Process state changes outside the workbench (a crash, an exit), so the visible list re-reads it while shown. */
+    private final Runnable statePoll=new Runnable(){@Override public void run(){if(destroyed)return;if(tab==0&&application==null&&engine!=null&&engine.ready())refresh();if(body!=null)body.postDelayed(this,3000);}};
+    @Override protected void onResume(){super.onResume();if(engine!=null&&engine.ready()){app.operations.query();refresh();}else if(body!=null)render();if(body!=null){body.removeCallbacks(statePoll);body.postDelayed(statePoll,3000);}}
+    @Override protected void onPause(){if(body!=null)body.removeCallbacks(statePoll);super.onPause();}
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putInt("tab",tab);out.putString("spaceFilter",spaceFilter);}
     @Override public void changed(){if(destroyed)return;if(!engine.ready()){catalog=null;lease="";render();return;}if(!lease.equals(engine.lease)){lease=engine.lease;app.operations.query();refresh();}render();}
     private void operationChanged(){
@@ -106,7 +110,7 @@ public final class WorkbenchActivity extends Activity implements EngineConnectio
             String name=catalog.appName(app,pkg),detail=busy?"正在启动…":installs.isEmpty()?"未安装 · 脚本保留":"";
             var tile=new WorkbenchLibraryUi.Tile(this,name,detail,icon,false,()->appActions.launch(catalog,pkg,spaceFilter));tile.packageName(pkg);
             tile.setOnLongClickListener(v->{appActions.menu(catalog,pkg,catalog.appName(app,pkg),spaceFilter);return true;});
-            String mode=catalog.modeLabel(pkg,spaceFilter);tile.mode(mode);tile.setContentDescription(name+(busy?"，正在启动":"")+(mode.isEmpty()?"":"，运行模式："+mode));if(cached==null)loadPresentation(pkg,tile);tiles.add(tile);
+            String mode=catalog.modeLabel(pkg,spaceFilter),live=catalog.runState(pkg,spaceFilter);tile.mode(mode);tile.running(live);tile.setContentDescription(name+(busy?"，正在启动":"")+(live.isEmpty()?"":"，"+live)+(mode.isEmpty()?"":"，运行模式："+mode));if(cached==null)loadPresentation(pkg,tile);tiles.add(tile);
         }
         var add=new WorkbenchLibraryUi.Tile(this,"添加应用","",new ProductUi.Icon("plus",ProductUi.ACCENT),false,this::addApplication);add.setContentDescription("添加应用");tiles.add(add);WorkbenchLibraryUi.grid(body,tiles);
     }

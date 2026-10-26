@@ -199,6 +199,10 @@ final class RuntimeSelfHookManagers {
             case "registerNetworkCallback(android.net.NetworkRequest,android.net.ConnectivityManager$NetworkCallback,android.os.Handler)":
                 RuntimeBridge.networkRegister((NetworkRequest)args[0],(ConnectivityManager.NetworkCallback)args[1],(Handler)args[2],false);return null;
             case "unregisterNetworkCallback(android.net.ConnectivityManager$NetworkCallback)":RuntimeBridge.networkUnregister((ConnectivityManager.NetworkCallback)args[0]);return null;
+            case "requestNetwork(android.net.NetworkRequest,android.net.ConnectivityManager$NetworkCallback)":RuntimeBridge.networkRequest((NetworkRequest)args[0],(ConnectivityManager.NetworkCallback)args[1],null,null);return null;
+            case "requestNetwork(android.net.NetworkRequest,android.net.ConnectivityManager$NetworkCallback,android.os.Handler)":RuntimeBridge.networkRequest((NetworkRequest)args[0],(ConnectivityManager.NetworkCallback)args[1],java.util.Objects.requireNonNull((Handler)args[2]),null);return null;
+            case "requestNetwork(android.net.NetworkRequest,android.net.ConnectivityManager$NetworkCallback,int)":RuntimeBridge.networkRequest((NetworkRequest)args[0],(ConnectivityManager.NetworkCallback)args[1],null,(Integer)args[2]);return null;
+            case "requestNetwork(android.net.NetworkRequest,android.net.ConnectivityManager$NetworkCallback,android.os.Handler,int)":RuntimeBridge.networkRequest((NetworkRequest)args[0],(ConnectivityManager.NetworkCallback)args[1],java.util.Objects.requireNonNull((Handler)args[2]),(Integer)args[3]);return null;
             default:throw new UnsupportedOperationException("CONNECTIVITY_CAPABILITY_UNSUPPORTED:"+key);
         }
     }

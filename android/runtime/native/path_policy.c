@@ -23,9 +23,13 @@ static char guest_process[256], guest_comm[16];
 static char host_storage_roots[3][PATH_MAX];
 static bool host_storage_configured;
 static int data_fd=-1, artifact_fd=-1;
+static pid_t configured_pid=-1;
 static bool configured;
 static bool thin_mode;
 void tp_configure_thin(bool thin){thin_mode=thin;}
+static bool owned_proc_pid(unsigned long pid){
+    return pid==(unsigned long)syscall(SYS_getpid)||(configured_pid>0&&pid==(unsigned long)configured_pid);
+}
 
 /* A saved file-backed code page is a runtime preimage, not another ELF instance.
  * Keep its address/inode/offset accounting while preventing false module bases. */
@@ -98,7 +102,7 @@ int tp_configure(const char *data,const char *data_canonical,const char *artifac
     data_fd=(int)syscall(SYS_openat,AT_FDCWD,data,O_PATH|O_DIRECTORY|O_CLOEXEC|O_NOFOLLOW,0);if(data_fd<0)return -1;
     artifact_fd=(int)syscall(SYS_openat,AT_FDCWD,artifacts,O_PATH|O_DIRECTORY|O_CLOEXEC|O_NOFOLLOW,0);if(artifact_fd<0)return -1;
     // Relative guest paths start in the immutable data incarnation, not the host cwd.
-    if(syscall(SYS_fchdir,data_fd)<0)return -1;dl_iterate_phdr(initial_image,NULL);configured=true;return 0;
+    if(syscall(SYS_fchdir,data_fd)<0)return -1;dl_iterate_phdr(initial_image,NULL);configured_pid=(pid_t)syscall(SYS_getpid);configured=true;return 0;
 }
 
 int tp_configure_process(const char *process_name){
@@ -144,7 +148,7 @@ static bool is_proc_self_fd_link(const char *path){
     else if(!strncmp(rest,"thread-self/fd/",15))rest+=15;
     else{
         char *end=NULL;unsigned long pid=strtoul(rest,&end,10);
-        if(end==rest||strncmp(end,"/fd/",4)!=0||pid!=(unsigned long)syscall(SYS_getpid))return false;
+        if(end==rest||strncmp(end,"/fd/",4)!=0||!owned_proc_pid(pid))return false;
         rest=end+4;
     }
     if(*rest<'0'||*rest>'9')return false;
@@ -358,7 +362,7 @@ static enum tp_proc_kind classify_proc(const char *path){
     else if(!strncmp(rest,"thread-self/",12))rest+=12;
     else{
         char *end=NULL;unsigned long pid=strtoul(rest,&end,10);
-        if(end==rest||*end!='/'||pid!=(unsigned long)syscall(SYS_getpid))return TP_PROC_NONE;
+        if(end==rest||*end!='/'||!owned_proc_pid(pid))return TP_PROC_NONE;
         rest=end+1;
     }
     if(!strncmp(rest,"task/",5)){
@@ -434,7 +438,6 @@ static bool transform_proc_line(enum tp_proc_kind kind,const char *line,size_t l
             char buf[32];int n=snprintf(buf,sizeof(buf),"Name:\t%s\n",guest_comm);
             return n>0&&buf_write(out,buf,(size_t)n);
         }
-        if(len>=11&&!memcmp(line,"TracerPid:\t",11))return buf_write(out,"TracerPid:\t0\n",13);
         return buf_write(out,line,len);
     }
     if(kind==TP_PROC_MAPS){

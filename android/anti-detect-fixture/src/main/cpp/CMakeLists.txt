@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(tripoder_anti_detect_fixture CXX)
+add_library(antidetect SHARED anti_detect.cpp)
+target_compile_options(antidetect PRIVATE -O0 -fno-inline)
+target_link_options(antidetect PRIVATE -Wl,--build-id=sha1)
+target_link_libraries(antidetect dl log)

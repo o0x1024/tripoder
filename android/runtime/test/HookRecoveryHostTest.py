@@ -62,7 +62,7 @@ final class EngineConnection {
 }''',
     'dev/tripoder/runtime/RuntimeCodeArtifacts.java': '''package dev.tripoder.runtime;
 public final class RuntimeCodeArtifacts {
- public static org.json.JSONObject list(Object app,String generation){throw new AssertionError("unexpected artifact read");}
+ public static org.json.JSONObject list(Object app,String generation,int cursor,int limit){throw new AssertionError("unexpected artifact read");}
  public static org.json.JSONObject read(Object app,String generation,String artifact,int offset,int length){throw new AssertionError("unexpected artifact read");}
 }''',
     'dev/tripoder/hooklab/WorkbenchAgentLifecycle.java': '''package dev.tripoder.hooklab;

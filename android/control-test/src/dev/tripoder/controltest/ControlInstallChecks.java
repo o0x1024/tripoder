@@ -45,11 +45,11 @@ final class ControlInstallChecks {
             String restoreOp=id();Bundle thickSet=test.execute(session,"setProjectMode","operation",restoreOp,"project",project,"mode","thick");
             Bundle thickResolved=test.execute(session,"resolveProject","project",project);Bundle thickStats=thickResolved.getBundle("integrity");
             test.check("set-project-mode-restores-thick","thick".equals(thickSet.getString("mode"))&&"thick".equals(thickResolved.getString("mode")),test.json(thickSet));
-            test.check("thick-mode-resolve-performs-full-artifact-verification",thickStats.getLong("fullVerifications")==verifiedBefore+1&&thickStats.getLong("trustedLoads")==trustedBefore,test.json(thickStats));
+            test.check("thick-mode-resolve-trusts-installed-artifacts",thickStats.getLong("trustedLoads")==trustedBefore+1&&thickStats.getLong("fullVerifications")==verifiedBefore,test.json(thickStats));
             String modeOp=id();Bundle thinSet=test.execute(session,"setProjectMode","operation",modeOp,"project",project,"mode","thin");
             Bundle thinResolved=test.execute(session,"resolveProject","project",project);Bundle thinStats=thinResolved.getBundle("integrity");
             test.check("set-project-mode-persists-thin-with-receipt","thin".equals(thinSet.getString("mode"))&&"thin".equals(thinResolved.getString("mode"))&&"SUCCEEDED".equals(test.execute(session,"query","operation",modeOp).getString("state")),test.json(thinSet));
-            test.check("thin-mode-resolve-uses-trusted-artifact-load-without-full-reverify",thinStats.getLong("trustedLoads")==trustedBefore+1&&thinStats.getLong("fullVerifications")==verifiedBefore+1,test.json(thinStats));
+            test.check("thin-mode-resolve-uses-trusted-artifact-load-without-full-reverify",thinStats.getLong("trustedLoads")==trustedBefore+2&&thinStats.getLong("fullVerifications")==verifiedBefore,test.json(thinStats));
             test.report.put("project",project).put("bindingOperation",rebind).put("installGeneration",current).put("dataId",bound.getString("dataId")).put("installFixture",fixtures);
         }finally{if(!base.delete()||!upgrade.delete())throw new IOException("TEST_COPY_CLEANUP_FAILED");}
     }

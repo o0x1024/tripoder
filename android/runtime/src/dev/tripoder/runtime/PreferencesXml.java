@@ -1,7 +1,7 @@
 package dev.tripoder.runtime;
 
 import android.system.*;
-import android.util.Xml;
+import dev.tripoder.selfhook.XmlFrameworkAccess;
 import org.xmlpull.v1.*;
 import java.io.*;
 import java.util.*;
@@ -13,7 +13,7 @@ final class PreferencesXml {
         if(!file.exists())return new LinkedHashMap<>();
         if(file.length()>MAX_BYTES)throw new IOException("PREFERENCES_SIZE_LIMIT");
         try(var stream=new FileInputStream(Os.open(file.toString(),OsConstants.O_RDONLY|OsConstants.O_NOFOLLOW|OsConstants.O_CLOEXEC,0))){
-            XmlPullParser p=Xml.newPullParser();p.setInput(stream,"UTF-8");int first=p.nextTag();if(first!=XmlPullParser.START_TAG||!"map".equals(p.getName())||p.getAttributeCount()!=0)throw new IOException("PREFERENCES_MAP_REQUIRED");
+            XmlPullParser p=XmlFrameworkAccess.parser(stream);int first=p.nextTag();if(first!=XmlPullParser.START_TAG||!"map".equals(p.getName())||p.getAttributeCount()!=0)throw new IOException("PREFERENCES_MAP_REQUIRED");
             Map<String,Object> values=new LinkedHashMap<>();
             while(p.nextTag()==XmlPullParser.START_TAG){
                 String type=p.getName(),key=p.getAttributeValue(null,"name");if(key==null||values.containsKey(key)||values.size()>=100000)throw new IOException("PREFERENCES_KEY_INVALID");
@@ -38,7 +38,7 @@ final class PreferencesXml {
     static void write(RuntimeStorage storage,File file,Map<String,Object> values)throws Exception{
         File stage=new File(file+".new");storage.check(file);storage.check(stage);
         try(var stream=new FileOutputStream(Os.open(stage.toString(),OsConstants.O_WRONLY|OsConstants.O_CREAT|OsConstants.O_TRUNC|OsConstants.O_NOFOLLOW|OsConstants.O_CLOEXEC,0600))){
-            XmlSerializer xml=Xml.newSerializer();xml.setOutput(stream,"UTF-8");xml.startDocument("UTF-8",true);xml.startTag(null,"map");
+            XmlSerializer xml=XmlFrameworkAccess.serializer(stream);xml.startDocument("UTF-8",true);xml.startTag(null,"map");
             for(var item:values.entrySet()){
                 Object value=item.getValue();String tag=value instanceof String?"string":value instanceof Integer?"int":value instanceof Long?"long":value instanceof Float?"float":value instanceof Boolean?"boolean":value instanceof Set?"set":null;
                 if(tag==null)throw new IOException("PREFERENCES_TYPE_INVALID");xml.startTag(null,tag);xml.attribute(null,"name",item.getKey());

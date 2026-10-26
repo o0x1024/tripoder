@@ -10,7 +10,9 @@ import java.util.*;
 final class RuntimeSystemBroadcasts {
     private static final String PROXY="android.intent.action.PROXY_CHANGE",PROXY_INFO="android.intent.extra.PROXY_INFO";
     private static final Set<String> BASIC=Set.of(
-        Intent.ACTION_SCREEN_ON,Intent.ACTION_SCREEN_OFF,Intent.ACTION_USER_PRESENT,
+        Intent.ACTION_SCREEN_ON,Intent.ACTION_SCREEN_OFF,Intent.ACTION_USER_PRESENT,Intent.ACTION_AIRPLANE_MODE_CHANGED,
+        "android.intent.action.USER_SWITCHED","android.intent.action.USER_BACKGROUND",
+        android.accounts.AccountManager.LOGIN_ACCOUNTS_CHANGED_ACTION,
         Intent.ACTION_APPLICATION_RESTRICTIONS_CHANGED,PROXY,
         Intent.ACTION_TIMEZONE_CHANGED,Intent.ACTION_TIME_CHANGED,Intent.ACTION_DATE_CHANGED,
         Intent.ACTION_LOCALE_CHANGED,Intent.ACTION_CONFIGURATION_CHANGED,Intent.ACTION_HEADSET_PLUG,
@@ -18,8 +20,9 @@ final class RuntimeSystemBroadcasts {
         android.hardware.usb.UsbManager.ACTION_USB_DEVICE_ATTACHED,android.hardware.usb.UsbManager.ACTION_USB_DEVICE_DETACHED,
         "android.hardware.usb.action.USB_ACCESSORY_ATTACHED","android.hardware.usb.action.USB_ACCESSORY_DETACHED","android.hardware.usb.action.USB_STATE",
         android.bluetooth.BluetoothAdapter.ACTION_STATE_CHANGED,android.bluetooth.BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED,
+        android.bluetooth.BluetoothDevice.ACTION_BOND_STATE_CHANGED,
         "android.bluetooth.device.action.ACL_CONNECTED","android.bluetooth.device.action.ACL_DISCONNECTED",
-        "android.bluetooth.headset.profile.action.CONNECTION_STATE_CHANGED","android.bluetooth.a2dp.profile.action.CONNECTION_STATE_CHANGED",
+        "android.bluetooth.headset.profile.action.CONNECTION_STATE_CHANGED","android.bluetooth.headset.profile.action.AUDIO_STATE_CHANGED","android.bluetooth.a2dp.profile.action.CONNECTION_STATE_CHANGED",
         Intent.ACTION_TIME_TICK,Intent.ACTION_BATTERY_LOW,Intent.ACTION_BATTERY_OKAY,
         Intent.ACTION_POWER_CONNECTED,Intent.ACTION_POWER_DISCONNECTED,
         android.os.BatteryManager.ACTION_CHARGING,android.os.BatteryManager.ACTION_DISCHARGING,
@@ -28,6 +31,7 @@ final class RuntimeSystemBroadcasts {
         android.net.ConnectivityManager.CONNECTIVITY_ACTION,"android.net.conn.INET_CONDITION_ACTION","android.net.conn.BACKGROUND_DATA_SETTING_CHANGED","android.net.conn.RESTRICT_BACKGROUND_CHANGED",
         android.net.wifi.WifiManager.WIFI_STATE_CHANGED_ACTION,android.net.wifi.WifiManager.NETWORK_STATE_CHANGED_ACTION,android.net.wifi.WifiManager.RSSI_CHANGED_ACTION,android.net.wifi.WifiManager.SCAN_RESULTS_AVAILABLE_ACTION,android.net.wifi.WifiManager.SUPPLICANT_STATE_CHANGED_ACTION,android.net.wifi.WifiManager.NETWORK_IDS_CHANGED_ACTION,
         android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY,android.media.AudioManager.RINGER_MODE_CHANGED_ACTION,android.media.AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED,android.media.AudioManager.ACTION_HDMI_AUDIO_PLUG,"android.media.VOLUME_CHANGED_ACTION","android.media.STREAM_MUTE_CHANGED_ACTION","android.media.STREAM_DEVICES_CHANGED_ACTION",
+        android.media.AudioManager.ACTION_MICROPHONE_MUTE_CHANGED,
         "android.intent.action.SIM_STATE_CHANGED","android.intent.action.ANY_DATA_STATE","android.intent.action.SERVICE_STATE","android.intent.action.PHONE_STATE","android.telephony.action.CARRIER_CONFIG_CHANGED","android.telephony.action.SUBSCRIPTION_CARRIER_IDENTITY_CHANGED","android.intent.action.ACTION_DEFAULT_DATA_SUBSCRIPTION_CHANGED","android.intent.action.ACTION_DEFAULT_VOICE_SUBSCRIPTION_CHANGED",
         "android.nfc.action.ADAPTER_STATE_CHANGED","android.location.PROVIDERS_CHANGED","android.location.MODE_CHANGED",
         "android.os.action.SETTING_RESTORED","android.intent.action.WALLPAPER_CHANGED","android.intent.action.INPUT_METHOD_CHANGED","android.intent.action.DOCK_EVENT"
@@ -40,24 +44,26 @@ final class RuntimeSystemBroadcasts {
         "android.hardware.usb.action.USB_STATE","android.intent.action.SIM_STATE_CHANGED","android.intent.action.NETWORK_SET_TIME","android.intent.action.NETWORK_SET_TIMEZONE"
     );
     static final Set<String> MEDIA=Set.of(Intent.ACTION_MEDIA_SHARED,Intent.ACTION_MEDIA_MOUNTED,Intent.ACTION_MEDIA_UNMOUNTED,Intent.ACTION_MEDIA_EJECT,Intent.ACTION_MEDIA_REMOVED,Intent.ACTION_MEDIA_BAD_REMOVAL,Intent.ACTION_MEDIA_CHECKING,Intent.ACTION_MEDIA_NOFS,Intent.ACTION_MEDIA_UNMOUNTABLE);
-    static final Set<String> PACKAGE=Set.of(Intent.ACTION_PACKAGE_ADDED,Intent.ACTION_PACKAGE_REMOVED,Intent.ACTION_PACKAGE_REPLACED,Intent.ACTION_PACKAGE_CHANGED,Intent.ACTION_PACKAGE_FULLY_REMOVED,Intent.ACTION_PACKAGE_DATA_CLEARED);
+    static final Set<String> PACKAGE=Set.of(Intent.ACTION_PACKAGE_ADDED,Intent.ACTION_PACKAGE_REMOVED,Intent.ACTION_PACKAGE_REPLACED,Intent.ACTION_PACKAGE_CHANGED,Intent.ACTION_PACKAGE_FULLY_REMOVED,Intent.ACTION_PACKAGE_DATA_CLEARED,Intent.ACTION_PACKAGE_RESTARTED);
+    static final Set<String> SELF_PACKAGE=Set.of(Intent.ACTION_MY_PACKAGE_SUSPENDED,Intent.ACTION_MY_PACKAGE_UNSUSPENDED);
     static final Set<String> ACTIONS;
-    static{Set<String> actions=new HashSet<>(BASIC);actions.addAll(MEDIA);actions.addAll(STICKY);actions.addAll(PACKAGE);ACTIONS=Set.copyOf(actions);}
+    static{Set<String> actions=new HashSet<>(BASIC);actions.addAll(MEDIA);actions.addAll(STICKY);actions.addAll(PACKAGE);actions.addAll(SELF_PACKAGE);ACTIONS=Set.copyOf(actions);}
     static boolean action(String action){return action!=null&&ACTIONS.contains(action);}
     static boolean contains(IntentFilter filter){for(int i=0;i<filter.countActions();i++)if(ACTIONS.contains(filter.getAction(i)))return true;return false;}
     static boolean only(IntentFilter filter){for(int i=0;i<filter.countActions();i++)if(!ACTIONS.contains(filter.getAction(i)))return false;return filter.countActions()>0;}
-    static void validate(IntentFilter filter){
-        if(!contains(filter))return;
-        if(filter.countCategories()!=0||filter.countDataTypes()!=0||filter.countDataAuthorities()!=0||filter.countDataPaths()!=0)throw new UnsupportedOperationException("SYSTEM_RECEIVER_DATA_FILTER_UNSUPPORTED");
-        boolean media=false,pkg=false;for(int i=0;i<filter.countActions();i++){media|=MEDIA.contains(filter.getAction(i));pkg|=PACKAGE.contains(filter.getAction(i));}
-        // Android permits mixed actions and a filter with no data scheme. Preserve
-        // its matching semantics; absence of a scheme does not match file/package events.
-        for(int i=0;i<filter.countDataSchemes();i++){String scheme=filter.getDataScheme(i);if(!(media&&"file".equals(scheme)||pkg&&"package".equals(scheme)))throw new UnsupportedOperationException(media?"MEDIA_RECEIVER_FILTER_UNSUPPORTED":"SYSTEM_RECEIVER_DATA_FILTER_UNSUPPORTED");}
-    }
     /** PACKAGE_* events are observable only for the observing guest's own package, never other installs. */
     static boolean ownPackageEvent(Intent intent,String packageName){
         if(!PACKAGE.contains(intent.getAction()))return true;
         android.net.Uri data=intent.getData();return data!=null&&packageName.equals(data.getSchemeSpecificPart());
+    }
+    /** The container's own availability applies to its guest processes. Never
+     * relay another installed package's targeted self event into this realm. */
+    static Intent forGuest(Intent observed,String packageName,String physicalPackage){
+        if(SELF_PACKAGE.contains(observed.getAction())){
+            if(!Objects.equals(physicalPackage,observed.getPackage())||physicalPackage==null)throw new SecurityException("SELF_PACKAGE_EVENT_NOT_VISIBLE");
+            return new Intent(observed).setPackage(Objects.requireNonNull(packageName));
+        }
+        if(!ownPackageEvent(observed,packageName))throw new SecurityException("PACKAGE_EVENT_NOT_VISIBLE");return observed;
     }
     /** True only for a custom permission the owner app itself declares at signature level;
      * such a permission couples delivery to a shared signer. A platform or normal permission
@@ -137,7 +143,12 @@ final class RuntimeSystemBroadcasts {
             String ssp=data==null?null:data.getSchemeSpecificPart();
             if(data==null||!"package".equals(data.getScheme())||ssp==null||ssp.isEmpty()||data.getQuery()!=null||data.getFragment()!=null)throw new SecurityException("PACKAGE_URI_INVALID");
         }else if(data!=null)throw new SecurityException("SYSTEM_BROADCAST_ENVELOPE_INVALID");
-        Intent result=new Intent(original.getAction()).setFlags(original.getFlags()).setData(data);result.replaceExtras(extras(original));return result;
+        Intent result=new Intent(original.getAction()).setFlags(original.getFlags()).setData(data);
+        if(SELF_PACKAGE.contains(original.getAction())){
+            if(original.getPackage()==null||original.getPackage().isEmpty())throw new SecurityException("SELF_PACKAGE_EVENT_TARGET_REQUIRED");
+            result.setPackage(original.getPackage());
+        }
+        result.replaceExtras(extras(original));return result;
     }
     static Intent visible(Intent original,Set<String> observedRoots){
         Intent result=envelope(original);

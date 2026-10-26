@@ -12,7 +12,7 @@ final class RuntimeSelfHookManagerExtras {
     private static final List<String> WIFI=List.of("isChannelConstrainedDiscoverySupported()","isGroupClientRemovalSupported()",
         "isGroupOwnerIPv6LinkLocalAddressProvided()","isPccModeSupported()","isSetVendorElementsSupported()","isWiFiDirectR2Supported()");
     private static final List<String> NOTIFICATION=List.of("areNotificationsEnabled()","areNotificationsPaused()","getImportance()",
-        "getCurrentInterruptionFilter()","shouldHideSilentStatusBarIcons()");
+        "getCurrentInterruptionFilter()","shouldHideSilentStatusBarIcons()","isNotificationPolicyAccessGranted()");
     private RuntimeSelfHookManagerExtras(){}
     static Object wifi(String key,Object[] args){
         if(key.equals("initialize(android.content.Context,android.os.Looper,android.net.wifi.p2p.WifiP2pManager$ChannelListener)"))
@@ -23,11 +23,16 @@ final class RuntimeSelfHookManagerExtras {
     @SuppressWarnings("unchecked") static Object notification(String key,Object[] args){
         int index=NOTIFICATION.indexOf(key);if(index>=0)return RuntimeSelfHookManagers.extraFramework().notificationProperty(RuntimeBridge.notificationPlatform(),index);
         switch(key){
+            case "setNotificationDelegate(java.lang.String)":RuntimeBridge.notificationDelegate((String)args[0]);return null;
+            case "getNotificationDelegate()":return RuntimeBridge.notificationDelegate();
+            case "canNotifyAsPackage(java.lang.String)":return RuntimeBridge.notificationCanPost((String)args[0]);
+            case "notifyAsPackage(java.lang.String,java.lang.String,int,android.app.Notification)":RuntimeBridge.notificationPostAs((String)args[0],(String)args[1],(Integer)args[2],(Notification)args[3]);return null;
             case "notify(int,android.app.Notification)":RuntimeBridge.notificationPost(null,(Integer)args[0],(Notification)args[1]);return null;
             case "notify(java.lang.String,int,android.app.Notification)":RuntimeBridge.notificationPost((String)args[0],(Integer)args[1],(Notification)args[2]);return null;
             case "cancel(int)":RuntimeBridge.notificationCancel(null,(Integer)args[0]);return null;
             case "cancel(java.lang.String,int)":RuntimeBridge.notificationCancel((String)args[0],(Integer)args[1]);return null;
             case "cancelAll()":RuntimeBridge.notificationCancelAll();return null;
+            case "getActiveNotifications()":return RuntimeBridge.notificationActive();
             case "createNotificationChannel(android.app.NotificationChannel)":RuntimeBridge.notificationCreateChannels(List.of((NotificationChannel)args[0]));return null;
             case "createNotificationChannels(java.util.List)":RuntimeBridge.notificationCreateChannels((List<NotificationChannel>)args[0]);return null;
             case "createNotificationChannelGroup(android.app.NotificationChannelGroup)":RuntimeBridge.notificationCreateGroups(List.of((NotificationChannelGroup)args[0]));return null;

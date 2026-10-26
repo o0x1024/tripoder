@@ -8,10 +8,15 @@ final class RuntimeComponents {
         return declared(install,type,name,false);
     }
     static ApkManifest.Component declared(ApkStore.BundleInstall install,String type,String name,boolean allowDisabled){
+        ApkManifest.Component component=findDeclared(install,type,name,allowDisabled);
+        if(component==null)throw new IllegalArgumentException("COMPONENT_NOT_DECLARED:"+type+":"+name);return component;
+    }
+    /** A selector can resolve to no declaration without being a failed execution. */
+    static ApkManifest.Component findDeclared(ApkStore.BundleInstall install,String type,String name,boolean allowDisabled){
         for(var component:install.components())if(component.type.equals(type)&&component.name.equals(name)){
-            if(!allowDisabled&&!component.enabled)throw new IllegalStateException("COMPONENT_DISABLED");return component;
+            if(!allowDisabled&&!component.enabled)throw new IllegalStateException("COMPONENT_DISABLED:"+type+":"+name);return component;
         }
-        throw new IllegalArgumentException("COMPONENT_NOT_DECLARED:"+type+":"+name);
+        return null;
     }
     static ActivityInfo activity(ApkStore.BundleInstall install,String name){
         ActivityInfo info=RuntimeActivityIndex.require(install.activityIndex(),name);
@@ -24,7 +29,7 @@ final class RuntimeComponents {
         // so they are accepted. documentLaunchMode is still refused: it spawns separate
         // document tasks, which the single-root launch-ticket ledger does not model.
         if(info.documentLaunchMode!=ActivityInfo.DOCUMENT_LAUNCH_NONE)throw new UnsupportedOperationException("ACTIVITY_TASK_POLICY_UNSUPPORTED");
-        if(info.launchMode<ActivityInfo.LAUNCH_MULTIPLE||info.launchMode>ActivityInfo.LAUNCH_SINGLE_INSTANCE)throw new IllegalStateException("ACTIVITY_LAUNCH_MODE_UNSUPPORTED");return info;
+        if(info.launchMode<ActivityInfo.LAUNCH_MULTIPLE||info.launchMode>ActivityInfo.LAUNCH_SINGLE_INSTANCE_PER_TASK)throw new IllegalStateException("ACTIVITY_LAUNCH_MODE_UNSUPPORTED");return info;
     }
     static boolean reparents(ActivityInfo info){return info.launchMode<ActivityInfo.LAUNCH_SINGLE_TASK&&(info.flags&ActivityInfo.FLAG_ALLOW_TASK_REPARENTING)!=0;}
     static void authorize(ActivityInfo component,String callerPackage){

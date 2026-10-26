@@ -1,9 +1,11 @@
+import {JavaObjectFrame, isJavaReferenceType, validJavaType} from "./java-objects.js";
+import type {JavaObjectRef} from "./java-objects.js";
 import { requireThat } from "./errors.js";
 
-export type JavaType = "void" | "boolean" | "byte" | "short" | "int" | "long" | "float" | "double" | "char" | "java.lang.String" | "[B" | "byte[]";
+export type JavaType = string;
 export type NativeType = "void" | "int32" | "uint32" | "int64" | "uint64" | "float" | "double";
 export type AbiType = JavaType | NativeType;
-export type HookValue = string | boolean | number | bigint | null | undefined;
+export type HookValue = string | boolean | number | bigint | null | undefined | JavaObjectRef;
 export interface Target {
   readonly packageName: string;
   readonly versionCode: string;
@@ -54,7 +56,6 @@ export function snapshotEvidence(evidence: EvidenceSnapshot): EvidenceSnapshot {
   requireThat(evidence.abi === "arm64-v8a", "UNSUPPORTED_ABI", "This prototype only models arm64-v8a");
   const ids = new Set<string>();
   requireThat(evidence.capabilities.every(c => c === "java-hook" || c === "native-hook"), "INVALID_EVIDENCE", "Unknown capability");
-  const javaTypes = new Set(["void", "boolean", "byte", "short", "int", "long", "float", "double", "char", "java.lang.String", "[B", "byte[]"]);
   const nativeTypes = new Set(["void", "int32", "uint32", "int64", "uint64", "float", "double"]);
   const symbols = evidence.symbols.map((symbol): HookSymbol => {
     requireThat(symbol.id.length > 0 && !ids.has(symbol.id), "INVALID_EVIDENCE", `Duplicate or empty symbol ID: ${symbol.id}`);
@@ -64,7 +65,7 @@ export function snapshotEvidence(evidence: EvidenceSnapshot): EvidenceSnapshot {
     if (symbol.kind === "java") {
       requireThat(symbol.className.length > 0 && symbol.methodName.length > 0 && symbol.classLoaderId.length > 0,
         "INVALID_EVIDENCE", "Java class, method and class loader are required");
-      requireThat(javaTypes.has(symbol.returnType) && symbol.argumentTypes.every(t => javaTypes.has(t)), "INVALID_SIGNATURE", "Unsupported Java signature");
+      requireThat(validJavaType(symbol.returnType, true) && symbol.argumentTypes.every(t => validJavaType(t)), "INVALID_SIGNATURE", "Unsupported Java signature");
       return Object.freeze({ ...symbol, argumentTypes: Object.freeze([...symbol.argumentTypes]) });
     }
     requireThat(symbol.kind === "native", "INVALID_EVIDENCE", "Unknown symbol kind");
@@ -101,8 +102,8 @@ export function validateHookValue(type: AbiType, value: unknown, location: strin
     default: {
       const ranges = { byte: [-128, 127], short: [-32768, 32767], int: [-2147483648, 2147483647],
         int32: [-2147483648, 2147483647], uint32: [0, 4294967295] } as const;
-      const range = ranges[type];
-      valid = range !== undefined && typeof value === "number" && Number.isInteger(value) && value >= range[0] && value <= range[1];
+      const range = ranges[type as keyof typeof ranges];
+      valid = isJavaReferenceType(type) ? JavaObjectFrame.valid(type,value) : range !== undefined && typeof value === "number" && Number.isInteger(value) && value >= range[0] && value <= range[1];
     }
   }
   requireThat(valid, "HOOK_TYPE", `${location}: expected ${type}`);

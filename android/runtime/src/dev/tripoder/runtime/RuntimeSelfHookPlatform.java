@@ -24,13 +24,18 @@ final class RuntimeSelfHookPlatform implements SelfHookControl.Platform {
     public Map<String,Object> dumpUiHierarchy(boolean includeInvisible){try{return RuntimeStartupDiagnostics.dumpUiHierarchy(includeInvisible);}catch(Exception error){throw new IllegalStateException(error);}}
     public Map<String,Object> dispatchUiAction(Map<String,Object> action){try{return RuntimeStartupDiagnostics.dispatchUiAction(action);}catch(Exception error){throw new IllegalStateException(error);}}
     public List<Map<String,Object>> diagnostics(){return RuntimeStartupDiagnostics.recentFailures();}
-    public Map<String,Object> inspectManifest(){try{return RuntimeSecurityAudit.inspectManifest();}catch(Exception error){throw new IllegalStateException(error);}}
-    public Map<String,Object> inspectStorage(String category,int limit){try{return RuntimeSecurityAudit.inspectStorage(category,limit);}catch(Exception error){throw new IllegalStateException(error);}}
+    public Map<String,Object> persistNetworkCapture(String tag,Object payload,String sourceSha,String revision){
+        try(android.os.ParcelFileDescriptor directory=RuntimeEngine.current.artifactDirectory()){
+            Map<String,Object> context=Map.of("processGeneration",identity.get("processGeneration"),"sourceSha256",sourceSha,"revision",revision,"symbol","network.capture","monotonicNanos",Long.toString(System.nanoTime()));
+            return HookWire.request(RuntimeCodeArtifacts.capture(directory.getFd(),new org.json.JSONObject(identity),tag,payload,context).toString());
+        }catch(Exception error){throw new IllegalStateException("NETWORK_CAPTURE_PERSIST_FAILED",error);}
+    }
     public Map<String,Object> listNetworkTraffic(long sinceSeq,int limit){try{return RuntimeSecurityAudit.listNetworkTraffic(sinceSeq,limit);}catch(Exception error){throw new IllegalStateException(error);}}
-    public Map<String,Object> sendHttpRequest(Map<String,Object> request){try{return RuntimeSecurityAudit.sendHttpRequest(request);}catch(Exception error){throw new IllegalStateException(error);}}
-    public Map<String,Object> invokeGuestMethod(Map<String,Object> target){try{return RuntimeSecurityAudit.invokeGuestMethod(target);}catch(Exception error){throw new IllegalStateException(error);}}
+    public Map<String,Object> sendHttpRequest(Map<String,Object> request){try{return RuntimeSecurityAudit.sendHttpRequest(request);}catch(HookPreflightRejected rejected){throw rejected;}catch(Exception error){throw new IllegalStateException(error);}}
+    public Map<String,Object> invokeGuestMethod(Map<String,Object> target){try{return RuntimeSecurityAudit.invokeGuestMethod(target);}catch(HookPreflightRejected rejected){throw rejected;}catch(Exception error){throw new IllegalStateException(error);}}
     public Map<String,Object> codeCommand(String command,Map<String,Object> params){try{return RuntimeEngine.current.codeProbes().command(command,params);}catch(Exception error){throw new IllegalStateException(error);}}
     public Map<String,Object> requestCodeSnapshot(String dexId){try{return dev.tripoder.runtime.script.HookWire.request(RuntimeEngine.current.codeProbes().capture(dexId).toString());}catch(Exception error){throw new IllegalStateException(error);}}
+    public Map<String,Object> requestEvidenceSnapshot(String tag,Object payload){try(android.os.ParcelFileDescriptor directory=RuntimeEngine.current.artifactDirectory()){return HookWire.request(RuntimeCodeArtifacts.capture(directory.getFd(),new org.json.JSONObject(identity),tag,payload,HookInvocationSession.evidenceContext()).toString());}catch(Exception error){throw new IllegalStateException("EVIDENCE_CAPTURE_FAILED:"+error.getClass().getSimpleName()+":"+error.getMessage(),error);}}
     public Map<String,Object> invocationContext(){RuntimeEngine engine=RuntimeEngine.current;RuntimeCodeProbes probes=engine.existingCodeProbes();return Map.of("runtimePhase",probes==null?(engine.ready?"APPLICATION_CREATED":"BEFORE_APPLICATION"):probes.currentStage(),"elapsedRealtimeNanos",Long.toString(android.os.SystemClock.elapsedRealtimeNanos()));}
     public SelfHookControl.Observation observe(List<Map<String,Object>> selectors){
         discardObservation();List<Map<String,Object>> java=new ArrayList<>(),nativeSymbols=new ArrayList<>();

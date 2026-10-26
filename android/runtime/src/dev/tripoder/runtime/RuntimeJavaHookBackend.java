@@ -5,6 +5,7 @@ import dev.tripoder.runtime.script.DraftCompiler;
 import dev.tripoder.runtime.script.HookEvidence;
 import dev.tripoder.runtime.script.HookInvocationSession;
 import dev.tripoder.runtime.script.JavaHookValues;
+import dev.tripoder.runtime.script.JavaObjectScope;
 import dev.tripoder.selfhook.ManagedHook;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -58,8 +59,10 @@ final class RuntimeJavaHookBackend {
                 for(Binding binding:selected){validate(binding.method());if(!handles.containsKey(binding.method()))
                     handles.put(binding.method(),ManagedHook.prepare(binding.method(),new Method[0]));}
                 for(Binding binding:selected){Method method=binding.method();Class<?>[] types=method.getParameterTypes();Class<?> result=method.getReturnType();
-                    handles.get(method).enable(call->JavaHookValues.encode(result,dispatch.call(binding.symbol(),JavaHookValues.decodeArguments(types,call.arguments()),
-                        args->JavaHookValues.decode(result,call.original(JavaHookValues.encodeArguments(types,args))))));}
+                    handles.get(method).enable(call->{try(JavaObjectScope scope=JavaObjectScope.open(plan.evidence().processInstanceId,plan.sourceSha256(),types,result)){
+                        return JavaHookValues.encode(result,dispatch.call(binding.symbol(),JavaHookValues.decodeArguments(types,call.arguments()),
+                            args->JavaHookValues.decode(result,call.original(JavaHookValues.encodeArguments(types,args)))));
+                    }});}
                 published=true;
             }
             public boolean retire(){if(!published||retired)throw new IllegalStateException("HOOK_RETIRE_STATE");for(Binding binding:selected)handles.get(binding.method()).disable();retired=true;return true;}

@@ -4,6 +4,7 @@ import dev.tripoder.runtime.script.DraftCompiler;
 import dev.tripoder.runtime.script.HookEvidence;
 import dev.tripoder.runtime.script.HookInvocationSession;
 import dev.tripoder.runtime.script.NativeHookValues;
+import dev.tripoder.runtime.script.NativeBufferScope;
 import dev.tripoder.runtime.script.HookPublicationRejected;
 import dev.tripoder.selfhook.NativeHook;
 import java.util.*;
@@ -36,12 +37,14 @@ final class RuntimeNativeHookBackend {
                 try {
                 for(Binding binding:bindings){var target=binding.target();int[] types=binding.arguments().stream().mapToInt(type->NativeHookValues.type(type,false)).toArray();
                     prepared.add(NativeHook.prepare(target.library().index(),target.generation(),target.rva(),target.library().path(),NativeHookValues.type(binding.result(),true),types,call->{
+                        try(var scope=new NativeBufferScope(binding.id(),binding.arguments(),binding.result(),call::snapshotArgument)){
                         int[] errorNumber={call.incomingErrno()};
                         Object value=dispatch.call(binding.id(),NativeHookValues.decodeArguments(binding.arguments(),call.arguments()),arguments->{
                             NativeHook.Result original=call.original(NativeHookValues.encodeArguments(binding.arguments(),arguments),errorNumber[0]);errorNumber[0]=original.errorNumber;
-                            return NativeHookValues.decode(binding.result(),original.bits);
+                            Object decoded=NativeHookValues.decode(binding.result(),original.bits);scope.complete(arguments,decoded);return decoded;
                         });
                         return new NativeHook.Result(NativeHookValues.encode(binding.result(),value),errorNumber[0]);
+                        }
                     }));
                 }
                 handles=prepared.toArray(NativeHook.Handle[]::new);NativeHook.publish(handles);published=true;

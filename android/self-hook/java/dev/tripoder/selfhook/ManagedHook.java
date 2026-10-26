@@ -80,6 +80,7 @@ public final class ManagedHook {
     private ManagedHook(){}
     private static native boolean prepareNative(int slot,Executable target,Method helper,Class<?> owner,String shorty,Executable[] callers);
     private static native int prepareBatchNative(int first,Executable[] targets,Method[] helpers,Class<?>[] owners,String[] shorties,Executable[][] callerArrays);
+    private static native String togglePhasesNative();
     private static native boolean toggleBatchNative(int[] slots,boolean active,boolean entryOnly);
     private static native Object originalNative(int slot,Object receiver,Object[] args);
     private static native String reportNative(int slot);
@@ -120,15 +121,19 @@ public final class ManagedHook {
         for(var item:batch.entrySet()){
             Handle handle=item.getKey();if(handle==null||item.getValue()==null||handle.entry.handler!=null||entries.get(handle.entry.id)!=handle.entry)
                 throw new IllegalStateException("HOOK_ENABLE_STATE");
-            if(entryOnly&&(!(handle.entry.target instanceof Method)||handle.entry.target.getDeclaringClass().getClassLoader()==null
+            if(entryOnly&&(!(handle.entry.target instanceof Method)||handle.entry.target.getDeclaringClass().getClassLoader()==Class.class.getClassLoader()
                 ||Modifier.isStatic(handle.entry.target.getModifiers())||Modifier.isNative(handle.entry.target.getModifiers())))
                 throw new IllegalArgumentException("GUEST_CALLBACK_ENTRY_REQUIRED");
             owners.add(handle.entry.target.getDeclaringClass());slots[i++]=handle.entry.id;
         }
+        long phaseStart=android.os.SystemClock.elapsedRealtimeNanos();
         try {for(Class<?> owner:owners)if(Class.forName(owner.getName(),true,owner.getClassLoader())!=owner)throw new IllegalStateException("CLASS_IDENTITY_CHANGED");}
         catch(ClassNotFoundException error){throw new IllegalStateException("CLASS_INITIALIZATION_FAILED",error);}
         batch.forEach((handle,handler)->handle.entry.handler=handler);
-        if(!toggleBatchNative(slots,true,entryOnly)){batch.keySet().forEach(handle->handle.entry.handler=null);throw new IllegalStateException("HOOK_ACTIVATION_REJECTED");}
+        long phaseMid=android.os.SystemClock.elapsedRealtimeNanos();
+        boolean toggled=toggleBatchNative(slots,true,entryOnly);
+        android.util.Log.i("TripoderSelfHook","ENABLE_BATCH_PHASES owners="+owners.size()+" classInit="+(phaseMid-phaseStart)/1000000+"ms toggle="+(android.os.SystemClock.elapsedRealtimeNanos()-phaseMid)/1000000+"ms entries="+slots.length+" "+togglePhasesNative());
+        if(!toggled){batch.keySet().forEach(handle->handle.entry.handler=null);throw new IllegalStateException("HOOK_ACTIVATION_REJECTED");}
     }
     public static synchronized void disableBatch(java.util.Collection<Handle> supplied){
         if(changing)throw new IllegalStateException("HOOK_PUBLICATION_REENTRY");changing=true;
@@ -224,7 +229,7 @@ public final class ManagedHook {
             index++;
         }
         helperResolveNs+=System.nanoTime()-measured;measured=System.nanoTime();
-        if(!OriginalMethodStorage.prepareBatch(targetArr,shortyArr))throw new IllegalStateException("ORIGINAL_STORAGE_REQUIRED: "+OriginalMethodStorage.report());
+        if(!OriginalMethodStorage.prepareBatch(targetArr,shortyArr))throw new IllegalStateException("ORIGINAL_STORAGE_REQUIRED: "+OriginalMethodStorage.preparationFailure());
         storageNs+=System.nanoTime()-measured;measured=System.nanoTime();
         Map<Executable,Handle> result=new LinkedHashMap<>();
         for(int i=0;i<count;i++){

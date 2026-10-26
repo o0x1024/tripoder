@@ -98,7 +98,7 @@ public final class RuntimeProviderFacade extends RuntimeProviderBase implements 
         if(uri==null||!"content".equals(uri.getScheme())||!reference.getString("authority").equals(uri.getAuthority()))throw new SecurityException("PROVIDER_URI_MISMATCH");
         long identity=Binder.clearCallingIdentity();try{
             if(kind.equals("query")){
-                Uri wire=new Uri.Builder().scheme("content").authority(reference.getString("physical")).appendPath("v1-thin").appendPath(reference.getString("lease")).appendQueryParameter("uri",uri.toString()).appendQueryParameter("callerPackage",engine.packageName).build();
+                Uri wire=new Uri.Builder().scheme("content").authority(reference.getString("physical")).appendPath("v2-thin").appendPath(reference.getString("lease")).appendQueryParameter("uri",uri.toString()).appendQueryParameter("source",engine.generation).build();
                 return retain(client.query(wire,projection,payload,null));
             }
             Bundle envelope=new Bundle();
@@ -106,10 +106,10 @@ public final class RuntimeProviderFacade extends RuntimeProviderBase implements 
             envelope.putString("authority",reference.getString("authority"));
             envelope.putString("kind",kind);
             envelope.putString("uri",uri.toString());
-            envelope.putString("callerPackage",engine.packageName);
+            envelope.putString("source",engine.generation);
             envelope.putBundle("payload",payload);
             envelope.putStringArray("projection",projection);
-            Bundle response=client.call("tripoder.thin",null,envelope);
+            Bundle response=client.call("tripoder.thin.v2",null,envelope);
             return kind.equals("getType")?response.getString("type"):response;
         }finally{Binder.restoreCallingIdentity(identity);}
     }
@@ -142,7 +142,7 @@ public final class RuntimeProviderFacade extends RuntimeProviderBase implements 
     private Cursor retain(Cursor cursor){
         if(cursor==null)return null;synchronized(this){uses++;}
         return new android.database.CursorWrapper(cursor){private final java.util.concurrent.atomic.AtomicBoolean closing=new java.util.concurrent.atomic.AtomicBoolean();
-            @Override public void close(){if(!closing.compareAndSet(false,true))return;super.close();endUse();}
+            @Override public void close(){if(!closing.compareAndSet(false,true))return;try{super.close();}finally{endUse();}}
         };
     }
     private void endUse(){synchronized(this){if(uses<=0)throw new IllegalStateException("PROVIDER_USE_UNBALANCED");uses--;}releaseIfIdle();}

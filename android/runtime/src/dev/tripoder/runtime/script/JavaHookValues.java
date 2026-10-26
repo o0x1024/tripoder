@@ -8,9 +8,11 @@ import java.util.List;
 public final class JavaHookValues {
     private JavaHookValues(){}
     public static void requireType(Class<?> type,boolean result){
-        if(type==boolean.class||type==byte.class||type==short.class||type==int.class||type==long.class||type==char.class
-            ||type==float.class||type==double.class||type==String.class||type==byte[].class||result&&type==void.class)return;
+        if(JavaTypes.valid(type.getName(),result))return;
         throw new IllegalArgumentException("HOOK_JAVA_ABI_UNSUPPORTED:"+type.getName());
+    }
+    public static void requireInvocationType(Class<?> type,boolean result){
+        if(!JavaTypes.invocation(type.getName(),result))throw new HookPreflightRejected("INVOKE_JAVA_ABI_UNSUPPORTED:"+type.getName());
     }
     public static Object decode(Class<?> type,Object value){
         requireType(type,true);Object decoded;
@@ -21,6 +23,7 @@ public final class JavaHookValues {
             if(value==null)decoded=null;
             else{byte[] b=(byte[])value;ScriptFault.require(b.length<=4096,"HOOK_TYPE:[B");decoded=java.util.HexFormat.of().formatHex(b);}
         }
+        else if(!type.isPrimitive()){decoded=JavaObjectScope.wrap(type,value);}
         else if(type==boolean.class){if(!(value instanceof Boolean))throw invalid(type);decoded=value;}
         else if(type==char.class){if(!(value instanceof Character))throw invalid(type);decoded=String.valueOf((Character)value);}
         else if(type==long.class){if(!(value instanceof Long))throw invalid(type);decoded=BigInteger.valueOf((Long)value);}
@@ -32,6 +35,7 @@ public final class JavaHookValues {
     }
     public static Object encode(Class<?> type,Object value){
         requireType(type,true);Object checked=ScriptValues.abi(type.getName(),value);
+        if(!type.isPrimitive()&&type!=String.class&&type!=byte[].class)return JavaObjectScope.unwrap(type,checked);
         if(type==void.class)return null;if(type==String.class||type==boolean.class)return checked;
         if(type==byte[].class)return checked==null?null:java.util.HexFormat.of().parseHex((String)checked);
         if(type==char.class)return ((String)checked).charAt(0);if(type==long.class)return ((BigInteger)checked).longValueExact();

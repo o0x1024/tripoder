@@ -8,6 +8,20 @@ import re
 import subprocess
 
 
+def erratum_return(disassembly, target, resume):
+    """A linker-moved memory instruction may return only to its original successor."""
+    if not re.fullmatch(r'__CortexA53843419_[0-9a-f]+', target):
+        return False
+    body = re.search(r'^[0-9a-f]+ <' + re.escape(target) + r'>:\n(.*?)(?=^[0-9a-f]+ <|\Z)', disassembly, re.M | re.S)
+    if not body:
+        return False
+    instructions = re.findall(r'^\s*[0-9a-f]+:\s+(\S+)\s*(.*)$', body[1], re.M)
+    if len(instructions) != 2 or instructions[0][0] not in ('ldr', 'ldur', 'str', 'stur'):
+        return False
+    returned = re.match(r'0x([0-9a-f]+)\s+<', instructions[1][1])
+    return instructions[1][0] == 'b' and returned is not None and int(returned[1], 16) == resume
+
+
 def audit(library, objdump, output, product=False):
     output.unlink(missing_ok=True)
     disassembly = subprocess.check_output([str(objdump), '-d', '--no-show-raw-insn', str(library)], text=True)
@@ -70,6 +84,10 @@ def audit(library, objdump, output, product=False):
             raise RuntimeError('UNRESOLVED_CRITICAL_PATH_BRANCH:' + line)
         target = target[1]
         if opcode == 'b' and target == name:
+            continue
+        address = int(re.match(r'\s*([0-9a-f]+):', line)[1], 16)
+        if opcode == 'b' and erratum_return(disassembly, target, address + 4):
+            calls.append({'function': name, 'target': target, 'instruction': line.strip(), 'linkerMemoryInstruction': True})
             continue
         if target not in allowed[name]:
             raise RuntimeError('UNEXPECTED_CRITICAL_PATH_CALL:' + name + ':' + line)

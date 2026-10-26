@@ -34,7 +34,7 @@ public final class ScriptContractTest {
         Object call(List<Object> a,HookRule.Original original)throws Throwable{return dispatch.call("owned",a,original);}
     }
     public static void main(String[] ignored)throws Throwable {
-        values();ast();execution();lifecycle();failure();parallel();commands();SourceControlTest.run();JavaHookValuesTest.run();NativeHookValuesTest.run();
+        values();ast();execution();lifecycle();failure();parallel();commands();SourceControlTest.run();JavaHookValuesTest.run();JavaObjectScopeTest.run();HttpRequestPreflightTest.run();NativeHookValuesTest.run();NativeBufferScopeTest.run();NetworkCaptureTest.run();NetworkControlTest.run();NetworkHttp1Test.run();
         OracleFixtures.run();NativeLifecycleResultsTest.run();
         System.out.println("SCRIPT_CONTRACT_PASS checks="+checks);
     }
@@ -97,7 +97,7 @@ public final class ScriptContractTest {
         Throwable sentinel=new ScriptFault("OWNED_GUEST_THROWABLE");
         try{beforeAfter.execute(Map.of(),l(1d),a->{throw sentinel;});throw new AssertionError("missing original failure");}
         catch(Throwable actual){check(actual==sentinel,"original Throwable identity");}
-        rejects(()->new HookRule("owned",List.of("java.lang.Object"),"int",null,handler(num(1)),null),"HOOK_ABI_UNSUPPORTED");
+        rejects(()->new HookRule("owned",List.of("void"),"int",null,handler(num(1)),null),"HOOK_ABI_UNSUPPORTED");
         rejects(()->rule(handler(num(1)),handler(num(1)),null),"HOOK_CONFLICT");
         HookRule floatBefore=new HookRule("owned",List.of("float"),"double",handler(m("type","ArrayExpression","elements",l(num(16777217d)))),null,handler(arg()));
         AtomicReference<Object> physicalFloat=new AtomicReference<>();Object unchangedSnapshot=floatBefore.execute(Map.of(),l(1d),a->{physicalFloat.set(ScriptValues.abi("float",a.get(0)));return 0d;});

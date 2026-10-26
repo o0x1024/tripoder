@@ -38,7 +38,7 @@ final class ApkInstallTransaction {
             }
             RuntimeFiles.sync(stage);fault.at("AFTER_COPY");
             ArtifactSet prepared=ArtifactSet.materialize(stage);fault.at("AFTER_VERIFY");
-            String pkg=prepared.packageName;ApkStore.Row old;Map<String,String> inventory;
+            String pkg=prepared.packageName;RuntimeMutationGuard.requireInstallPackage(pkg);ApkStore.Row old;Map<String,String> inventory;
             synchronized(apks.authority){
                 apks.catalog.requireSpace(space);old=apks.row(space,pkg);
                 requireGeneration(old,expected);inventory=inventory(space);

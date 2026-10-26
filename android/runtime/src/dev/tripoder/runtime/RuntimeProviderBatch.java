@@ -35,7 +35,10 @@ final class RuntimeProviderBatch {
     }
     static String kind(ContentProviderOperation op){if(op.isInsert())return "insert";if(op.isUpdate())return "update";if(op.isDelete())return "delete";if(op.isAssertQuery())return "query";throw new UnsupportedOperationException("PROVIDER_BATCH_OPERATION_NOT_IMPLEMENTED");}
     static void summary(Bundle request,Bundle payload,String authority){
-        ArrayList<ContentProviderOperation> operations=decode(payload.getByteArray("batch"),authority);String[] uris=new String[operations.size()],kinds=new String[operations.size()];
+        summary(request,decode(payload.getByteArray("batch"),authority));
+    }
+    static void summary(Bundle request,ArrayList<ContentProviderOperation> operations){
+        String[] uris=new String[operations.size()],kinds=new String[operations.size()];
         for(int i=0;i<operations.size();i++){uris[i]=operations.get(i).getUri().toString();kinds[i]=kind(operations.get(i));}
         Bundle summary=new Bundle();summary.putStringArray("uris",uris);summary.putStringArray("kinds",kinds);
         Parcel p=Parcel.obtain();try{p.writeBundle(summary);if(p.dataSize()>32768)throw new IllegalArgumentException("PROVIDER_BATCH_ROUTES_TOO_LARGE");}finally{p.recycle();}request.putBundle("batchRoutes",summary);

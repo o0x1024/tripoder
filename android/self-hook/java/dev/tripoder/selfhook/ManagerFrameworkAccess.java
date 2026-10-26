@@ -19,7 +19,7 @@ public final class ManagerFrameworkAccess {
     private static boolean attempted;private static volatile ManagerFrameworkAccess instance;
     private final Constructor<?> activity,connectivity,telephony,audio,battery,power,history,wifi,stats,notification,shortcut;
     private final Field service,callbackFlags,wifiService,groupId,groupChannels;
-    private final Method[] wifiFeatures=new Method[6],notificationProperties=new Method[5];
+    private final Method[] wifiFeatures=new Method[6],notificationProperties=new Method[6];
     private final Method channelId,channelGroup,preDispatchKey;
     private final Method[] integers=new Method[9];private final Method packageName,processName,forceStopped,timestamp;
     private final int launchKey,onCreateKey;
@@ -40,7 +40,7 @@ public final class ManagerFrameworkAccess {
         groupId=FixedFrameworkMembers.field(22,40,"mId","Ljava/lang/String;",false);groupChannels=FixedFrameworkMembers.field(23,40,"mChannels","Ljava/util/List;",false);
         String[] wifiNames={"isChannelConstrainedDiscoverySupported","isGroupClientRemovalSupported","isGroupOwnerIPv6LinkLocalAddressProvided","isPccModeSupported","isSetVendorElementsSupported","isWiFiDirectR2Supported"};
         for(int i=0;i<wifiNames.length;i++)wifiFeatures[i]=FixedFrameworkMembers.method(46,wifiNames[i],"()Z",false);
-        String[] notificationNames={"areNotificationsEnabled","areNotificationsPaused","getImportance","getCurrentInterruptionFilter","shouldHideSilentStatusBarIcons"};
+        String[] notificationNames={"areNotificationsEnabled","areNotificationsPaused","getImportance","getCurrentInterruptionFilter","shouldHideSilentStatusBarIcons","isNotificationPolicyAccessGranted"};
         for(int i=0;i<notificationNames.length;i++)notificationProperties[i]=FixedFrameworkMembers.method(38,notificationNames[i],i==2||i==3?"()I":"()Z",false);
         channelId=FixedFrameworkMembers.method(39,"setId","(Ljava/lang/String;)V",false);channelGroup=FixedFrameworkMembers.method(39,"setGroup","(Ljava/lang/String;)V",false);
         history=FixedFrameworkMembers.constructor(23,"(J)V");
@@ -68,7 +68,7 @@ public final class ManagerFrameworkAccess {
     public static android.app.NotificationManager notification(Context host){return (android.app.NotificationManager)FixedFrameworkMembers.create(require().notification,Objects.requireNonNull(host),java.time.InstantSource.system());}
     public static android.content.pm.ShortcutManager shortcut(Context context){return (android.content.pm.ShortcutManager)FixedFrameworkMembers.create(require().shortcut,Objects.requireNonNull(context),null);}
     public static boolean wifiFeature(android.net.wifi.p2p.WifiP2pManager physical,int index){if(index<0||index>=6)throw new IllegalArgumentException("WIFI_FEATURE_INDEX");return (Boolean)FixedFrameworkMembers.call(require().wifiFeatures[index],Objects.requireNonNull(physical));}
-    public static Object notificationProperty(android.app.NotificationManager physical,int index){if(index<0||index>=5)throw new IllegalArgumentException("NOTIFICATION_PROPERTY_INDEX");return FixedFrameworkMembers.call(require().notificationProperties[index],Objects.requireNonNull(physical));}
+    public static Object notificationProperty(android.app.NotificationManager physical,int index){if(index<0||index>=6)throw new IllegalArgumentException("NOTIFICATION_PROPERTY_INDEX");return FixedFrameworkMembers.call(require().notificationProperties[index],Objects.requireNonNull(physical));}
     public static void channelIdentity(android.app.NotificationChannel value,String id,String group){ManagerFrameworkAccess v=require();Objects.requireNonNull(value);FixedFrameworkMembers.call(v.channelId,value,Objects.requireNonNull(id));FixedFrameworkMembers.call(v.channelGroup,value,group);}
     public static void groupIdentity(android.app.NotificationChannelGroup value,String id,java.util.List<android.app.NotificationChannel> channels){ManagerFrameworkAccess v=require();FixedFrameworkMembers.set(v.groupId,Objects.requireNonNull(value),Objects.requireNonNull(id));FixedFrameworkMembers.set(v.groupChannels,value,Objects.requireNonNull(channels));}
     public static int callbackFlags(ConnectivityManager.NetworkCallback callback){return (Integer)FixedFrameworkMembers.get(require().callbackFlags,Objects.requireNonNull(callback));}

@@ -16,14 +16,20 @@ public final class NativeHook {
     public static final class Invocation {
         private final long token;private final long[] arguments;
         private final Thread owner=Thread.currentThread();private final int incoming;
-        private boolean called,closed;
+        private boolean called,closed,completed;
+        private long[] calledArguments;
         private Invocation(long token,long[] arguments,int incoming){this.token=token;this.arguments=arguments;this.incoming=incoming;}
         public long[] arguments(){return arguments.clone();}
         public int incomingErrno(){return incoming;}
         public Result original(long[] replacement,int errorNumber){
             if(owner!=Thread.currentThread()||called||closed)throw new IllegalStateException("NATIVE_ORIGINAL_NOT_OWNED");
-            called=true;Result value=original0(token,replacement,errorNumber);
-            if(value==null)throw new IllegalStateException("NATIVE_ORIGINAL_REJECTED");return value;
+            called=true;calledArguments=replacement.clone();Result value=original0(token,calledArguments,errorNumber);
+            if(value==null)throw new IllegalStateException("NATIVE_ORIGINAL_REJECTED");completed=true;return value;
+        }
+        public byte[] snapshotArgument(int index,int length){
+            if(owner!=Thread.currentThread()||closed||!completed)throw new IllegalStateException("NATIVE_BUFFER_AFTER_ORIGINAL_REQUIRED");
+            if(index<0||index>=calledArguments.length||length<1||length>1024)throw new IllegalArgumentException("NATIVE_BUFFER_BOUNDS");
+            return snapshot0(calledArguments[index],length);
         }
     }
     private static final class Context {
@@ -84,4 +90,5 @@ public final class NativeHook {
     private static native Result original0(long token,long[] arguments,int incomingErrno);
     private static native long[] contract0();
     private static native long[] resources0();
+    private static native byte[] snapshot0(long address,int length);
 }

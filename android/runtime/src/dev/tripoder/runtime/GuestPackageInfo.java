@@ -13,6 +13,9 @@ final class GuestPackageInfo {
         if((flags&~0xFFFFFFFFL)!=0)throw new UnsupportedOperationException("PACKAGE_INFO_FLAGS_UNSUPPORTED:0x"+Long.toHexString(flags));
         // Wall-clock adjustment may make an update timestamp earlier than first install.
         if(engine.firstInstallTime<=0||engine.lastUpdateTime<=0)throw new UnsupportedOperationException("INSTALL_HISTORY_UNAVAILABLE");
+        // Component enabled states cost an authenticated round trip to the authority, and only component-bearing flags read them.
+        final long componentFlags=PackageManager.GET_ACTIVITIES|PackageManager.GET_RECEIVERS|PackageManager.GET_SERVICES|PackageManager.GET_PROVIDERS;
+        android.os.Bundle states=(flags&componentFlags)!=0?RuntimeComponentState.snapshot(engine):null;
         PackageInfo result=new PackageInfo();
         result.packageName=engine.packageName;
         result.splitNames=engine.packageArchive.splitNames!=null?engine.packageArchive.splitNames.clone():null;
@@ -26,11 +29,11 @@ final class GuestPackageInfo {
         result.firstInstallTime=engine.firstInstallTime;
         result.lastUpdateTime=engine.lastUpdateTime;
         result.applicationInfo=GuestPackageManager.copyApplicationInfo(engine.info,(flags&PackageManager.GET_META_DATA)!=0);
-        if((flags&PackageManager.GET_ACTIVITIES)!=0)result.activities=components(engine.packageArchive.activities,flags,engine,ActivityInfo[]::new,ActivityInfo::new);
-        if((flags&PackageManager.GET_RECEIVERS)!=0)result.receivers=components(engine.packageArchive.receivers,flags,engine,ActivityInfo[]::new,ActivityInfo::new);
-        if((flags&PackageManager.GET_SERVICES)!=0)result.services=components(engine.packageArchive.services,flags,engine,ServiceInfo[]::new,ServiceInfo::new);
+        if((flags&PackageManager.GET_ACTIVITIES)!=0)result.activities=components(engine.packageArchive.activities,flags,engine,states,ActivityInfo[]::new,ActivityInfo::new);
+        if((flags&PackageManager.GET_RECEIVERS)!=0)result.receivers=components(engine.packageArchive.receivers,flags,engine,states,ActivityInfo[]::new,ActivityInfo::new);
+        if((flags&PackageManager.GET_SERVICES)!=0)result.services=components(engine.packageArchive.services,flags,engine,states,ServiceInfo[]::new,ServiceInfo::new);
         if((flags&PackageManager.GET_PROVIDERS)!=0){
-            result.providers=components(engine.packageArchive.providers,flags,engine,ProviderInfo[]::new,ProviderInfo::new);
+            result.providers=components(engine.packageArchive.providers,flags,engine,states,ProviderInfo[]::new,ProviderInfo::new);
             if(result.providers!=null&&(flags&PackageManager.GET_URI_PERMISSION_PATTERNS)==0)for(ProviderInfo provider:result.providers)provider.uriPermissionPatterns=null;
         }
         if((flags&PackageManager.GET_CONFIGURATIONS)!=0){
@@ -50,13 +53,13 @@ final class GuestPackageInfo {
         }
         return result;
     }
-    private static <T extends ComponentInfo>T[] components(T[] input,long flags,RuntimeEngine engine,IntFunction<T[]> array,java.util.function.Function<T,T> copier){
+    private static <T extends ComponentInfo>T[] components(T[] input,long flags,RuntimeEngine engine,android.os.Bundle states,IntFunction<T[]> array,java.util.function.Function<T,T> copier){
         if(input==null)return null;List<T> output=new ArrayList<>();long direct=flags&(PackageManager.MATCH_DIRECT_BOOT_AWARE|PackageManager.MATCH_DIRECT_BOOT_UNAWARE);
         if(direct==0&&(flags&PackageManager.MATCH_DIRECT_BOOT_AUTO)!=0)direct=PackageManager.MATCH_DIRECT_BOOT_AWARE|(engine.host.getSystemService(android.os.UserManager.class).isUserUnlocked()?PackageManager.MATCH_DIRECT_BOOT_UNAWARE:0);
         for(T original:input){
-            if((!original.enabled||!engine.info.enabled)&&(flags&PackageManager.MATCH_DISABLED_COMPONENTS)==0)continue;
+            if((!RuntimeComponentState.enabled(states,original)||!engine.info.enabled)&&(flags&PackageManager.MATCH_DISABLED_COMPONENTS)==0)continue;
             if(direct!=0&&(direct&(original.directBootAware?PackageManager.MATCH_DIRECT_BOOT_AWARE:PackageManager.MATCH_DIRECT_BOOT_UNAWARE))==0)continue;
-            T copy=copier.apply(original);
+            T copy=copier.apply(original);copy.enabled=RuntimeComponentState.enabled(states,original.name,original.enabled);
             copy.applicationInfo=GuestPackageManager.copyApplicationInfo(engine.info,(flags&PackageManager.GET_META_DATA)!=0);
             if((flags&PackageManager.GET_META_DATA)==0)copy.metaData=null;
             else if(original.metaData!=null)copy.metaData=original.metaData.deepCopy();

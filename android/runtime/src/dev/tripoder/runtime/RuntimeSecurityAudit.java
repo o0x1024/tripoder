@@ -32,96 +32,15 @@ final class RuntimeSecurityAudit {
         "private_key","session","sessionid","cookie","jwt","authorization","auth","phone","mobile","idcard","cert"
     );
 
-    static Map<String,Object> inspectManifest() {
-        RuntimeEngine engine = RuntimeEngine.current;
-        if (engine == null || engine.packageArchive == null || engine.info == null)
-            throw new IllegalStateException("AUDIT_ENGINE_MISSING");
-        PackageInfo pkg = engine.packageArchive;
-        ApplicationInfo app = engine.info;
-        boolean debuggable = (app.flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
-        boolean allowBackup = (app.flags & ApplicationInfo.FLAG_ALLOW_BACKUP) != 0;
-        boolean usesCleartext = (app.flags & ApplicationInfo.FLAG_USES_CLEARTEXT_TRAFFIC) != 0;
-        List<String> permissions = new ArrayList<>(engine.requestedPermissions);
-        Collections.sort(permissions);
-        if (permissions.size() > 128) permissions = List.copyOf(permissions.subList(0, 128));
-
-        List<Map<String,Object>> activities = new ArrayList<>();
-        List<Map<String,Object>> services = new ArrayList<>();
-        List<Map<String,Object>> receivers = new ArrayList<>();
-        List<Map<String,Object>> providers = new ArrayList<>();
-
-        for (ApkManifest.Component comp : engine.manifestDeclarations) {
-            Map<String,Object> item = new LinkedHashMap<>();
-            item.put("name", comp.name);
-            item.put("process", comp.process);
-            item.put("exported", Boolean.TRUE.equals(comp.exported));
-            item.put("enabled", !Boolean.FALSE.equals(comp.enabled));
-            item.put("permission", comp.permission == null ? "" : comp.permission);
-            if ("provider".equals(comp.type)) {
-                item.put("authorities", comp.authorities == null ? "" : comp.authorities);
-                item.put("readPermission", comp.declaration.android("readPermission", ""));
-                item.put("writePermission", comp.declaration.android("writePermission", ""));
-                item.put("grantUriPermissions", "true".equals(comp.declaration.android("grantUriPermissions", "false")));
-            }
-            List<ArtifactSet.FilterSpec> specs = engine.filterSpecs.getOrDefault(comp.type + "/" + comp.name, List.of());
-            List<Map<String,Object>> filters = new ArrayList<>();
-            for (int i = 0; i < Math.min(16, specs.size()); i++) {
-                ArtifactSet.FilterSpec s = specs.get(i);
-                List<String> schemes = new ArrayList<>();
-                for (String[] d : s.data) {
-                    if (d != null && d.length > 0 && d[0] != null && !d[0].isEmpty() && !schemes.contains(d[0]) && schemes.size() < 16)
-                        schemes.add(d[0]);
-                }
-                Map<String,Object> f = new LinkedHashMap<>();
-                f.put("actions", List.copyOf(s.actions.subList(0, Math.min(16, s.actions.size()))));
-                f.put("categories", List.copyOf(s.categories.subList(0, Math.min(16, s.categories.size()))));
-                f.put("schemes", List.copyOf(schemes));
-                filters.add(Collections.unmodifiableMap(f));
-            }
-            item.put("intentFilters", List.copyOf(filters));
-            switch (comp.type) {
-                case "activity":
-                case "activity-alias":
-                    if (activities.size() < 128) activities.add(Collections.unmodifiableMap(item));
-                    break;
-                case "service":
-                    if (services.size() < 128) services.add(Collections.unmodifiableMap(item));
-                    break;
-                case "receiver":
-                    if (receivers.size() < 128) receivers.add(Collections.unmodifiableMap(item));
-                    break;
-                case "provider":
-                    if (providers.size() < 128) providers.add(Collections.unmodifiableMap(item));
-                    break;
-                default:
-                    break;
-            }
-        }
-        Map<String,Object> out = new LinkedHashMap<>();
-        out.put("packageName", engine.packageName);
-        out.put("versionCode", (double)pkg.getLongVersionCode());
-        out.put("targetSdkVersion", (double)app.targetSdkVersion);
-        out.put("minSdkVersion", (double)app.minSdkVersion);
-        out.put("debuggable", debuggable);
-        out.put("allowBackup", allowBackup);
-        out.put("usesCleartextTraffic", usesCleartext);
-        out.put("requestedPermissions", List.copyOf(permissions));
-        out.put("activities", List.copyOf(activities));
-        out.put("services", List.copyOf(services));
-        out.put("receivers", List.copyOf(receivers));
-        out.put("providers", List.copyOf(providers));
-        return Collections.unmodifiableMap(out);
-    }
-
-    static Map<String,Object> inspectStorage(String category, int limit) throws Exception {
-        RuntimeEngine engine = RuntimeEngine.current;
-        if (engine == null || engine.data == null) throw new IllegalStateException("AUDIT_ENGINE_MISSING");
+    static Map<String,Object> inspectStorage(File directory,String category, int limit) throws Exception {
         if (!Set.of("all", "shared_prefs", "databases", "files").contains(category))
             throw new IllegalArgumentException("AUDIT_STORAGE_CATEGORY:" + category);
         if (limit < 1 || limit > 100) throw new IllegalArgumentException("AUDIT_STORAGE_LIMIT");
-        File root = engine.data.getCanonicalFile();
+        if(java.nio.file.Files.isSymbolicLink(directory.toPath()))throw new SecurityException("AUDIT_STORAGE_SYMLINK");
+        File root = directory.getCanonicalFile();
         Map<String,Object> out = new LinkedHashMap<>();
         out.put("category", category);
+        out.put("completeness","BOUNDED_LIVE_VIEW");out.put("limitPerCategory",limit);out.put("fileDepthLimit",4);
         if ("all".equals(category) || "shared_prefs".equals(category))
             out.put("sharedPreferences", inspectSharedPrefs(root, new File(root, "shared_prefs"), limit));
         if ("all".equals(category) || "databases".equals(category))
@@ -132,14 +51,17 @@ final class RuntimeSecurityAudit {
     }
 
     private static List<Map<String,Object>> inspectSharedPrefs(File sandboxRoot, File prefsDir, int limit) throws Exception {
-        if (!prefsDir.isDirectory()) return List.of();
+        if(java.nio.file.Files.isSymbolicLink(prefsDir.toPath()))throw new SecurityException("AUDIT_STORAGE_SYMLINK");
+        if (!prefsDir.exists()) return List.of();
+        if(!prefsDir.isDirectory())throw new java.io.IOException("AUDIT_STORAGE_NOT_DIRECTORY");
         File canonicalDir = prefsDir.getCanonicalFile();
-        if (!canonicalDir.getPath().startsWith(sandboxRoot.getPath() + File.separator)) return List.of();
+        if (!canonicalDir.getPath().startsWith(sandboxRoot.getPath() + File.separator)) throw new SecurityException("AUDIT_STORAGE_OUTSIDE_INSTALL");
         File[] files = canonicalDir.listFiles((d, name) -> name.endsWith(".xml"));
-        if (files == null) return List.of();
+        if (files == null) throw new java.io.IOException("AUDIT_STORAGE_UNREADABLE");
         Arrays.sort(files, Comparator.comparing(File::getName));
         List<Map<String,Object>> result = new ArrayList<>();
         for (int i = 0; i < Math.min(limit, files.length); i++) {
+            if(java.nio.file.Files.isSymbolicLink(files[i].toPath()))throw new SecurityException("AUDIT_STORAGE_SYMLINK");
             File file = files[i].getCanonicalFile();
             if (!file.getPath().startsWith(canonicalDir.getPath() + File.separator) || !file.isFile() || file.length() > 512 * 1024)
                 continue;
@@ -190,13 +112,16 @@ final class RuntimeSecurityAudit {
     }
 
     private static List<Map<String,Object>> inspectDatabases(File sandboxRoot, File dbDir, int limit) throws Exception {
-        if (!dbDir.isDirectory()) return List.of();
+        if(java.nio.file.Files.isSymbolicLink(dbDir.toPath()))throw new SecurityException("AUDIT_STORAGE_SYMLINK");
+        if (!dbDir.exists()) return List.of();
+        if(!dbDir.isDirectory())throw new java.io.IOException("AUDIT_STORAGE_NOT_DIRECTORY");
         File canonicalDir = dbDir.getCanonicalFile();
-        if (!canonicalDir.getPath().startsWith(sandboxRoot.getPath() + File.separator)) return List.of();
+        if (!canonicalDir.getPath().startsWith(sandboxRoot.getPath() + File.separator)) throw new SecurityException("AUDIT_STORAGE_OUTSIDE_INSTALL");
         File[] files = canonicalDir.listFiles();
-        if (files == null) return List.of();
+        if (files == null) throw new java.io.IOException("AUDIT_STORAGE_UNREADABLE");
         Arrays.sort(files, Comparator.comparing(File::getName));
         List<Map<String,Object>> result = new ArrayList<>();
+        for(File candidate:files)if(java.nio.file.Files.isSymbolicLink(candidate.toPath()))throw new SecurityException("AUDIT_STORAGE_SYMLINK");
         for (File candidate : files) {
             if (result.size() >= limit) break;
             String name = candidate.getName();
@@ -254,6 +179,7 @@ final class RuntimeSecurityAudit {
         ArrayDeque<Object[]> queue = new ArrayDeque<>();
         for (String sub : List.of("files", "cache")) {
             File dir = new File(sandboxRoot, sub);
+            if(java.nio.file.Files.isSymbolicLink(dir.toPath()))throw new SecurityException("AUDIT_STORAGE_SYMLINK");
             if (dir.isDirectory()) queue.add(new Object[]{dir.getCanonicalFile(), sub, 0});
         }
         while (!queue.isEmpty() && out.size() < limit) {
@@ -263,12 +189,13 @@ final class RuntimeSecurityAudit {
             int depth = (Integer)cur[2];
             if (!dir.getPath().startsWith(sandboxRoot.getPath() + File.separator) || depth > 4) continue;
             File[] children = dir.listFiles();
-            if (children == null) continue;
+            if (children == null) throw new java.io.IOException("AUDIT_STORAGE_UNREADABLE");
             Arrays.sort(children, Comparator.comparing(File::getName));
             for (File child : children) {
                 if (out.size() >= limit) break;
+                if(java.nio.file.Files.isSymbolicLink(child.toPath()))throw new SecurityException("AUDIT_STORAGE_SYMLINK");
                 File canonical = child.getCanonicalFile();
-                if (!canonical.getPath().startsWith(sandboxRoot.getPath() + File.separator)) continue;
+                if (!canonical.getPath().startsWith(sandboxRoot.getPath() + File.separator)) throw new SecurityException("AUDIT_STORAGE_OUTSIDE_INSTALL");
                 String rel = relPrefix + "/" + child.getName();
                 if (canonical.isDirectory()) {
                     queue.addLast(new Object[]{canonical, rel, depth + 1});
@@ -326,40 +253,11 @@ final class RuntimeSecurityAudit {
 
     @SuppressWarnings("unchecked")
     static Map<String,Object> sendHttpRequest(Map<String,Object> spec) throws Exception {
-        if (spec == null) throw new IllegalArgumentException("HTTP_REQUEST_SPEC_REQUIRED");
-        Object rawMethod = spec.get("method"), rawUrl = spec.get("url");
-        if (!(rawMethod instanceof String method) || !Set.of("GET","POST","PUT","DELETE","PATCH","HEAD","OPTIONS").contains(method))
-            throw new IllegalArgumentException("HTTP_METHOD_UNSUPPORTED");
-        if (!(rawUrl instanceof String urlText) || urlText.isEmpty() || urlText.length() > 2048)
-            throw new IllegalArgumentException("HTTP_URL_INVALID");
-        URI uri = URI.create(urlText);
-        String scheme = uri.getScheme();
-        if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme))
-            throw new IllegalArgumentException("HTTP_SCHEME_UNSUPPORTED");
-        int timeoutMs = 5000;
-        if (spec.containsKey("timeoutMs") && spec.get("timeoutMs") != null) {
-            Object rawTimeout = spec.get("timeoutMs");
-            if (!(rawTimeout instanceof Number) || ((Number)rawTimeout).intValue() < 100 || ((Number)rawTimeout).intValue() > 10000)
-                throw new IllegalArgumentException("HTTP_TIMEOUT_RANGE");
-            timeoutMs = ((Number)rawTimeout).intValue();
-        }
-        Map<String,String> reqHeaders = new LinkedHashMap<>();
-        if (spec.containsKey("headers") && spec.get("headers") != null) {
-            if (!(spec.get("headers") instanceof Map<?,?> rawHeaders) || rawHeaders.size() > 32)
-                throw new IllegalArgumentException("HTTP_HEADERS_INVALID");
-            for (Map.Entry<?,?> e : rawHeaders.entrySet()) {
-                if (!(e.getKey() instanceof String k) || !(e.getValue() instanceof String v) || k.isEmpty() || k.length() > 128 || v.length() > 2048)
-                    throw new IllegalArgumentException("HTTP_HEADER_ENTRY_INVALID");
-                reqHeaders.put(k, v);
-            }
-        }
-        String body = null;
-        if (spec.containsKey("body") && spec.get("body") != null) {
-            if (!(spec.get("body") instanceof String s) || s.length() > 16384)
-                throw new IllegalArgumentException("HTTP_BODY_INVALID");
-            body = s;
-        }
+        var checked=dev.tripoder.runtime.script.HttpRequestPreflight.validate(spec);
+        String method=checked.method(),urlText=checked.uri().toString(),body=checked.body();URI uri=checked.uri();int timeoutMs=checked.timeoutMs();Map<String,String> reqHeaders=checked.headers();
         long startNs = System.nanoTime();
+        // Calling a handler/proxy may already execute code or dispatch. Only the pure
+        // HttpRequestPreflight stage certifies rejection; later failures stay UNKNOWN.
         HttpURLConnection conn = (HttpURLConnection)uri.toURL().openConnection();
         conn.setInstanceFollowRedirects(false);
         conn.setConnectTimeout(timeoutMs);
@@ -430,8 +328,8 @@ final class RuntimeSecurityAudit {
         if (matched == null) throw new IllegalArgumentException("INVOKE_METHOD_NOT_FOUND");
         Class<?>[] paramTypes = matched.getParameterTypes();
         Class<?> returnType = matched.getReturnType();
-        for (Class<?> pt : paramTypes) JavaHookValues.requireType(pt, false);
-        JavaHookValues.requireType(returnType, true);
+        for (Class<?> pt : paramTypes) JavaHookValues.requireInvocationType(pt, false);
+        JavaHookValues.requireInvocationType(returnType, true);
 
         List<Object> normalizedArgs = new ArrayList<>(argList.size());
         for (int i = 0; i < argList.size(); i++) {

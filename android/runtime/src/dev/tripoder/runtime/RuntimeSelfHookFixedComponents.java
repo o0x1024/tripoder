@@ -17,7 +17,7 @@ final class RuntimeSelfHookFixedComponents {
         for(Method method:FixedComponentHooks.methods(FixedComponentHooks.Group.SERVICES)){
             RuntimeSelfHookComponents.Callback callback;
             switch(method.getName()){
-                case "onCreate":case "onDestroy":case "onRebind":case "onUnbind":case "onStartCommand":
+                case "onCreate":case "onDestroy":case "onBind":case "onRebind":case "onUnbind":case "onStartCommand":
                     callback=(receiver,args,original)->RuntimeSelfHookComponents.serviceLifecycle(method,receiver,args,original);break;
                 case "attach":callback=(receiver,args,original)->RuntimeSelfHookPlatformCallbacks.serviceAttach((Service)receiver,args,original);break;
                 case "stopSelf":callback=method.getParameterCount()==0
@@ -73,6 +73,7 @@ final class RuntimeSelfHookFixedComponents {
         for(Method method:FixedComponentHooks.methods(FixedComponentHooks.Group.RECEIVERS)){
             RuntimeSelfHookComponents.Callback callback;
             switch(method.getName()){
+                case "onReceive":callback=(receiver,args,original)->RuntimeSelfHookComponents.receiverLifecycle(method,receiver,args,original);break;
                 case "goAsync":callback=(receiver,args,original)->RuntimeSelfHookComponents.goAsync((BroadcastReceiver)receiver,original);break;
                 case "finish":callback=(receiver,args,original)->RuntimeSelfHookComponents.finishPending(receiver,original);break;
                 case "peekService":callback=(receiver,args,original)->RuntimeSelfHookPlatformCallbacks.peekService((BroadcastReceiver)receiver,args,original);break;

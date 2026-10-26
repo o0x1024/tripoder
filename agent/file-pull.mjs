@@ -49,13 +49,13 @@ export async function pullFiles(transport,args,{signal,onProgress=()=>{}}={}){
   try{
     const prior=await exists(statePath);if(prior?.isSymbolicLink())throw Error('FILE_PULL_UNSAFE_STATE');
     state=prior?JSON.parse(await readFile(statePath,'utf8')):{identity,exportId:args.operationId,state:'PREPARING'};
-    if(state.identity!==identity)throw Error('FILE_PULL_RESUME_IDENTITY_MISMATCH');
+    if(state.identity!==identity){state=undefined;throw Error('FILE_PULL_RESUME_IDENTITY_MISMATCH');}
     if(prior&&await exists(destination)&&await exists(sidecar)&&await exists(join(stage,'manifest.json'))){
       if(!Buffer.from(await readFile(sidecar)).equals(await readFile(join(stage,'manifest.json'))))throw Error('FILE_PULL_COMMITTED_MANIFEST_CHANGED');
-      const manifest=JSON.parse(await readFile(sidecar,'utf8'));validateManifest(manifest.entries);
-      if(manifest.exportId!==state.exportId)throw Error('FILE_PULL_COMMITTED_MANIFEST_CHANGED');
+      const manifest=JSON.parse(await readFile(sidecar,'utf8'));const total=validateManifest(manifest.entries);
+      if(manifest.exportId!==state.exportId||manifest.totalBytes!==total)throw Error('FILE_PULL_COMMITTED_MANIFEST_CHANGED');
       for(const e of manifest.entries){const path=manifest.entries[0].type==='file'?destination:join(destination,e.path);if(e.type==='file'){if(await hashFile(path)!==e.sha256)throw Error('FILE_PULL_COMMITTED_FILE_CHANGED');}else{const stat=await lstat(path);if(!stat.isDirectory()||stat.isSymbolicLink())throw Error('FILE_PULL_COMMITTED_DIRECTORY_CHANGED');}}
-      state={...state,state:'COMPLETE',destination,manifestPath:sidecar,totalBytes:manifest.totalBytes,files:manifest.entries.filter(e=>e.type==='file').length};await atomicJson(statePath,state);return state;
+      state={...state,state:'COMPLETE',completionScope:'DOWNLOAD_ONLY',acceptance:{capture:args.source.kind==='artifact'?'CAPTURED':'NOT_APPLICABLE',download:'VERIFIED',format:'NOT_CHECKED',usability:'NOT_CHECKED',taskComplete:false},destination,manifestPath:sidecar,manifestSha256:sha(JSON.stringify(manifest)),bytes:total,totalBytes:total,files:manifest.entries.filter(e=>e.type==='file').length,...(manifest.entries[0].type==='file'?{sha256:manifest.entries[0].sha256}:{})};delete state.error;await atomicJson(statePath,state);return state;
     }
     if(prior&&!await exists(destination)&&await exists(sidecar)&&await exists(join(stage,'manifest.json'))){if(!Buffer.from(await readFile(sidecar)).equals(await readFile(join(stage,'manifest.json'))))throw Error('FILE_PULL_DESTINATION_EXISTS');await unlink(sidecar);}
     if(await exists(destination)||await exists(sidecar))throw Error('FILE_PULL_DESTINATION_EXISTS');
@@ -91,7 +91,7 @@ export async function pullFiles(transport,args,{signal,onProgress=()=>{}}={}){
         // mkdir acts as an exclusive reservation; directory rename cannot replace a populated destination.
         await mkdir(destination,{mode:0o700});await rename(content,destination);
       }}catch(error){await unlink(sidecar);throw error;}
-    state={...state,state:'COMPLETE',destination,manifestPath:sidecar,totalBytes:total,files:entries.filter(e=>e.type==='file').length};await atomicJson(statePath,state);onProgress(state);return state;
+    state={...state,state:'COMPLETE',completionScope:'DOWNLOAD_ONLY',acceptance:{capture:args.source.kind==='artifact'?'CAPTURED':'NOT_APPLICABLE',download:'VERIFIED',format:'NOT_CHECKED',usability:'NOT_CHECKED',taskComplete:false},destination,manifestPath:sidecar,manifestSha256:sha(JSON.stringify(manifest)),bytes:total,totalBytes:total,files:entries.filter(e=>e.type==='file').length,...(entries[0].type==='file'?{sha256:entries[0].sha256}:{})};delete state.error;await atomicJson(statePath,state);onProgress(state);return state;
   }catch(error){if(state){state.state=signal?.aborted?'PAUSED':'FAILED';state.error=error.message;await atomicJson(statePath,state);}throw error;}
   finally{await lock.close();await unlink(join(stage,'lock'));}
 }
@@ -99,10 +99,11 @@ export async function pullFiles(transport,args,{signal,onProgress=()=>{}}={}){
 export class PullManager {
   constructor(transport){this.transport=transport;this.jobs=new Map();}
   start(args){const identity=sha(JSON.stringify(canonical(args))),prior=this.jobs.get(args.operationId);if(prior&&prior.identity!==identity)throw Error('FILE_PULL_OPERATION_CONTENT_MISMATCH');if(prior&&!['FAILED','PAUSED'].includes(prior.result.state))return prior.result;
+    if([...this.jobs.values()].filter(j=>!['COMPLETE','FAILED','PAUSED'].includes(j.result.state)).length>=2)throw Error('FILE_PULL_LOCAL_BUSY');
     const controller=new AbortController(),job={controller,identity,result:{operationId:args.operationId,exportId:args.operationId,state:'STARTED'}};this.jobs.set(args.operationId,job);
     job.promise=pullFiles(this.transport,args,{signal:controller.signal,onProgress:r=>{job.result={...job.result,...r};}}).then(r=>{job.result={...job.result,...r};},e=>{job.result={...job.result,state:controller.signal.aborted?'PAUSED':'FAILED',error:e.message};});return job.result;
   }
-  status(id){const job=this.jobs.get(id);if(!job)throw Error('FILE_PULL_JOB_NOT_FOUND');return job.result;}
-  cancel(id){const job=this.jobs.get(id);if(!job)throw Error('FILE_PULL_JOB_NOT_FOUND');job.controller.abort();return {...job.result,cancelRequested:true};}
+  status(id){const job=this.jobs.get(id);if(!job)throw Error('FILE_PULL_JOB_NOT_FOUND: use file_pull(action=start) with the original operationId, source, destination and followSymlinks to resume after MCP server restart');return job.result;}
+  cancel(id){const job=this.jobs.get(id);if(!job)throw Error('FILE_PULL_JOB_NOT_FOUND');if(['COMPLETE','FAILED','PAUSED'].includes(job.result.state))return job.result;job.controller.abort();return {...job.result,cancelRequested:true};}
   async close(){for(const job of this.jobs.values())job.controller.abort();await Promise.all([...this.jobs.values()].map(j=>j.promise));}
 }

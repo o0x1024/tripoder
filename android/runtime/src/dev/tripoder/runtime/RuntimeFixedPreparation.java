@@ -12,10 +12,13 @@ final class RuntimeFixedPreparation {
     private static Map<Executable,ManagedHook.Handle> reservations=Map.of();
     static synchronized void process()throws Exception{
         if(!processPrepared){
-            framework();List<dev.tripoder.selfhook.dex.AbiSignature> signatures=new ArrayList<>();
-            for(Executable target:targets().keySet())signatures.add(new dev.tripoder.selfhook.dex.AbiSignature(target));
-            dev.tripoder.selfhook.dex.HelperDex.prepareTemplates(signatures);
-            ManagedHook.initializeProcessForBootstrap(RuntimeEngine.current!=null&&RuntimeEngine.current.mode==RuntimeMode.THIN);processPrepared=true;
+            long t0=android.os.SystemClock.elapsedRealtime();
+            framework();long t1=android.os.SystemClock.elapsedRealtime();List<dev.tripoder.selfhook.dex.AbiSignature> signatures=new ArrayList<>();
+            var all=targets().keySet();long t2=android.os.SystemClock.elapsedRealtime();
+            for(Executable target:all)signatures.add(new dev.tripoder.selfhook.dex.AbiSignature(target));long t3=android.os.SystemClock.elapsedRealtime();
+            dev.tripoder.selfhook.dex.HelperDex.prepareTemplates(signatures);long t4=android.os.SystemClock.elapsedRealtime();
+            ManagedHook.initializeProcessForBootstrap(RuntimeEngine.current!=null&&RuntimeEngine.current.mode==RuntimeMode.THIN);processPrepared=true;long t5=android.os.SystemClock.elapsedRealtime();
+            android.util.Log.i("TripoderBoot","PROCESS_POLICY_PHASES framework="+(t1-t0)+"ms targets="+(t2-t1)+"ms signatures="+(t3-t2)+"ms templates="+(t4-t3)+"ms initialize="+(t5-t4)+"ms count="+signatures.size());
         }else ManagedHook.requireProcessInitialization();
     }
     static synchronized FrameworkAccess.Members framework()throws Exception{
@@ -36,13 +39,14 @@ final class RuntimeFixedPreparation {
     }
     private static Map<Executable,Executable[]> targets()throws Exception{
         Map<Executable,Executable[]> targets=new LinkedHashMap<>();
-        for(var family:RuntimeSelfHookManagerPolicy.Family.values())if(!RuntimeThinPolicy.active()||!RuntimeThinPolicy.platformManager(family))for(Method method:FixedManagerInventory.methods(family.ordinal()))targets.put(method,new Executable[0]);
+        for(var family:RuntimeSelfHookManagerPolicy.Family.values())if(!RuntimeThinPolicy.platformManager(family))for(Method method:FixedManagerInventory.methods(family.ordinal()))targets.put(method,new Executable[0]);
         for(var group:FixedComponentHooks.Group.values())for(Method method:FixedComponentHooks.methods(group))targets.put(method,new Executable[0]);
-        for(var group:FixedRuntimeHooks.Group.values())if(!RuntimeThinPolicy.active()||!RuntimeThinPolicy.platformHooks(group))for(Executable method:FixedRuntimeHooks.methods(group)){
+        for(var group:FixedRuntimeHooks.Group.values())if(!RuntimeThinPolicy.platformHooks(group))for(Executable method:FixedRuntimeHooks.methods(group)){
             if(!RuntimeThinPolicy.active()&&group==FixedRuntimeHooks.Group.PACKAGES&&RuntimeFixedPassthrough.packageMethod(method.getDeclaringClass().getName(),method.getName(),method.getParameterCount()))continue;
             if(group==FixedRuntimeHooks.Group.TRAFFIC&&RuntimeFixedPassthrough.trafficMethod(RuntimeSelfHookManagerPolicy.signature((Method)method)))continue;
             targets.put(method,new Executable[0]);
         }
+        for(Executable method:FixedRuntimeHooks.methods(FixedRuntimeHooks.Group.UI))if(RuntimeThinPolicy.autofillComponent(method))targets.put(method,new Executable[0]);
         for(Method method:JobFrameworkAccess.hooks())targets.put(method,new Executable[0]);
         for(Method method:PendingIntentFrameworkAccess.hooks())targets.put(method,new Executable[0]);
         targets.put((Method)members.methods[1],new Executable[0]);

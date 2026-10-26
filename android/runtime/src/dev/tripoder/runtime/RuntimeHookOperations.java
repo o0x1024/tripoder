@@ -11,6 +11,7 @@ public final class RuntimeHookOperations {
         RejectedCommandException(String message){super(message);}
         RejectedCommandException(Throwable cause){super(cause.getMessage(),cause);}
     }
+    public static final class QueryUnavailableException extends IllegalStateException {public QueryUnavailableException(Throwable cause){super(cause.getMessage(),cause);}}
     private static final ExecutorService calls=new ThreadPoolExecutor(4,4,0,TimeUnit.MILLISECONDS,new ArrayBlockingQueue<>(16),new ThreadPoolExecutor.AbortPolicy());
     public static Bundle execute(RuntimeBroker broker,String operation,String generation,String request,String caller)throws Exception{
         return execute(broker,operation,generation,request,caller,"");
@@ -18,7 +19,7 @@ public final class RuntimeHookOperations {
     public static Bundle execute(RuntimeBroker broker,String operation,String generation,String request,String caller,String scope)throws Exception{
         if(Thread.holdsLock(broker))throw new IllegalStateException("HOOK_CALL_INSIDE_BROKER_LOCK");
         if(request==null||request.length()>28000)throw new IllegalArgumentException("HOOK_REQUEST_SIZE");
-        JSONObject command=new JSONObject(request);
+        JSONObject command=new JSONObject(request);boolean query=dev.tripoder.runtime.script.HookCommands.readOnly(command.getString("command"));
         if(!generation.equals(command.getString("processGeneration")))throw new SecurityException("HOOK_PROCESS_STALE");
         RuntimeBroker.Slot slot;int pid;
         synchronized(broker){
@@ -44,6 +45,7 @@ public final class RuntimeHookOperations {
             synchronized(broker){
                 if(broker.contract.getSession(generation).state!=ExecutionContract.ProcessState.RUNNING)throw new IllegalStateException("HOOK_PROCESS_DIED_BEFORE_ACK");
                 if(!response.getBoolean("ok")){
+                    if(query){broker.contract.fail(operation,"HOOK_QUERY_UNAVAILABLE");throw new QueryUnavailableException(new IllegalStateException(response.getString("error")));}
                     if("REJECTED".equals(response.optString("outcome"))){broker.contract.fail(operation,"HOOK_COMMAND_REJECTED");throw new RejectedCommandException(response.getString("error"));}
                     broker.contract.markUnknown(operation,"HOOK_WORKER_OUTCOME_UNCONFIRMED");
                     throw new IllegalStateException(response.getString("error"));
@@ -52,7 +54,8 @@ public final class RuntimeHookOperations {
                 broker.contract.succeed(operation,durable.toString());return reply;
             }
         }catch(Exception error){
-            synchronized(broker){if(broker.contract.query(operation).state==ExecutionContract.OperationState.RUNNING){if(dispatched)broker.contract.markUnknown(operation,"HOOK_WORKER_OUTCOME_UNCONFIRMED");else {broker.contract.fail(operation,"HOOK_DISPATCH_REJECTED");throw new RejectedCommandException(error);}}}
+            synchronized(broker){if(broker.contract.query(operation).state==ExecutionContract.OperationState.RUNNING){if(query)broker.contract.fail(operation,"HOOK_QUERY_UNAVAILABLE");else if(dispatched)broker.contract.markUnknown(operation,"HOOK_WORKER_OUTCOME_UNCONFIRMED");else {broker.contract.fail(operation,"HOOK_DISPATCH_REJECTED");throw new RejectedCommandException(error);}}}
+            if(query&&!(error instanceof QueryUnavailableException))throw new QueryUnavailableException(error);
             throw error;
         }
     }

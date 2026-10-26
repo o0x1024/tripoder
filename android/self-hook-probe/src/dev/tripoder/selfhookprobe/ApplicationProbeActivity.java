@@ -48,9 +48,11 @@ public final class ApplicationProbeActivity extends Activity {
             info.dataDir=data.getAbsolutePath();info.processName=info.packageName;
             DexClassLoader definingLoader=new DexClassLoader(info.sourceDir,null,null,ClassLoader.getSystemClassLoader().getParent());
             ClassLoader loader=new ClassLoader(definingLoader){};
+            info.appComponentFactory=LogicalFactoryFixture.class.getName();
+            ApplicationAdapter.preparePackage(host,info,loader,definingLoader,getResources(),info.processName,java.util.List.of());
             Class<?> factoryType=loader.loadClass(LogicalFactoryFixture.class.getName());
             AppComponentFactory factory=(AppComponentFactory)factoryType.getConstructor().newInstance();
-            info.appComponentFactory=factoryType.getName();
+            ApplicationAdapter.publishFactory(factory);ApplicationAdapter.publishLoader(loader);
             Application guest=factory.instantiateApplication(loader,LogicalApplicationFixture.class.getName());
             require(guest.getClass()!=LogicalApplicationFixture.class&&guest.getClass().getClassLoader()==definingLoader&&
                 Class.forName(guest.getClass().getName(),false,loader)==guest.getClass(),"DELEGATING_LOADER_APPLICATION_IDENTITY");

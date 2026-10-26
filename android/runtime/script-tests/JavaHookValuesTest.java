@@ -25,7 +25,7 @@ final class JavaHookValuesTest {
         rejects(()->JavaHookValues.decode(double.class,Double.POSITIVE_INFINITY),"HOOK_TYPE");
         rejects(()->JavaHookValues.encode(char.class,"😀"),"HOOK_TYPE");
         for(Class<?> invalid:new Class<?>[]{Object.class,Integer.class,int[].class,Class.class}) {
-            try{JavaHookValues.requireType(invalid,false);throw new AssertionError("host type accepted");}
+            try{JavaHookValues.requireInvocationType(invalid,false);throw new AssertionError("invocation object type accepted");}
             catch(IllegalArgumentException expected){check(true,"host type rejected");}
         }
         try{JavaHookValues.decode(int.class,1L);throw new AssertionError("wrong boxed type");}

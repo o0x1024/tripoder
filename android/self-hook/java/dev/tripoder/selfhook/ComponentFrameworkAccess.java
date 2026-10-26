@@ -15,7 +15,7 @@ public final class ComponentFrameworkAccess {
     private static volatile ComponentFrameworkAccess instance;
     private final Method pending,protectedQuery,flags,provider;
     private final Object packages;
-    private final Field selection,index,key;
+    private final Field selection,index,key,pendingKind;
     private final Class<?> backReference;
     private ComponentFrameworkAccess()throws Exception {
         pending=FixedFrameworkMembers.method(15,"getPendingResult","()Landroid/content/BroadcastReceiver$PendingResult;",false);
@@ -25,6 +25,8 @@ public final class ComponentFrameworkAccess {
         provider=FixedFrameworkMembers.method(18,"getIContentProvider","()Landroid/content/IContentProvider;",false);
         selection=FixedFrameworkMembers.field(14,19,"mSelectionArgs","Landroid/util/SparseArray;",false);
         index=FixedFrameworkMembers.field(15,20,"fromIndex","I",false);key=FixedFrameworkMembers.field(16,20,"fromKey","Ljava/lang/String;",false);
+        pendingKind=FixedFrameworkMembers.field(66,25,"mType","I",false);
+        if(!java.lang.reflect.Modifier.isFinal(pendingKind.getModifiers()))throw new IllegalStateException("RECEIVER_PENDING_KIND_NOT_FINAL");
         backReference=FixedFrameworkMembers.owner(20);
         packages=Objects.requireNonNull(FixedFrameworkMembers.call(pm,null),"PHYSICAL_PACKAGE_MANAGER_REQUIRED");
         if(!FixedFrameworkMembers.owner(16).isInstance(packages))throw new IllegalStateException("PHYSICAL_PACKAGE_MANAGER_TYPE");
@@ -35,6 +37,11 @@ public final class ComponentFrameworkAccess {
     private static ComponentFrameworkAccess require(){ComponentFrameworkAccess v=instance;if(v==null)throw new IllegalStateException("COMPONENT_FRAMEWORK_NOT_READY");return v;}
     static Object physicalPackages(){return require().packages;}
     public static Object pendingResult(BroadcastReceiver receiver){return FixedFrameworkMembers.call(require().pending,Objects.requireNonNull(receiver));}
+    /** SDK dispatch role, never inferred from a mutable Intent or a result code. */
+    public static int pendingKind(Object pending){
+        int kind=(Integer)FixedFrameworkMembers.get(require().pendingKind,Objects.requireNonNull(pending));
+        if(kind<0||kind>2)throw new SecurityException("RECEIVER_PENDING_KIND_INVALID");return kind;
+    }
     public static boolean protectedBroadcast(String action){ComponentFrameworkAccess v=require();return (Boolean)FixedFrameworkMembers.call(v.protectedQuery,v.packages,Objects.requireNonNull(action));}
     public static long bindFlags(Context.BindServiceFlags flags){return (Long)FixedFrameworkMembers.call(require().flags,Objects.requireNonNull(flags));}
     public static Object providerHandle(ContentProvider provider){return Objects.requireNonNull(FixedFrameworkMembers.call(require().provider,Objects.requireNonNull(provider)),"PROVIDER_HANDLE_REQUIRED");}

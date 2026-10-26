@@ -23,6 +23,7 @@ public final class GuestContext extends GuestStorageContext {
     private final PackageManager guestPackages;
     private final Context platform;
     private final ClassLoader resourceOnlyLoader;
+    private final Object themeLock=new Object();private Resources.Theme theme;private int themeResource;
     public GuestContext(Context base,RuntimeEngine engine){this(base,engine,engine.resources);}
     static GuestContext application(Context logical,RuntimeEngine engine){return new GuestContext(logical,engine,engine.resources,engine.host);}
     private GuestContext(Context base,RuntimeEngine engine,Resources resources){this(base,engine,resources,base);}
@@ -59,6 +60,10 @@ public final class GuestContext extends GuestStorageContext {
     @Override public ClassLoader getClassLoader(){return resourceOnlyLoader==null?engine.loader:resourceOnlyLoader;}
     @Override public Resources getResources(){return guestResources;}
     @Override public AssetManager getAssets(){return guestResources.getAssets();}
+    @Override public Resources.Theme getTheme(){synchronized(themeLock){
+        if(theme==null){if(themeResource==0)themeResource=engine.applicationInfo.theme;themeResource=dev.tripoder.selfhook.ResourceFrameworkAccess.defaultTheme(themeResource,engine.applicationInfo.targetSdkVersion);theme=guestResources.newTheme();theme.applyStyle(themeResource,true);}return theme;
+    }}
+    @Override public void setTheme(int resource){synchronized(themeLock){if(themeResource!=resource){themeResource=resource;if(theme!=null)theme.applyStyle(resource,true);}}}
     @Override public Context getApplicationContext(){return resourceOnlyLoader!=null?null:engine.applicationContext();}
     @Override public ApplicationInfo getApplicationInfo(){return engine.applicationInfo;}
     @Override public String getPackageCodePath(){return getApplicationInfo().sourceDir;}
@@ -69,7 +74,7 @@ public final class GuestContext extends GuestStorageContext {
     @Override public int checkSelfPermission(String permission){return guestPermission(permission,super.checkSelfPermission(permission));}
     @Override public int checkPermission(String permission,int pid,int uid){int result=super.checkPermission(permission,pid,uid);return pid==android.os.Process.myPid()&&uid==android.os.Process.myUid()?guestPermission(permission,result):result;}
     @Override public int checkCallingOrSelfPermission(String permission){int result=super.checkCallingOrSelfPermission(permission);return android.os.Binder.getCallingPid()==android.os.Process.myPid()?guestPermission(permission,result):result;}
-    @Override public Context createPackageContext(String packageName,int flags){return engine.packageContexts.create(packageName,flags);}
+    @Override public Context createPackageContext(String packageName,int flags)throws PackageManager.NameNotFoundException{return engine.packageContexts.create(packageName,flags);}
     // Declared splits share the guest's merged class loader and resources; an undeclared split name throws NameNotFoundException, matching Android.
     @Override public Context createContextForSplit(String splitName)throws PackageManager.NameNotFoundException{
         if(splitName!=null&&engine.info.splitNames!=null)for(String declared:engine.info.splitNames)if(splitName.equals(declared))return this;
@@ -77,23 +82,25 @@ public final class GuestContext extends GuestStorageContext {
     }
     @Override public boolean isDeviceProtectedStorage(){return deviceProtected;}
     @Override public Context createDeviceProtectedStorageContext(){try{return new GuestContext(getBaseContext(),engine,guestResources,platform,resourceOnlyLoader,engine.storage.view("device-protected"),true);}catch(Exception error){throw new IllegalStateException("DEVICE_PROTECTED_STORAGE_FAILED",error);}}
-    @Override public Context createConfigurationContext(Configuration config){Configuration merged=new Configuration(guestResources.getConfiguration());merged.updateFrom(config);Context derived=super.createConfigurationContext(config);return new GuestContext(derived,engine,new Resources(guestResources.getAssets(),guestResources.getDisplayMetrics(),merged),derived,resourceOnlyLoader);}
+    @Override public Context createConfigurationContext(Configuration config){Configuration merged=new Configuration(guestResources.getConfiguration());merged.updateFrom(config);Context derived=super.createConfigurationContext(config);return new GuestContext(derived,engine,dev.tripoder.selfhook.ResourceFrameworkAccess.forLoader(new Resources(guestResources.getAssets(),guestResources.getDisplayMetrics(),merged),getClassLoader()),derived,resourceOnlyLoader,storage,deviceProtected);}
     // Derived contexts keep the guest's identity, storage and class loader and take only what differs (display, attribution, device) from the platform's own derivation.
     @Override public Context createDisplayContext(Display display){return windowDerived(platform.createDisplayContext(display));}
-    private Context windowDerived(Context derived){Resources platformResources=derived.getResources();return new GuestContext(derived,engine,new Resources(guestResources.getAssets(),platformResources.getDisplayMetrics(),new Configuration(platformResources.getConfiguration())),derived,resourceOnlyLoader);}
+    private Context windowDerived(Context derived){Resources platformResources=derived.getResources();return new GuestContext(derived,engine,dev.tripoder.selfhook.ResourceFrameworkAccess.forLoader(new Resources(guestResources.getAssets(),platformResources.getDisplayMetrics(),new Configuration(platformResources.getConfiguration())),getClassLoader()),derived,resourceOnlyLoader,storage,deviceProtected);}
     @Override public Context createWindowContext(int type,Bundle options){return windowDerived(platform.createWindowContext(type,options));}
     @Override public Context createWindowContext(Display display,int type,Bundle options){return windowDerived(platform.createWindowContext(display,type,options));}
     @Override public Context createAttributionContext(String attributionTag){return windowDerived(platform.createAttributionContext(attributionTag));}
     @Override public Context createContext(ContextParams params){return windowDerived(platform.createContext(params));}
     @Override public Context createDeviceContext(int deviceId){return windowDerived(platform.createDeviceContext(deviceId));}
     @Override public Object getSystemService(String name){
-        if(engine.mode==RuntimeMode.THIN&&RuntimeThinPolicy.platformService(name))return engine.host.getSystemService(name);
+        if(RuntimeThinPolicy.platformService(name))return engine.host.getSystemService(name);
         if(ACTIVITY_SERVICE.equals(name))return engine.activityManager.facade();
         if(CONNECTIVITY_SERVICE.equals(name))return engine.connectivity.facade();
         if(TELEPHONY_SERVICE.equals(name))return engine.telephony.facade();
         if(AUDIO_SERVICE.equals(name))return engine.audio.facade();
         if(BATTERY_SERVICE.equals(name))return engine.battery.facade();
         if(POWER_SERVICE.equals(name))return engine.power.facade();
+        if(USER_SERVICE.equals(name))return engine.users.facade();
+        if(ROLE_SERVICE.equals(name))return engine.roles.facade();
         if(NETWORK_STATS_SERVICE.equals(name))return engine.networkStats.facade();
         if(WIFI_P2P_SERVICE.equals(name))return engine.wifiP2p.facade();
         if(NOTIFICATION_SERVICE.equals(name))return engine.notifications.facade();
@@ -107,27 +114,34 @@ public final class GuestContext extends GuestStorageContext {
     // Routed by the activity-start hook: guest components through the ledger, everything else to the platform.
     @Override public void startActivity(Intent intent){startActivity(intent,null);}
     @Override public void startActivity(Intent intent,Bundle options){super.startActivity(intent,options);}
-    @Override public void startActivities(Intent[] intents){throw new UnsupportedOperationException("CONTEXT_START_ACTIVITY_UNSUPPORTED");}
-    @Override public void startActivities(Intent[] intents,Bundle options){throw new UnsupportedOperationException("CONTEXT_START_ACTIVITY_UNSUPPORTED");}
-    @Override public void startIntentSender(IntentSender sender,Intent fillIn,int flagsMask,int flagsValues,int extraFlags){throw new UnsupportedOperationException("INTENT_SENDER_UNSUPPORTED");}
-    @Override public void startIntentSender(IntentSender sender,Intent fillIn,int flagsMask,int flagsValues,int extraFlags,Bundle options){throw new UnsupportedOperationException("INTENT_SENDER_UNSUPPORTED");}
+    @Override public void startActivities(Intent[] intents){startActivities(intents,null);}
+    // The stack is built in order, the last intent on top, each routed like a single start.
+    @Override public void startActivities(Intent[] intents,Bundle options){for(int i=0;i<intents.length;i++)startActivity(intents[i],i==intents.length-1?options:null);}
+    // An IntentSender is already a platform token (guest PendingIntents are translated when created); the platform starts it.
+    @Override public void startIntentSender(IntentSender sender,Intent fillIn,int flagsMask,int flagsValues,int extraFlags)throws IntentSender.SendIntentException{super.startIntentSender(sender,fillIn,flagsMask,flagsValues,extraFlags);}
+    @Override public void startIntentSender(IntentSender sender,Intent fillIn,int flagsMask,int flagsValues,int extraFlags,Bundle options)throws IntentSender.SendIntentException{super.startIntentSender(sender,fillIn,flagsMask,flagsValues,extraFlags,options);}
     @Override public ComponentName startService(Intent intent){try{return engine.services.start(platform,intent);}catch(RuntimeException e){throw e;}catch(Exception e){throw new IllegalStateException("SERVICE_START_FAILED",e);}}
     // The promise of a foreground start is a notification shown through Service.startForeground; the start itself is an ordinary service start.
     @Override public ComponentName startForegroundService(Intent intent){return startService(intent);}
     @Override public boolean stopService(Intent intent){try{return engine.services.stop(platform,intent);}catch(RuntimeException e){throw e;}catch(Exception e){throw new IllegalStateException("SERVICE_STOP_FAILED",e);}}
-    @Override public boolean bindService(Intent intent,ServiceConnection conn,int flags){if(engine.webView.services.targets(intent))return engine.webView.services.bind(intent,conn,serviceFlags(flags),null,null);try{return engine.services.bind(platform,intent,conn,flags,null);}catch(RuntimeException e){throw e;}catch(Exception e){throw new IllegalStateException("SERVICE_BIND_FAILED",e);}}
-    @Override public boolean bindService(Intent intent,int flags,Executor executor,ServiceConnection conn){if(engine.webView.services.targets(intent))return engine.webView.services.bind(intent,conn,serviceFlags(flags),executor,null);try{return engine.services.bind(platform,intent,conn,flags,executor);}catch(RuntimeException e){throw e;}catch(Exception e){throw new IllegalStateException("SERVICE_BIND_FAILED",e);}}
-    @Override public boolean bindService(Intent intent,ServiceConnection conn,BindServiceFlags flags){if(engine.webView.services.targets(intent))return engine.webView.services.bind(intent,conn,RuntimeBridge.bindServiceFlags(flags),null,null);return bindService(intent,conn,Math.toIntExact(RuntimeBridge.bindServiceFlags(flags)));}
-    @Override public boolean bindService(Intent intent,BindServiceFlags flags,Executor executor,ServiceConnection conn){if(engine.webView.services.targets(intent))return engine.webView.services.bind(intent,conn,RuntimeBridge.bindServiceFlags(flags),executor,null);return bindService(intent,Math.toIntExact(RuntimeBridge.bindServiceFlags(flags)),executor,conn);}
-    @Override public boolean bindIsolatedService(Intent intent,int flags,String instanceName,Executor executor,ServiceConnection conn){return engine.webView.services.bind(intent,conn,serviceFlags(flags),executor,java.util.Objects.requireNonNull(instanceName));}
-    @Override public boolean bindIsolatedService(Intent intent,BindServiceFlags flags,String instanceName,Executor executor,ServiceConnection conn){return engine.webView.services.bind(intent,conn,RuntimeBridge.bindServiceFlags(flags),executor,java.util.Objects.requireNonNull(instanceName));}
+    @Override public boolean bindService(Intent intent,ServiceConnection conn,int flags){trace("bindService#1",intent);if(engine.webView.services.targets(intent))return engine.webView.services.bind(intent,conn,serviceFlags(flags),null,null);try{return engine.services.bind(platform,intent,conn,flags,null);}catch(RuntimeException e){throw e;}catch(Exception e){throw new IllegalStateException("SERVICE_BIND_FAILED",e);}}
+    @Override public boolean bindService(Intent intent,int flags,Executor executor,ServiceConnection conn){trace("bindService#2",intent);if(engine.webView.services.targets(intent))return engine.webView.services.bind(intent,conn,serviceFlags(flags),executor,null);try{return engine.services.bind(platform,intent,conn,flags,executor);}catch(RuntimeException e){throw e;}catch(Exception e){throw new IllegalStateException("SERVICE_BIND_FAILED",e);}}
+    @Override public boolean bindService(Intent intent,ServiceConnection conn,BindServiceFlags flags){trace("bindService#3",intent);if(engine.webView.services.targets(intent))return engine.webView.services.bind(intent,conn,RuntimeBridge.bindServiceFlags(flags),null,null);return bindService(intent,conn,Math.toIntExact(RuntimeBridge.bindServiceFlags(flags)));}
+    @Override public boolean bindService(Intent intent,BindServiceFlags flags,Executor executor,ServiceConnection conn){trace("bindService#4",intent);if(engine.webView.services.targets(intent))return engine.webView.services.bind(intent,conn,RuntimeBridge.bindServiceFlags(flags),executor,null);return bindService(intent,Math.toIntExact(RuntimeBridge.bindServiceFlags(flags)),executor,conn);}
+    @Override public boolean bindIsolatedService(Intent intent,int flags,String instanceName,Executor executor,ServiceConnection conn){trace("bindIsolatedService#5",intent);if(engine.webView.services.targets(intent))return engine.webView.services.bind(intent,conn,serviceFlags(flags),executor,java.util.Objects.requireNonNull(instanceName));try{return engine.services.bindIsolated(platform,intent,conn,flags,executor,instanceName);}catch(RuntimeException error){throw error;}catch(Exception error){throw new IllegalStateException("ISOLATED_BIND_FAILED",error);}}
+    @Override public boolean bindIsolatedService(Intent intent,BindServiceFlags flags,String instanceName,Executor executor,ServiceConnection conn){trace("bindIsolatedService#6",intent);long value=RuntimeBridge.bindServiceFlags(flags);if(engine.webView.services.targets(intent))return engine.webView.services.bind(intent,conn,value,executor,java.util.Objects.requireNonNull(instanceName));if(value<0||value>Integer.MAX_VALUE)throw new UnsupportedOperationException("ISOLATED_BIND_FLAGS_UNSUPPORTED");return bindIsolatedService(intent,(int)value,instanceName,executor,conn);}
     // Binding as another user needs INTERACT_ACROSS_USERS, which no ordinary app holds; binding as the current user is the ordinary bind.
-    @Override public boolean bindServiceAsUser(Intent intent,ServiceConnection conn,int flags,UserHandle user){requireCurrentUser(user);return bindService(intent,conn,flags);}
-    @Override public boolean bindServiceAsUser(Intent intent,ServiceConnection conn,BindServiceFlags flags,UserHandle user){requireCurrentUser(user);return bindService(intent,conn,flags);}
+    @Override public boolean bindServiceAsUser(Intent intent,ServiceConnection conn,int flags,UserHandle user){trace("bindServiceAsUser#7",intent);requireCurrentUser(user);return bindService(intent,conn,flags);}
+    @Override public boolean bindServiceAsUser(Intent intent,ServiceConnection conn,BindServiceFlags flags,UserHandle user){trace("bindServiceAsUser#8",intent);requireCurrentUser(user);return bindService(intent,conn,flags);}
+    // Hidden overloads that Chrome reaches by reflection to keep callbacks on its launcher thread. Left to ContextWrapper they would
+    // bypass the engine and bind the real installed package, so they take the same route as the public variants.
+    public boolean bindServiceAsUser(Intent intent,ServiceConnection conn,int flags,android.os.Handler handler,UserHandle user){trace("bindServiceAsUser#9",intent);requireCurrentUser(user);return bindService(intent,flags,handler==null?getMainExecutor():handler::post,conn);}
+    public boolean bindServiceAsUser(Intent intent,ServiceConnection conn,BindServiceFlags flags,android.os.Handler handler,UserHandle user){trace("bindServiceAsUser#10",intent);requireCurrentUser(user);return bindService(intent,flags,handler==null?getMainExecutor():handler::post,conn);}
+    private static void trace(String variant,Intent intent){android.util.Log.i("TripoderService","guestBind "+variant+" "+(intent==null?null:intent.getComponent()));}
     private static void requireCurrentUser(UserHandle user){if(user==null||!user.equals(android.os.Process.myUserHandle()))throw new SecurityException("Requires INTERACT_ACROSS_USERS permission to bind as another user");}
-    @Override public void rebindService(ServiceConnection conn,BindServiceFlags flags){engine.webView.services.rebind(conn,flags);}
+    @Override public void rebindService(ServiceConnection conn,BindServiceFlags flags){if(engine.webView.services.owns(conn)){engine.webView.services.rebind(conn,flags);return;}engine.services.rebind(conn,flags);}
     @Override public void updateServiceBindings(java.util.Collection<UpdateBindingParams> updates){throw new UnsupportedOperationException("SERVICE_UNSUPPORTED");}
-    @Override public void updateServiceGroup(ServiceConnection conn,int group,int importance){engine.webView.services.updateGroup(conn,group,importance);}
+    @Override public void updateServiceGroup(ServiceConnection conn,int group,int importance){if(engine.webView.services.owns(conn)){engine.webView.services.updateGroup(conn,group,importance);return;}engine.services.updateGroup(conn,group,importance);}
     @Override public void unbindService(ServiceConnection conn){if(engine.webView.services.owns(conn)){engine.webView.services.unbind(conn);return;}try{engine.services.unbind(conn);}catch(RuntimeException e){throw e;}catch(Exception e){throw new IllegalStateException("SERVICE_UNBIND_FAILED",e);}}
     @Override public boolean startInstrumentation(ComponentName component,String profileFile,Bundle arguments){throw new UnsupportedOperationException("INSTRUMENTATION_UNSUPPORTED");}
     @Override public void sendBroadcast(Intent intent){engine.receivers.send(intent,null,null,false,null,null,0,null,null);}
@@ -149,9 +163,9 @@ public final class GuestContext extends GuestStorageContext {
     @Override public void sendStickyBroadcast(Intent intent,Bundle options){engine.receivers.sendSticky(intent,null,options);}
     @Override public void sendStickyOrderedBroadcast(Intent intent,BroadcastReceiver receiver,Handler scheduler,int initialCode,String initialData,Bundle initialExtras){throw new UnsupportedOperationException("BROADCAST_UNSUPPORTED");}
     @Override public void removeStickyBroadcast(Intent intent){engine.receivers.removeSticky(intent);}
-    @Override public void sendStickyBroadcastAsUser(Intent intent,UserHandle user){throw new UnsupportedOperationException("BROADCAST_UNSUPPORTED");}
+    @Override public void sendStickyBroadcastAsUser(Intent intent,UserHandle user){requireCurrentUser(user);sendStickyBroadcast(intent);}
     @Override public void sendStickyOrderedBroadcastAsUser(Intent intent,UserHandle user,BroadcastReceiver receiver,Handler scheduler,int initialCode,String initialData,Bundle initialExtras){throw new UnsupportedOperationException("BROADCAST_UNSUPPORTED");}
-    @Override public void removeStickyBroadcastAsUser(Intent intent,UserHandle user){throw new UnsupportedOperationException("BROADCAST_UNSUPPORTED");}
+    @Override public void removeStickyBroadcastAsUser(Intent intent,UserHandle user){requireCurrentUser(user);removeStickyBroadcast(intent);}
     @Override public Intent registerReceiver(BroadcastReceiver receiver,IntentFilter filter){return engine.receivers.register(receiver,filter,null,null,0);}
     @Override public Intent registerReceiver(BroadcastReceiver receiver,IntentFilter filter,int flags){return engine.receivers.register(receiver,filter,null,null,flags);}
     @Override public Intent registerReceiver(BroadcastReceiver receiver,IntentFilter filter,String permission,Handler scheduler){return engine.receivers.register(receiver,filter,permission,scheduler,0);}
@@ -162,16 +176,20 @@ public final class GuestContext extends GuestStorageContext {
     @Override public void grantUriPermission(String target,android.net.Uri uri,int flags){throw uriGrant();}
     @Override public void revokeUriPermission(android.net.Uri uri,int flags){throw uriGrant();}
     @Override public void revokeUriPermission(String target,android.net.Uri uri,int flags){throw uriGrant();}
-    @Override public int checkUriPermission(android.net.Uri uri,int pid,int uid,int flags){throw uriGrant();}
-    @Override public int checkUriPermission(android.net.Uri uri,String read,String write,int pid,int uid,int flags){throw uriGrant();}
-    @Override public int[] checkUriPermissions(java.util.List<android.net.Uri> uris,int pid,int uid,int flags){throw uriGrant();}
-    @Override public int checkCallingUriPermission(android.net.Uri uri,int flags){throw uriGrant();}
-    @Override public int[] checkCallingUriPermissions(java.util.List<android.net.Uri> uris,int flags){throw uriGrant();}
-    @Override public int checkCallingOrSelfUriPermission(android.net.Uri uri,int flags){throw uriGrant();}
-    @Override public int[] checkCallingOrSelfUriPermissions(java.util.List<android.net.Uri> uris,int flags){throw uriGrant();}
+    @Override public int checkUriPermission(android.net.Uri uri,int pid,int uid,int flags){return RuntimeUriPermissionChecks.check(uri,uid);}
+    @Override public int checkUriPermission(android.net.Uri uri,String read,String write,int pid,int uid,int flags){
+        if((flags&Intent.FLAG_GRANT_READ_URI_PERMISSION)!=0&&(read==null||checkPermission(read,pid,uid)==PackageManager.PERMISSION_GRANTED))return PackageManager.PERMISSION_GRANTED;
+        if((flags&Intent.FLAG_GRANT_WRITE_URI_PERMISSION)!=0&&(write==null||checkPermission(write,pid,uid)==PackageManager.PERMISSION_GRANTED))return PackageManager.PERMISSION_GRANTED;
+        return uri==null?PackageManager.PERMISSION_DENIED:checkUriPermission(uri,pid,uid,flags);
+    }
+    @Override public int[] checkUriPermissions(java.util.List<android.net.Uri> uris,int pid,int uid,int flags){return RuntimeUriPermissionChecks.check(uris,uid);}
+    @Override public int checkCallingUriPermission(android.net.Uri uri,int flags){return android.os.Binder.getCallingPid()==android.os.Process.myPid()?PackageManager.PERMISSION_DENIED:checkUriPermission(uri,android.os.Binder.getCallingPid(),android.os.Binder.getCallingUid(),flags);}
+    @Override public int[] checkCallingUriPermissions(java.util.List<android.net.Uri> uris,int flags){if(android.os.Binder.getCallingPid()!=android.os.Process.myPid())return checkUriPermissions(uris,android.os.Binder.getCallingPid(),android.os.Binder.getCallingUid(),flags);int[] result=new int[uris.size()];java.util.Arrays.fill(result,PackageManager.PERMISSION_DENIED);return result;}
+    @Override public int checkCallingOrSelfUriPermission(android.net.Uri uri,int flags){return checkUriPermission(uri,android.os.Binder.getCallingPid(),android.os.Binder.getCallingUid(),flags);}
+    @Override public int[] checkCallingOrSelfUriPermissions(java.util.List<android.net.Uri> uris,int flags){return checkUriPermissions(uris,android.os.Binder.getCallingPid(),android.os.Binder.getCallingUid(),flags);}
     @Override public int checkContentUriPermissionFull(android.net.Uri uri,int pid,int uid,int flags){throw uriGrant();}
-    @Override public void enforceUriPermission(android.net.Uri uri,int pid,int uid,int flags,String message){throw uriGrant();}
-    @Override public void enforceUriPermission(android.net.Uri uri,String read,String write,int pid,int uid,int flags,String message){throw uriGrant();}
-    @Override public void enforceCallingUriPermission(android.net.Uri uri,int flags,String message){throw uriGrant();}
-    @Override public void enforceCallingOrSelfUriPermission(android.net.Uri uri,int flags,String message){throw uriGrant();}
+    @Override public void enforceUriPermission(android.net.Uri uri,int pid,int uid,int flags,String message){RuntimeUriPermissionChecks.enforce(checkUriPermission(uri,pid,uid,flags),message);}
+    @Override public void enforceUriPermission(android.net.Uri uri,String read,String write,int pid,int uid,int flags,String message){RuntimeUriPermissionChecks.enforce(checkUriPermission(uri,read,write,pid,uid,flags),message);}
+    @Override public void enforceCallingUriPermission(android.net.Uri uri,int flags,String message){RuntimeUriPermissionChecks.enforce(checkCallingUriPermission(uri,flags),message);}
+    @Override public void enforceCallingOrSelfUriPermission(android.net.Uri uri,int flags,String message){RuntimeUriPermissionChecks.enforce(checkCallingOrSelfUriPermission(uri,flags),message);}
 }

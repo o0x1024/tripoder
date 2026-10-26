@@ -108,6 +108,7 @@ public final class RuntimeHookBridge {
     public static ClassLoader loader(String symbol){return current().type(symbol).getClassLoader();}
     public static boolean sameClass(String symbol,Class<?> value){return current().type(symbol)==value;}
     public static boolean nativeMethod(String symbol){current().type(symbol);return current().javaObservation.nativeMethod(symbol);}
+    ArtifactSet verifiedArtifacts(){return artifacts;}
     public static String libraryNames(){JSONArray names=new JSONArray();for(var file:current().artifacts.nativeFiles)names.put(new java.io.File(file.path).getName());return names.toString();}
     public static String library(String name)throws Exception{
         return current().verifiedLibrary(name).toString();

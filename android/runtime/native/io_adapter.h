@@ -8,6 +8,7 @@ int tp_unlinkat(int,const char *,int);
 int tp_mkdirat(int,const char *,unsigned);
 int tp_renameat2(int,const char *,int,const char *,unsigned);
 int tp_faccessat(int,const char *,int);
+int tp_fchmodat(int,const char *,unsigned);
 ssize_t tp_readlinkat(int,const char *,char *,size_t);
 int tp_chdir(const char *);
 int tp_symlinkat(const char *,int,const char *);

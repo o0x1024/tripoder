@@ -20,6 +20,11 @@ final class RuntimeJobScheduler {
         if(signature.equals("getNamespace()"))return namespace.isEmpty()?null:namespace;
         Bundle request=engine.auth();request.putString("namespace",namespace.isEmpty()?null:namespace);request.putString("operation",UUID.randomUUID().toString());
         switch(signature){
+            case "enqueue(android.app.job.JobInfo,android.app.job.JobWorkItem)":{
+                JobInfo info=Objects.requireNonNull((JobInfo)args[0]);byte[] job=RuntimeJobInfo.encode(info),work=RuntimeJobWork.encode((JobWorkItem)args[1]);
+                if(job.length+work.length>48*1024)throw new IllegalArgumentException("JOB_ENQUEUE_PAYLOAD_LIMIT");
+                request.putString("kind","enqueue");request.putByteArray("job",job);request.putByteArray("work",work);request.putBoolean("early",JobFrameworkAccess.early(info));request.putBoolean("late",JobFrameworkAccess.late(info));return engine.brokerCall(RuntimeWire.JOB_ROUTE,request).getInt("result");
+            }
             case "schedule(android.app.job.JobInfo)":{
                 JobInfo info=Objects.requireNonNull((JobInfo)args[0]);request.putString("kind","schedule");request.putByteArray("job",RuntimeJobInfo.encode(info));request.putBoolean("early",JobFrameworkAccess.early(info));request.putBoolean("late",JobFrameworkAccess.late(info));return engine.brokerCall(RuntimeWire.JOB_ROUTE,request).getInt("result");
             }

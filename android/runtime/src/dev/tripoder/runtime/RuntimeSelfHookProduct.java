@@ -32,11 +32,11 @@ final class RuntimeSelfHookProduct {
         plan.put(ACTIVITY_CREATION,()->RuntimeSelfHookActivities.creation(value.managed));
         plan.put(ACTIVITY_DELIVERY,()->RuntimeSelfHookActivities.delivery(value.managed));
         plan.put(ACTIVITY_ROUTING,()->RuntimeSelfHookActivities.routing(value.managed));
-        plan.put(SERVICES,RuntimeSelfHookFixedComponents::services);
-        plan.put(PROVIDERS,RuntimeSelfHookFixedComponents::providers);
-        plan.put(RECEIVERS,RuntimeSelfHookFixedComponents::receivers);
+        plan.put(SERVICES,()->{RuntimeSelfHookFixedComponents.services();RuntimeSelfHookRawServices.install(value.managed);});
+        plan.put(PROVIDERS,()->{RuntimeSelfHookFixedComponents.providers();RuntimeSelfHookProviderInstallation.install(value.managed);});
+        plan.put(RECEIVERS,()->{RuntimeSelfHookFixedComponents.receivers();RuntimeSelfHookRawReceivers.install(value.managed);});
         plan.put(WIDGETS,RuntimeSelfHookFixedComponents::widgets);
-        plan.put(PACKAGES,()->RuntimeSelfHookPackages.install(value.managed));
+        plan.put(PACKAGES,()->{RuntimeSelfHookPackages.install(value.managed);RuntimeSelfHookResourceRegistration.install(value.managed);});
         plan.put(STORAGE,RuntimeSelfHookStorage::install);
         plan.put(ACTIVITY_MANAGER,()->value.manager(RuntimeSelfHookManagerPolicy.Family.ACTIVITY_MANAGER));
         plan.put(CONNECTIVITY,()->value.manager(RuntimeSelfHookManagerPolicy.Family.CONNECTIVITY));
@@ -50,7 +50,7 @@ final class RuntimeSelfHookProduct {
         plan.put(SHORTCUTS,()->value.manager(RuntimeSelfHookManagerPolicy.Family.SHORTCUTS));
         plan.put(JOBS,()->{value.manager(RuntimeSelfHookManagerPolicy.Family.JOB_SCHEDULER);RuntimeSelfHookJobs.install(value.managed);});
         plan.put(PENDING_INTENTS,()->RuntimePendingIntents.install(value.managed));
-        plan.put(UI_EFFECTS,()->{if(!RuntimeThinPolicy.active())RuntimeSelfHookSystemEdges.ui(value.managed);});
+        plan.put(UI_EFFECTS,()->{RuntimeSelfHookSystemEdges.autofill(value.managed);});
         plan.put(FAILURE_DIAGNOSTICS,()->{if(!RuntimeThinPolicy.active())RuntimeSelfHookSystemEdges.failures(value.managed);});
         plan.put(HOOK_CONTROL,()->engine.hooks.installSelfHookControl(engine.hooks.selfHookPlatform()));
         EnumMap<RuntimeSelfHookBootstrap.Capability,RuntimeSelfHookBootstrap.Installer> measured=new EnumMap<>(RuntimeSelfHookBootstrap.Capability.class);
@@ -70,7 +70,7 @@ final class RuntimeSelfHookProduct {
         android.util.Log.i("TripoderSelfHook","EXECUTION_POLICY:"+ManagedHook.processPolicy());
     }
     private void manager(RuntimeSelfHookManagerPolicy.Family family)throws Exception{
-        if(RuntimeThinPolicy.active()&&RuntimeThinPolicy.platformManager(family))return;
+        if(RuntimeThinPolicy.platformManager(family))return;
         RuntimeSelfHookManagers.install(family,FixedManagerInventory.methods(family.ordinal()).toArray(new Method[0]),adapters);
     }
 }

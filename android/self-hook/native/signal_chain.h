@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <signal.h>
 bool tp_signal_chain_prepare(void);
+bool tp_signal_chain_platform(uintptr_t *base,uintptr_t *libc,uintptr_t *real_mask);
+int tp_signal_chain_user_action(int signal,const struct sigaction *action,struct sigaction *previous);
 bool tp_signal_chain_module_added(uintptr_t base);
 int tp_signal_chain_claim(int signal,bool (*handler)(int,siginfo_t *,void *));
 uint64_t tp_signal_chain_claims(void);

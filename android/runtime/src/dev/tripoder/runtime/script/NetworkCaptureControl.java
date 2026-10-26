@@ -1,0 +1,68 @@
+package dev.tripoder.runtime.script;
+
+import java.util.*;
+import java.util.function.*;
+
+/** Managed source uses the same observe/prepare/activate/disable path as user Hooks. */
+final class NetworkCaptureControl {
+    private final SelfHookControl.Platform platform;
+    private final Function<Map<String,Object>,Map<String,Object>> command;
+    private final String generation;
+    private final Supplier<String> token;
+    private volatile NetworkCaptureSession session;
+    private volatile String sourceSha="",revision="";private boolean stopping;private String moduleName="",moduleBuild="";
+    NetworkCaptureControl(SelfHookControl.Platform platform,Function<Map<String,Object>,Map<String,Object>> command,String generation,Supplier<String> token){this.platform=platform;this.command=command;this.generation=generation;this.token=token;}
+    boolean ownsHook(){return session!=null&&!session.status().get("captureState").equals("STOPPED");}
+    void event(Map<String,Object> event){NetworkCaptureSession current=session;if(current!=null){if(revision.isEmpty())revision=(String)event.get("revision");current.event(event);}}
+    private Map<String,Object> invoke(String name,Map<String,Object> args){Map<String,Object> input=new LinkedHashMap<>(args);input.put("command",name);input.put("processGeneration",generation);return command.apply(input);}
+    Map<String,Object> inspect(String module){
+        List<String> missing=new ArrayList<>();String build="";
+        for(String name:List.of("SSL_new","SSL_free","SSL_read","SSL_write")){
+            List<Map<String,Object>> matches=platform.searchNativeExports(module,name,16).stream().filter(row->name.equals(row.get("name"))||name.equals(row.get("symbol"))).toList();
+            if(matches.size()!=1){missing.add(name);continue;}
+            String id=String.valueOf(matches.get(0).get("buildId"));if(build.isEmpty())build=id;else if(!build.equals(id))throw new HookPreflightRejected("NETWORK_MODULE_BUILD_ID_MISMATCH");
+        }
+        return Map.of("moduleName",module,"buildId",build,"profile","openssl-ssl-read-write-v1","candidate",missing.isEmpty(),"missingExports",missing,"signatureConfirmationRequired",true,"automaticAbiInference",false);
+    }
+    Map<String,Object> start(String module,String buildId,String profile,String confirmation){
+        if(ownsHook())throw new HookPreflightRejected("NETWORK_CAPTURE_ALREADY_ACTIVE");
+        if(!profile.equals("openssl-ssl-read-write-v1")||!confirmation.equals("confirmed"))throw new HookPreflightRejected("NETWORK_PROFILE_NOT_CONFIRMED");
+        Map<String,Object> candidate=inspect(module);
+        if(!Boolean.TRUE.equals(candidate.get("candidate"))||!buildId.equals(candidate.get("buildId")))throw new HookPreflightRejected("NETWORK_PROFILE_UNAVAILABLE_OR_STALE");
+        List<Map<String,Object>> selectors=List.of(selector("open",module,"SSL_new",List.of("uint64"),"uint64",buildId),selector("close",module,"SSL_free",List.of("uint64"),"void",buildId),selector("read",module,"SSL_read",List.of("uint64","uint64","int32"),"int32",buildId),selector("write",module,"SSL_write",List.of("uint64","uint64","int32"),"int32",buildId));
+        Map<String,Object> observed=invoke("observe",Map.of("selectors",selectors));
+        @SuppressWarnings("unchecked") String evidence=(String)((Map<String,Object>)observed.get("evidence")).get("id");
+        Map<String,Object> prepared=invoke("prepare",Map.of("evidenceId",evidence,"source",source(module,buildId)));
+        moduleName=module;moduleBuild=buildId;sourceSha=(String)prepared.get("sourceSha256");revision="";stopping=false;
+        session=new NetworkCaptureSession(token.get(),(tag,payload)->platform.persistNetworkCapture(tag,payload,sourceSha,revision));
+        Map<String,Object> activated=invoke("activate",Map.of("token",prepared.get("token"),"sourceSha256",sourceSha));
+        revision=(String)activated.get("revision");return status();
+    }
+    Map<String,Object> stop(String id){
+        requireSession(id);if(!ownsHook())return status();
+        if(!stopping){stopping=true;invoke("disable",Map.of("revision",revision));}
+        return status();
+    }
+    Map<String,Object> status(){
+        Map<String,Object> hook=invoke("status",Map.of());String state=(String)hook.get("state");
+        if(state.equals("ACTIVE")||state.equals("DRAINING"))revision=(String)hook.get("revision");
+        if(session==null)return Map.of("state",state,"captureState","IDLE");
+        if(stopping&&Set.of("IDLE","DISABLED").contains(state))session.stop();
+        if(!stopping&&!Set.of("ACTIVE","DRAINING").contains(state)&&ownsHook())session.fail("CAPTURE_HOOK_NOT_ACTIVE");
+        Map<String,Object> result=new LinkedHashMap<>(session.status());result.put("state",state);result.put("sourceSha256",sourceSha);result.put("revision",revision);result.put("stopping",stopping);result.put("moduleName",moduleName);result.put("buildId",moduleBuild);result.put("profile","openssl-ssl-read-write-v1");result.put("otherTlsImplementations","NOT_OBSERVED");return result;
+    }
+    Map<String,Object> query(String id,long cursor,int limit){requireSession(id);return session.query(cursor,limit);}
+    Map<String,Object> messages(String id,long cursor,int limit){requireSession(id);return session.messages(cursor,limit);}
+    private void requireSession(String id){if(session==null||!session.id.equals(id))throw new HookPreflightRejected("NETWORK_CAPTURE_ID_MISMATCH");}
+    private static Map<String,Object> selector(String id,String module,String symbol,List<String> arguments,String result,String build){return Map.of("id",id,"kind","native","moduleName",module,"symbol",symbol,"argumentTypes",arguments,"returnType",result,"buildId",build,"signatureSource","confirmed");}
+    private static String source(String module,String build){
+        // Both values have already passed exact native selector schema checks; quote through HookWire.
+        String m=HookWire.encode(module),b=HookWire.encode(build),prefix="ctx.native.function("+m+",";
+        StringBuilder source=new StringBuilder("import {definePlan} from '@abox/hook';export default definePlan({id:'network-capture',target,params:{},setup(ctx){");
+        source.append(prefix).append("'SSL_new',{argumentTypes:['uint64'],returnType:'uint64',buildId:").append(b).append("}).after(({result})=>{ctx.debug.emitEvent('network.open',String(result));return result;});");
+        source.append(prefix).append("'SSL_free',{argumentTypes:['uint64'],returnType:'void',buildId:").append(b).append("}).before(({args})=>{ctx.debug.emitEvent('network.close',String(args[0]));return args;});");
+        for(String direction:List.of("read","write"))source.append(prefix).append("'SSL_").append(direction).append("',{argumentTypes:['uint64','uint64','int32'],returnType:'int32',buildId:").append(b)
+            .append("}).before(({args})=>{ctx.debug.emitEvent('network.begin',{connection:String(args[0]),direction:'").append(direction).append("'});return args;}).after(({args,result})=>{ctx.debug.emitEvent('network.bytes',{connection:String(args[0]),direction:'").append(direction).append("',buffer:ctx.native.captureBuffer(1,2,1024)});return result;});");
+        return source.append("}});").toString();
+    }
+}

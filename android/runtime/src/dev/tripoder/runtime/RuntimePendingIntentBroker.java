@@ -55,7 +55,7 @@ final class RuntimePendingIntentBroker {
         boolean thinLookup;PendingIntentLedger.Version lookupPrior;
         synchronized(broker){
             current(install);
-            thinLookup=broker.resolveMode(install.space,install.info.packageName,install.generation)==RuntimeMode.THIN
+            thinLookup=broker.resolveMode(install.space,install.info.packageName,install.generation).routesThroughPlatform()
                 &&(flags&(RuntimePendingIntentPolicy.UPDATE_CURRENT|RuntimePendingIntentPolicy.CANCEL_CURRENT))==0;
             lookupPrior=thinLookup?ledger.current(key):null;
         }
@@ -66,7 +66,7 @@ final class RuntimePendingIntentBroker {
         }
         synchronized(broker){
             current(install);
-            boolean allowDisabled=broker.resolveMode(install.space,install.info.packageName,install.generation)==RuntimeMode.THIN;
+            boolean allowDisabled=broker.resolveMode(install.space,install.info.packageName,install.generation).routesThroughPlatform();
             if(tokenKind.equals("broadcast"))receiver=logical.getComponent()==null?null:receiver(install,logical,allowDisabled);
             else receiver=component(install,logical,tokenKind,allowDisabled);
             ledger.requireIdle(install.generation);prior=ledger.current(key);

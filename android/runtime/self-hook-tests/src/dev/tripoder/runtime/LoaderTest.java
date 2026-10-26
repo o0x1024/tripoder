@@ -22,6 +22,14 @@ public final class LoaderTest {
             var selected=new URLClassLoader(new URL[0],artifact);
             var sibling=new URLClassLoader(new URL[]{url},null)) {
             Class<?> application=artifact.loadClass("fixture.OwnedApplication");
+            Class<?> adapter=artifact.loadClass("fixture.OwnedDelegatingLoader");
+            ClassLoader delegated=(ClassLoader)adapter.getConstructor(ClassLoader.class).newInstance(artifact);
+            ClassLoader foreignDelegate=(ClassLoader)adapter.getConstructor(ClassLoader.class).newInstance(sibling);
+            check(RuntimeSelfHookLoaders.owns(artifact,delegated,application));
+            check(!RuntimeSelfHookLoaders.owns(artifact,foreignDelegate,application));
+            check(!RuntimeSelfHookLoaders.owns(artifact,sibling,application));
+            check(!RuntimeSelfHookLoaders.owns(artifact,delegated,Object.class));
+            check(System.getProperty("fixture.initialized")==null);
             RuntimeSelfHookLoaders.requireApplication(artifact,application,null,loader->owns(artifact,loader));checks++;
             RuntimeSelfHookLoaders.requireApplication(selected,application,null,loader->owns(artifact,loader));checks++;
             check(application.getClassLoader()==artifact);check(selected.loadClass(application.getName())==application);

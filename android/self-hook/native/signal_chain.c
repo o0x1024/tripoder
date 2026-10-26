@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include "signal_chain.h"
 #include <elf.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <stdatomic.h>
@@ -20,6 +21,7 @@ static struct entry {const char *name,*target;uintptr_t original,replacement;} e
 struct special_action {bool (*handler)(int,siginfo_t *,void *);uint64_t mask;unsigned long flags;};
 _Static_assert(sizeof(struct special_action)==24,"ART sigchain special-action ABI");
 static void (*add_special)(int,const struct special_action *);
+static uintptr_t platform_base,platform_libc;
 static _Atomic uint64_t claims;
 static _Atomic bool ready;static _Atomic uint64_t patched,checked;
 static bool range(size_t offset,size_t bytes,size_t size){return offset<=size&&bytes<=size-offset;}
@@ -48,7 +50,16 @@ bool tp_signal_chain_prepare(void){
     uintptr_t chain_base=base_of(chain),libc_base=base_of(libc);if(!chain_base||!libc_base)return false;
     for(unsigned i=0;i<sizeof(entries)/sizeof(entries[0]);i++){entries[i].original=export_at(libc,libc_base,entries[i].name);entries[i].replacement=export_at(chain,chain_base,entries[i].target);if(!entries[i].original||!entries[i].replacement)return false;}
     add_special=(void *)export_at(chain,chain_base,"AddSpecialSignalHandlerFn");if(!add_special)return false;
-    atomic_store_explicit(&ready,true,memory_order_release);return true;
+    platform_base=chain_base;platform_libc=libc_base;atomic_store_explicit(&ready,true,memory_order_release);return true;
+}
+bool tp_signal_chain_platform(uintptr_t *base,uintptr_t *libc,uintptr_t *real_mask){
+    if(!base||!libc||!real_mask||!atomic_load_explicit(&ready,memory_order_acquire))return false;
+    *base=platform_base;*libc=platform_libc;*real_mask=entries[4].original;return *base&&*libc&&*real_mask;
+}
+int tp_signal_chain_user_action(int signal,const struct sigaction *action,struct sigaction *previous){
+    if(!atomic_load_explicit(&ready,memory_order_acquire)){errno=ENOSYS;return -1;}
+    int (*registration)(int,const struct sigaction *,struct sigaction *)=(void *)entries[0].replacement;
+    return registration(signal,action,previous);
 }
 static long protect(uintptr_t page,int mode){
     register long x0 __asm__("x0")=(long)page,x1 __asm__("x1")=4096,x2 __asm__("x2")=mode,x8 __asm__("x8")=SYS_mprotect;

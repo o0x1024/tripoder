@@ -54,20 +54,23 @@ final class RuntimeProviderBroker {
                 if(to==null||!source.equals(to.allocation.session.processGeneration)||!to.install.generation.equals(install.generation))throw new SecurityException("LOCAL_PROVIDER_PROCESS_MISMATCH");
                 Bundle publication=broker.providers.local(to,component,existing);if(existing&&(publication==null||!"READY".equals(publication.getString("publication"))))return new Bundle();
             }
-            if(existing&&(to==null||!broker.providers.find(to.allocation.session.processGeneration,component).getString("publication").equals("READY")))return new Bundle();
+            if(existing){Bundle published=to==null?null:broker.providers.existing(to.allocation.session.processGeneration,component);if(published==null||!published.getString("publication").equals("READY"))return new Bundle();}
         }
         if(!existing&&!local)to=broker.processes.prepare(space,install.info.packageName,process);
         String target;Bundle publication;boolean thin;
         synchronized(broker){
             var session=broker.contract.authenticate(source,pid,uid);target=to.allocation.session.processGeneration;
             if(broker.requiredSlot(target)!=to||!to.install.generation.equals(install.generation))throw new SecurityException("PROVIDER_STALE_INSTALL");
-            publication=broker.providers.find(target,component);
+            if(!metadata(to.install,component).enabled)return new Bundle();
+            publication=local?broker.providers.find(target,component):broker.providers.ensurePublication(to,component);
             var sourceSlot=broker.requiredSlot(source);
-            thin=sourceSlot.mode==RuntimeMode.THIN&&to.mode==RuntimeMode.THIN;
+            thin=sourceSlot.mode.routesThroughPlatform()&&to.mode.routesThroughPlatform();
             if(thin)publication.putString("callerPackage",session.identity.packageName);
+            // Commit capability creation with the final live-slot checks. Otherwise
+            // death can close references before this late OPEN acquisition is inserted.
+            publication.putBoolean("thin",thin);
+            publication.putString("cap",thin?publication.getString("lease"):broker.providers.acquire(source,publication,logical,input.getBoolean("stable")));
         }
-        publication.putBoolean("thin",thin);
-        publication.putString("cap",thin?publication.getString("lease"):broker.providers.acquire(source,publication,logical,input.getBoolean("stable")));
         publication.putString("authority",logical);publication.putBoolean("local",local);publication.putString("physical",RuntimeProviderTransport.authority(broker.host,RuntimeSlot.index(to.activityStub)));return publication;
     }
     Bundle handle(int code,Bundle input,String generation)throws Exception{
@@ -75,6 +78,8 @@ final class RuntimeProviderBroker {
     }
     private Bundle handleTransaction(int code,Bundle input,String generation)throws Exception{
         Bundle out=new Bundle();ProviderLedger ledger=broker.providers;
+        if(code==RuntimeWire.PROVIDER_THIN_ACCESS)return thinAccess(input,generation);
+        if(code==RuntimeWire.PROVIDER_PUBLICATION&&"describe".equals(input.getString("kind"))){Bundle owned=ledger.lease(RuntimeWire.required(input,"lease"));if(!generation.equals(owned.getString("target")))throw new SecurityException("PROVIDER_LEASE_OWNER_MISMATCH");broker.requiredSlot(generation);return owned;}
         if(code==RuntimeWire.PROVIDER_PUBLICATION){ledger.publication(RuntimeWire.required(input,"lease"),generation,RuntimeWire.required(input,"state"));return out;}
         String cap=RuntimeWire.required(input,"cap");Bundle ref=ledger.acquisition(cap);String source=ref.getString("source"),target=ref.getString("target");
         if(code==RuntimeWire.PROVIDER_RELEASE){ledger.release(cap,generation);return out;}
@@ -122,6 +127,35 @@ final class RuntimeProviderBroker {
         }
         if(code==RuntimeWire.PROVIDER_FINISH){if(!call.getString("invocation").equals("RUNNING"))throw new IllegalStateException("PROVIDER_INVOCATION_NOT_RUNNING");boolean success=input.getBoolean("success");boolean readiness=call.getString("kind").equals("ready");ledger.finished(operation,success||readiness);if(success)broker.contract.succeed(operation,"PROVIDER_CALLBACK_RETURNED");else if(readiness)broker.contract.fail(operation,"PROVIDER_NOT_READY");else broker.contract.markUnknown(operation,"PROVIDER_CALLBACK_THREW_EFFECT_UNKNOWN:"+input.getString("failureClass","")+":"+input.getString("failureMessage",""));return out;}
         throw new IllegalArgumentException("PROVIDER_PROTOCOL_UNSUPPORTED");
+    }
+    /** Read-only admission; no acquisition, operation, callback or initialization occurs under this lock. */
+    private Bundle thinAccess(Bundle input,String target){
+        var targetSlot=broker.requiredSlot(target);
+        String source=RuntimeWire.required(input,"source");
+        var caller=broker.contract.authenticate(source,input.getInt("callerPid"),input.getInt("callerUid"));
+        var sourceSlot=broker.requiredSlot(source);
+        if(!targetSlot.mode.routesThroughPlatform()||!sourceSlot.mode.routesThroughPlatform())throw new SecurityException("PROVIDER_THIN_MODE_REQUIRED");
+        if(!caller.identity.spaceId.equals(targetSlot.install.space))throw new SecurityException("PROVIDER_SPACE_MISMATCH");
+        Bundle publication=broker.providers.lease(RuntimeWire.required(input,"lease"));
+        if(!target.equals(publication.getString("target")))throw new SecurityException("PROVIDER_LEASE_OWNER_MISMATCH");
+        // THIN READY is the existing publication admission, not proof that the
+        // guest instance has initialized. The worker still joins its one future.
+        if(!"READY".equals(publication.getString("publication")))throw new SecurityException("PROVIDER_PUBLICATION_NOT_ADMITTED");
+        String value=RuntimeWire.required(input,"uri"),kind=RuntimeWire.required(input,"kind");Uri uri=Uri.parse(value);
+        if(!"content".equals(uri.getScheme()))throw new SecurityException("PROVIDER_URI_MISMATCH");
+        String logical=authority(uri.getAuthority());
+        RuntimeProviderIndex index=new RuntimeProviderIndex(targetSlot.install.info.providers,targetSlot.install.components());
+        ProviderInfo info=index.component(publication.getString("component"));
+        RuntimeProviderIndex.requireAuthority(info,logical);
+        ProviderInfo resolved=index.authority(logical);var owner=InstallProviderIndex.find(broker.store.getReadableDatabase(),targetSlot.install.space,logical);
+        if(owner==null||!owner.pkg.equals(targetSlot.install.info.packageName)||!owner.generation.equals(targetSlot.install.generation)||resolved==null||!resolved.name.equals(info.name))throw new SecurityException("PROVIDER_AUTHORITY_OWNER_MISMATCH");
+        // Component enablement controls resolution. An admitted publication
+        // retains existing handles after DONT_KILL_APP, as in the SDK; caller,
+        // owner and manifest permissions remain checked on every callback.
+        // Even an empty batch must pass the base owner/exported boundary.
+        access(info,caller.identity.packageName,"ready",uri);accessRequest(info,caller.identity.packageName,kind,uri,input);
+        publication.putString("source",source);publication.putString("uri",value);publication.putString("authority",logical);publication.putBoolean("thin",true);
+        publication.putString("callerPackage",caller.identity.packageName);publication.putInt("callerPid",caller.pid);publication.putInt("callerUid",caller.uid);return publication;
     }
     private boolean reaches(String from,String target,Set<String> visited){
         if(from.equals(target))return true;

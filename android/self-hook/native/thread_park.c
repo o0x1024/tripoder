@@ -21,6 +21,7 @@ struct park_slot {
     _Atomic unsigned long long control; /* epoch and state form one indivisible identity */
     _Atomic int tid;
     uintptr_t pc, sp, lr;              /* ENTERING owns writes; PARKED release publishes */
+    uint64_t signal_mask;
 };
 static struct {
     _Atomic bool ready, busy;
@@ -62,6 +63,7 @@ static void park_handler(int signal, siginfo_t *info, void *raw_context) {
         slot->pc = context->uc_mcontext.pc;
         slot->sp = context->uc_mcontext.sp;
         slot->lr = context->uc_mcontext.regs[30];
+        __builtin_memcpy(&slot->signal_mask,&context->uc_sigmask,sizeof(slot->signal_mask));
         atomic_store_explicit(&slot->control, identity(epoch, PARKED), memory_order_release);
         for (;;) {
             unsigned released = atomic_load_explicit(&park.released, memory_order_acquire);
@@ -292,6 +294,7 @@ enum tp_park_status tp_park_context(unsigned epoch, unsigned index, struct tp_pa
     if (state_of(atomic_load_explicit(&slot->control, memory_order_acquire)) != PARKED) return TP_PARK_INVENTORY;
     context->tid = atomic_load(&slot->tid);
     context->pc = slot->pc; context->sp = slot->sp; context->lr = slot->lr;
+    context->signal_mask=slot->signal_mask;
     return TP_PARK_OK;
 }
 unsigned tp_park_late_signals(unsigned epoch) {

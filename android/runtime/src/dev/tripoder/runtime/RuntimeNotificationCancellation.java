@@ -16,13 +16,17 @@ final class RuntimeNotificationCancellation {
         if(bytes.length>512||!logical.equals(new String(bytes,StandardCharsets.UTF_8)))throw new IllegalArgumentException("NOTIFICATION_TAG_UNSUPPORTED");
         return prefix+"s"+Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
-    private boolean owns(String physical){
+    boolean owns(String physical){
         if(physical==null||!physical.startsWith(prefix))return false;
         if(physical.equals(prefix+"n"))return true;
         if(!physical.startsWith(prefix+"s"))throw new IllegalStateException("NOTIFICATION_TAG_ENCODING_INVALID");
         String logical=new String(Base64.getUrlDecoder().decode(physical.substring(prefix.length()+1)),StandardCharsets.UTF_8);
         if(!tag(logical).equals(physical))throw new IllegalStateException("NOTIFICATION_TAG_ENCODING_INVALID");
         return true;
+    }
+    String logical(String physical){
+        if(!owns(physical))throw new SecurityException("NOTIFICATION_TAG_SCOPE_MISMATCH");
+        return physical.equals(prefix+"n")?null:new String(Base64.getUrlDecoder().decode(physical.substring(prefix.length()+1)),StandardCharsets.UTF_8);
     }
     void cancel(NotificationManager platform,String logical,int id){platform.cancel(tag(logical),id);}
     void cancelAll(NotificationManager platform){

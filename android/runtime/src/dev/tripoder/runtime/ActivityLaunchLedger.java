@@ -34,8 +34,15 @@ final class ActivityLaunchLedger {
         void caller(android.os.Bundle out){out.putString("callerPackage",callerPackage);out.putString("callerComponent",callerComponent);out.putString("callerKind",callerKind);out.putBoolean("expectsResult",expectsResult);}
     }
     String prepare(String candidate,String generation,String operation,boolean expectsResult,String callerPackage,String payloadDigest,ActivityLedger.Ticket source,int requestFlags){
+        return prepare(candidate,generation,operation,expectsResult,callerPackage,payloadDigest,source,requestFlags,source==null?"CONTROLLER":"ACTIVITY");
+    }
+    String prepareContext(String candidate,String generation,String operation,String callerPackage,String payloadDigest,int requestFlags){
+        if(operation==null||(requestFlags&android.content.Intent.FLAG_ACTIVITY_NEW_TASK)==0)throw new SecurityException("ACTIVITY_CONTEXT_SOURCE_INVALID");
+        return prepare(candidate,generation,operation,false,callerPackage,payloadDigest,null,requestFlags,"CONTEXT");
+    }
+    private String prepare(String candidate,String generation,String operation,boolean expectsResult,String callerPackage,String payloadDigest,ActivityLedger.Ticket source,int requestFlags,String callerKind){
         String id=UUID.randomUUID().toString();ContentValues row=new ContentValues();row.put("id",id);row.put("candidate",candidate);row.put("generation",generation);row.put("operation",operation);row.put("expectsResult",expectsResult?1:0);row.put("callerPackage",callerPackage);row.put("payloadDigest",payloadDigest);row.put("state","PREPARED");
-        row.put("callerKind",source==null?"CONTROLLER":"ACTIVITY");
+        row.put("callerKind",callerKind);
         row.put("requestFlags",requestFlags);
         if(source!=null){if(!callerPackage.equals(source.pkg))throw new SecurityException("ACTIVITY_SOURCE_PACKAGE_MISMATCH");row.put("sourceTicket",source.id);row.put("sourceInstance",source.instance);row.put("callerComponent",source.component);}
         store.getWritableDatabase().insertOrThrow("activity_launches",null,row);return id;

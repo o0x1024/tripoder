@@ -54,6 +54,9 @@ final class RuntimeSelfHookComponents {
     static Object serviceLifecycle(Method target,Object receiver,Object[] arguments,RuntimeSelfHookLifecycle.Original original)throws Throwable {
         return RuntimeSelfHookLifecycle.service(require().services,target,receiver,arguments,original);
     }
+    static Object receiverLifecycle(Method target,Object receiver,Object[] arguments,RuntimeSelfHookLifecycle.Original original)throws Throwable {
+        return RuntimeSelfHookLifecycle.receiver(require().receivers,target,receiver,arguments,original);
+    }
     static RuntimeSelfHookFrameworkCalls frameworkCalls(){return require().framework;}
     private void check() {
         if(engine!=RuntimeEngine.current||failure!=null)throw new IllegalStateException("SELF_COMPONENT_ADAPTER_UNAVAILABLE",failure);
@@ -67,6 +70,7 @@ final class RuntimeSelfHookComponents {
     private final RuntimeSelfHookLifecycle.ReceiverRoute receivers=new RuntimeSelfHookLifecycle.ReceiverRoute() {
         public boolean owns(Object receiver){check();return RuntimeBridge.ownsReceiver((BroadcastReceiver)receiver);}
         public Object pending(Object receiver){return framework.receiverPendingResult((BroadcastReceiver)receiver);}
+        public boolean platformContext(Object context){return engine.receivers.platformContext((Context)context);}
         public Object before(Object receiver,Object intent,Object pending){return RuntimeBridge.receiverBefore((BroadcastReceiver)receiver,(Intent)intent,pending);}
         public Object context(Object original){return RuntimeBridge.context((Context)original);}
         public void after(Object receiver,boolean success){RuntimeBridge.receiverAfter((BroadcastReceiver)receiver,success);}
@@ -96,23 +100,26 @@ final class RuntimeSelfHookComponents {
     }
     static void installReceiver(BroadcastReceiver receiver) {
         RuntimeSelfHookComponents value=require();
-        if(receiver==null||!value.engine.ownsReceiverLoader(receiver.getClass().getClassLoader()))throw new SecurityException("SELF_COMPONENT_LOADER_MISMATCH");
+        if(receiver==null||!value.engine.ownsReceiverType(receiver.getClass()))throw new SecurityException("SELF_COMPONENT_LOADER_MISMATCH");
         Method target=publicLifecycle(receiver.getClass(),"onReceive",Context.class,Intent.class);
+        if(target==null){
+            if(!dev.tripoder.selfhook.SystemReceiverAccess.ownsType(receiver.getClass()))throw new SecurityException("SELF_RECEIVER_FIXED_CALLBACK_REQUIRED");
+            return;
+        }
         value.install(Map.of(target,(instance,arguments,original)->RuntimeSelfHookLifecycle.receiver(value.receivers,target,instance,arguments,original)));
     }
     private void ownedType(Object component) {
         if(component==null||!engine.ownsLoader(component.getClass().getClassLoader()))throw new SecurityException("SELF_COMPONENT_LOADER_MISMATCH");
     }
     /**
-     * A lifecycle implementation inherited from a boot class (IntentService.onBind, JobService.onStartJob, ...) is
-     * framework code: the guest never runs there, and hooking a framework class globally would require a registered
-     * boot adapter. Only a guest or guest-library override is ours to wrap; when none exists the platform
-     * implementation runs unchanged, exactly as it does on a real device.
+     * Boot lifecycle entries belong to the fixed pre-guest adapters, including
+     * IntentService's queueing and teardown overrides. This dynamic boundary
+     * only installs guest or guest-library implementations.
      */
     private static Method publicLifecycle(Class<?> type,String name,Class<?>... parameters) {
         try {
             Method method=type.getMethod(name,parameters);
-            if(method.getDeclaringClass().getClassLoader()==null)return null;
+            if(method.getDeclaringClass().getClassLoader()==Class.class.getClassLoader())return null;
             if(Modifier.isStatic(method.getModifiers())||Modifier.isAbstract(method.getModifiers()))
                 throw new IllegalStateException("SELF_COMPONENT_LIFECYCLE_NOT_CONCRETE:"+method);
             return method;
@@ -146,7 +153,10 @@ final class RuntimeSelfHookComponents {
             if(value.settingsAttempted)throw new IllegalStateException("SELF_SETTINGS_ALREADY_ATTEMPTED");
             value.settingsAttempted=true;
             try {
-                RuntimeBridge.settingsProviderHandle(Objects.requireNonNull(value.framework.providerHandle(RuntimeBridge.provider()),"PROVIDER_SETTINGS_HANDLE_REQUIRED"));
+                Object handle=Objects.requireNonNull(value.framework.providerHandle(RuntimeBridge.provider()),"PROVIDER_SETTINGS_HANDLE_REQUIRED");
+                RuntimeBridge.settingsProviderHandle(handle);
+                dev.tripoder.selfhook.SettingsNamespaceAccess.publish(handle);
+                if(value.engine.traceStartup)android.util.Log.i("TripoderSettingsNamespace",new org.json.JSONObject(dev.tripoder.selfhook.SettingsNamespaceAccess.check()).toString());
                 value.settingsRegistered=true;
             }catch(RuntimeException|Error error){value.failure=error;throw error;}
         }

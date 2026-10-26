@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <time.h>
 
 struct entry {
     struct tp_art_method_view *target,*backup,*helper;
@@ -79,6 +80,8 @@ static uintptr_t policy_runtime;
 static uint8_t saved_runtime_interpret;
 static uint32_t saved_runtime_debug;
 static bool bootstrap_deferred,runtime_state_saved;
+static uint64_t toggle_phase_ns[6],claim_sub_ns[3];
+static uint64_t phase_now(void){struct timespec t;clock_gettime(CLOCK_MONOTONIC,&t);return (uint64_t)t.tv_sec*1000000000u+(uint64_t)t.tv_nsec;}
 static void restore_runtime_state_locked(void){
     if(!runtime_state_saved)return;
     *(uint8_t *)(policy_runtime+0x362)=saved_runtime_interpret;
@@ -108,19 +111,19 @@ static bool claim_and_enable_nterp_locked(bool invalidate_callers){
         if(interpreter.level(interpreter.instrumentation)!=0)return false;
         interpreter.deopt_all(interpreter.instrumentation,tp_art_interpreter_client);
         accepted=interpreter.level(interpreter.instrumentation)==2;
-    }else accepted=tp_art_interpreter_claim_locked(&interpreter);
+    }else{uint64_t c0=phase_now();accepted=tp_art_interpreter_claim_locked(&interpreter);claim_sub_ns[0]=phase_now()-c0;}
     if(accepted&&(!already||invalidate)){
         // DeoptimizeEverything alone does not retire cached JIT code. Without
         // invalidation ConfigureStubs can republish a caller with the old
         // inlined body, even though the target entry is correctly hooked.
-        if(!tp_art_entry_writer_invalidate_compiled_callers())return false;
+        uint64_t c1=phase_now();if(!tp_art_entry_writer_invalidate_compiled_callers())return false;claim_sub_ns[1]=phase_now()-c1;
         atomic_fetch_add_explicit(&publication_deoptimizations,1,memory_order_relaxed);
         if(!already){
             uintptr_t jit=*(uintptr_t *)(runtime+0x298),options=jit?*(uintptr_t *)(jit+0x10):0;bootstrap_jit_option=(uint8_t *)options;if(bootstrap_jit_option){saved_jit_option=*bootstrap_jit_option;*bootstrap_jit_option=0;}
         }
         if(runtime){*(uint8_t *)(runtime+0x362)=0;*(uint32_t *)(runtime+0x3f0)=1;}
-        ((void (*)(void *,const char *,int,bool))(art.managed.access.base+0x8df864))(
-            interpreter.instrumentation,tp_art_interpreter_client,0,false);
+        uint64_t c2=phase_now();((void (*)(void *,const char *,int,bool))(art.managed.access.base+0x8df864))(
+            interpreter.instrumentation,tp_art_interpreter_client,0,false);claim_sub_ns[2]=phase_now()-c2;
         for(unsigned i=0;i<TP_MANAGED_ENTRY_LIMIT;i++)if(entries[i].helper)entries[i].helper->quick=art.managed.interpreter_bridge;
         // Configure the invalidated callers while mutators are stopped, then
         // return the runtime's execution flags to their preimage. Entry barriers
@@ -305,6 +308,12 @@ JNIEXPORT jint JNICALL Java_dev_tripoder_selfhook_ManagedHook_prepareBatchNative
     }
     return -1;
 }
+JNIEXPORT jstring JNICALL Java_dev_tripoder_selfhook_ManagedHook_togglePhasesNative(JNIEnv *env,jclass cls){
+    (void)cls;char text[240];snprintf(text,sizeof(text),"deopt=%llums invalidate=%llums configure=%llums suspend=%llums claim=%llums validate=%llums register=%llums write=%llums resume=%llums",
+        (unsigned long long)(claim_sub_ns[0]/1000000),(unsigned long long)(claim_sub_ns[1]/1000000),(unsigned long long)(claim_sub_ns[2]/1000000),(unsigned long long)(toggle_phase_ns[0]/1000000),(unsigned long long)(toggle_phase_ns[1]/1000000),(unsigned long long)(toggle_phase_ns[2]/1000000),
+        (unsigned long long)(toggle_phase_ns[3]/1000000),(unsigned long long)(toggle_phase_ns[4]/1000000),(unsigned long long)(toggle_phase_ns[5]/1000000));
+    return (*env)->NewStringUTF(env,text);
+}
 JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNative(JNIEnv *env,jclass cls,jintArray incoming,jboolean enabled,jboolean entry_only){
     (void)cls;if(!incoming)return JNI_FALSE;jsize count=(*env)->GetArrayLength(env,incoming);
     if(count<1||count>TP_MANAGED_ENTRY_LIMIT)return JNI_FALSE;
@@ -316,10 +325,10 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNat
         if(entry_only&&(!enabled||e->native||!e->instance||e->caller_count||e->transitions||!atomic_load_explicit(&bootstrap_complete,memory_order_acquire)))return JNI_FALSE;
     }
     if(enabled&&!tp_art_entry_writer_activate())return JNI_FALSE;
-    char jit=0,mutators=0;art.managed.jit_suspend(&jit);art.managed.access.suspend(&mutators,"tripoder-managed-batch-toggle",false);
-    bool invalidate_callers=false;for(jsize i=0;i<count;i++)if(enabled&&!entry_only&&!entries[indices[i]].callers_invalidated)invalidate_callers=true;
+    uint64_t p0=phase_now();char jit=0,mutators=0;art.managed.jit_suspend(&jit);art.managed.access.suspend(&mutators,"tripoder-managed-batch-toggle",false);
+    uint64_t p1=phase_now();bool invalidate_callers=false;for(jsize i=0;i<count;i++)if(enabled&&!entry_only&&!entries[indices[i]].callers_invalidated)invalidate_callers=true;
     bool accepted=claim_and_enable_nterp_locked(invalidate_callers)&&tp_art_entry_writer_installed();
-    unsigned failure=accepted?0:1;int failed_index=-1;uintptr_t observed_quick=0,expected_quick=0;uint32_t observed_flags=0;
+    uint64_t p2=phase_now();unsigned failure=accepted?0:1;int failed_index=-1;uintptr_t observed_quick=0,expected_quick=0;uint32_t observed_flags=0;
     struct identity_snapshot identity={0};uintptr_t prepared_quick=0;uint32_t expected_flags=0,expected_dex=0,expected_index=0;
     // Validate EVERY preimage and GC root before registering or changing any entry.
     for(jsize i=0;accepted&&i<count;i++){
@@ -337,11 +346,13 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNat
         if(!accepted){failed_index=slot;observed_quick=e->target->quick;expected_quick=expected;observed_flags=e->target->flags;
             prepared_quick=e->prepared_quick;expected_flags=e->semantic_flags;expected_dex=e->dex_index;expected_index=e->method_index;}
     }
+    uint64_t p3=phase_now();
     for(jsize i=0;accepted&&i<count;i++){
         struct entry *e=&entries[indices[i]];
         if(e->transitions==0)accepted=tp_entry_owner_register(&tp_art_entry_owners,&e->writer_policy)==TP_ENTRY_REGISTERED;
         if(!accepted){failure=7;failed_index=indices[i];}
     }
+    uint64_t p4=phase_now();
     for(jsize i=0;accepted&&i<count;i++){
         struct entry *e=&entries[indices[i]];if(!e->native)e->target->flags&=~UINT32_C(0x00100000);
         if(!e->native){
@@ -358,7 +369,8 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNat
         if(!accepted){failure=8;failed_index=indices[i];}
         if(accepted){if(enabled&&!entry_only&&!native_compilation)e->callers_invalidated=true;atomic_store_explicit(&e->active,enabled,memory_order_release);e->transitions++;e->stage=enabled?"ACTIVE":"DISABLED";}
     }
-    art.managed.access.resume(&mutators);art.managed.jit_resume(&jit);
+    uint64_t p5=phase_now();art.managed.access.resume(&mutators);art.managed.jit_resume(&jit);
+    {uint64_t p6=phase_now();toggle_phase_ns[0]=p1-p0;toggle_phase_ns[1]=p2-p1;toggle_phase_ns[2]=p3-p2;toggle_phase_ns[3]=p4-p3;toggle_phase_ns[4]=p5-p4;toggle_phase_ns[5]=p6-p5;}
     if(accepted&&entry_only)atomic_fetch_add_explicit(&callback_publications,1,memory_order_relaxed);
     if(!accepted){char reason[512];snprintf(reason,sizeof(reason),"TP_MANAGED_ENTRY_OWNERSHIP stage=%u slot=%d quick=%lx expected=%lx prepared=%lx flags=%x identity=%u owners=%lx/%lx semantic=%x/%x dex=%u/%u index=%u/%u data=%lx/%lx",failure,failed_index,(unsigned long)observed_quick,(unsigned long)expected_quick,(unsigned long)prepared_quick,observed_flags,identity.mismatch,(unsigned long)identity.target_owner,(unsigned long)identity.backup_owner,identity.flags,expected_flags,identity.dex_index,expected_dex,identity.method_index,expected_index,(unsigned long)identity.target_data,(unsigned long)identity.backup_data);fatal(reason);}
     return JNI_TRUE;

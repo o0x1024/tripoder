@@ -45,16 +45,20 @@ final class JobAttemptLedger {
         String attempt=RuntimeWire.required(input,"attempt");IBinder callback=input.getBinder("callback");
         if(callback==null||!callback.equals(callbacks.get(attempt)))throw new SecurityException("JOB_ATTEMPT_CALLBACK_STALE");
         try(Cursor c=broker.store.getReadableDatabase().rawQuery("SELECT generation,instance FROM job_attempts WHERE attempt=?",new String[]{attempt})){if(!c.moveToFirst()||!generation.equals(c.getString(0))||!instance.equals(c.getString(1)))throw new SecurityException("JOB_ATTEMPT_OWNER_MISMATCH");}
-        if(!Set.of("START_RETURNED","STOP_ENTERED","STOP_RETURNED","NETWORK_CHANGED","FINISH_REQUESTED","START_RPC_RETURNED","STOP_RPC_RETURNED","FINISH_RPC_RETURNED").contains(event))throw new SecurityException("JOB_ATTEMPT_EVENT_UNSUPPORTED");
+        if(!Set.of("START_RETURNED","STOP_ENTERED","STOP_RETURNED","NETWORK_CHANGED","FINISH_REQUESTED","START_RPC_RETURNED","STOP_RPC_RETURNED","FINISH_RPC_RETURNED","WORK_DEQUEUE_ENTERED","WORK_DEQUEUE_RETURNED","WORK_DEQUEUE_UNCONFIRMED","WORK_COMPLETE_ENTERED","WORK_COMPLETE_RETURNED","WORK_COMPLETE_UNCONFIRMED").contains(event))throw new SecurityException("JOB_ATTEMPT_EVENT_UNSUPPORTED");
+        if(event.equals("WORK_DEQUEUE_ENTERED"))broker.requiredSlot(generation);
         record(attempt,event,Boolean.toString(input.getBoolean("value")));
-        ContentValues row=new ContentValues();row.put("state",event);broker.store.getWritableDatabase().update("job_attempts",row,"attempt=?",new String[]{attempt});return new Bundle();
+        boolean completed=event.equals("START_RPC_RETURNED")&&!input.getBoolean("value");
+        ContentValues row=new ContentValues();row.put("state",completed?"COMPLETED":event.endsWith("UNCONFIRMED")?"UNKNOWN":event);broker.store.getWritableDatabase().update("job_attempts",row,"attempt=?",new String[]{attempt});
+        if(completed||event.equals("STOP_RPC_RETURNED")||event.equals("FINISH_RPC_RETURNED"))callbacks.remove(attempt);
+        return new Bundle();
     }
     private void record(String attempt,String event,String detail){ContentValues row=new ContentValues();row.put("attempt",attempt);row.put("event",event);row.put("detail",detail);row.put("created",System.currentTimeMillis());broker.store.getWritableDatabase().insertOrThrow("job_attempt_events",null,row);}
     private void releaseCallbacks(String column,String value){try(Cursor c=broker.store.getReadableDatabase().rawQuery("SELECT attempt FROM job_attempts WHERE "+column+"=?",new String[]{value})){while(c.moveToNext())callbacks.remove(c.getString(0));}}
     void dead(String generation){
         releaseCallbacks("generation",generation);
-        broker.store.getWritableDatabase().execSQL("UPDATE job_attempts SET state='UNKNOWN' WHERE generation=? AND state NOT IN ('STOP_RPC_RETURNED','FINISH_RPC_RETURNED')",new Object[]{generation});
+        broker.store.getWritableDatabase().execSQL("UPDATE job_attempts SET state='UNKNOWN' WHERE generation=? AND state NOT IN ('STOP_RPC_RETURNED','FINISH_RPC_RETURNED','COMPLETED')",new Object[]{generation});
         broker.store.getWritableDatabase().execSQL("UPDATE job_instances SET state='PROCESS_DEAD' WHERE generation=? AND state='LIVE'",new Object[]{generation});
     }
-    static void recover(SQLiteDatabase db){db.execSQL("UPDATE job_attempts SET state='UNKNOWN' WHERE state NOT IN ('STOP_RPC_RETURNED','FINISH_RPC_RETURNED')");db.execSQL("UPDATE job_instances SET state='PROCESS_DEAD' WHERE state='LIVE'");}
+    static void recover(SQLiteDatabase db){db.execSQL("UPDATE job_attempts SET state='UNKNOWN' WHERE state NOT IN ('STOP_RPC_RETURNED','FINISH_RPC_RETURNED','COMPLETED')");db.execSQL("UPDATE job_instances SET state='PROCESS_DEAD' WHERE state='LIVE'");}
 }

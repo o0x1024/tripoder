@@ -27,9 +27,9 @@ final class RuntimeAgentAnalysis {
             synchronized(broker){for(var slot:broker.processSlots())if(slot.install.space.equals(target.getString("space"))&&slot.install.info.packageName.equals(target.getString("package")))throw new IllegalStateException("PROCESS_ALREADY_RUNNING_STARTUP_PROBE_NOT_APPLIED");}
             String component=input.getString("component");
             if(component.isEmpty()){
-                JSONArray entries=new JSONArray(RuntimeControllerLaunch.targets(broker,ControlWire.request("launchTargets","project",target.getString("project"),"bindingOperation",target.getString("bindingOperation"))).getString("targets"));
-                for(int i=0;i<entries.length();i++)if(entries.getJSONObject(i).getBoolean("launcher")){if(!component.isEmpty())throw new IllegalStateException("APPLICATION_HAS_MULTIPLE_LAUNCHERS");component=entries.getJSONObject(i).getString("component");}
-                if(component.isEmpty())throw new IllegalStateException("APPLICATION_HAS_NO_LAUNCHER");
+                var install=broker.apks.get(target.getString("space"),target.getString("package"));
+                if(!target.getString("generation").equals(install.generation))throw new IllegalStateException("LAUNCH_BINDING_STALE");
+                component=RuntimeControllerLaunch.applicationEntry(install).getComponent().getClassName();
             }
             Bundle request=ControlWire.request("prepareLaunch","operation",input.getString("operation"),"project",target.getString("project"),"bindingOperation",target.getString("bindingOperation"),"generation",target.getString("generation"),"component",component);request.putString("codeProbeRevision",input.getString("probeRevision"));
             Bundle result=RuntimeControllerLaunch.prepare(broker,request,lease);
@@ -42,7 +42,7 @@ final class RuntimeAgentAnalysis {
             RuntimeControllerCommands.targetFields(input,"command");return new JSONObject().put("startupProbes",true).put("applicationStop",true).put("loaderDiscovery",true).put("dexMemorySnapshots",true).put("dexVersions",new JSONArray(new int[]{35,37,38,39,40})).put("compactDex",false).put("methodBodyReconstruction",false).put("atomicMemorySnapshot",false).put("defaultProbeHooks",0).put("maxArtifactChunkBytes",16384).put("discoveryScope","OWNED_BASE_DEX_CLASS_LOADERS").put("probePlansSurviveAuthorityRestart",false);
         }
         if(command.equals("agentProjects")){
-            RuntimeControllerCommands.targetFields(input,"command");new ApplicationProjects(broker).reconcileMetadata();JSONArray projects=new JSONArray();synchronized(broker){try(var c=broker.store.getReadableDatabase().rawQuery("SELECT p.id,p.space,p.package,p.generation,p.operation,p.mode FROM project_refs p JOIN installs i ON i.space=p.space AND i.package=p.package AND i.generation=p.generation WHERE p.kind='DIRECT' AND p.state='COMMITTED' AND i.state='COMMITTED' ORDER BY p.id LIMIT 257",null)){
+            RuntimeControllerCommands.targetFields(input,"command");JSONArray projects=new JSONArray();synchronized(broker){try(var c=broker.store.getReadableDatabase().rawQuery("SELECT p.id,p.space,p.package,p.generation,p.operation,p.mode FROM project_refs p JOIN installs i ON i.space=p.space AND i.package=p.package AND i.generation=p.generation WHERE p.kind='DIRECT' AND p.state='COMMITTED' AND i.state='COMMITTED' ORDER BY p.id LIMIT 257",null)){
                 while(c.moveToNext())projects.put(new JSONObject().put("project",c.getString(0)).put("space",c.getString(1)).put("package",c.getString(2)).put("installGeneration",c.getString(3)).put("bindingOperation",c.getString(4)).put("mode",c.getString(5)));
             }}if(projects.length()>256)throw new IllegalStateException("PROJECT_PAGE_REQUIRED");return new JSONObject().put("projects",projects);
         }

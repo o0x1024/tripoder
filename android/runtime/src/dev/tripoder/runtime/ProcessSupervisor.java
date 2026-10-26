@@ -92,11 +92,12 @@ public final class ProcessSupervisor {
             launch=launches.get(key);
             if(launch==null){
                 var existing=broker.findProcess(space,pkg,process);
-                if(existing!=null){var state=broker.contract.getSession(existing.allocation.session.processGeneration).state;if(state!=ExecutionContract.ProcessState.RUNNING&&(awaitApplication||state!=ExecutionContract.ProcessState.ATTACHED))throw new IllegalStateException("PROCESS_NOT_READY");return existing;}
+                if(existing!=null){broker.requiredSlot(existing.allocation.session.processGeneration);var state=broker.contract.getSession(existing.allocation.session.processGeneration).state;if(state!=ExecutionContract.ProcessState.RUNNING&&(awaitApplication||state!=ExecutionContract.ProcessState.ATTACHED))throw new IllegalStateException("PROCESS_NOT_READY");return existing;}
                 launch=reserveLaunch(install,process,key,false);owner=true;
             }
             if(!launch.slot.install.generation.equals(install.generation)||!launch.slot.install.data.equals(install.data))throw new IllegalStateException("STALE_INSTALL");
             if(launch.dead)throw new IllegalStateException("PROCESS_DRAINING");
+            broker.requiredSlot(launch.slot.allocation.session.processGeneration);
         }
         if(owner){Launch starting=launch;starts.execute(()->start(starting));}
         if(!wait)return launch.slot;
@@ -125,7 +126,7 @@ public final class ProcessSupervisor {
         if(allowSpare&&spare!=null&&fits(spare.index,install,process,retained))index=spare.index;
         for(int i=0;index<0&&i<RuntimeSlot.CAPACITY;i++)if((spare==null||spare.index!=i)&&fits(i,install,process,retained))index=i;
         if(index<0&&spare!=null){Spare idle=spare;dropSpare(idle);if(fits(idle.index,install,process,retained))index=idle.index;}
-        if(index<0)throw new IllegalStateException("PROCESS_CAPACITY_EXHAUSTED");
+        if(index<0)throw new IllegalStateException("PROCESS_CAPACITY_EXHAUSTED:requiredSlot="+(retained==null?"any":retained));
         return index;
     }
     private boolean fits(int i,ApkStore.BundleInstall install,String process,String retained){
@@ -207,9 +208,9 @@ public final class ProcessSupervisor {
     private void start(Launch launch){
         try{
             synchronized(broker){if(launch.external||launch.dead)return;}
-            FutureTask<Boolean> bind=new FutureTask<>(()->{synchronized(broker){if(launch.external||launch.dead)return true;}boolean ok=broker.host.bindService(new Intent(broker.host,RuntimeSlot.worker(launch.index)).putExtra("tripoder.bootstrapAbort",launch.slot.allocation.bootstrapToken),launch,Context.BIND_AUTO_CREATE);launch.boundToSystem=ok;launch.bindResolved=true;return ok;});main.post(bind);
+            FutureTask<Boolean> bind=new FutureTask<>(()->{synchronized(broker){if(launch.external||launch.dead)return true;launch.bindAdmissionStarted=true;}boolean ok=broker.host.bindService(new Intent(broker.host,RuntimeSlot.worker(launch.index)).putExtra("tripoder.bootstrapAbort",launch.slot.allocation.bootstrapToken),launch,Context.BIND_AUTO_CREATE);launch.boundToSystem=ok;launch.bindResolved=true;return ok;});main.post(bind);
             if(!bind.get(5,TimeUnit.SECONDS))throw new IllegalStateException("WORKER_BIND_REJECTED");
-            synchronized(broker){if(launch.external)return;}
+            synchronized(broker){if(launch.external||launch.dead)return;}
             if(!launch.connected.await(15,TimeUnit.SECONDS)||launch.peer==null)throw new IllegalStateException("WORKER_BIND_TIMEOUT_UNKNOWN");
             if(launch.spare!=null){
                 // A warm worker's onBind already ran without this launch's abort capability; hand it over, then let the idle bind go.
@@ -238,39 +239,105 @@ public final class ProcessSupervisor {
         // the caller's thread so an unresponsive guest cannot prevent the UNKNOWN response.
         if(first){
             if(launch.peer!=null)requestStop(launch);
-            else if(launch.external||(launch.bindResolved&&!launch.boundToSystem)){
+            // An external component may already be running in AMS before its
+            // first claim. Missing its peer never proves that process absent.
+            else if(launch.bindResolved&&!launch.boundToSystem){
                 synchronized(broker){broker.dead(launch.slot.allocation.session.processGeneration);}
                 main.post(()->release(launch));
             }
         }
     }
-    private void requestStop(Launch launch){stops.execute(()->{try{Bundle request=new Bundle();request.putString("bootstrapAbort",launch.slot.allocation.bootstrapToken);RuntimeWire.call(launch.peer,RuntimeWire.STOP,request);}catch(Exception error){android.util.Log.w("TripoderRuntime","Worker termination not acknowledged; reservation remains pinned",error);}});}
+    private void requestStop(Launch launch){
+        IBinder peer=launch.peer;if(peer==null)return;
+        requestStop(launch.slot,peer,false);
+    }
+    private void requestStop(RuntimeBroker.Slot slot,IBinder peer,boolean observeDeath){
+        slot.stopDispatch.request(stops,()->{
+            if(observeDeath)try{peer.linkToDeath(()->main.post(()->coldPeerDied(slot)),0);}
+            catch(RemoteException dead){main.post(()->coldPeerDied(slot));return;}
+            try{Bundle request=new Bundle();request.putString("bootstrapAbort",slot.allocation.bootstrapToken);RuntimeWire.call(peer,RuntimeWire.STOP,request);}
+            catch(Exception error){android.util.Log.w("TripoderRuntime","Worker termination not acknowledged; reservation remains pinned",error);}
+        });
+    }
+    private void coldPeerDied(RuntimeBroker.Slot slot){
+        synchronized(broker){broker.dead(slot.allocation.session.processGeneration);}
+        slot.stopDispatch.observedDead();
+    }
     public void stop(String generation)throws Exception{terminate(generation,false);}
+    /** Never wait for a caller's own death on its synchronous setting RPC. */
+    void restartComponents(List<String> generations,String operation){
+        // The observation deadline is independent of STOP's Binder/flush RPC.
+        // An unresponsive worker never turns a timeout into a death assertion.
+        main.postDelayed(()->{synchronized(broker){RuntimeComponentRestart.uncertain(broker,operation);}},15000);
+        // Waiters must not occupy the same finite pool that delivers STOP.
+        for(String generation:generations){
+            try{beginTermination(generation,false);}
+            catch(Exception error){
+                android.util.Log.w("TripoderComponents","Component restart death unconfirmed",error);
+                synchronized(broker){RuntimeComponentRestart.uncertain(broker,operation);}
+            }
+        }
+    }
     public void close(String generation)throws Exception{terminate(generation,true);}
+    /** Ending an application's main process (swiped away, or crashed) ends the application: Android removes a removed task's
+     *  remaining processes too, so none of them is left running invisibly with a session that blocks the next launch. */
+    private void closeSiblings(Launch died){
+        var session=died.slot.allocation.session;
+        if(session.kind!=ExecutionContract.ProcessKind.ORDINARY||!session.identity.processName.equals(died.slot.install.info.packageName))return;
+        new Thread(()->{
+            java.util.List<String> siblings=new java.util.ArrayList<>();
+            synchronized(broker){
+                try(var c=broker.store.getReadableDatabase().rawQuery("SELECT generation FROM sessions WHERE space=? AND package=? AND installGeneration=? AND processKind='ORDINARY' AND state NOT IN ('DEAD','FAILED') AND generation!=?",new String[]{died.slot.install.space,died.slot.install.info.packageName,died.slot.install.generation,session.processGeneration})){while(c.moveToNext())siblings.add(c.getString(0));}
+            }
+            for(String generation:siblings)try{android.util.Log.i("TripoderSupervisor","CLOSE_SIBLING generation="+generation);broker.processes.close(generation);}catch(Exception error){android.util.Log.w("TripoderSupervisor","CLOSE_SIBLING_FAILED generation="+generation+" "+error);}
+        },"tripoder-close-siblings").start();
+    }
     private void terminate(String generation,boolean permanent)throws Exception{
-        Launch selected=null;synchronized(broker){if(permanent)broker.store.requestClose(generation);for(Launch l:launches.values())if(l.slot.allocation.session.processGeneration.equals(generation)){selected=l;break;}if(selected!=null){selected.dead=true;selected.slot.closing=true;}}
+        long deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(15);
+        ProcessStopDispatch stop=beginTermination(generation,permanent);
+        if(stop!=null)stop.awaitDeath(deadline);
+    }
+    private ProcessStopDispatch beginTermination(String generation,boolean permanent)throws Exception{
+        if(broker.isolated.owns(generation))return broker.isolated.stop(generation,permanent);
+        Launch selected=null;boolean neverAdmitted=false;
+        synchronized(broker){
+            if(permanent)broker.store.requestClose(generation);
+            for(Launch l:launches.values())if(l.slot.allocation.session.processGeneration.equals(generation)){selected=l;break;}
+            if(selected!=null){
+                // The same monitor owns the decision immediately BEFORE bindService.
+                // A cold external component may already be in AMS and cannot use this proof.
+                neverAdmitted=!selected.external&&!selected.bindAdmissionStarted&&selected.peer==null&&!selected.boundToSystem;
+                selected.dead=true;selected.slot.closing=true;
+                if(neverAdmitted)broker.dead(generation);
+            }
+        }
+        if(neverAdmitted){
+            var retired=selected;var error=new IllegalStateException("PROCESS_RETIRED_BEFORE_BIND");retired.ready.completeExceptionally(error);retired.prepared.completeExceptionally(error);
+            if(retired.spare!=null){dropSpare(retired.spare);retired.spare=null;}
+            main.post(()->release(retired));return null;
+        }
         if(selected==null){
-            RuntimeBroker.Slot cold;synchronized(broker){if(broker.store.isDead(generation))return;cold=broker.slotForTermination(generation);cold.closing=true;}
-            CountDownLatch dead=new CountDownLatch(1);cold.peer.linkToDeath(dead::countDown,0);RuntimeWire.call(cold.peer,RuntimeWire.STOP,new Bundle());
-            if(!dead.await(15,TimeUnit.SECONDS))throw new IllegalStateException("PROCESS_STOP_UNCONFIRMED");synchronized(broker){broker.dead(generation);}return;
+            RuntimeBroker.Slot cold;IBinder peer;
+            synchronized(broker){if(broker.store.isDead(generation))return null;cold=broker.slotForTermination(generation);cold.closing=true;peer=cold.peer;}
+            if(peer==null)throw new IllegalStateException("PROCESS_STOP_BEFORE_ATTACH_UNKNOWN");
+            requestStop(cold,peer,true);return cold.stopDispatch;
         }
         if(selected.peer==null){drain(selected,new IllegalStateException("PROCESS_STOP_BEFORE_ATTACH_UNKNOWN"));throw new IllegalStateException("PROCESS_STOP_BEFORE_ATTACH_UNKNOWN");}
-        Bundle stop=new Bundle();stop.putString("bootstrapAbort",selected.slot.allocation.bootstrapToken);RuntimeWire.call(selected.peer,RuntimeWire.STOP,stop);
-        if(!selected.disconnected.await(15,TimeUnit.SECONDS))throw new IllegalStateException("PROCESS_STOP_UNCONFIRMED");
+        requestStop(selected);return selected.slot.stopDispatch;
     }
     private void release(Launch launch){
         if(launch.boundToSystem){broker.host.unbindService(launch);launch.boundToSystem=false;}
-        synchronized(broker){launches.remove(launch.key,launch);}launch.disconnected.countDown();main.postDelayed(this::maintainSpare,SPARE_AFTER_LAUNCH_DELAY_MS);
+        synchronized(broker){launches.remove(launch.key,launch);}launch.slot.stopDispatch.observedDead();main.postDelayed(this::maintainSpare,SPARE_AFTER_LAUNCH_DELAY_MS);
     }
     private final class Launch implements ServiceConnection {
         final String key;final int index;final RuntimeBroker.Slot slot;
-        final CountDownLatch connected=new CountDownLatch(1),disconnected=new CountDownLatch(1);
+        final CountDownLatch connected=new CountDownLatch(1),disconnected;
         final CompletableFuture<RuntimeBroker.Slot> ready=new CompletableFuture<>(),prepared=new CompletableFuture<>();
-        volatile IBinder peer;volatile boolean dead,boundToSystem,bindResolved,external;private boolean deathObserved;
+        volatile IBinder peer;volatile boolean dead,boundToSystem,bindResolved,external;boolean bindAdmissionStarted;private boolean deathObserved;
         volatile String phase="BIND";volatile Spare spare;final long begin=SystemClock.elapsedRealtime();
-        Launch(String key,int index,RuntimeBroker.Slot slot){this.key=key;this.index=index;this.slot=slot;}
+        Launch(String key,int index,RuntimeBroker.Slot slot){this.key=key;this.index=index;this.slot=slot;disconnected=slot.stopDispatch.death;}
         @Override public void onServiceConnected(ComponentName name,IBinder value){boolean observe;synchronized(broker){observe=peer==null;if(!observe&&!peer.equals(value))throw new SecurityException("WORKER_PEER_CHANGED");peer=value;}if(observe)try{value.linkToDeath(()->main.post(this::peerDied),0);}catch(RemoteException error){main.post(this::peerDied);}connected.countDown();if(dead)requestStop(this);}
-        private void peerDied(){synchronized(broker){if(deathObserved)return;deathObserved=true;dead=true;broker.dead(slot.allocation.session.processGeneration);}var error=new IllegalStateException("WORKER_DIED");ready.completeExceptionally(error);prepared.completeExceptionally(error);release(this);}
+        private void peerDied(){synchronized(broker){if(deathObserved)return;deathObserved=true;dead=true;broker.dead(slot.allocation.session.processGeneration);}var error=new IllegalStateException("WORKER_DIED");ready.completeExceptionally(error);prepared.completeExceptionally(error);release(this);closeSiblings(this);}
         @Override public void onServiceDisconnected(ComponentName name){if(peer!=null&&!peer.isBinderAlive())peerDied();else drain(this,new IllegalStateException("WORKER_DISCONNECTED_DEATH_UNCONFIRMED"));}
         @Override public void onNullBinding(ComponentName name){ready.completeExceptionally(new IllegalStateException("WORKER_NULL_BINDING"));connected.countDown();}
         @Override public void onBindingDied(ComponentName name){onServiceDisconnected(name);}

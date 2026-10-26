@@ -8,7 +8,7 @@ import org.json.JSONObject;
 final class RuntimeSelfHookStorage {
     private RuntimeSelfHookStorage(){}
     private static RuntimeEngine installedOwner;
-    private static native void installNative(byte[][] paths,boolean thin);
+    private static native void installNative(byte[][] paths,boolean thin,boolean diagnostics);
     private static native void traceExitNative(String path);
     static native String syscallNamespaceNative();
     static native String signalChainNative();
@@ -33,7 +33,7 @@ final class RuntimeSelfHookStorage {
         RuntimeEngine owner=RuntimeEngine.current;
         String[] hostRoots={owner.host.getDataDir().toString(),owner.host.getDataDir().getCanonicalPath(),owner.host.createDeviceProtectedStorageContext().getDataDir().getCanonicalPath()};
         for(int i=0;i<hostRoots.length;i++)values[keys.length+1+i]=hostRoots[i].getBytes(StandardCharsets.UTF_8);
-        installNative(values,RuntimeThinPolicy.active());
+        installNative(values,RuntimeThinPolicy.active(),owner.traceStartup);
         RuntimeEngine engine=RuntimeEngine.current;
         if(engine.traceExit)traceExitNative(engine.exitTracePath);
         installedOwner=engine;

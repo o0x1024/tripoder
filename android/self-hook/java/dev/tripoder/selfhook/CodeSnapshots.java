@@ -10,7 +10,7 @@ public final class CodeSnapshots {
     public static native long[] inspect(long nativeDexFile);
     public static native byte[] copy(long nativeDexFile,int maximumBytes);
     /** Atomic write through an authority-issued directory descriptor. The name
-     * is a single artifact ID with a .dex/.json suffix, never a path. */
+     * is a single artifact ID with a .dex/.snapshot/.json suffix, never a path. */
     public static native void writeArtifact(int directory,String name,byte[] bytes)throws java.io.IOException;
     /** Fixed boot adapter admission, limited to loader construction and path
      * extension; this grants no arbitrary boot-method instrumentation. */

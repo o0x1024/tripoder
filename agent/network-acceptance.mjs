@@ -5,7 +5,7 @@ import {createInterface} from 'node:readline';
 import {mkdir,writeFile,readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
-import https from 'node:https';
+import nodeHttp from 'node:http';
 import assert from 'node:assert/strict';
 import {loadConfig,MCP_VERSION} from './transport.mjs';
 const options=Object.fromEntries(process.argv.slice(2).reduce((a,k,i,args)=>i%2?a:[...a,[k,args[i+1]]],[]));
@@ -18,8 +18,8 @@ class NativeHttp {
   async rpc(method,params={},notification=false){
     const id=notification?undefined:++sequence,body=Buffer.from(JSON.stringify({jsonrpc:'2.0',...(notification?{}:{id}),method,params}));
     return new Promise((resolve,reject)=>{
-      const headers={authorization:'Bearer '+config.token,accept:'application/json, text/event-stream','content-type':'application/json','content-length':body.length,...(this.session?{'mcp-session-id':this.session,'mcp-protocol-version':MCP_VERSION}:{})};
-      const req=https.request(config.url,{method:'POST',ca:config.certificatePem,minVersion:'TLSv1.3',headers,agent:false},res=>{
+      const headers={accept:'application/json, text/event-stream','content-type':'application/json','content-length':body.length,...(this.session?{'mcp-session-id':this.session,'mcp-protocol-version':MCP_VERSION}:{})};
+      const req=nodeHttp.request(config.url,{method:'POST',headers,agent:false},res=>{
         const chunks=[];res.on('data',c=>chunks.push(c));res.on('aborted',()=>reject(Error('HTTP_INTERRUPTED')));res.on('end',()=>{try{if(notification){assert.equal(res.statusCode,202);resolve(null);return;}assert.equal(res.statusCode,200,'HTTP '+res.statusCode);const value=JSON.parse(Buffer.concat(chunks));assert.equal(value.id,id);if(method==='initialize')this.session=res.headers['mcp-session-id'];if(value.error)throw Error(value.error.message);resolve(value.result);}catch(e){reject(e);}});
       });req.setTimeout(75000,()=>req.destroy(Error('HTTP_TIMEOUT_OUTCOME_UNKNOWN')));req.on('error',reject);req.end(body);
     });
@@ -40,21 +40,21 @@ async function tool(mode,name,args={},success=true){const result=await clients[m
 const prefix='net-'+randomUUID().slice(0,8),pkg='dev.tripoder.launcherfixture',spaces={stdio:prefix+'-stdio',http:prefix+'-http'},uploads={};
 const selector={id:'counter',kind:'java',className:'dev.tripoder.previewguest.CounterActivity',methodName:'formatCount',argumentTypes:['int']};
 const invocation={className:selector.className,methodName:selector.methodName,argumentTypes:['int'],arguments:[7]};
-async function probe(headers,ca=config.certificatePem){
-  return new Promise((resolve,reject)=>{const req=https.request(config.url,{method:'GET',ca,minVersion:'TLSv1.3',agent:false,headers},res=>{res.resume();res.on('end',()=>resolve(res.statusCode));});req.setTimeout(10000,()=>req.destroy(Error('SECURITY_PROBE_TIMEOUT')));req.on('error',reject);req.end();});
+async function probe(headers){
+  return new Promise((resolve,reject)=>{const req=nodeHttp.request(config.url,{method:'GET',agent:false,headers},res=>{res.resume();res.on('end',()=>resolve(res.statusCode));});req.setTimeout(10000,()=>req.destroy(Error('SECURITY_PROBE_TIMEOUT')));req.on('error',reject);req.end();});
 }
 try{
-  check('phone-rejects-wrong-token',await probe({authorization:'Bearer invalid'})===401);
-  check('phone-rejects-untrusted-origin',await probe({authorization:'Bearer '+config.token,origin:'https://attacker.example'})===403);
-  await assert.rejects(probe({},[]),e=>e.code==='DEPTH_ZERO_SELF_SIGNED_CERT'||e.code==='SELF_SIGNED_CERT_IN_CHAIN');check('phone-certificate-trust-is-required',true);
+  check('phone-accepts-requests-without-credentials',await probe({})===405);
+  check('phone-rejects-untrusted-origin',await probe({origin:'https://attacker.example'})===403);
+  check('phone-uses-plain-http',new URL(config.url).protocol==='http:'&&Object.keys(config).join(',')==='url');
   for(const client of Object.values(clients)){await client.rpc('initialize',{protocolVersion:MCP_VERSION,capabilities:{},clientInfo:{name:'tripoder-network-acceptance',version:'1'}});await client.rpc('notifications/initialized',{},true);}
   const httpTools=(await http.rpc('tools/list')).tools,stdioTools=(await stdio.rpc('tools/list')).tools;
   check('http-publishes-shared-upload-tools',httpTools.some(t=>t.name==='application_upload'&&t.inputSchema.properties.action.enum.includes('commit'))&&!httpTools.some(t=>t.name==='application_import'));
-  check('stdio-adds-only-local-file-convenience',JSON.stringify(stdioTools.filter(t=>!['application_import','file_pull','file_pull_status'].includes(t.name)))===JSON.stringify(httpTools)&&stdioTools.some(t=>t.name==='application_import'));
+  check('stdio-adds-only-local-file-convenience',JSON.stringify(stdioTools.filter(t=>!['application_import','file_pull','file_pull_status','artifact_verify'].includes(t.name)))===JSON.stringify(httpTools)&&stdioTools.some(t=>t.name==='application_import'));
   if(options['--read-only']==='true'){
     report.scope='physical-device-stdio-and-native-http-read-only';
     for(const mode of ['stdio','http']){
-      const caps=await tool(mode,'runtime.capabilities');check(mode+'-main-runtime-authenticated-and-explicit',caps.explicitTargets===true&&caps.authenticationRequired===true);
+      const caps=await tool(mode,'runtime.capabilities');check(mode+'-main-runtime-without-credentials-and-explicit',caps.explicitTargets===true&&caps.authenticationRequired===false);
       await tool(mode,'spaces.list');check(mode+'-main-spaces-readable',true);
     }
   }else{

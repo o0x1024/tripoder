@@ -1,0 +1,10 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tripoder.isolatedfdprobe" android:versionCode="11" android:versionName="11">
+    <uses-sdk android:minSdkVersion="37" android:targetSdkVersion="37"/>
+    <queries><package android:name="dev.tripoder.isolatedfdpayload"/></queries>
+    <application android:label="Owned isolated FD probe" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:extractNativeLibs="false" android:allowBackup="false" android:appComponentFactory=".ProbeFactory">
+        <activity android:name=".OwnerActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
+        <activity android:name=".ProductionActivity" android:exported="true"/>
+        <service android:name=".IsolatedService" android:exported="false" android:isolatedProcess="true"/>
+        <service android:name=".ProductionService" android:exported="false" android:isolatedProcess="true"/>
+    </application>
+</manifest>

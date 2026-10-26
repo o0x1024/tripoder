@@ -13,7 +13,10 @@ final class RuntimeControllerCommands {
     private static Bundle executeScoped(RuntimeBroker broker,Bundle input,String lease)throws Exception{
         if("install".equals(input.getString("command")))return RuntimeControllerInstall.install(broker,input);
         if(input.hasFileDescriptors())throw new SecurityException("CONTROL_FILE_DESCRIPTOR_UNSUPPORTED");
-        String command=ControlWire.required(input,"command");Bundle out=new Bundle();
+        String command=ControlWire.required(input,"command");
+        if("applicationStorage".equals(command))return RuntimeControllerInstallationQueries.storage(broker,input);
+        if("applicationProcessHistory".equals(command))return RuntimeControllerInstallationQueries.processHistory(broker,input);
+        if("applicationManifest".equals(command))return RuntimeControllerInstallationQueries.inspect(broker,input);Bundle out=new Bundle();
         if(command.equals("catalog")){fields(input,"command");return RuntimeControllerCatalog.read(broker);}
         if(command.equals("appPresentation"))return RuntimeControllerPresentation.read(broker,input);
         if(command.equals("reclaimEmptyTasks")){fields(input,"command");String receipt=RuntimeEmptyTasks.reclaim(broker,null).toString();Bundle resources=RuntimeControllerResources.inspect(broker);resources.putString("reclaimed",receipt);return resources;}
@@ -80,6 +83,9 @@ final class RuntimeControllerCommands {
                     fields(input,"command");out.putString("authority",broker.store.authorityGeneration);out.putString("lease",lease);out.putInt("engineUid",android.os.Process.myUid());out.putInt("enginePid",android.os.Process.myPid());out.putInt("controllerUid",android.os.Process.myUid());out.putInt("schema",broker.store.getReadableDatabase().getVersion());out.putBoolean("strongIsolation",false);out.putBoolean("hookReady",true);break;
                 case "createSpace":{
                     fields(input,"command","space","operation");String space=ControlWire.required(input,"space"),operation=ControlWire.required(input,"operation");RuntimeFiles.id(space);
+                    // Reject a new duplicate before admission. Replays retain the
+                    // exact existing operation's digest and terminal semantics.
+                    if(broker.contract.query(operation)==null)try(var existing=broker.store.getReadableDatabase().rawQuery("SELECT 1 FROM spaces WHERE id=?",new String[]{space})){if(existing.moveToFirst())throw new IllegalStateException("SPACE_ALREADY_EXISTS");}
                     String digest=ApkStore.textDigest("controller-create-space-v1\n"+space);var admission=broker.contract.accept(operation,ControllerTrust.OPERATIONS,digest);
                     if(!admission.created){if(admission.operation.state!=ExecutionContract.OperationState.SUCCEEDED)throw new IllegalStateException("OPERATION_QUERY_REQUIRED:"+admission.operation.state);out.putString("space",admission.operation.result);break;}
                     broker.contract.start(operation);var db=broker.store.getWritableDatabase();
@@ -89,7 +95,14 @@ final class RuntimeControllerCommands {
                 }
                 case "query":{
                     fields(input,"command","operation");var operation=broker.contract.query(ControlWire.required(input,"operation"));if(operation==null)throw new IllegalStateException("OPERATION_NOT_FOUND");
-                    if(!ControllerTrust.OPERATIONS.equals(operation.callerIdentity))throw new SecurityException("OPERATION_OWNER_MISMATCH");out.putString("state",operation.state.name());out.putString("result",operation.result);out.putString("detail",operation.detail);out.putString("evidence",operation.evidence);break;
+                    if(!ControllerTrust.OPERATIONS.equals(operation.callerIdentity))throw new SecurityException("OPERATION_OWNER_MISMATCH");out.putString("state",operation.state.name());out.putString("result",operation.result);out.putString("detail",operation.detail);out.putString("evidence",operation.evidence);
+                    out.putString("caller",operation.callerIdentity);out.putString("payloadDigest",operation.payloadDigest);
+                    try(var ownership=broker.store.getReadableDatabase().rawQuery("SELECT scope,command,dispatch FROM operation_scopes WHERE operation=?",new String[]{operation.id})){
+                        if(ownership.moveToFirst()){
+                            out.putString("effectScope",ownership.getString(0));out.putString("command",ownership.getString(1));out.putString("dispatch",ownership.getString(2));
+                            if("createSpace".equals(ownership.getString(1)))out.putBoolean("spaceCreationExecutionInert",RuntimeSpaceCreationProof.permits(broker.store.getReadableDatabase(),operation.id,ownership.getString(0)));
+                        }
+                    }break;
                 }
                 case "cancelNotAccepted":{
                     fields(input,"command","operation");String id=ControlWire.required(input,"operation");var operation=broker.contract.query(id);

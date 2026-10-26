@@ -15,15 +15,15 @@ final class BroadcastLedger {
         db.execSQL("CREATE TABLE broadcast_deliveries(ticket TEXT PRIMARY KEY,operation TEXT UNIQUE NOT NULL,source TEXT NOT NULL,sourceIdentity TEXT NOT NULL,target TEXT NOT NULL,component TEXT NOT NULL,registration TEXT NOT NULL,payload BLOB NOT NULL,digest TEXT NOT NULL,ordered INTEGER NOT NULL,state TEXT NOT NULL,instance TEXT NOT NULL,returned INTEGER NOT NULL,finished INTEGER NOT NULL,asynchronous INTEGER NOT NULL,systemDone INTEGER NOT NULL,resourceRetired INTEGER NOT NULL DEFAULT 0,resourceProof TEXT,externalOrigin INTEGER NOT NULL DEFAULT 0)");
     }
     static final class ActiveRegistration {
-        final String id,generation,space,pkg,permission;final byte[] filter;final android.content.IntentFilter parsedFilter;final boolean exported;volatile Set<String> roots;
-        ActiveRegistration(String id,String generation,String space,String pkg,byte[] filter,boolean exported,Set<String> roots,String permission){
-            this.id=id;this.generation=generation;this.space=space;this.pkg=pkg;this.filter=filter;this.parsedFilter=RuntimeBroadcastIntent.filter(filter);this.exported=exported;this.roots=Set.copyOf(roots);this.permission=permission;
+        final String id,generation,space,pkg,permission,receiverKey;final byte[] filter;final android.content.IntentFilter parsedFilter;final boolean exported;volatile Set<String> roots;
+        ActiveRegistration(String id,String generation,String space,String pkg,byte[] filter,boolean exported,Set<String> roots,String permission,String receiverKey){
+            this.id=id;this.generation=generation;this.space=space;this.pkg=pkg;this.filter=filter;this.parsedFilter=RuntimeBroadcastIntent.filter(filter);this.exported=exported;this.roots=Set.copyOf(roots);this.permission=permission;this.receiverKey=receiverKey;
         }
     }
     private final Map<String,ActiveRegistration> preparedRegistrations=new java.util.concurrent.ConcurrentHashMap<>();
     private final Map<String,ActiveRegistration> activeRegistrations=new java.util.concurrent.ConcurrentHashMap<>();
     static String token(){byte[] bytes=new byte[32];new java.security.SecureRandom().nextBytes(bytes);return HexFormat.of().formatHex(bytes);}
-    String registration(ExecutionContract.Session source,byte[] filter,boolean exported,Set<String> roots,String permission){String id=token();ContentValues v=new ContentValues();v.put("id",id);v.put("generation",source.processGeneration);v.put("space",source.identity.spaceId);v.put("package",source.identity.packageName);v.put("action",action(id));v.put("filter",filter);v.put("exported",exported?1:0);v.put("state","PREPARED");v.put("volumeRoots",new org.json.JSONArray(roots).toString());v.put("permission",permission==null?"":permission);store.getWritableDatabase().insertOrThrow("broadcast_registrations",null,v);preparedRegistrations.put(id,new ActiveRegistration(id,source.processGeneration,source.identity.spaceId,source.identity.packageName,filter,exported,roots,permission==null?"":permission));return id;}
+    String registration(ExecutionContract.Session source,byte[] filter,boolean exported,Set<String> roots,String permission,String receiverKey){RuntimeFiles.id(receiverKey);String id=token();ContentValues v=new ContentValues();v.put("id",id);v.put("generation",source.processGeneration);v.put("space",source.identity.spaceId);v.put("package",source.identity.packageName);v.put("action",action(id));v.put("filter",filter);v.put("exported",exported?1:0);v.put("state","PREPARED");v.put("volumeRoots",new org.json.JSONArray(roots).toString());v.put("permission",permission==null?"":permission);store.getWritableDatabase().insertOrThrow("broadcast_registrations",null,v);preparedRegistrations.put(id,new ActiveRegistration(id,source.processGeneration,source.identity.spaceId,source.identity.packageName,filter,exported,roots,permission==null?"":permission,receiverKey));return id;}
     static String action(String id){return "dev.tripoder.runtime.broadcast."+id;}
     boolean registrationActive(String registration,String generation){
         ActiveRegistration r=activeRegistrations.get(registration);
@@ -67,6 +67,7 @@ final class BroadcastLedger {
     List<ActiveRegistration> activeRegistrationsForSpace(String space){
         List<ActiveRegistration> out=new ArrayList<>();
         for(ActiveRegistration r:activeRegistrations.values())if(space.equals(r.space))out.add(r);
+        out.sort(Comparator.comparingInt((ActiveRegistration r)->r.parsedFilter.getPriority()).reversed().thenComparing(r->r.id));
         return out;
     }
     List<Bundle> registrations(String space){

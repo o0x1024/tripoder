@@ -102,7 +102,7 @@ public final class ApkManifest {
                         r.beginArray();
                         while(r.hasNext()){
                             Element child=componentElementFromJsonReader(r,2);
-                            if(Set.of("activity","activity-alias","service","receiver","provider","processes").contains(child.name))children.add(child);
+                            if(Set.of("activity","activity-alias","service","receiver","provider","processes","uses-library","uses-native-library").contains(child.name))children.add(child);
                         }
                         r.endArray();
                     }else r.skipValue();

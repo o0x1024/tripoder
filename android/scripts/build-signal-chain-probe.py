@@ -24,7 +24,7 @@ def main():
     clang=args.ndk.resolve()/'toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android36-clang'
     library=build/'libsignalcontract.so'
     subprocess.run([str(clang),'-std=c11','-O2','-g','-shared','-fPIC','-Wall','-Wextra','-Werror',
-                    '-I'+str(core),str(probe/'probe.c'),str(core/'signal_chain.c'),'-o',str(library)],check=True)
+                    '-I'+str(core),str(probe/'probe.c'),str(probe/'user_delivery.c'),str(core/'signal_chain.c'),'-o',str(library)],check=True)
     builder=ApkBuilder(ROOT,build,args.sdk,'android-37.0','37.0.0',args.java_home,args.key)
     apk=builder.apk('signal-contract',[probe/'Probe.java'],probe/'AndroidManifest.xml',libraries=[library])
     if any(sha(ROOT/p)!=digest for p,digest in before.items()):

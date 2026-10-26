@@ -1,3 +1,6 @@
+import {JavaObjectFrame,isJavaReferenceType} from "./java-objects.js";
+import type {SimulatedJavaObject} from "./java-objects.js";
+export type {SimulatedJavaObject} from "./java-objects.js";
 import { HookError, requireThat } from "./errors.js";
 import { evidenceKey, snapshotEvidence, validateArguments, validateHookValue } from "./evidence.js";
 import type { EvidenceSnapshot, HookValue } from "./evidence.js";
@@ -108,6 +111,17 @@ export class HookSimulator<S extends Parameters> {
 
   events(): readonly SimulationEvent[] { return [...this.#events]; }
 
+  invokeJavaFixture(symbolId: string,incoming: readonly unknown[],original:(args:readonly unknown[])=>unknown): {value:unknown;revision:number;hookOutcome:"applied"} {
+    const rule=this.#active().plan.rules.find(r=>r.symbol.id===symbolId);requireThat(rule?.symbol.kind==="java","HOOK_NOT_REGISTERED",symbolId);
+    const objectType=(type:string)=>isJavaReferenceType(type)&&type!=="java.lang.String"&&type!=="[B";
+    const frame=new JavaObjectFrame();try{
+      const values=incoming.map((value,i)=>objectType(rule.symbol.argumentTypes[i]!)?frame.wrap(rule.symbol.argumentTypes[i]!,value as SimulatedJavaObject|null):value) as HookValue[];
+      const result=this.invoke(symbolId,values,args=>{
+        const raw=args.map((value,i)=>objectType(rule.symbol.argumentTypes[i]!)?frame.unwrap(rule.symbol.argumentTypes[i]!,value):value);
+        const output=original(raw);return objectType(rule.symbol.returnType)?frame.wrap(rule.symbol.returnType,output as SimulatedJavaObject|null):output as HookValue;
+      });return {...result,value:objectType(rule.symbol.returnType)?frame.unwrap(rule.symbol.returnType,result.value):result.value};
+    }finally{frame.close();}
+  }
   invoke(symbolId: string, incoming: readonly HookValue[], original: (args: readonly HookValue[]) => HookValue): InvocationResult {
     // Capture once: reentrant updates from a callback affect subsequent calls only.
     const state = this.#active();
@@ -117,10 +131,12 @@ export class HookSimulator<S extends Parameters> {
     validateArguments(rule.symbol, incoming);
     let args: readonly HookValue[] = Object.freeze([...incoming]);
     this.#record({ revision: state.revision, symbolId, kind: "simulated-hit" });
+    const previousEvidence = state.plan.emitSink?.evidence;
     const previousEmit = state.plan.emitSink?.fn;
     const previousStack = state.plan.emitSink?.stack;
     const previousCaller = state.plan.emitSink?.caller;
     if (state.plan.emitSink) {
+      state.plan.emitSink.evidence=(tag,payload)=>{this.#record({revision:state.revision,symbolId,kind:"debug-event",tag,payload});return {artifactId:`simulated-${state.revision}-${this.#events.length}`,state:"SIMULATED"};};
       state.plan.emitSink.fn = (tag, payload) => {
         this.#record({ revision: state.revision, symbolId, kind: "debug-event", tag, payload });
       };
@@ -184,6 +200,7 @@ export class HookSimulator<S extends Parameters> {
       return { value, revision: state.revision, hookOutcome: "applied" };
     } finally {
       if (state.plan.emitSink) {
+        state.plan.emitSink.evidence=previousEvidence;
         state.plan.emitSink.fn = previousEmit;
         state.plan.emitSink.stack = previousStack;
         state.plan.emitSink.caller = previousCaller;

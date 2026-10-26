@@ -16,6 +16,7 @@ static JavaVM *vm;static jclass helper;static jmethodID resolver;static void *li
 static _Atomic bool bound;static bool attempted;
 static void stop(const char *reason){android_set_abort_message(reason);abort();}
 JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_NativeMethodOriginal_bindNative(JNIEnv *env,jclass cls,jobject reflected){
+    TP_ART_MAPS_SCOPE;
     if(attempted)return JNI_FALSE;attempted=true;
     if(!tp_art_access_bind(&access))return JNI_FALSE;
 #define CHECK(name,NAME) if(!tp_art_validate_code(&access,TP_JNI_##NAME##_RVA,tp_jni_##name##_bytes,sizeof(tp_jni_##name##_bytes)))return JNI_FALSE

@@ -9,12 +9,20 @@ final class RuntimeProcessControl extends RuntimeWire.Endpoint {
     private final Context context;
     private volatile int controllerPid;
     private String abortCapability;
+    private boolean retired;
     private RuntimeProcessControl(Context context){this.context=context;}
     static synchronized RuntimeProcessControl get(Context context){if(instance==null)instance=new RuntimeProcessControl(context.getApplicationContext());return instance;}
-    synchronized void claim(int pid){if(pid<=0||controllerPid!=0)throw new SecurityException("WORKER_ALREADY_ATTACHED");controllerPid=pid;}
-    synchronized void configureAbort(String value){if(value==null)return;if(value.equals(abortCapability))return;if(controllerPid!=0||abortCapability!=null||!value.matches("[0-9a-f]{64}"))throw new SecurityException("WORKER_ABORT_CAPABILITY_INVALID");abortCapability=value;}
+    synchronized void claim(int pid){if(retired||pid<=0||controllerPid!=0)throw new SecurityException("WORKER_ALREADY_ATTACHED");controllerPid=pid;}
+    synchronized void configureAbort(String value){if(retired)throw new SecurityException("WORKER_RETIRED");if(value==null)return;if(value.equals(abortCapability))return;if(controllerPid!=0||abortCapability!=null||!value.matches("[0-9a-f]{64}"))throw new SecurityException("WORKER_ABORT_CAPABILITY_INVALID");abortCapability=value;}
+    /** A rejected cold entry owns no authority lease and has never loaded a guest.
+     * Fence this very process before scheduling its exit; never kill a recorded PID. */
+    synchronized void retireUnclaimed(){
+        if(retired||controllerPid!=0||abortCapability!=null||RuntimeEngine.current!=null)return;
+        retired=true;terminate();
+    }
     @Override protected Bundle handle(int code,Bundle input,int pid,int uid)throws Exception{
         if(uid!=android.os.Process.myUid())throw new SecurityException("WORKER_UID_MISMATCH");
+        synchronized(this){if(retired)throw new SecurityException("WORKER_RETIRED");}
         if(code==RuntimeWire.ABORT_CONFIGURE){configureAbort(RuntimeWire.required(input,"bootstrapAbort"));return new Bundle();}
         if(code==RuntimeWire.LOAD){claim(pid);try{RuntimeEngine engine=new RuntimeEngine(context,input);Bundle out=new Bundle();out.putInt("pid",android.os.Process.myPid());out.putInt("uid",android.os.Process.myUid());out.putString("generation",engine.generation);return out;}catch(Exception error){android.util.Log.e("TripoderRuntime","Worker initialization failed",error);terminate();throw error;}}
         synchronized(this){if(code==RuntimeWire.STOP&&controllerPid==0&&abortCapability!=null&&abortCapability.equals(input.getString("bootstrapAbort")))controllerPid=pid;}

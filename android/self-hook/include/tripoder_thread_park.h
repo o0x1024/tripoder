@@ -19,6 +19,7 @@ struct tp_park_snapshot {
 struct tp_park_context {
     int tid;
     uintptr_t pc, sp, lr;
+    uint64_t signal_mask; /* interrupted mask, before the park handler's mask */
 };
 
 /* One explicit signal reservation for process lifetime. No signal/backend fallback.

@@ -10,6 +10,14 @@ final class ActivityEntryLedger {
     private final RuntimeStore store;
     ActivityEntryLedger(RuntimeStore store){this.store=store;}
     static void create(SQLiteDatabase db){db.execSQL("CREATE TABLE activity_entries(stub TEXT PRIMARY KEY,componentLease TEXT NOT NULL REFERENCES activity_components(lease) ON DELETE CASCADE,requested TEXT NOT NULL,UNIQUE(componentLease,requested))");}
+    void requireCapacity(String lease,String canonical,String requested){
+        if(canonical.equals(requested))return;
+        int used=0;
+        try(Cursor c=store.getReadableDatabase().rawQuery("SELECT requested FROM activity_entries WHERE componentLease=?",new String[]{lease})){
+            while(c.moveToNext()){if(requested.equals(c.getString(0)))return;if(!canonical.equals(c.getString(0)))used++;}
+        }
+        if(used>=RuntimeActivitySlots.ALIASES)throw new IllegalStateException("ACTIVITY_ALIAS_CAPACITY_EXHAUSTED");
+    }
     String acquire(String canonicalStub,String lease,String canonical,String requested){
         try(Cursor c=store.getReadableDatabase().rawQuery("SELECT stub FROM activity_entries WHERE componentLease=? AND requested=?",new String[]{lease,requested})){if(c.moveToFirst())return c.getString(0);}
         String stub=canonicalStub;

@@ -21,7 +21,7 @@ final class RuntimeActivityIndex {
     }
     static ActivityInfo require(Map<String,ActivityInfo> index,String name){
         ActivityInfo info=index.get(name);if(info==null)throw new IllegalArgumentException("COMPONENT_NOT_DECLARED:activity:"+name);
-        if(!info.enabled||!info.applicationInfo.enabled)throw new IllegalStateException("COMPONENT_DISABLED");
+        if(!info.enabled||!info.applicationInfo.enabled)throw new IllegalStateException("COMPONENT_DISABLED:"+name+";componentEnabled="+info.enabled+";applicationEnabled="+info.applicationInfo.enabled);
         return new ActivityInfo(info);
     }
 }

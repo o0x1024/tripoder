@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tripoder.nativeserviceprobe" android:versionCode="2" android:versionName="2">
+    <uses-sdk android:minSdkVersion="37" android:targetSdkVersion="37"/>
+    <application android:label="Owned native service host probe" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:extractNativeLibs="false" android:allowBackup="false">
+        <activity android:name=".ProbeActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
+        <service android:name=".HostService" android:exported="false" android:isolatedProcess="true"/>
+    </application>
+</manifest>

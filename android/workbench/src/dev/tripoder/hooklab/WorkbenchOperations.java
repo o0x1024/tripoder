@@ -37,13 +37,15 @@ final class WorkbenchOperations {
     boolean busyPackage(String pkg){return submitting.contains("package:"+pkg);}
     /** Imports and space creation name neither a project nor a package. */
     boolean busyUnscoped(){return submitting.contains("");}
+    /** An install request is still crossing Binder; imports are serial but never block other operations. */
+    boolean busyImport(){return submitting.contains("import");}
     /** Something is crossing Binder or being reconciled right now; pages show a progress indicator. */
     boolean busy(){return !submitting.isEmpty()||!querying.isEmpty();}
     /** Changes whenever the set of in-flight targets changes, so pages can redraw busy tiles and buttons only then. */
     String busySignature(){return new TreeSet<>(submitting).toString();}
     /** Launch records of one project the engine has not settled yet. */
     int pendingLaunches(String project){int count=0;for(String id:pendingIds()){JSONObject record=record(id);if(record==null)continue;String command=record.optString("command");if((command.equals("prepareLaunch")||command.isEmpty())&&record.optString("scope").equals("project:"+project))count++;}return count;}
-    private static String scope(Bundle input){String project=input.getString("project");if(project!=null)return "project:"+project;String pkg=input.getString("package");return pkg==null?"":"package:"+pkg;}
+    private static String scope(Bundle input){if("install".equals(input.getString("command")))return "import";String project=input.getString("project");if(project!=null)return "project:"+project;String pkg=input.getString("package");return pkg==null?"":"package:"+pkg;}
     private JSONObject record(String id){try{String raw=state.getString(RECORD+id,null);return raw==null?null:new JSONObject(raw);}catch(org.json.JSONException corrupt){return new JSONObject();}}
     void inform(String text){message=text;changed();}
     void submit(Bundle input,String label,Closeable resource)throws Exception{

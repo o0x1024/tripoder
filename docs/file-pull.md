@@ -54,19 +54,21 @@
 node tools/file-pull.mjs /private/connection.json PULL_UUID '{"kind":"path","path":"/sdcard/Download/example"}' /absolute/computer/path/example
 ```
 
-Ctrl-C 暂停；保留 .part 和手机快照后，用相同命令续传。连接配置权限仍要求 0600。退出期间认证/证书/服务器身份变化时拒绝错误续传。
+Ctrl-C 暂停；保留 .part 和手机快照后，用相同命令续传。连接配置只包含HTTP端点，不包含证书或私钥。退出期间服务器端点或来源身份变化时拒绝错误续传。
 
-## Sentinel HTTP 本地下载
+## MCP 客户端接入与执行位置
 
-Sentinel 内置工具 `mcp_file_pull` 调用已连接服务器，不需要把 Token 再写入脚本或传给模型：
+文件接收器只属于 Tripoder 的电脑侧 MCP 服务。Sentinel 与其他客户端都通过标准 MCP 工具调用它，不需要客户端原生下载工具或专用结果组件。
 
-```json
-{"action":"start","operation_id":"PULL_UUID","server_name":"tripoder-http","source":{"kind":"path","path":"/sdcard/Download/example"},"destination":"downloads/example","follow_symlinks":false}
-```
+在 Sentinel 中连接电脑侧 stdio 服务，在 Profile 和会话工具配置中显式选择该连接下的 `file_pull`、`file_pull_status`。只连接手机 HTTP 时，只有 `file_export` / `file_query`，不能直接写入客户端电脑。两种入口不自动切换。
 
-用相同 operation_id、server_name 和 action=status 查询；action=cancel 暂停；action=resume 携带原 source、destination 和 follow_symlinks 恢复。相对路径基于当前工作目录。Docker 只能下载到已有 host bind mount 的工作目录；不伪称手机路径可在电脑或容器中使用。结果包含宿主 destination、runtimePath 和 runtime 元数据。
+`destination` 必须是运行 MCP 服务的电脑上的绝对路径；若服务部署在另一台机器或容器内，文件就保存在那台机器或容器内，不自动映射到 Sentinel 的工作目录。
 
-默认拒绝已存在目标和同名 `.manifest.json`。先写私有 `.part`，验证每个文件的大小和 SHA 后再提交。目录旁生成 `example.manifest.json`，记录来源、相对路径和每文件 SHA。路径越界、符号链接落盘和大小写/Unicode 归一化冲突均拒绝。校验失败保留半成品，修复本地损坏后才能续传。手机源文件始终不因下载或取消而删除。
+下载结果只包含状态、字节进度、最终路径、manifest 路径及 SHA-256。单文件返回文件 `sha256`，目录每文件的哈希在 manifest 内，`manifestSha256` 固定清单字节。STARTED/PREPARING/DOWNLOADING 不是完成，只有 COMPLETE 表示所有文件校验并提交。FAILED 查询返回 MCP `isError=true` 与 `ok=false`；取消仅暂停正在运行的任务。
+
+MCP 服务重启后内存任务列表为空。用同一 `operationId`、`source`、`destination`、`followSymlinks` 再次 `file_pull(action=start)`，从本地私有暂存和同一手机快照恢复；不会重新准备可能变化的源。已完成文件会重新核验。服务器端点、参数或已提交文件发生变化时明确拒绝。
+
+默认拒绝已存在目标和同名 `.manifest.json`。先写私有 `.part`，验证每个文件的大小和 SHA 后再提交。目录旁生成 `example.manifest.json`，记录来源、相对路径和每文件 SHA。路径越界、符号链接落盘和大小写/Unicode 归一化冲突均拒绝。校验失败保留半成品，手机源文件不因下载或取消而删除。最多两个本地下载同时运行，超出直接返回 FILE_PULL_LOCAL_BUSY，不排队。
 
 手机快照可用 file_export(action=release) 主动释放。电脑 `.part` 中保留恢复元数据；完成后可自行删除该目录。SQLite 一致性需要先停止写入或通过备份接口生成副本，pull 不自动停应用、不宣称已完成完整脱壳或 APK 重建。
 
@@ -74,9 +76,12 @@ Sentinel 内置工具 `mcp_file_pull` 调用已连接服务器，不需要把 To
 
 ```sh
 python3 android/workbench/test/run-mcp-tests.py
-TRIPODER_SENTINEL_WORKSPACE=/absolute/sentinel-ai-pro python3 android/workbench/test/run-mcp-tests.py
 ```
 
-第二条在生产 Java AgentHttp / AgentMcp / FileExports 主机 fixture 存活期间调用 Sentinel 原生接收器，验证带认证和受信证书的 HTTPS 目录下载。fixture 的 Workbench/Binder 控制层是主机适配器；不代表 Android 权限、真机、安装后的桌面或真实模型验收。
+验证生产 Java HTTP/MCP/文件导出与 Node MCP 接收器，包括目录、分块、暂停恢复、服务器/来源身份变化、MCP 状态和错误语义。Workbench/Binder 控制层是主机适配器，不代表 Android 权限、真机或 Sentinel 实际模型会话；这些验收单独记录。
 
-按本次要求不进行真机验收、不安装 APK、不重启或修改现有桌面连接。源码修改需重建升级 Tripoder 与 Sentinel 后生效。
+## DEX 分阶段验收
+
+电脑侧 MCP `artifact_verify({operationId,destination})` 只读检查原下载产物。启动服务时可明确配置 `--dex-validator /absolute/path/to/dexdump`；模型不能指定任意可执行文件或命令。消费者只接收固定 `-f FILE` 参数，运行有时间和输出上限，结果仅返回退出码和输出哈希。
+
+捕获、下载、格式、消费者可用性分别返回状态。文件下载 COMPLETE 仅表示下载完成；NOT_CHECKED 或 FAILED 均不能标记整个产物已验收。消费者解析通过也仅证明该消费者能解析文件，不代表 App 业务运行或全部方法重建。校验不修改原文件、不重算头部、不使用派生文件替换原样证据。

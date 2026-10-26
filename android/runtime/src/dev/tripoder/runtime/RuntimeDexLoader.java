@@ -14,6 +14,16 @@ import java.util.zip.*;
 final class RuntimeDexLoader {
     private static final long MAX_DEX_BYTES=512L*1024*1024;
     private record DexTarget(File apk,ArtifactSet.FileRecord file,File extracted){}
+    static List<ArtifactSet.FileRecord> orderedDex(ArtifactSet.Part part,boolean required)throws IOException{
+        TreeMap<Integer,ArtifactSet.FileRecord> dex=new TreeMap<>();
+        for(var file:part.entries){
+            if(file.path.contains("/")||!file.path.endsWith(".dex"))continue;
+            if(!file.path.matches("classes(?:[2-9]|[1-9][0-9]+)?\\.dex"))throw new IOException("DEX_NAME_UNSUPPORTED");
+            String suffix=file.path.substring(7,file.path.length()-4);int index=suffix.isEmpty()?1:Integer.parseInt(suffix);
+            if(index>128||dex.put(index,file)!=null)throw new IOException("DEX_COUNT_LIMIT");
+        }
+        if(required&&dex.isEmpty()||!dex.isEmpty()&&dex.lastKey()!=dex.size())throw new IOException("DEX_SEQUENCE_INCOMPLETE");return List.copyOf(dex.values());
+    }
     static ClassLoader create(ArtifactSet set,String libraries,ClassLoader parent)throws Exception{
         return createInternal(set,libraries,parent,true);
     }
@@ -21,7 +31,8 @@ final class RuntimeDexLoader {
         var info=RuntimeEngine.current.applicationInfo;
         StringBuilder path=new StringBuilder();
         for(var part:set.parts)path.append(path.length()==0?"":File.pathSeparator).append(RuntimeEngine.current.executionCode.part(part.path));
-        return new dalvik.system.PathClassLoader(path.toString(),info.nativeLibraryDir,parent);
+        var shared=RuntimeEngine.current.sharedLibraries;
+        return dev.tripoder.selfhook.ClassLoaderNamespaceAccess.create(path.toString(),shared.nativeSearch,info.dataDir,parent,info.targetSdkVersion,shared.nativeNames,shared.before,shared.after);
     }
     private static ClassLoader createInternal(ArtifactSet set,String libraries,ClassLoader parent,boolean retainMemfdMappings)throws Exception{
         return createInternal(set,libraries,parent,retainMemfdMappings,false);
@@ -38,15 +49,7 @@ final class RuntimeDexLoader {
         long total=0;
         for(int p=0;p<set.parts.size();p++){
             ArtifactSet.Part part=set.parts.get(p);apkFiles.add(part.file);
-            TreeMap<Integer,ArtifactSet.FileRecord> dex=new TreeMap<>();
-            for(var file:part.entries){
-                if(file.path.contains("/")||!file.path.endsWith(".dex"))continue;
-                if(!file.path.matches("classes(?:[2-9]|[1-9][0-9]+)?\\.dex"))throw new IOException("DEX_NAME_UNSUPPORTED");
-                String suffix=file.path.substring(7,file.path.length()-4);int index=suffix.isEmpty()?1:Integer.parseInt(suffix);
-                if(index>128||dex.put(index,file)!=null)throw new IOException("DEX_COUNT_LIMIT");
-            }
-            if(p==0?(dex.isEmpty()||dex.lastKey()!=dex.size()):(!dex.isEmpty()&&dex.lastKey()!=dex.size()))throw new IOException("DEX_SEQUENCE_INCOMPLETE");
-            for(var file:dex.values()){
+            for(var file:orderedDex(part,p==0)){
                 if(records.size()>=128)throw new IOException("DEX_COUNT_LIMIT");
                 total+=file.size;if(file.size<=0||total>MAX_DEX_BYTES)throw new IOException("DEX_MEMORY_LIMIT");
                 records.add(new DexTarget(part.file,file,new File(set.directory,ArtifactSet.dexExtractedPath(p,file.path))));

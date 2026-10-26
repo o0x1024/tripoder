@@ -18,7 +18,7 @@ final class ProviderLedger {
     }
     void reserve(RuntimeBroker.Slot slot){
         SQLiteDatabase db=store.getWritableDatabase();
-        String initialState=slot.mode==RuntimeMode.THIN?"READY":"DECLARED";
+        String initialState=slot.mode.routesThroughPlatform()?"READY":"DECLARED";
         for(var component:new RuntimeProviderIndex(slot.install.info.providers,slot.install.components()).publications(slot.allocation.session.identity.processName)){
             ContentValues v=new ContentValues();v.put("id",UUID.randomUUID().toString());v.put("generation",slot.allocation.session.processGeneration);v.put("component",component.name);v.put("state",initialState);db.insertOrThrow("provider_leases",null,v);
         }
@@ -30,12 +30,20 @@ final class ProviderLedger {
         if(existing)return null;
         var info=new RuntimeProviderIndex(slot.install.info.providers,slot.install.components()).component(component);
         if(!info.enabled||!info.multiprocess||!info.packageName.equals(slot.install.info.packageName))throw new SecurityException("LOCAL_PROVIDER_DECLARATION_INVALID");
-        String id=UUID.randomUUID().toString();ContentValues row=new ContentValues();row.put("id",id);row.put("generation",generation);row.put("component",component);row.put("state",slot.mode==RuntimeMode.THIN?"READY":"DECLARED");store.getWritableDatabase().insertOrThrow("provider_leases",null,row);return lease(id);
+        String id=UUID.randomUUID().toString();ContentValues row=new ContentValues();row.put("id",id);row.put("generation",generation);row.put("component",component);row.put("state",slot.mode.routesThroughPlatform()?"READY":"DECLARED");store.getWritableDatabase().insertOrThrow("provider_leases",null,row);return lease(id);
     }
     Bundle lease(String id){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT generation,component,state FROM provider_leases WHERE id=?",new String[]{id})){
         if(!c.moveToFirst())throw new SecurityException("PROVIDER_LEASE_UNKNOWN");Bundle b=new Bundle();b.putString("lease",id);b.putString("target",c.getString(0));b.putString("component",c.getString(1));b.putString("publication",c.getString(2));return b;
     }}
-    Bundle find(String generation,String component){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT id FROM provider_leases WHERE generation=? AND component=?",new String[]{generation,component})){if(!c.moveToFirst())throw new SecurityException("PROVIDER_NOT_RESERVED");return lease(c.getString(0));}}
+    Bundle existing(String generation,String component){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT id FROM provider_leases WHERE generation=? AND component=?",new String[]{generation,component})){return c.moveToFirst()?lease(c.getString(0)):null;}}
+    Bundle find(String generation,String component){Bundle found=existing(generation,component);if(found==null)throw new SecurityException("PROVIDER_NOT_RESERVED");return found;}
+    Bundle ensurePublication(RuntimeBroker.Slot slot,String component){
+        String generation=slot.allocation.session.processGeneration;Bundle found=existing(generation,component);if(found!=null)return found;
+        var info=new RuntimeProviderIndex(slot.install.info.providers,slot.install.components()).component(component);
+        if(!info.enabled||!slot.allocation.session.identity.processName.equals(info.processName))throw new SecurityException("PROVIDER_PUBLICATION_OWNER_MISMATCH");
+        ContentValues row=new ContentValues();String id=UUID.randomUUID().toString();row.put("id",id);row.put("generation",generation);row.put("component",component);row.put("state",slot.mode.routesThroughPlatform()?"READY":"DECLARED");store.getWritableDatabase().insertOrThrow("provider_leases",null,row);return lease(id);
+    }
+
     void publication(String id,String generation,String state){
         Bundle b=lease(id);if(!generation.equals(b.getString("target")))throw new SecurityException("PROVIDER_GENERATION_MISMATCH");
         String prior=b.getString("publication");if(!(prior.equals("DECLARED")&&state.equals("INITIALIZING")||prior.equals("INITIALIZING")&&(state.equals("READY")||state.equals("FAILED"))))throw new IllegalStateException("PROVIDER_PUBLICATION_TRANSITION");

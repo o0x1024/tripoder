@@ -24,25 +24,17 @@ final class RuntimePendingIntents {
         if(java.lang.reflect.Modifier.isStatic(method.getModifiers())){
             if(args.length==0||!(args[0] instanceof Context)||!owns((Context)args[0]))return original.call(args);
             String tokenKind=name.equals("getBroadcast")||name.equals("getBroadcastAsUser")?"broadcast":name.equals("getActivity")?"activity":name.equals("getService")||name.equals("getForegroundService")?"service":null;
-            if(tokenKind==null)return unhandled(name,args);
+            if(tokenKind==null)throw new UnsupportedOperationException("PENDING_KIND_UNSUPPORTED:"+name);
             if(name.equals("getBroadcastAsUser")&&args.length==5&&!android.os.Process.myUserHandle().equals(args[4]))throw new SecurityException("PENDING_OTHER_USER_UNSUPPORTED");
             Intent source=(Intent)args[2];
             if(!tokenKind.equals("broadcast")){
                 // An implicit start resolves against the guest's own filters now, exactly as it would when sent; a target the guest does not declare has no token.
                 ComponentName target=source==null?null:source.getComponent()!=null?source.getComponent():tokenKind.equals("activity")?RuntimeBridge.resolveOwnActivity(source):RuntimeBridge.resolveOwnService(source);
-                if(target==null)return unhandled(name,args);
+                if(target==null)throw new UnsupportedOperationException("PENDING_DESTINATION_UNRESOLVED:"+name);
                 source=new Intent(source).setComponent(target);
             }
             Intent logical=RuntimePendingIntentPayload.logical(source,tokenKind);Bundle request=engine.auth();request.putString("kind","get");request.putString("tokenKind",tokenKind);request.putString("operation",UUID.randomUUID().toString());request.putInt("requestCode",(Integer)args[1]);request.putInt("flags",(Integer)args[3]);request.putByteArray("payload",RuntimeBroadcastIntent.encodeFor(tokenKind,logical));
-            PendingIntent created;
-            try{created=engine.brokerCall(RuntimeWire.PENDING_INTENT,request).getParcelable("token",PendingIntent.class);}
-            catch(RuntimeException refused){
-                // An activity/service target the authority cannot model must not take the caller down; it gets the same inert token as an unmodelled kind.
-                String reason=String.valueOf(refused.getMessage());
-                if(!tokenKind.equals("broadcast")&&(reason.contains("COMPONENT_NOT_DECLARED")||reason.contains("UNSUPPORTED")||reason.contains("COMPONENT_DISABLED")))return unhandled(name,args);
-                throw refused;
-            }
-            return created;
+            return engine.brokerCall(RuntimeWire.PENDING_INTENT,request).getParcelable("token",PendingIntent.class);
         }
         PendingIntent token=receiver instanceof PendingIntent?(PendingIntent)receiver:PendingIntentFrameworkAccess.pending((IntentSender)receiver);
         Bundle value=view(token);if(value==null)return original.call(args);
@@ -54,16 +46,6 @@ final class RuntimePendingIntents {
             case "sendIntent":return sendSender((IntentSender)receiver,value,args,original);
             default:throw new UnsupportedOperationException("PENDING_CAPABILITY_UNSUPPORTED:"+name);
         }
-    }
-    /** Activity and service tokens are not modelled yet. Creating one must not take the process down (it is usually a keep-alive alarm or a notification's content intent), so the app receives
-     *  a real token that nothing handles: firing it delivers to no receiver, which is a result any PendingIntent can have. NO_CREATE still answers "does not exist". */
-    private static final Set<String> UNHANDLED_LOGGED=Collections.synchronizedSet(new HashSet<>());
-    private Object unhandled(String name,Object[] args){
-        int requestCode=args[1] instanceof Integer?(Integer)args[1]:0,flags=args[args.length-1] instanceof Integer?(Integer)args[args.length-1]:(args.length>3&&args[3] instanceof Integer?(Integer)args[3]:0);
-        if(UNHANDLED_LOGGED.add(name))android.util.Log.w("TripoderRuntime","PendingIntent."+name+" is not modelled: the token created for it is delivered to nobody");
-        if((flags&PendingIntent.FLAG_NO_CREATE)!=0)return null;
-        Intent sink=new Intent("dev.tripoder.runtime.PENDING_UNHANDLED."+name).setPackage(engine.host.getPackageName());
-        return PendingIntent.getBroadcast(engine.host,requestCode,sink,(flags&(PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_CANCEL_CURRENT|PendingIntent.FLAG_ONE_SHOT))|PendingIntent.FLAG_IMMUTABLE);
     }
     Bundle view(PendingIntent token)throws Exception{
         String version=RuntimePendingIntentPayload.taggedVersion(PendingIntentFrameworkAccess.tokenTag(token));if(version==null)return null;

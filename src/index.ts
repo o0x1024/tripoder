@@ -4,3 +4,5 @@ export type { Parameters, ParameterValues, Parameter, ParameterValue } from "./p
 export { definePlan, preparePlan } from "./plan.js";
 export type { HookPlan, PreparedPlan, HookCall, AfterCall, PlanContext } from "./plan.js";
 export type { EvidenceSnapshot, HookSymbol, HookValue, JavaMethod, NativeFunction, Target } from "./evidence.js";
+
+export type {JavaObjectRef} from "./java-objects.js";

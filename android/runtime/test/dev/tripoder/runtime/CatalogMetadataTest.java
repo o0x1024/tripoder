@@ -18,6 +18,9 @@ public final class CatalogMetadataTest {
     public static void main(String[] args)throws Exception{
         RuntimeBroker broker=new RuntimeBroker();install(broker,"a","g1","data1");install(broker,"b","g2","data2");
         broker.apks.loading=()->{throw new AssertionError("listing tried to open an APK");};
+        // Reading the catalog binds nothing; an exact target request does.
+        ApplicationProjects owner=new ApplicationProjects(broker);owner.ensure("owned.app");
+        owner.targetMetadata("a","owned.app","g1");owner.targetMetadata("b","owned.app","g2");
         Bundle catalog=RuntimeControllerCatalog.read(broker);
         check(new JSONArray(catalog.getString("installs")).length()==2,"both spaces listed without APKs");
         JSONArray owners=new JSONArray(catalog.getString("applications"));String project=owners.getJSONObject(0).getString("project");
@@ -32,11 +35,19 @@ public final class CatalogMetadataTest {
         bindings.setModeIn("mode1","trusted-workbench",project,"a","thick");
         install(broker,"a","g3","data1");
         broker.store.db.execSQL("UPDATE project_refs SET state='STALE' WHERE space='a'");
-        RuntimeControllerCatalog.read(broker);Bundle upgraded=bindings.resolveMetadataIn(project,"a");
+        new ApplicationProjects(broker).targetMetadata("a","owned.app","g3");Bundle upgraded=bindings.resolveMetadataIn(project,"a");
         check(upgraded.getString("generation").equals("g3")&&upgraded.getString("mode").equals("thick"),"metadata repair preserves mode on upgrade");
         check(new ApplicationProjects(broker).ensure("owned.app").equals(project),"upgrade preserves canonical project");
         check(bindings.resolveMetadataIn(project,"b").getString("bindingOperation").equals(second.getString("bindingOperation")),"upgrade does not replace sibling binding");
         rejects(()->bindings.resolveBinding(project,first.getString("bindingOperation")),"PROJECT_NOT_BOUND");
+
+        // An installed space that was never launched has no binding: choosing its mode binds the named generation first.
+        install(broker,"c","g4","data4");
+        rejects(()->bindings.resolveMetadataIn(project,"c"),"PROJECT_NOT_BOUND");
+        Bundle unbound=bindings.setModeIn("mode-unbound","trusted-workbench",project,"c","g4","thick");
+        check(unbound.getString("mode").equals("thick")&&unbound.getString("generation").equals("g4"),"mode chosen before the first launch binds the generation");
+        check(bindings.resolveMetadataIn(project,"c").getString("mode").equals("thick"),"mode survives the implicit binding");
+        rejects(()->bindings.setModeIn("mode-stale","trusted-workbench",project,"c","gX","thin"),"INSTALL_GENERATION_CONFLICT");
         check(broker.apks.loads==0,"stale identity rejected before opening APK");
 
         // A slow real target must leave the global lock available to a concurrent list read.
@@ -47,14 +58,14 @@ public final class CatalogMetadataTest {
             Future<Bundle> target=pool.submit(()->new ApplicationProjects(broker).target("a","owned.app","g3"));
             check(entered.await(2,TimeUnit.SECONDS),"target reached APK loader without global lock");
             Future<Bundle> listing=pool.submit(()->RuntimeControllerCatalog.read(broker));
-            check(new JSONArray(listing.get(2,TimeUnit.SECONDS).getString("installs")).length()==2,"catalog completes while APK load is blocked");
+            check(new JSONArray(listing.get(2,TimeUnit.SECONDS).getString("installs")).length()==3,"catalog completes while APK load is blocked");
             release.countDown();check(target.get(2,TimeUnit.SECONDS).getString("generation").equals("g3"),"real target still resolves artifacts");
         }finally{release.countDown();pool.shutdownNow();}
 
         // Mutations racing the out-of-lock parse cannot return a usable stale target.
         broker.apks.loading=()->install(broker,"a","g4","data1");
         rejects(()->bindings.resolveBinding(project,upgraded.getString("bindingOperation")),"PROJECT_BINDING_STALE");
-        RuntimeControllerCatalog.read(broker);Bundle latest=bindings.resolveMetadataIn(project,"a");
+        new ApplicationProjects(broker).targetMetadata("a","owned.app","g4");Bundle latest=bindings.resolveMetadataIn(project,"a");
         broker.apks.loading=()->{synchronized(broker){broker.store.db.execSQL("DELETE FROM installs WHERE space='a'");}};
         rejects(()->bindings.resolveBinding(project,latest.getString("bindingOperation")),"PROJECT_BINDING_STALE");
         install(broker,"a","g4","otherdata");
@@ -62,7 +73,7 @@ public final class CatalogMetadataTest {
 
         broker.store.db.execSQL("UPDATE installs SET state='CORRUPT' WHERE space='a'");
         int loads=broker.apks.loads;
-        check(new JSONArray(RuntimeControllerCatalog.read(broker).getString("installs")).length()==2,"corrupt install remains visible without parsing");
+        check(new JSONArray(RuntimeControllerCatalog.read(broker).getString("installs")).length()==3,"corrupt install remains visible without parsing");
         check(broker.apks.loads==loads,"corrupt list does not load artifacts");
         check(new JSONArray(RuntimeControllerCatalog.read(broker).getString("applications")).getJSONObject(0).getString("project").equals(project),"corruption retains application ownership");
         System.out.println("catalog-metadata-host: "+checks+" checks passed");

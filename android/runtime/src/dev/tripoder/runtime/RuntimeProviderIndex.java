@@ -23,6 +23,8 @@ final class RuntimeProviderIndex {
         }
     }
     List<ProviderInfo> publications(String process){List<ProviderInfo> out=new ArrayList<>();for(var info:components.values())if(info.enabled&&process.equals(info.processName))out.add(new ProviderInfo(info));return out;}
+    List<ProviderInfo> publications(String process,android.os.Bundle states){List<ProviderInfo> out=new ArrayList<>();for(var info:components.values())if(RuntimeComponentState.enabled(states,info)&&process.equals(info.processName)){ProviderInfo copy=new ProviderInfo(info);copy.enabled=true;out.add(copy);}return out;}
+    ProviderInfo component(String name,android.os.Bundle states){ProviderInfo copy=component(name);copy.enabled=RuntimeComponentState.enabled(states,copy.name,copy.enabled);return copy;}
     ProviderInfo component(String name){ProviderInfo info=components.get(name);if(info==null)throw new IllegalStateException("PROVIDER_METADATA_MISSING:"+name);return new ProviderInfo(info);}
     ProviderInfo authority(String name){ProviderInfo info=authorities.get(name);return info==null?null:new ProviderInfo(info);}
     static void requireAuthority(ProviderInfo publication,String authority){if(!RuntimeProviderBroker.aliases(publication.authority).contains(authority))throw new SecurityException("PROVIDER_AUTHORITY_NOT_PUBLISHED:"+authority);}

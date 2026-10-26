@@ -8,6 +8,11 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <stdio.h>
+#include "kernel_syscall.h"
+
+/* Authority-granted directory FDs are runtime capabilities. Internal operations
+ * use the existing kernel entry, never re-enter the guest pathname policy. */
+#define syscall tp_kernel_syscall
 
 /* Linux ARM64 process_vm_readv is deliberately used instead of dereferencing
  * speculative runtime pointers. Stale/unmapped addresses return failure, never
@@ -74,21 +79,22 @@ JNIEXPORT jbyteArray JNICALL Java_dev_tripoder_selfhook_CodeSnapshots_copy(JNIEn
 JNIEXPORT void JNICALL Java_dev_tripoder_selfhook_CodeSnapshots_writeArtifact(JNIEnv *env,jclass unused,jint directory,jstring input,jbyteArray bytes){
     (void)unused;const char *name=(*env)->GetStringUTFChars(env,input,NULL);if(!name)return;
     size_t length=strlen(name);int valid=directory>=0&&length>5&&length<=85;const char *suffix=strrchr(name,'.');
-    if(!suffix||(strcmp(suffix,".dex")&&strcmp(suffix,".json")))valid=0;
+    if(!suffix||(strcmp(suffix,".dex")&&strcmp(suffix,".json")&&strcmp(suffix,".snapshot")))valid=0;
     if(valid)for(const char *c=name;c<suffix;c++)if(!((*c>='A'&&*c<='Z')||(*c>='a'&&*c<='z')||(*c>='0'&&*c<='9')||*c=='_'||*c=='-'))valid=0;
     jsize size=(*env)->GetArrayLength(env,bytes);if(size<1||size>64*1024*1024)valid=0;
     if(!valid){(*env)->ReleaseStringUTFChars(env,input,name);(*env)->ThrowNew(env,(*env)->FindClass(env,"java/io/IOException"),"ARTIFACT_WRITE_ARGUMENT");return;}
     char temporary[96];snprintf(temporary,sizeof(temporary),"%s.tmp",name);
     int fd=(int)syscall(SYS_openat,directory,temporary,O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC|O_NOFOLLOW,0600),ok=fd>=0;
+    const char *stage="openat";int failure=ok?0:errno;
     jbyte buffer[16384];
     for(jsize offset=0;ok&&offset<size;){jsize count=size-offset;if(count>(jsize)sizeof(buffer))count=(jsize)sizeof(buffer);
         (*env)->GetByteArrayRegion(env,bytes,offset,count,buffer);if((*env)->ExceptionCheck(env)){ok=0;break;}
-        for(jsize done=0;done<count;){long wrote=syscall(SYS_write,fd,buffer+done,(size_t)(count-done));if(wrote<0&&errno==EINTR)continue;if(wrote<=0){ok=0;break;}done+=(jsize)wrote;}offset+=count;
+        for(jsize done=0;done<count;){long wrote=syscall(SYS_write,fd,buffer+done,(size_t)(count-done));if(wrote<0&&errno==EINTR)continue;if(wrote<=0){ok=0;stage="write";failure=wrote<0?errno:EIO;break;}done+=(jsize)wrote;}offset+=count;
     }
-    if(ok&&syscall(SYS_fsync,fd)<0)ok=0;if(fd>=0)syscall(SYS_close,fd);
-    if(ok&&syscall(SYS_renameat,directory,temporary,directory,name)<0)ok=0;
-    if(ok&&syscall(SYS_fsync,directory)<0)ok=0;
+    if(ok&&syscall(SYS_fsync,fd)<0){ok=0;stage="file-fsync";failure=errno;}if(fd>=0)syscall(SYS_close,fd);
+    if(ok&&syscall(SYS_renameat,directory,temporary,directory,name)<0){ok=0;stage="renameat";failure=errno;}
+    if(ok&&syscall(SYS_fsync,directory)<0){ok=0;stage="directory-fsync";failure=errno;}
     if(!ok)syscall(SYS_unlinkat,directory,temporary,0);
     (*env)->ReleaseStringUTFChars(env,input,name);
-    if(!ok&&!(*env)->ExceptionCheck(env))(*env)->ThrowNew(env,(*env)->FindClass(env,"java/io/IOException"),"ARTIFACT_DESCRIPTOR_WRITE_FAILED");
+    if(!ok&&!(*env)->ExceptionCheck(env)){char detail[128];snprintf(detail,sizeof(detail),"ARTIFACT_DESCRIPTOR_WRITE_FAILED:%s:errno=%d",stage,failure);(*env)->ThrowNew(env,(*env)->FindClass(env,"java/io/IOException"),detail);}
 }

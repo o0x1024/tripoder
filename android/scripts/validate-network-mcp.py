@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Prepare a self-owned Android installation, then verify native HTTP and stdio with ADB stopped.
-ADB is installation/bootstrap infrastructure only. No credential enters evidence or stdout.
+ADB is installation/bootstrap infrastructure only. Connection configuration stays outside evidence.
 """
 import argparse,datetime,hashlib,json,os,shutil,socket,subprocess,tempfile,time,uuid
 from pathlib import Path
@@ -15,7 +15,7 @@ def main():
     for artifact in receipt['artifacts'].values():
         if sha(artifact['path'])!=artifact['sha256']:raise RuntimeError('APK_CHANGED_SINCE_BUILD')
     if sha(fixture)!=receipt['installFixtures']['launcherSha256']:raise RuntimeError('FIXTURE_CHANGED_SINCE_BUILD')
-    evidence=args.evidence.resolve();evidence.mkdir(parents=True,exist_ok=False);package=receipt['artifacts']['engine']['package'];run='control-'+uuid.uuid4().hex[:16];remote='/sdcard/Android/data/'+package+'/files/';node=shutil.which('node');report={'passed':False,'runId':run,'package':package,'scope':'LAN HTTPS MCP through stdio and native HTTP; '+('read-only' if args.read_only else 'owned fixture'),'adbStoppedDuringCalls':False,'sentinelDesktopVerified':False}
+    evidence=args.evidence.resolve();evidence.mkdir(parents=True,exist_ok=False);package=receipt['artifacts']['engine']['package'];run='control-'+uuid.uuid4().hex[:16];remote='/sdcard/Android/data/'+package+'/files/';node=shutil.which('node');report={'passed':False,'runId':run,'package':package,'scope':'LAN HTTP MCP through stdio and native HTTP; '+('read-only' if args.read_only else 'owned fixture'),'adbStoppedDuringCalls':False,'sentinelDesktopVerified':False}
     adb_path=shutil.which('adb')
     def adb(*command,check=True,timeout=120):
         result=subprocess.run([adb_path,'-s',args.serial,*command],capture_output=True,text=True,timeout=timeout)
@@ -25,7 +25,7 @@ def main():
         try:
             with socket.create_connection(('127.0.0.1',5037),timeout=1):return True
         except OSError:return False
-    instrument=None;stopped=False;credential_name='mcp-connection-'+run+'.json'
+    instrument=None;stopped=False;connection_name='mcp-connection-'+run+'.json'
     try:
         if args.install:
             for key in ['engine','controlTest']:
@@ -43,10 +43,10 @@ def main():
         out,err=instrument.communicate(timeout=60);(evidence/'bootstrap-instrumentation.txt').write_text(out+err)
         raw=adb('shell','cat',remote+'result-'+run+'.json').stdout;result=json.loads(raw);(evidence/'bootstrap-result.json').write_text(raw)
         if not result.get('passed'):raise RuntimeError('NETWORK_BOOTSTRAP_FAILED:'+result.get('error',''))
-        with tempfile.TemporaryDirectory(prefix='tripoder-network-credential-') as folder:
-            connection=Path(folder)/'connection.json';data=adb('shell','cat',remote+credential_name).stdout
+        with tempfile.TemporaryDirectory(prefix='tripoder-network-connection-') as folder:
+            connection=Path(folder)/'connection.json';data=adb('shell','cat',remote+connection_name).stdout
             with os.fdopen(os.open(connection,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600),'w') as stream:stream.write(data)
-            data=None;adb('shell','rm',remote+credential_name)
+            data=None;adb('shell','rm',remote+connection_name)
             # Instrumentation may finish its target process. Relaunch the persisted, explicitly enabled endpoint.
             adb('shell','am','start','-W','-n',package+'/dev.tripoder.hooklab.WorkbenchActivity')
             time.sleep(2)
@@ -61,7 +61,7 @@ def main():
     finally:
         if stopped:subprocess.run([adb_path,'start-server'],capture_output=True,timeout=30)
         if instrument and instrument.poll() is None:instrument.terminate();instrument.communicate(timeout=10)
-        adb('shell','rm','-f',remote+credential_name,check=False)
+        adb('shell','rm','-f',remote+connection_name,check=False)
         shutil.copyfile(receipt_path,evidence/'build-receipt.json')
         report['clientSourceSha256']={str(p.relative_to(repo)):sha(p) for p in [repo/'agent/server.mjs',repo/'agent/transport.mjs',repo/'agent/tools.mjs',repo/'agent/network-acceptance.mjs']}
         report['finishedAtUtc']=datetime.datetime.now(datetime.timezone.utc).isoformat();(evidence/'summary.json').write_text(json.dumps(report,indent=2))

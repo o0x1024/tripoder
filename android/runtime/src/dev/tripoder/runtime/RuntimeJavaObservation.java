@@ -89,17 +89,14 @@ final class RuntimeJavaObservation {
         }
         RuntimeEngine engine=RuntimeEngine.current;
         if(engine!=null&&engine.existingCodeProbes()!=null)found.addAll(engine.codeProbes().classes(packagePrefix,limit));
-        if(engine!=null&&engine.info!=null&&engine.info.sourceDir!=null){
-            java.io.File apk=new java.io.File(engine.info.sourceDir);
-            if(apk.isFile()){
-                try(java.util.zip.ZipFile zip=new java.util.zip.ZipFile(apk)){
-                    var entries=zip.entries();
-                    while(entries.hasMoreElements()&&found.size()<limit){
-                        java.util.zip.ZipEntry entry=entries.nextElement();
-                        String entryName=entry.getName();
+        if(engine!=null){
+            for(var part:engine.hooks.verifiedArtifacts().parts){if(found.size()>=limit)break;
+                try(java.util.zip.ZipFile zip=new java.util.zip.ZipFile(engine.executionCode.part(part.path))){
+                    var entries=zip.entries();while(entries.hasMoreElements()&&found.size()<limit){
+                        java.util.zip.ZipEntry entry=entries.nextElement();String entryName=entry.getName();
                         if(!entryName.startsWith("classes")||!entryName.endsWith(".dex")||entryName.contains("/"))continue;
-                        byte[] dex=zip.getInputStream(entry).readAllBytes();
-                        scanDexClasses(dex,packagePrefix,limit,found);
+                        if(entry.getSize()<0||entry.getSize()>64L*1024*1024)throw new IllegalStateException("DEX_QUERY_SIZE_LIMIT");
+                        try(var stream=zip.getInputStream(entry)){byte[] dex=stream.readNBytes(64*1024*1024+1);if(dex.length>64*1024*1024)throw new IllegalStateException("DEX_QUERY_SIZE_LIMIT");scanDexClasses(dex,packagePrefix,limit,found);}
                     }
                 }
             }

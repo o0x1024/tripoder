@@ -22,6 +22,7 @@ final class RuntimeStorage {
     private final java.util.concurrent.ExecutorService preferenceWriter=java.util.concurrent.Executors.newSingleThreadExecutor(r->new Thread(r,"guest-preferences"));
     private final java.util.concurrent.atomic.AtomicBoolean finisherRegistered=new java.util.concurrent.atomic.AtomicBoolean();
     private final Set<Path> verifiedDirectories=Collections.synchronizedSet(new HashSet<>());
+    private final Map<String,RuntimeStorage> views=new HashMap<>();
     RuntimeStorage(Context host,Bundle input)throws Exception{
         this.host=host;runtimeMode=RuntimeMode.parse(input.getString(RuntimeMode.KEY)).requireImplemented();
         space=RuntimeFiles.id(RuntimeWire.required(input,"space"));packageName=RuntimeFiles.id(RuntimeWire.required(input,"package"));
@@ -39,8 +40,11 @@ final class RuntimeStorage {
         basePath=parent.basePath;rootPath=root.toPath();
         directory(root);canonicalRoot=root.getCanonicalFile();
     }
-    RuntimeStorage view(String subdirectory)throws Exception{return new RuntimeStorage(this,subdirectory);}
-    static String name(String name){if(name==null||name.isEmpty()||name.equals(".")||name.equals("..")||name.indexOf('/')>=0||name.indexOf('\0')>=0||name.getBytes(java.nio.charset.StandardCharsets.UTF_8).length>200)throw new IllegalArgumentException("INVALID_FILE_NAME");return name;}
+    RuntimeStorage view(String subdirectory)throws Exception{
+        String key=name(subdirectory);
+        synchronized(views){RuntimeStorage view=views.get(key);if(view==null){view=new RuntimeStorage(this,key);views.put(key,view);}return view;}
+    }
+    static String name(String name){if(name==null||name.isEmpty()||name.equals(".")||name.equals("..")||name.indexOf('/')>=0||name.indexOf('\0')>=0||name.getBytes(java.nio.charset.StandardCharsets.UTF_8).length>200)throw new IllegalArgumentException("INVALID_FILE_NAME:chars="+(name==null?-1:name.length())+";bytes="+(name==null?-1:name.getBytes(java.nio.charset.StandardCharsets.UTF_8).length)+";slash="+(name!=null&&name.indexOf('/')>=0)+";nul="+(name!=null&&name.indexOf('\0')>=0));return name;}
     private Object preferenceLock(String name){return preferenceLocks.computeIfAbsent(name,k->new Object());}
     private void directory(File file){
         Path target=file.toPath();if(verifiedDirectories.contains(target))return;
@@ -62,11 +66,17 @@ final class RuntimeStorage {
         if(!p.startsWith(rootPath)||!p.normalize().equals(p))throw new SecurityException("STORAGE_PATH_OUTSIDE_ROOT");
         Path parent=p.getParent();
         if(parent!=null&&!verifiedDirectories.contains(parent))directory(path.getParentFile());
-        if(Files.isSymbolicLink(p))throw new SecurityException("STORAGE_SYMLINK_REJECTED");
-        if(Files.exists(p,LinkOption.NOFOLLOW_LINKS)&&!Files.isRegularFile(p,LinkOption.NOFOLLOW_LINKS))throw new IllegalStateException("STORAGE_REGULAR_FILE_REQUIRED");
+        // One no-follow observation: a platform AtomicFile rename can remove
+        // the path between separate exists/type checks. ENOENT is a valid new
+        // or in-flight file, while a real symlink/non-regular inode stays denied.
+        try{
+            var stat=Os.lstat(path.toString());
+            if(OsConstants.S_ISLNK(stat.st_mode))throw new SecurityException("STORAGE_SYMLINK_REJECTED");
+            if(!OsConstants.S_ISREG(stat.st_mode))throw new IllegalStateException("STORAGE_REGULAR_FILE_REQUIRED");
+        }catch(ErrnoException error){if(error.errno!=OsConstants.ENOENT)throw new IllegalStateException("STORAGE_FILE_OBSERVATION_FAILED",error);}
     }
     FileOutputStream output(String name,int mode)throws FileNotFoundException{
-        if(runtimeMode!=RuntimeMode.THIN&&mode!=Context.MODE_PRIVATE&&mode!=Context.MODE_APPEND)throw new IllegalArgumentException("FILE_MODE_UNSUPPORTED");File path=file("files",name);
+        if(!runtimeMode.routesThroughPlatform()&&mode!=Context.MODE_PRIVATE&&mode!=Context.MODE_APPEND)throw new IllegalArgumentException("FILE_MODE_UNSUPPORTED");File path=file("files",name);
         try{return new FileOutputStream(Os.open(path.toString(),OsConstants.O_WRONLY|OsConstants.O_CREAT|OsConstants.O_NOFOLLOW|OsConstants.O_CLOEXEC|((mode&Context.MODE_APPEND)!=0?OsConstants.O_APPEND:OsConstants.O_TRUNC),0600));}
         catch(ErrnoException error){FileNotFoundException out=new FileNotFoundException(error.getMessage());out.initCause(error);throw out;}
     }
@@ -81,13 +91,15 @@ final class RuntimeStorage {
      * this process fails with OverlappingFileLockException instead of waiting. Different files load in parallel without
      * blocking each other on a storage-wide monitor.
      */
+    private static String preferenceName(String value){String name=String.valueOf(value);name(name+".xml");return name;}
     SharedPreferences preferences(String name,int mode){
-        if(runtimeMode==RuntimeMode.THIN){
+        name=preferenceName(name);
+        if(runtimeMode.routesThroughPlatform()){
             File target=file("shared_prefs",name+".xml");
             int physicalMode=(mode&Context.MODE_MULTI_PROCESS)!=0?Context.MODE_MULTI_PROCESS:Context.MODE_PRIVATE;
             return dev.tripoder.selfhook.PackageFrameworkAccess.sharedPreferences(host,target,physicalMode);
         }
-        if(mode!=Context.MODE_PRIVATE&&mode!=Context.MODE_MULTI_PROCESS)throw new IllegalArgumentException("PREFERENCES_MODE_UNSUPPORTED:0x"+Integer.toHexString(mode));name(name);
+        if(mode!=Context.MODE_PRIVATE&&mode!=Context.MODE_MULTI_PROCESS)throw new IllegalArgumentException("PREFERENCES_MODE_UNSUPPORTED:0x"+Integer.toHexString(mode));
         if(finisherRegistered.compareAndSet(false,true))RuntimeBridge.storageFinisher(this::flush);
         RuntimePreferences found=preferences.get(name);
         if(found==null){
@@ -103,8 +115,8 @@ final class RuntimeStorage {
         return found;
     }
     boolean deletePreferences(String name){
-        name(name);
-        if(runtimeMode==RuntimeMode.THIN){
+        name=preferenceName(name);
+        if(runtimeMode.routesThroughPlatform()){
             File target=file("shared_prefs",name+".xml"),backup=new File(target.getPath()+".bak");
             SharedPreferences p=dev.tripoder.selfhook.PackageFrameworkAccess.sharedPreferences(host,target,Context.MODE_PRIVATE);
             p.edit().clear().commit();
@@ -115,9 +127,9 @@ final class RuntimeStorage {
     /** Same data incarnation only (e.g. credential-protected to device-protected view): bytes move, and no stale in-memory view keeps serving the old file. */
     boolean movePreferencesFrom(RuntimeStorage source,String name)throws java.io.IOException{
         if(!source.anchor.equals(anchor)||!source.dataId.equals(dataId)||!source.processGeneration.equals(processGeneration))throw new SecurityException("STORAGE_MOVE_ACROSS_INCARNATIONS_DENIED");
-        name(name);if(source==this)return true;
+        name=preferenceName(name);if(source==this)return true;
         File from=source.file("shared_prefs",name+".xml"),to=file("shared_prefs",name+".xml");
-        if(runtimeMode==RuntimeMode.THIN){
+        if(runtimeMode.routesThroughPlatform()){
             if(!Files.exists(from.toPath(),LinkOption.NOFOLLOW_LINKS))return true;
             SharedPreferences srcPrefs=dev.tripoder.selfhook.PackageFrameworkAccess.sharedPreferences(host,from,Context.MODE_PRIVATE);
             Map<String,?> snapshot=new LinkedHashMap<>(srcPrefs.getAll());
@@ -158,7 +170,10 @@ final class RuntimeStorage {
         for(String suffix:new String[]{"","-wal","-shm","-journal"}){File s=new File(from+suffix);if(Files.exists(s.toPath(),LinkOption.NOFOLLOW_LINKS))Files.move(s.toPath(),new File(to+suffix).toPath(),StandardCopyOption.REPLACE_EXISTING);}
         return true;
     }
-    void flush(){List<RuntimePreferences> snapshot=new ArrayList<>(preferences.values());for(var p:snapshot)p.flush();}
+    void flush(){
+        List<RuntimePreferences> snapshot=new ArrayList<>(preferences.values());for(var p:snapshot)p.flush();
+        List<RuntimeStorage> children;synchronized(views){children=new ArrayList<>(views.values());}for(var child:children)child.flush();
+    }
     /**
      * {@code Context.getDatabasePath} parity. A relative name is a file inside {@code databases/}; an absolute name is
      * already a guest path (WorkManager and others pass one back in) and must stay absolute instead of being nested a
@@ -180,7 +195,7 @@ final class RuntimeStorage {
         check(path);for(String suffix:new String[]{"-wal","-shm","-journal"})check(new File(path+suffix));return path;
     }
     SQLiteDatabase database(String name,int mode,SQLiteDatabase.CursorFactory factory,DatabaseErrorHandler handler){
-        int allowed=Context.MODE_ENABLE_WRITE_AHEAD_LOGGING|Context.MODE_NO_LOCALIZED_COLLATORS;if(runtimeMode!=RuntimeMode.THIN&&(mode&~allowed)!=0)throw new IllegalArgumentException("DATABASE_MODE_UNSUPPORTED");
+        int allowed=Context.MODE_ENABLE_WRITE_AHEAD_LOGGING|Context.MODE_NO_LOCALIZED_COLLATORS;if(!runtimeMode.routesThroughPlatform()&&(mode&~allowed)!=0)throw new IllegalArgumentException("DATABASE_MODE_UNSUPPORTED");
         File path=database(name);
         int flags=SQLiteDatabase.CREATE_IF_NECESSARY;
         if((mode&Context.MODE_ENABLE_WRITE_AHEAD_LOGGING)!=0)flags|=SQLiteDatabase.ENABLE_WRITE_AHEAD_LOGGING;

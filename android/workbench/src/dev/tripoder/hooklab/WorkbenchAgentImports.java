@@ -3,6 +3,7 @@ package dev.tripoder.hooklab;
 import android.os.*;
 import android.util.*;
 import dev.tripoder.control.*;
+import dev.tripoder.runtime.ArtifactSet;
 import org.json.*;
 import java.io.*;
 import java.nio.file.*;
@@ -46,8 +47,8 @@ final class WorkbenchAgentImports {
     }
     private JSONObject begin(JSONObject params,String id)throws Exception{
         AgentCrypto.id(params.getString("space"));JSONArray files=params.getJSONArray("files");if(files.length()<1||files.length()>64)throw new IllegalArgumentException("UPLOAD_FILE_COUNT");long total=0;
-        for(int i=0;i<files.length();i++){JSONObject file=files.getJSONObject(i);AgentCrypto.fields(file,"name","size","sha256");String expected=i==0?"base.apk":"split-"+i+".apk";if(!expected.equals(file.getString("name"))||!file.getString("sha256").matches("[a-f0-9]{64}"))throw new IllegalArgumentException("UPLOAD_FILE_METADATA");long size=file.getLong("size");if(size<1||size>1024L*1024*1024)throw new IllegalArgumentException("UPLOAD_FILE_SIZE");total+=size;}
-        if(total>4L*1024*1024*1024)throw new IllegalArgumentException("UPLOAD_TOTAL_SIZE");File dir=directory(id),meta=new File(dir,"upload.json");String digest=WorkbenchAgentLifecycle.sha(params.toString());
+        for(int i=0;i<files.length();i++){JSONObject file=files.getJSONObject(i);AgentCrypto.fields(file,"name","size","sha256");String expected=i==0?"base.apk":"split-"+i+".apk";if(!expected.equals(file.getString("name"))||!file.getString("sha256").matches("[a-f0-9]{64}"))throw new IllegalArgumentException("UPLOAD_FILE_METADATA");long size=file.getLong("size");if(size<1||size>ArtifactSet.MAX_APK_BYTES)throw new IllegalArgumentException("UPLOAD_FILE_SIZE");total+=size;}
+        if(total>ArtifactSet.MAX_SET_BYTES)throw new IllegalArgumentException("UPLOAD_TOTAL_SIZE");File dir=directory(id),meta=new File(dir,"upload.json");String digest=WorkbenchAgentLifecycle.sha(params.toString());
         if(meta.exists()){if(metadata(id).optBoolean("cancelled"))throw new IllegalStateException("UPLOAD_CANCELLED");if(!metadata(id).getString("digest").equals(digest))throw new IllegalArgumentException("AGENT_REQUEST_ID_CONTENT_MISMATCH");}
         else{if(operation(id)!=null)throw new IllegalArgumentException("AGENT_REQUEST_ID_CONTENT_MISMATCH");if(root.getUsableSpace()<total+64L*1024*1024)throw new IOException("UPLOAD_STORAGE_FULL");if(!dir.isDirectory()&&!dir.mkdir())throw new IOException("UPLOAD_DIRECTORY");save(meta,new JSONObject(params.toString()).put("digest",digest));}
         JSONObject prior=operation(id);if(prior!=null){if(!"SUCCEEDED".equals(prior.getString("state")))throw new IllegalStateException("OPERATION_QUERY_REQUIRED:"+id);return completed(id,meta.exists()?metadata(id):params,prior);}

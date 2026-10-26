@@ -78,7 +78,7 @@ final class RuntimeManifestIndex {
                 if(info instanceof ProviderInfo&&!declared.authorities.equals(((ProviderInfo)info).authority))continue;
                 if(info instanceof ActivityInfo&&!Objects.equals(declared.targetActivity.isEmpty()?null:declared.targetActivity,((ActivityInfo)info).targetActivity))continue;
                 if(!pkg.packageName.equals(info.packageName))throw new SecurityException("MANIFEST_COMPONENT_PACKAGE_MISMATCH");
-                if(found!=null&&(found.enabled!=info.enabled||found.exported!=info.exported||!Objects.equals(found.processName,info.processName)))throw new SecurityException("MANIFEST_COMPONENT_AMBIGUOUS:"+declared.name);
+                if(found!=null&&declared.type.equals("provider")&&(found.enabled!=info.enabled||found.exported!=info.exported||!Objects.equals(found.processName,info.processName)))throw new SecurityException("MANIFEST_COMPONENT_AMBIGUOUS:"+declared.name);
                 found=info;
             }
             if(found==null)throw new IllegalStateException("MANIFEST_COMPONENT_METADATA_MISSING:"+declared.type+":"+declared.name);

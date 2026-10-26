@@ -1,3 +1,5 @@
+import {JavaObjectFrame, assertSnapshotData, eventSnapshot} from "./java-objects.js";
+import type {JavaObjectRef} from "./java-objects.js";
 import { requireThat } from "./errors.js";
 import { evidenceKey, sameTarget, snapshotEvidence } from "./evidence.js";
 import type { EvidenceSnapshot, HookSymbol, HookValue, JavaType, NativeType, Target } from "./evidence.js";
@@ -25,15 +27,21 @@ export interface PlanContext<P> {
     snapshotDex(dexId: string): Readonly<{ artifactId: string; state: string }>;
   };
   readonly java: {
+    objectInfo(ref: JavaObjectRef): Readonly<Record<string,unknown>>;
+    snapshotThread(ref: JavaObjectRef): Readonly<Record<string,unknown>>;
+    snapshotThrowable(ref: JavaObjectRef, limits?: {maxFrames?: number;maxCauses?: number}): Readonly<Record<string,unknown>>;
     method(className: string, methodName: string, argumentTypes: readonly JavaType[], options?: { classLoaderId?: string; returnType?: JavaType }): HookBuilder<P>;
   };
   readonly native: {
+    /** After original only; signed byte-count result, uint64 pointer slot, integral capacity slot. */
+    captureBuffer(pointerArgument: number, capacityArgument: number, maxBytes: number): Readonly<Record<string, unknown>>;
     function(moduleName: string, symbol: string, signature: {
       argumentTypes: readonly NativeType[]; returnType: NativeType; buildId: string;
     }): HookBuilder<P>;
   };
   readonly debug: {
     emitEvent(tag: string, payload?: unknown): void;
+    captureEvidence(tag: string, payload: unknown): Readonly<{artifactId:string;state:string}>;
     captureJavaStack(maxDepth?: number): readonly string[];
     callerModuleOffset(): string;
   };
@@ -56,8 +64,10 @@ export interface PreparedPlan<S extends Parameters> {
   readonly parameters: ParameterValues<S>;
   readonly rules: readonly PreparedRule<ParameterValues<S>>[];
   readonly emitSink?: {
+    nativeBuffer?: ((pointerArgument:number,capacityArgument:number,maxBytes:number)=>Readonly<Record<string,unknown>>) | undefined;
     snapshotDex?: ((dexId: string) => Readonly<{ artifactId: string; state: string }>) | undefined;
     fn?: ((tag: string, payload: unknown) => void) | undefined;
+    evidence?: ((tag:string,payload:unknown)=>Readonly<{artifactId:string;state:string}>) | undefined;
     stack?: ((maxDepth: number) => readonly string[]) | undefined;
     caller?: (() => string) | undefined;
   };
@@ -78,8 +88,10 @@ export function preparePlan<S extends Parameters>(plan: HookPlan<S>, observed: E
   const values = resolveParameters(specs, parameters);
   const rules = new Map<string, { symbol: HookSymbol; handlers: HookHandlers<ParameterValues<S>> }>();
   const emitSink: {
+    nativeBuffer?: ((pointerArgument:number,capacityArgument:number,maxBytes:number)=>Readonly<Record<string,unknown>>) | undefined;
     snapshotDex?: ((dexId: string) => Readonly<{ artifactId: string; state: string }>) | undefined;
     fn?: ((tag: string, payload: unknown) => void) | undefined;
+    evidence?: ((tag:string,payload:unknown)=>Readonly<{artifactId:string;state:string}>) | undefined;
     stack?: ((maxDepth: number) => readonly string[]) | undefined;
     caller?: (() => string) | undefined;
   } = {};
@@ -116,6 +128,9 @@ export function preparePlan<S extends Parameters>(plan: HookPlan<S>, observed: E
       },
     },
     java: {
+      objectInfo: ref => JavaObjectFrame.info(ref),
+      snapshotThread: ref => JavaObjectFrame.snapshot(ref,"java.lang.Thread"),
+      snapshotThrowable: (ref,limits={}) => {requireThat(Object.keys(limits).every(k=>k==="maxFrames"||k==="maxCauses"),"HOOK_SNAPSHOT_FIELDS","Unknown snapshot option");requireThat(Number.isSafeInteger(limits.maxFrames??16)&&Number.isSafeInteger(limits.maxCauses??4)&&(limits.maxFrames??16)>=1&&(limits.maxFrames??16)<=32&&(limits.maxCauses??4)>=1&&(limits.maxCauses??4)<=6,"HOOK_SNAPSHOT_LIMIT","Snapshot exceeds limits");return JavaObjectFrame.snapshot(ref,"java.lang.Throwable");},
       method(className, methodName, argumentTypes, options = {}) {
         requireThat(evidence.capabilities.includes("java-hook"), "CAPABILITY_MISSING", "java-hook capability is unavailable");
         const norm = (t: string) => t === "byte[]" ? "[B" : t;
@@ -130,6 +145,12 @@ export function preparePlan<S extends Parameters>(plan: HookPlan<S>, observed: E
       },
     },
     native: {
+      captureBuffer(pointerArgument,capacityArgument,maxBytes){
+        requireThat(!collecting,"NATIVE_BUFFER_OUTSIDE_INVOCATION","Native capture requires an active invocation");
+        requireThat(Number.isInteger(pointerArgument)&&pointerArgument>=0&&pointerArgument<16&&Number.isInteger(capacityArgument)&&capacityArgument>=0&&capacityArgument<16&&pointerArgument!==capacityArgument&&Number.isInteger(maxBytes)&&maxBytes>=1&&maxBytes<=1024,"NATIVE_BUFFER_ARGUMENT","Invalid native capture bounds");
+        requireThat(emitSink.nativeBuffer,"NATIVE_BUFFER_UNSUPPORTED","An invocation-owned native buffer provider is required");
+        return Object.freeze({...emitSink.nativeBuffer(pointerArgument,capacityArgument,maxBytes)});
+      },
       function(moduleName, name, signature) {
         requireThat(evidence.capabilities.includes("native-hook"), "CAPABILITY_MISSING", "native-hook capability is unavailable");
         const matches = evidence.symbols.filter(s => s.kind === "native" && s.moduleName === moduleName && s.symbol === name);
@@ -143,10 +164,11 @@ export function preparePlan<S extends Parameters>(plan: HookPlan<S>, observed: E
       },
     },
     debug: {
+      captureEvidence(tag,payload){requireThat(!collecting&&emitSink.evidence,"EVIDENCE_CAPTURE_UNSUPPORTED","Evidence sink is unavailable");requireThat(typeof tag==="string"&&/^[a-zA-Z0-9_.:-]{1,64}$/.test(tag),"HOOK_EVENT_TAG","Invalid evidence tag");assertSnapshotData(payload);return emitSink.evidence(tag,payload);},
       emitEvent(tag, payload = null) {
         requireThat(!collecting, "HOOK_EMIT_OUTSIDE_INVOCATION", "emitEvent can only be called inside a hook callback");
         requireThat(typeof tag === "string" && /^[a-zA-Z0-9_.:-]{1,64}$/.test(tag), "HOOK_EVENT_TAG", "Invalid event tag");
-        emitSink.fn?.(tag, payload);
+        const snapshot=eventSnapshot(payload);assertSnapshotData(snapshot);emitSink.fn?.(tag, snapshot);
       },
       captureJavaStack(maxDepth = 8) {
         requireThat(!collecting, "HOOK_EMIT_OUTSIDE_INVOCATION", "captureJavaStack can only be called inside a hook callback");

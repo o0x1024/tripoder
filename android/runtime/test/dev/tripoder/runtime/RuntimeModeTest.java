@@ -38,6 +38,9 @@ public final class RuntimeModeTest {
         check("resolve-single-thin",RuntimeMode.resolve(List.of("thin"))==RuntimeMode.THIN);
         check("resolve-multiple-agreeing-thin",RuntimeMode.resolve(List.of("thin","thin"))==RuntimeMode.THIN);
         rejects("resolve-conflict-rejected",IllegalStateException.class,"RUNTIME_MODE_CONFLICT:thick:thin",()->RuntimeMode.resolve(List.of("thick","thin")));
+        for(RuntimeMode mode:RuntimeMode.values())check("routes-through-platform-"+mode.wire,mode.routesThroughPlatform());
+        check("thick-conceals-device",RuntimeMode.THICK.concealsDevice());
+        check("thin-uses-platform-device",!RuntimeMode.THIN.concealsDevice());
         rejects("resolve-unknown-rejected",IllegalArgumentException.class,"RUNTIME_MODE_UNKNOWN:",()->RuntimeMode.resolve(List.of("invalid")));
         System.out.println("{\"passed\":true,\"assertions\":"+checks+",\"checks\":[\""+String.join("\",\"",names)+"\"]}");
     }

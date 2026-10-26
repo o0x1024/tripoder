@@ -17,7 +17,11 @@ final class RuntimeSelfHookPlatformCallbacks {
         public Object application(){return RuntimeBridge.application();}
         public boolean stop(Object service,int startId)throws Exception {
             Service value=(Service)service;
-            return RuntimeSelfHookComponents.frameworkCalls().stopServiceToken(value,RuntimeBridge.serviceComponent(value),startId);
+            RuntimeEngine engine=RuntimeEngine.current;boolean trace=engine!=null&&engine.traceStartup;
+            if(trace)android.util.Log.i("TripoderServiceStop","ENTER:component="+value.getClass().getName()+":startId="+startId);
+            boolean stopped=RuntimeSelfHookComponents.frameworkCalls().stopServiceToken(value,RuntimeBridge.serviceComponent(value),startId);
+            if(trace)android.util.Log.i("TripoderServiceStop","RESULT:component="+value.getClass().getName()+":startId="+startId+":stopped="+stopped);
+            return stopped;
         }
     };
     private static final RuntimeSelfHookBoundaries.ProviderRoute PROVIDERS=new RuntimeSelfHookBoundaries.ProviderRoute() {
@@ -41,7 +45,12 @@ final class RuntimeSelfHookPlatformCallbacks {
     };
 
     static Object serviceAttach(Service service,Object[] arguments,RuntimeSelfHookLifecycle.Original original)throws Throwable {
-        RuntimeSelfHookComponents.requireActive();return RuntimeSelfHookBoundaries.serviceAttach(SERVICES,service,arguments,original);
+        RuntimeSelfHookComponents.requireActive();Object[] attached=arguments;
+        if(RuntimeBridge.ownsService(service)){
+            if(arguments.length!=6||!(arguments[3] instanceof android.os.IBinder))throw new IllegalArgumentException("SERVICE_ATTACH_ARGUMENT_SHAPE");
+            attached=arguments.clone();attached[5]=dev.tripoder.selfhook.ServiceTokenAccess.scopedManager(arguments[5],(android.os.IBinder)arguments[3],RuntimeBridge.serviceComponent(service),RuntimeEngine.current.packageName,RuntimeEngine.current.traceStartup);
+        }
+        return RuntimeSelfHookBoundaries.serviceAttach(SERVICES,service,attached,original);
     }
     static Object stopSelf(Service service,int startId,RuntimeSelfHookLifecycle.Original original)throws Throwable {
         RuntimeSelfHookJobs.rejectServiceControl(service);

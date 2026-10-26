@@ -1,0 +1,13 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tripoder.nativeservicefixture" android:versionCode="2" android:versionName="2">
+    <uses-sdk android:minSdkVersion="37" android:targetSdkVersion="37"/>
+    <application android:label="Owned native service fixture" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:extractNativeLibs="false" android:allowBackup="false">
+        <activity android:name=".Main" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
+        <!-- A service with no Java class: only the native entry point and library the properties name. -->
+        <service android:name=".NativeEcho" android:exported="false" android:isolatedProcess="true" android:useAppZygote="true" android:nativeService="true">
+            <property android:name="android.app.PROPERTY_NATIVE_SERVICE_LIBRARY_NAME" android:value="libnativeecho.so"/>
+            <property android:name="android.app.PROPERTY_NATIVE_SERVICE_FUNCTION_NAME" android:value="NativeEcho_onCreate"/>
+        </service>
+        <!-- Same library through Android's defaults: libmain.so and ANativeService_onCreate. -->
+        <service android:name=".DefaultNames" android:exported="false" android:isolatedProcess="true" android:useAppZygote="true" android:nativeService="true"/>
+    </application>
+</manifest>

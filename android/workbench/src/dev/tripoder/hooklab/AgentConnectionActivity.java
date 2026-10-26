@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import java.nio.charset.StandardCharsets;
 
-/** Explicit user export through the system document picker; credentials never enter logs or clipboard. */
+/** Export the HTTP endpoint address through the document picker. */
 public final class AgentConnectionActivity extends Activity {
     @Override public void onCreate(Bundle saved){super.onCreate(saved);if(saved==null)startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("application/json").putExtra(Intent.EXTRA_TITLE,"tripoder-connection.json"),1);}
     @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(request!=1)return;

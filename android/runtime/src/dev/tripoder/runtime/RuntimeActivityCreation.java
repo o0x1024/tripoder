@@ -27,14 +27,34 @@ public final class RuntimeActivityCreation {
         public void bindRecord(Object record,IBinder token){require();if(this.record!=null||record==null||token==null)throw new SecurityException("ACTIVITY_CREATION_RECORD_INVALID");this.record=record;this.token=token;}
         /**
          * Bind the platform's construction call to this admission. The platform may hand back either form of the same
-         * record: the physical slot it resolved or the guest-visible component it derived from the ActivityInfo. Both
+         * record: the physical slot it resolved or the construction target from the admitted ActivityInfo. Both
          * name the one admitted identity; the lease ticket and delivery still have to match exactly.
          */
         public void requireArguments(String suppliedName,Intent supplied){require();
             String slot=physical.getComponent().getClassName();
-            boolean name=RuntimeActivitySlots.target(slot).equals(suppliedName)||visible.getComponent().getClassName().equals(suppliedName);
+            boolean name=RuntimeActivitySlots.target(slot).equals(suppliedName)||this.name.equals(suppliedName);
             boolean component=supplied!=null&&(physical.getComponent().equals(supplied.getComponent())||visible.getComponent().equals(supplied.getComponent()));
             if(!name||!component||!Objects.equals(ticket,supplied.getStringExtra("tripoder.ticket"))||!Objects.equals(physical.getStringExtra("tripoder.delivery"),supplied.getStringExtra("tripoder.delivery")))throw new SecurityException("ACTIVITY_CREATION_ARGUMENTS_MISMATCH");}
+        /** Code identities and equality bits only; capability values and Intent
+         * payloads never participate in the diagnostic output. */
+        void rejectedArguments(java.lang.reflect.Method target,Object instrumentation,ClassLoader suppliedLoader,String suppliedName,Intent supplied){
+            try{
+                Map<String,Object> facts=new LinkedHashMap<>();
+                facts.put("phase",phase);facts.put("declaringClass",target.getDeclaringClass().getName());
+                facts.put("instrumentationClass",instrumentation.getClass().getName());
+                facts.put("nameIsPhysicalTarget",RuntimeActivitySlots.target(physical.getComponent().getClassName()).equals(suppliedName));
+                facts.put("nameIsVisible",visible.getComponent().getClassName().equals(suppliedName));facts.put("nameIsFactoryTarget",name.equals(suppliedName));
+                facts.put("intentPresent",supplied!=null);facts.put("componentIsPhysical",supplied!=null&&physical.getComponent().equals(supplied.getComponent()));
+                facts.put("componentIsVisible",supplied!=null&&visible.getComponent().equals(supplied.getComponent()));
+                String suppliedTicket=supplied==null?null:supplied.getStringExtra("tripoder.ticket"),suppliedDelivery=supplied==null?null:supplied.getStringExtra("tripoder.delivery");
+                facts.put("ticketPresent",suppliedTicket!=null);facts.put("ticketMatches",Objects.equals(ticket,suppliedTicket));
+                facts.put("deliveryPresent",suppliedDelivery!=null);facts.put("deliveryMatches",Objects.equals(physical.getStringExtra("tripoder.delivery"),suppliedDelivery));
+                facts.put("recordPresent",record!=null);facts.put("recordIntentIsSupplied",record!=null&&dev.tripoder.selfhook.ActivityFrameworkAccess.recordIntent(record)==supplied);
+                facts.put("recordTokenMatches",record!=null&&Objects.equals(token,dev.tripoder.selfhook.ActivityFrameworkAccess.recordToken(record)));
+                facts.put("loaderIsGuest",suppliedLoader==engine.guestLoader());facts.put("loaderOwned",engine.ownsLoader(suppliedLoader));
+                android.util.Log.e("TripoderActivityCreation",new org.json.JSONObject(facts).toString());
+            }catch(Exception diagnosticError){android.util.Log.e("TripoderActivityCreation","ARGUMENT_DIAGNOSTICS_UNAVAILABLE:"+diagnosticError.getClass().getName());}
+        }
         public Activity complete(Activity activity){require();if(!constructing())throw new SecurityException("ACTIVITY_CREATION_PHASE_INVALID");
             if(activity==null||activity.getBaseContext()!=null||engine.ownsActivity(activity)||!engine.ownsLoader(activity.getClass().getClassLoader()))throw new SecurityException("ACTIVITY_CREATION_RESULT_NOT_FRESH_OWNED_INSTANCE");
             ComponentName expected=new ComponentName(engine.packageName,RuntimeWire.required(physical.getExtras(),"tripoder.component"));

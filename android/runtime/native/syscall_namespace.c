@@ -4,6 +4,7 @@
 #include "syscall_namespace.h"
 #include "kernel_syscall.h"
 #include "user_memory.h"
+#include "ptrace_namespace.h"
 #include <errno.h>
 #include <linux/filter.h>
 #include <linux/seccomp.h>
@@ -25,17 +26,43 @@
  * as libc, once, before guest code. Only the owned internal syscall gateway bypasses
  * this dispatcher, so internal policy syscalls do not recurse through SIGSYS. */
 static struct sigaction previous;
-static const int numbers[]={SYS_openat,SYS_newfstatat,SYS_readlinkat,SYS_faccessat,SYS_unlinkat,SYS_mkdirat,SYS_renameat2,SYS_chdir,SYS_symlinkat,SYS_linkat,SYS_statfs,SYS_inotify_add_watch};
-static _Atomic uint64_t observed[12];
+struct kernel_sigaction_a64 {
+    uintptr_t handler;
+    unsigned long flags;
+    uintptr_t restorer;
+    uint64_t mask;
+};
+static struct kernel_sigaction_a64 guest_sigsys;
+static int (*chain_user_action)(int,const struct sigaction *,struct sigaction *);
+static const int numbers[]={SYS_openat,SYS_newfstatat,SYS_readlinkat,SYS_faccessat,SYS_unlinkat,SYS_mkdirat,SYS_renameat2,SYS_chdir,SYS_symlinkat,SYS_linkat,SYS_statfs,SYS_inotify_add_watch,SYS_fchmodat,SYS_ptrace,SYS_wait4,SYS_waitid};
+enum { CALL_COUNT=sizeof(numbers)/sizeof(numbers[0]) };
+static const unsigned call_count=CALL_COUNT;
+static _Atomic bool installed;
+static bool debugger_auditing;
+void tp_syscall_namespace_trace_debugger(bool enabled){if(!atomic_load_explicit(&installed,memory_order_acquire))debugger_auditing=enabled;}
+_Static_assert(CALL_COUNT+10<=32,"syscall filter budget");
+static _Atomic uint64_t observed[CALL_COUNT];
 struct audit_row { _Atomic bool busy;unsigned sequence;int number;long result;uintptr_t pc;char path[256]; };
 static struct audit_row audit[64];static _Atomic unsigned audit_sequence;
 static _Atomic bool auditing;
+static _Atomic int audit_fd=-1;
+void tp_syscall_namespace_set_audit_fd(int fd){atomic_store_explicit(&audit_fd,fd,memory_order_release);}
+int tp_syscall_namespace_get_audit_fd(void){return atomic_load_explicit(&audit_fd,memory_order_acquire);}
 static void record(int number,long result,uintptr_t pc,const char *path){
     if(!atomic_load_explicit(&auditing,memory_order_relaxed))return;
+    char safe_path[256];safe_path[0]=0;
+    if(path){if(tp_user_string(path,safe_path,sizeof(safe_path))<0)safe_path[sizeof(safe_path)-1]=0;}
+    int fd=atomic_load_explicit(&audit_fd,memory_order_relaxed);
+    if(fd>=0){
+        char line[512];
+        int n=snprintf(line,sizeof(line),"seccomp pid=%ld tid=%ld nr=%d res=%ld pc=%lx path=%s\n",
+            syscall(SYS_getpid),syscall(SYS_gettid),number,result,(unsigned long)pc,safe_path);
+        if(n>0&&(size_t)n<sizeof(line))syscall(SYS_write,fd,line,(size_t)n);
+    }
     unsigned sequence=atomic_fetch_add_explicit(&audit_sequence,1,memory_order_relaxed)+1;struct audit_row *row=&audit[sequence%64];
     bool expected=false;if(!atomic_compare_exchange_strong_explicit(&row->busy,&expected,true,memory_order_acquire,memory_order_relaxed))return;
     row->number=number;row->result=result;row->pc=pc;
-    row->path[0]=0;if(path){if(tp_user_string(path,row->path,sizeof(row->path))<0)row->path[sizeof(row->path)-1]=0;}
+    memcpy(row->path,safe_path,sizeof(row->path));
     row->sequence=sequence;atomic_store_explicit(&row->busy,false,memory_order_release);
 }
 static long metadata_path(int number,int descriptor,const char *name,void *output,unsigned mask){
@@ -46,26 +73,53 @@ static long metadata_path(int number,int descriptor,const char *name,void *outpu
     else{char alias[64];snprintf(alias,sizeof(alias),"/proc/self/fd/%d",fd);result=syscall(SYS_inotify_add_watch,descriptor,alias,mask);}
     int saved=errno;syscall(SYS_close,fd);errno=saved;return result;
 }
-static _Atomic bool installed;
 static bool owned_request(int signal,const siginfo_t *info){
-    if(signal!=SIGSYS||!info||info->si_code!=SYS_SECCOMP)return false;
-    for(unsigned i=0;i<12;i++)if(info->si_syscall==numbers[i])return true;return false;
+    if(signal!=SIGSYS||!info||info->si_code!=SYS_SECCOMP||info->si_errno!=TP_NAMESPACE_TRAP_DATA)return false;
+    if(info->si_syscall==SYS_rt_sigaction)return true;
+    for(unsigned i=0;i<call_count;i++)if(info->si_syscall==numbers[i])return true;
+    return false;
+}
+static long sigsys_action(int sig,const void *act,void *oldact,size_t sigsetsize){
+    if(sig!=SIGSYS||sigsetsize!=sizeof(uint64_t)){errno=EINVAL;return -1;}
+    struct kernel_sigaction_a64 next;
+    if(act&&tp_user_read(act,&next,sizeof(next))<0)return -1;
+    if(chain_user_action){
+        struct sigaction requested={0},previous_action={0};
+        if(act){requested.sa_sigaction=(void (*)(int,siginfo_t *,void *))next.handler;requested.sa_flags=(int)next.flags;requested.sa_restorer=(void (*)(void))next.restorer;memcpy(&requested.sa_mask,&next.mask,sizeof(next.mask));}
+        if(chain_user_action(sig,act?&requested:NULL,oldact?&previous_action:NULL)<0)return -1;
+        if(oldact){
+            struct kernel_sigaction_a64 old={.handler=(uintptr_t)previous_action.sa_sigaction,.flags=(unsigned long)previous_action.sa_flags,.restorer=(uintptr_t)previous_action.sa_restorer};
+            memcpy(&old.mask,&previous_action.sa_mask,sizeof(old.mask));
+            if(tp_user_write(oldact,&old,sizeof(old))<0)return -1;
+        }
+        return 0;
+    }
+    if(oldact&&tp_user_write(oldact,&guest_sigsys,sizeof(guest_sigsys))<0)return -1;
+    if(act){
+        guest_sigsys=next;
+        memset(&previous,0,sizeof(previous));
+        previous.sa_sigaction=(void (*)(int,siginfo_t *,void *))next.handler;
+        previous.sa_flags=(int)next.flags;
+        memcpy(&previous.sa_mask,&next.mask,sizeof(next.mask)<sizeof(previous.sa_mask)?sizeof(next.mask):sizeof(previous.sa_mask));
+    }
+    return 0;
 }
 static void forward_signal(int signal,siginfo_t *info,void *raw){
         if((previous.sa_flags&SA_SIGINFO)&&previous.sa_sigaction)previous.sa_sigaction(signal,info,raw);
         else if(previous.sa_handler==SIG_IGN)return;
         else if(previous.sa_handler!=SIG_DFL&&previous.sa_handler)previous.sa_handler(signal);
-        else{sigaction(SIGSYS,&previous,NULL);syscall(SYS_tgkill,syscall(SYS_getpid),syscall(SYS_gettid),SIGSYS);}
+        else{syscall(SYS_rt_sigaction,SIGSYS,&guest_sigsys,NULL,sizeof(uint64_t));syscall(SYS_tgkill,syscall(SYS_getpid),syscall(SYS_gettid),SIGSYS);}
 }
 static long dispatch(int signal,siginfo_t *info,void *raw){
     (void)signal;
     ucontext_t *context=raw;const __u64 *args=context->uc_mcontext.regs;int saved=errno;long result;
-    const char *name=(const char *)args[1];for(unsigned i=0;i<12;i++)if(info->si_syscall==numbers[i])atomic_fetch_add_explicit(&observed[i],1,memory_order_relaxed);
+    const char *name=(const char *)args[1];for(unsigned i=0;i<CALL_COUNT;i++)if(info->si_syscall==numbers[i])atomic_fetch_add_explicit(&observed[i],1,memory_order_relaxed);
     switch(info->si_syscall){
         case SYS_openat:result=tp_openat((int)args[0],name,(int)args[2],(unsigned)args[3]);break;
         case SYS_newfstatat:result=tp_fstatat((int)args[0],name,(struct stat *)args[2],(int)args[3]);break;
         case SYS_readlinkat:result=tp_readlinkat((int)args[0],name,(char *)args[2],(size_t)args[3]);break;
         case SYS_faccessat:result=tp_faccessat((int)args[0],name,(int)args[2]);break;
+        case SYS_fchmodat:result=tp_fchmodat((int)args[0],name,(unsigned)args[2]);break;
         case SYS_unlinkat:result=tp_unlinkat((int)args[0],name,(int)args[2]);break;
         case SYS_mkdirat:result=tp_mkdirat((int)args[0],name,(unsigned)args[2]);break;
         case SYS_renameat2:result=tp_renameat2((int)args[0],name,(int)args[2],(const char *)args[3],(unsigned)args[4]);break;
@@ -73,6 +127,18 @@ static long dispatch(int signal,siginfo_t *info,void *raw){
         case SYS_symlinkat:name=(const char *)args[2];result=tp_symlinkat((const char *)args[0],(int)args[1],name);break;
         case SYS_linkat:result=tp_linkat((int)args[0],name,(int)args[2],(const char *)args[3],(int)args[4]);break;
         case SYS_statfs:name=(const char *)args[0];result=metadata_path(SYS_statfs,0,name,(void *)args[1],0);break;
+        case SYS_rt_sigaction:name=NULL;result=sigsys_action((int)args[0],(const void *)args[1],(void *)args[2],(size_t)args[3]);break;
+        case SYS_ptrace:case SYS_wait4:case SYS_waitid:{
+            name=NULL;
+            if(info->si_syscall==SYS_ptrace)result=tp_namespace_ptrace(args[0],args[1],args[2],args[3]);
+            else if(info->si_syscall==SYS_wait4)result=tp_namespace_wait4(args[0],(void *)args[1],args[2],(void *)args[3]);
+            else result=tp_namespace_waitid(args[0],args[1],(void *)args[2],args[3],(void *)args[4]);
+            int call_errno=errno;
+            int fd=atomic_load_explicit(&audit_fd,memory_order_relaxed),status=0;
+            if(info->si_syscall==SYS_wait4&&result>0&&args[1])tp_user_read((void *)args[1],&status,sizeof(status));
+            if(debugger_auditing&&fd>=0){char line[256];int n=snprintf(line,sizeof(line),"DEBUGGER pid=%ld tid=%ld nr=%d a0=%lx a1=%lx a2=%lx a3=%lx result=%ld errno=%d status=%x\n",syscall(SYS_getpid),syscall(SYS_gettid),info->si_syscall,(unsigned long)args[0],(unsigned long)args[1],(unsigned long)args[2],(unsigned long)args[3],result,result<0?call_errno:0,status);if(n>0&&(size_t)n<sizeof(line))syscall(SYS_write,fd,line,(size_t)n);}
+            errno=call_errno;break;
+        }
         default:result=metadata_path(SYS_inotify_add_watch,(int)args[0],name,NULL,(unsigned)args[2]);break;
     }
     int result_errno=errno;record(info->si_syscall,result<0?-result_errno:result,context->uc_mcontext.pc,name);errno=result_errno;
@@ -88,25 +154,36 @@ static void dispatch_entry(int signal,siginfo_t *info,void *raw){
 static bool dispatch_special(int signal,siginfo_t *info,void *raw){
     if(!owned_request(signal,info))return false;dispatch_entry(signal,info,raw);return true;
 }
-int tp_syscall_namespace_install_with_signal_chain(int (*claim)(int,bool (*)(int,siginfo_t *,void *))){
+int tp_syscall_namespace_install_with_signal_chain(int (*claim)(int,bool (*)(int,siginfo_t *,void *)),int (*reserve_delivery)(void),int (*user_action)(int,const struct sigaction *,struct sigaction *)){
     if(atomic_load_explicit(&installed,memory_order_acquire))return 0;
+    if(claim&&!user_action){errno=EINVAL;return -1;}
+    chain_user_action=user_action;
     uintptr_t resume=(uintptr_t)tp_kernel_syscall_resume;
     struct sock_filter filter[32];unsigned length=0;
     filter[length++]=(struct sock_filter)BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,instruction_pointer)+4);
     filter[length++]=(struct sock_filter)BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,(uint32_t)(resume>>32),0,2);
     filter[length++]=(struct sock_filter)BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,instruction_pointer));
-    filter[length++]=(struct sock_filter)BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,(uint32_t)resume,13,0);
+    filter[length++]=(struct sock_filter)BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,(uint32_t)resume,call_count+4,0);
     filter[length++]=(struct sock_filter)BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,nr));
-    for(unsigned i=0;i<12;i++)filter[length++]=(struct sock_filter)BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,(uint32_t)numbers[i],(uint8_t)(12-i),0);
+    for(unsigned i=0;i<call_count;i++)filter[length++]=(struct sock_filter)BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,(uint32_t)numbers[i],(uint8_t)(call_count+3-i),0);
+    filter[length++]=(struct sock_filter)BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,SYS_rt_sigaction,0,2);
+    filter[length++]=(struct sock_filter)BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,args[0]));
+    filter[length++]=(struct sock_filter)BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,SIGSYS,1,0);
     filter[length++]=(struct sock_filter)BPF_STMT(BPF_RET|BPF_K,SECCOMP_RET_ALLOW);
-    filter[length++]=(struct sock_filter)BPF_STMT(BPF_RET|BPF_K,SECCOMP_RET_TRAP);
+    filter[length++]=(struct sock_filter)BPF_STMT(BPF_RET|BPF_K,SECCOMP_RET_TRAP|TP_NAMESPACE_TRAP_DATA);
     struct sock_fprog program={.len=(unsigned short)length,.filter=filter};
     struct sigaction handler;memset(&handler,0,sizeof(handler));handler.sa_sigaction=dispatch_entry;handler.sa_flags=SA_SIGINFO;sigemptyset(&handler.sa_mask);
     if(claim?claim(SIGSYS,dispatch_special)!=0:sigaction(SIGSYS,&handler,&previous)!=0)return -1;
+    if(!claim){
+        guest_sigsys.handler=(uintptr_t)previous.sa_sigaction;
+        guest_sigsys.flags=(unsigned long)previous.sa_flags;
+        memcpy(&guest_sigsys.mask,&previous.sa_mask,sizeof(guest_sigsys.mask)<sizeof(previous.sa_mask)?sizeof(guest_sigsys.mask):sizeof(previous.sa_mask));
+    }
+    if(claim&&(!reserve_delivery||reserve_delivery()!=0))return -1;
     if(prctl(PR_SET_NO_NEW_PRIVS,1,0,0,0)!=0||syscall(SYS_seccomp,SECCOMP_SET_MODE_FILTER,SECCOMP_FILTER_FLAG_TSYNC,&program)!=0){int saved=errno;if(!claim)sigaction(SIGSYS,&previous,NULL);errno=saved;return -1;}
     atomic_store_explicit(&installed,true,memory_order_release);return 0;
 }
-int tp_syscall_namespace_install(void){return tp_syscall_namespace_install_with_signal_chain(NULL);}
+int tp_syscall_namespace_install(void){return tp_syscall_namespace_install_with_signal_chain(NULL,NULL,NULL);}
 void tp_syscall_namespace_counts(uint64_t counts[4]){for(unsigned i=0;i<4;i++)counts[i]=atomic_load_explicit(&observed[i],memory_order_relaxed);}
 void tp_syscall_namespace_enable_audit(void){atomic_store_explicit(&auditing,true,memory_order_release);}
 

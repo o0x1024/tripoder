@@ -48,7 +48,7 @@ final class RuntimeControllerHooks {
             output.putString("project",project);output.putString("bindingOperation",target.getString("bindingOperation"));return output;
         }catch(Exception failure){
             synchronized(broker){
-                if(failure instanceof RuntimeHookOperations.RejectedCommandException)broker.hookClaims.rejected(claim);
+                if(failure instanceof RuntimeHookOperations.RejectedCommandException||dev.tripoder.runtime.script.HookCommands.readOnly(command))broker.hookClaims.rejected(claim);
                 else broker.hookClaims.uncertain(claim,operation);
             }
             throw failure;

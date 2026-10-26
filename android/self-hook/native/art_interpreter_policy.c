@@ -3,6 +3,7 @@
 
 const char tp_art_interpreter_client[]="tripoder-managed-process-interpreter";
 bool tp_art_interpreter_bind(const struct tp_art_deopt_access *art,struct tp_art_interpreter_policy *policy){
+    TP_ART_MAPS_SCOPE;
     if(!art||!policy||policy->bound||!art->instrumentation)return false;
 #define CHECK(name,NAME) if(!tp_art_validate_code(&art->managed.access,TP_GLOBAL_##NAME##_RVA,tp_global_##name##_bytes,sizeof(tp_global_##name##_bytes)))return false
     CHECK(level,LEVEL);CHECK(deopt_all,DEOPT_ALL);CHECK(configure,CONFIGURE);

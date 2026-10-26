@@ -14,7 +14,7 @@ public final class SourceControlTest {
     static final Map<String,Object> SELECTOR=m("id","owned","kind","java","className","owned.Fixture","methodName","value","argumentTypes",l("int"));
     static HookEvidence evidence(){return new HookEvidence(m("id","observed-1","source","fixture","target",TARGET,"processInstanceId","123:process-1","abi","arm64-v8a","capabilities",l("java-hook","native-hook"),"symbols",l(SYMBOL)));}
     static final class Platform implements SelfHookControl.Platform {
-        final Map<String,Object> identity=new LinkedHashMap<>(IDENTITY);final Backend backend=new Backend();boolean live=true;int prepares,observations,contextCalls;String phase="BEFORE_APPLICATION";DraftCompiler.Plan prepared;
+        final Map<String,Object> identity=new LinkedHashMap<>(IDENTITY);final Backend backend=new Backend();boolean live=true,failQuery=false;int prepares,observations,contextCalls;String phase="BEFORE_APPLICATION";DraftCompiler.Plan prepared;RuntimeException httpFailure;
         public Map<String,Object> identity(){return identity;}
         public List<Map<String,Object>> modules(){return List.of();}
         public List<Map<String,Object>> moduleEvents(){return List.of();}
@@ -23,6 +23,8 @@ public final class SourceControlTest {
         public boolean evidenceLive(HookEvidence e){return live;}
         public HookInvocationSession.PreparedBackend prepare(DraftCompiler.Plan p){prepares++;prepared=p;return backend;}
         public void discardObservation(){}
+        public Map<String,Object> sendHttpRequest(Map<String,Object> request){if(httpFailure!=null)throw httpFailure;return Map.of("statusCode",200d);}
+        public Map<String,Object> inspectDexClass(String name){if(failQuery)throw new IllegalArgumentException("OWNED_CLASS_NOT_FOUND");return Map.of("className",name);}
         public Map<String,Object> invocationContext(){contextCalls++;return m("runtimePhase",phase);}
     }
     static Map<String,Object> command(SelfHookControl control,String name,Object... fields){Map<String,Object> request=m("command",name,"processGeneration","process-1");for(int i=0;i<fields.length;i+=2)request.put((String)fields[i],fields[i+1]);return HookWire.request(control.handle(HookWire.encode(request)));}
@@ -118,11 +120,18 @@ public final class SourceControlTest {
         release.countDown();worker.join(5000);check(!worker.isAlive()&&error.get()==null&&inFlight.get().equals(10d),"protocol old parameter snapshot retained");
         check(result(command(control,"status")).get("state").equals("DISABLED")&&platform.backend.retired==1,"protocol disable ack after retire");
         check(result(command(control,"status")).get("state").equals("IDLE"),"disabled next status idle");
-        check(result(command(control,"manifestInspect")).get("activities") instanceof List,"manifestInspect wire command");
-        check("all".equals(result(command(control,"storageInspect","category","all","limit",20d)).get("category")),"storageInspect wire command");
-        check(result(command(control,"networkTraffic","sinceSeq",0d,"limit",20d)).get("exchanges") instanceof List,"networkTraffic wire command");
+        platform.failQuery=true;Map<String,Object> unavailable=command(control,"dexInspect","className","owned.Missing");
+        check(unavailable.get("outcome").equals("UNAVAILABLE"),"read query failure is not unknown mutation");
+        check(result(command(control,"modules")).get("modules") instanceof List,"query failure does not block next read");platform.failQuery=false;
+        failed(command(control,"manifestInspect"),"HOOK_COMMAND_UNSUPPORTED");
+        failed(command(control,"storageInspect","category","all","limit",20d),"HOOK_COMMAND_UNSUPPORTED");
+        check(command(control,"networkTraffic","captureId","missing","sinceSeq",0d,"limit",16d).get("outcome").equals("REJECTED"),"passive traffic requires an exact existing capture");
         failed(command(control,"prepare","evidenceId",id,"source",SOURCE),"HOOK_EVIDENCE_STALE");
         failed(command(control,"status","ast",m()),"HOOK_COMMAND_FIELDS");
+        platform.httpFailure=new HookPreflightRejected("HTTP_URL_INVALID");
+        check(command(control,"httpRequest","request",m("method","GET","url","https://example.com/")).get("outcome").equals("REJECTED"),"HTTP pure preflight is known rejection");
+        platform.httpFailure=new IllegalStateException("HTTP_POSSIBLE_DISPATCH_UNCONFIRMED");
+        check(command(control,"httpRequest","request",m("method","GET","url","https://example.com/")).get("outcome").equals("UNKNOWN"),"HTTP possible handler/network dispatch stays unknown");platform.httpFailure=null;
         platform.identity.put("installGeneration","changed");failed(command(control,"status"),"HOOK_PROCESS_STALE");
     }
     static void expiryAndFailures()throws Throwable {

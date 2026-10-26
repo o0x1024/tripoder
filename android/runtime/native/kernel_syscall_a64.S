@@ -68,16 +68,8 @@ tp_native_stack_call:
     mov x20,x1
     mov x21,x2
     mov x22,x3
-    mov x0,#222
-    mov x1,#0
-    mov x2,#0x40000
-    mov x3,#3
-    mov x4,#0x22
-    mov x5,#-1
-    mov x6,#0
-    bl tp_kernel_syscall
-    cmn x0,#1
-    b.eq 2f
+    bl tp_stack_acquire
+    cbz x0,2f
     mov x24,x0
     add sp,x24,#64,lsl #12
     .cfi_def_cfa x23,80
@@ -88,10 +80,8 @@ tp_native_stack_call:
     mov x25,x0
     mov sp,x23
     .cfi_def_cfa sp,80
-    mov x0,#215
-    mov x1,x24
-    mov x2,#0x40000
-    bl tp_kernel_syscall
+    mov x0,x24
+    bl tp_stack_release
     mov x0,x25
     b 3f
 2:

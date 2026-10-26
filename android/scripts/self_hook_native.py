@@ -33,11 +33,11 @@ def build_native(repo, build, ndk, libc, art, linker):
     sources = sorted((core/'native').glob('*.c'))
     for group in ('coverage', 'abi', 'modules'):
         sources += sorted((core/'native'/group).glob('*.c'))
-    sources += [runtime/name for name in ('io_adapter.c', 'path_policy.c', 'self_hook_storage.c', 'exit_diagnostics.c', 'syscall_namespace.c', 'user_memory.c', 'mapping_evidence.c')]
+    sources += [runtime/name for name in ('io_adapter.c', 'path_policy.c', 'self_hook_storage.c', 'exit_diagnostics.c', 'syscall_namespace.c', 'ptrace_namespace.c', 'user_memory.c', 'mapping_evidence.c')]
     assembly = [core/'native/abi/scalar_call_a64.S', core/'native/abi/scalar_inbound_a64.S',runtime/'kernel_syscall_a64.S']
     cpp = core/'native/coverage/loaded_class_inventory.cpp'
     inputs = set(sources + assembly + [cpp, Path(__file__).resolve(), core/'tests/check_park_binary.py'])
-    java_inputs=sorted((core/'java').rglob('*.java'))+[repo/'android/runtime/src/dev/tripoder/runtime'/name for name in ('RuntimeSelfHookStorage.java','RuntimeNativeMappingEvidence.java')]
+    java_inputs=sorted((core/'java').rglob('*.java'))+[repo/'android/runtime/src/dev/tripoder/runtime'/name for name in ('RuntimeSelfHookStorage.java','RuntimeNativeMappingEvidence.java','script/JavaObjectSnapshots.java')]
     inputs.update(java_inputs)
     for root in (core/'native', core/'include', runtime):
         inputs.update(path for path in root.rglob('*') if path.suffix in ('.h', '.hpp', '.S'))
@@ -80,7 +80,7 @@ def build_native(repo, build, ndk, libc, art, linker):
     exports = run(toolchain/'llvm-nm', '--dynamic', '--defined-only', library)
     symbols = {line.split()[-1] for line in exports.splitlines() if line.split()}
     if not symbols or any(not name.startswith(('Java_dev_tripoder_selfhook_', 'Java_dev_tripoder_selfhook_coverage_',
-                                               'Java_dev_tripoder_runtime_RuntimeSelfHookStorage_'))
+                                               'Java_dev_tripoder_runtime_RuntimeSelfHookStorage_', 'Java_dev_tripoder_runtime_script_JavaObjectSnapshots_'))
                           and name!='Java_dev_tripoder_runtime_RuntimeNativeMappingEvidence_relevantRowsNative' for name in symbols):
         raise RuntimeError('SELF_HOOK_PRODUCT_EXPORTS:'+exports)
     # A JNI method is resolved by name; a declaration whose symbol is absent fails on the device at first use, and a

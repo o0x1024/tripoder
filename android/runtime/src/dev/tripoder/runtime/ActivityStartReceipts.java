@@ -15,11 +15,19 @@ final class ActivityStartReceipts {
     void record(Bundle input,RuntimeBroker.Slot source){
         var launch=activities.launches.get(RuntimeWire.required(input,"delivery"));
         var candidate=activities.get(RuntimeWire.required(input,"candidate"));
-        if(!"ACTIVITY".equals(launch.callerKind)||!launch.candidate.equals(candidate.id)||!candidate.stub.equals(RuntimeWire.required(input,"stub"))||!launch.generation.equals(candidate.generation))throw new SecurityException("ACTIVITY_START_RESULT_TARGET_MISMATCH");
-        var caller=activities.get(launch.sourceTicket);var identity=source.allocation.session;
+        if(!launch.candidate.equals(candidate.id)||!candidate.stub.equals(RuntimeWire.required(input,"stub"))||!launch.generation.equals(candidate.generation))throw new SecurityException("ACTIVITY_START_RESULT_TARGET_MISMATCH");
+        var identity=source.allocation.session;
+        if("ACTIVITY".equals(launch.callerKind)){
+        var caller=activities.get(launch.sourceTicket);
         // Clear-top may destroy the source before this cross-process receipt arrives.
         // Its accepted immutable instance and authenticated generation still identify it.
         if(!caller.generation.equals(identity.processGeneration)||!launch.sourceInstance.equals(caller.instance)||!caller.space.equals(candidate.space)||!caller.pkg.equals(identity.identity.packageName))throw new SecurityException("ACTIVITY_START_RESULT_SOURCE_MISMATCH");
+        }else if("CONTEXT".equals(launch.callerKind)){
+            ActivityContextSource.requireShape(launch);
+            if(!launch.callerPackage.equals(identity.identity.packageName)||!candidate.space.equals(identity.identity.spaceId))throw new SecurityException("ACTIVITY_START_RESULT_CONTEXT_MISMATCH");
+            var operation=broker.contract.query(launch.operation);
+            if(operation==null||!operation.callerIdentity.equals(identity.identity.key()))throw new SecurityException("ACTIVITY_START_RESULT_CONTEXT_OWNER_MISMATCH");
+        }else throw new SecurityException("ACTIVITY_START_RESULT_SOURCE_KIND_UNSUPPORTED");
         int result=input.getInt("startResult",Integer.MIN_VALUE);activities.launches.startResult(launch.id,result);
         if(result==2||result==3){reconcile(candidate.generation);return;}
         if(result!=0&&result!=3){activities.launches.unsupportedStart(launch.id);throw new UnsupportedOperationException("ANDROID_START_RESULT_UNSUPPORTED:"+result);}

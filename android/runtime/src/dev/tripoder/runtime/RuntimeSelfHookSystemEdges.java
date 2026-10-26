@@ -28,7 +28,8 @@ final class RuntimeSelfHookSystemEdges {
                 // Tags label this UID's traffic. Attribution UID setters are a different
                 // capability and must never enter through a method-name wildcard.
                 if(TAGGING.contains(key))return original.call(args);
-                throw new SecurityException("TRAFFIC_CAPABILITY_NOT_GRANTED:"+key);
+                // Privileged attribution setters are refused by the platform itself for an ordinary app.
+                RuntimeFailThrough.note("traffic",key);return original.call(args);
             });
         }
         Set<String> required=new HashSet<>(UID);required.addAll(DEVICE);required.addAll(Set.of("getTotalStats(int)","getIfaceStats(java.lang.String,int)"));
@@ -43,19 +44,28 @@ final class RuntimeSelfHookSystemEdges {
             finally{try{RuntimeBridge.wifiP2pEndClose(channel,confirmed);}catch(Throwable acknowledgement){if(failure==null)throw acknowledgement;if(acknowledgement!=failure)failure.addSuppressed(acknowledgement);}}
         });installer.install(callbacks);
     }
+    static void autofill(RuntimeManagedInstaller installer)throws Exception{
+        Map<Executable,RuntimeManagedInstaller.Callback> callbacks=new LinkedHashMap<>();
+        for(Executable target:FixedRuntimeHooks.methods(FixedRuntimeHooks.Group.UI))if(RuntimeThinPolicy.autofillComponent(target))callbacks.put(target,autofillCallback());
+        installer.install(callbacks);
+        RuntimeBiometrics.install(installer);
+    }
+    private static RuntimeManagedInstaller.Callback autofillCallback(){
+        return (receiver,args,original)->{
+            android.app.Activity activity=ActivityFrameworkAccess.autofillActivity(receiver);
+            if(!RuntimeBridge.owns(activity))return original.call(args);
+            // Autofill validates the component against the caller UID and real Activity
+            // token. Use this instance's admitted window, while Activity keeps its
+            // guest-visible component for application code.
+            return RuntimeEngine.current.physicalActivityComponent(activity);
+        };
+    }
     static void ui(RuntimeManagedInstaller installer)throws Exception{
         Map<Executable,RuntimeManagedInstaller.Callback> callbacks=new LinkedHashMap<>();
         for(Executable target:FixedRuntimeHooks.methods(FixedRuntimeHooks.Group.UI)){
             switch(target.getName()){
                 case "playSoundEffect":callbacks.put(target,(receiver,args,original)->{RuntimeBridge.playUiSound(ActivityFrameworkAccess.view(receiver),(Integer)args[0]);return null;});break;
-                case "autofillClientGetComponentName":callbacks.put(target,(receiver,args,original)->{
-                    android.app.Activity activity=ActivityFrameworkAccess.autofillActivity(receiver);
-                    if(!RuntimeBridge.owns(activity))return original.call(args);
-                    // Autofill validates the component against the caller UID and real Activity
-                    // token. Use this instance's admitted window, while Activity keeps its
-                    // guest-visible component for application code.
-                    return RuntimeEngine.current.physicalActivityComponent(activity);
-                });break;
+                case "autofillClientGetComponentName":callbacks.put(target,autofillCallback());break;
                 default:throw new IllegalStateException("UI_FIXED_BINDING_UNHANDLED:"+target);
             }
         }

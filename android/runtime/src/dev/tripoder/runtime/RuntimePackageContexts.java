@@ -11,9 +11,15 @@ final class RuntimePackageContexts {
     private final RuntimeEngine engine;
     private ClassLoader resourcesLoader;
     RuntimePackageContexts(RuntimeEngine engine){this.engine=engine;}
-    Context create(String packageName,int flags){
-        if(!engine.packageName.equals(packageName))throw new UnsupportedOperationException("CROSS_PACKAGE_CONTEXT_UNSUPPORTED");
-        if((flags&~(Context.CONTEXT_INCLUDE_CODE|Context.CONTEXT_IGNORE_SECURITY))!=0)throw new UnsupportedOperationException("PACKAGE_CONTEXT_FLAGS_UNSUPPORTED:"+flags);
+    Context createFromPlatform(Context source,String packageName,int flags,android.os.UserHandle user)throws android.content.pm.PackageManager.NameNotFoundException{
+        dev.tripoder.selfhook.ApplicationAdapter.requireLogicalContext(source);
+        if(user!=null&&dev.tripoder.selfhook.PackageFrameworkAccess.userId(user)!=RuntimePackageBridge.userId())throw new SecurityException("PACKAGE_CONTEXT_USER_OUTSIDE_GUEST");
+        return create(packageName,flags);
+    }
+    Context create(String packageName,int flags)throws android.content.pm.PackageManager.NameNotFoundException{
+        if(!engine.packageName.equals(packageName))throw new android.content.pm.PackageManager.NameNotFoundException(packageName);
+        // The guest's own context has nothing further to restrict or relocate; other flags change nothing here.
+        if((flags&~(Context.CONTEXT_INCLUDE_CODE|Context.CONTEXT_IGNORE_SECURITY))!=0)RuntimeFailThrough.note("package-context-flags","0x"+Integer.toHexString(flags));
         ClassLoader selected=null;
         if((flags&Context.CONTEXT_INCLUDE_CODE)==0)synchronized(this){
             if(resourcesLoader==null)resourcesLoader=new PathClassLoader("",engine.info.nativeLibraryDir,ClassLoader.getSystemClassLoader());

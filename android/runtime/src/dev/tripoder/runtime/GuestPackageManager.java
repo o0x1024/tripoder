@@ -22,12 +22,13 @@ final class GuestPackageManager extends DeniedPackageManager {
 
     @Override public boolean hasSystemFeature(String name) { return platform.hasSystemFeature(name); }
     @Override public boolean hasSystemFeature(String name, int version) { return platform.hasSystemFeature(name, version); }
+    @Override public String[] getSystemSharedLibraryNames(){return RuntimePackageBridge.physicalSystemSharedLibraryNames();}
     @Override public boolean isInstantApp() { return false; }
+    @Override public boolean isPackageSuspended(){return (engine.info.flags&ApplicationInfo.FLAG_SUSPENDED)!=0;}
+    @Override public boolean isPackageSuspended(String packageName)throws NameNotFoundException{requireSelf(packageName);return isPackageSuspended();}
     @Override public android.content.pm.PackageInfo getPackageInfo(String name,int flags)throws NameNotFoundException{
         try {
-            android.content.pm.PackageInfo pi = GuestPackageInfo.get(engine,name,Integer.toUnsignedLong(flags));
-            android.util.Log.i("TripoderGuestPM", "getPackageInfo(String,int) name=" + name + " flags=" + flags + " -> sigs=" + (pi.signatures != null ? pi.signatures.length : "null") + " firstInstall=" + pi.firstInstallTime);
-            return pi;
+            return GuestPackageInfo.get(engine,name,Integer.toUnsignedLong(flags));
         } catch (Throwable t) {
             android.util.Log.w("TripoderGuestPM", "getPackageInfo(String,int) name=" + name + " flags=" + flags + " FAILED", t);
             throw t;
@@ -36,9 +37,7 @@ final class GuestPackageManager extends DeniedPackageManager {
     @Override public android.content.pm.PackageInfo getPackageInfo(String name,PackageInfoFlags flags)throws NameNotFoundException{
         if(flags==null)throw new IllegalArgumentException("PACKAGE_INFO_FLAGS_REQUIRED");
         try {
-            android.content.pm.PackageInfo pi = GuestPackageInfo.get(engine,name,flags.getValue());
-            android.util.Log.i("TripoderGuestPM", "getPackageInfo(String,Flags) name=" + name + " flags=" + flags.getValue() + " -> sigs=" + (pi.signatures != null ? pi.signatures.length : "null"));
-            return pi;
+            return GuestPackageInfo.get(engine,name,flags.getValue());
         } catch (Throwable t) {
             android.util.Log.w("TripoderGuestPM", "getPackageInfo(String,Flags) name=" + name + " flags=" + flags.getValue() + " FAILED", t);
             throw t;
@@ -71,9 +70,7 @@ final class GuestPackageManager extends DeniedPackageManager {
             requireSelf(packageName);
             if ((flags & ~0xFFFFFFFFL) != 0)
                 throw new UnsupportedOperationException("APPLICATION_INFO_FLAGS_UNSUPPORTED:0x" + Long.toHexString(flags));
-            ApplicationInfo ai = copyApplicationInfo(engine.info, (flags & GET_META_DATA) != 0);
-            android.util.Log.i("TripoderGuestPM", "applicationInfo pkg=" + packageName + " flags=" + flags + " -> " + ai);
-            return ai;
+            return copyApplicationInfo(engine.info, (flags & GET_META_DATA) != 0);
         } catch (Throwable t) {
             android.util.Log.w("TripoderGuestPM", "applicationInfo pkg=" + packageName + " flags=" + flags + " FAILED", t);
             throw t;
@@ -146,17 +143,19 @@ final class GuestPackageManager extends DeniedPackageManager {
         if(component==null||flags==null)throw new IllegalArgumentException("SERVICE_COMPONENT_REQUIRED");requireSelf(component.getPackageName());
         long value=flags.getValue();if((value&~0xFFFFFFFFL)!=0)throw new UnsupportedOperationException("SERVICE_INFO_FLAGS_UNSUPPORTED:0x"+Long.toHexString(value));
         ServiceInfo raw=engine.serviceIndex.get(component.getClassName());
+        android.os.Bundle states=RuntimeComponentState.snapshot(engine);
         long directBoot=value&(MATCH_DIRECT_BOOT_AWARE|MATCH_DIRECT_BOOT_UNAWARE);
         if(directBoot==0&&(value&MATCH_DIRECT_BOOT_AUTO)!=0)directBoot=MATCH_DIRECT_BOOT_AWARE|(engine.host.getSystemService(android.os.UserManager.class).isUserUnlocked()?MATCH_DIRECT_BOOT_UNAWARE:0);
-        if(raw==null||!raw.enabled&&(value&MATCH_DISABLED_COMPONENTS)==0||directBoot!=0&&(value&(raw.directBootAware?MATCH_DIRECT_BOOT_AWARE:MATCH_DIRECT_BOOT_UNAWARE))==0)throw new NameNotFoundException(component.flattenToString());
-        ServiceInfo copy=new ServiceInfo(raw);copy.applicationInfo=copyApplicationInfo(engine.info,(value&GET_META_DATA)!=0);
+        if(raw==null||!RuntimeComponentState.enabled(states,raw)&&(value&MATCH_DISABLED_COMPONENTS)==0||directBoot!=0&&(value&(raw.directBootAware?MATCH_DIRECT_BOOT_AWARE:MATCH_DIRECT_BOOT_UNAWARE))==0)throw new NameNotFoundException(component.flattenToString());
+        ServiceInfo copy=new ServiceInfo(raw);copy.enabled=RuntimeComponentState.enabled(states,raw.name,raw.enabled);copy.applicationInfo=copyApplicationInfo(engine.info,(value&GET_META_DATA)!=0);
         copy.metaData=(value&GET_META_DATA)==0||raw.metaData==null?null:raw.metaData.deepCopy();return copy;
     }
 
     private ProviderInfo providerInfo(ProviderInfo info,long flags){
         if((flags&~0xFFFFFFFFL)!=0)throw new UnsupportedOperationException("PROVIDER_INFO_FLAGS_UNSUPPORTED");
-        if(info==null||!info.enabled&&(flags&MATCH_DISABLED_COMPONENTS)==0)return null;
-        ProviderInfo result=new ProviderInfo(info);result.applicationInfo=copyApplicationInfo(engine.info,(flags&GET_META_DATA)!=0);
+        android.os.Bundle states=RuntimeComponentState.snapshot(engine);
+        if(info==null||!RuntimeComponentState.enabled(states,info)&&(flags&MATCH_DISABLED_COMPONENTS)==0)return null;
+        ProviderInfo result=new ProviderInfo(info);result.enabled=RuntimeComponentState.enabled(states,info.name,info.enabled);result.applicationInfo=copyApplicationInfo(engine.info,(flags&GET_META_DATA)!=0);
         result.metaData=(flags&GET_META_DATA)==0||info.metaData==null?null:info.metaData.deepCopy();
         if((flags&GET_URI_PERMISSION_PATTERNS)==0)result.uriPermissionPatterns=null;
         return result;
