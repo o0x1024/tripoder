@@ -25,6 +25,7 @@ def main():
     if args.direct_syscalls:
         sources[-1]="android/runtime/test/native/syscall_namespace_probe.c"
         sources.append("android/runtime/native/syscall_namespace.c")
+        sources.append("android/runtime/native/ptrace_namespace.c")
         sources.append("android/runtime/native/kernel_syscall_a64.S")
     else:
         sources.append("android/runtime/native/kernel_syscall_a64.S")

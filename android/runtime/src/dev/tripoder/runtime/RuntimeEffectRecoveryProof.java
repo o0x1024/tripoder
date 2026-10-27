@@ -17,6 +17,13 @@ final class RuntimeEffectRecoveryProof {
         return acknowledged(db,dispatch,owner)&&inert(db,operation,owner,true,true);
     }
     static boolean permitsFreshStart(SQLiteDatabase db,String operation,String owner){return inert(db,operation,owner,false,true);}
+    /** A running session's own bookkeeping cannot conflict with a broadcast whose every unfinished delivery targets a dead generation
+     *  already fenced at ingress. Without this, a secondary process dying mid-delivery fences the whole package and crashes the healthy one. */
+    static boolean permitsLiveSessionContinuation(SQLiteDatabase db,String operation){
+        try(var rows=db.rawQuery("SELECT COUNT(*),SUM(CASE WHEN d.resourceRetired=1 AND d.resourceProof='TARGET_DEAD_AND_INGRESS_FENCED' AND s.state='DEAD' AND (d.registration='' OR EXISTS(SELECT 1 FROM broadcast_registrations r WHERE r.id=d.registration AND r.generation=d.target AND r.state='CLOSED')) THEN 1 ELSE 0 END) FROM broadcast_deliveries d LEFT JOIN sessions s ON s.generation=d.target WHERE d.operation=? AND d.state!='COMPLETED'",new String[]{operation})){
+            return rows.moveToFirst()&&rows.getInt(0)>0&&rows.getInt(0)==rows.getInt(1);
+        }
+    }
     private static boolean inert(SQLiteDatabase db,String operation,String owner,boolean admitted,boolean unstarted){
         if(unstarted&&RuntimeStoppedEffectProof.permits(db,operation,owner,admitted))return true;
         if(unstarted&&RuntimeUnstartedEffectProof.permits(db,operation,owner,admitted))return true;

@@ -62,6 +62,7 @@ public final class RuntimeMutationGuard implements AutoCloseable {
                 if(scope.equals(effectScope)){
                     if(guard!=null&&(guard.explicitStart&&RuntimeEffectRecoveryProof.permitsFreshStart(db,c.getString(0),scope)||guard.command.equals("install")&&RuntimeEffectRecoveryProof.permitsExplicitStart(db,c.getString(0),scope))){acknowledgements.add(c.getString(0));continue;}
                     if(RuntimeEffectRecoveryProof.permitsAcknowledgedContinuation(db,c.getString(0),c.getString(4),scope))continue;
+                    if(guard==null&&RuntimeEffectRecoveryProof.permitsLiveSessionContinuation(db,c.getString(0)))continue;
                     // The user's explicit delete stops and removes every installation of this scope; its success retires these effects (retireDeleted).
                     if(guard!=null&&guard.command.equals("deleteApplication"))continue;
                 }

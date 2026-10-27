@@ -11,6 +11,7 @@ final class RuntimeSelfHookStorage {
     private static native void installNative(byte[][] paths,boolean diagnostics);
     private static native void traceExitNative(String path);
     private static native void faultEvidenceNative(String path)throws java.io.IOException;
+    private static native void faultMapsNative(String path)throws java.io.IOException;
     static native void faultStageNative(int stage);
     static native String syscallNamespaceNative();
     static native void setSyscallPolicyNative(boolean blockExecve,boolean blockKill,boolean networkSinkhole);
@@ -35,8 +36,10 @@ final class RuntimeSelfHookStorage {
         for(int i=0;i<hostRoots.length;i++)values[keys.length+i]=hostRoots[i].getBytes(StandardCharsets.UTF_8);
         installNative(values,owner.traceStartup);
         android.os.Bundle metadata=owner.host.getPackageManager().getApplicationInfo(owner.host.getPackageName(),android.content.pm.PackageManager.GET_META_DATA).metaData;
-        if(metadata!=null&&metadata.getBoolean("tripoder.diagnostics.faults",false))
+        if(metadata!=null&&metadata.getBoolean("tripoder.diagnostics.faults",false)){
             faultEvidenceNative(new java.io.File(owner.host.getFilesDir(),"native-fault-"+owner.generation+".txt").toString());
+            faultMapsNative(new java.io.File(owner.host.getFilesDir(),"native-maps-"+owner.generation+".txt").toString());
+        }
         RuntimeEngine engine=RuntimeEngine.current;
         if(engine.traceExit)traceExitNative(engine.exitTracePath);
         installedOwner=engine;

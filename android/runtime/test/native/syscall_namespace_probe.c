@@ -21,6 +21,8 @@ static long direct(long number,long a,long b,long c,long d){
     __asm__ volatile("svc #0":"+r"(x0):"r"(x1),"r"(x2),"r"(x3),"r"(x8):"memory","cc");return x0;
 }
 static void old_signal(int signal){if(signal==SIGSYS)prior_signal++;}
+static volatile long masked_handler_open=-2;
+static void masked_handler(int signal){(void)signal;masked_handler_open=direct(SYS_openat,AT_FDCWD,(long)"/data/app/~~code/dev.tripoder.syscallfixture-code/base.apk",O_RDONLY,0);if(masked_handler_open>=0)close((int)masked_handler_open);}
 static void *worker(void *unused){(void)unused;long fd=direct(SYS_openat,AT_FDCWD,(long)"/data/app/~~code/dev.tripoder.syscallfixture-code/base.apk",O_RDONLY,0);if(fd>=0)close((int)fd);return (void *)(intptr_t)(fd>=0?1:0);}
 static void *small_stack(void *unused){(void)unused;long fd=direct(SYS_openat,AT_FDCWD,(long)"/proc/self/maps",O_RDONLY,0);char bytes[16];long count=fd>=0?read((int)fd,bytes,sizeof(bytes)):-1;if(fd>=0)close((int)fd);return (void *)(intptr_t)(count>0);}
 static void *small_adapter(void *unused){(void)unused;int fd=tp_openat(AT_FDCWD,"/proc/self/maps",O_RDONLY,0);char bytes[16];long count=fd>=0?read(fd,bytes,sizeof(bytes)):-1;if(fd>=0)close(fd);return (void *)(intptr_t)(count>0);}
@@ -57,6 +59,10 @@ int main(int argc,char **argv){
     check("invalid-path-pointer-returns-kernel-efault",direct(SYS_openat,AT_FDCWD,1,O_RDONLY,0)==-EFAULT);
     check("invalid-readlink-output-returns-kernel-efault",direct(SYS_readlinkat,AT_FDCWD,(long)"/proc/self/exe",1,4096)==-EFAULT);
     raise(SIGSYS);check("unrelated-sigsys-reaches-previous-handler",prior_signal==1);
+    struct sigaction masked={0};masked.sa_handler=masked_handler;sigfillset(&masked.sa_mask);struct sigaction readback={0};
+    check("handler-registered-with-full-mask-succeeds",sigaction(SIGUSR1,&masked,NULL)==0&&sigaction(SIGUSR1,NULL,&readback)==0);
+    check("registered-handler-mask-never-blocks-sigsys",!sigismember(&readback.sa_mask,SIGSYS)&&sigismember(&readback.sa_mask,SIGUSR2));
+    raise(SIGUSR1);check("namespaced-syscall-inside-full-mask-handler-survives",masked_handler_open>=0);
     uint64_t counts[4];tp_syscall_namespace_counts(counts);check("all-four-direct-entry-families-observed",counts[0]>=3&&counts[1]>=1&&counts[2]>=1&&counts[3]>=1);
     printf("{\"summary\":true,\"passed\":%s,\"checks\":%d,\"failures\":%d}\n",failures?"false":"true",checks,failures);return failures?1:0;
 }

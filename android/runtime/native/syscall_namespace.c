@@ -37,7 +37,7 @@ struct kernel_sigaction_a64 {
 };
 static struct kernel_sigaction_a64 guest_sigsys;
 static int (*chain_user_action)(int,const struct sigaction *,struct sigaction *);
-static const int numbers[]={SYS_openat,SYS_newfstatat,SYS_readlinkat,SYS_faccessat,SYS_unlinkat,SYS_mkdirat,SYS_renameat2,SYS_chdir,SYS_symlinkat,SYS_linkat,SYS_statfs,SYS_inotify_add_watch,SYS_fchmodat,SYS_ptrace,SYS_wait4,SYS_waitid,SYS_execve,SYS_execveat,SYS_kill,SYS_tkill,SYS_tgkill,SYS_connect};
+static const int numbers[]={SYS_openat,SYS_newfstatat,SYS_readlinkat,SYS_faccessat,SYS_unlinkat,SYS_mkdirat,SYS_renameat2,SYS_chdir,SYS_symlinkat,SYS_linkat,SYS_statfs,SYS_inotify_add_watch,SYS_fchmodat,SYS_ptrace,SYS_wait4,SYS_waitid,SYS_execve,SYS_execveat,SYS_kill,SYS_tkill,SYS_tgkill,SYS_connect,SYS_rt_sigaction};
 enum { CALL_COUNT=sizeof(numbers)/sizeof(numbers[0]) };
 static const unsigned call_count=CALL_COUNT;
 static _Atomic bool installed;
@@ -58,7 +58,7 @@ void tp_syscall_namespace_get_policy(bool *block_execve,bool *block_kill,bool *n
     if(network_sinkhole)*network_sinkhole=atomic_load_explicit(&policy_network_sinkhole,memory_order_acquire);
     if(counts){for(unsigned i=0;i<6;i++)counts[i]=atomic_load_explicit(&policy_counts[i],memory_order_relaxed);}
 }
-_Static_assert(CALL_COUNT+10<=32,"syscall filter budget");
+_Static_assert(CALL_COUNT+7<=48,"syscall filter budget");
 static _Atomic uint64_t observed[CALL_COUNT];
 struct audit_row { _Atomic bool busy;unsigned sequence;int number;long result;uintptr_t pc;char path[256]; };
 static struct audit_row audit[64];static _Atomic unsigned audit_sequence;
@@ -122,6 +122,30 @@ static long sigsys_action(int sig,const void *act,void *oldact,size_t sigsetsize
     }
     return 0;
 }
+/* A trapped syscall issued while SIGSYS is blocked is never delivered: the kernel resets SIGSYS to SIG_DFL and kills the whole
+ * process. A handler runs with its registered sa_mask, and libraries (bionic debuggerd, libunwindstack, crash reporters, WebView)
+ * register theirs with a full mask, so every namespaced syscall inside such a handler would be fatal. Register every handler without
+ * SIGSYS in its mask; the namespace then keeps working inside signal handlers. */
+static const uint64_t sigsys_bit=(uint64_t)1<<(SIGSYS-1);
+static long other_sigaction(int sig,const void *act,void *oldact,size_t sigsetsize){
+    struct kernel_sigaction_a64 next;
+    if(sigsetsize==sizeof(uint64_t)&&act){
+        if(tp_user_read(act,&next,sizeof(next))<0)return -1;
+        next.mask&=~sigsys_bit;
+        return syscall(SYS_rt_sigaction,sig,&next,oldact,sigsetsize);
+    }
+    return syscall(SYS_rt_sigaction,sig,NULL,oldact,sigsetsize);
+}
+static void keep_sigsys_deliverable(void){
+    for(int number=1;number<=64;number++){
+        if(number==SIGKILL||number==SIGSTOP||number==SIGSYS)continue;
+        struct kernel_sigaction_a64 current;memset(&current,0,sizeof(current));
+        if(syscall(SYS_rt_sigaction,number,NULL,&current,sizeof(uint64_t))!=0)continue;
+        if(current.handler==(uintptr_t)SIG_DFL||current.handler==(uintptr_t)SIG_IGN||!(current.mask&sigsys_bit))continue;
+        current.mask&=~sigsys_bit;
+        syscall(SYS_rt_sigaction,number,&current,NULL,sizeof(uint64_t));
+    }
+}
 static void forward_signal(int signal,siginfo_t *info,void *raw){
         if((previous.sa_flags&SA_SIGINFO)&&previous.sa_sigaction)previous.sa_sigaction(signal,info,raw);
         else if(previous.sa_handler==SIG_IGN)return;
@@ -145,7 +169,7 @@ static long dispatch(int signal,siginfo_t *info,void *raw){
         case SYS_symlinkat:name=(const char *)args[2];result=tp_symlinkat((const char *)args[0],(int)args[1],name);break;
         case SYS_linkat:result=tp_linkat((int)args[0],name,(int)args[2],(const char *)args[3],(int)args[4]);break;
         case SYS_statfs:name=(const char *)args[0];result=metadata_path(SYS_statfs,0,name,(void *)args[1],0);break;
-        case SYS_rt_sigaction:name=NULL;result=sigsys_action((int)args[0],(const void *)args[1],(void *)args[2],(size_t)args[3]);break;
+        case SYS_rt_sigaction:name=NULL;result=(int)args[0]==SIGSYS?sigsys_action((int)args[0],(const void *)args[1],(void *)args[2],(size_t)args[3]):other_sigaction((int)args[0],(const void *)args[1],(void *)args[2],(size_t)args[3]);break;
         case SYS_ptrace:case SYS_wait4:case SYS_waitid:{
             name=NULL;
             if(info->si_syscall==SYS_ptrace)result=tp_namespace_ptrace(args[0],args[1],args[2],args[3]);
@@ -243,21 +267,24 @@ static void dispatch_entry(int signal,siginfo_t *info,void *raw){
 static bool dispatch_special(int signal,siginfo_t *info,void *raw){
     if(!owned_request(signal,info))return false;dispatch_entry(signal,info,raw);return true;
 }
+/* bionic's debuggerd handler (BIONIC_SIGNAL_DEBUGGER = SIGRTMIN+3) answers a system-requested native backtrace by cloning a
+ * pseudothread that opens, forks, execs and waits. Those are exactly the namespaced syscalls, and they run in a context where
+ * a trapped SIGSYS cannot be delivered, so the kernel kills the whole guest with SIGSYS. The sandbox cannot host a native
+ * dump (exec is refused), so decline the request here; Java traces use SIGQUIT and are unaffected. */
+#define TP_BIONIC_SIGNAL_DEBUGGER 35
+static bool decline_native_dump(int signal,siginfo_t *info,void *raw){(void)signal;(void)info;(void)raw;return true;}
 int tp_syscall_namespace_install_with_signal_chain(int (*claim)(int,bool (*)(int,siginfo_t *,void *)),int (*reserve_delivery)(void),int (*user_action)(int,const struct sigaction *,struct sigaction *)){
     if(atomic_load_explicit(&installed,memory_order_acquire))return 0;
     if(claim&&!user_action){errno=EINVAL;return -1;}
     chain_user_action=user_action;
     uintptr_t resume=(uintptr_t)tp_kernel_syscall_resume;
-    struct sock_filter filter[32];unsigned length=0;
+    struct sock_filter filter[48];unsigned length=0;
     filter[length++]=(struct sock_filter)BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,instruction_pointer)+4);
     filter[length++]=(struct sock_filter)BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,(uint32_t)(resume>>32),0,2);
     filter[length++]=(struct sock_filter)BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,instruction_pointer));
-    filter[length++]=(struct sock_filter)BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,(uint32_t)resume,call_count+4,0);
+    filter[length++]=(struct sock_filter)BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,(uint32_t)resume,call_count+1,0);
     filter[length++]=(struct sock_filter)BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,nr));
-    for(unsigned i=0;i<call_count;i++)filter[length++]=(struct sock_filter)BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,(uint32_t)numbers[i],(uint8_t)(call_count+3-i),0);
-    filter[length++]=(struct sock_filter)BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,SYS_rt_sigaction,0,2);
-    filter[length++]=(struct sock_filter)BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,args[0]));
-    filter[length++]=(struct sock_filter)BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,SIGSYS,1,0);
+    for(unsigned i=0;i<call_count;i++)filter[length++]=(struct sock_filter)BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,(uint32_t)numbers[i],(uint8_t)(call_count-i),0);
     filter[length++]=(struct sock_filter)BPF_STMT(BPF_RET|BPF_K,SECCOMP_RET_ALLOW);
     filter[length++]=(struct sock_filter)BPF_STMT(BPF_RET|BPF_K,SECCOMP_RET_TRAP|TP_NAMESPACE_TRAP_DATA);
     struct sock_fprog program={.len=(unsigned short)length,.filter=filter};
@@ -269,6 +296,8 @@ int tp_syscall_namespace_install_with_signal_chain(int (*claim)(int,bool (*)(int
         memcpy(&guest_sigsys.mask,&previous.sa_mask,sizeof(guest_sigsys.mask)<sizeof(previous.sa_mask)?sizeof(guest_sigsys.mask):sizeof(previous.sa_mask));
     }
     if(claim&&(!reserve_delivery||reserve_delivery()!=0))return -1;
+    if(claim&&claim(TP_BIONIC_SIGNAL_DEBUGGER,decline_native_dump)!=0)return -1;
+    keep_sigsys_deliverable();
     if(prctl(PR_SET_NO_NEW_PRIVS,1,0,0,0)!=0||syscall(SYS_seccomp,SECCOMP_SET_MODE_FILTER,SECCOMP_FILTER_FLAG_TSYNC,&program)!=0){int saved=errno;if(!claim)sigaction(SIGSYS,&previous,NULL);errno=saved;return -1;}
     atomic_store_explicit(&installed,true,memory_order_release);return 0;
 }

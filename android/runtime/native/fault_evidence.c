@@ -13,6 +13,7 @@
 /* Opt-in diagnosis: a fixed ring of code locations and one instruction word,
  * never process data or stacks. ART and the guest retain their signal semantics. */
 static int output=-1;
+static int mapsOutput=-1;
 static _Atomic unsigned sequence,stage;
 static size_t literal(char *out,size_t at,const char *text){while(*text&&at<510)out[at++]=*text++;return at;}
 static size_t number(char *out,size_t at,uint64_t value,unsigned radix){
@@ -47,6 +48,7 @@ static long capture(long signal,long info_address,long context_address){
     at=literal(record,at," signal=");at=number(record,at,(unsigned)signal,10);
     at=literal(record,at," code=");if(info&&info->si_code<0){at=literal(record,at,"-");at=number(record,at,(unsigned)-info->si_code,10);}else at=number(record,at,info?(unsigned)info->si_code:0,10);
     at=literal(record,at," tid=");at=number(record,at,(uint64_t)tp_kernel_syscall(SYS_gettid),10);at=literal(record,at," ");
+    if(info){at=literal(record,at,"faultaddr=0x");at=number(record,at,(uintptr_t)info->si_addr,16);at=literal(record,at," ");}
     uintptr_t pc=context->uc_mcontext.pc,lr=context->uc_mcontext.regs[30];
     /* Exactly one instruction at the code location; no data registers or stacks. */
     bool instruction_read=false;
@@ -56,7 +58,9 @@ static long capture(long signal,long info_address,long context_address){
     if(!instruction_read)at=literal(record,at,"instruction=unavailable ");
     int fd=(int)tp_kernel_syscall(SYS_openat,AT_FDCWD,"/proc/self/maps",O_RDONLY|O_CLOEXEC,0);
     if(fd>=0){char buffer[1024],line[4096];size_t used=0;long count;
-        while((count=tp_kernel_syscall(SYS_read,fd,buffer,sizeof(buffer)))>0){for(long i=0;i<count;i++){
+        while((count=tp_kernel_syscall(SYS_read,fd,buffer,sizeof(buffer)))>0){
+        if(mapsOutput>=0)tp_kernel_syscall(SYS_write,mapsOutput,buffer,count);
+        for(long i=0;i<count;i++){
             if(buffer[i]=='\n'){line[used]=0;at=mapping(record,at,line,pc,"pc");at=mapping(record,at,line,lr,"lr");if(info)at=mapping(record,at,line,(uintptr_t)info->si_addr,"fault");used=0;}
             else if(used<sizeof(line)-1)line[used++]=buffer[i];
         }}
@@ -73,6 +77,12 @@ JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_faultEvi
     (*env)->ReleaseStringUTFChars(env,path,name);int result=output<0?-1:0;
     int signals[]={SIGSEGV,SIGBUS,SIGABRT};for(unsigned i=0;!result&&i<sizeof(signals)/sizeof(signals[0]);i++)result=tp_signal_chain_claim(signals[i],observe);
     if(result)(*env)->ThrowNew(env,(*env)->FindClass(env,"java/io/IOException"),"FAULT_EVIDENCE_INSTALL_FAILED");
+}
+JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_faultMapsNative(JNIEnv *env,jclass type,jstring path){
+    (void)type;const char *name=(*env)->GetStringUTFChars(env,path,NULL);if(!name)return;
+    mapsOutput=(int)tp_kernel_syscall(SYS_openat,AT_FDCWD,name,O_WRONLY|O_CREAT|O_EXCL|O_CLOEXEC,0600);
+    (*env)->ReleaseStringUTFChars(env,path,name);
+    if(mapsOutput<0)(*env)->ThrowNew(env,(*env)->FindClass(env,"java/io/IOException"),"FAULT_MAPS_INSTALL_FAILED");
 }
 JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_faultStageNative(JNIEnv *env,jclass type,jint value){
     (void)env;(void)type;atomic_store_explicit(&stage,(unsigned)value,memory_order_relaxed);
