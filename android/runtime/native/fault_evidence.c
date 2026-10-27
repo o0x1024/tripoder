@@ -66,6 +66,12 @@ static long capture(long signal,long info_address,long context_address){
         }}
         tp_kernel_syscall(SYS_close,fd);
     }
+    /* Register values only (resolved offline against the maps dump above); no memory behind them is read. */
+    if(mapsOutput>=0){char regs[1024];size_t n=0;const char *head="\nTP_REGS";while(*head)regs[n++]=*head++;
+        for(unsigned r=0;r<=33;r++){uint64_t value=r<=30?context->uc_mcontext.regs[r]:r==31?context->uc_mcontext.sp:r==32?context->uc_mcontext.pc:(uint64_t)(uintptr_t)(info?info->si_addr:0);
+            regs[n++]=' ';regs[n++]=r==31?'s':r==32?'p':r==33?'f':'x';if(r<=30){if(r>=10)regs[n++]=(char)('0'+r/10);regs[n++]=(char)('0'+r%10);}else regs[n++]=r==31?'p':r==32?'c':'a';
+            regs[n++]='=';char reverse[17];unsigned digits=0;do{reverse[digits++]="0123456789abcdef"[value&15];value>>=4;}while(value);while(digits)regs[n++]=reverse[--digits];}
+        regs[n++]='\n';tp_kernel_syscall(SYS_write,mapsOutput,regs,n);}
     record[511]='\n';tp_kernel_syscall(SYS_pwrite64,output,record,sizeof(record),(long)(seq%32)*sizeof(record));errno=saved;return 0;
 }
 static bool observe(int signal,siginfo_t *info,void *context){

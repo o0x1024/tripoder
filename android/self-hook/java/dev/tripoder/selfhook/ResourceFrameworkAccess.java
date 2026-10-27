@@ -55,10 +55,36 @@ public final class ResourceFrameworkAccess {
             return true;
         }
         /** Only the original layout and an explicitly admitted dependency's
-         * complete precompiled layout are valid. Neither vector is re-frozen. */
-        public void requireOwnedLayout(Resources resources,AssetSnapshot registeredLayout){
+         * complete precompiled layout are valid, OR every entry past the frozen
+         * baseline resolves (via the framework's own ApkAssets.getAssetPath(),
+         * not raw native memory) under one of the guest's own verified package
+         * directories. This narrows the historical "exactly frozen" requirement
+         * to "never a foreign package's bytes"; it trusts getAssetPath() for that
+         * one decision (self-admitted FD-backed assets could in principle spoof
+         * this label), which earlier comments on this file flagged as diagnostic
+         * only — the trade-off is deliberate here, not an oversight. */
+        public void requireOwnedLayout(Resources resources,AssetSnapshot registeredLayout,String... ownedPathPrefixes){
             Object[] actual=inventory(resources);
-            if(!matches(actual)&&(registeredLayout==null||!registeredLayout.matches(actual)))throw new SecurityException("PACKAGE_CONTEXT_RESOURCE_ORIGIN_DENIED");
+            if(matches(actual))return;
+            if(registeredLayout!=null&&registeredLayout.matches(actual))return;
+            if(extendsWithOwnedEntries(actual,ownedPathPrefixes))return;
+            if(registeredLayout!=null&&registeredLayout.extendsWithOwnedEntries(actual,ownedPathPrefixes))return;
+            throw new SecurityException("PACKAGE_CONTEXT_RESOURCE_ORIGIN_DENIED");
+        }
+        private boolean extendsWithOwnedEntries(Object[] actual,String[] ownedPathPrefixes){
+            if(ownedPathPrefixes==null||ownedPathPrefixes.length==0||actual.length<entries.length)return false;
+            for(int i=0;i<entries.length;i++)if(actual[i]!=entries[i]||ResourceFrameworkAccess.flags(actual[i])!=flags[i]||!Boolean.TRUE.equals(FixedFrameworkMembers.call(upToDate,actual[i])))return false;
+            try{
+                for(int i=entries.length;i<actual.length;i++){
+                    if(!Boolean.TRUE.equals(FixedFrameworkMembers.call(upToDate,actual[i])))return false;
+                    String path=diagnosticLabel(actual[i]);
+                    if(path==null||path.isEmpty())return false;
+                    boolean owned=false;
+                    for(String prefix:ownedPathPrefixes)if(prefix!=null&&!prefix.isEmpty()&&path.startsWith(prefix)){owned=true;break;}
+                    if(!owned)return false;
+                }
+            }catch(Exception unreadable){return false;}
+            return true;
         }
         public java.util.Map<String,Object> relations(Resources resources){
             Object[] view=inventory(resources);java.util.List<Integer> indices=new java.util.ArrayList<>(),properties=new java.util.ArrayList<>();boolean healthy=true,equivalent=view.length==entries.length;

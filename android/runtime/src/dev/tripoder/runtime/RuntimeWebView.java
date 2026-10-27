@@ -60,10 +60,30 @@ final class RuntimeWebView {
         WebView.setDataDirectorySuffix("tripoder-"+suffix);
     }
     boolean owns(String name){return provider!=null&&provider.packageName.equals(name);}
+    /** Standard Android overlay/RRO partitions: root-owned, SELinux-protected, never
+     * a package's own bytes. Their late binding is ordinary platform churn, not a
+     * guest or dependency growing its own resource set. */
+    private static final String[] SYSTEM_OVERLAY_PREFIXES={
+        "/product/overlay/","/odm/overlay/","/vendor/overlay/","/system_ext/overlay/","/system/overlay/","/data/resource-cache/"};
     void requireGuestResources(Resources view){
         ResourceState state=resourceState;
         boolean registered=state==ResourceState.REGISTERING||state==ResourceState.REGISTERED;
-        engine.resourceAssets.requireOwnedLayout(view,registered?resourcePlan.layout():null);
+        // getAssetPath() reports the guest-visible (virtualized) path, e.g.
+        // /data/user/0/<pkg>/..., not this process's real on-disk storage. A
+        // dynamic module/plugin loader calling AssetManager.addAssetPath on its
+        // own extracted or installed bytes stays under its own dataDir/sourceDir;
+        // the explicitly captured+signature-verified WebView provider (see
+        // capture()) can likewise keep adding its own resources after its one
+        // frozen layout was computed. Neither vector can be a foreign package.
+        java.util.List<String> owned=new java.util.ArrayList<>();
+        if(engine.applicationInfo.dataDir!=null)owned.add(engine.applicationInfo.dataDir);
+        if(engine.applicationInfo.sourceDir!=null)owned.add(new java.io.File(engine.applicationInfo.sourceDir).getParent());
+        if(provider!=null&&provider.applicationInfo!=null){
+            if(provider.applicationInfo.dataDir!=null)owned.add(provider.applicationInfo.dataDir);
+            if(provider.applicationInfo.sourceDir!=null)owned.add(new java.io.File(provider.applicationInfo.sourceDir).getParent());
+        }
+        owned.addAll(Arrays.asList(SYSTEM_OVERLAY_PREFIXES));
+        engine.resourceAssets.requireOwnedLayout(view,registered?resourcePlan.layout():null,owned.toArray(new String[0]));
     }
     Object registerResources(Object receiver,String name,ApplicationInfo supplied,RuntimeManagedInstaller.Original original)throws Throwable{
         boolean owner;
