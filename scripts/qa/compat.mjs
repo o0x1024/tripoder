@@ -1,7 +1,7 @@
 // THIN/THICK compatibility + functional smoke campaign.
 // Launch -> consent/permission sweep -> phone+SMS login -> browse tabs/detail/search -> crash verdict.
 // Usage:
-//   node scripts/qa/compat.mjs --mode thin [--limit 10] [--from 0] [--pkgs a,b]
+//   node scripts/qa/compat.mjs [--limit 10] [--from 0] [--pkgs a,b]
 //                               [--out artifacts/qa/campaign] [--resume]
 import { Mcp, adb, sleep, ensureDir, targetOf, waitForCode } from './mcp.mjs';
 import { Flow, PHONES } from './flow.mjs';
@@ -12,9 +12,10 @@ const arg = (name, fallback = '') => {
   const i = process.argv.indexOf(`--${name}`);
   return i >= 0 ? process.argv[i + 1] : fallback;
 };
-const MODE = arg('mode', 'thin');
+if(process.argv.includes('--mode'))throw Error('Runtime mode selection has been removed');
+const RUN_LABEL = 'runtime';
 const OUT = resolve(process.cwd(), arg('out', 'artifacts/qa/campaign'));
-const STATE_PATH = resolve(OUT, `state-${MODE}.json`);
+const STATE_PATH = resolve(OUT, `state-${RUN_LABEL}.json`);
 const limit = Number(arg('limit', '999'));
 const from = Number(arg('from', '0'));
 const only = arg('pkgs', '') ? arg('pkgs', '').split(',').map((s) => s.trim()).filter(Boolean) : null;
@@ -256,7 +257,7 @@ async function deepBrowse(pkg, processGeneration, { maxTabs = 6, maxCards = 2 } 
   const record = async (name) => {
     const nodes = await stableTree();
     if (hostScreen(nodes)) { crashed = true; notes.push('host-screen:' + name); }
-    const shot = await flow.shot(`${pkg}-${MODE}-${name}`).catch(() => null);
+    const shot = await flow.shot(`${pkg}-${RUN_LABEL}-${name}`).catch(() => null);
     visited.push({ name, texts: texts(nodes).slice(0, 14), screenshot: shot });
     return nodes;
   };
@@ -357,7 +358,7 @@ async function run(pkg) {
   mark('begin');
   await adb(['shell', 'settings put system accelerometer_rotation 0']).catch(() => {});
   await adb(['shell', 'settings put system user_rotation 0']).catch(() => {});
-  const rec = { package: pkg, mode: MODE, startedAt: new Date().toISOString(), steps: [], screens: [] };
+  const rec = { package: pkg, startedAt: new Date().toISOString(), steps: [], screens: [] };
   const hostReady = await resetHost();
   rec.steps.push('host-reset=' + hostReady);
   mark('host-reset=' + hostReady);
@@ -384,19 +385,16 @@ async function run(pkg) {
     }
     const running = await alive(pkg);
     if (running) await mcp.call('application_stop', { operationId: opid(`stop-${pkg}`), target }).catch(() => {});
-    await mcp.call('application_mode_set', { operationId: opid(`mode-${pkg}-${MODE}`), target, mode: MODE });
-    rec.steps.push('mode=' + MODE + (attempt ? `#retry${attempt}` : ''));
-    mark('mode=' + MODE + ' -> starting');
     await adb(['logcat', '-b', 'crash', '-c']).catch(() => {});
     started = await mcp.call('process_start', {
-      operationId: opid(`start-${pkg}-${MODE}`),
+      operationId: opid(`start-${pkg}-${RUN_LABEL}`),
       target, component: '', probeRevision: '',
     }, { timeoutMs: 150000 });
     rec.processGeneration = started.processGeneration;
     rec.pid = started.pid;
     rec.steps.push('started pid=' + started.pid);
     mark('started pid=' + started.pid);
-    await sleep((MODE === 'thick' ? 12000 : 8000) + attempt * 4000);
+    await sleep(8000 + attempt * 4000);
     pre = await stableTree();
     mark('pre-tree nodes=' + pre.length);
     // A live guest whose window is not composited yet still counts as started; only a
@@ -407,20 +405,20 @@ async function run(pkg) {
   if (hostScreen(pre)) {
     rec.status = 'ENGINE_LOST_ON_START';
     rec.crash = await crashLog(pkg);
-    rec.screens.push({ name: 'engine-lost', screenshot: await flow.shot(`${pkg}-${MODE}-engine-lost`).catch(() => null) });
+    rec.screens.push({ name: 'engine-lost', screenshot: await flow.shot(`${pkg}-${RUN_LABEL}-engine-lost`).catch(() => null) });
     return rec;
   }
   if (!(await alive(pkg, rec.processGeneration))) {
     rec.status = 'CRASH_ON_LAUNCH';
     rec.crash = await crashLog(pkg);
-    rec.screens.push({ name: 'launch-crash', screenshot: await flow.shot(`${pkg}-${MODE}-launch-crash`).catch(() => null) });
+    rec.screens.push({ name: 'launch-crash', screenshot: await flow.shot(`${pkg}-${RUN_LABEL}-launch-crash`).catch(() => null) });
     return rec;
   }
   mark('alive-after-start -> sweep');
   const swept = await sweep(7);
   mark('sweep done: ' + (swept.join(',') || 'none'));
   if (swept.length) rec.steps.push('overlays:' + swept.join(','));
-  rec.screens.push({ name: 'after-consent', screenshot: await flow.shot(`${pkg}-${MODE}-after-consent`).catch(() => null) });
+  rec.screens.push({ name: 'after-consent', screenshot: await flow.shot(`${pkg}-${RUN_LABEL}-after-consent`).catch(() => null) });
   if (!(await alive(pkg, rec.processGeneration))) {
     rec.status = 'CRASH_ON_CONSENT'; rec.crash = await crashLog(pkg); return rec;
   }
@@ -453,7 +451,7 @@ async function run(pkg) {
   if (postLoginSweep.length) rec.steps.push('post-login-overlays:' + postLoginSweep.join(','));
   if (!(await alive(pkg, rec.processGeneration))) {
     rec.status = 'CRASH_DURING_LOGIN'; rec.crash = await crashLog(pkg);
-    rec.screens.push({ name: 'login-crash', screenshot: await flow.shot(`${pkg}-${MODE}-login-crash`).catch(() => null) });
+    rec.screens.push({ name: 'login-crash', screenshot: await flow.shot(`${pkg}-${RUN_LABEL}-login-crash`).catch(() => null) });
     return rec;
   }
 
@@ -488,11 +486,11 @@ let work = (apps.installations || []).filter((i) => i.state === 'COMMITTED'
   && !i.package.startsWith('dev.tripoder.')).map((i) => i.package).sort();
 if (only) work = only;
 work = work.slice(from, from + limit);
-console.log(`[compat] mode=${MODE} apps=${work.length} resume=${resume ? Object.keys(state).length : 0}`);
+console.log(`[compat] runtime=${RUN_LABEL} apps=${work.length} resume=${resume ? Object.keys(state).length : 0}`);
 
 for (const pkg of work) {
   if (resume && state[pkg] && state[pkg].status && !['ERROR', 'UNKNOWN'].includes(state[pkg].status)) continue;
-  console.log(`\n=== ${pkg} (${MODE}) ===`);
+  console.log(`\n=== ${pkg} (${RUN_LABEL}) ===`);
   const t0 = Date.now();
   let rec;
   const WATCHDOG = Number(arg('watchdog', '210000'));
@@ -500,24 +498,24 @@ for (const pkg of work) {
     rec = await Promise.race([
       run(pkg),
       new Promise((resolve) => setTimeout(() => resolve({
-        package: pkg, mode: MODE, status: 'APP_TIMEOUT', screens: [],
+        package: pkg, status: 'APP_TIMEOUT', screens: [],
         error: `watchdog ${WATCHDOG}ms exceeded`,
       }), WATCHDOG).unref()),
     ]);
   } catch (error) {
-    rec = { package: pkg, mode: MODE, status: 'ERROR', error: String(error.message || error).slice(0, 900), screens: [] };
+    rec = { package: pkg, status: 'ERROR', error: String(error.message || error).slice(0, 900), screens: [] };
   }
   rec.elapsedMs = Date.now() - t0;
   rec.log = flow.log.slice(-80);
   flow.log = [];
   state[pkg] = rec;
   await save();
-  await ensureDir(resolve(OUT, MODE, pkg));
-  await writeFile(resolve(OUT, MODE, pkg, 'result.json'), JSON.stringify(rec, null, 2));
+  await ensureDir(resolve(OUT, RUN_LABEL, pkg));
+  await writeFile(resolve(OUT, RUN_LABEL, pkg, 'result.json'), JSON.stringify(rec, null, 2));
   console.log(`[${rec.status}] ${pkg} login=${rec.login?.state || '-'} screens=${rec.screens?.length || 0} ${rec.elapsedMs}ms ${rec.error || ''}`);
   await mcp.call('application_stop', { operationId: opid(`stopfin-${pkg}`), target: { space: 'default', package: pkg, installGeneration: rec.installGeneration } }).catch(() => {});
   await sleep(700);
   if (rec.elapsedMs > appBudgetMs) console.log('[compat] app exceeded budget', pkg, rec.elapsedMs);
 }
-console.log('[compat] DONE', MODE, Object.values(state).filter((r) => r.status === 'PASS').length, '/', Object.keys(state).length);
+console.log('[compat] DONE', RUN_LABEL, Object.values(state).filter((r) => r.status === 'PASS').length, '/', Object.keys(state).length);
 await mcp.close();

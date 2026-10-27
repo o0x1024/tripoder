@@ -35,7 +35,29 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
         default Map<String,Object> personaConfigureTelephony(Map<String,Object> fields){throw new ScriptFault("HOOK_PERSONA_UNSUPPORTED");}
         default Map<String,Object> personaConfigureLocation(Map<String,Object> fields){throw new ScriptFault("HOOK_PERSONA_UNSUPPORTED");}
         default Map<String,Object> personaConfigureBattery(Integer level,Boolean charging){throw new ScriptFault("HOOK_PERSONA_UNSUPPORTED");}
+        default Map<String,Object> personaConfigureLocale(String language,String country,String timeZoneId){throw new ScriptFault("HOOK_PERSONA_UNSUPPORTED");}
+        default Map<String,Object> personaConfigureNetwork(boolean hideVpn){throw new ScriptFault("HOOK_PERSONA_UNSUPPORTED");}
         default Map<String,Object> personaStatus(){throw new ScriptFault("HOOK_PERSONA_UNSUPPORTED");}
+        default Map<String,Object> malwareConfigure(boolean enabled,boolean blockHighRiskIntents){throw new ScriptFault("HOOK_MALWARE_PROBE_UNSUPPORTED");}
+        default Map<String,Object> malwareConfigure(boolean enabled,boolean blockHighRiskIntents,boolean blockExecve,boolean blockKill,boolean networkSinkhole){return malwareConfigure(enabled,blockHighRiskIntents);}
+        default Map<String,Object> malwareClear(){throw new ScriptFault("HOOK_MALWARE_PROBE_UNSUPPORTED");}
+        default Map<String,Object> malwareStatus(){throw new ScriptFault("HOOK_MALWARE_PROBE_UNSUPPORTED");}
+        default Map<String,Object> malwareEvents(long sinceSeq,int limit){throw new ScriptFault("HOOK_MALWARE_PROBE_UNSUPPORTED");}
+        default Map<String,Object> heapChooseInstances(String className,int limit){throw new ScriptFault("HOOK_HEAP_UNSUPPORTED");}
+        default Map<String,Object> heapReadField(String instanceId,String fieldName){throw new ScriptFault("HOOK_HEAP_UNSUPPORTED");}
+        default Map<String,Object> heapSnapshotContainer(String instanceId,int maxEntries){throw new ScriptFault("HOOK_HEAP_UNSUPPORTED");}
+        default Map<String,Object> timeWarpConfigure(long offsetMillis,double delayScale){throw new ScriptFault("HOOK_TIME_WARP_UNSUPPORTED");}
+        default Map<String,Object> timeWarpReset(){throw new ScriptFault("HOOK_TIME_WARP_UNSUPPORTED");}
+        default Map<String,Object> timeWarpStatus(){throw new ScriptFault("HOOK_TIME_WARP_UNSUPPORTED");}
+        default Map<String,Object> honeydataConfigure(String category,List<Map<String,Object>> rows){throw new ScriptFault("HOOK_HONEYDATA_UNSUPPORTED");}
+        default Map<String,Object> honeydataClear(){throw new ScriptFault("HOOK_HONEYDATA_UNSUPPORTED");}
+        default Map<String,Object> honeydataStatus(){throw new ScriptFault("HOOK_HONEYDATA_UNSUPPORTED");}
+        default Map<String,Object> processSnapshotHeap(){throw new ScriptFault("HOOK_PROCESS_SNAPSHOT_UNSUPPORTED");}
+        default Map<String,Object> processSnapshotFreeze(String databaseName){throw new ScriptFault("HOOK_PROCESS_SNAPSHOT_UNSUPPORTED");}
+        default Map<String,Object> envMockConfigureHttp(List<Map<String,Object>> rules){throw new ScriptFault("HOOK_ENV_MOCK_UNSUPPORTED");}
+        default Map<String,Object> envMockConfigureNetwork(String networkState){throw new ScriptFault("HOOK_ENV_MOCK_UNSUPPORTED");}
+        default Map<String,Object> envMockClear(){throw new ScriptFault("HOOK_ENV_MOCK_UNSUPPORTED");}
+        default Map<String,Object> envMockStatus(){throw new ScriptFault("HOOK_ENV_MOCK_UNSUPPORTED");}
         default Map<String,Object> sendComponent(Map<String,Object> request){throw new ScriptFault("HOOK_COMPONENT_UNSUPPORTED");}
         default Map<String,Object> providerInteract(Map<String,Object> request){throw new ScriptFault("HOOK_PROVIDER_UNSUPPORTED");}
         default Map<String,Object> invokeGuestMethod(Map<String,Object> target){return Map.of("result",null);}
@@ -54,7 +76,7 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
         Map.entry("nativeExports",Set.of("moduleName","symbolPrefix","limit")),Map.entry("uiDump",Set.of("includeInvisible","limit")),Map.entry("uiScreenshot",Set.of("maxDimension")),
         Map.entry("uiAction",Set.of("action")),Map.entry("diagnostics",Set.of()),
 
-        Map.entry("networkInspect",Set.of("moduleName")),Map.entry("networkStart",Set.of("moduleName","buildId","profile","signatureSource")),Map.entry("networkStop",Set.of("captureId")),Map.entry("networkStatus",Set.of()),Map.entry("networkMessages",Set.of("captureId","sinceSeq","limit")),Map.entry("networkHar",Set.of("captureId","sinceSeq","limit")),Map.entry("componentSend",Set.of("request")),Map.entry("privacyConfigureAttribution",Set.of("entries")),Map.entry("personaConfigureTelephony",Set.of("fields")),Map.entry("personaConfigureBattery",Set.of("level","charging")),Map.entry("personaConfigureLocation",Set.of("fields")),Map.entry("personaStatus",Set.of()),Map.entry("privacyMarkConsentStage",Set.of("stage","note")),Map.entry("privacyAttribution",Set.of("className")),Map.entry("privacyTimeline",Set.of("sinceSeq","limit")),Map.entry("providerInteract",Set.of("request")),Map.entry("networkConfigure",Set.of("connections","messages","totalBytes","confirmHigherLimits")),Map.entry("networkTraffic",Set.of("captureId","sinceSeq","limit")),Map.entry("httpRequest",Set.of("request")),
+        Map.entry("networkInspect",Set.of("moduleName")),Map.entry("networkStart",Set.of("moduleName","buildId","profile","signatureSource")),Map.entry("networkStop",Set.of("captureId")),Map.entry("networkStatus",Set.of()),Map.entry("networkMessages",Set.of("captureId","sinceSeq","limit")),Map.entry("networkHar",Set.of("captureId","sinceSeq","limit")),Map.entry("componentSend",Set.of("request")),Map.entry("privacyConfigureAttribution",Set.of("entries")),Map.entry("personaConfigureTelephony",Set.of("fields")),Map.entry("personaConfigureBattery",Set.of("level","charging")),Map.entry("personaConfigureLocation",Set.of("fields")),Map.entry("personaConfigureLocale",Set.of("language","country","timeZoneId")),Map.entry("personaConfigureNetwork",Set.of("hideVpn")),Map.entry("personaStatus",Set.of()),Map.entry("malwareConfigure",Set.of("enabled","blockHighRiskIntents")),Map.entry("malwareClear",Set.of()),Map.entry("malwareStatus",Set.of()),Map.entry("malwareEvents",Set.of("sinceSeq","limit")),Map.entry("heapChooseInstances",Set.of("className","limit")),Map.entry("heapReadField",Set.of("instanceId","fieldName")),Map.entry("heapSnapshotContainer",Set.of("instanceId","maxEntries")),Map.entry("timeWarpConfigure",Set.of("offsetMillis","delayScale")),Map.entry("timeWarpReset",Set.of()),Map.entry("timeWarpStatus",Set.of()),Map.entry("honeydataConfigure",Set.of("category","rows")),Map.entry("honeydataClear",Set.of()),Map.entry("honeydataStatus",Set.of()),Map.entry("processSnapshotHeap",Set.of()),Map.entry("processSnapshotFreeze",Set.of("databaseName")),Map.entry("envMockConfigureHttp",Set.of("rules")),Map.entry("envMockConfigureNetwork",Set.of("networkState")),Map.entry("envMockClear",Set.of()),Map.entry("envMockStatus",Set.of()),Map.entry("privacyMarkConsentStage",Set.of("stage","note")),Map.entry("privacyAttribution",Set.of("className")),Map.entry("privacyTimeline",Set.of("sinceSeq","limit")),Map.entry("providerInteract",Set.of("request")),Map.entry("networkConfigure",Set.of("connections","messages","totalBytes","confirmHigherLimits")),Map.entry("networkTraffic",Set.of("captureId","sinceSeq","limit")),Map.entry("httpRequest",Set.of("request")),
         Map.entry("guestInvoke",Set.of("target")),Map.entry("probeStatus",Set.of()),Map.entry("probeStop",Set.of()),Map.entry("classLoaders",Set.of()),Map.entry("classLoaderCreate",Set.of("dexId","parentClassLoaderId")),Map.entry("dexList",Set.of("classLoaderId","cursor","limit")),Map.entry("dexSnapshot",Set.of("dexId")),Map.entry("codeArtifacts",Set.of()),Map.entry("runtimeEvents",Set.of("sinceSeq","limit")),Map.entry("classInspect",Set.of("classLoaderId","className")));
     private final Map<String,Object> identity;
     private final String generation;
@@ -98,14 +120,26 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
     /** Only this phase may certify rejection without executing a command. */
     private void validateInput(Map<String,Object> input){
         String name=text(input,"command");Set<String> fields=FIELDS.get(name);require(fields!=null,"HOOK_COMMAND_UNSUPPORTED");
-        Set<String> expected=new HashSet<>(fields);expected.add("command");expected.add("processGeneration");require(input.keySet().equals(expected),"HOOK_COMMAND_FIELDS");
+        Set<String> expected=new HashSet<>(fields);expected.add("command");expected.add("processGeneration");
+        if(name.equals("malwareConfigure")){
+            Set<String> allowed=new HashSet<>(expected);allowed.addAll(Set.of("blockExecve","blockKill","networkSinkhole"));
+            require(input.keySet().containsAll(expected)&&allowed.containsAll(input.keySet()),"HOOK_COMMAND_FIELDS");
+        }else{
+            require(input.keySet().equals(expected),"HOOK_COMMAND_FIELDS");
+        }
         require(generation.equals(input.get("processGeneration"))&&identity.equals(platform.identity()),"HOOK_PROCESS_STALE");
         if(name.equals("networkStart")&&(active!=null||prepared!=null))throw new HookPreflightRejected("HOOK_CONTEXT_IN_USE");
         if(network.ownsHook()&&Set.of("observe","prepare","activate","disable","discard","updateParameters","cancelPreparation").contains(name))throw new HookPreflightRejected("NETWORK_CAPTURE_OWNS_HOOK");
         if(name.equals("observe"))selectors(input.get("selectors"));
     }
     private Map<String,Object> command(Map<String,Object> input){
-        String name=text(input,"command");Set<String> fields=FIELDS.get(name);require(fields!=null,"HOOK_COMMAND_UNSUPPORTED");Set<String> expected=new HashSet<>(fields);expected.add("command");expected.add("processGeneration");require(input.keySet().equals(expected),"HOOK_COMMAND_FIELDS");
+        String name=text(input,"command");Set<String> fields=FIELDS.get(name);require(fields!=null,"HOOK_COMMAND_UNSUPPORTED");Set<String> expected=new HashSet<>(fields);expected.add("command");expected.add("processGeneration");
+        if(name.equals("malwareConfigure")){
+            Set<String> allowed=new HashSet<>(expected);allowed.addAll(Set.of("blockExecve","blockKill","networkSinkhole"));
+            require(input.keySet().containsAll(expected)&&allowed.containsAll(input.keySet()),"HOOK_COMMAND_FIELDS");
+        }else{
+            require(input.keySet().equals(expected),"HOOK_COMMAND_FIELDS");
+        }
         require(generation.equals(input.get("processGeneration"))&&identity.equals(platform.identity()),"HOOK_PROCESS_STALE");
         long now=clock.getAsLong();require(now>=lastClock&&now>=0&&now<=Long.MAX_VALUE-60000,"HOOK_CLOCK_INVALID");lastClock=now;
         if(prepared!=null&&(now>prepared.deadline||prepared.evidenceEpoch!=invalidation.get()))prepared=null;
@@ -239,7 +273,69 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
                 Integer level=rawLevel==null?null:((Double)rawLevel).intValue();Boolean charging=(Boolean)rawCharging;
                 return withIdentity(new LinkedHashMap<>(platform.personaConfigureBattery(level,charging)));
             }
+            case "personaConfigureLocale":{
+                Object rawLang=input.get("language"),rawCtry=input.get("country"),rawTz=input.get("timeZoneId");
+                require(rawLang instanceof String&&rawCtry instanceof String&&rawTz instanceof String,"PERSONA_LOCALE_ARG");
+                return withIdentity(new LinkedHashMap<>(platform.personaConfigureLocale((String)rawLang,(String)rawCtry,(String)rawTz)));
+            }
+            case "personaConfigureNetwork":{
+                Object rawHide=input.get("hideVpn");require(rawHide instanceof Boolean,"PERSONA_NETWORK_ARG");
+                return withIdentity(new LinkedHashMap<>(platform.personaConfigureNetwork((Boolean)rawHide)));
+            }
             case "personaStatus":return withIdentity(new LinkedHashMap<>(platform.personaStatus()));
+            case "malwareConfigure":{
+                Object rawEn=input.get("enabled"),rawBlock=input.get("blockHighRiskIntents");
+                Object rawExec=input.getOrDefault("blockExecve",Boolean.FALSE),rawKill=input.getOrDefault("blockKill",Boolean.FALSE),rawSink=input.getOrDefault("networkSinkhole",Boolean.FALSE);
+                require(rawEn instanceof Boolean&&rawBlock instanceof Boolean&&rawExec instanceof Boolean&&rawKill instanceof Boolean&&rawSink instanceof Boolean,"MALWARE_CONFIGURE_ARG");
+                return withIdentity(new LinkedHashMap<>(platform.malwareConfigure((Boolean)rawEn,(Boolean)rawBlock,(Boolean)rawExec,(Boolean)rawKill,(Boolean)rawSink)));
+            }
+            case "malwareClear":return withIdentity(new LinkedHashMap<>(platform.malwareClear()));
+            case "malwareStatus":return withIdentity(new LinkedHashMap<>(platform.malwareStatus()));
+            case "malwareEvents":{
+                Object rawSince=input.get("sinceSeq"),rawLimit=input.get("limit");
+                require(rawSince instanceof Double&&(Double)rawSince==Math.rint((Double)rawSince)&&(Double)rawSince>=0,"MALWARE_EVENTS_SEQ");
+                require(rawLimit instanceof Double&&(Double)rawLimit==Math.rint((Double)rawLimit)&&(Double)rawLimit>=1&&(Double)rawLimit<=64,"MALWARE_EVENTS_LIMIT");
+                return withIdentity(new LinkedHashMap<>(platform.malwareEvents(((Double)rawSince).longValue(),((Double)rawLimit).intValue())));
+            }
+            case "heapChooseInstances":{
+                String cls=text(input,"className");Object rawLimit=input.get("limit");
+                require(rawLimit instanceof Double&&(Double)rawLimit==Math.rint((Double)rawLimit)&&(Double)rawLimit>=1&&(Double)rawLimit<=64,"HEAP_CHOOSE_LIMIT");
+                return withIdentity(new LinkedHashMap<>(platform.heapChooseInstances(cls,((Double)rawLimit).intValue())));
+            }
+            case "heapReadField":{
+                String instId=text(input,"instanceId"),field=text(input,"fieldName");
+                return withIdentity(new LinkedHashMap<>(platform.heapReadField(instId,field)));
+            }
+            case "heapSnapshotContainer":{
+                String instId=text(input,"instanceId");Object rawMax=input.get("maxEntries");
+                require(rawMax instanceof Double&&(Double)rawMax==Math.rint((Double)rawMax)&&(Double)rawMax>=1&&(Double)rawMax<=64,"HEAP_SNAPSHOT_LIMIT");
+                return withIdentity(new LinkedHashMap<>(platform.heapSnapshotContainer(instId,((Double)rawMax).intValue())));
+            }
+            case "timeWarpConfigure":{
+                Object rawOff=input.get("offsetMillis"),rawScale=input.get("delayScale");
+                require(rawOff instanceof Double&&(Double)rawOff==Math.rint((Double)rawOff)&&rawScale instanceof Double,"TIME_WARP_CONFIGURE_ARG");
+                return withIdentity(new LinkedHashMap<>(platform.timeWarpConfigure(((Double)rawOff).longValue(),(Double)rawScale)));
+            }
+            case "timeWarpReset":return withIdentity(new LinkedHashMap<>(platform.timeWarpReset()));
+            case "timeWarpStatus":return withIdentity(new LinkedHashMap<>(platform.timeWarpStatus()));
+            case "honeydataConfigure":{
+                String cat=text(input,"category");Object rawRows=input.get("rows");
+                require(rawRows instanceof List<?>,"HONEYDATA_ROWS_ARG");
+                List<Map<String,Object>> rows=new ArrayList<>();for(Object item:(List<?>)rawRows){require(item instanceof Map<?,?>,"HONEYDATA_ROW_ARG");rows.add(object(item));}
+                return withIdentity(new LinkedHashMap<>(platform.honeydataConfigure(cat,rows)));
+            }
+            case "honeydataClear":return withIdentity(new LinkedHashMap<>(platform.honeydataClear()));
+            case "honeydataStatus":return withIdentity(new LinkedHashMap<>(platform.honeydataStatus()));
+            case "processSnapshotHeap":return withIdentity(new LinkedHashMap<>(platform.processSnapshotHeap()));
+            case "processSnapshotFreeze":return withIdentity(new LinkedHashMap<>(platform.processSnapshotFreeze(text(input,"databaseName"))));
+            case "envMockConfigureHttp":{
+                Object rawRules=input.get("rules");require(rawRules instanceof List<?>,"ENV_MOCK_RULES_ARG");
+                List<Map<String,Object>> rules=new ArrayList<>();for(Object item:(List<?>)rawRules){require(item instanceof Map<?,?>,"ENV_MOCK_RULE_ARG");rules.add(object(item));}
+                return withIdentity(new LinkedHashMap<>(platform.envMockConfigureHttp(rules)));
+            }
+            case "envMockConfigureNetwork":return withIdentity(new LinkedHashMap<>(platform.envMockConfigureNetwork(text(input,"networkState"))));
+            case "envMockClear":return withIdentity(new LinkedHashMap<>(platform.envMockClear()));
+            case "envMockStatus":return withIdentity(new LinkedHashMap<>(platform.envMockStatus()));
             case "privacyConfigureAttribution":{
                 Object raw=input.get("entries");require(raw instanceof List<?>,"PRIVACY_ATTRIBUTION_LIST");
                 List<Map<String,Object>> entries=new ArrayList<>();for(Object item:(List<?>)raw){require(item instanceof Map<?,?>,"PRIVACY_ATTRIBUTION_LIST");entries.add(object(item));}
@@ -281,7 +377,7 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
             Set<String> keys=kind.equals("java")?Set.of("id","kind","className","methodName","argumentTypes"):Set.of("id","kind","moduleName","symbol","argumentTypes","returnType","buildId","signatureSource");
             if(kind.equals("java")&&selector.containsKey("classLoaderId")){keys=new HashSet<>(keys);keys.add("classLoaderId");require(text(selector,"classLoaderId").matches("[A-Za-z0-9_-]{1,80}"),"CLASS_LOADER_REFERENCE");}
             require(Set.of("java","native").contains(kind)&&selector.keySet().equals(keys),"HOOK_SELECTOR_FIELDS");require(strings(selector.get("argumentTypes")).size()<=16,"HOOK_ARGUMENT_COUNT");
-            if(kind.equals("java")){require(text(selector,"className").length()<=512&&text(selector,"methodName").length()<=128&&!text(selector,"methodName").startsWith("<"),"HOOK_METHOD_NAME");}
+            if(kind.equals("java")){require(text(selector,"className").length()<=512&&text(selector,"methodName").length()<=128&&(!text(selector,"methodName").startsWith("<")||"<init>".equals(text(selector,"methodName"))),"HOOK_METHOD_NAME");}
             else require(text(selector,"moduleName").matches("lib[a-zA-Z0-9_+.$-]+\\.so")&&text(selector,"symbol").length()<=256&&"confirmed".equals(selector.get("signatureSource")),"HOOK_NATIVE_SELECTOR_FIELDS");
             selected.add(selector);
         }

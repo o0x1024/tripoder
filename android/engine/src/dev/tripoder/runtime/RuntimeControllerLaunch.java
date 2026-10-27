@@ -90,7 +90,7 @@ final class RuntimeControllerLaunch {
                 Intent intent=broker.activities.controllerEntry(broker.host,ticket,category);issued.put(operation,android.os.SystemClock.elapsedRealtime());
                 Bundle out=broker.processEvidence(slot);out.putString("operation",operation);out.putString("component",component);out.putParcelable("intent",intent);return out;
             }
-        }catch(Exception error){boolean modeRejected=String.valueOf(error.getMessage()).startsWith("RUNTIME_MODE_NOT_IMPLEMENTED:");synchronized(broker){if(broker.contract.query(operation).state==ExecutionContract.OperationState.RUNNING){if(started&&!modeRejected)broker.contract.markUnknown(operation,"LAUNCH_PREPARATION_UNCONFIRMED");else broker.contract.fail(operation,modeRejected?"RUNTIME_MODE_NOT_IMPLEMENTED":"LAUNCH_TARGET_REJECTED");}}throw error;}
+        }catch(Exception error){synchronized(broker){if(broker.contract.query(operation).state==ExecutionContract.OperationState.RUNNING){if(started)broker.contract.markUnknown(operation,"LAUNCH_PREPARATION_UNCONFIRMED");else broker.contract.fail(operation,"LAUNCH_TARGET_REJECTED");}}throw error;}
     }
     /** A relaunch is the user's word that the application is not in use. When an open root belongs only to dead processes,
      *  sibling processes that no open root belongs to (a crashed app's background service process) are closed first, so

@@ -94,7 +94,7 @@ public final class IsolatedRecoveryIntegration extends Instrumentation {
             Bundle installed=app.engine.executeBlocking(request);if(!PKG.equals(installed.getString("package")))throw new SecurityException("OWNED_RECOVERY_FIXTURE_PACKAGE_CHANGED");install=installed.getString("generation");
         }
         JSONObject upgraded=JobMutationInspection.installation(app,SPACE,PKG);check("fixture-upgrade-keeps-existing-data-incarnation",dataId.equals(upgraded.getString("dataId")));report.put("installGeneration",install).put("dataIncarnation",dataId);
-        Bundle target=execute("applicationTarget","space",SPACE,"package",PKG,"generation",install);execute("setApplicationMode","operation",id(),"project",target.getString("project"),"space",SPACE,"generation",install,"mode","thick");
+        Bundle target=execute("applicationTarget","space",SPACE,"package",PKG,"generation",install);
         int before=starts();save("launching-held-instance");Bundle first=launch(target);JSONObject held=ready(first,before+1);report.put("heldBeforeCrash",held).put("parentBeforeCrash",WorkbenchAgentLifecycle.json(first));check("real-isolated-instance-held-before-fault",android.os.Process.isIsolatedUid(held.getInt("isolatedUid"))&&held.getInt("isolatedUid")!=android.os.Process.myUid());
         try(var db=database();var row=db.rawQuery("SELECT COUNT(*) FROM sessions WHERE authorityGeneration=? AND state!='DEAD' AND NOT(space=? AND package=? AND installGeneration=?)",new String[]{held.getString("authority"),SPACE,PKG,install})){row.moveToFirst();check("authority-has-no-unrelated-live-qa-generation",row.getInt(0)==0);}
         check("held-launch-already-acknowledged",execute("query","operation",first.getString("operation")).getString("state").equals("SUCCEEDED"));

@@ -1,0 +1,30 @@
+{
+  "source": "docs/evidence/compatibility-closure-2026-10-23/framework-after34/framework.jar",
+  "jarSha256": "b65eb83784dccd3ebe3efec622b184ef970fe104417220a137f8045d4fbb019c",
+  "dexEntry": "classes.dex",
+  "dexSize": 9806172,
+  "dexSha256": "35303ddca835a763425b31a7d0eef61c009914bce1ae13bb2e465ed02e03e09d",
+  "analysis": "Read-only DEX structural decoding by explore agent; device dynamic observation pending",
+  "methods": {
+    "scheduleCreateService": {
+      "codeOffset": 1931184,
+      "codeUnits": 67,
+      "writes": [
+        "cu11:CreateServiceData.token",
+        "cu13:CreateServiceData.info"
+      ],
+      "intentWrite": false
+    },
+    "CreateServiceData.<init>": {
+      "codeOffset": 1934924,
+      "completeInstructions": "1070 fbb6 0000 000e"
+    },
+    "handleCreateService": {
+      "codeOffset": 1979804,
+      "cu81": "iget-object CreateServiceData.intent",
+      "cu83": "invoke-virtual AppComponentFactory.instantiateService(ClassLoader,String,Intent)"
+    }
+  },
+  "conclusion": "Normal factory creation cannot receive bind challenge through the absent creation Intent; measure onBind separately",
+  "backendImplemented": false
+}

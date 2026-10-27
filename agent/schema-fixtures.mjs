@@ -2,7 +2,7 @@
 import {writeFile} from 'node:fs/promises';
 import {tools,operationRoutes,referenceMigrations} from './tools.mjs';
 const target={space:'space-a',package:'owned.app',installGeneration:'install-a',processGeneration:'process-a'};
-const values={operationId:'operation-a',uploadId:'upload-a',launchOperationId:'launch-a',target,space:'space-a',package:'owned.app',expectedRevision:'',probeRevision:'',component:'',expectedGeneration:'',expectedSha256:'a'.repeat(64),sourceSha256:'a'.repeat(64),sha256:'a'.repeat(64),name:'base.apk',className:'owned.Counter',methodName:'value',argumentTypes:[],arguments:[],classLoaderId:'loader-a',cursor:'',category:'all',packagePrefix:'',symbolPrefix:'',moduleName:'libowned.so',data:'YWJjZA==',source:'export default {};',configuration:{}};
+const values={operationId:'operation-a',uploadId:'upload-a',launchOperationId:'launch-a',target,space:'space-a',package:'owned.app',expectedRevision:'',probeRevision:'',component:'',expectedGeneration:'',expectedSha256:'a'.repeat(64),sourceSha256:'a'.repeat(64),sha256:'a'.repeat(64),name:'base.apk',className:'owned.Counter',methodName:'value',argumentTypes:[],arguments:[],classLoaderId:'loader-a',cursor:'',category:'all',packagePrefix:'',symbolPrefix:'',moduleName:'libowned.so',data:'YWJjZA==',source:'export default {};',configuration:{},databaseName:'app.db',language:'en',country:'US',timeZoneId:'UTC',offsetMillis:0,delayScale:1,instanceId:'inst-1',fieldName:'value'};
 function example(schema,key){
   if(key==='cursor'&&schema.type==='integer')return 0;
   if(key==='entryId')return 'e0';
@@ -10,6 +10,7 @@ function example(schema,key){
   if(key==='source'&&schema.anyOf)return {kind:'path',path:'/tmp/example'};
   if(key==='destination')return '/tmp/download';
   if(key==='action'&&schema.enum)return schema.enum[0];
+  if(key==='category'&&schema.enum)return schema.enum[0];
   if(Object.hasOwn(values,key))return structuredClone(values[key]);
   if(schema.examples)return structuredClone(schema.examples[0]);
   if(schema.anyOf)return example(schema.anyOf[0],key);
@@ -60,6 +61,8 @@ for(const [name,args,valid] of [
   ['ui_dispatch_action',scoped('action',{kind:'key',keyCode:4.5}),false],
   ['guest_invoke',scoped('invocation',{}),false],
   ['guest_invoke',scoped('invocation',{className:'owned.Counter',methodName:'value',argumentTypes:['long','[B','java.lang.String'],arguments:['9223372036854775807','ff00',null]}),true],
+  ['guest_invoke',scoped('invocation',{className:'owned.Counter',methodName:'value',argumentTypes:[],arguments:[],instanceId:'inst-1'}),true],
+  ['guest_invoke',scoped('invocation',{className:'owned.Counter',methodName:'value',argumentTypes:[],arguments:[],instanceId:'bad-id'}),false],
   ['guest_invoke',scoped('invocation',{className:'owned.Counter',methodName:'value',argumentTypes:['int'],arguments:[]}),false],
   ['guest_invoke',scoped('invocation',{className:'owned.Counter',methodName:'value',argumentTypes:['long'],arguments:[7]}),false],
   ['guest_invoke',scoped('invocation',{className:'owned.Counter',methodName:'value',argumentTypes:['long'],arguments:['9223372036854775808']}),false],

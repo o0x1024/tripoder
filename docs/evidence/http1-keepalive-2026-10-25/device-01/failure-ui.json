@@ -1,0 +1,70 @@
+{
+  "status": {
+    "protocol": 2,
+    "requestId": "35a00eb2-520d-4ba4-a10c-405be14c9261",
+    "ok": false,
+    "operationId": "35a00eb2-520d-4ba4-a10c-405be14c9261",
+    "state": "FAILED",
+    "error": "ContractException:fa5536d1-730e-4985-84f7-450c694a513e",
+    "target": {
+      "space": "network-d4fb288a-eda",
+      "package": "dev.tripoder.nativetlsfixture",
+      "installGeneration": "31c1f558-19c5-4592-ac1c-e3c9a322b495",
+      "processGeneration": "d6ff96fd63e232159745b5337c7c81e2a143eb242855714ea9cd291d5506f77f"
+    },
+    "errorCode": "COMMAND_FAILED",
+    "pendingOperationId": "35a00eb2-520d-4ba4-a10c-405be14c9261",
+    "recovery": {
+      "action": "Inspect the exact published action schema and error before issuing a command.",
+      "steps": [],
+      "replayAllowed": false,
+      "newIdRetryAllowed": false,
+      "preserveOriginalEvidence": true,
+      "pollingDoesNotResolve": true
+    }
+  },
+  "ui": {
+    "protocol": 2,
+    "requestId": "47c9fe79-6f45-4164-bc9a-b083ba9e7eaf",
+    "ok": false,
+    "operationId": "47c9fe79-6f45-4164-bc9a-b083ba9e7eaf",
+    "state": "FAILED",
+    "error": "IllegalStateException:HOOK_OUTCOME_QUERY_REQUIRED:fa5536d1-730e-4985-84f7-450c694a513e",
+    "target": {
+      "space": "network-d4fb288a-eda",
+      "package": "dev.tripoder.nativetlsfixture",
+      "installGeneration": "31c1f558-19c5-4592-ac1c-e3c9a322b495",
+      "processGeneration": "d6ff96fd63e232159745b5337c7c81e2a143eb242855714ea9cd291d5506f77f"
+    },
+    "errorCode": "HOOK_OUTCOME_QUERY_REQUIRED",
+    "pendingOperationId": "fa5536d1-730e-4985-84f7-450c694a513e",
+    "recovery": {
+      "action": "Query the original operation and exact Hook status. Reading events does not clear the gate. Never replay this mutation, including under a new operationId.",
+      "steps": [
+        {
+          "tool": "operation_get",
+          "arguments": {
+            "operationId": "fa5536d1-730e-4985-84f7-450c694a513e"
+          }
+        },
+        {
+          "tool": "process_inspect",
+          "arguments": {
+            "action": "hook_status",
+            "target": {
+              "space": "network-d4fb288a-eda",
+              "package": "dev.tripoder.nativetlsfixture",
+              "installGeneration": "31c1f558-19c5-4592-ac1c-e3c9a322b495",
+              "processGeneration": "d6ff96fd63e232159745b5337c7c81e2a143eb242855714ea9cd291d5506f77f"
+            }
+          }
+        }
+      ],
+      "replayAllowed": false,
+      "newIdRetryAllowed": false,
+      "preserveOriginalEvidence": true,
+      "pollingDoesNotResolve": true,
+      "requiresOriginalTarget": false
+    }
+  }
+}

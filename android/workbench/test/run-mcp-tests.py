@@ -34,7 +34,7 @@ with tempfile.TemporaryDirectory(prefix='tripoder-mcp-test-') as folder:
     server=subprocess.Popen([str(java/'java'),'-cp',str(classes)+os.pathsep+str(jar),'dev.tripoder.hooklab.McpHost',str(root)],stdout=subprocess.PIPE,text=True)
     try:
         if server.stdout.readline().strip()!='READY':raise RuntimeError('JAVA_MCP_SERVER_START_FAILED')
-        subprocess.run(['node','--test','agent/agent.test.mjs','agent/audit.test.mjs','agent/schema.test.mjs','agent/file-pull.test.mjs','agent/artifact-verify.test.mjs','agent/recovery.test.mjs'],cwd=repo,env={**os.environ,'TRIPODER_MCP_TEST_CONNECTION':str(root/'connection.json')},check=True)
+        subprocess.run(['node','--test','agent/agent.test.mjs','agent/audit.test.mjs','agent/schema.test.mjs','agent/file-pull.test.mjs','agent/artifact-verify.test.mjs','agent/recovery.test.mjs','agent/transport-budget.test.mjs'],cwd=repo,env={**os.environ,'TRIPODER_MCP_TEST_CONNECTION':str(root/'connection.json')},check=True)
         python_client=subprocess.run([sys.executable,str(repo/'tools/tpmcp.py'),'tools'],cwd=repo,env={**os.environ,'TRIPODER_CONNECTION':str(root/'connection.json')},capture_output=True,text=True,check=True)
         assert json.loads(python_client.stdout)['tools'], 'Python HTTP client did not discover tools'
         print('Python HTTP initialize/session/catalog passed without a certificate')

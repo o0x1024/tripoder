@@ -37,7 +37,7 @@ final class RuntimeSelfHookBootstrap {
         PENDING_INTENTS,
         UI_EFFECTS,
         FAILURE_DIAGNOSTICS,
-        HOOK_CONTROL
+        NATIVE_LIBRARY_RUNTIME
     }
 
     @FunctionalInterface interface Installer { void install() throws Exception; }

@@ -80,11 +80,47 @@ public final class DraftCompiler {
             Map<String,Object> holder=Collections.singletonMap("schema",Collections.unmodifiableMap(schema));schemas.put(holder,spec);return holder;
         }));return Collections.unmodifiableMap(out);
     }
-    private Map<String,Object> context(){return Map.of("java",Map.of("method",RestrictedAst.capability(this::javaMethod),"objectInfo",RestrictedAst.capability(args->{objectInvocation(args);arity(args,1,1);return ScriptValues.freeze(JavaObjectScope.info(args.get(0)));}),"snapshotThread",RestrictedAst.capability(args->{objectInvocation(args);arity(args,1,1);return ScriptValues.freeze(JavaObjectSnapshots.thread(args.get(0)));}),"snapshotThrowable",RestrictedAst.capability(this::snapshotThrowable),"readField",RestrictedAst.capability(this::readField)),"native",Map.of("function",RestrictedAst.capability(this::nativeFunction),"captureBuffer",RestrictedAst.capability(this::captureNativeBuffer)),"code",Map.of("snapshotDex",RestrictedAst.capability(args->{require(!collecting,"CODE_CAPTURE_OUTSIDE_INVOCATION");arity(args,1,1);String id=string(args.get(0));require(id.matches("[A-Za-z0-9_-]{1,80}"),"DEX_REFERENCE");return ScriptValues.freeze(codeSnapshot.apply(id));})),"debug",Map.of("emitEvent",RestrictedAst.capability(this::emitEvent),"captureEvidence",RestrictedAst.capability(this::captureEvidence),"captureJavaStack",RestrictedAst.capability(this::captureJavaStack),"callerModuleOffset",RestrictedAst.capability(this::callerModuleOffset)),"privacy",Map.of("attribution",RestrictedAst.capability(this::privacyAttributionOf),"consentStage",RestrictedAst.capability(args->{arity(args,0,0);return ScriptValues.freeze(privacyConsentStage.get());})));}
+    private Map<String,Object> context(){return Map.of("java",Map.of("method",RestrictedAst.capability(this::javaMethod),"objectInfo",RestrictedAst.capability(args->{objectInvocation(args);arity(args,1,1);return ScriptValues.freeze(JavaObjectScope.info(args.get(0)));}),"snapshotThread",RestrictedAst.capability(args->{objectInvocation(args);arity(args,1,1);return ScriptValues.freeze(JavaObjectSnapshots.thread(args.get(0)));}),"snapshotThrowable",RestrictedAst.capability(this::snapshotThrowable),"readField",RestrictedAst.capability(this::readField),"snapshotContainer",RestrictedAst.capability(this::snapshotContainer)),"native",Map.of("function",RestrictedAst.capability(this::nativeFunction),"captureBuffer",RestrictedAst.capability(this::captureNativeBuffer)),"code",Map.of("snapshotDex",RestrictedAst.capability(args->{require(!collecting,"CODE_CAPTURE_OUTSIDE_INVOCATION");arity(args,1,1);String id=string(args.get(0));require(id.matches("[A-Za-z0-9_-]{1,80}"),"DEX_REFERENCE");return ScriptValues.freeze(codeSnapshot.apply(id));})),"debug",Map.of("emitEvent",RestrictedAst.capability(this::emitEvent),"captureEvidence",RestrictedAst.capability(this::captureEvidence),"captureJavaStack",RestrictedAst.capability(this::captureJavaStack),"callerModuleOffset",RestrictedAst.capability(this::callerModuleOffset)),"privacy",Map.of("attribution",RestrictedAst.capability(this::privacyAttributionOf),"consentStage",RestrictedAst.capability(args->{arity(args,0,0);return ScriptValues.freeze(privacyConsentStage.get());})),"state",Map.of("get",RestrictedAst.capability(this::stateGet),"set",RestrictedAst.capability(this::stateSet),"delete",RestrictedAst.capability(this::stateDelete),"clear",RestrictedAst.capability(this::stateClear),"keys",RestrictedAst.capability(this::stateKeys)));}
     private Object privacyAttributionOf(List<Object> args){arity(args,1,1);return ScriptValues.freeze(privacyAttribution.apply(string(args.get(0))));}
     private Object readField(List<Object> args){
         objectInvocation(args);arity(args,2,2);String name=string(args.get(1));
         return JavaObjectSnapshots.readField(args.get(0),name);
+    }
+    private Object snapshotContainer(List<Object> args){
+        objectInvocation(args);arity(args,1,2);
+        int maxEntries=16;
+        if(args.size()==2&&args.get(1)!=ScriptValues.UNDEFINED){
+            Object raw=args.get(1);
+            require(raw instanceof Double&&(Double)raw==Math.rint((Double)raw)&&(Double)raw>=1&&(Double)raw<=64,"HOOK_SNAPSHOT_LIMIT:maxEntries");
+            maxEntries=((Double)raw).intValue();
+        }
+        return ScriptValues.freeze(JavaObjectSnapshots.snapshotContainer(args.get(0),maxEntries));
+    }
+    private Object stateGet(List<Object> args){
+        require(!collecting,"HOOK_STATE_OUTSIDE_INVOCATION");arity(args,1,1);
+        String key=ScriptValues.key(string(args.get(0)));require(key.length()<=128,"HOOK_STATE_KEY");
+        return HookInvocationSession.stateGet(key);
+    }
+    private Object stateSet(List<Object> args){
+        require(!collecting,"HOOK_STATE_OUTSIDE_INVOCATION");arity(args,2,2);
+        String key=ScriptValues.key(string(args.get(0)));require(key.length()<=128,"HOOK_STATE_KEY");
+        Object raw=args.get(1)==ScriptValues.UNDEFINED?null:args.get(1);
+        Object frozen=ScriptValues.freeze(raw);
+        return HookInvocationSession.stateSet(key,frozen);
+    }
+    private Object stateDelete(List<Object> args){
+        require(!collecting,"HOOK_STATE_OUTSIDE_INVOCATION");arity(args,1,1);
+        String key=ScriptValues.key(string(args.get(0)));require(key.length()<=128,"HOOK_STATE_KEY");
+        return HookInvocationSession.stateDelete(key);
+    }
+    private Object stateClear(List<Object> args){
+        require(!collecting,"HOOK_STATE_OUTSIDE_INVOCATION");arity(args,0,0);
+        HookInvocationSession.stateClear();
+        return ScriptValues.UNDEFINED;
+    }
+    private Object stateKeys(List<Object> args){
+        require(!collecting,"HOOK_STATE_OUTSIDE_INVOCATION");arity(args,0,0);
+        return ScriptValues.freeze(HookInvocationSession.stateKeys());
     }
     private Object captureNativeBuffer(List<Object> args){
         require(!collecting,"NATIVE_BUFFER_OUTSIDE_INVOCATION");arity(args,3,3);

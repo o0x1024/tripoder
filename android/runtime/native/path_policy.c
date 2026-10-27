@@ -3,13 +3,9 @@
 #include "path_policy.h"
 #include <errno.h>
 #include <fcntl.h>
-#include <linux/memfd.h>
-#include <link.h>
-#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/prctl.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 #define syscall tp_kernel_syscall
@@ -17,50 +13,16 @@
 /* Independent, process-immutable namespace policy. Direct internal syscalls avoid
  * recursively entering the intercepted libc wrappers. No privileged operations. */
 static char data_paths[4][PATH_MAX], artifact_paths[4][PATH_MAX];
-static char artifact_libraries[2][PATH_MAX],logical_libraries[PATH_MAX];
 static size_t data_path_lens[4], artifact_path_lens[4];
-static char guest_process[256], guest_comm[16];
 static char host_storage_roots[3][PATH_MAX];
 static bool host_storage_configured;
 static int data_fd=-1, artifact_fd=-1;
 static pid_t configured_pid=-1;
 static bool configured;
-static bool thin_mode;
-void tp_configure_thin(bool thin){thin_mode=thin;}
 static bool owned_proc_pid(unsigned long pid){
     return pid==(unsigned long)syscall(SYS_getpid)||(configured_pid>0&&pid==(unsigned long)configured_pid);
 }
 
-/* A saved file-backed code page is a runtime preimage, not another ELF instance.
- * Keep its address/inode/offset accounting while preventing false module bases. */
-struct projected_image {uintptr_t first,last;uint64_t hash;unsigned length;char path[PATH_MAX];};
-static struct projected_image projected_images[4096];
-static _Atomic unsigned projected_count;
-static uint64_t image_hash(const char *text,size_t length){uint64_t hash=UINT64_C(1469598103934665603);for(size_t i=0;i<length;i++)hash=(hash^(unsigned char)text[i])*UINT64_C(1099511628211);return hash;}
-static int register_image(const char *path,uintptr_t base,const Elf64_Phdr *headers,unsigned count){
-    if(!path||path[0]!='/'||!base||!headers||count>1024)return 0;
-    size_t length=0;const volatile char *input=path;while(length<PATH_MAX&&input[length])length++;if(!length||length>=PATH_MAX)return 0;
-    uintptr_t first=UINTPTR_MAX,last=0;
-    for(unsigned i=0;i<count;i++)if(headers[i].p_type==PT_LOAD){uintptr_t low=(base+headers[i].p_vaddr)&~(uintptr_t)4095,high=(base+headers[i].p_vaddr+headers[i].p_memsz+4095)&~(uintptr_t)4095;if(low<first)first=low;if(high>last)last=high;}
-    if(first>=last)return 0;unsigned used=atomic_load_explicit(&projected_count,memory_order_acquire);
-    for(unsigned i=0;i<used;i++)if(projected_images[i].first==first&&projected_images[i].last==last)return 1;
-    if(used>=4096)return 0;struct projected_image *image=&projected_images[used];image->first=first;image->last=last;image->length=(unsigned)length;
-    uint64_t hash=UINT64_C(1469598103934665603);for(size_t i=0;i<length;i++){char c=input[i];image->path[i]=c;hash=(hash^(unsigned char)c)*UINT64_C(1099511628211);}image->path[length]=0;image->hash=hash;
-    atomic_store_explicit(&projected_count,used+1,memory_order_release);return 1;
-}
-int tp_project_module(const char *path,uintptr_t base){
-    const Elf64_Ehdr *header=(const void *)base;
-    if(!base||header->e_ident[0]!=0x7f||header->e_ident[1]!='E'||header->e_ident[2]!='L'||header->e_ident[3]!='F'||header->e_phentsize!=sizeof(Elf64_Phdr)||header->e_phoff>65536)return 0;
-    return register_image(path,base,(const void *)(base+header->e_phoff),header->e_phnum);
-}
-static int initial_image(struct dl_phdr_info *info,size_t size,void *unused){
-    (void)size;(void)unused;const char *name=info->dlpi_name;char canonical[PATH_MAX],descriptor[64];
-    if(name&&name[0]=='/'){
-        int fd=(int)syscall(SYS_openat,AT_FDCWD,name,O_PATH|O_CLOEXEC,0);
-        if(fd>=0){snprintf(descriptor,sizeof(descriptor),"/proc/self/fd/%d",fd);ssize_t count=syscall(SYS_readlinkat,AT_FDCWD,descriptor,canonical,sizeof(canonical)-1);syscall(SYS_close,fd);if(count>0){canonical[count]=0;name=canonical;}}
-    }
-    register_image(name,info->dlpi_addr,info->dlpi_phdr,info->dlpi_phnum);return 0;
-}
 static bool prefix_len(const char *path,const char *root,size_t n) {
     return strncmp(path,root,n)==0&&(path[n]=='/'||path[n]=='\0');
 }
@@ -69,13 +31,6 @@ static bool prefix(const char *path,const char *root) {
 }
 static int fail(int value){errno=value;return -1;}
 static int copy(char *out,const char *in){if(in==NULL)return fail(EFAULT);size_t n=strnlen(in,PATH_MAX);if(n>=PATH_MAX)return fail(ENAMETOOLONG);memcpy(out,in,n+1);return 0;}
-static void set_comm(const char *name){
-    // The kernel truncates a thread's comm to 15 chars; for a process name longer than that ART
-    // seeds comm from the tail (e.g. "com.netease.cloudmusic" -> "ease.cloudmusic"), and that is
-    // what a real device exposes through comm, /proc/self/stat and status Name. Present the same.
-    size_t n=strlen(name);const char *tail=n>15?name+(n-15):name;
-    size_t copy_len=n>15?15:n;memcpy(guest_comm,tail,copy_len);guest_comm[copy_len]='\0';
-}
 static int fd_path(int fd,char *out){
     if(fd==AT_FDCWD){long n=syscall(SYS_getcwd,out,PATH_MAX);return n<0?-1:0;}
     char name[64];int length=snprintf(name,sizeof(name),"/proc/self/fd/%d",fd);if(length<=0||(size_t)length>=sizeof(name))return fail(EBADF);
@@ -96,21 +51,10 @@ int tp_configure(const char *data,const char *data_canonical,const char *artifac
     snprintf(artifact_paths[3],PATH_MAX,"/data/app/~~tripoder/%s",package);
     data_path_lens[2]=strlen(data_paths[2]);data_path_lens[3]=strlen(data_paths[3]);
     artifact_path_lens[2]=strlen(artifact_paths[2]);artifact_path_lens[3]=strlen(artifact_paths[3]);
-    for(int i=0;i<2;i++)if(snprintf(artifact_libraries[i],PATH_MAX,"%s/lib/",artifact_paths[i])>=PATH_MAX)return fail(ENAMETOOLONG);
-    if(snprintf(logical_libraries,PATH_MAX,"%s/lib/arm64/",artifact_paths[2])>=PATH_MAX)return fail(ENAMETOOLONG);
-    snprintf(guest_process,sizeof(guest_process),"%s",package);set_comm(package);
     data_fd=(int)syscall(SYS_openat,AT_FDCWD,data,O_PATH|O_DIRECTORY|O_CLOEXEC|O_NOFOLLOW,0);if(data_fd<0)return -1;
     artifact_fd=(int)syscall(SYS_openat,AT_FDCWD,artifacts,O_PATH|O_DIRECTORY|O_CLOEXEC|O_NOFOLLOW,0);if(artifact_fd<0)return -1;
     // Relative guest paths start in the immutable data incarnation, not the host cwd.
-    if(syscall(SYS_fchdir,data_fd)<0)return -1;dl_iterate_phdr(initial_image,NULL);configured_pid=(pid_t)syscall(SYS_getpid);configured=true;return 0;
-}
-
-int tp_configure_process(const char *process_name){
-    if(!configured)return fail(ENOSYS);
-    if(!process_name||!*process_name||strlen(process_name)>=sizeof(guest_process))return fail(EINVAL);
-    snprintf(guest_process,sizeof(guest_process),"%s",process_name);set_comm(process_name);
-    syscall(SYS_prctl,PR_SET_NAME,(unsigned long)guest_comm,0,0,0);
-    return 0;
+    if(syscall(SYS_fchdir,data_fd)<0)return -1;configured_pid=(pid_t)syscall(SYS_getpid);configured=true;return 0;
 }
 
 /* Walk every parent before processing '..': a missing or symlinked component
@@ -351,165 +295,6 @@ int tp_resolve(int dirfd,const char *path,enum tp_access access,struct tp_path *
         out->parent=AT_FDCWD;return copy(out->leaf,combined);
     }
     out->parent=dirfd;return copy(out->leaf,path);
-}
-
-enum tp_proc_kind { TP_PROC_NONE, TP_PROC_CMDLINE, TP_PROC_COMM, TP_PROC_STATUS, TP_PROC_MAPS, TP_PROC_MOUNTS, TP_PROC_STAT };
-static enum tp_proc_kind classify_proc(const char *path){
-    if(!strcmp(path,"/proc/mounts"))return TP_PROC_MOUNTS;
-    if(strncmp(path,"/proc/",6)!=0)return TP_PROC_NONE;
-    const char *rest=path+6;
-    if(!strncmp(rest,"self/",5))rest+=5;
-    else if(!strncmp(rest,"thread-self/",12))rest+=12;
-    else{
-        char *end=NULL;unsigned long pid=strtoul(rest,&end,10);
-        if(end==rest||*end!='/'||!owned_proc_pid(pid))return TP_PROC_NONE;
-        rest=end+1;
-    }
-    if(!strncmp(rest,"task/",5)){
-        rest+=5;while(*rest>='0'&&*rest<='9')rest++;
-        if(*rest!='/')return TP_PROC_NONE;
-        rest++;
-    }
-    if(!strcmp(rest,"cmdline"))return TP_PROC_CMDLINE;
-    if(!strcmp(rest,"comm"))return TP_PROC_COMM;
-    if(!strcmp(rest,"status"))return TP_PROC_STATUS;
-    if(!strcmp(rest,"stat"))return TP_PROC_STAT;
-    if(!strcmp(rest,"maps")||!strcmp(rest,"smaps"))return TP_PROC_MAPS;
-    if(!strcmp(rest,"mountinfo")||!strcmp(rest,"mounts"))return TP_PROC_MOUNTS;
-    return TP_PROC_NONE;
-}
-static bool write_all(int fd,const char *buf,size_t len){
-    size_t off=0;
-    while(off<len){
-        ssize_t n=(ssize_t)syscall(SYS_write,fd,buf+off,len-off);
-        if(n<=0)return false;
-        off+=(size_t)n;
-    }
-    return true;
-}
-struct proc_buf { int fd; char data[16384]; size_t used; };
-static bool buf_flush(struct proc_buf *b){
-    if(b->used==0)return true;
-    bool ok=write_all(b->fd,b->data,b->used);
-    b->used=0;return ok;
-}
-static bool buf_write(struct proc_buf *b,const char *src,size_t len){
-    if(len>sizeof(b->data))return buf_flush(b)&&write_all(b->fd,src,len);
-    if(b->used+len>sizeof(b->data)&&!buf_flush(b))return false;
-    memcpy(b->data+b->used,src,len);b->used+=len;return true;
-}
-static bool write_replaced(struct proc_buf *out,const char *line,size_t len,const char *match,const char *replacement){
-    const char *pos=strstr(line,match);if(!pos)return buf_write(out,line,len);
-    size_t prefix_len=(size_t)(pos-line),match_len=strlen(match),rep_len=strlen(replacement);
-    return buf_write(out,line,prefix_len)&&buf_write(out,replacement,rep_len)&&buf_write(out,pos+match_len,len-prefix_len-match_len);
-}
-static bool write_artifact_path(struct proc_buf *out,const char *line,size_t len,int index){
-    if(strstr(line,artifact_libraries[index]))return write_replaced(out,line,len,artifact_libraries[index],logical_libraries);
-    return write_replaced(out,line,len,artifact_paths[index],artifact_paths[2]);
-}
-static bool is_vma_header(const char *line,size_t len){
-    size_t i=0;
-    while(i<len&&((line[i]>='0'&&line[i]<='9')||(line[i]>='a'&&line[i]<='f')))i++;
-    if(i==0||i>=len||line[i]!='-')return false;
-    size_t j=++i;
-    while(i<len&&((line[i]>='0'&&line[i]<='9')||(line[i]>='a'&&line[i]<='f')))i++;
-    return i>j&&i<len&&line[i]==' ';
-}
-static const char *snapshot_alias(const char *line,size_t length){
-    const char *name=line;for(unsigned field=0;field<5;field++){while(*name&&*name!=' ')name++;while(*name==' ')name++;}
-    if(*name!='/')return NULL;size_t bytes=length-(size_t)(name-line);if(bytes&&name[bytes-1]=='\n')bytes--;
-    uint64_t hash=image_hash(name,bytes);unsigned count=atomic_load_explicit(&projected_count,memory_order_acquire);bool known=false;
-    uintptr_t first=0,last=0;const char *at=line;for(;*at&&*at!='-';at++){unsigned digit=(unsigned)(*at>='a'?*at-'a'+10:*at-'0');first=(first<<4)|digit;}if(*at++!='-')return NULL;
-    for(;*at&&*at!=' ';at++){unsigned digit=(unsigned)(*at>='a'?*at-'a'+10:*at-'0');last=(last<<4)|digit;}
-    for(unsigned i=0;i<count;i++){const struct projected_image *image=&projected_images[i];if(image->hash!=hash||image->length!=bytes||memcmp(image->path,name,bytes))continue;known=true;if(first>=image->first&&last<=image->last)return NULL;}
-    return known?name:NULL;
-}
-static bool transform_proc_line(enum tp_proc_kind kind,const char *line,size_t len,bool *skip_vma,struct proc_buf *out){
-    if(kind==TP_PROC_STAT){
-        const char *lparen=strchr(line,'(');const char *rparen=lparen?strrchr(lparen,')'):NULL;
-        if(lparen&&rparen&&rparen>lparen){
-            size_t prefix_len=(size_t)(lparen-line+1);
-            return buf_write(out,line,prefix_len)&&buf_write(out,guest_comm,strlen(guest_comm))&&buf_write(out,rparen,len-(size_t)(rparen-line));
-        }
-        return buf_write(out,line,len);
-    }
-    if(kind==TP_PROC_STATUS){
-        if(len>=6&&!memcmp(line,"Name:\t",6)){
-            char buf[32];int n=snprintf(buf,sizeof(buf),"Name:\t%s\n",guest_comm);
-            return n>0&&buf_write(out,buf,(size_t)n);
-        }
-        return buf_write(out,line,len);
-    }
-    if(kind==TP_PROC_MAPS){
-        if(is_vma_header(line,len)){
-            const char *alias=snapshot_alias(line,len);if(alias){*skip_vma=false;return buf_write(out,line,(size_t)(alias-line))&&buf_write(out,"[anon:runtime-code-snapshot]\n",sizeof("[anon:runtime-code-snapshot]\n")-1);}
-            for(int i=0;i<2;i++)if(strstr(line,artifact_paths[i])){*skip_vma=false;return write_artifact_path(out,line,len,i);}
-            for(int i=0;i<2;i++)if(strstr(line,data_paths[i])){*skip_vma=false;return write_replaced(out,line,len,data_paths[i],data_paths[3]);}
-            const char *dex=strstr(line,"/memfd:tripoder-dex");
-            if(dex){*skip_vma=false;return buf_write(out,line,(size_t)(dex-line))&&buf_write(out,"[anon:dalvik-classes.dex]\n",26);}
-            // The runtime's own executable memfds (near-address trampolines, linker/ART notifiers) are
-            // named with an identifying token that the dynamic linker echoes into maps. A real device's
-            // in-memory executable code shows up as an anonymous JIT memfd, so present them that way.
-            const char *mf=strstr(line,"/memfd:tripoder");
-            if(mf){const char *name=mf+7;const char *end=name;while(end<line+len&&*end!=' '&&*end!='\n')end++;*skip_vma=false;
-                return buf_write(out,line,(size_t)(name-line))&&buf_write(out,"jit-cache",9)&&buf_write(out,end,len-(size_t)(end-line));}
-            if(strstr(line,"libtripoderselfhook.so")||strstr(line,"libtripoderio.so")||strstr(line,"frida")||strstr(line,"gadget")||strstr(line,"dev.tripoder.engine")||strstr(line,"dev.tripoder.runtimeprobe")){*skip_vma=true;return true;}
-            *skip_vma=false;return buf_write(out,line,len);
-        }
-        return *skip_vma?true:buf_write(out,line,len);
-    }
-    if(kind==TP_PROC_MOUNTS){
-        for(int i=0;i<2;i++)if(strstr(line,artifact_paths[i]))return write_artifact_path(out,line,len,i);
-        for(int i=0;i<2;i++)if(strstr(line,data_paths[i]))return write_replaced(out,line,len,data_paths[i],data_paths[3]);
-        if(strstr(line,"dev.tripoder.engine")||strstr(line,"dev.tripoder.runtimeprobe"))return true;
-        return buf_write(out,line,len);
-    }
-    return buf_write(out,line,len);
-}
-int tp_open_proc(const char *path,int flags){
-    if(!configured)return fail(ENOSYS);
-    enum tp_proc_kind kind=classify_proc(path);
-    // The kernel already serves these files efficiently. Thin needs no full
-    // mounts read, filtering, memfd allocation and rewritten copy.
-    if(thin_mode&&kind==TP_PROC_MOUNTS)return fail(ENOSYS);
-    if(kind==TP_PROC_NONE)return fail(ENOSYS);
-    int mfd=(int)syscall(SYS_memfd_create,"procfs",MFD_CLOEXEC);
-    if(mfd<0)return -1;
-    bool ok=false;int saved=EIO;
-    if(kind==TP_PROC_CMDLINE){
-        ok=write_all(mfd,guest_process,strlen(guest_process)+1);
-    }else if(kind==TP_PROC_COMM){
-        char buf[24];int n=snprintf(buf,sizeof(buf),"%s\n",guest_comm);
-        ok=n>0&&write_all(mfd,buf,(size_t)n);
-    }else{
-        int raw=(int)syscall(SYS_openat,AT_FDCWD,path,O_RDONLY|O_CLOEXEC,0);
-        if(raw<0){saved=errno;syscall(SYS_close,mfd);return fail(saved);}
-        struct proc_buf out={.fd=mfd,.used=0};
-        char chunk[8192],line[4096];size_t line_len=0;bool skip_vma=false;ok=true;
-        for(;;){
-            ssize_t n=(ssize_t)syscall(SYS_read,raw,chunk,sizeof(chunk));
-            if(n==0)break;
-            if(n<0){ok=false;saved=errno;break;}
-            for(ssize_t i=0;i<n;i++){
-                if(line_len<sizeof(line)-1)line[line_len++]=chunk[i];
-                if(chunk[i]=='\n'){
-                    line[line_len]='\0';
-                    if(!transform_proc_line(kind,line,line_len,&skip_vma,&out)){ok=false;saved=errno;break;}
-                    line_len=0;
-                }
-            }
-            if(!ok)break;
-        }
-        if(ok&&line_len>0){
-            line[line_len]='\0';
-            if(!transform_proc_line(kind,line,line_len,&skip_vma,&out)){ok=false;saved=errno;}
-        }
-        if(ok&&!buf_flush(&out)){ok=false;saved=errno;}
-        syscall(SYS_close,raw);
-    }
-    if(!ok||syscall(SYS_lseek,mfd,0,SEEK_SET)<0){syscall(SYS_close,mfd);return fail(saved);}
-    if(!(flags&O_CLOEXEC))syscall(SYS_fcntl,mfd,F_SETFD,0);
-    return mfd;
 }
 
 ssize_t tp_unresolve(const char *physical,size_t physical_len,char *out,size_t size){

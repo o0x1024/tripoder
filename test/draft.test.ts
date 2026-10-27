@@ -136,3 +136,10 @@ test("Hex/Base64/JSON builtins round-trip and reject malformed input", () => {
   sim7.activate(prepareDraft(script('return JSON.parse("{not json");'), evidence));
   assert.throws(() => sim7.invoke("greet", ["x"], () => "original"), /Invalid JSON/);
 });
+test("ctx.state persists bounded session dictionary values across invocations and ctx.java.snapshotContainer inspects container fixtures", () => {
+  assert.throws(() => prepareDraft(script('return "ok";').replace('setup(ctx) {', 'setup(ctx) { ctx.state.set("k", "v");'), evidence), /state.set can only be called inside a hook callback/);
+  const plan = prepareDraft(script('const prev = ctx.state.get("count") ?? 0; const next = Number(prev) + 1; ctx.state.set("count", next); ctx.state.set("last", String(args[0])); return `${next}:${ctx.state.keys().length}`;'), evidence);
+  const sim = new HookSimulator(evidence); sim.activate(plan);
+  assert.equal(sim.invoke("greet", ["first"], () => "orig").value, "1:2");
+  assert.equal(sim.invoke("greet", ["second"], () => "orig").value, "2:2");
+});

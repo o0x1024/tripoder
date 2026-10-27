@@ -32,7 +32,7 @@ public final class CodeProbeIntegration extends ControlTestBase {
         awaitSignal("stop-for-artifact");stop();signal("stopped",new JSONObject());
         awaitSignal("restarted");waitText("startup=original memory=dynamic-v1 file=dynamic-v1 error=");check("disabled-probe-plan-restores-ordinary-startup",true,"new generation, original method");signal("restored",new JSONObject());
         awaitSignal("finished");stop();execute(controller,"deleteSpace","operation",id(),"space",space);
-        report.put("scope","generic-code-probes-owned-application").put("pairingPerformed",false).put("phoneApprovalPerformed",false).put("runtimeMode","thin");
+        report.put("scope","generic-code-probes-owned-application").put("pairingPerformed",false).put("phoneApprovalPerformed",false);
     }
     private void cleanupOwnedFixtures()throws Exception{
         JSONObject catalog=json(execute(controller,"catalog"));JSONArray spaceRows=new JSONArray(catalog.getString("spaces"));Set<String> spaces=new HashSet<>();for(int i=0;i<spaceRows.length();i++)spaces.add(spaceRows.getString(i));

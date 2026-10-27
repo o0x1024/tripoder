@@ -34,7 +34,7 @@ final class ActivityLedger {
         return prepareWithCommit(slot,component,resultOperation,launchOperation,callerPackage,payloadDigest,source,flags,associate,false);
     }
     private String prepareWithCommit(RuntimeBroker.Slot slot,String component,String resultOperation,String launchOperation,String callerPackage,String payloadDigest,Ticket source,int flags,java.util.function.Consumer<String> associate,boolean fromContext){
-        String ticket=UUID.randomUUID().toString();var identity=slot.allocation.session.identity;boolean thin=slot.mode.routesThroughPlatform()&&launchOperation!=null&&!ControllerTrust.OPERATIONS.equals(contract.query(launchOperation).callerIdentity);
+        String ticket=UUID.randomUUID().toString();var identity=slot.allocation.session.identity;boolean thin=launchOperation!=null&&!ControllerTrust.OPERATIONS.equals(contract.query(launchOperation).callerIdentity);
         components.releaseUnused();
         var db=store.getWritableDatabase();db.beginTransaction();try{
             String stub=components.acquire(slot,component);
@@ -95,9 +95,9 @@ final class ActivityLedger {
     Ticket get(String id){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT * FROM activity_tickets WHERE ticket=?",new String[]{id})){if(!c.moveToFirst())throw new SecurityException("ACTIVITY_TICKET_MISSING");return new Ticket(c);}}
     void caller(String delivery,android.os.Bundle out){var launch=launches.get(delivery);launch.caller(out);if("ACTIVITY".equals(launch.callerKind))out.putString("callerPhysical",get(launch.sourceTicket).stub);}
     Ticket source(String id,String instance,RuntimeBroker.Slot slot,int taskId){
-        boolean thin=slot.mode.routesThroughPlatform();
-        Ticket ticket=thin?get(id):instance(id,slot.allocation.session.processGeneration,instance);requireOwner(ticket,slot);
-        if(thin){
+
+        Ticket ticket=get(id);requireOwner(ticket,slot);
+        {
             if(!ticket.generation.equals(slot.allocation.session.processGeneration))throw new SecurityException("ACTIVITY_INSTANCE_STALE");
             if(taskId>=0&&(ticket.taskId!=taskId||!"LIVE".equals(ticket.state)||ticket.instance==null)){
                 ContentValues row=new ContentValues();row.put("taskId",taskId);row.put("resourceProof","OWNED_TASK_ATTACHED");
@@ -120,14 +120,14 @@ final class ActivityLedger {
         if(!ticket.component.equals(component)||!ticket.generation.equals(slot.allocation.session.processGeneration)||!ticket.stub.equals(stub))throw new SecurityException("ACTIVITY_TICKET_SESSION_MISMATCH");
         if(!ticket.state.equals("PREPARED")&&!ticket.state.equals("RECREATING"))throw new SecurityException("ACTIVITY_TICKET_NOT_CLAIMABLE:"+ticket.state);
         if(!launches.forTicket(id).equals(delivery))throw new SecurityException("ACTIVITY_DELIVERY_TICKET_MISMATCH");
-        boolean thin=slot.mode.routesThroughPlatform();
+
         var db=store.getWritableDatabase();db.beginTransaction();try{
             if(ticket.state.equals("PREPARED")){
                 launches.enter(delivery,ticket,ticket,instance,"CREATE",payloadDigest);
-                if(thin)launches.received(delivery,id,instance);
+                launches.received(delivery,id,instance);
             }
-            ContentValues row=new ContentValues();row.put("state",thin?"LIVE":"CLAIMED");row.put("instance",instance);row.put("destroyedConfirmed",0);
-            if(thin)row.put("resourceProof","OWNED_TASK_ATTACHED");
+            ContentValues row=new ContentValues();row.put("state","LIVE");row.put("instance",instance);row.put("destroyedConfirmed",0);
+            row.put("resourceProof","OWNED_TASK_ATTACHED");
             update(id,row);db.setTransactionSuccessful();
         }finally{db.endTransaction();}
     }
@@ -173,7 +173,7 @@ final class ActivityLedger {
         if(!ticket.generation.equals(slot.allocation.session.processGeneration)){
             if(store.hookRecoveryBlocked(ticket.generation))return null;
             restore(id,ticket.stub);
-        }else if(!ticket.state.equals("PREPARED")&&!ticket.state.equals("RECREATING")&&!(slot.mode.routesThroughPlatform()&&ticket.state.equals("LIVE")))
+        }else if(!ticket.state.equals("PREPARED")&&!ticket.state.equals("RECREATING")&&!(ticket.state.equals("LIVE")))
             throw new SecurityException("ACTIVITY_TICKET_NOT_CLAIMABLE:"+ticket.state);
         else if(ticket.state.equals("LIVE")&&(!launch.state.equals("RECEIVED")||!"CREATE".equals(launch.kind)||!id.equals(launch.receiver)||!java.util.Objects.equals(ticket.instance,launch.instance)))
             throw new SecurityException("ACTIVITY_CONSTRUCTION_THIN_RECEIPT_MISMATCH");

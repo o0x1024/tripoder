@@ -1,0 +1,55 @@
+{
+  "stop": {
+    "protocol": 2,
+    "requestId": "5cd5bd9d-ab31-4488-a242-3937ad23d008",
+    "ok": true,
+    "result": {
+      "stoppedProcesses": 0,
+      "retiredUnattachedTickets": 0,
+      "project": "4748a608-6ea4-4d16-bac4-ba8c90b43bd9",
+      "installGeneration": "d6d45af0-b8d6-4f69-8d76-8505d6c008da",
+      "operationId": "5cd5bd9d-ab31-4488-a242-3937ad23d008"
+    }
+  },
+  "recovery": {
+    "protocol": 2,
+    "requestId": "9febe630-1c1d-430e-bfca-0e98b7fefeb7",
+    "ok": true,
+    "result": {
+      "entryInert": true,
+      "canAcknowledge": false,
+      "entryIssued": false,
+      "detail": "LAUNCH_PREPARATION_UNCONFIRMED",
+      "resourcesRetired": false,
+      "state": "UNKNOWN",
+      "targetVerification": "SCOPE_ONLY_ORIGINAL_INSTALLATION_IDENTITY_REQUIRED",
+      "targetVerified": false,
+      "operation": "3c9ff2cc-b38e-422d-aa86-1787926cfac3",
+      "recoveryState": "NO_ENTRY_TO_FENCE_OUTCOME_UNKNOWN"
+    },
+    "errorCode": "OPERATION_OUTCOME_UNKNOWN",
+    "pendingOperationId": "3c9ff2cc-b38e-422d-aa86-1787926cfac3",
+    "recovery": {
+      "action": "Preserve the original UNKNOWN result and evidence. Query the original operation and exact launch recovery. targets=[] is not proof of failure. If entryIssued=false, do not call launch_manage(close). A deliberate application_stop with its own new operationId may establish stop/dead-session evidence; inspect launch_recovery again before planning a new launch. Changing the launch ID alone never authorizes retry.",
+      "steps": [
+        {
+          "tool": "operation_get",
+          "arguments": {
+            "operationId": "3c9ff2cc-b38e-422d-aa86-1787926cfac3"
+          }
+        },
+        {
+          "tool": "application_query",
+          "arguments": {
+            "action": "targets"
+          }
+        }
+      ],
+      "replayAllowed": false,
+      "newIdRetryAllowed": false,
+      "preserveOriginalEvidence": true,
+      "pollingDoesNotResolve": true,
+      "requiresOriginalTarget": true
+    }
+  }
+}

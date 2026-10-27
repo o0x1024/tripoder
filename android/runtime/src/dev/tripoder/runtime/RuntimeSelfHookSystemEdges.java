@@ -46,7 +46,7 @@ final class RuntimeSelfHookSystemEdges {
     }
     static void autofill(RuntimeManagedInstaller installer)throws Exception{
         Map<Executable,RuntimeManagedInstaller.Callback> callbacks=new LinkedHashMap<>();
-        for(Executable target:FixedRuntimeHooks.methods(FixedRuntimeHooks.Group.UI))if(RuntimeThinPolicy.autofillComponent(target))callbacks.put(target,autofillCallback());
+        for(Executable target:FixedRuntimeHooks.methods(FixedRuntimeHooks.Group.UI))if(RuntimePlatformPolicy.autofillComponent(target))callbacks.put(target,autofillCallback());
         installer.install(callbacks);
         RuntimeBiometrics.install(installer);
     }

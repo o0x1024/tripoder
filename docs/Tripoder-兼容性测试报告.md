@@ -1,5 +1,7 @@
 # 前手机全部应用迁移至 Tripoder 的兼容性测试报告
 
+> 历史测试记录。本报告引用的 THIN/THICK 运行模式与 `application_manage action=set_mode` 已在单运行时收敛（见 [单运行时收敛](single-runtime.md)）中移除；数字与结论仅描述当时构建，不代表当前行为。
+
 - 报告日期：2026-10-23
 - 数据批次：`compat-run1`（一应用一空间；重点失败项在 `qa2-*` 新空间复测）
 - 测试设备：前手机 Xiaomi M154FF（`d861a4fa`），Android 17 / API 37，arm64-v8a

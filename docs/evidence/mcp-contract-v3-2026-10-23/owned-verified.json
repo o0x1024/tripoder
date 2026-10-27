@@ -1,0 +1,452 @@
+{
+  "mode": "owned",
+  "passed": true,
+  "checks": [
+    {
+      "name": "contract-v3",
+      "passed": true
+    },
+    {
+      "name": "no-old-manifest-tool",
+      "passed": true
+    },
+    {
+      "name": "owned-original-apk-import",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "exact-installation-found",
+      "passed": true
+    },
+    {
+      "name": "manifest-install-generation",
+      "passed": true
+    },
+    {
+      "name": "manifest-has-application",
+      "passed": true
+    },
+    {
+      "name": "manifest-does-not-start-process",
+      "passed": true
+    },
+    {
+      "name": "stale-install-rejected",
+      "passed": true
+    },
+    {
+      "name": "precise-process-identity-error",
+      "passed": true
+    },
+    {
+      "name": "storage-installation-view",
+      "passed": true
+    },
+    {
+      "name": "object-signatures-activated",
+      "passed": true
+    },
+    {
+      "name": "original-once-object-identity-and-no-overrides",
+      "passed": true,
+      "details": {
+        "summary": "calls=3;identity=true;overrides=0"
+      }
+    },
+    {
+      "name": "json-invocation-rejects-object-return-before-call",
+      "passed": true
+    },
+    {
+      "name": "rejected-object-return-has-no-guest-side-effect",
+      "passed": true
+    },
+    {
+      "name": "read-failure-is-unavailable",
+      "passed": true
+    },
+    {
+      "name": "read-failure-does-not-lock-hook-control",
+      "passed": true
+    },
+    {
+      "name": "explicit-snapshots-persisted",
+      "passed": true
+    },
+    {
+      "name": "snapshot-source-and-install-binding",
+      "passed": true
+    },
+    {
+      "name": "snapshot-sha256",
+      "passed": true
+    },
+    {
+      "name": "real-Throwable-message",
+      "passed": true
+    },
+    {
+      "name": "real-Throwable-cause-and-suppressed",
+      "passed": true
+    },
+    {
+      "name": "snapshot-source-and-install-binding",
+      "passed": true
+    },
+    {
+      "name": "snapshot-sha256",
+      "passed": true
+    },
+    {
+      "name": "snapshot-source-and-install-binding",
+      "passed": true
+    },
+    {
+      "name": "snapshot-sha256",
+      "passed": true
+    },
+    {
+      "name": "owned-worker-exited",
+      "passed": true
+    },
+    {
+      "name": "snapshots-survive-worker-death",
+      "passed": true
+    },
+    {
+      "name": "snapshot-sha256",
+      "passed": true
+    }
+  ],
+  "calls": [
+    {
+      "tool": "runtime_query",
+      "action": "spaces",
+      "ok": true
+    },
+    {
+      "tool": "space_manage",
+      "action": "create",
+      "operationId": "773dba13-ad3a-4897-8c63-a4a69c6fd086",
+      "ok": true
+    },
+    {
+      "tool": "runtime_query",
+      "action": "applications",
+      "ok": true
+    },
+    {
+      "tool": "runtime_query",
+      "action": "applications",
+      "ok": true
+    },
+    {
+      "tool": "application_query",
+      "action": "targets",
+      "ok": true
+    },
+    {
+      "tool": "application_query",
+      "action": "manifest",
+      "ok": true
+    },
+    {
+      "tool": "application_query",
+      "action": "targets",
+      "ok": true
+    },
+    {
+      "tool": "application_query",
+      "action": "manifest",
+      "ok": false,
+      "state": "REJECTED",
+      "error": "IllegalStateException:INSTALL_GENERATION_CONFLICT"
+    },
+    {
+      "tool": "process_inspect",
+      "action": "hook_status",
+      "ok": false,
+      "state": "REJECTED",
+      "errorCode": "INVALID_TOOL_ARGUMENTS",
+      "issues": [
+        {
+          "path": "/target/processGeneration",
+          "code": "REQUIRED_PROPERTY_MISSING",
+          "source": "application_query(action=targets)"
+        }
+      ],
+      "error": "INVALID_TOOL_ARGUMENTS:[{\"path\":\"\\/target\\/processGeneration\",\"code\":\"REQUIRED_PROPERTY_MISSING\",\"source\":\"application_query(action=targets)\"}]"
+    },
+    {
+      "tool": "application_query",
+      "action": "storage",
+      "ok": true
+    },
+    {
+      "tool": "probes_query",
+      "action": "configuration",
+      "ok": true
+    },
+    {
+      "tool": "probes_control",
+      "action": "configure",
+      "operationId": "550c39f6-75b4-48b6-b14f-43e0a602b5fa",
+      "ok": true
+    },
+    {
+      "tool": "process_start",
+      "operationId": "51938a59-dd8a-4dd6-81d3-d11fa4ed1313",
+      "ok": true
+    },
+    {
+      "tool": "process_inspect",
+      "action": "hook_status",
+      "ok": true
+    },
+    {
+      "tool": "guest_invoke",
+      "operationId": "716bce05-da73-4db1-b26c-f8155a0e5a1d",
+      "ok": true
+    },
+    {
+      "tool": "guest_invoke",
+      "operationId": "a2439f96-e7c3-4a60-94e5-40eec5c8a65a",
+      "ok": false,
+      "state": "FAILED",
+      "error": "RejectedCommandException:dev.tripoder.runtime.script.HookPreflightRejected: INVOKE_JAVA_ABI_UNSUPPORTED:java.lang.Throwable"
+    },
+    {
+      "tool": "guest_invoke",
+      "operationId": "15f33344-4bed-4ad3-a0f9-d4ec6b9f2039",
+      "ok": true
+    },
+    {
+      "tool": "code_query",
+      "action": "resolved_class",
+      "ok": false,
+      "state": "UNAVAILABLE",
+      "error": "QueryUnavailableException:java.lang.IllegalStateException: java.lang.ClassNotFoundException: owned.DoesNotExist"
+    },
+    {
+      "tool": "process_inspect",
+      "action": "modules",
+      "ok": true
+    },
+    {
+      "tool": "artifact_query",
+      "action": "list",
+      "ok": true
+    },
+    {
+      "tool": "artifact_query",
+      "action": "read",
+      "ok": true
+    },
+    {
+      "tool": "artifact_query",
+      "action": "read",
+      "ok": true
+    },
+    {
+      "tool": "artifact_query",
+      "action": "read",
+      "ok": true
+    },
+    {
+      "tool": "probes_query",
+      "action": "configuration",
+      "ok": true
+    },
+    {
+      "tool": "probes_control",
+      "action": "configure",
+      "operationId": "c55de301-2272-47ea-b5d9-55fd35e688ba",
+      "ok": true
+    },
+    {
+      "tool": "guest_invoke",
+      "operationId": "9dce39d5-76c7-4e05-bac6-1f6437123849",
+      "ok": false,
+      "state": "UNKNOWN",
+      "error": "ExecutionException:android.os.DeadObjectException"
+    },
+    {
+      "tool": "operation_get",
+      "operationId": "9dce39d5-76c7-4e05-bac6-1f6437123849",
+      "ok": true
+    },
+    {
+      "tool": "application_query",
+      "action": "targets",
+      "ok": true
+    },
+    {
+      "tool": "artifact_query",
+      "action": "list",
+      "ok": true
+    },
+    {
+      "tool": "artifact_query",
+      "action": "read",
+      "ok": true
+    }
+  ],
+  "deviceExecuted": true,
+  "sentinelDesktopVerified": false,
+  "runnerSha256": "29fe23fd7fd854354e5e1f6d0c774324f743c938080b839e7eb7152990137428",
+  "startedAt": "2026-10-22T16:28:17.220Z",
+  "serverVersion": "0.4.0",
+  "importOperationId": "f6aafd83-5553-4bb1-8a24-4ccaf4e7f7ba",
+  "importReceipt": {
+    "protocol": 2,
+    "requestId": "f6aafd83-5553-4bb1-8a24-4ccaf4e7f7ba",
+    "ok": true,
+    "result": {
+      "operationId": "f6aafd83-5553-4bb1-8a24-4ccaf4e7f7ba",
+      "state": "SUCCEEDED",
+      "space": "contract-objects-v3-verified",
+      "package": "dev.tripoder.probefixture",
+      "generation": "03dd0e75-f6dd-48b5-a628-df6c8436ae82"
+    }
+  },
+  "target": {
+    "space": "contract-objects-v3-verified",
+    "package": "dev.tripoder.probefixture",
+    "installGeneration": "03dd0e75-f6dd-48b5-a628-df6c8436ae82"
+  },
+  "manifest": {
+    "declarations": 7,
+    "permissions": 0,
+    "components": 1
+  },
+  "sourceSha256": "753cc4daef051811825624cd70306a185002335f2437e4b6d6515c743c33ca4c",
+  "probeRevision": "6925d640-7706-4d02-a32e-23bbd67092e0",
+  "start": {
+    "ok": true,
+    "result": {
+      "target": {
+        "space": "contract-objects-v3-verified",
+        "package": "dev.tripoder.probefixture",
+        "installGeneration": "03dd0e75-f6dd-48b5-a628-df6c8436ae82"
+      },
+      "processGeneration": "b224ef07411b1588d43110bcbb13525130ca452d09da313518013200196b28d6",
+      "pid": 28330,
+      "probeRevision": "6925d640-7706-4d02-a32e-23bbd67092e0",
+      "entryDispatchRequested": true,
+      "operationId": "51938a59-dd8a-4dd6-81d3-d11fa4ed1313"
+    }
+  },
+  "processGeneration": "b224ef07411b1588d43110bcbb13525130ca452d09da313518013200196b28d6",
+  "hook": {
+    "state": "ACTIVE",
+    "revision": "17c1cbd455b433d00f62a4fd47266467fb31a6864d0e020a9f49bf9832d7c79a",
+    "sourceSha256": "753cc4daef051811825624cd70306a185002335f2437e4b6d6515c743c33ca4c",
+    "parameterVersion": 1,
+    "hits": 3,
+    "errors": 0,
+    "inFlight": 0,
+    "firstInvocation": {
+      "runtimePhase": "APPLICATION_ATTACHED",
+      "elapsedRealtimeNanos": "294576758637467",
+      "symbol": "caught",
+      "thread": "main",
+      "processGeneration": "b224ef07411b1588d43110bcbb13525130ca452d09da313518013200196b28d6",
+      "monotonicNanos": "276099828420976"
+    },
+    "identity": {
+      "space": "contract-objects-v3-verified",
+      "installGeneration": "03dd0e75-f6dd-48b5-a628-df6c8436ae82",
+      "descriptorSha256": "408e3e9ac5db18054cf794cf0e4fc7c3bac0ad0795a9ccb09d4d2fd3446cade0",
+      "processGeneration": "b224ef07411b1588d43110bcbb13525130ca452d09da313518013200196b28d6",
+      "pid": 28330,
+      "mode": "thin",
+      "target": {
+        "packageName": "dev.tripoder.probefixture",
+        "versionCode": "1",
+        "apkSha256": "ca6da8a9fcfa83acc7befa9a9086f819487952fc62c3e477927c180b41ec678c"
+      }
+    },
+    "executionPolicy": {
+      "bound": true,
+      "owned": false,
+      "observedLevel": 0,
+      "claims": 0,
+      "client": "tripoder-managed-process-interpreter",
+      "processLifetimeLease": false,
+      "policy": "method-entry-only",
+      "preserveCompilation": true,
+      "bootstrapComplete": true,
+      "publicationDeoptimizations": 0,
+      "callbackPublications": 0,
+      "bootstrapDeferred": false,
+      "runtimeStateRestored": true,
+      "allowUnhookedCompilation": true,
+      "jitEnabled": true,
+      "explicitInitialization": true,
+      "preexistingCompiledFramesCovered": false,
+      "fullCallerCoverage": false,
+      "fixedBindings": 1022
+    }
+  },
+  "futureProbeDisabledBeforeFault": true,
+  "intentionalExit": {
+    "state": "UNKNOWN",
+    "operationId": "9dce39d5-76c7-4e05-bac6-1f6437123849"
+  },
+  "exitReconciliation": {
+    "protocol": 2,
+    "requestId": "07d9fbfd-7398-43af-8864-6f1916b42f23",
+    "ok": true,
+    "result": {
+      "operationId": "9dce39d5-76c7-4e05-bac6-1f6437123849",
+      "state": "UNKNOWN",
+      "detail": "HOOK_WORKER_OUTCOME_UNCONFIRMED",
+      "result": "",
+      "evidence": ""
+    },
+    "recovery": {
+      "action": "The original journal still records UNKNOWN. Inspect actual state; do not assume success or replay.",
+      "steps": [],
+      "replayAllowed": false
+    }
+  },
+  "artifacts": [
+    {
+      "artifactId": "0dc89771-48e0-49ca-aecc-cfa2d9852116",
+      "tag": "exception.caught",
+      "sha256": "f6af3de5d414cec2e0b9e017455694724d5ba45b57ceaeae17f8fb5e334cfedc",
+      "sourceSha256": "753cc4daef051811825624cd70306a185002335f2437e4b6d6515c743c33ca4c"
+    },
+    {
+      "artifactId": "4aae12d8-d953-43c7-ad03-4125aca80972",
+      "tag": "exception.caught",
+      "sha256": "94dca711b0f753c237f4bcbd1349b6f734d0fa9a6066751b06456d6fb7bb18fa",
+      "sourceSha256": "753cc4daef051811825624cd70306a185002335f2437e4b6d6515c743c33ca4c"
+    },
+    {
+      "artifactId": "801b722d-7986-48ce-8087-fcfd715e5f6c",
+      "tag": "exception.thread",
+      "sha256": "0b0a7987fd5da93a6449e1a22b2a944d22147f84b06ba2a38da9d64b92ec239e",
+      "sourceSha256": "753cc4daef051811825624cd70306a185002335f2437e4b6d6515c743c33ca4c"
+    },
+    {
+      "artifactId": "e7636a68-5426-4d80-8f28-b46e12c22c5c",
+      "tag": "exception.thread",
+      "sha256": "f16679d88cc9ff0d1e458128bccf65f3e55b060472f71d81503103589ea14a65",
+      "sourceSha256": "753cc4daef051811825624cd70306a185002335f2437e4b6d6515c743c33ca4c"
+    },
+    {
+      "artifactId": "e98518ff-f395-4592-92ad-32557e276fef",
+      "tag": "exception.handle",
+      "sha256": "47513f2d2e6d873892bdd777e5094e7c949baf10bd887e71d9d5c64cf03b1ef3",
+      "sourceSha256": "753cc4daef051811825624cd70306a185002335f2437e4b6d6515c743c33ca4c"
+    },
+    {
+      "artifactId": "fe8ac330-ad52-44f8-8173-f43822fdf484",
+      "tag": "exception.handle",
+      "sha256": "4425ccc23874a453b3c5cf78e5e6ba40f841596bd796d13fd4037114205318f8",
+      "sourceSha256": "753cc4daef051811825624cd70306a185002335f2437e4b6d6515c743c33ca4c"
+    }
+  ]
+}

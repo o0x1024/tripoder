@@ -16,7 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import org.json.*;
 
-/** Real guest tasks in both modes, including the application's own later description. */
+/** Real guest tasks in two spaces, including the application's own later description. */
 public final class TaskPresentationIntegration extends WorkbenchUiTestBase {
     private static final String PACKAGE="dev.tripoder.taskpresentation",LABEL="客体任务验收";
     private IBinder session;private String firstSpace;
@@ -30,8 +30,8 @@ public final class TaskPresentationIntegration extends WorkbenchUiTestBase {
         try(var in=getContext().getAssets().open("task-presentation-guest.apk");var out=new FileOutputStream(apk)){in.transferTo(out);}
         List<String> spaces=new ArrayList<>();
         try{
-            for(String mode:new String[]{"thin","thick"}){
-                String space="task-ui-"+run.substring(8)+"-"+mode;spaces.add(space);execute(session,"createSpace","operation",id(),"space",space);
+            for(String sample:new String[]{"a","b"}){
+                String space="task-ui-"+run.substring(8)+"-"+sample;spaces.add(space);execute(session,"createSpace","operation",id(),"space",space);
                 Bundle installed;
                 try(var descriptor=ParcelFileDescriptor.open(apk,ParcelFileDescriptor.MODE_READ_ONLY)){
                     Bundle input=ControlWire.request("install","space",space,"operation",id());
@@ -39,27 +39,27 @@ public final class TaskPresentationIntegration extends WorkbenchUiTestBase {
                     installed=ControlWire.call(session,ControlWire.EXECUTE,input);
                 }
                 String generation=installed.getString("generation");Bundle target=execute(session,"applicationTarget","space",space,"package",PACKAGE,"generation",generation);
-                execute(session,"setApplicationMode","operation",id(),"project",target.getString("project"),"space",space,"generation",generation,"mode",mode);
-                if(mode.equals("thin"))firstSpace=space;
-                badgeChecks(mode,space);
+
+                if(sample.equals("a"))firstSpace=space;
+                libraryChecks(sample);
                 Bundle ready=execute(session,"prepareApplicationLaunch","operation",id(),"space",space,"package",PACKAGE,"generation",generation);
                 Intent entry=ready.getParcelable("intent",Intent.class);getTargetContext().startActivity(entry);waitNode("设置动态任务标题",false);
                 ActivityManager.AppTask task=awaitTask(entry,LABEL);
-                check("guest-task-uses-application-label-"+mode,LABEL.equals(task.getTaskInfo().taskDescription.getLabel()),task.getTaskInfo().taskDescription.toString());
+                check("guest-task-uses-application-label-"+sample,LABEL.equals(task.getTaskInfo().taskDescription.getLabel()),task.getTaskInfo().taskDescription.toString());
                 int taskId=task.getTaskInfo().taskId;
-                check("guest-task-remains-owned-by-host-"+mode,enginePackage().equals(task.getTaskInfo().baseActivity.getPackageName()),taskId);
-                check("guest-recents-icon-has-tripoder-badge-"+mode,awaitBadgedIcon(task,false),mode);
-                runningModeCheck(mode,space,target.getString("project"),ready.getString("generation"),task);
-                captureRecents(mode);
+                check("guest-task-remains-owned-by-host-"+sample,enginePackage().equals(task.getTaskInfo().baseActivity.getPackageName()),taskId);
+                check("guest-recents-icon-has-tripoder-badge-"+sample,awaitBadgedIcon(task,false),sample);
+                runningLibraryCheck(sample,space,target.getString("project"),ready.getString("generation"),task);
+                captureRecents(sample);
                 getUiAutomation().performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK);waitNode("设置动态任务标题",false);
                 click("设置动态任务标题");awaitTask(entry,"动态客体任务");
-                check("guest-can-replace-task-description-"+mode,"动态客体任务".equals(task.getTaskInfo().taskDescription.getLabel())&&task.getTaskInfo().taskDescription.getPrimaryColor()==Color.BLUE,task.getTaskInfo().taskDescription.toString());
-                check("custom-icon-keeps-tripoder-badge-"+mode,awaitBadgedIcon(task,true),mode);
-                waitNode("原图保持不变",false);check("guest-input-bitmap-unchanged-"+mode,true,"source bitmap retains original pixels");
-                captureRecents("dynamic-"+mode);
+                check("guest-can-replace-task-description-"+sample,"动态客体任务".equals(task.getTaskInfo().taskDescription.getLabel())&&task.getTaskInfo().taskDescription.getPrimaryColor()==Color.BLUE,task.getTaskInfo().taskDescription.toString());
+                check("custom-icon-keeps-tripoder-badge-"+sample,awaitBadgedIcon(task,true),sample);
+                waitNode("原图保持不变",false);check("guest-input-bitmap-unchanged-"+sample,true,"source bitmap retains original pixels");
+                captureRecents("dynamic-"+sample);
                 getUiAutomation().performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK);waitNode("设置动态任务标题",false);
                 getUiAutomation().performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME);SystemClock.sleep(250);
-                check("background-keeps-custom-description-"+mode,"动态客体任务".equals(task.getTaskInfo().taskDescription.getLabel()),task.getTaskInfo().taskDescription.toString());
+                check("background-keeps-custom-description-"+sample,"动态客体任务".equals(task.getTaskInfo().taskDescription.getLabel()),task.getTaskInfo().taskDescription.toString());
                 execute(session,"stopApplication","operation",id(),"space",space,"package",PACKAGE,"generation",generation);
                 shell("am start -W -n "+enginePackage()+"/dev.tripoder.hooklab.WorkbenchActivity");
             }
@@ -90,55 +90,28 @@ public final class TaskPresentationIntegration extends WorkbenchUiTestBase {
         }while(SystemClock.elapsedRealtime()<deadline);
         return false;
     }
-    private void badgeChecks(String mode,String space)throws Exception{
+    private void libraryChecks(String sample)throws Exception{
         Activity page=startActivitySync(new Intent().setComponent(engineComponent("dev.tripoder.hooklab.WorkbenchActivity")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));
-        String all=mode.equals("thin")?"THIN":"THIN / THICK";awaitBadge(page,all);capture(mode.equals("thin")?"mode-badge-thin":"mode-badge-mixed");
-        if(mode.equals("thin")){
-            longPressTile();waitNode("切换为 THICK",false);capture("quick-mode-menu");click("切换为 THICK");awaitBadge(page,"THICK");
-            check("long-press-switches-directly-to-thick",modeIn(space).equals("thick")&&find(getUiAutomation().getRootInActiveWindow(),"项目脚本编辑器",true)==null,true);
-            longPressTile();click("切换为 THIN");awaitBadge(page,"THIN");check("long-press-switches-back-to-thin",modeIn(space).equals("thin"),true);
-        }
-        if(mode.equals("thick")){
-            longPressTile();click("切换运行模式");waitNode("切换哪个空间的运行模式？",false);capture("quick-mode-spaces");click("取消");
-            check("cancel-space-choice-keeps-both-modes",modeIn(firstSpace).equals("thin")&&modeIn(space).equals("thick"),true);
-            longPressTile();click("切换运行模式");click(firstSpace+" · THIN");waitNode("运行模式 · "+firstSpace,false);click("THICK");awaitBadge(page,"THICK");
-            check("multi-space-switch-changes-only-chosen-space",modeIn(firstSpace).equals("thick")&&modeIn(space).equals("thick"),true);
-            longPressTile();click("切换为 THIN");click(firstSpace+" · THICK");awaitBadge(page,"THIN / THICK");
-            runOnMainSync(()->{try{var filter=page.getClass().getDeclaredField("spaceFilter");filter.setAccessible(true);filter.set(page,space);invoke(page,"render",new Class<?>[0]);}catch(Exception error){throw new IllegalStateException(error);}});
-            awaitBadge(page,"THICK");capture("mode-badge-thick");
-            longPressTile();click("切换为 THIN");awaitBadge(page,"THIN");
-            check("filtered-space-switch-skips-space-picker",modeIn(firstSpace).equals("thin")&&modeIn(space).equals("thin"),true);
-            longPressTile();click("切换为 THICK");awaitBadge(page,"THICK");
-        }
+        long deadline=SystemClock.elapsedRealtime()+8000;View[] tile={null};
+        do{runOnMainSync(()->{try{tile[0]=findTile((View)field(page,"body"));}catch(Exception error){throw new IllegalStateException(error);}});if(tile[0]!=null)break;SystemClock.sleep(40);}while(SystemClock.elapsedRealtime()<deadline);
+        check("application-card-has-no-runtime-mode-"+sample,tile[0]!=null&&!String.valueOf(tile[0].getContentDescription()).contains("运行模式"),tile[0]!=null);
+        longPressTile();waitNode("应用分析",false);
+        check("application-menu-has-no-mode-switch-"+sample,find(getUiAutomation().getRootInActiveWindow(),"切换运行模式",false)==null&&find(getUiAutomation().getRootInActiveWindow(),"切换为 THICK",false)==null,true);
+        getUiAutomation().performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK);
     }
     private void longPressTile()throws Exception{
         long deadline=SystemClock.elapsedRealtime()+8000;
         do{AccessibilityNodeInfo tile=findPackage(getUiAutomation().getRootInActiveWindow(),PACKAGE);if(tile!=null&&tile.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK))return;SystemClock.sleep(40);}while(SystemClock.elapsedRealtime()<deadline);
         throw new IllegalStateException("APPLICATION_LONG_PRESS_FAILED");
     }
-    private String modeIn(String space)throws Exception{
-        JSONArray refs=new JSONArray(execute(session,"catalog").getString("projects"));
-        for(int i=0;i<refs.length();i++){JSONObject ref=refs.getJSONObject(i);if(space.equals(ref.getString("space"))&&PACKAGE.equals(ref.getString("package"))&&ref.getString("state").equals("COMMITTED"))return ref.getString("mode");}
-        throw new IllegalStateException("FIXTURE_MODE_MISSING");
-    }
-    private void runningModeCheck(String mode,String space,String project,String process,ActivityManager.AppTask task)throws Exception{
+    private void runningLibraryCheck(String sample,String space,String project,String process,ActivityManager.AppTask task)throws Exception{
         shell("am start -W -n "+enginePackage()+"/dev.tripoder.hooklab.WorkbenchActivity");
-        longPressTile();click("切换为 "+(mode.equals("thin")?"THICK":"THIN"));waitNode("没有切换运行模式",false);
-        waitNode("应用正在运行，请先强行停止应用后再切换运行模式",false);
+        longPressTile();waitNode("应用分析",false);
         JSONArray processes=new JSONArray(execute(session,"hookProcesses","project",project).getString("processes"));boolean live=false;
-        for(int i=0;i<processes.length();i++)if(process.equals(processes.getJSONObject(i).getString("processGeneration")))live=true;
-        check("quick-mode-never-stops-running-application-"+mode,live&&modeIn(space).equals(mode),true);capture("quick-mode-running-"+mode);click("知道了");
+        for(int i=0;i<processes.length();i++)if(process.equals(processes.getJSONObject(i).getString("processGeneration"))){live=true;check("live-process-has-no-runtime-mode-"+sample,!processes.getJSONObject(i).has("mode"),true);}
+        check("application-menu-preserves-running-process-"+sample,live,true);
+        getUiAutomation().performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK);
         runOnMainSync(task::moveToFront);waitNode("设置动态任务标题",false);
-    }
-    private void awaitBadge(Activity page,String label)throws Exception{
-        long deadline=SystemClock.elapsedRealtime()+8000;View[] tile={null};
-        do{runOnMainSync(()->{try{tile[0]=findTile((View)field(page,"body"));}catch(Exception error){throw new IllegalStateException(error);}});if(tile[0]!=null&&String.valueOf(tile[0].getContentDescription()).contains("运行模式："+label))break;SystemClock.sleep(40);}while(SystemClock.elapsedRealtime()<deadline);
-        check("application-card-announces-mode-"+label,tile[0]!=null&&String.valueOf(tile[0].getContentDescription()).contains("运行模式："+label),tile[0]==null?"missing":String.valueOf(tile[0].getContentDescription()));
-        boolean[] valid={false};runOnMainSync(()->{try{
-            TextView badge=(TextView)field(tile[0],"modeBadge");View icon=(View)field(tile[0],"icon");Rect b=new Rect(),i=new Rect(),t=new Rect();badge.getGlobalVisibleRect(b);icon.getGlobalVisibleRect(i);tile[0].getGlobalVisibleRect(t);
-            valid[0]=badge.getText().toString().equals(label)&&badge.getVisibility()==View.VISIBLE&&!badge.isClickable()&&!badge.isLongClickable()&&b.bottom<=i.top&&b.right<=t.right&&b.left>=t.left&&b.top>=t.top;
-        }catch(Exception error){throw new IllegalStateException(error);}});
-        check("mode-badge-fits-card-without-blocking-icon-"+label,valid[0],label);
     }
     private View findTile(View view)throws Exception{
         if(view.getClass().getName().endsWith("WorkbenchLibraryUi$Tile")&&PACKAGE.equals(field(view,"pkg")))return view;
@@ -152,11 +125,11 @@ public final class TaskPresentationIntegration extends WorkbenchUiTestBase {
         }SystemClock.sleep(40);}while(SystemClock.elapsedRealtime()<deadline);
         throw new IllegalStateException("GUEST_TASK_DESCRIPTION_MISSING:"+label);
     }
-    private void captureRecents(String mode)throws Exception{
+    private void captureRecents(String sample)throws Exception{
         getUiAutomation().performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_RECENTS);SystemClock.sleep(800);
-        AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow();JSONArray names=new JSONArray();labels(root,names);report.put("recentsLabels-"+mode,names);
+        AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow();JSONArray names=new JSONArray();labels(root,names);report.put("recentsLabels-"+sample,names);
         // This capture deliberately covers the requested system Recents UI, not the workbench capture helper.
-        String name=run+"-task-recents-"+mode+".png";File out=new File(getTargetContext().getExternalFilesDir(null),name);
+        String name=run+"-task-recents-"+sample+".png";File out=new File(getTargetContext().getExternalFilesDir(null),name);
         shell("screencap -p "+out.getAbsolutePath());
         JSONArray captures=report.optJSONArray("captures");if(captures==null){captures=new JSONArray();report.put("captures",captures);}captures.put(name);
     }

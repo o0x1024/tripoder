@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise the production catalog's mode selection with synthetic authority snapshots."""
+"""Exercise the production catalog's application and space selection with synthetic authority snapshots."""
 from pathlib import Path
 import os
 import subprocess
@@ -13,7 +13,7 @@ jar = cache / "json-20250517.jar"
 if not jar.exists():
     urllib.request.urlretrieve("https://repo.maven.apache.org/maven2/org/json/json/20250517/json-20250517.jar", jar)
 java_home = Path(os.environ.get("JAVA_HOME", "/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home"))
-with tempfile.TemporaryDirectory(prefix="tripoder-catalog-mode-") as temporary:
+with tempfile.TemporaryDirectory(prefix="tripoder-catalog-") as temporary:
     root = Path(temporary)
     bundle = root / "Bundle.java"
     bundle.write_text('''package android.os;
@@ -31,5 +31,5 @@ final class WorkbenchApplication {
 }''')
     classes = root / "classes"
     classes.mkdir()
-    subprocess.run([str(java_home / "bin/javac"), "--release", "17", "-cp", str(jar), "-d", str(classes), str(bundle), str(app), str(repo / "android/workbench/src/dev/tripoder/hooklab/WorkbenchCatalog.java"), str(repo / "android/workbench/test/CatalogModeTest.java")], check=True)
-    subprocess.run([str(java_home / "bin/java"), "-cp", str(classes) + os.pathsep + str(jar), "dev.tripoder.hooklab.CatalogModeTest"], check=True)
+    subprocess.run([str(java_home / "bin/javac"), "--release", "17", "-cp", str(jar), "-d", str(classes), str(bundle), str(app), str(repo / "android/workbench/src/dev/tripoder/hooklab/WorkbenchCatalog.java"), str(repo / "android/workbench/test/CatalogTest.java")], check=True)
+    subprocess.run([str(java_home / "bin/java"), "-cp", str(classes) + os.pathsep + str(jar), "dev.tripoder.hooklab.CatalogTest"], check=True)

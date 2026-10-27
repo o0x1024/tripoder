@@ -27,7 +27,7 @@ final class RuntimeDexLoader {
     static ClassLoader create(ArtifactSet set,String libraries,ClassLoader parent)throws Exception{
         return createInternal(set,libraries,parent,true);
     }
-    static ClassLoader createForGuest(ArtifactSet set,String libraries,ClassLoader parent,boolean thin)throws Exception{
+    static ClassLoader createForGuest(ArtifactSet set,String libraries,ClassLoader parent)throws Exception{
         var info=RuntimeEngine.current.applicationInfo;
         StringBuilder path=new StringBuilder();
         for(var part:set.parts)path.append(path.length()==0?"":File.pathSeparator).append(RuntimeEngine.current.executionCode.part(part.path));
@@ -35,9 +35,6 @@ final class RuntimeDexLoader {
         return dev.tripoder.selfhook.ClassLoaderNamespaceAccess.create(path.toString(),shared.nativeSearch,info.dataDir,parent,info.targetSdkVersion,shared.nativeNames,shared.before,shared.after);
     }
     private static ClassLoader createInternal(ArtifactSet set,String libraries,ClassLoader parent,boolean retainMemfdMappings)throws Exception{
-        return createInternal(set,libraries,parent,retainMemfdMappings,false);
-    }
-    private static ClassLoader createInternal(ArtifactSet set,String libraries,ClassLoader parent,boolean retainMemfdMappings,boolean thin)throws Exception{
         if(set.parts.isEmpty())throw new IllegalStateException("RUNTIME_SPLIT_EXECUTION_NOT_YET_SUPPORTED");
         // The exact same physical name must reach ART, linker notifications and
         // Native observation. Resolve the platform's data-directory alias once,

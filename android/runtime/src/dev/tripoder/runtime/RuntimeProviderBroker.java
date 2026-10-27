@@ -57,19 +57,18 @@ final class RuntimeProviderBroker {
             if(existing){Bundle published=to==null?null:broker.providers.existing(to.allocation.session.processGeneration,component);if(published==null||!published.getString("publication").equals("READY"))return new Bundle();}
         }
         if(!existing&&!local)to=broker.processes.prepare(space,install.info.packageName,process);
-        String target;Bundle publication;boolean thin;
+        String target;Bundle publication;
         synchronized(broker){
             var session=broker.contract.authenticate(source,pid,uid);target=to.allocation.session.processGeneration;
             if(broker.requiredSlot(target)!=to||!to.install.generation.equals(install.generation))throw new SecurityException("PROVIDER_STALE_INSTALL");
             if(!metadata(to.install,component).enabled)return new Bundle();
             publication=local?broker.providers.find(target,component):broker.providers.ensurePublication(to,component);
             var sourceSlot=broker.requiredSlot(source);
-            thin=sourceSlot.mode.routesThroughPlatform()&&to.mode.routesThroughPlatform();
-            if(thin)publication.putString("callerPackage",session.identity.packageName);
+            publication.putString("callerPackage",session.identity.packageName);
             // Commit capability creation with the final live-slot checks. Otherwise
             // death can close references before this late OPEN acquisition is inserted.
-            publication.putBoolean("thin",thin);
-            publication.putString("cap",thin?publication.getString("lease"):broker.providers.acquire(source,publication,logical,input.getBoolean("stable")));
+            publication.putBoolean("thin",true);
+            publication.putString("cap",publication.getString("lease"));
         }
         publication.putString("authority",logical);publication.putBoolean("local",local);publication.putString("physical",RuntimeProviderTransport.authority(broker.host,RuntimeSlot.index(to.activityStub)));return publication;
     }
@@ -134,7 +133,7 @@ final class RuntimeProviderBroker {
         String source=RuntimeWire.required(input,"source");
         var caller=broker.contract.authenticate(source,input.getInt("callerPid"),input.getInt("callerUid"));
         var sourceSlot=broker.requiredSlot(source);
-        if(!targetSlot.mode.routesThroughPlatform()||!sourceSlot.mode.routesThroughPlatform())throw new SecurityException("PROVIDER_THIN_MODE_REQUIRED");
+        {}
         if(!caller.identity.spaceId.equals(targetSlot.install.space))throw new SecurityException("PROVIDER_SPACE_MISMATCH");
         Bundle publication=broker.providers.lease(RuntimeWire.required(input,"lease"));
         if(!target.equals(publication.getString("target")))throw new SecurityException("PROVIDER_LEASE_OWNER_MISMATCH");

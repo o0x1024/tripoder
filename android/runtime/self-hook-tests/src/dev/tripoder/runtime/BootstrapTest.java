@@ -88,7 +88,7 @@ public final class BootstrapTest {
         });
         var mutableGate=new RuntimeSelfHookBootstrap();var mutable=plan(()->{});var ran=new AtomicInteger();
         mutable.put(RuntimeSelfHookBootstrap.Capability.FRAMEWORK_ACCESS,mutable::clear);
-        mutable.put(RuntimeSelfHookBootstrap.Capability.HOOK_CONTROL,()->ran.incrementAndGet());
+        mutable.put(RuntimeSelfHookBootstrap.Capability.NATIVE_LIBRARY_RUNTIME,()->ran.incrementAndGet());
         mutableGate.install(mutable,mutableGate::requireComplete);check(ran.get()==1);
         System.out.println("bootstrap checks="+checks);
     }

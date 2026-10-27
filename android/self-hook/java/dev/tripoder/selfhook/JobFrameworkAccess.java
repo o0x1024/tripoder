@@ -45,6 +45,6 @@ public final class JobFrameworkAccess {
         FixedFrameworkMembers.set(access.callback,view,null);FixedFrameworkMembers.set(access.extras,view,new PersistableBundle(logicalExtras));FixedFrameworkMembers.set(access.namespace,view,logicalNamespace);
         return view;
     }
-    public static void attach(JobService service,Context context,Application application,String component){JobFrameworkAccess a=require();FixedFrameworkMembers.call(a.attach,service,context,FixedFrameworkMembers.call(a.thread,null),component,null,application,null);}
+    public static void attach(Service service,Context context,Application application,String component){JobFrameworkAccess a=require();FixedFrameworkMembers.call(a.attach,service,context,FixedFrameworkMembers.call(a.thread,null),component,null,application,null);}
     private JobFrameworkAccess(boolean unused){throw new AssertionError();}
 }

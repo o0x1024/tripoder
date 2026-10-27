@@ -68,11 +68,11 @@ public final class ApkStore {
         BundleInstall cached=installedCache.get(cacheKey);
         if(cached!=null)return cached;
         long g0=android.os.SystemClock.elapsedRealtime();
-        Row row;RuntimeMode mode;synchronized(authority){catalog.requireSpace(space);RuntimeFiles.id(pkg);row=row(space,pkg);mode=resolveMode(space,pkg);}
+        Row row;synchronized(authority){catalog.requireSpace(space);RuntimeFiles.id(pkg);row=row(space,pkg);}
         if(row==null)throw new ActivityNotFoundException("PACKAGE_NOT_IN_SPACE:"+pkg);
         if(!"COMMITTED".equals(row.state))throw new SecurityException("INSTALL_CORRUPT:"+row.reason);
         try{
-            File directory=new File(root,"artifacts/"+RuntimeFiles.id(row.generation));long g1=android.os.SystemClock.elapsedRealtime();ArtifactSet set=integrity.get(directory,row.descriptorSha,mode.routesThroughPlatform());long g2=android.os.SystemClock.elapsedRealtime();if(g2-g1>500||g1-g0>500)android.util.Log.w("TripoderBoot","ApkStore.get slow row="+(g1-g0)+"ms integrity="+(g2-g1)+"ms mode="+mode.wire+" thread="+Thread.currentThread().getName()+" pkg="+pkg);
+            File directory=new File(root,"artifacts/"+RuntimeFiles.id(row.generation));long g1=android.os.SystemClock.elapsedRealtime();ArtifactSet set=integrity.get(directory,row.descriptorSha,true);long g2=android.os.SystemClock.elapsedRealtime();if(g2-g1>500||g1-g0>500)android.util.Log.w("TripoderBoot","ApkStore.get slow row="+(g1-g0)+"ms integrity="+(g2-g1)+"ms thread="+Thread.currentThread().getName()+" pkg="+pkg);
             if(!set.packageName.equals(pkg)||!set.signerSha.equals(row.signer)||set.versionCode!=row.version||!set.base.equals(new File(row.apk))||!set.parts.get(0).sha256.equals(row.sha))throw new SecurityException("INSTALL_METADATA_MISMATCH");
             BundleInstall install=reuse(space,row.generation,row.dataId,set);
             synchronized(authority){Row current=row(space,pkg);if(current==null||!row.generation.equals(current.generation)||!row.dataId.equals(current.dataId)||!"COMMITTED".equals(current.state))throw new IllegalStateException("STALE_INSTALL");InstallHistory.resolve(store,contract,install);}
@@ -168,11 +168,6 @@ public final class ApkStore {
             for(BundleInstall install:installedCache.values())if(install.space.equals(space)&&install.info.packageName.equals(pkg)&&install.data.getName().equals(dataId))install.applyComponentSettings(states);
             synchronized(reusable){for(BundleInstall install:reusable.values())if(install.space.equals(space)&&install.info.packageName.equals(pkg)&&install.data.getName().equals(dataId))install.applyComponentSettings(states);}
         }
-    }
-    RuntimeMode resolveMode(String space,String pkg){
-        List<String> modes=new ArrayList<>();
-        try(Cursor c=store.getReadableDatabase().rawQuery("SELECT mode FROM project_refs WHERE space=? AND package=? AND state='COMMITTED' ORDER BY id",new String[]{space,pkg})){while(c.moveToNext())modes.add(c.getString(0));}
-        return RuntimeMode.resolve(modes);
     }
     Row row(String space,String pkg){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT generation,apk,sha256,descriptorSha,state,reason,version,signer,dataId FROM installs WHERE space=? AND package=?",new String[]{space,pkg})){return c.moveToFirst()?new Row(c):null;}}
     static final class Row {

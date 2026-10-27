@@ -19,6 +19,10 @@ final class RuntimeSelfHookJobs {
             if(method.getDeclaringClass()==JobParameters.class&&jobs.ownsParameters(receiver)){
                 if(method.getName().equals("dequeueWork"))return jobs.dequeue((JobParameters)receiver);
                 if(method.getName().equals("completeWork")){jobs.complete((JobParameters)receiver,(JobWorkItem)args[0]);return null;}
+                // The guest's own engine parcels its parameters into a fresh copy and arms a cleaner on it; a view owns no system callback to clean up.
+                if(method.getName().equals("enableCleaner")||method.getName().equals("disableCleaner"))return null;
+                // Start/stop acknowledgement belongs to the gateway; the guest engine sees the same "no callback" a finished attempt has.
+                if(method.getName().equals("getCallback"))return null;
                 throw new UnsupportedOperationException("JOB_PARAMETER_CAPABILITY_UNSUPPORTED:"+method.getName());
             }
             if(receiver instanceof IInterface&&method.getDeclaringClass().getName().equals("android.app.job.IJobCallback$Stub$Proxy")){

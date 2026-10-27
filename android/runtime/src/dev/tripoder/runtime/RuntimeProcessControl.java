@@ -28,7 +28,7 @@ final class RuntimeProcessControl extends RuntimeWire.Endpoint {
         synchronized(this){if(code==RuntimeWire.STOP&&controllerPid==0&&abortCapability!=null&&abortCapability.equals(input.getString("bootstrapAbort")))controllerPid=pid;}
         if(pid!=controllerPid||controllerPid==0)throw new SecurityException("WORKER_CALLER_MISMATCH");
         if(code==RuntimeWire.START_APPLICATION){try{RuntimeEngine.current.startApplication();return new Bundle();}catch(Exception error){android.util.Log.e("TripoderRuntime","Worker initialization failed",error);terminate();throw error;}}
-        if(code==RuntimeWire.STOP){if(RuntimeEngine.current!=null)RuntimeEngine.current.storage.flush();terminate();return new Bundle();}
+        if(code==RuntimeWire.STOP){terminate();return new Bundle();}
         if(code==RuntimeWire.CHECK)return RuntimeEngine.current.check(input);
         if(code==RuntimeWire.DISPATCH_PENDING){RuntimeEngine.current.dispatchPending(RuntimeWire.required(input,"kind"),input.getByteArray("payload"));return new Bundle();}
         if(code==RuntimeWire.HOOK){

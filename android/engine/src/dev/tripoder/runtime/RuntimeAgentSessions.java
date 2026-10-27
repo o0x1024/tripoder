@@ -43,8 +43,8 @@ final class RuntimeAgentSessions implements AutoCloseable {
     private JSONObject targets()throws Exception{
 
         JSONArray rows=new JSONArray();synchronized(broker){
-            try(var c=broker.store.getReadableDatabase().rawQuery("SELECT p.id,p.space,p.package,p.generation,p.operation,p.mode,s.generation,s.processName,s.pid FROM project_refs p JOIN installs i ON i.space=p.space AND i.package=p.package AND i.generation=p.generation JOIN sessions s ON s.space=p.space AND s.package=p.package AND s.installGeneration=p.generation WHERE p.kind='DIRECT' AND p.state='COMMITTED' AND i.state='COMMITTED' AND s.state='RUNNING' AND s.authorityGeneration=? ORDER BY p.id,s.processName LIMIT 257",new String[]{broker.store.authorityGeneration})){
-                while(c.moveToNext())rows.put(new JSONObject().put("project",c.getString(0)).put("space",c.getString(1)).put("package",c.getString(2)).put("installGeneration",c.getString(3)).put("bindingOperation",c.getString(4)).put("mode",c.getString(5)).put("processGeneration",c.getString(6)).put("processName",c.getString(7)).put("pid",c.getInt(8)));
+            try(var c=broker.store.getReadableDatabase().rawQuery("SELECT p.id,p.space,p.package,p.generation,p.operation,s.generation,s.processName,s.pid FROM project_refs p JOIN installs i ON i.space=p.space AND i.package=p.package AND i.generation=p.generation JOIN sessions s ON s.space=p.space AND s.package=p.package AND s.installGeneration=p.generation WHERE p.kind='DIRECT' AND p.state='COMMITTED' AND i.state='COMMITTED' AND s.state='RUNNING' AND s.authorityGeneration=? ORDER BY p.id,s.processName LIMIT 257",new String[]{broker.store.authorityGeneration})){
+                while(c.moveToNext())rows.put(new JSONObject().put("project",c.getString(0)).put("space",c.getString(1)).put("package",c.getString(2)).put("installGeneration",c.getString(3)).put("bindingOperation",c.getString(4)).put("processGeneration",c.getString(5)).put("processName",c.getString(6)).put("pid",c.getInt(7)));
             }
         }
         if(rows.length()>256)throw new IllegalStateException("AGENT_TARGET_PAGE_REQUIRED");
@@ -157,7 +157,24 @@ final class RuntimeAgentSessions implements AutoCloseable {
             case "personaConfigureTelephony":AgentCrypto.fields(params,"fields");break;
             case "personaConfigureBattery":AgentCrypto.fields(params,"level","charging");break;
             case "personaConfigureLocation":AgentCrypto.fields(params,"fields");break;
+            case "personaConfigureLocale":AgentCrypto.fields(params,"language","country","timeZoneId");break;
+            case "personaConfigureNetwork":AgentCrypto.fields(params,"hideVpn");break;
             case "personaStatus":AgentCrypto.fields(params);break;
+            case "malwareConfigure":if(!params.has("blockExecve"))params.put("blockExecve",false);if(!params.has("blockKill"))params.put("blockKill",false);if(!params.has("networkSinkhole"))params.put("networkSinkhole",false);AgentCrypto.fields(params,"enabled","blockHighRiskIntents","blockExecve","blockKill","networkSinkhole");break;
+            case "malwareClear":case "malwareStatus":AgentCrypto.fields(params);break;
+            case "malwareEvents":AgentCrypto.fields(params,"sinceSeq","limit");break;
+            case "heapChooseInstances":AgentCrypto.fields(params,"className","limit");break;
+            case "heapReadField":AgentCrypto.fields(params,"instanceId","fieldName");break;
+            case "heapSnapshotContainer":if(!params.has("maxEntries"))params.put("maxEntries",16);AgentCrypto.fields(params,"instanceId","maxEntries");break;
+            case "timeWarpConfigure":AgentCrypto.fields(params,"offsetMillis","delayScale");break;
+            case "timeWarpReset":case "timeWarpStatus":AgentCrypto.fields(params);break;
+            case "honeydataConfigure":AgentCrypto.fields(params,"category","rows");break;
+            case "honeydataClear":case "honeydataStatus":AgentCrypto.fields(params);break;
+            case "processSnapshotHeap":AgentCrypto.fields(params);break;
+            case "processSnapshotFreeze":AgentCrypto.fields(params,"databaseName");break;
+            case "envMockConfigureHttp":AgentCrypto.fields(params,"rules");break;
+            case "envMockConfigureNetwork":AgentCrypto.fields(params,"networkState");break;
+            case "envMockClear":case "envMockStatus":AgentCrypto.fields(params);break;
             case "privacyConfigureAttribution":AgentCrypto.fields(params,"entries");break;
             case "privacyMarkConsentStage":AgentCrypto.fields(params,"stage","note");break;
             case "privacyAttribution":AgentCrypto.fields(params,"className");break;
@@ -187,7 +204,7 @@ final class RuntimeAgentSessions implements AutoCloseable {
         return new JSONObject().put("protocol",AgentCrypto.PROTOCOL).put("session",session.id).put("state",session.state)
             .put("project",session.project).put("space",session.target.getString("space")).put("package",session.target.getString("package"))
             .put("installGeneration",session.target.getString("generation")).put("bindingOperation",session.target.getString("bindingOperation"))
-            .put("processGeneration",session.process).put("mode",session.target.getString("mode",RuntimeMode.DEFAULT.wire))
+            .put("processGeneration",session.process)
             .put("hookState",session.hookState).put("authenticationRequired",false).put("reviewRequired",false).put("autoApprove",true)
             .put("expires",JSONObject.NULL).put("processClose","NOT_REQUESTED").put("strongIsolation",false);
     }

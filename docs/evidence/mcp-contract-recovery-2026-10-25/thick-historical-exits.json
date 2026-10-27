@@ -1,0 +1,34 @@
+{
+  "source": "adb shell dumpsys activity exit-info dev.tripoder.cmbqa, observed before APK updates in this investigation",
+  "collectedBeforeUpdate": true,
+  "records": [
+    {
+      "timestampAsiaShanghai": "2026-10-25 20:08:19.540",
+      "pid": 4149,
+      "process": "dev.tripoder.cmbqa:slot0",
+      "reason": "SIGNALED",
+      "status": 11,
+      "trace": null
+    },
+    {
+      "timestampAsiaShanghai": "2026-10-25 20:08:39.995",
+      "pid": 4688,
+      "process": "dev.tripoder.cmbqa:slot0",
+      "reason": "SIGNALED",
+      "status": 11,
+      "trace": null
+    }
+  ],
+  "conclusion": "SIGSEGV exit evidence; APK-size/copy-timeout/OOM causality is not established",
+  "nativeFaultPc": "UNKNOWN",
+  "originalOperations": [
+    "cmb-start-1",
+    "cmb-start-2"
+  ],
+  "originalInstallation": {
+    "space": "p6-20261014",
+    "package": "cmb.pb",
+    "installGeneration": "9cd40a21-29b0-4cdc-b763-063c1f38711e"
+  },
+  "freshReproduction": "DEFERRED: user requested independent reproduction on the new installation after the concurrent task finishes"
+}

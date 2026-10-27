@@ -23,8 +23,13 @@ final class RuntimeAlarms {
         if(!name.equals("cancel")){
             boolean extended=Set.of("setWindow","setRepeating","setInexactRepeating").contains(name);
             if(args.length!=(extended?4:3))throw new UnsupportedOperationException("ALARM_SHAPE_UNSUPPORTED:"+method);
-            request.putInt("type",(Integer)args[0]);request.putLong("trigger",(Long)args[1]);
-            if(extended)request.putLong(name.equals("setWindow")?"window":"interval",(Long)args[2]);
+            int alarmType=(Integer)args[0];
+            long trigger=RuntimeTimeWarp.adjustAlarmTrigger(alarmType,(Long)args[1]);
+            request.putInt("type",alarmType);request.putLong("trigger",trigger);
+            if(extended){
+                long second=RuntimeTimeWarp.scaleDelayMillis((Long)args[2]);
+                request.putLong(name.equals("setWindow")?"window":"interval",second);
+            }
         }
         request.putString("operation",UUID.randomUUID().toString());engine.brokerCall(RuntimeWire.PENDING_INTENT,request);return null;
     }

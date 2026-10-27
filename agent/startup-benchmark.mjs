@@ -1,4 +1,5 @@
 import {operationCall,operationSchema} from './tools.mjs';
+import {MCP_VERSION} from './transport.mjs';
 /** Process-cold launch measurements through the real MCP transport and Android foreground task. */
 import {spawn, execFile} from 'node:child_process';
 import {promisify} from 'node:util';
@@ -13,7 +14,7 @@ const serial=options['--serial'], host=options['--host-package'], adb=options['-
 assert.match(serial,/^[-A-Za-z0-9_.:]+$/);assert.match(host,/^[A-Za-z0-9_.]+$/);assert.ok(rounds>=1&&rounds<=20);
 await mkdir(directory,{recursive:true});
 const shell=promisify(execFile), pending=new Map(), log=[], samples=[];let sequence=0, stderr='';
-const child=spawn(process.execPath,[resolve('agent/server.mjs'),'--serial',serial,'--device-port',options['--device-port']||'29732'],{stdio:['pipe','pipe','pipe']});
+const child=spawn(process.execPath,[resolve('agent/server.mjs'),'--connection',resolve(options['--connection'])],{stdio:['pipe','pipe','pipe']});
 child.stderr.on('data',b=>stderr=(stderr+b).slice(-16384));
 createInterface({input:child.stdout}).on('line',line=>{const value=JSON.parse(line),item=pending.get(value.id);if(item){clearTimeout(item.timer);pending.delete(value.id);item.resolve(value);}});
 child.on('exit',code=>{for(const item of pending.values())item.reject(Error('MCP_EXIT:'+code+':'+stderr));pending.clear();});
@@ -25,19 +26,18 @@ const install={space:config.space,package:config.package,installGeneration:confi
 const activities=config.expectedActivities||[config.expectedActivity];
 const capture=spawn(adb,['-s',serial,'logcat','-v','epoch','-T','1','TripoderBoot:I','TripoderSelfHook:I','TripoderStartup:E','TripoderHook:I','TripoderBenchmark:I','ActivityTaskManager:I','Choreographer:I','*:S'],{stdio:['ignore','pipe','ignore']});
 createInterface({input:capture.stdout}).on('line',line=>{
- if(/TripoderBoot.*(?:runtime mode=|\w+ \+\d+ms|SLOT_PREWARMED|APPLICATION_ATTACH|APPLICATION_READY|ApkStore.get slow)/.test(line)
+ if(/TripoderBoot.*(?:\w+ \+\d+ms|SLOT_PREWARMED|APPLICATION_ATTACH|APPLICATION_READY|ApkStore.get slow)/.test(line)
    ||/TripoderSelfHook.*(?:INSTALLED:|READY:|FIXED_PUBLICATION:|EXECUTION_POLICY:|PREPARATION_METRICS:)/.test(line)
    ||line.includes('TripoderHook')&&line.includes('STATUS_TIMING:')
    ||line.includes('TripoderBenchmark')||line.includes('Choreographer')||line.includes('ActivityTaskManager')&&line.includes('Displayed '+host+'/'))log.push(line);
 });
-const report={schema:1,label:options['--label'],serial,hostPackage:host,installation:install,mode:'thick',authorityCold:options['--authority-cold']==='true',clock:'host performance.now; device epoch for stage durations',samples};
+const report={schema:1,label:options['--label'],serial,hostPackage:host,installation:install,authorityCold:options['--authority-cold']==='true',clock:'host performance.now; device epoch for stage durations',samples};
 try{
- await rpc('initialize',{protocolVersion:'2025-03-26',capabilities:{},clientInfo:{name:'process-cold-startup-benchmark',version:'1'}});
+ await rpc('initialize',{protocolVersion:MCP_VERSION,capabilities:{},clientInfo:{name:'process-cold-startup-benchmark',version:'1'}});
  child.stdin.write(JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})+'\n');
  for(let attempt=0;;attempt++){const status=await tool('runtime.status',{},false);if(status.ok)break;if(attempt===9)throw Error('ENDPOINT_NOT_READY:'+status.error);await new Promise(resolve=>setTimeout(resolve,500));}
  const plan=await tool('probes.get',{target:install});assert.equal(plan.configuration.enabled,false,'benchmark requires probes off');
- const original=(await tool('launch.entries',{target:install})).mode;report.originalMode=original;
- await mutate('application.stop',{target:install});if(original!=='thick')await mutate('application.mode',{target:install,mode:'thick'});
+ await mutate('application.stop',{target:install});
  const paths=(await command('shell','pm','path',host)).stdout.trim().split('\n');
  const path=paths.find(p=>p.startsWith('package:')&&p.endsWith('/base.apk')).slice(8);
  report.hostApkSha256=(await command('shell','sha256sum',path)).stdout.split(/\s+/)[0];

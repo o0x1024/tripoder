@@ -34,12 +34,6 @@ SKIP_PREFIXES = ("dev.tripoder.",)
 # shared space instead when a realistic multi-app container is what we want to measure.
 SPACE = ""
 SHARED_SPACE = False
-# Runtime instrumentation mode exercised by the launch phase. Empty keeps whatever the
-# installation already uses (the campaign never switched it before this option existed);
-# `--mode thick` switches a stopped installation, launches, judges and restores the
-# previous mode so one device state can be compared under both models.
-MODE = ""
-RESTORE_MODE = True
 # The engine leases one of eight activity-affinity slots per (space, guest, affinity) and only
 # returns a lease when the space that owns the component row is deleted. A 100+ app campaign
 # therefore exhausts the pool and every later launch is refused with
@@ -372,28 +366,6 @@ def cleanup_targets(engine, only_package=""):
         stop_target(engine, target)
 
 
-def installation_mode(engine, target):
-    """The engine's own per-project runtime mode, read before any switch."""
-    try:
-        reply = engine.call("application_query", {"action": "launch_entries", "target": target}, timeout=90)
-    except Exception:
-        return ""
-    return ((reply.get("result") or {}).get("mode") or "")
-
-
-def switch_mode(engine, target, mode):
-    """`set_mode` only accepts a stopped installation; callers stop the guest first."""
-    reply = engine.call(
-        "application_manage",
-        {"operationId": f"qa-mode-{slug(target['package'])}-{int(time.time())}",
-         "action": "set_mode", "target": target, "mode": mode},
-        timeout=120,
-    )
-    if reply.get("ok") is False or reply.get("isError"):
-        raise RuntimeError((reply.get("errorCode") or "") + ":" + (reply.get("error") or "")[:200])
-    return True
-
-
 def recycle_spaces(engine, journal, pending, flush=False):
     """Give back the affinity leases the pool only releases on space deletion.
 
@@ -473,7 +445,7 @@ def phase_launch(engine, journal, packages, outdir, wait_ms, settle_ms):
             # Only a verdict that describes the guest is final. A lost controller lease or an
             # exhausted affinity pool describes the harness, so it must be retried, otherwise
             # a mid-run engine death silently freezes dozens of packages as unjudged.
-            transient = last["verdict"] in ("TRANSPORT_ERROR", "MODE_SET_FAILED", "SCOPE_FENCED") or (
+            transient = last["verdict"] in ("TRANSPORT_ERROR", "SCOPE_FENCED") or (
                 last["verdict"] == "START_REJECTED" and "PROCESS_ALREADY_RUNNING" in (last.get("error") or "")
             ) or any(marker in (last.get("error") or "") for marker in (
                 "ENGINE_NOT_CONNECTED", "ACTIVITY_AFFINITY_CAPACITY_EXHAUSTED", "WORKER_DIED",
@@ -488,21 +460,6 @@ def phase_launch(engine, journal, packages, outdir, wait_ms, settle_ms):
         epoch = time.time()
         started = time.time()
         record = {"phase": "launch", "package": package, "space": space, "operationId": operation, "installGeneration": generation}
-        if MODE:
-            before = installation_mode(engine, target)
-            record["modeBefore"] = before
-            if before != MODE:
-                try:
-                    switch_mode(engine, target, MODE)
-                    record["modeChanged"] = f"{before or 'unknown'}->{MODE}"
-                    switched.append((dict(target), before))
-                except Exception as error:
-                    record.update(verdict="MODE_SET_FAILED", error=str(error)[:300],
-                                  seconds=round(time.time() - started, 1))
-                    journal.add(**record)
-                    print(f"[run] {package:45} MODE_SET_FAILED {str(error)[:90]}", flush=True)
-                    continue
-            record["mode"] = MODE
         # Android 10+ blocks background activity launches; the engine's own entry dispatch is
         # only allowed to surface the guest while the engine itself is visible, which is also
         # the real user flow (open the workbench, launch the app).
@@ -642,24 +599,12 @@ def phase_launch(engine, journal, packages, outdir, wait_ms, settle_ms):
         if settle_ms:
             time.sleep(settle_ms / 1000.0)
 
-    # Restore every installation this run switched, including the ones whose start was
-    # rejected (those take an early `continue` and would otherwise stay in MODE). A recycling
-    # run deletes those installations instead, so the mode disappears with the space.
     if RECYCLE:
         recycle_spaces(engine, journal, pending, flush=True)
-    if MODE and RESTORE_MODE and switched and not RECYCLE:
-        for target, before in switched:
-            base = {"phase": "mode_restore", "package": target["package"], "space": target["space"],
-                    "installGeneration": target["installGeneration"]}
-            try:
-                switch_mode(engine, target, before)
-                journal.add(**base, restored=before)
-            except Exception as error:
-                journal.add(**base, restoreError=str(error)[:200])
 
 
 def main():
-    global SPACE, SHARED_SPACE, MODE, RESTORE_MODE, RECYCLE, RETRY_FAILED
+    global SPACE, SHARED_SPACE, RECYCLE, RETRY_FAILED
     parser = argparse.ArgumentParser()
     parser.add_argument("--phase", default="all", choices=["inventory", "import", "launch", "all"])
     parser.add_argument("--out", default="")
@@ -669,9 +614,6 @@ def main():
     parser.add_argument("--space", default="", help="use one shared space instead of one space per package")
     parser.add_argument("--wait-ms", type=int, default=20000, help="stability window per guest")
     parser.add_argument("--settle-ms", type=int, default=1500, help="pause between guests")
-    parser.add_argument("--mode", default="", choices=["", "thin", "thick"],
-                        help="switch each stopped installation to this runtime mode before launching")
-    parser.add_argument("--keep-mode", action="store_true", help="do not restore the previous mode after judging")
     parser.add_argument("--recycle", action="store_true",
                         help="delete each judged space so its activity-affinity lease returns to the 8-slot pool")
     parser.add_argument("--retry-failed", action="store_true",
@@ -682,7 +624,6 @@ def main():
         SPACE, SHARED_SPACE = options.space, True
     else:
         SPACE, SHARED_SPACE = "", False
-    MODE, RESTORE_MODE = options.mode, not options.keep_mode
     RECYCLE = options.recycle
     RETRY_FAILED = options.retry_failed
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")

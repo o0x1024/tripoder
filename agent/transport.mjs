@@ -24,12 +24,15 @@ export class Transport {
     const body=Buffer.from(JSON.stringify(request));if(body.length>65536)throw Object.assign(Error('MCP_FRAME_TOO_LARGE'),{dispatched:false});
     const headers={'content-type':'application/json','accept':'application/json, text/event-stream','content-length':body.length};
     if(this.session){headers['mcp-session-id']=this.session;headers['mcp-protocol-version']=MCP_VERSION;}
+    // Discovery carries the complete generated schemas, including action metadata.
+    // Keep ordinary tool results bounded separately from this finite catalog.
+    const responseLimit=request.method==='tools/list'?1048576:524288;
     return new Promise((resolve,reject)=>{
       let sent=false,done=false;let deadline;const fail=(code,dispatched=sent)=>{if(done)return;done=true;clearTimeout(deadline);const error=Object.assign(Error(code),{dispatched});reject(error);};
       const req=http.request(this.config.url,{method:'POST',headers,agent:false},response=>{
         const knownRejected=[400,401,403,404,405,406,413,415,429,503].includes(response.statusCode);
         if(response.statusCode!==200&&response.statusCode!==202){response.resume();fail('MCP_HTTP_'+response.statusCode,!knownRejected);return;}
-        const chunks=[];let size=0;response.on('data',chunk=>{size+=chunk.length;if(size>524288){fail('MCP_RESPONSE_TOO_LARGE');req.destroy();}else chunks.push(chunk);});
+        const chunks=[];let size=0;response.on('data',chunk=>{size+=chunk.length;if(size>responseLimit){fail('MCP_RESPONSE_TOO_LARGE');req.destroy();}else chunks.push(chunk);});
         response.on('aborted',()=>fail('MCP_RESPONSE_INTERRUPTED'));
         response.on('error',()=>fail('MCP_RESPONSE_INTERRUPTED'));
         response.on('end',()=>{if(done)return;try{

@@ -1,0 +1,468 @@
+{
+  "passed": true,
+  "scope": "physical-mtls-http1-keepalive-and-pipelining",
+  "checks": [
+    {
+      "name": "new-capture-tools-published",
+      "passed": true
+    },
+    {
+      "name": "guest-ui-ready",
+      "passed": true
+    },
+    {
+      "name": "baseline-guest-exact-sequential-and-pipelined-exchanges",
+      "passed": true
+    },
+    {
+      "name": "export-profile-is-candidate-requiring-confirmation",
+      "passed": true
+    },
+    {
+      "name": "stale-build-id-known-rejection",
+      "passed": true
+    },
+    {
+      "name": "managed-capture-started",
+      "passed": true
+    },
+    {
+      "name": "managed-hook-ownership-enforced",
+      "passed": true
+    },
+    {
+      "name": "fixture-retains-two-live-tls-connections",
+      "passed": true
+    },
+    {
+      "name": "capture-sees-two-open-lifetimes",
+      "passed": true
+    },
+    {
+      "name": "connection-cursor-remains-unconsumed-while-open",
+      "passed": true
+    },
+    {
+      "name": "live-http-message-pagination",
+      "passed": true
+    },
+    {
+      "name": "live-http-message-pagination",
+      "passed": true
+    },
+    {
+      "name": "live-http-message-pagination",
+      "passed": true
+    },
+    {
+      "name": "six-complete-exchanges-before-any-tls-close",
+      "passed": true
+    },
+    {
+      "name": "per-message-association-preserves-order-and-interim-responses",
+      "passed": true
+    },
+    {
+      "name": "head-chunked-trailers-and-duplicate-headers-validated",
+      "passed": true
+    },
+    {
+      "name": "message-cursor-has-no-duplicates",
+      "passed": true
+    },
+    {
+      "name": "released-client-and-server-verify-all-original-bytes",
+      "passed": true
+    },
+    {
+      "name": "passive-query-origin-and-cursor",
+      "passed": true
+    },
+    {
+      "name": "passive-query-origin-and-cursor",
+      "passed": true
+    },
+    {
+      "name": "two-finalized-connection-lifetimes",
+      "passed": true
+    },
+    {
+      "name": "uniform-query-reassembly-matches-real-guest-and-server",
+      "passed": true
+    },
+    {
+      "name": "wrong-capture-id-is-explicit-read-unavailable",
+      "passed": true
+    },
+    {
+      "name": "capture-stopped-and-drained",
+      "passed": true
+    },
+    {
+      "name": "disabled-guest-exact-sequential-and-pipelined-exchanges",
+      "passed": true
+    },
+    {
+      "name": "stopped-session-collects-no-later-traffic",
+      "passed": true
+    },
+    {
+      "name": "restart-allocates-new-capture-id",
+      "passed": true
+    },
+    {
+      "name": "all-eight-connection-and-message-artifacts-survive-with-valid-sha",
+      "passed": true
+    },
+    {
+      "name": "no-agent-sent-http",
+      "passed": true
+    }
+  ],
+  "runs": {
+    "baseline": {
+      "runId": "a582eaac-0ebb-4aef-a255-131daca3567c",
+      "exchanges": [
+        {
+          "request": "GET /keepalive/a582eaac-0ebb-4aef-a255-131daca3567c/0/1 HTTP/1.1\r\nHost: localhost\r\n\r\nHEAD /keepalive/a582eaac-0ebb-4aef-a255-131daca3567c/0/2 HTTP/1.1\r\nHost: localhost\r\n\r\nGET /keepalive/a582eaac-0ebb-4aef-a255-131daca3567c/0/3 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 103 Early Hints\r\nLink: </owned>\r\n\r\nHTTP/1.1 200 OK\r\nContent-Length: 44\r\nSet-Cookie: a=1\r\nSet-Cookie: b=2\r\n\r\nowned-a582eaac-0ebb-4aef-a255-131daca3567c-0HTTP/1.1 200 OK\r\nContent-Length: 999\r\n\r\nHTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n2c\r\nowned-a582eaac-0ebb-4aef-a255-131daca3567c-0\r\n0\r\nX-Owned: yes\r\n\r\n"
+        },
+        {
+          "request": "GET /keepalive/a582eaac-0ebb-4aef-a255-131daca3567c/1/1 HTTP/1.1\r\nHost: localhost\r\n\r\nHEAD /keepalive/a582eaac-0ebb-4aef-a255-131daca3567c/1/2 HTTP/1.1\r\nHost: localhost\r\n\r\nGET /keepalive/a582eaac-0ebb-4aef-a255-131daca3567c/1/3 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 103 Early Hints\r\nLink: </owned>\r\n\r\nHTTP/1.1 200 OK\r\nContent-Length: 44\r\nSet-Cookie: a=1\r\nSet-Cookie: b=2\r\n\r\nowned-a582eaac-0ebb-4aef-a255-131daca3567c-1HTTP/1.1 200 OK\r\nContent-Length: 999\r\n\r\nHTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n2c\r\nowned-a582eaac-0ebb-4aef-a255-131daca3567c-1\r\n0\r\nX-Owned: yes\r\n\r\n"
+        }
+      ],
+      "messages": [
+        {
+          "connectionIndex": 0,
+          "messageIndex": 1,
+          "request": "GET /keepalive/a582eaac-0ebb-4aef-a255-131daca3567c/0/1 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 200 OK\r\nContent-Length: 44\r\nSet-Cookie: a=1\r\nSet-Cookie: b=2\r\n\r\nowned-a582eaac-0ebb-4aef-a255-131daca3567c-0",
+          "informational": [
+            "HTTP/1.1 103 Early Hints\r\nLink: </owned>\r\n\r\n"
+          ]
+        },
+        {
+          "connectionIndex": 0,
+          "messageIndex": 2,
+          "request": "HEAD /keepalive/a582eaac-0ebb-4aef-a255-131daca3567c/0/2 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 200 OK\r\nContent-Length: 999\r\n\r\n",
+          "informational": []
+        },
+        {
+          "connectionIndex": 0,
+          "messageIndex": 3,
+          "request": "GET /keepalive/a582eaac-0ebb-4aef-a255-131daca3567c/0/3 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n2c\r\nowned-a582eaac-0ebb-4aef-a255-131daca3567c-0\r\n0\r\nX-Owned: yes\r\n\r\n",
+          "informational": []
+        },
+        {
+          "connectionIndex": 1,
+          "messageIndex": 1,
+          "request": "GET /keepalive/a582eaac-0ebb-4aef-a255-131daca3567c/1/1 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 200 OK\r\nContent-Length: 44\r\nSet-Cookie: a=1\r\nSet-Cookie: b=2\r\n\r\nowned-a582eaac-0ebb-4aef-a255-131daca3567c-1",
+          "informational": [
+            "HTTP/1.1 103 Early Hints\r\nLink: </owned>\r\n\r\n"
+          ]
+        },
+        {
+          "connectionIndex": 1,
+          "messageIndex": 2,
+          "request": "HEAD /keepalive/a582eaac-0ebb-4aef-a255-131daca3567c/1/2 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 200 OK\r\nContent-Length: 999\r\n\r\n",
+          "informational": []
+        },
+        {
+          "connectionIndex": 1,
+          "messageIndex": 3,
+          "request": "GET /keepalive/a582eaac-0ebb-4aef-a255-131daca3567c/1/3 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n2c\r\nowned-a582eaac-0ebb-4aef-a255-131daca3567c-1\r\n0\r\nX-Owned: yes\r\n\r\n",
+          "informational": []
+        }
+      ],
+      "passed": true,
+      "concurrentConnections": 2,
+      "messagesPerConnection": 3,
+      "clientAuthenticated": true,
+      "protocol": "TLSv1.3",
+      "modes": [
+        "sequential",
+        "pipelined"
+      ]
+    },
+    "observed": {
+      "runId": "c2c6fa41-1414-4a94-9f8b-246320b0c406",
+      "exchanges": [
+        {
+          "request": "GET /keepalive/c2c6fa41-1414-4a94-9f8b-246320b0c406/0/1 HTTP/1.1\r\nHost: localhost\r\n\r\nHEAD /keepalive/c2c6fa41-1414-4a94-9f8b-246320b0c406/0/2 HTTP/1.1\r\nHost: localhost\r\n\r\nGET /keepalive/c2c6fa41-1414-4a94-9f8b-246320b0c406/0/3 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 103 Early Hints\r\nLink: </owned>\r\n\r\nHTTP/1.1 200 OK\r\nContent-Length: 44\r\nSet-Cookie: a=1\r\nSet-Cookie: b=2\r\n\r\nowned-c2c6fa41-1414-4a94-9f8b-246320b0c406-0HTTP/1.1 200 OK\r\nContent-Length: 999\r\n\r\nHTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n2c\r\nowned-c2c6fa41-1414-4a94-9f8b-246320b0c406-0\r\n0\r\nX-Owned: yes\r\n\r\n"
+        },
+        {
+          "request": "GET /keepalive/c2c6fa41-1414-4a94-9f8b-246320b0c406/1/1 HTTP/1.1\r\nHost: localhost\r\n\r\nHEAD /keepalive/c2c6fa41-1414-4a94-9f8b-246320b0c406/1/2 HTTP/1.1\r\nHost: localhost\r\n\r\nGET /keepalive/c2c6fa41-1414-4a94-9f8b-246320b0c406/1/3 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 103 Early Hints\r\nLink: </owned>\r\n\r\nHTTP/1.1 200 OK\r\nContent-Length: 44\r\nSet-Cookie: a=1\r\nSet-Cookie: b=2\r\n\r\nowned-c2c6fa41-1414-4a94-9f8b-246320b0c406-1HTTP/1.1 200 OK\r\nContent-Length: 999\r\n\r\nHTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n2c\r\nowned-c2c6fa41-1414-4a94-9f8b-246320b0c406-1\r\n0\r\nX-Owned: yes\r\n\r\n"
+        }
+      ],
+      "messages": [
+        {
+          "connectionIndex": 0,
+          "messageIndex": 1,
+          "request": "GET /keepalive/c2c6fa41-1414-4a94-9f8b-246320b0c406/0/1 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 200 OK\r\nContent-Length: 44\r\nSet-Cookie: a=1\r\nSet-Cookie: b=2\r\n\r\nowned-c2c6fa41-1414-4a94-9f8b-246320b0c406-0",
+          "informational": [
+            "HTTP/1.1 103 Early Hints\r\nLink: </owned>\r\n\r\n"
+          ]
+        },
+        {
+          "connectionIndex": 0,
+          "messageIndex": 2,
+          "request": "HEAD /keepalive/c2c6fa41-1414-4a94-9f8b-246320b0c406/0/2 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 200 OK\r\nContent-Length: 999\r\n\r\n",
+          "informational": []
+        },
+        {
+          "connectionIndex": 0,
+          "messageIndex": 3,
+          "request": "GET /keepalive/c2c6fa41-1414-4a94-9f8b-246320b0c406/0/3 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n2c\r\nowned-c2c6fa41-1414-4a94-9f8b-246320b0c406-0\r\n0\r\nX-Owned: yes\r\n\r\n",
+          "informational": []
+        },
+        {
+          "connectionIndex": 1,
+          "messageIndex": 1,
+          "request": "GET /keepalive/c2c6fa41-1414-4a94-9f8b-246320b0c406/1/1 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 200 OK\r\nContent-Length: 44\r\nSet-Cookie: a=1\r\nSet-Cookie: b=2\r\n\r\nowned-c2c6fa41-1414-4a94-9f8b-246320b0c406-1",
+          "informational": [
+            "HTTP/1.1 103 Early Hints\r\nLink: </owned>\r\n\r\n"
+          ]
+        },
+        {
+          "connectionIndex": 1,
+          "messageIndex": 2,
+          "request": "HEAD /keepalive/c2c6fa41-1414-4a94-9f8b-246320b0c406/1/2 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 200 OK\r\nContent-Length: 999\r\n\r\n",
+          "informational": []
+        },
+        {
+          "connectionIndex": 1,
+          "messageIndex": 3,
+          "request": "GET /keepalive/c2c6fa41-1414-4a94-9f8b-246320b0c406/1/3 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n2c\r\nowned-c2c6fa41-1414-4a94-9f8b-246320b0c406-1\r\n0\r\nX-Owned: yes\r\n\r\n",
+          "informational": []
+        }
+      ],
+      "passed": true,
+      "concurrentConnections": 2,
+      "messagesPerConnection": 3,
+      "clientAuthenticated": true,
+      "protocol": "TLSv1.3",
+      "modes": [
+        "sequential",
+        "pipelined"
+      ]
+    },
+    "disabled": {
+      "runId": "3f0184f3-56bc-4247-aa3f-cb3d10465de3",
+      "exchanges": [
+        {
+          "request": "GET /keepalive/3f0184f3-56bc-4247-aa3f-cb3d10465de3/0/1 HTTP/1.1\r\nHost: localhost\r\n\r\nHEAD /keepalive/3f0184f3-56bc-4247-aa3f-cb3d10465de3/0/2 HTTP/1.1\r\nHost: localhost\r\n\r\nGET /keepalive/3f0184f3-56bc-4247-aa3f-cb3d10465de3/0/3 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 103 Early Hints\r\nLink: </owned>\r\n\r\nHTTP/1.1 200 OK\r\nContent-Length: 44\r\nSet-Cookie: a=1\r\nSet-Cookie: b=2\r\n\r\nowned-3f0184f3-56bc-4247-aa3f-cb3d10465de3-0HTTP/1.1 200 OK\r\nContent-Length: 999\r\n\r\nHTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n2c\r\nowned-3f0184f3-56bc-4247-aa3f-cb3d10465de3-0\r\n0\r\nX-Owned: yes\r\n\r\n"
+        },
+        {
+          "request": "GET /keepalive/3f0184f3-56bc-4247-aa3f-cb3d10465de3/1/1 HTTP/1.1\r\nHost: localhost\r\n\r\nHEAD /keepalive/3f0184f3-56bc-4247-aa3f-cb3d10465de3/1/2 HTTP/1.1\r\nHost: localhost\r\n\r\nGET /keepalive/3f0184f3-56bc-4247-aa3f-cb3d10465de3/1/3 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 103 Early Hints\r\nLink: </owned>\r\n\r\nHTTP/1.1 200 OK\r\nContent-Length: 44\r\nSet-Cookie: a=1\r\nSet-Cookie: b=2\r\n\r\nowned-3f0184f3-56bc-4247-aa3f-cb3d10465de3-1HTTP/1.1 200 OK\r\nContent-Length: 999\r\n\r\nHTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n2c\r\nowned-3f0184f3-56bc-4247-aa3f-cb3d10465de3-1\r\n0\r\nX-Owned: yes\r\n\r\n"
+        }
+      ],
+      "messages": [
+        {
+          "connectionIndex": 0,
+          "messageIndex": 1,
+          "request": "GET /keepalive/3f0184f3-56bc-4247-aa3f-cb3d10465de3/0/1 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 200 OK\r\nContent-Length: 44\r\nSet-Cookie: a=1\r\nSet-Cookie: b=2\r\n\r\nowned-3f0184f3-56bc-4247-aa3f-cb3d10465de3-0",
+          "informational": [
+            "HTTP/1.1 103 Early Hints\r\nLink: </owned>\r\n\r\n"
+          ]
+        },
+        {
+          "connectionIndex": 0,
+          "messageIndex": 2,
+          "request": "HEAD /keepalive/3f0184f3-56bc-4247-aa3f-cb3d10465de3/0/2 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 200 OK\r\nContent-Length: 999\r\n\r\n",
+          "informational": []
+        },
+        {
+          "connectionIndex": 0,
+          "messageIndex": 3,
+          "request": "GET /keepalive/3f0184f3-56bc-4247-aa3f-cb3d10465de3/0/3 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n2c\r\nowned-3f0184f3-56bc-4247-aa3f-cb3d10465de3-0\r\n0\r\nX-Owned: yes\r\n\r\n",
+          "informational": []
+        },
+        {
+          "connectionIndex": 1,
+          "messageIndex": 1,
+          "request": "GET /keepalive/3f0184f3-56bc-4247-aa3f-cb3d10465de3/1/1 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 200 OK\r\nContent-Length: 44\r\nSet-Cookie: a=1\r\nSet-Cookie: b=2\r\n\r\nowned-3f0184f3-56bc-4247-aa3f-cb3d10465de3-1",
+          "informational": [
+            "HTTP/1.1 103 Early Hints\r\nLink: </owned>\r\n\r\n"
+          ]
+        },
+        {
+          "connectionIndex": 1,
+          "messageIndex": 2,
+          "request": "HEAD /keepalive/3f0184f3-56bc-4247-aa3f-cb3d10465de3/1/2 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 200 OK\r\nContent-Length: 999\r\n\r\n",
+          "informational": []
+        },
+        {
+          "connectionIndex": 1,
+          "messageIndex": 3,
+          "request": "GET /keepalive/3f0184f3-56bc-4247-aa3f-cb3d10465de3/1/3 HTTP/1.1\r\nHost: localhost\r\n\r\n",
+          "response": "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n2c\r\nowned-3f0184f3-56bc-4247-aa3f-cb3d10465de3-1\r\n0\r\nX-Owned: yes\r\n\r\n",
+          "informational": []
+        }
+      ],
+      "passed": true,
+      "concurrentConnections": 2,
+      "messagesPerConnection": 3,
+      "clientAuthenticated": true,
+      "protocol": "TLSv1.3",
+      "modes": [
+        "sequential",
+        "pipelined"
+      ]
+    }
+  },
+  "captures": [
+    {
+      "completedConnections": 0,
+      "captureId": "3f67a1c20794a90c7aa02caaf6229659c7e41d1fffeeb99bdf15ec231908d892",
+      "untrackedEvents": 0,
+      "events": 0,
+      "captureState": "ACTIVE",
+      "captureError": "",
+      "droppedConnections": 0,
+      "liveConnections": 0,
+      "coverage": "OBSERVED_LIFETIMES_ONLY",
+      "capturedBytes": 0,
+      "messages": 0,
+      "liveHttp": [],
+      "limits": {
+        "totalBytes": 65536,
+        "requestsPerConnection": 16,
+        "messagesPerCapture": 32,
+        "bytesPerDirection": 4096,
+        "connections": 16,
+        "segmentsPerConnection": 64
+      },
+      "state": "ACTIVE",
+      "sourceSha256": "ec80c4c6935b46716715dad2d5800703390f4ee80d313694c59e2c06a426a7fc",
+      "revision": "e26615b3653d66c7277524d3334fb813f2dcaa079e44aebe99d7ebe2b65dd971",
+      "stopping": false,
+      "moduleName": "libownednativetls.so",
+      "buildId": "b272892dd5f4206ec6dba2798144b877df6d8739",
+      "profile": "openssl-ssl-read-write-v1",
+      "otherTlsImplementations": "NOT_OBSERVED",
+      "identity": {
+        "space": "network-1b20ff52-688",
+        "installGeneration": "563cef71-2487-46a9-8e42-8ab65947073f",
+        "descriptorSha256": "8df1f0dc0ea2c2c5c5bedde1d9f916d3c6b64c94d4b57049aefabb9692dc722f",
+        "processGeneration": "d4bc92ab106bf31b8c4b503ab8fa7650e62165936e0f2459bc1c6a0b1949c7e1",
+        "pid": 32616,
+        "mode": "thick",
+        "target": {
+          "packageName": "dev.tripoder.nativetlsfixture",
+          "versionCode": "1",
+          "apkSha256": "1ec4ede794f19dad5c6aa3d8a2b81703802518edb77425da9cb2b838d3eac679"
+        }
+      },
+      "operationId": "a901b66a-5098-4a42-8768-faa7d8ca3dcc"
+    },
+    {
+      "completedConnections": 0,
+      "captureId": "d2721f8a7bd4ffefb52bf640545573d17c98b69f18bcd4281b9066114dfe291f",
+      "untrackedEvents": 0,
+      "events": 0,
+      "captureState": "ACTIVE",
+      "captureError": "",
+      "droppedConnections": 0,
+      "liveConnections": 0,
+      "coverage": "OBSERVED_LIFETIMES_ONLY",
+      "capturedBytes": 0,
+      "messages": 0,
+      "liveHttp": [],
+      "limits": {
+        "totalBytes": 65536,
+        "requestsPerConnection": 16,
+        "messagesPerCapture": 32,
+        "bytesPerDirection": 4096,
+        "connections": 16,
+        "segmentsPerConnection": 64
+      },
+      "state": "ACTIVE",
+      "sourceSha256": "ec80c4c6935b46716715dad2d5800703390f4ee80d313694c59e2c06a426a7fc",
+      "revision": "f8b721c758c01cff4257d06ed69160b7cf7ea458c893fe31e13ef9eb55f787e0",
+      "stopping": false,
+      "moduleName": "libownednativetls.so",
+      "buildId": "b272892dd5f4206ec6dba2798144b877df6d8739",
+      "profile": "openssl-ssl-read-write-v1",
+      "otherTlsImplementations": "NOT_OBSERVED",
+      "identity": {
+        "space": "network-1b20ff52-688",
+        "installGeneration": "563cef71-2487-46a9-8e42-8ab65947073f",
+        "descriptorSha256": "8df1f0dc0ea2c2c5c5bedde1d9f916d3c6b64c94d4b57049aefabb9692dc722f",
+        "processGeneration": "d4bc92ab106bf31b8c4b503ab8fa7650e62165936e0f2459bc1c6a0b1949c7e1",
+        "pid": 32616,
+        "mode": "thick",
+        "target": {
+          "packageName": "dev.tripoder.nativetlsfixture",
+          "versionCode": "1",
+          "apkSha256": "1ec4ede794f19dad5c6aa3d8a2b81703802518edb77425da9cb2b838d3eac679"
+        }
+      },
+      "operationId": "6685546b-1492-4ed2-827e-7a575e5841cc"
+    }
+  ],
+  "adbUsedForMcp": false,
+  "arbitraryTlsCoverage": false,
+  "runnerSha256": "7e3b1c7ffbb95315ca3facdbe8b8fc945c865ba1dcdf7bac10092594852bf962",
+  "space": "network-1b20ff52-688",
+  "fixtureSha256": "1ec4ede794f19dad5c6aa3d8a2b81703802518edb77425da9cb2b838d3eac679",
+  "importOperationId": "bc76f87c-a199-4203-b19c-5d4195d5113f",
+  "target": {
+    "space": "network-1b20ff52-688",
+    "package": "dev.tripoder.nativetlsfixture",
+    "installGeneration": "563cef71-2487-46a9-8e42-8ab65947073f"
+  },
+  "process": {
+    "space": "network-1b20ff52-688",
+    "package": "dev.tripoder.nativetlsfixture",
+    "installGeneration": "563cef71-2487-46a9-8e42-8ab65947073f",
+    "processGeneration": "d4bc92ab106bf31b8c4b503ab8fa7650e62165936e0f2459bc1c6a0b1949c7e1"
+  },
+  "candidate": {
+    "signatureConfirmationRequired": true,
+    "missingExports": [],
+    "automaticAbiInference": false,
+    "candidate": true,
+    "profile": "openssl-ssl-read-write-v1",
+    "buildId": "b272892dd5f4206ec6dba2798144b877df6d8739",
+    "moduleName": "libownednativetls.so",
+    "identity": {
+      "space": "network-1b20ff52-688",
+      "installGeneration": "563cef71-2487-46a9-8e42-8ab65947073f",
+      "descriptorSha256": "8df1f0dc0ea2c2c5c5bedde1d9f916d3c6b64c94d4b57049aefabb9692dc722f",
+      "processGeneration": "d4bc92ab106bf31b8c4b503ab8fa7650e62165936e0f2459bc1c6a0b1949c7e1",
+      "pid": 32616,
+      "mode": "thick",
+      "target": {
+        "packageName": "dev.tripoder.nativetlsfixture",
+        "versionCode": "1",
+        "apkSha256": "1ec4ede794f19dad5c6aa3d8a2b81703802518edb77425da9cb2b838d3eac679"
+      }
+    },
+    "operationId": "dc9d6545-93ae-4ee6-82be-e50626bce76b"
+  },
+  "processStopped": true,
+  "callsFile": "calls.json",
+  "messagesFile": "messages.json",
+  "connectionsFile": "connections.json"
+}

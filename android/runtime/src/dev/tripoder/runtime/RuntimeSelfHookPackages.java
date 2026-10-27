@@ -12,7 +12,7 @@ final class RuntimeSelfHookPackages {
         Map<Executable,RuntimeManagedInstaller.Callback> callbacks=new LinkedHashMap<>();
         for(Executable target:FixedRuntimeHooks.methods(FixedRuntimeHooks.Group.PACKAGES)){
             Method method=(Method)target;
-            if(!RuntimeThinPolicy.active()&&RuntimeFixedPassthrough.packageMethod(method.getDeclaringClass().getName(),method.getName(),method.getParameterCount()))continue;
+            if(RuntimeFixedPassthrough.packageMethod(method.getDeclaringClass().getName(),method.getName(),method.getParameterCount()))continue;
             if(method.getDeclaringClass().getName().equals("android.app.ContextImpl"))callbacks.put(method,(receiver,args,original)->{
                 if(!RuntimePackageBridge.active())return original.call(args);
                 Context context=(Context)receiver;

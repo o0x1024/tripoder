@@ -4,14 +4,14 @@ import {tools,command,operationRoutes,contract} from './tools.mjs';
 import {cases} from './schema-fixtures.mjs';
 import {validate} from './schema-validation.mjs';
 test('all public tool contracts and nested payloads accept valid calls and reject malformed arguments',()=>{
-  assert.equal(tools.length,50);
+  assert.equal(tools.length,60);
   for(const fixture of cases){
     if(fixture.valid)assert.doesNotThrow(()=>command(fixture.name,fixture.args),JSON.stringify(fixture));
     else assert.throws(()=>command(fixture.name,fixture.args),undefined,JSON.stringify(fixture));
   }
 });
 test('model and execution share the exact published action branches',()=>{
-  assert.equal(contract.length,43);
+  assert.equal(contract.length,53);
   for(const tool of tools){assert.equal(tool.inputSchema.type,'object');if(Object.keys(tool._meta['dev.tripoder/actionSchemas']).length)assert.deepEqual(tool.inputSchema.anyOf,Object.values(tool._meta['dev.tripoder/actionSchemas']));assert.equal(tool.inputSchema.oneOf,undefined);assert.equal(tool._meta['dev.tripoder/contractVersion'],3);}
   assert.throws(()=>command('file_export',{action:'read',operationId:'op',exportId:'id'}),/INVALID_DISCRIMINATOR/);
   assert.throws(()=>command('file_query',{action:'stat',source:{kind:'path',path:'/tmp/a'},exportId:'other'}),/UNKNOWN_PROPERTY/);
@@ -56,4 +56,12 @@ test('all structural fixtures have identical model-schema and execution-schema a
  }
  assert.doesNotThrow(()=>validate({action:'targets'},tools.find(t=>t.name==='application_query').inputSchema));
  assert.doesNotThrow(()=>validate({action:'launch_targets',target},tools.find(t=>t.name==='application_query').inputSchema));
+});
+
+test('runtime mode selection is absent and rejected before dispatch',()=>{
+  const manage=tools.find(tool=>tool.name==='application_manage');
+  assert.equal(manage._meta['dev.tripoder/actionSchemas'].set_mode,undefined);
+  assert.equal(operationRoutes.some(route=>route.method==='application.mode'),false);
+  assert.throws(()=>command('application_manage',{action:'set_mode',operationId:'op',target:installation,mode:'thin'}),/INVALID_DISCRIMINATOR/);
+  assert.throws(()=>command('application_mode_set',{}),/TOOL_NOT_FOUND/);
 });

@@ -36,15 +36,15 @@ final class ThinProviderAccessChecks {
         db.execSQL("INSERT INTO installs VALUES(?,?,?,?,?,?,'COMMITTED','',1,'owned',?,'owned-import')",new Object[]{space,info.packageName,install.generation,artifacts.base.toString(),artifacts.parts.get(0).sha256,artifacts.descriptorSha,install.data.getName()});
         InstallProviderIndex.publish(db,space,install.generation,InstallProviderIndex.authorities(artifacts));return install;
     }
-    private RuntimeBroker.Slot slot(ApkStore.BundleInstall install,RuntimeMode mode,boolean attach){
+    private RuntimeBroker.Slot slot(ApkStore.BundleInstall install,boolean attach){
         // Additional scratch generations use distinct process identities; no physical process is launched.
         String process=slots.values().stream().anyMatch(s->s.install==install)?install.info.packageName+":owned_model_"+nextPid:install.info.packageName;
-        return slot(install,mode,attach,process);
+        return slot(install,attach,process);
     }
-    private RuntimeBroker.Slot slot(ApkStore.BundleInstall install,RuntimeMode mode,boolean attach,String process){
+    private RuntimeBroker.Slot slot(ApkStore.BundleInstall install,boolean attach,String process){
         var allocated=broker.contract.allocate(install.space,install.info.packageName,install.generation,process,android.os.Process.myUid());
         String stub=RuntimeSlot.activity(nextPid%8).getName();broker.store.reserve(allocated.session,stub);
-        var slot=new RuntimeBroker.Slot(install,allocated,stub,mode,null);slots.put(generation(slot),slot);
+        var slot=new RuntimeBroker.Slot(install,allocated,stub,null);slots.put(generation(slot),slot);
         int observedPid=nextPid++;if(attach)broker.store.session(broker.contract.attach(allocated.bootstrapToken,observedPid,android.os.Process.myUid()));
         return slot;
     }
@@ -69,7 +69,7 @@ final class ThinProviderAccessChecks {
             var targetInstall=install(owned,assets,"thin-target.apk","owned-thin","target");
             var sourceInstall=install(owned,assets,"thin-source.apk","owned-thin","source");
             var foreignInstall=install(owned,assets,"thin-source.apk","owned-thin-foreign","foreign");
-            target=slot(targetInstall,RuntimeMode.THIN,true);source=slot(sourceInstall,RuntimeMode.THIN,true);
+            target=slot(targetInstall,true);source=slot(sourceInstall,true);
             synchronized(broker){
                 broker.providers.reserve(target);open=lease(target,".PeerProviders$Open");String protectedLease=lease(target,".PeerProviders$Protected"),path=lease(target,".PeerProviders$Path"),privateLease=lease(target,".OwnedDocumentsProvider");
                 String history=UUID.randomUUID().toString();broker.contract.accept(history,"owned-model","a".repeat(64));broker.contract.start(history);broker.contract.markUnknown(history,"RETAINED_THIN_MODEL_UNKNOWN");
@@ -87,12 +87,8 @@ final class ThinProviderAccessChecks {
                 source.closing=true;try{denied("closing-source","PROCESS_CLOSING",()->call(good));}finally{source.closing=false;}
                 target.closing=true;try{denied("closing-target","PROCESS_CLOSING",()->call(good));}finally{target.closing=false;}
                 slots.remove(generation(target));try{denied("missing-target-slot","STALE_SESSION",()->call(good));}finally{slots.put(generation(target),target);}
-                var foreign=slot(foreignInstall,RuntimeMode.THIN,true);denied("cross-space","PROVIDER_SPACE_MISMATCH",()->call(request(foreign,open,"query",".peer-open/owned")));
-                var thickSource=new RuntimeBroker.Slot(source.install,source.allocation,source.activityStub,RuntimeMode.THICK,null);slots.put(generation(source),thickSource);
-                try{denied("thick-source","PROVIDER_THIN_MODE_REQUIRED",()->call(good));}finally{slots.put(generation(source),source);}
-                var thickTarget=new RuntimeBroker.Slot(target.install,target.allocation,target.activityStub,RuntimeMode.THICK,null);slots.put(generation(target),thickTarget);
-                try{denied("thick-target","PROVIDER_THIN_MODE_REQUIRED",()->call(good));}finally{slots.put(generation(target),target);}
-                var otherTarget=slot(targetInstall,RuntimeMode.THIN,true,PKG+":remote");broker.providers.reserve(otherTarget);String otherLease=lease(otherTarget,".CanonicalProvider$Remote");
+                var foreign=slot(foreignInstall,true);denied("cross-space","PROVIDER_SPACE_MISMATCH",()->call(request(foreign,open,"query",".peer-open/owned")));
+                var otherTarget=slot(targetInstall,true,PKG+":remote");broker.providers.reserve(otherTarget);String otherLease=lease(otherTarget,".CanonicalProvider$Remote");
                 denied("lease-owned-by-other-target","PROVIDER_LEASE_OWNER_MISMATCH",()->call(request(source,otherLease,"query",".peer-open/owned")));
                 denied("unknown-lease","PROVIDER_LEASE_UNKNOWN",()->call(request(source,UUID.randomUUID().toString(),"query",".peer-open/owned")));
                 denied("authority-mismatch","PROVIDER_AUTHORITY_NOT_PUBLISHED",()->call(request(source,open,"query",".peer-protected/owned")));
@@ -108,9 +104,9 @@ final class ThinProviderAccessChecks {
                 denied("empty-private-batch","PROVIDER_NOT_EXPORTED",()->call(batch(request(source,privateLease,"applyBatch",".documents"),new String[0],new String[0])));
                 denied("cross-authority-batch","PROVIDER_BATCH_ROUTE_INVALID",()->call(batch(request(source,open,"applyBatch",".peer-open"),new String[]{"content://"+PKG+".peer-path/public"},new String[]{"query"})));
                 call(request(target,privateLease,"query",".documents/owned"));check.accept("thin-access-model-canonical-owner-retains-private-access",true);
-                var allocated=slot(sourceInstall,RuntimeMode.THIN,false);denied("unattached-source","SESSION_INACTIVE",()->call(request(allocated,open,"query",".peer-open/owned")));
+                var allocated=slot(sourceInstall,false);denied("unattached-source","SESSION_INACTIVE",()->call(request(allocated,open,"query",".peer-open/owned")));
                 for(boolean failed:new boolean[]{false,true}){
-                    var ended=slot(sourceInstall,RuntimeMode.THIN,true);if(failed)broker.store.session(broker.contract.markFailed(generation(ended),"OWNED_MODEL"));else broker.store.session(broker.contract.markDead(generation(ended)));
+                    var ended=slot(sourceInstall,true);if(failed)broker.store.session(broker.contract.markFailed(generation(ended),"OWNED_MODEL"));else broker.store.session(broker.contract.markDead(generation(ended)));
                     denied(failed?"failed-source":"dead-source","SESSION_INACTIVE",()->call(request(ended,open,"query",".peer-open/owned")));
                 }
                 check.accept("thin-access-model-readonly-gate-creates-no-journal-or-reference",operations==count(db,"operations")&&calls==count(db,"provider_calls")&&acquisitions==count(db,"provider_acquisitions"));

@@ -1,0 +1,9 @@
+INSTRUMENTATION_RESULT: shortMsg=Process crashed.
+INSTRUMENTATION_CODE: 0
+
+The operator force-stopped only the owned native dev.tripoder.factorycontract
+process after the test runner failed to complete. This is not a native app-crash
+finding. No data was cleared. The instrumentation result is NOT accepted.
+The v2 probe replaced the framework Instrumentation owner and used the previous
+owner's startActivitySync waiter. The fixed SDK completion path uses the current
+owner, so this runner design cannot provide a reliable completion receipt.

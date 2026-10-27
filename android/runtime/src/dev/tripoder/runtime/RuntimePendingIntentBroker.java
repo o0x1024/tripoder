@@ -52,23 +52,22 @@ final class RuntimePendingIntentBroker {
         // needs no operation row, SQLite transaction, fsync or mutation lease.
         // UPDATE/CANCEL still use the mutation path below so payload changes and
         // token replacement retain their actual system semantics.
-        boolean thinLookup;PendingIntentLedger.Version lookupPrior;
+        boolean readOnlyLookup;PendingIntentLedger.Version lookupPrior;
         synchronized(broker){
             current(install);
-            thinLookup=broker.resolveMode(install.space,install.info.packageName,install.generation).routesThroughPlatform()
-                &&(flags&(RuntimePendingIntentPolicy.UPDATE_CURRENT|RuntimePendingIntentPolicy.CANCEL_CURRENT))==0;
-            lookupPrior=thinLookup?ledger.current(key):null;
+            readOnlyLookup=(flags&(RuntimePendingIntentPolicy.UPDATE_CURRENT|RuntimePendingIntentPolicy.CANCEL_CURRENT))==0;
+            lookupPrior=readOnlyLookup?ledger.current(key):null;
         }
-        if(thinLookup){
+        if(readOnlyLookup){
             PendingIntent observed=lookupPrior==null?null:lookup(lookupPrior);
             if(observed!=null)return token(lookupPrior,observed);
             if((flags&RuntimePendingIntentPolicy.NO_CREATE)!=0)return new Bundle();
         }
         synchronized(broker){
             current(install);
-            boolean allowDisabled=broker.resolveMode(install.space,install.info.packageName,install.generation).routesThroughPlatform();
-            if(tokenKind.equals("broadcast"))receiver=logical.getComponent()==null?null:receiver(install,logical,allowDisabled);
-            else receiver=component(install,logical,tokenKind,allowDisabled);
+
+            if(tokenKind.equals("broadcast"))receiver=logical.getComponent()==null?null:receiver(install,logical,true);
+            else receiver=component(install,logical,tokenKind,true);
             ledger.requireIdle(install.generation);prior=ledger.current(key);
             atomic(()->begin(operation,install,prior==null?"":prior.version,"GET",digest));
         }

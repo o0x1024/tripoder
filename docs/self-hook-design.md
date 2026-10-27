@@ -30,9 +30,9 @@ flowchart TD
 
 当前实现绑定仓库已验证的 ART 二进制合约。修改目标入口不能自动覆盖已经内联的调用者，`fullCallerCoverage` 和 `preexistingCompiledFramesCovered` 始终报告 false。
 
-THICK 的固定 helper、备份方法和回调先在正常 ART 状态下准备，再以一次暂停发布。初次发布及后续普通 Hook 的新目标发布，会反优化并使 JIT code cache 失效；只调用 `DeoptimizeEverything` 可能在 `ConfigureStubs` 时重新发布仍含旧内联代码的 JIT 调用者。缓存对象必须来自已绑定的 Runtime/Jit，并核对其身份与固定函数体。
+固定 helper、备份方法和回调先在正常 ART 状态下准备，再以一次暂停发布。初次发布及后续普通 Hook 的新目标发布，会反优化并使 JIT code cache 失效；只调用 `DeoptimizeEverything` 可能在 `ConfigureStubs` 时重新发布仍含旧内联代码的 JIT 调用者。缓存对象必须来自已绑定的 Runtime/Jit，并核对其身份与固定函数体。
 
-固定发布完成后恢复原有运行标志和 JIT 选项，受控方法保留编译/内联屏障及稳定备份入口。Guest Service/Receiver 在注册给 Android 前安装实际回调入口，不为每个组件重复反优化全进程；若该入口升级为普通 Hook，仍补做调用者失效。THIN 保留原有编译策略、固定集合与发布顺序。
+固定发布完成后恢复原有运行标志和 JIT 选项，受控方法保留编译/内联屏障及稳定备份入口。Guest Service/Receiver 在注册给 Android 前安装实际回调入口，不为每个组件重复反优化全进程；若该入口升级为普通 Hook，仍补做调用者失效。所有普通客体使用同一批量发布与调用者失效规则。
 
 原方法备份保持 GC root 和稳定桥，中央入口管理器继续维护已注册目标的入口所有权。实际冷启动、编译调用者及停用恢复的验证见 [THICK P0/P1 记录](thick-startup-p0-p1.md)。
 

@@ -1,0 +1,36 @@
+// QA-only explicit USB delivery to the same advertised phone HTTP endpoint.
+// No listener, forward, runtime backend, retry or app data access is added.
+import {Transport,MCP_VERSION} from '/Users/like/code/tripoder/agent/transport.mjs';
+import {spawn} from 'node:child_process';
+
+async function phoneHttp(url,method,headers,body=Buffer.alloc(0),limit=1048576){
+ const endpoint=new URL(url);if(!/^\d+\.\d+\.\d+\.\d+$/.test(endpoint.hostname))throw Error('QA_PHONE_IPV4_REQUIRED');
+ const request=Buffer.concat([Buffer.from(`${method} ${endpoint.pathname} HTTP/1.1\r\nHost: ${endpoint.host}\r\nConnection: close\r\n${Object.entries(headers).map(([k,v])=>`${k}: ${v}\r\n`).join('')}\r\n`),body]);
+ return new Promise((resolve,reject)=>{
+  let sent=false,done=false,size=0;const chunks=[];const child=spawn('adb',['-s','d861a4fa','shell','-T','toybox','nc','-w','3','-W','75',endpoint.hostname,endpoint.port]);
+  const fail=message=>{if(done)return;done=true;clearTimeout(timer);child.kill();reject(Object.assign(Error(message),{dispatched:sent}));};
+  const timer=setTimeout(()=>fail(sent?'TRANSPORT_TIMEOUT_OUTCOME_UNKNOWN':'MCP_CONNECTION_TIMEOUT'),80000);
+  child.stdin.once('finish',()=>{sent=true;});child.stdin.on('error',()=>fail('QA_USB_STDIN_INTERRUPTED'));child.on('error',()=>fail('QA_USB_CONNECTION_FAILED'));
+  child.stdout.on('data',b=>{size+=b.length;if(size>limit+8192)fail('MCP_RESPONSE_TOO_LARGE');else chunks.push(b);});
+  child.stderr.resume();child.once('close',code=>{
+   if(done)return;try{
+    const bytes=Buffer.concat(chunks),split=bytes.indexOf('\r\n\r\n');if(code!==0||split<0)throw Error('QA_USB_HTTP_INTERRUPTED');
+    const lines=bytes.subarray(0,split).toString('ascii').split('\r\n');const match=/^HTTP\/1\.1 (\d{3}) /.exec(lines.shift());if(!match)throw Error('QA_USB_HTTP_STATUS');
+    const responseHeaders={};for(const line of lines){const at=line.indexOf(':');if(at<=0)throw Error('QA_USB_HTTP_HEADER');const key=line.slice(0,at).toLowerCase();if(Object.hasOwn(responseHeaders,key))throw Error('QA_USB_HTTP_DUPLICATE_HEADER');responseHeaders[key]=line.slice(at+1).trim();}
+    const payload=bytes.subarray(split+4);if(!/^\d+$/.test(responseHeaders['content-length'])||payload.length!==Number(responseHeaders['content-length'])||payload.length>limit)throw Error('QA_USB_HTTP_LENGTH');
+    done=true;clearTimeout(timer);resolve({status:Number(match[1]),headers:responseHeaders,body:payload});
+   }catch(error){fail(error.message);}
+  });child.stdin.end(request);
+ });
+}
+Transport.prototype.rpc=async function(request){
+ if(this.closed)throw Object.assign(Error('TRANSPORT_CLOSED'),{dispatched:false});const body=Buffer.from(JSON.stringify(request));if(body.length>65536)throw Object.assign(Error('MCP_FRAME_TOO_LARGE'),{dispatched:false});
+ const headers={'content-type':'application/json','accept':'application/json, text/event-stream','content-length':body.length};
+ if(this.session){headers['mcp-session-id']=this.session;headers['mcp-protocol-version']=MCP_VERSION;}
+ const r=await phoneHttp(this.config.url,'POST',headers,body,request.method==='tools/list'?1048576:524288);
+ if(![200,202].includes(r.status))throw Object.assign(Error('MCP_HTTP_'+r.status),{dispatched:![400,401,403,404,405,406,413,415,429,503].includes(r.status)});
+ if(r.status===202){if(request.id!==undefined||r.body.length)throw Error('MCP_NOTIFICATION_RESPONSE_INVALID');return null;}
+ if(!r.headers['content-type']?.startsWith('application/json'))throw Error('MCP_RESPONSE_TYPE_INVALID');const value=JSON.parse(new TextDecoder('utf8',{fatal:true}).decode(r.body));if(value.jsonrpc!=='2.0'||value.id!==request.id)throw Error('MCP_RESPONSE_CORRELATION_MISMATCH');
+ if(request.method==='initialize'&&!value.error){const session=r.headers['mcp-session-id'];if(!session)throw Error('MCP_SESSION_MISSING');this.session=session;}return value;
+};
+Transport.prototype.close=async function(){if(this.closed)return;this.closed=true;if(!this.session)return;await phoneHttp(this.config.url,'DELETE',{'mcp-session-id':this.session,'mcp-protocol-version':MCP_VERSION},undefined,1024);this.session=null;};

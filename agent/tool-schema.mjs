@@ -33,10 +33,20 @@ export const httpRequest={...object({
 },['method','url']),description:'Explicit guest HTTP request. Only method and url are required.',examples:[{method:'GET',url:'https://example.com/',timeoutMs:5000}]};
 export const invocation={...object({
   className:string('Fully qualified declared guest class; the class must belong to the guest ClassLoader.',512,1),
-  methodName:{...string('Declared method name; constructors are unsupported.',128,1),pattern:'^[^<].*$'},
+  methodName:{...string('Declared method name, or "<init>" to invoke a constructor and register a new live instanceId.',128,1),pattern:'^([^<].*|<init>)$'},
   argumentTypes:{type:'array',maxItems:16,items:{type:'string',enum:javaTypes},description:'Exact declared Java types in order. Use [] for a zero-argument method.'},
   arguments:{type:'array',maxItems:16,items:{anyOf:[...scalar.anyOf,{type:'null',description:'Null for nullable String or byte[] only.'}]},description:'One value per argumentType in the same order. byte/short/int use bounded JSON integers, boolean uses a JSON boolean, long MUST be a decimal string in signed 64-bit range, byte[] is an even-length hex string (max 4096 bytes), char is one UTF-16 code unit. Only String/byte[] accept null. Objects/arrays are unsupported.'},
-}),description:'Invoke a guest method. Instance methods require a no-argument constructor and create a new instance; this does not select an existing instance.',examples:[{className:'com.example.Counter',methodName:'value',argumentTypes:[],arguments:[]}]};
+  instanceId:{...string('Optional live instance handle from heap_query(action=choose_instances), e.g. "inst-1". When omitted on an instance method, a no-argument constructor creates a new instance.',32,6),pattern:'^inst-[0-9]{1,9}$'},
+},['className','methodName','argumentTypes','arguments']),description:'Invoke a guest method or "<init>" constructor. Instance methods either use instanceId from heap_query(action=choose_instances) or guest_invoke(methodName="<init>"), or create a new instance via a no-argument constructor.',examples:[{className:'com.example.Counter',methodName:'value',argumentTypes:[],arguments:[]}]};
+export const honeyRow={type:'object',description:'One virtual row (column name -> string/number/boolean/null value) served by the honeydata ContentProvider interceptor.',minProperties:1,maxProperties:16,propertyNames:{type:'string',minLength:1,maxLength:64,pattern:'^[A-Za-z0-9_]+$'},additionalProperties:{description:'Column value.',anyOf:[...scalar.anyOf,{type:'null',description:'SQL NULL.'}]}};
+export const httpMockRule={...object({
+  urlPrefix:{...string('HTTP(S) URL prefix matched against guest requests.',512,8),pattern:'^[Hh][Tt][Tt][Pp][Ss]?://[^\\s/]+'},
+  method:{type:'string',enum:['ANY','GET','POST','PUT','DELETE','PATCH','HEAD','OPTIONS'],description:'HTTP method filter, or ANY to match all methods.'},
+  statusCode:{type:'integer',minimum:100,maximum:599,description:'Synthetic HTTP response status code.'},
+  headers:{type:'object',description:'Synthetic response headers.',maxProperties:16,propertyNames:{type:'string',minLength:1,maxLength:128,pattern:"^[!#$%&'*+.^_`|~0-9A-Za-z-]+$(?![\\s\\S])"},additionalProperties:string('Response header value.',1024)},
+  body:string('Synthetic UTF-8 response body.',16384),
+  delayMs:{type:'integer',minimum:0,maximum:5000,description:'Artificial latency in milliseconds before returning the synthetic response.'},
+},['urlPrefix','statusCode']),description:'One deterministic HTTP mock/fault rule matched by URL prefix.'};
 const flatValue={description:'Scalar extra: string, boolean or number. Integers become int (or long when out of int range); other numbers become double.',anyOf:[string('String value.',2048),{type:'boolean',description:'Boolean value.'},number]};
 const extrasMap=(description,maxProperties=32)=>({type:'object',description,maxProperties,propertyNames:{type:'string',minLength:1,maxLength:128},additionalProperties:{description:'Scalar, or one nested object of scalars that becomes a Bundle.',anyOf:[...flatValue.anyOf,{type:'object',description:'Nested Bundle of scalar extras (one level only).',maxProperties:32,propertyNames:{type:'string',minLength:1,maxLength:128},additionalProperties:flatValue}]}});
 export const componentRequest={...object({
@@ -94,7 +104,7 @@ const meanings={
   id:'Unique selector symbol referenced by the Hook source; not a class or method name.',
   kind:'Discriminator selecting this exact variant.',
   className:'Fully qualified guest Java class name; inspecting it does not initialize the class.',
-  methodName:'Exact declared method name; constructors are unsupported.',
+  methodName:'Exact declared method name, or "<init>" for a constructor.',
   argumentTypes:'Exact declared argument types in order, including [] for no arguments.',
   moduleName:'Exact loaded native library basename, e.g. libexample.so.',
   symbol:'Exact exported ELF symbol from native_exports_search.',
@@ -126,7 +136,6 @@ const meanings={
   component:'Exact declared launcher component; empty string selects the unique launcher. Use application_launch_targets to discover it.',
   probeRevision:'Exact probes_get.revision; empty string if no probe configuration exists.',
   name:'Display name for this space, 1-24 characters after trimming.',
-  mode:'Runtime mode applied to this exact stopped installation.',
   apkPaths:'Absolute readable computer APK paths, base first followed by splits. Available only through the stdio local-import adapter.',
   expectedGeneration:'Current installGeneration for an upgrade; empty string for a new installation.',
   uploadId:'Original application_upload_begin operationId. It also identifies the eventual commit.',

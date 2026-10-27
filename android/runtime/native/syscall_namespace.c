@@ -18,6 +18,9 @@
 #include <string.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <ucontext.h>
 #include <unistd.h>
 #define syscall tp_kernel_syscall
@@ -34,12 +37,27 @@ struct kernel_sigaction_a64 {
 };
 static struct kernel_sigaction_a64 guest_sigsys;
 static int (*chain_user_action)(int,const struct sigaction *,struct sigaction *);
-static const int numbers[]={SYS_openat,SYS_newfstatat,SYS_readlinkat,SYS_faccessat,SYS_unlinkat,SYS_mkdirat,SYS_renameat2,SYS_chdir,SYS_symlinkat,SYS_linkat,SYS_statfs,SYS_inotify_add_watch,SYS_fchmodat,SYS_ptrace,SYS_wait4,SYS_waitid};
+static const int numbers[]={SYS_openat,SYS_newfstatat,SYS_readlinkat,SYS_faccessat,SYS_unlinkat,SYS_mkdirat,SYS_renameat2,SYS_chdir,SYS_symlinkat,SYS_linkat,SYS_statfs,SYS_inotify_add_watch,SYS_fchmodat,SYS_ptrace,SYS_wait4,SYS_waitid,SYS_execve,SYS_execveat,SYS_kill,SYS_tkill,SYS_tgkill,SYS_connect};
 enum { CALL_COUNT=sizeof(numbers)/sizeof(numbers[0]) };
 static const unsigned call_count=CALL_COUNT;
 static _Atomic bool installed;
 static bool debugger_auditing;
+static _Atomic bool policy_block_execve=false;
+static _Atomic bool policy_block_kill=false;
+static _Atomic bool policy_network_sinkhole=false;
+static _Atomic uint64_t policy_counts[6]; /* 0:execve_attempts, 1:execve_blocked, 2:kill_attempts, 3:kill_blocked, 4:connect_attempts, 5:connect_sinkholed */
 void tp_syscall_namespace_trace_debugger(bool enabled){if(!atomic_load_explicit(&installed,memory_order_acquire))debugger_auditing=enabled;}
+void tp_syscall_namespace_set_policy(bool block_execve,bool block_kill,bool network_sinkhole){
+    atomic_store_explicit(&policy_block_execve,block_execve,memory_order_release);
+    atomic_store_explicit(&policy_block_kill,block_kill,memory_order_release);
+    atomic_store_explicit(&policy_network_sinkhole,network_sinkhole,memory_order_release);
+}
+void tp_syscall_namespace_get_policy(bool *block_execve,bool *block_kill,bool *network_sinkhole,uint64_t counts[6]){
+    if(block_execve)*block_execve=atomic_load_explicit(&policy_block_execve,memory_order_acquire);
+    if(block_kill)*block_kill=atomic_load_explicit(&policy_block_kill,memory_order_acquire);
+    if(network_sinkhole)*network_sinkhole=atomic_load_explicit(&policy_network_sinkhole,memory_order_acquire);
+    if(counts){for(unsigned i=0;i<6;i++)counts[i]=atomic_load_explicit(&policy_counts[i],memory_order_relaxed);}
+}
 _Static_assert(CALL_COUNT+10<=32,"syscall filter budget");
 static _Atomic uint64_t observed[CALL_COUNT];
 struct audit_row { _Atomic bool busy;unsigned sequence;int number;long result;uintptr_t pc;char path[256]; };
@@ -138,6 +156,77 @@ static long dispatch(int signal,siginfo_t *info,void *raw){
             if(info->si_syscall==SYS_wait4&&result>0&&args[1])tp_user_read((void *)args[1],&status,sizeof(status));
             if(debugger_auditing&&fd>=0){char line[256];int n=snprintf(line,sizeof(line),"DEBUGGER pid=%ld tid=%ld nr=%d a0=%lx a1=%lx a2=%lx a3=%lx result=%ld errno=%d status=%x\n",syscall(SYS_getpid),syscall(SYS_gettid),info->si_syscall,(unsigned long)args[0],(unsigned long)args[1],(unsigned long)args[2],(unsigned long)args[3],result,result<0?call_errno:0,status);if(n>0&&(size_t)n<sizeof(line))syscall(SYS_write,fd,line,(size_t)n);}
             errno=call_errno;break;
+        }
+        case SYS_execve:case SYS_execveat:{
+            name=(const char *)(info->si_syscall==SYS_execve?args[0]:args[1]);
+            atomic_fetch_add_explicit(&policy_counts[0],1,memory_order_relaxed);
+            /* The seccomp trap filter survives execve but the SIGSYS handler does not: an exec'd image dies with SIGSYS at its first
+             * namespaced syscall (the dynamic linker's openat). A failed exec is the only outcome the caller can handle. */
+            if(true||atomic_load_explicit(&policy_block_execve,memory_order_acquire)){
+                atomic_fetch_add_explicit(&policy_counts[1],1,memory_order_relaxed);
+                errno=EACCES;result=-1;
+            }else if(info->si_syscall==SYS_execve){
+                result=syscall(SYS_execve,args[0],args[1],args[2]);
+            }else{
+                result=syscall(SYS_execveat,args[0],args[1],args[2],args[3],args[4]);
+            }
+            break;
+        }
+        case SYS_kill:case SYS_tkill:case SYS_tgkill:{
+            name=NULL;
+            pid_t self_pid=(pid_t)syscall(SYS_getpid);
+            bool external=false;
+            if(info->si_syscall==SYS_kill){
+                pid_t target_pid=(pid_t)args[0];
+                external=(target_pid!=self_pid&&target_pid!=0);
+            }else if(info->si_syscall==SYS_tgkill){
+                pid_t tgid=(pid_t)args[0];
+                external=(tgid!=self_pid&&tgid!=-1);
+            }
+            if(external){
+                atomic_fetch_add_explicit(&policy_counts[2],1,memory_order_relaxed);
+                if(atomic_load_explicit(&policy_block_kill,memory_order_acquire)){
+                    atomic_fetch_add_explicit(&policy_counts[3],1,memory_order_relaxed);
+                    errno=EPERM;result=-1;break;
+                }
+            }
+            if(info->si_syscall==SYS_kill)result=syscall(SYS_kill,args[0],args[1]);
+            else if(info->si_syscall==SYS_tkill)result=syscall(SYS_tkill,args[0],args[1]);
+            else result=syscall(SYS_tgkill,args[0],args[1],args[2]);
+            break;
+        }
+        case SYS_connect:{
+            name=NULL;
+            bool external_inet=false;
+            sa_family_t family=0;
+            size_t addrlen=(size_t)args[2];
+            if(args[1]&&addrlen>=sizeof(sa_family_t)&&tp_user_read((const void *)args[1],&family,sizeof(family))==0){
+                if(family==AF_INET&&addrlen>=sizeof(struct sockaddr_in)){
+                    struct sockaddr_in sin;
+                    if(tp_user_read((const void *)args[1],&sin,sizeof(sin))==0){
+                        uint32_t host_ip=ntohl(sin.sin_addr.s_addr);
+                        external_inet=(host_ip!=0&&(host_ip>>24)!=127);
+                    }
+                }else if(family==AF_INET6&&addrlen>=sizeof(struct sockaddr_in6)){
+                    struct sockaddr_in6 sin6;
+                    if(tp_user_read((const void *)args[1],&sin6,sizeof(sin6))==0){
+                        bool is_loopback=IN6_IS_ADDR_LOOPBACK(&sin6.sin6_addr)||IN6_IS_ADDR_UNSPECIFIED(&sin6.sin6_addr);
+                        if(!is_loopback&&IN6_IS_ADDR_V4MAPPED(&sin6.sin6_addr)){
+                            is_loopback=(sin6.sin6_addr.s6_addr[12]==127);
+                        }
+                        external_inet=!is_loopback;
+                    }
+                }
+            }
+            if(external_inet){
+                atomic_fetch_add_explicit(&policy_counts[4],1,memory_order_relaxed);
+                if(atomic_load_explicit(&policy_network_sinkhole,memory_order_acquire)){
+                    atomic_fetch_add_explicit(&policy_counts[5],1,memory_order_relaxed);
+                    errno=ECONNREFUSED;result=-1;break;
+                }
+            }
+            result=syscall(SYS_connect,args[0],args[1],args[2]);
+            break;
         }
         default:result=metadata_path(SYS_inotify_add_watch,(int)args[0],name,NULL,(unsigned)args[2]);break;
     }

@@ -14,7 +14,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 /**
- * THICK-mode location facade. Without a sandbox mock fix every call is forwarded to the real platform manager.
+ * Guest location facade. Without a sandbox mock fix every call is forwarded to the real platform manager.
  * With one, last-known/current/updates all report the mock position; real fixes are no longer delivered.
  * Only listener based updates are supported (no PendingIntent/GNSS callbacks).
  */
@@ -41,7 +41,7 @@ final class RuntimeLocation {
         Location out=new Location(provider);out.setLatitude(fix.latitude());out.setLongitude(fix.longitude());out.setAccuracy(fix.accuracy());
         if(fix.altitude()!=null)out.setAltitude(fix.altitude());
         out.setSpeed(fix.speed());out.setBearing(fix.bearing());
-        out.setTime(System.currentTimeMillis());out.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos());
+        out.setTime(RuntimeTimeWarp.currentTimeMillis());out.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos());
         return out;
     }
 
@@ -94,7 +94,7 @@ final class RuntimeLocation {
     private Object unregister(LocationListener guest){
         Registration found=null;
         synchronized(this){for(Registration existing:registrations)if(existing.guest==guest){found=existing;break;}if(found!=null)registrations.remove(found);}
-        if(found!=null)try{platform().removeUpdates(found);}catch(RuntimeException ignored){}
+        platform().removeUpdates(found==null?guest:found);
         return null;
     }
 

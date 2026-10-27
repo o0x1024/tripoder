@@ -1,0 +1,76 @@
+{
+  "status": "IN_PROGRESS_NOT_ACCEPTED",
+  "dataCleared": false,
+  "admissionWeakened": false,
+  "source48": {
+    "engineSha256": "e710a32bf773529dd35b2fe1db7f8de5fac92718eda49d039e26a1adf490830e",
+    "build": "PASS",
+    "sdkSources": 350,
+    "deviceValidation": "FAIL_244_CHECKS_BEFORE_PRIORITY_ASSERTION"
+  },
+  "roots": [
+    {
+      "package": "com.aliyun.tongyi",
+      "thin": "com-aliyun-tongyi-thin-1792801513",
+      "thick": "com-aliyun-tongyi-thick-1792801558",
+      "firstFailure": "FIXED_BOOT_MANAGED_ADAPTER_REQUIRED:android.app.IntentService.onCreate",
+      "terminationOwner": "RuntimeManagedInstaller.install",
+      "root": "publicLifecycle assumes bootstrap class loader is null; inherited IntentService methods also need existing fixed lifecycle boundary to translate delivery and acknowledge lifecycle",
+      "repair": "PENDING_OWNED_NEGATIVE",
+      "ownedFixtureSha256": "76844122eb65259b894e438c2a3c4376f83d4ff98fba7a92a4227326f814d556",
+      "ownedNegative": {
+        "thin": "dev-tripoder-servicecontract-thin-1792802617",
+        "thick": "dev-tripoder-servicecontract-thick-1792802656",
+        "sameFrozenApk": true,
+        "sameFirstFailureAsTongyiAndQuark": true
+      }
+    },
+    {
+      "package": "com.dianping.v1",
+      "thin": "com-dianping-v1-thin-1792801693",
+      "thick": "APPLICATION preparation timeout; first causal stack unresolved",
+      "thinFirstFailure": "PACKAGE_CACHED_ENDPOINT_CHANGED",
+      "thinBoundary": "RuntimePackages.contextualManager on actual ActivityThread framework request",
+      "repair": "PENDING_ROOT_PROOF_NO_GUARD_REMOVAL"
+    },
+    {
+      "package": "com.quark.browser",
+      "thin": "com-quark-browser-thin-1792802132",
+      "firstFailure": "FIXED_BOOT_MANAGED_ADAPTER_REQUIRED:android.app.IntentService.onCreate",
+      "rootGroup": "INHERITED_INTENT_SERVICE_FIXED_ADAPTER",
+      "repair": "PENDING"
+    },
+    {
+      "rootGroup": "SIGNED_FILTER_PRIORITY_INT32",
+      "before": {
+        "models": "phase48-contracts/result.json",
+        "thin": "dev-tripoder-launchcontract-thin-1792802452",
+        "thick": "dev-tripoder-launchcontract-thick-1792802492"
+      },
+      "firstFailure": "enabled-higher-priority-info-is-selected",
+      "cause": "Binary XML unsigned spelling 4294967291 retains int32 bits of -5; Integer.parseInt rejected it and swallowed the failure as zero",
+      "repair": "Decode finite int32 bit domain; malformed or out-of-range values rejected; no substituted zero",
+      "verification": "PENDING"
+    }
+  ],
+  "observations": [
+    {
+      "package": "com.mi.health",
+      "both": "WelcomeActivity; thick PNG visually inspected; no business acceptance"
+    },
+    {
+      "package": "com.fenxiang.storyline",
+      "both": "SplashActivity privacy dialog; thick PNG visually inspected; no consent granted"
+    },
+    {
+      "package": "com.google.android.apps.bard",
+      "both": "ErrorActivity says Google app required; thick PNG visually inspected; NOT accepted"
+    }
+  ],
+  "source49": {
+    "engineSha256": "b06e06594a0bdc91fff31378ea5ac1ec8d6a615aa1b98ed86d9293382da61039",
+    "build": "PASS",
+    "sdkSources": 350,
+    "deviceValidation": "PASS_279_MODEL_AND_INTEGRATION_CHECKS_NOT_APP_ACCEPTANCE"
+  }
+}

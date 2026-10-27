@@ -26,7 +26,7 @@ public final class RuntimeMutationGuard implements AutoCloseable {
         if(space==null&&command.equals("agentExplicit"))try{var target=new org.json.JSONObject(input.getString("payload")).getJSONObject("params").getJSONObject("target");space=target.getString("space");pkg=target.getString("package");}catch(Exception unscoped){/* Unknown legacy shapes remain globally fenced. */}
         String scope=space==null?"*":"space/"+space+(pkg==null?"":"/package/"+pkg);
         return new RuntimeMutationGuard(scope,command,command.equals("prepareLaunch")||command.equals("prepareApplicationLaunch")||command.equals("agentPrepareLaunch"),
-            command.equals("cancelNotAccepted")||command.equals("closeLaunchEntry")||command.equals("stopApplication")||command.equals("agentStopApplication")||command.equals("setApplicationMode")||command.equals("setProjectMode")||command.equals("applicationTarget"),input.getString("operation"),installPackage);
+            command.equals("cancelNotAccepted")||command.equals("closeLaunchEntry")||command.equals("stopApplication")||command.equals("agentStopApplication")||command.equals("applicationTarget"),input.getString("operation"),installPackage);
     }
     static RuntimeMutationGuard generation(RuntimeBroker broker,String generation,String command){
         try(var c=broker.store.getReadableDatabase().rawQuery("SELECT space,package FROM sessions WHERE generation=?",new String[]{generation})){

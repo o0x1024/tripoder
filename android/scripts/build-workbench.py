@@ -25,6 +25,7 @@ def main():
     parser.add_argument('--ndk', required=True, type=Path)
     parser.add_argument('--recovery-acceptance',action='store_true',help='Include owned fault fixture ONLY in a separate QA package')
     parser.add_argument('--startup-diagnostics',action='store_true',help='Record bounded early Application thread samples ONLY in a separate QA package')
+    parser.add_argument('--fault-evidence',action='store_true',help='Opt in to bounded signal/code-location records without memory or UI capture')
     parser.add_argument('--mcp-port',type=int,help='Explicit MCP port for a separate QA package; production port is unchanged')
     parser.add_argument('--package', default='dev.tripoder.engine',
                         help='Application id. A second id installs alongside the original, which is the only way to '
@@ -98,6 +99,7 @@ def main():
     manifest=generated/'EngineManifest.xml';text=(android/'engine/AndroidManifest.xml').read_text()
     if args.recovery_acceptance:text=text.replace('<!-- PROCESS_COMPONENT_POOL -->','<service android:name="dev.tripoder.runtime.RecoveryFaultService" android:process=":authority" android:exported="false"/><!-- PROCESS_COMPONENT_POOL -->')
     if args.startup_diagnostics:text=text.replace('<!-- PROCESS_COMPONENT_POOL -->','<meta-data android:name="tripoder.diagnostics.startup" android:value="true"/><!-- PROCESS_COMPONENT_POOL -->')
+    if args.fault_evidence:text=text.replace('<!-- PROCESS_COMPONENT_POOL -->','<meta-data android:name="tripoder.diagnostics.faults" android:value="true"/><!-- PROCESS_COMPONENT_POOL -->')
     if text.count('<!-- PROCESS_COMPONENT_POOL -->')!=1:raise RuntimeError('PROCESS_COMPONENT_POOL_MARKER_REQUIRED')
     # One pass for every place the id is embedded (manifest package, provider authorities, task affinity), so a renamed
     # build can never share an authority or affinity with the install it sits next to.
@@ -147,6 +149,7 @@ def main():
     receipt['installFixtures']=fixture_info
     receipt['recoveryAcceptanceFixture']=args.recovery_acceptance
     receipt['startupDiagnostics']=args.startup_diagnostics
+    receipt['faultEvidence']=args.fault_evidence
     receipt['mcpPortOverride']=args.mcp_port
     (build/'build-receipt.json').write_text(json.dumps(receipt,indent=2))
 

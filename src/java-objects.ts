@@ -62,6 +62,23 @@ export class JavaObjectFrame {
     requireThat(Object.hasOwn(value.snapshot, fieldName), 'HOOK_FIELD_NOT_FOUND', fieldName);
     return structuredClone(value.snapshot[fieldName]);
   }
+  /** Shallow container snapshot for simulation: returns bounded entries from the fixture's .snapshot. */
+  static container(ref: JavaObjectRef, maxEntries = 16): Readonly<Record<string, unknown>> {
+    const frame=frames.at(-1);requireThat(frame, 'HOOK_OBJECT_OUTSIDE_INVOCATION', 'snapshotContainer requires an invocation');
+    const entry=refs.get(ref);requireThat(entry, 'HOOK_OBJECT_REFERENCE_REQUIRED', 'An invocation reference is required');
+    requireThat(entry.frame === frame, 'HOOK_OBJECT_SCOPE_MISMATCH', 'Reference belongs to another invocation');
+    const value=entry.value;requireThat(value, 'HOOK_OBJECT_REFERENCE_EXPIRED', 'Object root released');
+    requireThat(value.snapshot, 'SIMULATED_SNAPSHOT_REQUIRED', 'Provide an explicit host fixture snapshot');
+    const allEntries=Object.entries(value.snapshot);
+    const bounded=Object.fromEntries(allEntries.slice(0, maxEntries));
+    return Object.freeze({
+      className: value.className,
+      containerKind: "SimulatedContainer",
+      size: allEntries.length,
+      entries: Object.freeze(structuredClone(bounded)),
+      truncated: allEntries.length > maxEntries,
+    });
+  }
   close(): void {this.#live();this.#closed=true;for(const ref of this.#references.values()){const entry=refs.get(ref);if(entry)entry.value=undefined;}this.#references.clear();frames.pop();}
 }
 

@@ -110,7 +110,7 @@ public final class WorkbenchActivity extends Activity implements EngineConnectio
             String name=catalog.appName(app,pkg),detail=busy?"正在启动…":installs.isEmpty()?"未安装 · 脚本保留":"";
             var tile=new WorkbenchLibraryUi.Tile(this,name,detail,icon,false,()->appActions.launch(catalog,pkg,spaceFilter));tile.packageName(pkg);
             tile.setOnLongClickListener(v->{appActions.menu(catalog,pkg,catalog.appName(app,pkg),spaceFilter);return true;});
-            String mode=catalog.modeLabel(pkg,spaceFilter),live=catalog.runState(pkg,spaceFilter);tile.mode(mode);tile.running(live);tile.setContentDescription(name+(busy?"，正在启动":"")+(live.isEmpty()?"":"，"+live)+(mode.isEmpty()?"":"，运行模式："+mode));if(cached==null)loadPresentation(pkg,tile);tiles.add(tile);
+            String live=catalog.runState(pkg,spaceFilter);tile.running(live);tile.setContentDescription(name+(busy?"，正在启动":"")+(live.isEmpty()?"":"，"+live));if(cached==null)loadPresentation(pkg,tile);tiles.add(tile);
         }
         var add=new WorkbenchLibraryUi.Tile(this,"添加应用","",new ProductUi.Icon("plus",ProductUi.ACCENT),false,this::addApplication);add.setContentDescription("添加应用");tiles.add(add);WorkbenchLibraryUi.grid(body,tiles);
     }

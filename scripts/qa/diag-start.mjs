@@ -2,7 +2,7 @@
 import { Mcp, adb, sleep, targetOf } from './mcp.mjs';
 
 const pkg = process.argv[2] || 'com.xingin.xhs';
-const mode = process.argv[3] || 'thin';
+
 const mcp = await new Mcp({ timeoutMs: 150000 }).init();
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 
@@ -16,7 +16,6 @@ const target = targetOf(inst);
 
 log('stop', JSON.stringify(await mcp.call('application_stop', { operationId: `d-stop-${Date.now()}`, target }).catch((e) => String(e.message))).slice(0, 300));
 await sleep(1500);
-log('mode_set', JSON.stringify(await mcp.call('application_mode_set', { operationId: `d-mode-${Date.now()}`, target, mode }).catch((e) => String(e.message))).slice(0, 400));
 const probes = await mcp.call('probes_get', { target }).catch((e) => ({ error: String(e.message) }));
 log('probes_get', JSON.stringify(probes).slice(0, 300));
 const started = await mcp.call('process_start', {

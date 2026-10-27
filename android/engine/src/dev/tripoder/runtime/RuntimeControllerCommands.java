@@ -84,13 +84,6 @@ final class RuntimeControllerCommands {
             if(input.containsKey("expectedBinding"))fields(input,"command","operation","project","space","package","generation","expectedBinding");else fields(input,"command","operation","project","space","package","generation");
             return new ProjectTargetBindings(broker).bind(ControlWire.required(input,"operation"),ControllerTrust.OPERATIONS,ControlWire.required(input,"project"),ControlWire.required(input,"space"),ControlWire.required(input,"package"),ControlWire.required(input,"generation"),input.getString("expectedBinding"));
         }
-        if("setApplicationMode".equals(command)){fields(input,"command","operation","project","space","generation","mode");return new ProjectTargetBindings(broker).setModeIn(input.getString("operation"),ControllerTrust.OPERATIONS,input.getString("project"),input.getString("space"),input.getString("generation"),input.getString("mode"));}
-        if("setProjectMode".equals(command)){
-            RuntimeControllerService.agents().requireUiControl(input.getString("project"),"setProjectMode");
-            fields(input,"command","operation","project","mode");
-            synchronized(broker){RuntimeControllerService.requireLease(lease);}
-            return new ProjectTargetBindings(broker).setMode(ControlWire.required(input,"operation"),ControllerTrust.OPERATIONS,ControlWire.required(input,"project"),ControlWire.required(input,"mode"));
-        }
         if("resolveProject".equals(command)){fields(input,"command","project");return new ProjectTargetBindings(broker).resolve(ControlWire.required(input,"project"));}
         synchronized(broker){
             switch(command){

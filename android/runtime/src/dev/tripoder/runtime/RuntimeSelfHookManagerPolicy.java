@@ -11,7 +11,16 @@ import java.util.Set;
 /** Fixed supported capabilities. Every other instance method on an owned facade is denied. */
 final class RuntimeSelfHookManagerPolicy {
     enum Family { ACTIVITY_MANAGER,CONNECTIVITY,TELEPHONY,AUDIO,BATTERY,POWER,WIFI_P2P,NETWORK_STATS,NOTIFICATIONS,SHORTCUTS,JOB_SCHEDULER,LOCATION }
-    interface Route {/** Called before an explicit platform operation (e.g. require its declared permission). */default void admitObservation(Family family){}default Object platform(){throw new IllegalStateException("SYSTEM_MANAGER_PHYSICAL_ROUTE_REQUIRED");}boolean owns(Object receiver);Object execute(String signature,Object[] arguments)throws Throwable;default Object execute(Object receiver,String signature,Object[] arguments)throws Throwable{return execute(signature,arguments);}}
+    interface Route {
+        /** Device facades preserve the full platform API; only explicit persona observations are intercepted. */
+        default boolean platformDevice(){return false;}
+        default boolean interceptsDevice(String signature){return true;}
+        default void admitObservation(Family family){}
+        default Object platform(){throw new IllegalStateException("SYSTEM_MANAGER_PHYSICAL_ROUTE_REQUIRED");}
+        boolean owns(Object receiver);
+        Object execute(String signature,Object[] arguments)throws Throwable;
+        default Object execute(Object receiver,String signature,Object[] arguments)throws Throwable{return execute(signature,arguments);}
+    }
     @FunctionalInterface interface Callback {
         Object invoke(Object receiver,Object[] arguments,RuntimeSelfHookLifecycle.Original original)throws Throwable;
     }
@@ -128,6 +137,10 @@ final class RuntimeSelfHookManagerPolicy {
     static Object invoke(Family family,Route route,String signature,Class<?> returnType,Object receiver,Object[] arguments,
                          RuntimeSelfHookLifecycle.Original original)throws Throwable {
         if(!route.owns(receiver))return original.call(arguments);
+        if(route.platformDevice()){
+            if(!required(family).contains(signature)||!route.interceptsDevice(signature))return original.call(arguments);
+            return route.execute(receiver,signature,arguments);
+        }
         if(!required(family).contains(signature)){
             if(family==Family.NETWORK_STATS)throw new SecurityException("NETWORK_HISTORY_CAPABILITY_NOT_GRANTED:"+signature);
             // Pure observation of device state does not depend on which package asks. The guest is the same process and UID as the host, so the platform's own

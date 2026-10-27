@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "date": "2026-10-27",
+  "passed": true,
+  "deviceExecuted": true,
+  "qaPackage": "dev.tripoder.singleruntime",
+  "qaRuntimeSourceMatchesProduct": true,
+  "nativeCoreBuilds": {
+    "qaSha256": "8f2b9640f6a20af419ad54f4ec19577dd2a6758c5d30f59a88b98288c99b8afc",
+    "productSha256": "e0aba39e82ae06c5b2aa9237c53ea61ed4db70227495618eb7930092bb8f32e1",
+    "productActualLoadedSha256": "e0aba39e82ae06c5b2aa9237c53ea61ed4db70227495618eb7930092bb8f32e1",
+    "productExactBinaryNativeRegressionPassed": true
+  },
+  "phases": [
+    {
+      "phase": "migration",
+      "checks": 20,
+      "passed": true,
+      "report": "migration/migration-result.json"
+    },
+    {
+      "phase": "runtime-policy",
+      "checks": 18,
+      "passed": true,
+      "report": "runtime-policy/runtime-policy-result.json"
+    },
+    {
+      "phase": "control",
+      "checks": 62,
+      "passed": true,
+      "report": "control-current-contract/control-result.json"
+    },
+    {
+      "phase": "hook-ui",
+      "checks": 11,
+      "passed": true,
+      "report": "hook-ui/hook-ui-result.json"
+    },
+    {
+      "phase": "native-mcp",
+      "checks": 15,
+      "passed": true,
+      "report": "native-mcp/summary.json"
+    },
+    {
+      "phase": "product-native-mcp",
+      "checks": 16,
+      "passed": true,
+      "report": "product-native-mcp/summary.json"
+    }
+  ],
+  "deviceChecks": 142,
+  "productUpdate": {
+    "package": "dev.tripoder.engine",
+    "installedExactBuild": true,
+    "apkSha256": "1e376d6bf63d74092745ccc06f97c35a2acc1ebfb7dde4521532a9b28964658c",
+    "sameUid": true,
+    "sameDataDirectory": true,
+    "sameFirstInstallTime": true,
+    "databaseSchema": 41,
+    "hookReady": true,
+    "modeActionAbsent": true,
+    "installationModeFieldsAbsent": true,
+    "legacyModeDescriptionsAbsent": true,
+    "installationCount": 4,
+    "uiModeLabelsAbsent": true
+  },
+  "retainedFailures": [
+    {
+      "report": "control/control-result.json",
+      "reason": "Instrumentation interruption left SUPERVISOR_INTERRUPTED; subsequent run explicitly reconnected once."
+    },
+    {
+      "report": "control-after-reconnect/control-result.json",
+      "reason": "Nonexistent binding receipt returns PROJECT_NOT_BOUND; corrected stale harness error-code assertion and retained exact rejection plus FAILED-receipt checks."
+    }
+  ],
+  "productInitialReconnect": {
+    "observedReason": "AUTHORITY_HEALTH_TIMEOUT",
+    "explicitReconnectPerformed": true,
+    "subsequentRuntimeReady": true
+  },
+  "cleanup": {
+    "qaPackageStopped": true,
+    "qaDataAndReceiptsRetained": true,
+    "temporaryAdbForwardRemoved": true,
+    "productMcpSettingPreserved": true,
+    "productOwnedTestSpaceDeleted": true,
+    "originalInstallationCountRestored": true
+  },
+  "limits": [
+    "Owned fixtures and runtime-contract acceptance; not universal hardened-app, login or third-party business acceptance.",
+    "Same UID/data-directory/first-install identity verified across product update; private business data files were not enumerated."
+  ]
+}

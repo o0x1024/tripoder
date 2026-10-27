@@ -15,7 +15,7 @@ abstract class GuestStorageContext extends ContextWrapper {
     @Override public File getCodeCacheDir(){storage.dir("code_cache");return new File(getDataDir(),"code_cache");}
     @Override public File getNoBackupFilesDir(){storage.dir("no_backup");return new File(getDataDir(),"no_backup");}
     @Override public File getFileStreamPath(String name){return new File(getFilesDir(),name);}
-    @Override public File getDir(String name,int mode){if(!storage.runtimeMode.routesThroughPlatform()&&mode!=MODE_PRIVATE)throw new IllegalArgumentException("FILE_MODE_UNSUPPORTED");storage.dir("app_"+RuntimeStorage.name(name));return new File(getDataDir(),"app_"+RuntimeStorage.name(name));}
+    @Override public File getDir(String name,int mode){storage.dir("app_"+RuntimeStorage.name(name));return new File(getDataDir(),"app_"+RuntimeStorage.name(name));}
     @Override public boolean deleteFile(String name){return getFileStreamPath(name).delete();}
     @Override public String[] fileList(){return storage.list("files");}
     // Typed external directories stay guest-private; the type is a single path segment, never a host path.

@@ -1,0 +1,587 @@
+{
+  "passed": true,
+  "scope": "physical-owned-guest-managed-passive-tls-capture",
+  "checks": [
+    {
+      "name": "new-capture-tools-published",
+      "passed": true
+    },
+    {
+      "name": "guest-ui-ready",
+      "passed": true
+    },
+    {
+      "name": "baseline-guest-mtls-exact-concurrent-exchanges",
+      "passed": true
+    },
+    {
+      "name": "export-profile-is-candidate-requiring-confirmation",
+      "passed": true
+    },
+    {
+      "name": "stale-build-id-known-rejection",
+      "passed": true
+    },
+    {
+      "name": "managed-capture-started",
+      "passed": true
+    },
+    {
+      "name": "managed-hook-ownership-enforced",
+      "passed": true
+    },
+    {
+      "name": "observed-guest-mtls-exact-concurrent-exchanges",
+      "passed": true
+    },
+    {
+      "name": "passive-query-origin-and-cursor",
+      "passed": true
+    },
+    {
+      "name": "passive-query-origin-and-cursor",
+      "passed": true
+    },
+    {
+      "name": "two-finalized-connection-lifetimes",
+      "passed": true
+    },
+    {
+      "name": "uniform-query-reassembly-matches-real-guest-and-server",
+      "passed": true
+    },
+    {
+      "name": "wrong-capture-id-is-explicit-read-unavailable",
+      "passed": true
+    },
+    {
+      "name": "capture-stopped-and-drained",
+      "passed": true
+    },
+    {
+      "name": "disabled-guest-mtls-exact-concurrent-exchanges",
+      "passed": true
+    },
+    {
+      "name": "stopped-session-collects-no-later-traffic",
+      "passed": true
+    },
+    {
+      "name": "restart-allocates-new-capture-id",
+      "passed": true
+    },
+    {
+      "name": "all-session-evidence-survives-worker-stop-with-valid-sha",
+      "passed": true
+    },
+    {
+      "name": "no-agent-sent-http",
+      "passed": true
+    }
+  ],
+  "runs": {
+    "baseline": {
+      "passed": true,
+      "runId": "de79ee48-264f-4da7-8c77-525c368ac1a7",
+      "concurrentConnections": 2,
+      "clientAuthenticated": true,
+      "protocol": "TLSv1.3",
+      "exchanges": [
+        {
+          "request": "POST /native/de79ee48-264f-4da7-8c77-525c368ac1a7/0 HTTP/1.1\r\nHost: localhost\r\nContent-Length: 232\r\nConnection: close\r\n\r\nnative-owned-de79ee48-264f-4da7-8c77-525c368ac1a7-0-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "response": "HTTP/1.1 200 OK\r\nContent-Length: 232\r\nConnection: close\r\n\r\nnative-owned-de79ee48-264f-4da7-8c77-525c368ac1a7-0-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        },
+        {
+          "request": "POST /native/de79ee48-264f-4da7-8c77-525c368ac1a7/1 HTTP/1.1\r\nHost: localhost\r\nContent-Length: 232\r\nConnection: close\r\n\r\nnative-owned-de79ee48-264f-4da7-8c77-525c368ac1a7-1-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "response": "HTTP/1.1 200 OK\r\nContent-Length: 232\r\nConnection: close\r\n\r\nnative-owned-de79ee48-264f-4da7-8c77-525c368ac1a7-1-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        }
+      ]
+    },
+    "observed": {
+      "passed": true,
+      "runId": "40fd4542-8b6a-4fd5-aedf-79c8bccf426c",
+      "concurrentConnections": 2,
+      "clientAuthenticated": true,
+      "protocol": "TLSv1.3",
+      "exchanges": [
+        {
+          "request": "POST /native/40fd4542-8b6a-4fd5-aedf-79c8bccf426c/0 HTTP/1.1\r\nHost: localhost\r\nContent-Length: 232\r\nConnection: close\r\n\r\nnative-owned-40fd4542-8b6a-4fd5-aedf-79c8bccf426c-0-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "response": "HTTP/1.1 200 OK\r\nContent-Length: 232\r\nConnection: close\r\n\r\nnative-owned-40fd4542-8b6a-4fd5-aedf-79c8bccf426c-0-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        },
+        {
+          "request": "POST /native/40fd4542-8b6a-4fd5-aedf-79c8bccf426c/1 HTTP/1.1\r\nHost: localhost\r\nContent-Length: 232\r\nConnection: close\r\n\r\nnative-owned-40fd4542-8b6a-4fd5-aedf-79c8bccf426c-1-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "response": "HTTP/1.1 200 OK\r\nContent-Length: 232\r\nConnection: close\r\n\r\nnative-owned-40fd4542-8b6a-4fd5-aedf-79c8bccf426c-1-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        }
+      ]
+    },
+    "disabled": {
+      "passed": true,
+      "runId": "cb3df055-f129-4425-a032-30a9cf044716",
+      "concurrentConnections": 2,
+      "clientAuthenticated": true,
+      "protocol": "TLSv1.3",
+      "exchanges": [
+        {
+          "request": "POST /native/cb3df055-f129-4425-a032-30a9cf044716/0 HTTP/1.1\r\nHost: localhost\r\nContent-Length: 232\r\nConnection: close\r\n\r\nnative-owned-cb3df055-f129-4425-a032-30a9cf044716-0-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "response": "HTTP/1.1 200 OK\r\nContent-Length: 232\r\nConnection: close\r\n\r\nnative-owned-cb3df055-f129-4425-a032-30a9cf044716-0-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        },
+        {
+          "request": "POST /native/cb3df055-f129-4425-a032-30a9cf044716/1 HTTP/1.1\r\nHost: localhost\r\nContent-Length: 232\r\nConnection: close\r\n\r\nnative-owned-cb3df055-f129-4425-a032-30a9cf044716-1-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "response": "HTTP/1.1 200 OK\r\nContent-Length: 232\r\nConnection: close\r\n\r\nnative-owned-cb3df055-f129-4425-a032-30a9cf044716-1-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        }
+      ]
+    }
+  },
+  "captures": [
+    {
+      "completedConnections": 0,
+      "captureId": "a7e020e74e094997ba9011fc4b8aa76c92a71141cc41070e1147af44346764cf",
+      "untrackedEvents": 0,
+      "events": 0,
+      "captureState": "ACTIVE",
+      "captureError": "",
+      "droppedConnections": 0,
+      "liveConnections": 0,
+      "coverage": "OBSERVED_LIFETIMES_ONLY",
+      "capturedBytes": 0,
+      "limits": {
+        "segmentsPerConnection": 64,
+        "totalBytes": 65536,
+        "bytesPerDirection": 4096,
+        "connections": 16
+      },
+      "state": "ACTIVE",
+      "sourceSha256": "5ad9da2dfe7c97e44be0515c30cfb3316f24017818081eca9761de15a9851e79",
+      "revision": "3a87bd1ccd07eec7f6d2f7da379bb303e3c56457eabc4b61ed00b3caed9b0556",
+      "stopping": false,
+      "moduleName": "libownednativetls.so",
+      "buildId": "831347610c98482c2f0d7f9c00423819ef9e38fc",
+      "profile": "openssl-ssl-read-write-v1",
+      "otherTlsImplementations": "NOT_OBSERVED",
+      "identity": {
+        "space": "network-ff53044a-305",
+        "installGeneration": "d69cce9d-53c7-462f-b06e-5881b1a13e82",
+        "descriptorSha256": "7b78b7d126a8cd771b927f7ea7e0be35c26be39116f8ab4869d74f0edc936e3f",
+        "processGeneration": "09d48430424a47d8dafa5f1b9d7cafdae6d64f6277c1804a7860776d83f235ef",
+        "pid": 7221,
+        "mode": "thick",
+        "target": {
+          "packageName": "dev.tripoder.nativetlsfixture",
+          "versionCode": "1",
+          "apkSha256": "c7f8e57993b21588ce5238b242af5be80e60b34d4e000ecf2eb4fb0262a2f2d5"
+        }
+      },
+      "operationId": "b2bc8597-10e2-4a2d-bafc-9b8b2d444af4"
+    },
+    {
+      "completedConnections": 0,
+      "captureId": "15f967617abcb5aacf6d540a233e8d3aaebed3975e69c6e438b7c5a42f4f5dac",
+      "untrackedEvents": 0,
+      "events": 0,
+      "captureState": "ACTIVE",
+      "captureError": "",
+      "droppedConnections": 0,
+      "liveConnections": 0,
+      "coverage": "OBSERVED_LIFETIMES_ONLY",
+      "capturedBytes": 0,
+      "limits": {
+        "segmentsPerConnection": 64,
+        "totalBytes": 65536,
+        "bytesPerDirection": 4096,
+        "connections": 16
+      },
+      "state": "ACTIVE",
+      "sourceSha256": "5ad9da2dfe7c97e44be0515c30cfb3316f24017818081eca9761de15a9851e79",
+      "revision": "abd04aa09883fd31f40b299155546af5502f1ddca459da2ccb15edcf268b4c2c",
+      "stopping": false,
+      "moduleName": "libownednativetls.so",
+      "buildId": "831347610c98482c2f0d7f9c00423819ef9e38fc",
+      "profile": "openssl-ssl-read-write-v1",
+      "otherTlsImplementations": "NOT_OBSERVED",
+      "identity": {
+        "space": "network-ff53044a-305",
+        "installGeneration": "d69cce9d-53c7-462f-b06e-5881b1a13e82",
+        "descriptorSha256": "7b78b7d126a8cd771b927f7ea7e0be35c26be39116f8ab4869d74f0edc936e3f",
+        "processGeneration": "09d48430424a47d8dafa5f1b9d7cafdae6d64f6277c1804a7860776d83f235ef",
+        "pid": 7221,
+        "mode": "thick",
+        "target": {
+          "packageName": "dev.tripoder.nativetlsfixture",
+          "versionCode": "1",
+          "apkSha256": "c7f8e57993b21588ce5238b242af5be80e60b34d4e000ecf2eb4fb0262a2f2d5"
+        }
+      },
+      "operationId": "1ed4a3dd-bb92-4829-a18d-251148b9d4da"
+    }
+  ],
+  "adbUsedForMcp": false,
+  "arbitraryTlsCoverage": false,
+  "runnerSha256": "f12ddff00368cc5be73005253bb372617ba7bf733cac5224ee5f465801253d95",
+  "space": "network-ff53044a-305",
+  "fixtureSha256": "c7f8e57993b21588ce5238b242af5be80e60b34d4e000ecf2eb4fb0262a2f2d5",
+  "importOperationId": "3b0d46ff-9dad-454c-8622-0180dc88f8e9",
+  "target": {
+    "space": "network-ff53044a-305",
+    "package": "dev.tripoder.nativetlsfixture",
+    "installGeneration": "d69cce9d-53c7-462f-b06e-5881b1a13e82"
+  },
+  "process": {
+    "space": "network-ff53044a-305",
+    "package": "dev.tripoder.nativetlsfixture",
+    "installGeneration": "d69cce9d-53c7-462f-b06e-5881b1a13e82",
+    "processGeneration": "09d48430424a47d8dafa5f1b9d7cafdae6d64f6277c1804a7860776d83f235ef"
+  },
+  "candidate": {
+    "signatureConfirmationRequired": true,
+    "missingExports": [],
+    "automaticAbiInference": false,
+    "candidate": true,
+    "profile": "openssl-ssl-read-write-v1",
+    "buildId": "831347610c98482c2f0d7f9c00423819ef9e38fc",
+    "moduleName": "libownednativetls.so",
+    "identity": {
+      "space": "network-ff53044a-305",
+      "installGeneration": "d69cce9d-53c7-462f-b06e-5881b1a13e82",
+      "descriptorSha256": "7b78b7d126a8cd771b927f7ea7e0be35c26be39116f8ab4869d74f0edc936e3f",
+      "processGeneration": "09d48430424a47d8dafa5f1b9d7cafdae6d64f6277c1804a7860776d83f235ef",
+      "pid": 7221,
+      "mode": "thick",
+      "target": {
+        "packageName": "dev.tripoder.nativetlsfixture",
+        "versionCode": "1",
+        "apkSha256": "c7f8e57993b21588ce5238b242af5be80e60b34d4e000ecf2eb4fb0262a2f2d5"
+      }
+    },
+    "operationId": "092f166f-bc55-474e-82d6-3bbe2af2c4cd"
+  },
+  "connections": [
+    {
+      "seq": 1,
+      "captureId": "a7e020e74e094997ba9011fc4b8aa76c92a71141cc41070e1147af44346764cf",
+      "connectionId": "a7e020e74e094997ba9011fc4b8aa76c92a71141cc41070e1147af44346764cf-c1",
+      "byteState": "COMPLETE",
+      "reasons": [],
+      "chunks": 17,
+      "noDataResults": 1,
+      "requestHex": "504f5354202f6e61746976652f34306664343534322d386236612d346664352d616564662d3739633862636366343236632f3120485454502f312e310d0a486f73743a206c6f63616c686f73740d0a436f6e74656e742d4c656e6774683a203233320d0a436f6e6e656374696f6e3a20636c6f73650d0a0d0a6e61746976652d6f776e65642d34306664343534322d386236612d346664352d616564662d3739633862636366343236632d312d787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878",
+      "responseHex": "485454502f312e3120323030204f4b0d0a436f6e74656e742d4c656e6774683a203233320d0a436f6e6e656374696f6e3a20636c6f73650d0a0d0a6e61746976652d6f776e65642d34306664343534322d386236612d346664352d616564662d3739633862636366343236632d312d787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878",
+      "segments": [
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 47,
+          "offset": "0",
+          "direction": "write",
+          "actualBytes": "47"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 47,
+          "offset": "47",
+          "direction": "write",
+          "actualBytes": "47"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 47,
+          "offset": "94",
+          "direction": "write",
+          "actualBytes": "47"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 47,
+          "offset": "141",
+          "direction": "write",
+          "actualBytes": "47"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 47,
+          "offset": "188",
+          "direction": "write",
+          "actualBytes": "47"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 47,
+          "offset": "235",
+          "direction": "write",
+          "actualBytes": "47"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 47,
+          "offset": "282",
+          "direction": "write",
+          "actualBytes": "47"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 24,
+          "offset": "329",
+          "direction": "write",
+          "actualBytes": "24"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 37,
+          "offset": "0",
+          "direction": "read",
+          "actualBytes": "37"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 37,
+          "offset": "37",
+          "direction": "read",
+          "actualBytes": "37"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 37,
+          "offset": "74",
+          "direction": "read",
+          "actualBytes": "37"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 37,
+          "offset": "111",
+          "direction": "read",
+          "actualBytes": "37"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 37,
+          "offset": "148",
+          "direction": "read",
+          "actualBytes": "37"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 37,
+          "offset": "185",
+          "direction": "read",
+          "actualBytes": "37"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 37,
+          "offset": "222",
+          "direction": "read",
+          "actualBytes": "37"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 32,
+          "offset": "259",
+          "direction": "read",
+          "actualBytes": "32"
+        }
+      ],
+      "httpState": "COMPLETE",
+      "request": {
+        "state": "COMPLETE",
+        "startLine": "POST /native/40fd4542-8b6a-4fd5-aedf-79c8bccf426c/1 HTTP/1.1",
+        "bodyOffset": 121,
+        "bodyBytes": 232,
+        "headers": {
+          "host": "localhost",
+          "content-length": "232",
+          "connection": "close"
+        }
+      },
+      "response": {
+        "state": "COMPLETE",
+        "startLine": "HTTP/1.1 200 OK",
+        "bodyOffset": 59,
+        "bodyBytes": 232,
+        "headers": {
+          "content-length": "232",
+          "connection": "close"
+        }
+      },
+      "artifact": {
+        "artifactId": "f14f9fdf-389a-4aa4-bf29-535c003de349",
+        "kind": "hook-evidence",
+        "processGeneration": "09d48430424a47d8dafa5f1b9d7cafdae6d64f6277c1804a7860776d83f235ef",
+        "space": "network-ff53044a-305",
+        "package": "dev.tripoder.nativetlsfixture",
+        "installGeneration": "d69cce9d-53c7-462f-b06e-5881b1a13e82",
+        "revision": "3a87bd1ccd07eec7f6d2f7da379bb303e3c56457eabc4b61ed00b3caed9b0556",
+        "sourceSha256": "5ad9da2dfe7c97e44be0515c30cfb3316f24017818081eca9761de15a9851e79",
+        "symbol": "network.capture",
+        "tag": "network.connection",
+        "state": "COMPLETE",
+        "size": 3902,
+        "sha256": "664a352cbc09687136178f50ec1735a76103dc1f1fc6b25017d6aa0215266c6a",
+        "mediaType": "application/json"
+      }
+    },
+    {
+      "seq": 2,
+      "captureId": "a7e020e74e094997ba9011fc4b8aa76c92a71141cc41070e1147af44346764cf",
+      "connectionId": "a7e020e74e094997ba9011fc4b8aa76c92a71141cc41070e1147af44346764cf-c2",
+      "byteState": "COMPLETE",
+      "reasons": [],
+      "chunks": 17,
+      "noDataResults": 1,
+      "requestHex": "504f5354202f6e61746976652f34306664343534322d386236612d346664352d616564662d3739633862636366343236632f3020485454502f312e310d0a486f73743a206c6f63616c686f73740d0a436f6e74656e742d4c656e6774683a203233320d0a436f6e6e656374696f6e3a20636c6f73650d0a0d0a6e61746976652d6f776e65642d34306664343534322d386236612d346664352d616564662d3739633862636366343236632d302d787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878",
+      "responseHex": "485454502f312e3120323030204f4b0d0a436f6e74656e742d4c656e6774683a203233320d0a436f6e6e656374696f6e3a20636c6f73650d0a0d0a6e61746976652d6f776e65642d34306664343534322d386236612d346664352d616564662d3739633862636366343236632d302d787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878",
+      "segments": [
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 47,
+          "offset": "0",
+          "direction": "write",
+          "actualBytes": "47"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 47,
+          "offset": "47",
+          "direction": "write",
+          "actualBytes": "47"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 47,
+          "offset": "94",
+          "direction": "write",
+          "actualBytes": "47"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 47,
+          "offset": "141",
+          "direction": "write",
+          "actualBytes": "47"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 47,
+          "offset": "188",
+          "direction": "write",
+          "actualBytes": "47"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 47,
+          "offset": "235",
+          "direction": "write",
+          "actualBytes": "47"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 47,
+          "offset": "282",
+          "direction": "write",
+          "actualBytes": "47"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 24,
+          "offset": "329",
+          "direction": "write",
+          "actualBytes": "24"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 37,
+          "offset": "0",
+          "direction": "read",
+          "actualBytes": "37"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 37,
+          "offset": "37",
+          "direction": "read",
+          "actualBytes": "37"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 37,
+          "offset": "74",
+          "direction": "read",
+          "actualBytes": "37"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 37,
+          "offset": "111",
+          "direction": "read",
+          "actualBytes": "37"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 37,
+          "offset": "148",
+          "direction": "read",
+          "actualBytes": "37"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 37,
+          "offset": "185",
+          "direction": "read",
+          "actualBytes": "37"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 37,
+          "offset": "222",
+          "direction": "read",
+          "actualBytes": "37"
+        },
+        {
+          "state": "COMPLETE",
+          "capturedBytes": 32,
+          "offset": "259",
+          "direction": "read",
+          "actualBytes": "32"
+        }
+      ],
+      "httpState": "COMPLETE",
+      "request": {
+        "state": "COMPLETE",
+        "startLine": "POST /native/40fd4542-8b6a-4fd5-aedf-79c8bccf426c/0 HTTP/1.1",
+        "bodyOffset": 121,
+        "bodyBytes": 232,
+        "headers": {
+          "host": "localhost",
+          "content-length": "232",
+          "connection": "close"
+        }
+      },
+      "response": {
+        "state": "COMPLETE",
+        "startLine": "HTTP/1.1 200 OK",
+        "bodyOffset": 59,
+        "bodyBytes": 232,
+        "headers": {
+          "content-length": "232",
+          "connection": "close"
+        }
+      },
+      "artifact": {
+        "artifactId": "b5047574-96a1-4298-9cdf-8f33fdc49cfb",
+        "kind": "hook-evidence",
+        "processGeneration": "09d48430424a47d8dafa5f1b9d7cafdae6d64f6277c1804a7860776d83f235ef",
+        "space": "network-ff53044a-305",
+        "package": "dev.tripoder.nativetlsfixture",
+        "installGeneration": "d69cce9d-53c7-462f-b06e-5881b1a13e82",
+        "revision": "3a87bd1ccd07eec7f6d2f7da379bb303e3c56457eabc4b61ed00b3caed9b0556",
+        "sourceSha256": "5ad9da2dfe7c97e44be0515c30cfb3316f24017818081eca9761de15a9851e79",
+        "symbol": "network.capture",
+        "tag": "network.connection",
+        "state": "COMPLETE",
+        "size": 3902,
+        "sha256": "40c3b4e7cf792a018bce548868c58b57ebb605a4ae2a339e0198b801a69012f3",
+        "mediaType": "application/json"
+      }
+    }
+  ],
+  "processStopped": true,
+  "callsFile": "calls.json"
+}

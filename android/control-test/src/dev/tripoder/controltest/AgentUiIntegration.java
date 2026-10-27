@@ -42,7 +42,7 @@ public final class AgentUiIntegration extends ControlTestBase {
         for(int i=0;i<live.length();i++)if(process.equals(live.getJSONObject(i).getString("processGeneration"))&&worker.getInt("pid")==live.getJSONObject(i).getInt("pid"))alive=true;
         check("desktop-close-keeps-exact-worker-running",alive,worker.getInt("pid"));
         check("desktop-draft-does-not-overwrite-project-source",originalScript.equals(invoke(projects,"script",new Class<?>[]{String.class},project)),true);
-        report.put("authenticationRequired",false).put("runtimeMode","thin");
+        report.put("authenticationRequired",false);
         execute(controller,"deleteSpace","operation",id(),"space",space);
     }
     private void cleanupOwnedFixtures(Object projects)throws Exception{

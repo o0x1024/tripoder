@@ -33,7 +33,7 @@ def build_native(repo, build, ndk, libc, art, linker):
     sources = sorted((core/'native').glob('*.c'))
     for group in ('coverage', 'abi', 'modules'):
         sources += sorted((core/'native'/group).glob('*.c'))
-    sources += [runtime/name for name in ('io_adapter.c', 'path_policy.c', 'self_hook_storage.c', 'exit_diagnostics.c', 'syscall_namespace.c', 'ptrace_namespace.c', 'user_memory.c', 'mapping_evidence.c')]
+    sources += [runtime/name for name in ('io_adapter.c', 'path_policy.c', 'self_hook_storage.c', 'exit_diagnostics.c', 'fault_evidence.c', 'syscall_namespace.c', 'ptrace_namespace.c', 'user_memory.c', 'mapping_evidence.c')]
     assembly = [core/'native/abi/scalar_call_a64.S', core/'native/abi/scalar_inbound_a64.S',runtime/'kernel_syscall_a64.S']
     cpp = core/'native/coverage/loaded_class_inventory.cpp'
     inputs = set(sources + assembly + [cpp, Path(__file__).resolve(), core/'tests/check_park_binary.py'])
@@ -95,7 +95,7 @@ def build_native(repo, build, ndk, libc, art, linker):
         package = re.search(r'package\s+([\w.]+)\s*;', text)
         if not package:
             continue
-        for method in re.finditer(r'\bnative\b[^;{}]*?(\b\w+)\s*\(', text):
+        for method in re.finditer(r'\bnative\s+[^;{}]*?(\b\w+)\s*\(', text):
             name = 'Java_'+package.group(1).replace('.','_')+'_'+source.stem+'_'+method.group(1)
             declared[name] = source.name
     java_exports = {name for name in symbols if name.startswith('Java_dev_tripoder_')}

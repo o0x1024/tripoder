@@ -256,6 +256,24 @@ final class RuntimeSecurityAudit {
         var checked=dev.tripoder.runtime.script.HttpRequestPreflight.validate(spec);
         String method=checked.method(),urlText=checked.uri().toString(),body=checked.body();URI uri=checked.uri();int timeoutMs=checked.timeoutMs();Map<String,String> reqHeaders=checked.headers();
         long startNs = System.nanoTime();
+        RuntimeEnvMock.HttpRule mockRule = RuntimeEnvMock.matchHttp(method, urlText);
+        if (mockRule != null) {
+            if (mockRule.delayMs > 0) {
+                try { Thread.sleep(mockRule.delayMs); } catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); }
+            }
+            long durationMs = (System.nanoTime() - startNs) / 1_000_000L;
+            String preview = mockRule.body.length() > 4096 ? mockRule.body.substring(0, 4096) : mockRule.body;
+            boolean truncated = mockRule.body.length() > 4096;
+            recordNetworkExchange(method, urlText, reqHeaders, body == null ? "" : body, mockRule.statusCode, mockRule.headers, preview, durationMs);
+            Map<String,Object> out = new LinkedHashMap<>();
+            out.put("statusCode", (double)mockRule.statusCode);
+            out.put("headers", mockRule.headers);
+            out.put("body", preview);
+            out.put("bodyTruncated", truncated);
+            out.put("durationMs", (double)durationMs);
+            out.put("mocked", true);
+            return Collections.unmodifiableMap(out);
+        }
         // Calling a handler/proxy may already execute code or dispatch. Only the pure
         // HttpRequestPreflight stage certifies rejection; later failures stay UNKNOWN.
         HttpURLConnection conn = (HttpURLConnection)uri.toURL().openConnection();
@@ -302,13 +320,52 @@ final class RuntimeSecurityAudit {
         Object rawTypes = target.get("argumentTypes"), rawArgs = target.get("arguments");
         if (!(rawClass instanceof String className) || className.isEmpty() || className.length() > 512)
             throw new IllegalArgumentException("INVOKE_CLASS_NAME");
-        if (!(rawMethod instanceof String methodName) || methodName.isEmpty() || methodName.length() > 128 || methodName.startsWith("<"))
+        if (!(rawMethod instanceof String methodName) || methodName.isEmpty() || methodName.length() > 128 || (methodName.startsWith("<") && !"<init>".equals(methodName)))
             throw new IllegalArgumentException("INVOKE_METHOD_NAME");
         if (!(rawTypes instanceof List<?> typeList) || !(rawArgs instanceof List<?> argList) || typeList.size() != argList.size() || typeList.size() > 16)
             throw new IllegalArgumentException("INVOKE_ARGUMENTS_MISMATCH");
 
         Class<?> owner = Class.forName(className, false, engine.loader);
         if (!engine.ownsLoader(owner.getClassLoader())) throw new SecurityException("INVOKE_CLASS_OUTSIDE_GUEST");
+
+        if ("<init>".equals(methodName)) {
+            Constructor<?> matchedCtor = null;
+            for (Constructor<?> candidate : owner.getDeclaredConstructors()) {
+                if (candidate.getParameterCount() != typeList.size()) continue;
+                Class<?>[] params = candidate.getParameterTypes();
+                boolean ok = true;
+                for (int i = 0; i < params.length; i++) {
+                    if (!(typeList.get(i) instanceof String expected)) { ok = false; break; }
+                    String actual = params[i].getName();
+                    ok &= actual.equals(expected) || (params[i] == byte[].class && "byte[]".equals(expected));
+                }
+                if (ok) {
+                    if (matchedCtor != null) throw new IllegalArgumentException("INVOKE_METHOD_AMBIGUOUS");
+                    matchedCtor = candidate;
+                }
+            }
+            if (matchedCtor == null) throw new IllegalArgumentException("INVOKE_METHOD_NOT_FOUND");
+            Class<?>[] paramTypes = matchedCtor.getParameterTypes();
+            for (Class<?> pt : paramTypes) JavaHookValues.requireInvocationType(pt, false);
+            List<Object> normalizedArgs = new ArrayList<>(argList.size());
+            for (int i = 0; i < argList.size(); i++) {
+                Object raw = argList.get(i);
+                if (paramTypes[i] == long.class && raw instanceof String s && s.matches("-?[0-9]{1,20}"))
+                    normalizedArgs.add(new java.math.BigInteger(s));
+                else normalizedArgs.add(raw);
+            }
+            Object[] physicalArgs = JavaHookValues.encodeArguments(paramTypes, normalizedArgs);
+            matchedCtor.setAccessible(true);
+            Object instance = matchedCtor.newInstance(physicalArgs);
+            String createdId = RuntimeLiveInstances.register(instance);
+            Map<String,Object> out = new LinkedHashMap<>();
+            out.put("className", owner.getName());
+            out.put("methodName", "<init>");
+            out.put("returnType", owner.getName());
+            out.put("result", createdId);
+            out.put("instanceId", createdId);
+            return Collections.unmodifiableMap(out);
+        }
 
         Method matched = null;
         for (Method candidate : owner.getDeclaredMethods()) {
@@ -340,11 +397,18 @@ final class RuntimeSecurityAudit {
         }
         Object[] physicalArgs = JavaHookValues.encodeArguments(paramTypes, normalizedArgs);
         matched.setAccessible(true);
+        Object rawInstanceId = target.get("instanceId");
+        String usedInstanceId = null;
         Object receiver = null;
         if (!Modifier.isStatic(matched.getModifiers())) {
-            Constructor<?> ctor = owner.getDeclaredConstructor();
-            ctor.setAccessible(true);
-            receiver = ctor.newInstance();
+            if (rawInstanceId instanceof String instId && !instId.isEmpty()) {
+                receiver = RuntimeLiveInstances.requireInstance(instId, owner);
+                usedInstanceId = instId;
+            } else {
+                Constructor<?> ctor = owner.getDeclaredConstructor();
+                ctor.setAccessible(true);
+                receiver = ctor.newInstance();
+            }
         }
         Object rawResult = matched.invoke(receiver, physicalArgs);
         Object decoded = JavaHookValues.decode(returnType, rawResult);
@@ -354,6 +418,7 @@ final class RuntimeSecurityAudit {
         out.put("methodName", matched.getName());
         out.put("returnType", returnType.getName());
         out.put("result", wireResult);
+        if (usedInstanceId != null) out.put("instanceId", usedInstanceId);
         return Collections.unmodifiableMap(out);
     }
 

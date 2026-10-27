@@ -17,6 +17,58 @@ final class RuntimeSandboxPersona {
     private static volatile Fix location;
     private static volatile Integer batteryLevel;
     private static volatile Boolean batteryCharging;
+    private static volatile Locale bootLocale;
+    private static volatile TimeZone bootTimeZone;
+    private static volatile String localeLanguage = "";
+    private static volatile String localeCountry = "";
+    private static volatile String timeZoneId = "";
+    private static volatile boolean hideVpn = false;
+
+    private static synchronized void ensureBootDefaults() {
+        if (bootLocale == null) bootLocale = Locale.getDefault();
+        if (bootTimeZone == null) bootTimeZone = TimeZone.getDefault();
+    }
+
+    static synchronized Map<String,Object> configureLocale(String language, String country, String tzId) {
+        ensureBootDefaults();
+        String lang = language == null ? "" : language.trim();
+        String ctry = country == null ? "" : country.trim();
+        String tz = tzId == null ? "" : tzId.trim();
+        if (!lang.isEmpty() && !lang.matches("[a-z]{2,3}")) throw new IllegalArgumentException("PERSONA_LOCALE_LANGUAGE");
+        if (!ctry.isEmpty() && !ctry.matches("[A-Z]{2}")) throw new IllegalArgumentException("PERSONA_LOCALE_COUNTRY");
+        if (!tz.isEmpty() && !tz.matches("[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)*")) throw new IllegalArgumentException("PERSONA_TIMEZONE_ID");
+        if (lang.isEmpty() && !ctry.isEmpty()) throw new IllegalArgumentException("PERSONA_LOCALE_LANGUAGE_REQUIRED_FOR_COUNTRY");
+
+        if (lang.isEmpty()) {
+            Locale.setDefault(bootLocale);
+            localeLanguage = "";
+            localeCountry = "";
+        } else {
+            Locale nextLocale = ctry.isEmpty() ? new Locale(lang) : new Locale(lang, ctry);
+            Locale.setDefault(nextLocale);
+            localeLanguage = lang;
+            localeCountry = ctry;
+        }
+        if (tz.isEmpty()) {
+            TimeZone.setDefault(bootTimeZone);
+            timeZoneId = "";
+        } else {
+            TimeZone resolved = TimeZone.getTimeZone(tz);
+            if ("GMT".equals(resolved.getID()) && !"GMT".equalsIgnoreCase(tz) && !"UTC".equalsIgnoreCase(tz)) {
+                throw new IllegalArgumentException("PERSONA_TIMEZONE_UNKNOWN:" + tz);
+            }
+            TimeZone.setDefault(resolved);
+            timeZoneId = resolved.getID();
+        }
+        return status();
+    }
+
+    static synchronized Map<String,Object> configureNetwork(boolean hide) {
+        hideVpn = hide;
+        return status();
+    }
+
+    static boolean hideVpn() { return hideVpn; }
 
     static Map<String,Object> configureTelephony(Map<String,Object> fields) {
         if (fields.size() > 6) throw new IllegalArgumentException("PERSONA_TELEPHONY_FIELDS");
@@ -89,6 +141,17 @@ final class RuntimeSandboxPersona {
             loc.put("speed", (double) fix.speed()); loc.put("bearing", (double) fix.bearing());
         }
         out.put("location", loc);
+        ensureBootDefaults();
+        Map<String,Object> locale = new LinkedHashMap<>();
+        locale.put("language", localeLanguage);
+        locale.put("country", localeCountry);
+        locale.put("timeZoneId", timeZoneId);
+        locale.put("effectiveLocale", Locale.getDefault().toLanguageTag());
+        locale.put("effectiveTimeZone", TimeZone.getDefault().getID());
+        out.put("locale", locale);
+        Map<String,Object> net = new LinkedHashMap<>();
+        net.put("hideVpn", hideVpn);
+        out.put("network", net);
         return Collections.unmodifiableMap(out);
     }
 

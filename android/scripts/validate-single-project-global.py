@@ -8,6 +8,7 @@ import re
 import subprocess
 import time
 import uuid
+import xml.etree.ElementTree as ET
 
 
 def main():
@@ -16,7 +17,8 @@ def main():
     parser.add_argument('--package', default='dev.tripoder.engine')
     parser.add_argument('--test-package', default='dev.tripoder.controltest')
     parser.add_argument('--evidence', type=Path, required=True)
-    parser.add_argument('--phase', choices=['migration', 'global-ui', 'library-ui', 'app-actions-ui', 'multi-add', 'publication', 'execution-code', 'thick-policy', 'catalog-seed', 'catalog-cold', 'task-presentation', 'all'], default='all')
+    parser.add_argument('--phase', choices=['migration', 'control', 'hook-ui', 'global-ui', 'library-ui', 'app-actions-ui', 'multi-add', 'publication', 'execution-code', 'runtime-policy', 'catalog-seed', 'catalog-cold', 'task-presentation', 'all'], default='all')
+    parser.add_argument('--retry-engine-once', action='store_true', help='After instrumentation interruption, explicitly click the owned workbench reconnect action once')
     options = parser.parse_args()
     for value in (options.package, options.test_package):
         if not re.fullmatch(r'[A-Za-z0-9_.]+', value):
@@ -35,7 +37,8 @@ def main():
     uid = int(match[1])
     started = call('shell', 'date "+%m-%d %H:%M:%S.%3N"').stdout.strip()
     report = {'passed': False, 'package': options.package, 'uid': uid, 'phases': [], 'deviceLogStart': started}
-    phases = {'migration': 'SingleProjectMigrationIntegration', 'global-ui': 'GlobalControlUiIntegration', 'library-ui': 'LibraryUiIntegration', 'app-actions-ui': 'AppActionsUiIntegration', 'multi-add': 'MultiAddUiIntegration', 'publication': 'ApplicationPublicationIntegration', 'execution-code': 'ExecutionCodeIntegration', 'thick-policy': 'ThickPolicyIntegration'}
+    phases = {'migration': 'SingleProjectMigrationIntegration', 'global-ui': 'GlobalControlUiIntegration', 'library-ui': 'LibraryUiIntegration', 'app-actions-ui': 'AppActionsUiIntegration', 'multi-add': 'MultiAddUiIntegration', 'publication': 'ApplicationPublicationIntegration', 'execution-code': 'ExecutionCodeIntegration', 'runtime-policy': 'RuntimePolicyIntegration'}
+    phases.update({'control': 'ControlIntegration', 'hook-ui': 'HookUiIntegration'})
     phases.update({'catalog-seed': 'CatalogReadIntegration', 'catalog-cold': 'CatalogReadIntegration'})
     phases['task-presentation']='TaskPresentationIntegration'
     selected = ['migration', 'global-ui'] if options.phase == 'all' else [options.phase]
@@ -48,6 +51,7 @@ def main():
             with output_file.open('w') as output:
                 process = subprocess.Popen(command, stdout=output, stderr=subprocess.STDOUT, text=True)
                 launched = False
+                retried = False
                 deadline = time.monotonic() + 180
                 while process.poll() is None:
                     if time.monotonic() > deadline:
@@ -62,6 +66,21 @@ def main():
                                 raise RuntimeError('WORKBENCH_SIGNAL_MISMATCH')
                             call('shell', 'am', 'start', '-W', '-n', expected)
                             launched = True
+                    if launched and options.retry_engine_once and not retried:
+                        window = remote + 'acceptance-window-' + run + '.xml'
+                        call('shell', 'uiautomator', 'dump', window)
+                        nodes = list(ET.fromstring(call('shell', 'cat', window).stdout).iter('node'))
+                        owned = [node for node in nodes if node.get('package') == options.package]
+                        reason = any('SUPERVISOR_INTERRUPTED' in node.get('text', '') for node in owned)
+                        button = next((node for node in owned if node.get('text') == '重新连接' and node.get('clickable') == 'true'), None)
+                        if reason and button is not None:
+                            bounds = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', button.get('bounds', ''))
+                            if not bounds:
+                                raise RuntimeError('RECONNECT_BOUNDS_INVALID')
+                            x1, y1, x2, y2 = map(int, bounds.groups())
+                            call('shell', 'input', 'tap', str((x1+x2)//2), str((y1+y2)//2))
+                            report.setdefault('explicitEngineRetries', []).append({'phase': phase, 'reason': 'SUPERVISOR_INTERRUPTED', 'action': 'workbench-reconnect-once'})
+                            retried = True
                     time.sleep(0.15)
             raw = call('shell', 'cat', remote + 'result-' + run + '.json').stdout
             value = json.loads(raw)

@@ -32,7 +32,16 @@ export interface PlanContext<P> {
     snapshotThrowable(ref: JavaObjectRef, limits?: {maxFrames?: number;maxCauses?: number}): Readonly<Record<string,unknown>>;
     /** Direct field read, never a guest-overridden getter. Returns a scalar, or a new JavaObjectRef for an object-typed field. */
     readField(ref: JavaObjectRef, fieldName: string): HookValue | JavaObjectRef;
+    /** Shallow container snapshot without executing guest-overridden virtual methods or toString. */
+    snapshotContainer(ref: JavaObjectRef, maxEntries?: number): Readonly<Record<string, unknown>>;
     method(className: string, methodName: string, argumentTypes: readonly JavaType[], options?: { classLoaderId?: string; returnType?: JavaType }): HookBuilder<P>;
+  };
+  readonly state: {
+    get(key: string): unknown;
+    set(key: string, value: unknown): unknown;
+    delete(key: string): boolean;
+    clear(): void;
+    keys(): readonly string[];
   };
   readonly native: {
     /** After original only; signed byte-count result, uint64 pointer slot, integral capacity slot. */
@@ -80,6 +89,7 @@ export interface PreparedPlan<S extends Parameters> {
     caller?: (() => string) | undefined;
     privacyAttribution?: ((className: string) => Readonly<Record<string,unknown>>) | undefined;
     privacyConsentStage?: (() => Readonly<Record<string,unknown>>) | undefined;
+    stateStore?: Map<string, unknown> | undefined;
   };
 }
 
@@ -106,7 +116,8 @@ export function preparePlan<S extends Parameters>(plan: HookPlan<S>, observed: E
     caller?: (() => string) | undefined;
     privacyAttribution?: ((className: string) => Readonly<Record<string,unknown>>) | undefined;
     privacyConsentStage?: (() => Readonly<Record<string,unknown>>) | undefined;
-  } = {};
+    stateStore?: Map<string, unknown> | undefined;
+  } = { stateStore: new Map<string, unknown>() };
   let collecting = true;
   function builder(symbol: HookSymbol): HookBuilder<ParameterValues<S>> {
     let rule = rules.get(symbol.id);
@@ -144,6 +155,7 @@ export function preparePlan<S extends Parameters>(plan: HookPlan<S>, observed: E
       snapshotThread: ref => JavaObjectFrame.snapshot(ref,"java.lang.Thread"),
       snapshotThrowable: (ref,limits={}) => {requireThat(Object.keys(limits).every(k=>k==="maxFrames"||k==="maxCauses"),"HOOK_SNAPSHOT_FIELDS","Unknown snapshot option");requireThat(Number.isSafeInteger(limits.maxFrames??16)&&Number.isSafeInteger(limits.maxCauses??4)&&(limits.maxFrames??16)>=1&&(limits.maxFrames??16)<=32&&(limits.maxCauses??4)>=1&&(limits.maxCauses??4)<=6,"HOOK_SNAPSHOT_LIMIT","Snapshot exceeds limits");return JavaObjectFrame.snapshot(ref,"java.lang.Throwable");},
       readField: (ref,fieldName) => {requireThat(typeof fieldName==="string"&&fieldName.length>0,"HOOK_FIELD_NAME","Field name must be a non-empty string");return JavaObjectFrame.field(ref,fieldName) as HookValue | JavaObjectRef;},
+      snapshotContainer: (ref,maxEntries=16) => {requireThat(typeof maxEntries==="number"&&Number.isSafeInteger(maxEntries)&&maxEntries>=1&&maxEntries<=64,"HOOK_SNAPSHOT_LIMIT","maxEntries must be an integer between 1 and 64");return JavaObjectFrame.container(ref,maxEntries);},
       method(className, methodName, argumentTypes, options = {}) {
         requireThat(evidence.capabilities.includes("java-hook"), "CAPABILITY_MISSING", "java-hook capability is unavailable");
         const norm = (t: string) => t === "byte[]" ? "[B" : t;
@@ -203,6 +215,39 @@ export function preparePlan<S extends Parameters>(plan: HookPlan<S>, observed: E
       consentStage() {
         requireThat(emitSink.privacyConsentStage !== undefined, "PRIVACY_CONSENT_STAGE_UNSUPPORTED", "A consent-stage backend is required");
         return Object.freeze({ ...emitSink.privacyConsentStage() });
+      },
+    },
+    state: {
+      get(key) {
+        requireThat(!collecting, "HOOK_STATE_OUTSIDE_INVOCATION", "state.get can only be called inside a hook callback");
+        requireThat(typeof key === "string" && key.length >= 1 && key.length <= 128, "HOOK_STATE_KEY", "State key must be a 1..128 character string");
+        const store = emitSink.stateStore!;
+        return store.has(key) ? store.get(key) : undefined;
+      },
+      set(key, value) {
+        requireThat(!collecting, "HOOK_STATE_OUTSIDE_INVOCATION", "state.set can only be called inside a hook callback");
+        requireThat(typeof key === "string" && key.length >= 1 && key.length <= 128, "HOOK_STATE_KEY", "State key must be a 1..128 character string");
+        const store = emitSink.stateStore!;
+        if (!store.has(key)) requireThat(store.size < 64, "HOOK_STATE_CAPACITY", "Session state capacity limit (64 keys) exceeded");
+        const normalized = value === undefined ? null : eventSnapshot(value);
+        assertSnapshotData(normalized);
+        requireThat(JSON.stringify({ k: key, v: normalized }).length <= 4096, "HOOK_STATE_VALUE_SIZE", "State entry exceeds 4096 bytes");
+        const frozen = normalized !== null && typeof normalized === "object" ? Object.freeze(structuredClone(normalized)) : normalized;
+        store.set(key, frozen);
+        return frozen;
+      },
+      delete(key) {
+        requireThat(!collecting, "HOOK_STATE_OUTSIDE_INVOCATION", "state.delete can only be called inside a hook callback");
+        requireThat(typeof key === "string" && key.length >= 1 && key.length <= 128, "HOOK_STATE_KEY", "State key must be a 1..128 character string");
+        return emitSink.stateStore!.delete(key);
+      },
+      clear() {
+        requireThat(!collecting, "HOOK_STATE_OUTSIDE_INVOCATION", "state.clear can only be called inside a hook callback");
+        emitSink.stateStore!.clear();
+      },
+      keys() {
+        requireThat(!collecting, "HOOK_STATE_OUTSIDE_INVOCATION", "state.keys can only be called inside a hook callback");
+        return Object.freeze([...emitSink.stateStore!.keys()]);
       },
     },
   };

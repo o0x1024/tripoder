@@ -21,23 +21,18 @@ final class RuntimeServices {
     private static final class Identity {final String lease,stub,component,instance;Identity(Bundle b,String instance){lease=RuntimeWire.required(b,"lease");stub=RuntimeWire.required(b,"stub");component=RuntimeWire.required(b,"component");this.instance=instance;}}
     Service instantiate(String stub,Intent input)throws Exception{
         String instance=UUID.randomUUID().toString();Bundle lease;
-        if(engine.mode.routesThroughPlatform()){
+        {
             lease=thinStubs.get(stub);
             if(lease==null&&input!=null&&input.getBooleanExtra("tripoder.thinService",false)){
                 String id=input.getStringExtra("tripoder.serviceLease"),comp=input.getStringExtra("tripoder.serviceComponent");
                 if(id!=null&&comp!=null){lease=new Bundle();lease.putString("lease",id);lease.putString("stub",stub);lease.putString("component",comp);thinStubs.put(stub,lease);}
             }
             if(lease==null){Bundle request=engine.auth();request.putString("stub",stub);request.putString("instance",instance);lease=engine.brokerCall(RuntimeWire.SERVICE_CLAIM,request);thinStubs.put(stub,lease);}
-        }else{
-            Bundle request=engine.auth();request.putString("stub",stub);request.putString("instance",instance);lease=engine.brokerCall(RuntimeWire.SERVICE_CLAIM,request);
         }
         engine.startApplication();
         String name=RuntimeWire.required(lease,"component");Intent visible=null;
         if(input!=null){
-            if(!engine.mode.routesThroughPlatform()){
-                if(!new ComponentName(engine.host,stub).equals(input.getComponent())||!RuntimeWire.required(lease,"lease").equals(input.getStringExtra("tripoder.serviceLease")))throw new SecurityException("SERVICE_FACTORY_DELIVERY_MISMATCH");
-                visible=restored(input,name);
-            }else{visible=new Intent(input).setComponent(new ComponentName(engine.packageName,name));visible.removeExtra("tripoder.serviceLease");visible.removeExtra("tripoder.serviceComponent");visible.removeExtra("tripoder.thinService");}
+            {visible=new Intent(input).setComponent(new ComponentName(engine.packageName,name));visible.removeExtra("tripoder.serviceLease");visible.removeExtra("tripoder.serviceComponent");visible.removeExtra("tripoder.thinService");}
         }
         android.util.Log.i("TripoderService", "instantiate stub=" + stub + " component=" + name);
         Service service=engine.componentFactory.instantiateService(engine.guestLoader(),name,visible);if(service==null||!engine.ownsLoader(service.getClass().getClassLoader()))throw new SecurityException("SERVICE_LOADER_MISMATCH");
@@ -50,7 +45,7 @@ final class RuntimeServices {
         if(stub||leased){
             // Engine-routed framework delivery: the physical stub component and the per-instance lease are both present. Strip them and present the guest-visible intent. Half a pair is an inconsistent (spoofed) delivery.
             if(!stub)throw new SecurityException("SERVICE_INTENT_STUB_MISMATCH");if(!leased)throw new SecurityException("SERVICE_INTENT_LEASE_MISMATCH");
-            if(!engine.mode.routesThroughPlatform())return restored(input,identity.component);
+            {}
             Intent value=new Intent(input);value.removeExtra("tripoder.serviceLease");value.removeExtra("tripoder.serviceComponent");value.removeExtra("tripoder.thinService");value.setComponent(new ComponentName(engine.packageName,identity.component));value.setExtrasClassLoader(engine.guestLoader());return value;
         }
         // Not engine-routed: the guest invoked its own hooked service lifecycle directly -- a service
@@ -64,15 +59,12 @@ final class RuntimeServices {
         return RuntimeServiceIntent.delivery(physical,new ComponentName(engine.packageName,component),engine.guestLoader());
     }
     void lifecycle(Service service,String event)throws Exception{
-        if(engine.mode.routesThroughPlatform()){identity(service);return;}
-        android.util.Log.i("TripoderService", "service lifecycle start: " + service.getClass().getName() + " event=" + event);
-        long t0 = android.os.SystemClock.elapsedRealtime();
-        Identity identity=identity(service);Bundle b=engine.auth();b.putString("lease",identity.lease);b.putString("instance",identity.instance);b.putString("event",event);engine.brokerCall(RuntimeWire.SERVICE_EVENT,b);
-        android.util.Log.i("TripoderService", "service lifecycle done: " + service.getClass().getName() + " event=" + event + " took=" + (android.os.SystemClock.elapsedRealtime() - t0) + "ms");
+        {identity(service);return;}
+
     }
     private Identity identity(Service service){Identity id=instances.get(service);if(id==null)throw new SecurityException("SERVICE_INSTANCE_NOT_REGISTERED");return id;}
-    private RuntimeServiceIntent.Request snapshotForMode(Intent input)throws Exception{
-        if(!engine.mode.routesThroughPlatform())return RuntimeServiceIntent.snapshot(input);
+    private RuntimeServiceIntent.Request snapshotForPlatform(Intent input)throws Exception{
+        {}
         Objects.requireNonNull(input,"SERVICE_INTENT_REQUIRED");
         if(input.getComponent()==null){
             ComponentName resolved=RuntimeBridge.resolveOwnService(input);
@@ -84,15 +76,15 @@ final class RuntimeServices {
         Intent copy=new Intent(input);if(input.getExtras()!=null)copy.replaceExtras(new Bundle(input.getExtras()));return RuntimeServiceIntent.thin(copy);
     }
     ComponentName start(Context base,Intent intent)throws Exception{
-        RuntimeServiceIntent.Request request=snapshotForMode(intent);if(request==null)return null;intent=request.intent;
-        if(engine.mode.routesThroughPlatform()&&!engine.packageName.equals(intent.getComponent().getPackageName())&&engine.serviceIndex.get(intent.getComponent().getClassName())==null){
+        RuntimeServiceIntent.Request request=snapshotForPlatform(intent);if(request==null)return null;intent=request.intent;
+        if(!engine.packageName.equals(intent.getComponent().getPackageName())&&engine.serviceIndex.get(intent.getComponent().getClassName())==null){
             try{return base.startService(intent);}catch(Exception ignored){return null;}
         }
         Bundle route=route("start",intent,"",0,request.digest);if(route.getBoolean("absent"))return null;ComponentName physical=base.startService(physical(request,route));boolean accepted=physical!=null;if(accepted&&!physical.equals(component(route)))throw new SecurityException("SERVICE_START_COMPONENT_MISMATCH");ack(route,accepted);return accepted?intent.getComponent():null;
     }
     boolean stop(Context base,Intent intent)throws Exception{
-        RuntimeServiceIntent.Request request=snapshotForMode(intent);if(request==null)return false;intent=request.intent;
-        if(engine.mode.routesThroughPlatform()&&!engine.packageName.equals(intent.getComponent().getPackageName())&&engine.serviceIndex.get(intent.getComponent().getClassName())==null){
+        RuntimeServiceIntent.Request request=snapshotForPlatform(intent);if(request==null)return false;intent=request.intent;
+        if(!engine.packageName.equals(intent.getComponent().getPackageName())&&engine.serviceIndex.get(intent.getComponent().getClassName())==null){
             try{return base.stopService(intent);}catch(Exception ignored){return false;}
         }
         Bundle route=route("stop",intent,"",0,request.digest);if(route.getBoolean("absent"))return false;boolean stopped=base.stopService(physical(request,route));ack(route,stopped);return stopped;
@@ -115,7 +107,7 @@ final class RuntimeServices {
         // letting the shape check throw on the caller's worker thread (SDKs probing for an optional
         // system service do not catch that and self-kill, which is what crashed 高德 at login).
         if(intent!=null&&intent.getComponent()==null){
-            if(engine.mode.routesThroughPlatform()){
+            {
                 ComponentName resolved=RuntimeBridge.resolveOwnService(intent);
                 if(resolved!=null)intent=new Intent(intent).setComponent(resolved);
             }
@@ -128,8 +120,8 @@ final class RuntimeServices {
                 return false;
             }
         }
-        RuntimeServiceIntent.Request request=snapshotForMode(intent);intent=request.intent;
-        if(!engine.mode.routesThroughPlatform())RuntimeServiceBinding.validate(flags);
+        RuntimeServiceIntent.Request request=snapshotForPlatform(intent);intent=request.intent;
+        {}
         Binding binding;
         synchronized(bindings){
             var held=bindings.computeIfAbsent(original,key->new ArrayList<>());
@@ -176,7 +168,7 @@ final class RuntimeServices {
         android.util.Log.i("TripoderService", "unbindService: " + binding.logical + " physical=" + binding.physical);
         if(!binding.platformRegistered)return;
         if(!binding.routed){binding.base.unbindService(binding);return;}
-        if(engine.mode.routesThroughPlatform()&&!binding.isolated){
+        if(!binding.isolated){
             binding.base.unbindService(binding);
             return;
         }
@@ -193,17 +185,16 @@ final class RuntimeServices {
         if(instance!=null)request.putString("isolatedInstance",instance);
         // Whether the target runs isolated is the authority's decision; it needs this process's resolved library graph then.
         if(kind.equals("bind")){Bundle libraries=RuntimeIsolatedLibraries.describe(engine.sharedLibraries);if(libraries!=null)request.putBundle("platformLibraries",libraries);}
-        if(intent!=null){if(!engine.mode.routesThroughPlatform())request.putString("requestDigest",Objects.requireNonNull(digest,"SERVICE_SNAPSHOT_DIGEST_REQUIRED"));request.putString("package",intent.getComponent().getPackageName());request.putString("component",intent.getComponent().getClassName());}
+        if(intent!=null){{}request.putString("package",intent.getComponent().getPackageName());request.putString("component",intent.getComponent().getClassName());}
         Bundle result=engine.brokerCall(RuntimeWire.SERVICE_ROUTE,request);
-        if(engine.mode.routesThroughPlatform()&&!result.getBoolean("isolated")&&result.containsKey("stub")&&result.containsKey("lease")&&result.containsKey("component"))thinStubs.put(result.getString("stub"),result);
+        if(!result.getBoolean("isolated")&&result.containsKey("stub")&&result.containsKey("lease")&&result.containsKey("component"))thinStubs.put(result.getString("stub"),result);
         return result;
     }
-    private void ack(Bundle route,boolean applied)throws Exception{if(engine.mode.routesThroughPlatform()&&!route.getBoolean("isolated"))return;Bundle request=engine.auth();request.putString("operation",RuntimeWire.required(route,"operation"));request.putBoolean("applied",applied);engine.brokerCall(RuntimeWire.SERVICE_ACK,request);}
+    private void ack(Bundle route,boolean applied)throws Exception{if(!route.getBoolean("isolated"))return;Bundle request=engine.auth();request.putString("operation",RuntimeWire.required(route,"operation"));request.putBoolean("applied",applied);engine.brokerCall(RuntimeWire.SERVICE_ACK,request);}
     private ComponentName component(Bundle route){return new ComponentName(engine.host,RuntimeWire.required(route,"stub"));}
     private Intent physical(RuntimeServiceIntent.Request request,Bundle route)throws Exception{
         Intent out=new Intent(request.intent).setComponent(component(route)).putExtra("tripoder.serviceLease",RuntimeWire.required(route,"lease"));
-        if(route.getBoolean("isolated")){Bundle capability=new Bundle();capability.putBinder(RuntimeIsolatedService.AUTHORITY,Objects.requireNonNull(route.getBinder("isolatedAuthority")));out.putExtras(capability).putExtra("tripoder.generation",RuntimeWire.required(route,"generation")).putExtra(RuntimeServiceIntent.PAYLOAD,!engine.mode.routesThroughPlatform()?request.payload():RuntimeServiceIntent.snapshot(request.intent).payload());}
-        else if(!engine.mode.routesThroughPlatform())out.putExtra(RuntimeServiceIntent.PAYLOAD,request.payload());
+        if(route.getBoolean("isolated")){Bundle capability=new Bundle();capability.putBinder(RuntimeIsolatedService.AUTHORITY,Objects.requireNonNull(route.getBinder("isolatedAuthority")));out.putExtras(capability).putExtra("tripoder.generation",RuntimeWire.required(route,"generation")).putExtra(RuntimeServiceIntent.PAYLOAD,RuntimeServiceIntent.snapshot(request.intent).payload());}
         else out.putExtra("tripoder.thinService",true).putExtra("tripoder.serviceComponent",RuntimeWire.required(route,"component"));
         return out;
     }

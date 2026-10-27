@@ -1,0 +1,70 @@
+Traceback (most recent call last):
+  File "/Users/like/code/tripoder/android/runtime/self-hook-tests/run.py", line 89, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/Users/like/code/tripoder/android/runtime/self-hook-tests/run.py", line 65, in main
+    run(javac,'--release','17','-classpath',str(args.android_jar)+':'+str(args.apksig_jar),'-d',sdk_classes,*sources)
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/like/code/tripoder/android/runtime/self-hook-tests/run.py", line 31, in run
+    raise RuntimeError(str(command[0])+': '+result.stdout+'\n'+result.stderr)
+RuntimeError: /opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home/bin/javac:
+/Users/like/code/tripoder/android/runtime/src/dev/tripoder/runtime/ArtifactSet.java:3: 错误: 程序包com.android.apksig不存在
+import com.android.apksig.ApkVerifier;
+                         ^
+/Users/like/code/tripoder/android/runtime/src/dev/tripoder/runtime/ApkManifest.java:3: 错误: 程序包com.android.apksig.internal.apk不存在
+import com.android.apksig.internal.apk.AndroidBinXmlParser;
+                                      ^
+/Users/like/code/tripoder/android/runtime/src/dev/tripoder/runtime/ArtifactSet.java:395: 错误: 程序包ApkVerifier不存在
+            java.util.concurrent.CompletableFuture<ApkVerifier.Result> signature=java.util.concurrent.CompletableFuture.supplyAsync(()->{
+                                                              ^
+/Users/like/code/tripoder/android/runtime/src/dev/tripoder/runtime/ArtifactSet.java:396: 错误: 程序包ApkVerifier不存在
+                try{return new ApkVerifier.Builder(file.toFile()).setMinCheckedPlatformVersion(PLATFORM).setMaxCheckedPlatformVersion(PLATFORM).build().verify();}catch(Exception error){throw new java.util.concurrent.CompletionException(error);}
+                                          ^
+/Users/like/code/tripoder/android/runtime/src/dev/tripoder/runtime/ArtifactSet.java:398: 错误: 程序包ApkVerifier不存在
+            ArtifactSetZip.Scan scan;ApkVerifier.Result verification;
+                                                ^
+/Users/like/code/tripoder/android/runtime/src/dev/tripoder/runtime/ApkManifest.java:149: 错误: 找不到符号
+        AndroidBinXmlParser p=new AndroidBinXmlParser(ByteBuffer.wrap(binaryXml));
+        ^
+  符号:   类 AndroidBinXmlParser
+  位置: 类 ApkManifest
+/Users/like/code/tripoder/android/runtime/src/dev/tripoder/runtime/ApkManifest.java:149: 错误: 找不到符号
+        AndroidBinXmlParser p=new AndroidBinXmlParser(ByteBuffer.wrap(binaryXml));
+                                  ^
+  符号:   类 AndroidBinXmlParser
+  位置: 类 ApkManifest
+/Users/like/code/tripoder/android/runtime/src/dev/tripoder/runtime/ApkManifest.java:152: 错误: 找不到符号
+        while(p.getEventType()!=AndroidBinXmlParser.EVENT_END_DOCUMENT){
+                                ^
+  符号:   变量 AndroidBinXmlParser
+  位置: 类 ApkManifest
+/Users/like/code/tripoder/android/runtime/src/dev/tripoder/runtime/ApkManifest.java:153: 错误: 找不到符号
+            if(p.getEventType()==AndroidBinXmlParser.EVENT_START_ELEMENT){
+                                 ^
+  符号:   变量 AndroidBinXmlParser
+  位置: 类 ApkManifest
+/Users/like/code/tripoder/android/runtime/src/dev/tripoder/runtime/ApkManifest.java:161: 错误: 程序包AndroidBinXmlParser不存在
+                        case AndroidBinXmlParser.VALUE_TYPE_STRING:value=p.getAttributeStringValue(i);break;
+                                                ^
+/Users/like/code/tripoder/android/runtime/src/dev/tripoder/runtime/ApkManifest.java:162: 错误: 程序包AndroidBinXmlParser不存在
+                        case AndroidBinXmlParser.VALUE_TYPE_INT:value=Long.toString(Integer.toUnsignedLong(p.getAttributeIntValue(i)));break;
+                                                ^
+/Users/like/code/tripoder/android/runtime/src/dev/tripoder/runtime/ApkManifest.java:163: 错误: 程序包AndroidBinXmlParser不存在
+                        case AndroidBinXmlParser.VALUE_TYPE_BOOLEAN:value=Boolean.toString(p.getAttributeBooleanValue(i));break;
+                                                ^
+/Users/like/code/tripoder/android/runtime/src/dev/tripoder/runtime/ApkManifest.java:164: 错误: 程序包AndroidBinXmlParser不存在
+                        case AndroidBinXmlParser.VALUE_TYPE_REFERENCE:value=ANDROID.equals(ns)?resolved(resources,p.getAttributeName(i),p.getAttributeIntValue(i)):"@0x"+Integer.toHexString(p.getAttributeIntValue(i));break;
+                                                ^
+/Users/like/code/tripoder/android/runtime/src/dev/tripoder/runtime/ApkManifest.java:165: 错误: 程序包AndroidBinXmlParser不存在
+                        case AndroidBinXmlParser.VALUE_TYPE_UNSUPPORTED:value=BinXmlTypedValues.preserve(values[i]);break;
+                                                ^
+/Users/like/code/tripoder/android/runtime/src/dev/tripoder/runtime/ApkManifest.java:171: 错误: 找不到符号
+            }else if(p.getEventType()==AndroidBinXmlParser.EVENT_END_ELEMENT){
+                                       ^
+  符号:   变量 AndroidBinXmlParser
+  位置: 类 ApkManifest
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+注: 某些输入文件使用了未经检查或不安全的操作。
+注: 有关详细信息, 请使用 -Xlint:unchecked 重新编译。
+15 个错误

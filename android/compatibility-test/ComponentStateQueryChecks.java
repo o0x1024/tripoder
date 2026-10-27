@@ -33,7 +33,7 @@ final class ComponentStateQueryChecks {
             db.execSQL("INSERT INTO installs VALUES(?,?,?,?,?,?,'COMMITTED','',1,'owned',?,'owned-import')",new Object[]{install.space,info.packageName,install.generation,artifacts.base.toString(),artifacts.parts.get(0).sha256,artifacts.descriptorSha,install.data.getName()});
             int pid=280001,uid=android.os.Process.myUid();var allocation=broker.contract.allocate(install.space,info.packageName,install.generation,info.packageName,uid);
             String generation=allocation.session.processGeneration,stub=RuntimeSlot.activity(7).getName();broker.store.reserve(allocation.session,stub);broker.store.session(broker.contract.attach(allocation.bootstrapToken,pid,uid));
-            var field=RuntimeBroker.class.getDeclaredField("slots");field.setAccessible(true);((Map<String,RuntimeBroker.Slot>)field.get(broker)).put(generation,new RuntimeBroker.Slot(install,allocation,stub,RuntimeMode.THIN,null));
+            var field=RuntimeBroker.class.getDeclaredField("slots");field.setAccessible(true);((Map<String,RuntimeBroker.Slot>)field.get(broker)).put(generation,new RuntimeBroker.Slot(install,allocation,stub,null));
             String absent=info.packageName+".OwnedUndeclaredComponentProbe",declared=info.packageName+".Main";Bundle query=request(generation,absent);
             long operations=count(db,"operations"),settings=count(db,"component_settings");
             check.accept("component-query-model-undeclared-class-returns-native-default",RuntimeComponentSettings.route(broker,query,pid,uid).getInt("state")==PackageManager.COMPONENT_ENABLED_STATE_DEFAULT);

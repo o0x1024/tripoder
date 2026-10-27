@@ -17,9 +17,12 @@ public final class RuntimeHookBridge {
     private final ArtifactSet artifacts;
     private final RuntimeNativeMappingEvidence runtimeMappings;
     private final RuntimeJavaObservation javaObservation;
+    private final RuntimeNativeLibraryCatalog nativeLibraries;
     private RuntimeNativeObservation nativeObservation;
     private volatile HookCommandDispatcher selfHookControl;
     private SelfHookControl localControl;
+    private boolean controlAttempted;
+    private Throwable controlFailure;
     private final Map<String,ArtifactSet.FileRecord> nativeFilesByName;
     RuntimeHookBridge(RuntimeEngine engine,Bundle input,ArtifactSet artifacts)throws Exception{
         this.engine=engine;this.artifacts=artifacts;
@@ -32,9 +35,13 @@ public final class RuntimeHookBridge {
             .put("installGeneration",RuntimeWire.required(input,"installGeneration"))
             .put("descriptorSha256",RuntimeWire.required(input,"descriptorSha"))
             .put("processGeneration",engine.generation).put("pid",android.os.Process.myPid())
-            .put("mode",engine.mode.wire)
             .put("target",new JSONObject().put("packageName",engine.packageName).put("versionCode",Long.toString(artifacts.versionCode)).put("apkSha256",RuntimeWire.required(input,"sha256")));
         javaObservation=new RuntimeJavaObservation(engine::guestLoader,engine::ownsLoader,()->RuntimeEngine.current==engine,identitySnapshot());
+        nativeLibraries=new RuntimeNativeLibraryCatalog(new RuntimeNativeLibraryCatalog.Inventory(){
+            public List<String> names(){List<String> names=new ArrayList<>();for(var file:artifacts.nativeFiles)names.add(new java.io.File(file.path).getName());return List.copyOf(names);}
+            public String path(String name)throws Exception{return canonicalLibraryPath(name);}
+            public Map<String,Object> inspect(String name)throws Exception{return HookWire.request(verifiedLibrary(name).toString());}
+        },()->RuntimeEngine.current==engine);
     }
     private static RuntimeHookBridge current(){RuntimeEngine e=RuntimeEngine.current;if(e==null||e.application==null)throw new IllegalStateException("HOOK_APPLICATION_NOT_READY");return e.hooks;}
     public static String identity(){return current().identity.toString();}
@@ -47,15 +54,16 @@ public final class RuntimeHookBridge {
         catch(TimeoutException error){throw new IllegalStateException("HOOK_AGENT_TIMEOUT_UNKNOWN",error);}
         finally{requests.remove(id,result);}
     }
-    /** Installed once by the self-hook bootstrap only after the compiler/backend contract is ready. */
-    public synchronized void installSelfHookControl(HookCommandDispatcher.Handler handler){
-        if(selfHookControl!=null)throw new IllegalStateException("HOOK_CONTROL_ALREADY_INSTALLED");
-        selfHookControl=new HookCommandDispatcher(handler);
-    }
+    void installNativeRuntime(){nativeLibraries.installProcessBoundary();}
     /** Existing prepare(source,evidenceId) is compiled inside this process; callers never supply ASTs. */
-    public void installSelfHookControl(SelfHookControl.Platform platform){
-        SelfHookControl control=new SelfHookControl(HookWire.request(identity.toString()),platform,android.os.SystemClock::elapsedRealtime);localControl=control;
-        installSelfHookControl(raw->{
+    private synchronized HookCommandDispatcher control()throws Exception{
+        if(selfHookControl!=null)return selfHookControl;
+        if(controlAttempted)throw new IllegalStateException("HOOK_CONTROL_INITIALIZATION_FAILED",controlFailure);
+        controlAttempted=true;
+        try{
+        SelfHookControl.Platform platform=selfHookPlatform();
+        SelfHookControl control=new SelfHookControl(HookWire.request(identity.toString()),platform,android.os.SystemClock::elapsedRealtime);
+        HookCommandDispatcher dispatcher=new HookCommandDispatcher(raw->{
             long statusStart=android.os.SystemClock.elapsedRealtime();
             String response=control.handle(raw);
             if(!"status".equals(HookWire.request(raw).get("command")))return response;
@@ -75,10 +83,13 @@ public final class RuntimeHookBridge {
             if(done-statusStart>500)android.util.Log.i("TripoderHook","STATUS_TIMING:control="+(controlDone-statusStart)+":mappings="+(mappingsDone-controlDone)+":resources="+(done-mappingsDone));
             return HookWire.encode(wire);
         });
+        localControl=control;selfHookControl=dispatcher;
+        android.util.Log.i("TripoderHook","CONTROL_INITIALIZED");
+        return selfHookControl;
+        }catch(Exception|Error failure){controlFailure=failure;throw failure;}
     }
-    public static void submit(String id,String request){
-        HookCommandDispatcher dispatcher=current().selfHookControl;
-        if(dispatcher==null)throw new IllegalStateException("REQUIRED_HOOK_ADAPTER_MISSING");
+    public static void submit(String id,String request)throws Exception{
+        HookCommandDispatcher dispatcher=current().control();
         dispatcher.submit(id,request,new HookCommandDispatcher.Sink(){
             public void response(String requestId,String response){
                 if(!complete(requestId,response))android.util.Log.e("TripoderHook","HOOK_ACK_NOT_DELIVERED:"+requestId);
@@ -95,6 +106,7 @@ public final class RuntimeHookBridge {
     public static boolean complete(String id,String response){CompletableFuture<String> pending=requests.get(id);return pending!=null&&pending.complete(response);}
     /** Same parser/compiler/backend, executed before Application construction. */
     void activateStartup(JSONObject hook)throws Exception{
+        control(); // An explicitly configured startup Hook is a tool request.
         JSONObject observed=startupCall("observe",new JSONObject().put("selectors",hook.getJSONArray("selectors")));
         JSONObject prepared=startupCall("prepare",new JSONObject().put("evidenceId",observed.getJSONObject("evidence").getString("id")).put("source",hook.getString("source")));
         JSONObject result=startupCall("activate",new JSONObject().put("token",prepared.getString("token")).put("sourceSha256",prepared.getString("sourceSha256")));
@@ -142,11 +154,7 @@ public final class RuntimeHookBridge {
     Map<String,Object> identitySnapshot(){return HookWire.request(identity.toString());}
     RuntimeJavaObservation javaObservation(){return javaObservation;}
     synchronized RuntimeNativeObservation nativeObservation()throws Exception {
-        if(nativeObservation==null)nativeObservation=new RuntimeNativeObservation(new RuntimeNativeObservation.Inventory(){
-            public List<String> names(){List<String> names=new ArrayList<>();for(var file:artifacts.nativeFiles)names.add(new java.io.File(file.path).getName());return List.copyOf(names);}
-            public String path(String name)throws Exception{return canonicalLibraryPath(name);}
-            public Map<String,Object> inspect(String name)throws Exception{return HookWire.request(verifiedLibrary(name).toString());}
-        },()->RuntimeEngine.current==engine,identitySnapshot());
+        if(nativeObservation==null)nativeObservation=new RuntimeNativeObservation(nativeLibraries,()->RuntimeEngine.current==engine,identitySnapshot());
         return nativeObservation;
     }
     SelfHookControl.Platform selfHookPlatform()throws Exception{return new RuntimeSelfHookPlatform(identitySnapshot(),javaObservation,nativeObservation());}

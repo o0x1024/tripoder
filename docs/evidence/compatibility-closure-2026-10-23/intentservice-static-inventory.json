@@ -1,0 +1,124 @@
+{
+  "status": "STATIC_CANDIDATE_PENDING_LIVE_REGISTRY",
+  "productCodeChanged": false,
+  "liveRegistryVerified": false,
+  "target": {
+    "ownerIndex": 79,
+    "binaryClassName": "android.app.IntentService",
+    "dexDescriptor": "Landroid/app/IntentService;"
+  },
+  "source": {
+    "jar": "docs/evidence/compatibility-closure-2026-10-23/framework-after34/framework.jar",
+    "devicePath": "/system/framework/framework.jar",
+    "jarBytes": 51386617,
+    "jarSha256": "b65eb83784dccd3ebe3efec622b184ef970fe104417220a137f8045d4fbb019c",
+    "deviceExportReceipt": "docs/evidence/compatibility-closure-2026-10-23/framework-after34/receipt.json",
+    "dexEntry": "classes.dex",
+    "dexBytes": 9806172,
+    "dexSha256": "35303ddca835a763425b31a7d0eef61c009914bce1ae13bb2e465ed02e03e09d",
+    "classAccessFlagsHex": "401"
+  },
+  "extraction": {
+    "method": "Read class_defs/class_data_item/method_ids/proto_ids from the locally exported DEX without executing APK or framework code; independently cross-check apkanalyzer smali.",
+    "apkanalyzerCommand": "JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home /opt/homebrew/share/android-commandlinetools/cmdline-tools/latest/bin/apkanalyzer dex code --class android.app.IntentService docs/evidence/compatibility-closure-2026-10-23/framework-after34/framework.jar",
+    "inventoryRule": "FixedComponentHooks.prepare inventories Method objects only, excludes Constructor objects, sorts name + JVM descriptor + ':' + lowercase hexadecimal modifiers, joins with LF, and appends one final LF before UTF-8 SHA-256.",
+    "javaReflectionModifiersStatus": "Candidate modifiers are derived from actual DEX access flags. Equality with live ART Method.getModifiers() and exact fixed registry Method identities remains to be checked."
+  },
+  "declaredMethods": [
+    {
+      "name": "onBind",
+      "descriptor": "(Landroid/content/Intent;)Landroid/os/IBinder;",
+      "dexAccessFlagsHex": "1",
+      "candidateJavaModifiers": 1,
+      "modifierNames": [
+        "public"
+      ],
+      "codeOffset": 2637580
+    },
+    {
+      "name": "onCreate",
+      "descriptor": "()V",
+      "dexAccessFlagsHex": "1",
+      "candidateJavaModifiers": 1,
+      "modifierNames": [
+        "public"
+      ],
+      "codeOffset": 2637668
+    },
+    {
+      "name": "onDestroy",
+      "descriptor": "()V",
+      "dexAccessFlagsHex": "1",
+      "candidateJavaModifiers": 1,
+      "modifierNames": [
+        "public"
+      ],
+      "codeOffset": 2637792
+    },
+    {
+      "name": "onHandleIntent",
+      "descriptor": "(Landroid/content/Intent;)V",
+      "dexAccessFlagsHex": "404",
+      "candidateJavaModifiers": 1028,
+      "modifierNames": [
+        "protected",
+        "abstract"
+      ],
+      "codeOffset": 0
+    },
+    {
+      "name": "onStart",
+      "descriptor": "(Landroid/content/Intent;I)V",
+      "dexAccessFlagsHex": "1",
+      "candidateJavaModifiers": 1,
+      "modifierNames": [
+        "public"
+      ],
+      "codeOffset": 2637820
+    },
+    {
+      "name": "onStartCommand",
+      "descriptor": "(Landroid/content/Intent;II)I",
+      "dexAccessFlagsHex": "1",
+      "candidateJavaModifiers": 1,
+      "modifierNames": [
+        "public"
+      ],
+      "codeOffset": 2637600
+    },
+    {
+      "name": "setIntentRedelivery",
+      "descriptor": "(Z)V",
+      "dexAccessFlagsHex": "1",
+      "candidateJavaModifiers": 1,
+      "modifierNames": [
+        "public"
+      ],
+      "codeOffset": 2637868
+    }
+  ],
+  "excludedConstructor": {
+    "name": "<init>",
+    "descriptor": "(Ljava/lang/String;)V",
+    "dexAccessFlagsHex": "10001",
+    "codeOffset": 2637640,
+    "reason": "The current FixedComponentHooks inventory includes only java.lang.reflect.Method, not Constructor."
+  },
+  "candidateInventory": {
+    "methodCount": 7,
+    "utf8Text": "onBind(Landroid/content/Intent;)Landroid/os/IBinder;:1\nonCreate()V:1\nonDestroy()V:1\nonHandleIntent(Landroid/content/Intent;)V:404\nonStart(Landroid/content/Intent;I)V:1\nonStartCommand(Landroid/content/Intent;II)I:1\nsetIntentRedelivery(Z)V:1\n",
+    "sha256": "770175655176e1a088715091d7a1d04bdad6cb161afbb5241931ed5fab48895e"
+  },
+  "boundaries": [
+    "This is static candidate evidence, not a live registry receipt or Hook admission.",
+    "The inventory contains seven declared methods; inventory membership does not authorize all seven as Hook targets.",
+    "No product or QA source was modified, no build or device command was run, and no target/framework code was executed to produce this file."
+  ],
+  "liveRegistryVerification": {
+    "result": "phase49b-fixed-registry/result.json",
+    "passed": true,
+    "engineSha256": "b06e06594a0bdc91fff31378ea5ac1ec8d6a615aa1b98ed86d9293382da61039",
+    "fixedMethods": 698,
+    "componentChecks": 22
+  }
+}

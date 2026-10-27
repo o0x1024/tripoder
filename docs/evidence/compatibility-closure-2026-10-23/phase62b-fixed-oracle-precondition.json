@@ -1,0 +1,11 @@
+{
+  "evidence": "phase62b-fixed-registry",
+  "productSha256": "2b00342c17a41abc8e0e3618bb8ff17be661b7b7bcf0769485fa3b693830c8a9",
+  "retainedNegative": true,
+  "observed": "HOOK_ACTIVATION_REJECTED followed by fixed-installer terminal kill",
+  "cause": "Owned oracle omitted completeBootstrap; native entry-only guard correctly requires bootstrap_complete before first guest callback publication.",
+  "guardRelaxed": false,
+  "productChangedForOracleRepair": false,
+  "correction": "publish the owned permanent interpreted caller, complete actual bootstrap, warm the bridge, then use the real enroller",
+  "dataCleared": false
+}

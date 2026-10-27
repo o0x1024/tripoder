@@ -1,0 +1,5 @@
+import {definePlan} from '@abox/hook';export default definePlan({id:'object-contract',target,params:{},setup(ctx){
+    ctx.java.method(symbols.caught.className,'uncaughtException',['java.lang.Thread','java.lang.Throwable']).before(({args})=>{ctx.debug.captureEvidence('exception.caught',ctx.java.snapshotThrowable(args[1],{maxFrames:12,maxCauses:4}));ctx.debug.captureEvidence('exception.thread',ctx.java.snapshotThread(args[0]));return args;});
+    ctx.java.method(symbols.handle.className,'handleException',['java.lang.Throwable']).before(({args})=>{ctx.debug.captureEvidence('exception.handle',ctx.java.snapshotThrowable(args[0],{maxFrames:12,maxCauses:4}));return args;});
+    ctx.java.method(symbols.echo.className,'echoThrowable',['java.lang.Throwable']).before(({args})=>args).after(({result})=>result);
+  }});

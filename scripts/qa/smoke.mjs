@@ -1,5 +1,5 @@
-// Per-application, per-mode smoke run: start, watch the guest main process, capture UI/screenshot/logcat.
-// Usage: node scripts/qa/smoke.mjs --mode thin --packages a,b --out artifacts/qa/smoke
+// Per-application, single-runtime smoke run: start, watch the guest main process, capture UI/screenshot/logcat.
+// Usage: node scripts/qa/smoke.mjs --packages a,b --out artifacts/qa/smoke
 import { Mcp, targetOf, adb, sleep, flattenUi, saveShot, ensureDir } from './mcp.mjs';
 import { resolve } from 'node:path';
 import { readFile, writeFile } from 'node:fs/promises';
@@ -8,7 +8,8 @@ function argOf(name, fallback) {
   const i = process.argv.indexOf(`--${name}`);
   return i >= 0 ? process.argv[i + 1] : fallback;
 }
-const mode = argOf('mode', 'thin');
+
+if(process.argv.includes('--mode'))throw Error('Runtime mode selection has been removed');
 const outDir = resolve(process.cwd(), argOf('out', 'artifacts/qa/smoke'));
 await ensureDir(outDir);
 const packagesArg = argOf('packages', '');
@@ -37,13 +38,12 @@ async function logcatSlice() {
 }
 
 async function runOne(pkg, installation) {
-  const record = { package: pkg, mode, startedAt: new Date().toISOString() };
+  const record = { package: pkg,  startedAt: new Date().toISOString() };
   const target = targetOf(installation);
-  const dir = resolve(outDir, mode, pkg);
+  const dir = resolve(outDir,  pkg);
   await ensureDir(dir);
   try {
     await mcp.call('application_stop', { operationId: `smoke-stop-${pkg.replace(/\W/g, '')}-${Date.now()}`, target });
-    await mcp.call('application_mode_set', { operationId: `smoke-mode-${pkg.replace(/\W/g, '')}-${Date.now()}`, target, mode });
     const probes = await mcp.call('probes_get', { target });
     record.probeRevision = probes.revision ?? '';
     await adb(['logcat', '-c']).catch(() => {});
@@ -68,7 +68,7 @@ async function runOne(pkg, installation) {
     record.mainAliveAfter24s = firstAlive;
     const aliveTargets = await mcp.call('targets_list');
     record.processes = (aliveTargets.targets || []).filter((t) => t.package === pkg)
-      .map((t) => `${t.processName}#${t.pid}#${t.mode}`);
+      .map((t) => `${t.processName}#${t.pid}`);
 
     if (mainSeen) {
       const full = { ...target, processGeneration: mainSeen.processGeneration };
@@ -110,17 +110,17 @@ const apps = await mcp.call('applications_list');
 const installations = (apps.installations || []).filter((i) => i.state === 'COMMITTED');
 const work = onlyPackages ? installations.filter((i) => onlyPackages.includes(i.package)) : installations;
 const results = [];
-console.log('smoke', mode, 'apps', work.length);
+console.log('smoke',  'apps', work.length);
 for (const installation of work) {
   let record;
   try {
     record = await runOne(installation.package, installation);
   } catch (error) {
-    record = { package: installation.package, mode, error: String(error.message).slice(0, 400), crashed: true };
+    record = { package: installation.package,  error: String(error.message).slice(0, 400), crashed: true };
   }
   results.push(record);
   console.log(JSON.stringify({ package: record.package, crashed: record.crashed, alive: record.mainAliveAfter24s, activities: (record.activities || []).slice(0, 2), error: record.error }));
-  await writeFile(resolve(outDir, `smoke-${mode}.json`), JSON.stringify(results, null, 2));
+  await writeFile(resolve(outDir, `smoke-runtime.json`), JSON.stringify(results, null, 2));
 }
-console.log('DONE', mode, results.length, 'crashed', results.filter((r) => r.crashed).length);
+console.log('DONE',  results.length, 'crashed', results.filter((r) => r.crashed).length);
 await mcp.close();

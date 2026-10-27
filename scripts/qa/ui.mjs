@@ -1,5 +1,5 @@
 // Interactive UI helper for a running (or newly started) guest.
-//   node scripts/qa/ui.mjs start <pkg> [mode]
+//   node scripts/qa/ui.mjs start <pkg>
 //   node scripts/qa/ui.mjs dump <pkg> [--all]
 //   node scripts/qa/ui.mjs shot <pkg> <name>
 //   node scripts/qa/ui.mjs tap <pkg> <index>
@@ -40,14 +40,13 @@ function centre(bounds) { return [Math.round((bounds[0] + bounds[2]) / 2), Math.
 
 try {
   if (command === 'start') {
-    const mode = rest[0] || 'thin';
+
     const inst = await installation(pkg);
     const target = targetOf(inst);
     await mcp.call('application_stop', { operationId: `ui-stop-${Date.now()}`, target }).catch(() => {});
-    await mcp.call('application_mode_set', { operationId: `ui-mode-${Date.now()}`, target, mode });
     const probes = await mcp.call('probes_get', { target });
     const started = await mcp.call('process_start', { operationId: `ui-start-${Date.now()}`, target, component: '', probeRevision: probes.revision ?? '' }, { timeoutMs: 120000 });
-    console.log('started', JSON.stringify({ pid: started.pid, generation: started.processGeneration, mode }));
+    console.log('started', JSON.stringify({ pid: started.pid, generation: started.processGeneration }));
     await sleep(Number(process.env.QA_SETTLE_MS ?? 8000));
   } else if (command === 'dump') {
     const { activities, rows } = await dump();

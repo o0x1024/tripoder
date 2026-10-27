@@ -79,7 +79,7 @@ final class ComponentRestartChecks {
     private static LaunchModel launch(RuntimeBroker broker,ApkStore.BundleInstall install,boolean external)throws Exception{
         var allocated=broker.contract.allocate(install.space,install.info.packageName,install.generation,install.info.packageName,android.os.Process.myUid());
         broker.store.reserve(allocated.session,RuntimeSlot.activity(7).getName());
-        var slot=new RuntimeBroker.Slot(install,allocated,RuntimeSlot.activity(7).getName(),RuntimeMode.THIN,null);
+        var slot=new RuntimeBroker.Slot(install,allocated,RuntimeSlot.activity(7).getName(),null);
         Class<?> type=Class.forName("dev.tripoder.runtime.ProcessSupervisor$Launch");var constructor=type.getDeclaredConstructors()[0];constructor.setAccessible(true);
         Object launch=constructor.newInstance(broker.processes,"owned-model-"+allocated.session.processGeneration,7,slot);
         var flag=type.getDeclaredField("external");flag.setAccessible(true);flag.setBoolean(launch,external);

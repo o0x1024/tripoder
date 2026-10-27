@@ -80,6 +80,16 @@ static bool guest_attached(JNIEnv *env,jobject application){
     jobject apk=(*env)->GetObjectField(env,application,state.fields[1]);
     return same(env,apk,state.roots[LOGICAL]);
 }
+/** A delegate Application a hot-fix or plugin framework built around the guest's own base context (attachBaseContext without attach). It is derived from this guest's Context, which no foreign application can hold. */
+static bool guest_delegate(JNIEnv *env,jobject application){
+    if(!application||!state.roots[CONTEXT]||!(*env)->IsInstanceOf(env,application,state.classes[0]))return false;
+    jobject cursor=application;
+    for(unsigned depth=0;cursor&&depth<16&&(*env)->IsInstanceOf(env,cursor,state.classes[6]);depth++){
+        cursor=(*env)->GetObjectField(env,cursor,state.fields[10]);
+        if(same(env,cursor,state.roots[CONTEXT]))return true;
+    }
+    return false;
+}
 static bool physical(JNIEnv *env,bool attached){
     if(state.tid&&state.tid!=gettid())return false;
     if((*env)->PushLocalFrame(env,64)<0)return false;
@@ -95,13 +105,21 @@ static bool physical(JNIEnv *env,bool attached){
     else if(!same(env,current,thread))valid=false,state.broken="ActivityThread.currentActivityThread";
     // The process application is guest-owned state once a hot-fix proxy replaces it: what remains fixed is that the
     // replacement was attached to this guest's LoadedApk, so no foreign application can become the process application.
-    else if(!same(env,initial,host)&&!guest_attached(env,initial))valid=false,state.broken="ActivityThread.mInitialApplication";
+    else if(!same(env,initial,host)&&!guest_attached(env,initial)&&!guest_delegate(env,initial))valid=false,state.broken="ActivityThread.mInitialApplication";
     else if(!same(env,apk,state.roots[PHYSICAL]))valid=false,state.broken="host.mLoadedApk";
     else if(!same(env,host_owner,host))valid=false,state.broken="host LoadedApk.mApplication";
     if(valid&&state.roots[LOGICAL]){
         jobject owner=(*env)->GetObjectField(env,state.roots[LOGICAL],state.fields[2]);
-        valid=((!attached&&!owner)||same(env,owner,guest)||guest_attached(env,owner))&&!same(env,state.roots[PHYSICAL],state.roots[LOGICAL]);
-        if(!valid)state.broken="logical LoadedApk.mApplication";
+        valid=((!attached&&!owner)||same(env,owner,guest)||guest_attached(env,owner)||guest_delegate(env,owner))&&!same(env,state.roots[PHYSICAL],state.roots[LOGICAL]);
+        if(!valid){
+            state.broken="logical LoadedApk.mApplication";
+            // Name the relation of the replacing Application to the three LoadedApk identities, so a plugin framework's move is visible.
+            jobject owner_apk=owner&&(*env)->IsInstanceOf(env,owner,state.classes[0])?(*env)->GetObjectField(env,owner,state.fields[1]):NULL;
+            static char detail[112];
+            snprintf(detail,sizeof(detail),"logical LoadedApk.mApplication[owner=%s,att=%d,host=%d,apkL=%d,apkP=%d,apkN=%d]",owner?"set":"null",(int)attached,(int)same(env,owner,host),(int)same(env,owner_apk,state.roots[LOGICAL]),(int)same(env,owner_apk,state.roots[PHYSICAL]),(int)(owner_apk==NULL));
+            state.broken=detail;
+            (*env)->ExceptionClear(env);
+        }
         // The class loader pair belongs to the guest, exactly as its resources do: platform hot-fix and plugin runtimes
         // replace it during attachBaseContext to publish patch/plugin DEX. Accept any replacement that still resolves
         // inside this installation's verified DEX sequence, and reject one that would escape it.
@@ -280,7 +298,7 @@ JNIEXPORT void JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_attachNativ
     jobject installed=(*env)->GetObjectField(env,state.roots[LOGICAL],state.fields[2]);
     if(!installed)(*env)->SetObjectField(env,state.roots[LOGICAL],state.fields[2],state.roots[GUEST]);
     if(!tp_art_reflection_complete(env)) {fail(env,"APPLICATION_PUBLICATION_FAILED");goto done;}
-    if(!physical(env,true)){static char why[128];snprintf(why,sizeof(why),"APPLICATION_POST_ATTACH_IDENTITY:%s",state.broken?state.broken:"?");fail(env,why);goto done;}
+    if(!physical(env,true)){static char why[192];snprintf(why,sizeof(why),"APPLICATION_POST_ATTACH_IDENTITY:%s",state.broken?state.broken:"?");fail(env,why);goto done;}
     state.stage="ATTACHED";
 done:
     (*env)->PopLocalFrame(env,NULL);
@@ -311,10 +329,10 @@ JNIEXPORT jobject JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_installe
  * Only an Application already attached to this exact logical LoadedApk may become the component owner. */
 JNIEXPORT void JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_publishApplicationNative(JNIEnv *env,jclass unused,jobject application){
     (void)unused;
-    if(state.tid!=gettid()||!state.attaches||!physical(env,true)||!guest_attached(env,application)){
+    if(state.tid!=gettid()||!state.attaches||!physical(env,true)||(!guest_attached(env,application)&&!guest_delegate(env,application))){
         fail(env,"APPLICATION_PUBLICATION_OWNER_MISMATCH");return;
     }
-    if(!tp_art_reflection_adopt(env,application)){fail(env,"APPLICATION_PUBLICATION_VIEW_REJECTED");return;}
+    if(!tp_art_reflection_adopt(env,application,!guest_attached(env,application))){fail(env,"APPLICATION_PUBLICATION_VIEW_REJECTED");return;}
     (*env)->SetObjectField(env,state.roots[LOGICAL],state.fields[2],application);
     if((*env)->ExceptionCheck(env)||!physical(env,true)){fail(env,"APPLICATION_PUBLICATION_FAILED");return;}
 }

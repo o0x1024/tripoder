@@ -19,6 +19,34 @@ def create(db):
 
 
 class ApplicationProjectsSchemaTest(unittest.TestCase):
+    def test_v40_upgrade_removes_only_active_mode_configuration(self):
+        db = sqlite3.connect(":memory:")
+        create(db)
+        db.execute("ALTER TABLE project_refs ADD COLUMN mode TEXT NOT NULL DEFAULT 'thin'")
+        db.execute("CREATE TABLE installs(space,package,generation,dataId,state)")
+        db.execute("CREATE TABLE operations(id PRIMARY KEY,state,result,detail)")
+        db.execute("CREATE TABLE recovery_paused(generation PRIMARY KEY)")
+        db.execute("CREATE TABLE state_checkpoints(id PRIMARY KEY,dataId)")
+        for i, mode in enumerate(("thin", "thick")):
+            state = ("COMMITTED", "STALE")[i]
+            db.execute("INSERT INTO project_refs VALUES (?,?,?,?,?,?,?,?,?,?)", ("owner", str(i), "owned.app", "g"+str(i), "source", "snapshot", state, "binding"+str(i), "DIRECT", mode))
+            db.execute("INSERT INTO installs VALUES (?,?,?,?,?)", (str(i), "owned.app", "g"+str(i), "data"+str(i), "COMMITTED"))
+            db.execute("INSERT INTO operations VALUES (?,?,?,?)", ("op"+str(i), ("SUCCEEDED", "UNKNOWN")[i], json.dumps({"mode": mode}), "original evidence"))
+        db.execute("INSERT INTO recovery_paused VALUES ('g1')")
+        db.execute("INSERT INTO state_checkpoints VALUES ('checkpoint','data1')")
+        columns = [row[1] for row in db.execute("PRAGMA table_info(project_refs)") if row[1] != "mode"]
+        before = db.execute("SELECT "+",".join(columns)+" FROM project_refs ORDER BY space").fetchall()
+        retained = {table: db.execute("SELECT * FROM "+table).fetchall() for table in ("installs", "operations", "recovery_paused", "state_checkpoints")}
+        store = (Path(__file__).parents[1] / "src/dev/tripoder/runtime/RuntimeStore.java").read_text()
+        sql = re.search(r'if\(oldVersion>=35&&oldVersion<41\)db.execSQL\("([^"]+)"\)', store).group(1)
+        db.execute(sql)
+        self.assertNotIn("mode", [row[1] for row in db.execute("PRAGMA table_info(project_refs)")])
+        self.assertEqual(before, db.execute("SELECT * FROM project_refs ORDER BY space").fetchall())
+        for table, rows in retained.items():
+            self.assertEqual(rows, db.execute("SELECT * FROM "+table).fetchall(), table)
+        with self.assertRaises(sqlite3.IntegrityError):
+            db.execute("INSERT INTO project_refs VALUES ('other','0','owned.app','g','','','COMMITTED','other-binding','DIRECT')")
+
     def test_one_owner_multiple_spaces_and_ownership_survives_target_removal(self):
         db = sqlite3.connect(":memory:")
         create(db)
@@ -26,12 +54,12 @@ class ApplicationProjectsSchemaTest(unittest.TestCase):
         with self.assertRaises(sqlite3.IntegrityError):
             db.execute("INSERT INTO application_projects VALUES ('owned.app','duplicate','b')")
         for space in ("a", "b"):
-            db.execute("INSERT INTO project_refs VALUES (?,?,?,?,?,?,?,?,?,?)", ("canonical", space, "owned.app", "install-"+space, "", "", "COMMITTED", "bind-"+space, "DIRECT", "thin"))
+            db.execute("INSERT INTO project_refs VALUES (?,?,?,?,?,?,?,?,?)", ("canonical", space, "owned.app", "install-"+space, "", "", "COMMITTED", "bind-"+space, "DIRECT"))
         self.assertEqual(db.execute("SELECT COUNT(DISTINCT id),COUNT(*) FROM project_refs").fetchone(), (1, 2))
         db.execute("DELETE FROM project_refs WHERE space='a'")
         self.assertEqual(db.execute("SELECT id FROM application_projects WHERE package='owned.app'").fetchone(), ("canonical",))
         with self.assertRaises(sqlite3.IntegrityError):
-            db.execute("INSERT INTO project_refs VALUES ('other','b','owned.app','g','','','COMMITTED','o','DIRECT','thin')")
+            db.execute("INSERT INTO project_refs VALUES ('other','b','owned.app','g','','','COMMITTED','o','DIRECT')")
 
     def test_upgrade_preserves_archives_and_collapses_duplicate_projects(self):
         db = sqlite3.connect(":memory:")

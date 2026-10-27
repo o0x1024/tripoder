@@ -3,9 +3,64 @@
 #include <elf.h>
 #include <cstring>
 #include <string>
+#include <cstdint>
+#include <cerrno>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 extern "C" __attribute__((visibility("default"), noinline))
 int guest_delay_ms(int base) { return base * 3 + 7; }
+
+extern "C" __attribute__((visibility("default"), noinline))
+uint64_t SSL_new(uint64_t ctx) { return ctx ^ 0x55aa01ULL; }
+
+extern "C" __attribute__((visibility("default"), noinline))
+void SSL_free(uint64_t ssl) { (void)ssl; }
+
+extern "C" __attribute__((visibility("default"), noinline))
+int32_t SSL_read(uint64_t ssl, uint64_t buf, int32_t num) {
+    (void)ssl;
+    if (buf && num >= 16) {
+        const char *resp = "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK";
+        int32_t len = (int32_t)strlen(resp);
+        if (len <= num) {
+            memcpy(reinterpret_cast<void *>(buf), resp, (size_t)len);
+            return len;
+        }
+    }
+    return 0;
+}
+
+extern "C" __attribute__((visibility("default"), noinline))
+int32_t SSL_write(uint64_t ssl, uint64_t buf, int32_t num) {
+    (void)ssl; (void)buf;
+    return num;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_dev_tripoder_fixture_GuestProbe_nativeTryKillExternal(JNIEnv *, jclass, jint pid) {
+    errno = 0;
+    int r = kill((pid_t)pid, 0);
+    return r == 0 ? 0 : -errno;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_dev_tripoder_fixture_GuestProbe_nativeTryConnectExternal(JNIEnv *, jclass) {
+    int fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+    if (fd < 0) return -errno;
+    struct sockaddr_in sin{};
+    sin.sin_family = AF_INET;
+    sin.sin_port = htons(443);
+    sin.sin_addr.s_addr = htonl(0x01010101U); // 1.1.1.1 (non-loopback)
+    errno = 0;
+    int r = connect(fd, reinterpret_cast<struct sockaddr *>(&sin), sizeof(sin));
+    int err = r == 0 ? 0 : -errno;
+    close(fd);
+    return err;
+}
 
 extern "C" JNIEXPORT jint JNICALL
 Java_dev_tripoder_fixture_GuestProbe_nativeDelay(JNIEnv *, jclass, jint base) {

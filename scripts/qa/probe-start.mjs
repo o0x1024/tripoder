@@ -2,7 +2,7 @@
 import { Mcp, adb, sleep, targetOf } from './mcp.mjs';
 
 const pkg = process.argv[2] || 'com.tencent.mm';
-const mode = (process.argv[3] || 'thin').toLowerCase();
+
 const mcp = await new Mcp({ timeoutMs: 150000 }).init();
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 
@@ -23,7 +23,6 @@ if (!inst) { log('no installation'); process.exit(1); }
 const target = targetOf(inst);
 log('stop', JSON.stringify(await mcp.call('application_stop', { operationId: `p-stop-${Date.now()}`, target }).catch((e) => String(e.message))).slice(0, 200));
 await sleep(1200);
-log('mode', JSON.stringify(await mcp.call('application_mode_set', { operationId: `p-mode-${Date.now()}`, target, mode }).catch((e) => String(e.message))).slice(0, 200));
 const probes = await mcp.call('probes_get', { target }).catch(() => ({}));
 const started = await mcp.call('process_start', { operationId: `p-start-${Date.now()}`, target, component: '', probeRevision: probes.revision ?? '' }, { timeoutMs: 180000 })
   .catch((e) => ({ error: String(e.message).slice(0, 300) }));
@@ -39,5 +38,5 @@ for (let i = 0; i < 8; i++) {
   log(`t+${(i + 1) * 2.5}s`, JSON.stringify(f), 'dump=', JSON.stringify(acts).slice(0, 220), dump?.error || '');
 }
 await adb(['shell', 'screencap -p /sdcard/probe.png']).catch(() => {});
-await adb(['pull', '/sdcard/probe.png', `artifacts/qa/probe-${pkg}-${mode}.png`]).catch(() => {});
+await adb(['pull', '/sdcard/probe.png', `artifacts/qa/probe-${pkg}-runtime.png`]).catch(() => {});
 await mcp.close();

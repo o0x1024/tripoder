@@ -21,7 +21,9 @@ public final class ManagerPolicyTest {
         public void fail(){throw marker;}
     }
     private static final class Route implements RuntimeSelfHookManagerPolicy.Route {
-        boolean owned=true;int executions;Object result;Throwable failure;
+        boolean owned=true,device,intercept=true;int executions;Object result;Throwable failure;
+        public boolean platformDevice(){return device;}
+        public boolean interceptsDevice(String key){return intercept;}
         public boolean owns(Object receiver){return owned;}
         public Object execute(String key,Object[] args)throws Throwable{executions++;if(failure!=null)throw failure;return result;}
     }
@@ -84,6 +86,17 @@ public final class ManagerPolicyTest {
             public Object execute(String signature,Object[] arguments){throw new AssertionError();}
         };
         rejected(()->RuntimeSelfHookManagerPolicy.physicalOriginal(operation,invalidRoute,guest,new Object[0],a->null),SecurityException.class);
+        route.device=true;route.intercept=false;int prior=route.executions;
+        for(String signature:new String[]{"registerTelephonyCallback(java.util.concurrent.Executor,android.telephony.TelephonyCallback)","unregisterTelephonyCallback(android.telephony.TelephonyCallback)","getNetworkCountryIso()"}){
+            check("platform".equals(RuntimeSelfHookManagerPolicy.invoke(RuntimeSelfHookManagerPolicy.Family.TELEPHONY,route,signature,Object.class,receiver,new Object[0],a->"platform")));
+        }
+        check(route.executions==prior);
+        SecurityException permission=new SecurityException("platform-permission");
+        try{RuntimeSelfHookManagerPolicy.invoke(RuntimeSelfHookManagerPolicy.Family.LOCATION,route,"getProviders(boolean)",Object.class,receiver,new Object[]{true},a->{throw permission;});throw new AssertionError();}
+        catch(SecurityException error){check(error==permission);}
+        route.intercept=true;route.result="explicit-persona";
+        check("explicit-persona".equals(RuntimeSelfHookManagerPolicy.invoke(RuntimeSelfHookManagerPolicy.Family.LOCATION,route,"getLastKnownLocation(java.lang.String)",Object.class,receiver,new Object[]{"gps"},a->{throw new AssertionError("persona escaped");})));
+        check("platform".equals(RuntimeSelfHookManagerPolicy.invoke(RuntimeSelfHookManagerPolicy.Family.LOCATION,route,"getBestProvider(android.location.Criteria,boolean)",Object.class,receiver,new Object[0],a->"platform")));
         System.out.println("manager policy checks="+checks+" supported="+supported);
     }
 }

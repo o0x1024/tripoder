@@ -41,6 +41,168 @@ public final class JavaObjectSnapshots {
         field.setAccessible(true);Object raw;try{raw=field.get(object);}catch(IllegalAccessException impossible){throw new AssertionError(impossible);}
         return JavaHookValues.decode(field.getType(),raw);
     }
+    /** Shallow container snapshot without executing guest-overridden virtual methods or toString. */
+    public static Map<String,Object> snapshotContainer(Object reference,int maxEntries){
+        require(maxEntries>=1&&maxEntries<=64,"HOOK_SNAPSHOT_LIMIT:maxEntries");
+        Object object=JavaObjectScope.object(reference);
+        return snapshotLiveContainer(object,maxEntries);
+    }
+    public static Map<String,Object> snapshotLiveContainer(Object object,int maxEntries){
+        require(maxEntries>=1&&maxEntries<=64,"HOOK_SNAPSHOT_LIMIT:maxEntries");
+        require(object!=null,"HOOK_OBJECT_REFERENCE_REQUIRED");
+        Class<?> cls=object.getClass();
+        Map<String,Object> out=new LinkedHashMap<>();
+        out.put("className",cls.getName());
+        if(object instanceof android.content.Intent intent){
+            out.put("containerKind","Intent");
+            out.put("action",intent.getAction()==null?"":bounded(intent.getAction(),256));
+            out.put("dataString",intent.getDataString()==null?"":bounded(intent.getDataString(),512));
+            android.content.ComponentName comp=intent.getComponent();
+            out.put("component",comp==null?"":bounded(comp.flattenToString(),256));
+            out.put("flags",(double)intent.getFlags());
+            Set<String> cats=intent.getCategories();
+            List<String> catList=new ArrayList<>();
+            if(cats!=null){for(String c:cats){if(catList.size()>=16)break;if(c!=null)catList.add(bounded(c,128));}}
+            out.put("categories",List.copyOf(catList));
+            android.os.Bundle extras=intent.getExtras();
+            out.put("extras",extras==null?Map.of():bundleEntries(extras,maxEntries));
+            return Collections.unmodifiableMap(out);
+        }
+        if(object instanceof android.os.BaseBundle bundle){
+            out.put("containerKind","Bundle");
+            Map<String,Object> entries=bundleEntries(bundle,maxEntries);
+            out.put("size",(double)bundle.size());
+            out.put("entries",entries);
+            out.put("truncated",bundle.size()>maxEntries);
+            return Collections.unmodifiableMap(out);
+        }
+        if(object instanceof android.content.ContentValues values){
+            out.put("containerKind","ContentValues");
+            Map<String,Object> entries=new LinkedHashMap<>();
+            int count=0;
+            for(String key:values.keySet()){
+                if(count>=maxEntries)break;
+                if(key!=null){entries.put(bounded(key,128),shallowValue(values.get(key)));count++;}
+            }
+            out.put("size",(double)values.size());
+            out.put("entries",Collections.unmodifiableMap(entries));
+            out.put("truncated",values.size()>maxEntries);
+            return Collections.unmodifiableMap(out);
+        }
+        if(object instanceof android.net.Uri uri){
+            out.put("containerKind","Uri");
+            out.put("uri",bounded(String.valueOf(uri),1024));
+            out.put("scheme",uri.getScheme()==null?"":bounded(uri.getScheme(),64));
+            out.put("authority",uri.getAuthority()==null?"":bounded(uri.getAuthority(),256));
+            out.put("path",uri.getPath()==null?"":bounded(uri.getPath(),512));
+            out.put("query",uri.getQuery()==null?"":bounded(uri.getQuery(),512));
+            return Collections.unmodifiableMap(out);
+        }
+        if(object instanceof org.json.JSONObject json&&cls==org.json.JSONObject.class){
+            out.put("containerKind","JSONObject");
+            Map<String,Object> entries=new LinkedHashMap<>();
+            int total=json.length(),count=0;
+            Iterator<String> it=json.keys();
+            while(it.hasNext()){
+                String key=it.next();
+                if(count<maxEntries&&key!=null){entries.put(bounded(key,128),shallowValue(json.opt(key)));count++;}
+            }
+            out.put("size",(double)total);
+            out.put("entries",Collections.unmodifiableMap(entries));
+            out.put("truncated",total>maxEntries);
+            return Collections.unmodifiableMap(out);
+        }
+        if(cls.isArray()){
+            out.put("containerKind","Array");
+            int length=java.lang.reflect.Array.getLength(object);
+            out.put("size",(double)length);
+            if(object instanceof byte[] bytes){
+                int take=Math.min(length,Math.min(maxEntries*16,1024));
+                out.put("hex",HexFormat.of().formatHex(bytes,0,take));
+                out.put("truncated",length>take);
+            }else{
+                List<Object> items=new ArrayList<>(Math.min(length,maxEntries));
+                for(int i=0;i<Math.min(length,maxEntries);i++)items.add(shallowValue(java.lang.reflect.Array.get(object,i)));
+                out.put("elements",Collections.unmodifiableList(items));
+                out.put("truncated",length>maxEntries);
+            }
+            return Collections.unmodifiableMap(out);
+        }
+        if(cls.getClassLoader()==null&&object instanceof Map<?,?> map){
+            out.put("containerKind","Map");
+            Map<String,Object> entries=new LinkedHashMap<>();
+            int total=map.size(),count=0;
+            for(Map.Entry<?,?> e:map.entrySet()){
+                if(count>=maxEntries)break;
+                String k=shallowKey(e.getKey());
+                entries.put(k,shallowValue(e.getValue()));
+                count++;
+            }
+            out.put("size",(double)total);
+            out.put("entries",Collections.unmodifiableMap(entries));
+            out.put("truncated",total>maxEntries);
+            return Collections.unmodifiableMap(out);
+        }
+        if(cls.getClassLoader()==null&&object instanceof Collection<?> col){
+            out.put("containerKind","Collection");
+            List<Object> items=new ArrayList<>();
+            int total=col.size(),count=0;
+            for(Object item:col){
+                if(count>=maxEntries)break;
+                items.add(shallowValue(item));
+                count++;
+            }
+            out.put("size",(double)total);
+            out.put("elements",Collections.unmodifiableList(items));
+            out.put("truncated",total>maxEntries);
+            return Collections.unmodifiableMap(out);
+        }
+        // Generic object shallow field summary (non-virtual declared fields up to maxEntries)
+        out.put("containerKind","ObjectFields");
+        Map<String,Object> fields=new LinkedHashMap<>();
+        int count=0;boolean truncated=false;
+        for(Class<?> cursor=cls;cursor!=null&&cursor!=Object.class;cursor=cursor.getSuperclass()){
+            for(java.lang.reflect.Field f:cursor.getDeclaredFields()){
+                if(java.lang.reflect.Modifier.isStatic(f.getModifiers()))continue;
+                if(count>=maxEntries){truncated=true;break;}
+                try{
+                    f.setAccessible(true);
+                    fields.putIfAbsent(f.getName(),shallowValue(f.get(object)));
+                    count=fields.size();
+                }catch(Throwable ignored){}
+            }
+            if(truncated)break;
+        }
+        out.put("size",(double)fields.size());
+        out.put("entries",Collections.unmodifiableMap(fields));
+        out.put("truncated",truncated);
+        return Collections.unmodifiableMap(out);
+    }
+    private static Map<String,Object> bundleEntries(android.os.BaseBundle bundle,int maxEntries){
+        Map<String,Object> entries=new LinkedHashMap<>();
+        int count=0;
+        for(String key:bundle.keySet()){
+            if(count>=maxEntries)break;
+            if(key!=null){entries.put(bounded(key,128),shallowValue(bundle.get(key)));count++;}
+        }
+        return Collections.unmodifiableMap(entries);
+    }
+    private static String shallowKey(Object key){
+        if(key==null)return "null";
+        if(key instanceof String s)return bounded(s,128);
+        if(key instanceof Number||key instanceof Boolean||key instanceof Character)return String.valueOf(key);
+        return key.getClass().getName()+"@"+Integer.toHexString(System.identityHashCode(key));
+    }
+    public static Object shallowValue(Object val){
+        if(val==null||val==org.json.JSONObject.NULL)return null;
+        if(val instanceof String s)return bounded(s,512);
+        if(val instanceof Boolean b)return b;
+        if(val instanceof Character c)return String.valueOf(c);
+        if(val instanceof Long l)return Long.toString(l);
+        if(val instanceof Number n){double d=n.doubleValue();return Double.isFinite(d)?d:String.valueOf(n);}
+        if(val instanceof byte[] b){int take=Math.min(b.length,256);return HexFormat.of().formatHex(b,0,take);}
+        return Map.of("className",val.getClass().getName(),"identityHash",(double)System.identityHashCode(val));
+    }
     private static java.lang.reflect.Field declared(Class<?> type,String name){
         for(Class<?> cursor=type;cursor!=null;cursor=cursor.getSuperclass()){
             try{return cursor.getDeclaredField(name);}catch(NoSuchFieldException missing){/* keep walking up */}

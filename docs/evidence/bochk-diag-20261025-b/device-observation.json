@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "startedAtUtc": "2026-10-25T03:27:11.243595+00:00",
+  "validatorSha256": "ac251e11a3fb6a06bacee908c5e63f84b422cb955a2939ccb71b61c4f0293a54",
+  "commands": [
+    {
+      "command": [
+        "get-state"
+      ],
+      "exitCode": 0,
+      "stdout": "device\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.engine"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "shell",
+        "am",
+        "force-stop",
+        "dev.tripoder.controltest"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/product/build/tripoder.apk"
+      ],
+      "exitCode": 0,
+      "stdout": "Performing Streamed Install\nSuccess\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "install",
+        "--no-incremental",
+        "-r",
+        "/Users/like/code/tripoder/android/product/build/tripoder-control-test.apk"
+      ],
+      "exitCode": 1,
+      "stdout": "Performing Streamed Install\n",
+      "stderr": "adb: failed to install /Users/like/code/tripoder/android/product/build/tripoder-control-test.apk: Failure [INSTALL_FAILED_USER_RESTRICTED: Install canceled by user]\n\n"
+    }
+  ],
+  "fullP5Accepted": false,
+  "businessScenariosVerified": false,
+  "rootUsed": false,
+  "permissionGrantsPerformed": false,
+  "passed": false,
+  "error": "Performing Streamed Install\nadb: failed to install /Users/like/code/tripoder/android/product/build/tripoder-control-test.apk: Failure [INSTALL_FAILED_USER_RESTRICTED: Install canceled by user]\n\n",
+  "finishedAtUtc": "2026-10-25T03:27:25.320672+00:00"
+}

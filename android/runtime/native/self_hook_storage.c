@@ -55,12 +55,12 @@ JNIEXPORT jstring JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_physi
     if(size<=0||size>=(ssize_t)sizeof(actual)-1){fail_io(env,"ARTIFACT_PHYSICAL_IDENTITY_FAILED");return NULL;}
     actual[size]=0;return (*env)->NewStringUTF(env,actual);
 }
-JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_installNative(JNIEnv *env,jclass unused,jobjectArray input,jboolean thin,jboolean diagnostics){
+JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_installNative(JNIEnv *env,jclass unused,jobjectArray input,jboolean diagnostics){
     (void)unused;bool expected=false;
     if(!atomic_compare_exchange_strong(&attempted,&expected,true)){fail(env,"NATIVE_STORAGE_ALREADY_ATTEMPTED");return;}
     jsize count=input?(*env)->GetArrayLength(env,input):0;
-    if(count!=5&&count!=6&&count!=9){fail(env,"NATIVE_STORAGE_ARGUMENTS");return;}
-    char paths[9][PATH_MAX];
+    if(count!=8){fail(env,"NATIVE_STORAGE_ARGUMENTS");return;}
+    char paths[8][PATH_MAX];
     for(jsize i=0;i<count;i++){
         jbyteArray value=(*env)->GetObjectArrayElement(env,input,i);
         if(!value){fail(env,"NATIVE_STORAGE_PATH_REQUIRED");return;}
@@ -72,9 +72,7 @@ JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_installN
         paths[i][size]=0;
     }
     if(tp_configure(paths[0],paths[1],paths[2],paths[3],paths[4])!=0){fail(env,"NATIVE_STORAGE_CONFIGURATION_FAILED");return;}
-    if(tp_configure_process(count>=6?paths[5]:paths[4])!=0){fail(env,"NATIVE_STORAGE_PROCESS_CONFIGURATION_FAILED");return;}
-    if(count==9&&tp_configure_host_storage(paths[6],paths[7],paths[8])!=0){fail(env,"NATIVE_HOST_STORAGE_CONFIGURATION_FAILED");return;}
-    tp_configure_thin(thin);
+    if(tp_configure_host_storage(paths[5],paths[6],paths[7])!=0){fail(env,"NATIVE_HOST_STORAGE_CONFIGURATION_FAILED");return;}
     tp_syscall_namespace_trace_debugger(diagnostics);
     if(tp_park_prepare_process()!=TP_PARK_OK){fail(env,"NATIVE_STORAGE_THREAD_RESERVATION_FAILED");return;}
     /* All libc and direct-SVC filesystem calls share the syscall namespace. */
@@ -85,8 +83,18 @@ JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_installN
     }
 }
 JNIEXPORT jstring JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_syscallNamespaceNative(JNIEnv *env,jclass type){
-    (void)type;uint64_t counts[4];tp_syscall_namespace_counts(counts);char value[256];
-    snprintf(value,sizeof(value),"{\"openat\":%llu,\"fstatat\":%llu,\"readlinkat\":%llu,\"faccessat\":%llu}",(unsigned long long)counts[0],(unsigned long long)counts[1],(unsigned long long)counts[2],(unsigned long long)counts[3]);return (*env)->NewStringUTF(env,value);
+    (void)type;uint64_t counts[4],pcounts[6];bool bexec=false,bkill=false,bsink=false;
+    tp_syscall_namespace_counts(counts);tp_syscall_namespace_get_policy(&bexec,&bkill,&bsink,pcounts);
+    char value[512];
+    snprintf(value,sizeof(value),"{\"openat\":%llu,\"fstatat\":%llu,\"readlinkat\":%llu,\"faccessat\":%llu,\"blockExecve\":%s,\"blockKill\":%s,\"networkSinkhole\":%s,\"execveAttempts\":%llu,\"execveBlocked\":%llu,\"killAttempts\":%llu,\"killBlocked\":%llu,\"connectAttempts\":%llu,\"connectSinkholed\":%llu}",
+        (unsigned long long)counts[0],(unsigned long long)counts[1],(unsigned long long)counts[2],(unsigned long long)counts[3],
+        bexec?"true":"false",bkill?"true":"false",bsink?"true":"false",
+        (unsigned long long)pcounts[0],(unsigned long long)pcounts[1],(unsigned long long)pcounts[2],(unsigned long long)pcounts[3],(unsigned long long)pcounts[4],(unsigned long long)pcounts[5]);
+    return (*env)->NewStringUTF(env,value);
+}
+JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_setSyscallPolicyNative(JNIEnv *env,jclass type,jboolean block_execve,jboolean block_kill,jboolean network_sinkhole){
+    (void)env;(void)type;
+    tp_syscall_namespace_set_policy(block_execve,block_kill,network_sinkhole);
 }
 JNIEXPORT jbyteArray JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_readPhysicalProc(JNIEnv *env,jclass unused,jstring path,jint limit){
     (void)unused;

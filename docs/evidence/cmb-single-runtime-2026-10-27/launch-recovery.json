@@ -1,0 +1,41 @@
+{
+  "protocol": 2,
+  "requestId": "f15319c9-17a1-4e27-a684-2ffa8fa3bd2c",
+  "ok": true,
+  "result": {
+    "entryInert": true,
+    "canAcknowledge": false,
+    "entryIssued": false,
+    "detail": "LAUNCH_PREPARATION_UNCONFIRMED",
+    "resourcesRetired": false,
+    "state": "UNKNOWN",
+    "targetVerification": "SCOPE_ONLY_ORIGINAL_INSTALLATION_IDENTITY_REQUIRED",
+    "targetVerified": false,
+    "operation": "e33c4f78-4765-4916-bdff-d42fffc0fb3a",
+    "recoveryState": "NO_ENTRY_TO_FENCE_OUTCOME_UNKNOWN"
+  },
+  "errorCode": "OPERATION_OUTCOME_UNKNOWN",
+  "pendingOperationId": "e33c4f78-4765-4916-bdff-d42fffc0fb3a",
+  "recovery": {
+    "action": "Preserve the original UNKNOWN result and evidence. Query the original operation and exact launch recovery. targets=[] is not proof of failure. If entryIssued=false, do not call launch_manage(close). A deliberate application_stop with its own new operationId may establish stop/dead-session evidence; inspect launch_recovery again before planning a new launch. Changing the launch ID alone never authorizes retry.",
+    "steps": [
+      {
+        "tool": "operation_get",
+        "arguments": {
+          "operationId": "e33c4f78-4765-4916-bdff-d42fffc0fb3a"
+        }
+      },
+      {
+        "tool": "application_query",
+        "arguments": {
+          "action": "targets"
+        }
+      }
+    ],
+    "replayAllowed": false,
+    "newIdRetryAllowed": false,
+    "preserveOriginalEvidence": true,
+    "pollingDoesNotResolve": true,
+    "requiresOriginalTarget": true
+  }
+}

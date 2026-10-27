@@ -35,7 +35,7 @@ final class WorkbenchLibraryUi {
         item.setBackground(new RippleDrawable(ColorStateList.valueOf(ProductUi.TINT),null,null));item.setFocusable(true);item.setSelected(selected);item.setOnClickListener(v->click.run());return item;
     }
     static final class Tile extends android.widget.FrameLayout {
-        final ImageView icon;final TextView name,detail;private final Corner corner;private final TextView modeBadge,runBadge;private final LinearLayout column;private String pkg;
+        final ImageView icon;final TextView name,detail;private final Corner corner;private final TextView runBadge;private final LinearLayout column;private String pkg;
         Tile(Context c,String title,String subtitle,Drawable drawable,boolean picker,Runnable click){super(c);setMinimumHeight(dp(c,picker?132:144));
             GradientDrawable bg=ProductUi.shape(ProductUi.SURFACE,16,c);if(ProductUi.night)bg.setStroke(dp(c,1),ProductUi.LINE);setBackground(new RippleDrawable(ColorStateList.valueOf(ProductUi.TINT),bg,null));setFocusable(true);
             column=ProductUi.column(c);column.setGravity(Gravity.CENTER);column.setPadding(dp(c,8),dp(c,picker?18:34),dp(c,8),dp(c,14));
@@ -43,15 +43,9 @@ final class WorkbenchLibraryUi {
             name=text(c,title,13,ProductUi.INK);name.setGravity(Gravity.CENTER);name.setMaxLines(2);name.setEllipsize(TextUtils.TruncateAt.END);ProductUi.add(column,name,12);
             detail=text(c,subtitle,11,ProductUi.MUTED);detail.setGravity(Gravity.CENTER);detail.setSingleLine();detail.setEllipsize(TextUtils.TruncateAt.END);ProductUi.add(column,detail,6);detail.setVisibility(subtitle.isEmpty()?GONE:VISIBLE);addView(column,new FrameLayout.LayoutParams(-1,-2));
             corner=new Corner(c);corner.setVisibility(picker?VISIBLE:GONE);FrameLayout.LayoutParams cp=new FrameLayout.LayoutParams(dp(c,24),dp(c,24),Gravity.TOP|Gravity.END);cp.setMargins(0,dp(c,8),dp(c,8),0);addView(corner,cp);
-            modeBadge=ProductUi.text(c,"",9,ProductUi.ACCENT,true);modeBadge.setSingleLine();modeBadge.setIncludeFontPadding(false);modeBadge.setPadding(dp(c,6),dp(c,3),dp(c,6),dp(c,3));modeBadge.setVisibility(GONE);modeBadge.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             runBadge=ProductUi.text(c,"",9,ProductUi.GREEN,true);runBadge.setSingleLine();runBadge.setIncludeFontPadding(false);runBadge.setPadding(dp(c,6),dp(c,3),dp(c,6),dp(c,3));runBadge.setVisibility(GONE);runBadge.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             FrameLayout.LayoutParams rp=new FrameLayout.LayoutParams(-2,-2,Gravity.TOP|Gravity.START);rp.setMargins(dp(c,8),dp(c,8),dp(c,8),0);addView(runBadge,rp);
-            FrameLayout.LayoutParams mp=new FrameLayout.LayoutParams(-2,-2,Gravity.TOP|Gravity.END);mp.setMargins(dp(c,8),dp(c,8),dp(c,8),0);addView(modeBadge,mp);setOnClickListener(v->click.run());}
-        void mode(String value){
-            modeBadge.setText(value);modeBadge.setVisibility(value.isEmpty()?GONE:VISIBLE);boolean thick=value.equals("THICK"),mixed=value.contains("/")||value.equals("未知模式");
-            modeBadge.setTextColor(mixed?ProductUi.WARN:thick?ProductUi.MUTED:ProductUi.ACCENT);modeBadge.setBackground(ProductUi.shape(mixed?ProductUi.WARN_BG:thick?(ProductUi.night?0xff303646:0xffe9edf3):ProductUi.TINT,8,getContext()));
-            int top=Math.max(dp(getContext(),34),modeBadge.getPaint().getFontMetricsInt(null)+modeBadge.getPaddingTop()+modeBadge.getPaddingBottom()+dp(getContext(),16));column.setPadding(column.getPaddingLeft(),top,column.getPaddingRight(),column.getPaddingBottom());
-        }
+            setOnClickListener(v->click.run());}
         /** Whether the application's processes are alive: green for the main process, amber when only background ones remain. */
         void running(String value){
             boolean background=value.equals("后台运行");runBadge.setText(value.isEmpty()?"":"● "+value);runBadge.setVisibility(value.isEmpty()?GONE:VISIBLE);

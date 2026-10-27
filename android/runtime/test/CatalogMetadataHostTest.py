@@ -83,7 +83,7 @@ final class ApkStore{
 final class RuntimeBroker{
  final RuntimeStore store=new RuntimeStore();final ExecutionContract contract=new ExecutionContract(store);final ApkStore apks=new ApkStore(this);
  final Catalog catalog=new Catalog();final Claims hookClaims=new Claims();java.util.List<Slot> processSlots(){return java.util.List.of();}
- RuntimeBroker(){contract.onRecover();store.db.execSQL("CREATE TABLE installs(space TEXT,package TEXT,generation TEXT,dataId TEXT,state TEXT,version INTEGER DEFAULT 1,PRIMARY KEY(space,package))");ApplicationProjects.create(store.db);ApplicationProjects.createTargets(store.db);}
+ RuntimeBroker(){contract.onRecover();store.db.execSQL("CREATE TABLE installs(space TEXT,package TEXT,generation TEXT,dataId TEXT,state TEXT,version INTEGER DEFAULT 1,PRIMARY KEY(space,package))");store.db.execSQL("CREATE TABLE sessions(space,package,installGeneration,processName,processKind,state)");ApplicationProjects.create(store.db);ApplicationProjects.createTargets(store.db);}
  final class Catalog{java.util.List<String> spaces(){try(var c=store.db.rawQuery("SELECT DISTINCT space FROM installs ORDER BY space",null)){var out=new java.util.ArrayList<String>();while(c.moveToNext())out.add(c.getString(0));return out;}}void invalidateProjects(String s,String p){}}
  static final class Claims{void requireUnclaimedBinding(String p,String o){}}static final class Slot{ApkStore.BundleInstall install;}
 }'''
@@ -101,7 +101,7 @@ with tempfile.TemporaryDirectory(prefix="tripoder-catalog-test-") as temporary:
         path.write_text(text)
         sources.append(str(path))
     runtime = repo / "android/runtime/src/dev/tripoder/runtime"
-    sources += [str(runtime / name) for name in ("ExecutionContract.java", "RuntimeMode.java", "ApplicationProjects.java", "ProjectTargetBindings.java")]
+    sources += [str(runtime / name) for name in ("ExecutionContract.java", "ApplicationProjects.java", "ProjectTargetBindings.java")]
     sources += [str(repo / "android/engine/src/dev/tripoder/runtime/RuntimeControllerCatalog.java"),
                 str(repo / "android/runtime/test/dev/tripoder/runtime/CatalogMetadataTest.java")]
     classes = root / "classes"

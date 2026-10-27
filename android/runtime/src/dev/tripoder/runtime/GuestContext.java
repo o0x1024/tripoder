@@ -92,7 +92,7 @@ public final class GuestContext extends GuestStorageContext {
     @Override public Context createContext(ContextParams params){return windowDerived(platform.createContext(params));}
     @Override public Context createDeviceContext(int deviceId){return windowDerived(platform.createDeviceContext(deviceId));}
     @Override public Object getSystemService(String name){
-        if(RuntimeThinPolicy.platformService(name))return engine.host.getSystemService(name);
+        if(RuntimePlatformPolicy.platformService(name))return engine.host.getSystemService(name);
         if(ACTIVITY_SERVICE.equals(name))return engine.activityManager.facade();
         if(CONNECTIVITY_SERVICE.equals(name))return engine.connectivity.facade();
         if(TELEPHONY_SERVICE.equals(name))return engine.telephony.facade();

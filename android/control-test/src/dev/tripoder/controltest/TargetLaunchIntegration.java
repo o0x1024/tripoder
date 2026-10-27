@@ -56,12 +56,12 @@ public final class TargetLaunchIntegration extends ControlTestBase {
         if(recordFile.exists()){
             record=new JSONObject(java.nio.file.Files.readString(recordFile.toPath()));
             if(!expected.equals(record.getString("sha256")))throw new IllegalStateException("TARGET_RECEIPT_DIGEST_CHANGED");
-            if(args.containsKey("mode"))execute(session,"setProjectMode","operation",id(),"project",record.getString("project"),"mode",args.getString("mode"));
+
             Bundle resolved=execute(session,"resolveProject","project",record.getString("project"));
             if(!SPACE.equals(resolved.getString("space"))||!pkg.equals(resolved.getString("package"))||!record.getString("generation").equals(resolved.getString("generation"))||!record.getString("binding").equals(resolved.getString("bindingOperation")))throw new IllegalStateException("TARGET_BINDING_CHANGED");
         }else if((record=claimExistingInstall(session,catalog,pkg,expected,projects,title))!=null){
             atomicWrite(recordFile,record);
-            if(args.containsKey("mode"))execute(session,"setProjectMode","operation",id(),"project",record.getString("project"),"mode",args.getString("mode"));
+
         }else{
             String operation=id();Bundle installedResult;
             try(var fd=ParcelFileDescriptor.open(source,ParcelFileDescriptor.MODE_READ_ONLY)){
@@ -70,11 +70,11 @@ public final class TargetLaunchIntegration extends ControlTestBase {
             }
             check("target-install-committed","SUCCEEDED".equals(execute(session,"query","operation",operation).getString("state")),json(installedResult));
             String generation=installedResult.getString("generation");Bundle canonical=applicationProject(session,projects,SPACE,pkg,generation);String project=canonical.getString("project"),binding=canonical.getString("bindingOperation");
-            if(args.containsKey("mode"))execute(session,"setProjectMode","operation",id(),"project",project,"mode",args.getString("mode"));
+
             record=new JSONObject().put("project",project).put("binding",binding).put("generation",generation).put("sha256",expected);
             atomicWrite(recordFile,record);
         }
-        report.put("targetReceipt",record).put("space",SPACE).put("projectMode",args.containsKey("mode")?args.getString("mode"):execute(session,"resolveProject","project",record.getString("project")).getString("mode"));
+        report.put("targetReceipt",record).put("space",SPACE);
         if(args.containsKey("closeActivityTicket"))for(String ticket:args.getString("closeActivityTicket").split(",",-1)){
             UUID.fromString(ticket);JSONArray entries=new JSONArray(execute(session,"launchEntries","project",record.getString("project")).getString("entries"));String selected=null;
             for(int i=0;i<entries.length();i++){JSONObject item=entries.getJSONObject(i);if(ticket.equals(item.getString("ticket"))){if(selected!=null||!"ACTIVITY_ROUTE".equals(item.optString("kind")))throw new IllegalStateException("EXACT_ACTIVITY_ROUTE_REQUIRED");selected=item.getString("operation");}}
@@ -210,7 +210,7 @@ public final class TargetLaunchIntegration extends ControlTestBase {
             Bundle canonical=applicationProject(session,projects,SPACE,pkg,generation);project=canonical.getString("project");binding=canonical.getString("bindingOperation");
         }
         execute(session,"selectProjectTarget","operation",id(),"project",project,"space",SPACE,"package",pkg,"generation",generation);
-        if(args.containsKey("mode"))execute(session,"setProjectMode","operation",id(),"project",project,"mode",args.getString("mode"));
+
         Bundle resolved=execute(session,"resolveProject","project",project);
         if(!SPACE.equals(resolved.getString("space"))||!pkg.equals(resolved.getString("package"))||!generation.equals(resolved.getString("generation"))||!binding.equals(resolved.getString("bindingOperation")))throw new IllegalStateException("TARGET_CLAIM_BINDING_MISMATCH");
         JSONObject record=new JSONObject().put("project",project).put("binding",binding).put("generation",generation).put("sha256",expected);

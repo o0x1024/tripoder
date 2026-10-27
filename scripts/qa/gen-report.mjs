@@ -91,7 +91,7 @@ const md = `# Tripoder 全量应用 THIN / THICK 兼容性与功能测试报告
 
 1. 用 \`device_applications_list\` / \`pm list packages -3\` 枚举手机上的第三方应用；
 2. 通过 MCP \`application_import_device\` 逐个导入默认空间（分块传输原始 APK/split）；
-3. 每个应用依次执行：\`application_stop\` → \`application_mode_set(thin|thick)\` → \`process_start\` → 存活观察 → UIAutomator 无障碍树（可覆盖 Compose/Flutter/WebView）→ 登录（手机号 + 短信验证码）→ 浏览主界面 → 截图 + logcat 崩溃证据；
+3. 每个应用依次执行：\`application_stop\` → \`process_start\` → 存活观察 → UIAutomator 无障碍树（可覆盖 Compose/Flutter/WebView）→ 登录（手机号 + 短信验证码）→ 浏览主界面 → 截图 + logcat 崩溃证据；
 4. 崩溃判定同时使用：主进程是否仍在 \`targets_list\`、\`crash_diagnostics_get\`、logcat 中 \`FATAL EXCEPTION\` / \`TripoderHook\` / \`Process is going to kill itself\`。
 
 自动化脚本：\`scripts/qa/mcp.mjs\`、\`flow.mjs\`、\`deep.mjs\`、\`import-batch.mjs\`、\`aggregate.mjs\`。

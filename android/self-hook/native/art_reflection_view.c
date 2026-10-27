@@ -54,13 +54,13 @@ static bool guest_attached(JNIEnv *env,jobject candidate,jobject current) {
     return candidate_apk&&current_apk&&(*env)->IsSameObject(env,candidate_apk,current_apk);
 }
 /** Publish a guest-owned delegate as the logical application, retaining every generation that was ever published. */
-static bool publish(JNIEnv *env,jobject candidate) {
+static bool publish(JNIEnv *env,jobject candidate,bool derived) {
     jobject root=(*env)->NewGlobalRef(env,candidate);
     if (!root) return false;
     for (unsigned attempt=0;attempt<4;attempt++) {
         jobject current=atomic_load_explicit(&view.logical,memory_order_acquire);
         if ((*env)->IsSameObject(env,candidate,current)) { (*env)->DeleteGlobalRef(env,root); return true; }
-        if (!guest_attached(env,candidate,current)) { (*env)->DeleteGlobalRef(env,root); return false; }
+        if (!derived&&!guest_attached(env,candidate,current)) { (*env)->DeleteGlobalRef(env,root); return false; }
         // Old generations stay retained: a concurrent reader may still hold the value it loaded.
         if (atomic_compare_exchange_strong_explicit(&view.logical,&current,root,memory_order_release,memory_order_acquire))
             return true;
@@ -96,7 +96,7 @@ static void set(JNIEnv *env,jobject field,jobject owner,jobject value) {
     if ((*env)->ExceptionCheck(env)) { atomic_fetch_add(&view.original_exceptions,1); return; }
     if (selected) {
         atomic_fetch_add(&view.mapped_sets,1);
-        if (!publish(env,value)) deny(env);
+        if (!publish(env,value,false)) deny(env);
     }
 }
 
@@ -179,10 +179,10 @@ bool tp_art_reflection_promote(JNIEnv *env,jobject logical){
     // The promoted global is retained by the atomic owner until process exit.
     return true;
 }
-bool tp_art_reflection_adopt(JNIEnv *env,jobject application){
+bool tp_art_reflection_adopt(JNIEnv *env,jobject application,bool derived){
     if((*env)->ExceptionCheck(env)||!application||!atomic_load_explicit(&view.ready,memory_order_acquire)
        ||!atomic_load_explicit(&view.enabled,memory_order_acquire)||!atomic_load_explicit(&view.published,memory_order_acquire))return false;
-    return publish(env,application);
+    return publish(env,application,derived);
 }
 bool tp_art_reflection_complete(JNIEnv *env){
     if((*env)->ExceptionCheck(env)||!atomic_load_explicit(&view.logical,memory_order_acquire))return false;

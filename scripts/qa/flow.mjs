@@ -35,18 +35,17 @@ export class Flow {
     return { space: self.space, package: self.package, installGeneration: self.installGeneration, processGeneration: self.processGeneration };
   }
 
-  async start(pkg, mode = 'thin', { settleMs = 9000, component = '' } = {}) {
+  async start(pkg, { settleMs = 9000, component = '' } = {}) {
     this.pkg = pkg;
     const inst = await this.installation(pkg);
     const target = targetOf(inst);
     await this.mcp.call('application_stop', { operationId: `f-stop-${Date.now()}`, target }).catch(() => {});
-    await this.mcp.call('application_mode_set', { operationId: `f-mode-${Date.now()}`, target, mode });
     const probes = await this.mcp.call('probes_get', { target });
     const t0 = Date.now();
     const started = await this.mcp.call('process_start', {
       operationId: `f-start-${Date.now()}`, target, component, probeRevision: probes.revision ?? '',
     }, { timeoutMs: 120000 });
-    this.note(`start ${pkg} ${mode} pid=${started.pid} ${Date.now() - t0}ms`);
+    this.note(`start ${pkg} runtime pid=${started.pid} ${Date.now() - t0}ms`);
     await sleep(settleMs);
     return started;
   }
@@ -525,14 +524,14 @@ export class Flow {
   }
 
   /** Browse the main tabs/sections, capturing a screenshot per stop and watching for crashes. */
-  async browse(pkg, { stops = 5, settleMs = 2500, mode = 'thin' } = {}) {
+  async browse(pkg, { stops = 5, settleMs = 2500 } = {}) {
     const seen = [];
     for (let i = 0; i < stops; i++) {
       const alive = await this.live(pkg);
       if (!alive) { this.note('process gone during browse at stop', i); return { crashed: true, stopAt: i, seen }; }
       const { nodes } = await this.tree();
       const texts = this.texts(nodes);
-      seen.push({ stop: i, texts: texts.slice(0, 12), screenshot: await this.shot(`${pkg}-${mode}-browse-${i}`) });
+      seen.push({ stop: i, texts: texts.slice(0, 12), screenshot: await this.shot(`${pkg}-runtime-browse-${i}`) });
       this.note(`browse stop ${i}:`, texts.slice(0, 6).join(' | ').slice(0, 200));
       // Bottom navigation: pick the next clickable node in the lowest band.
       const bottom = nodes.filter((n) => n.clickable && n.centre[1] > 2250 && n.bounds[3] > 2300);

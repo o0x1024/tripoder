@@ -13,7 +13,7 @@ import java.nio.channels.FileLock;
 
 /** The broker is the only owner of this connection. Guest processes never open it. */
 public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionContract.Store {
-    private static final int SCHEMA_VERSION=40;
+    private static final int SCHEMA_VERSION=41;
     private RandomAccessFile authorityFile;
     private FileLock authorityLock;
     private boolean closed;
@@ -114,6 +114,7 @@ public final class RuntimeStore extends SQLiteOpenHelper implements ExecutionCon
         if(oldVersion<38)db.execSQL("ALTER TABLE sessions ADD COLUMN componentRestartOperation TEXT");
         if(oldVersion<39)RuntimeIsolatedSessions.migrate(db);
         if(oldVersion<40)RuntimeStateCheckpoints.create(db);
+        if(oldVersion>=35&&oldVersion<41)db.execSQL("ALTER TABLE project_refs DROP COLUMN mode");
     }
     private static void recoveryTables(SQLiteDatabase db){
         db.execSQL("CREATE TABLE IF NOT EXISTS operation_scopes(operation TEXT PRIMARY KEY,scope TEXT NOT NULL,command TEXT NOT NULL,dispatch TEXT NOT NULL)");

@@ -1,0 +1,74 @@
+{
+  "environment": "ORIGINAL_SYSTEM_INSTALLATION",
+  "pid": 23400,
+  "sameApkAsGuest": true,
+  "checks": [
+    {
+      "name": "pending-mask-contract",
+      "ready": 1,
+      "claim": 0,
+      "installed": 0,
+      "pendingBefore": 1,
+      "pendingPipeAfter": 1,
+      "pendingWinchAfter": 1,
+      "pipeHits": 0,
+      "winchHits": 0,
+      "callbacks": 1,
+      "pipeBlockedInside": 1,
+      "winchBlockedInside": 1,
+      "maskRestored": 1,
+      "normalDelivery": 1,
+      "returnValue": 1234,
+      "passed": true
+    },
+    {
+      "name": "sdk-untrapped-delivery-baseline",
+      "trapped": false,
+      "entered": 1,
+      "maskRead": 1,
+      "physicalSigsysBlocked": 1,
+      "physicalPipeBlocked": 1,
+      "physicalWinchBlocked": 1,
+      "syscallReturned": 1,
+      "ownResourceCorrect": 1,
+      "declaredMaskKept": 1,
+      "nestedSyscallErrnoKept": 1,
+      "afterRaiseErrnoMatched": 0,
+      "priorMaskRestored": 1,
+      "passed": true
+    },
+    {
+      "name": "user-delivery-contract",
+      "trapped": true,
+      "entered": 1,
+      "maskRead": 1,
+      "physicalSigsysBlocked": 1,
+      "physicalPipeBlocked": 1,
+      "physicalWinchBlocked": 1,
+      "syscallReturned": 1,
+      "ownResourceCorrect": 1,
+      "declaredMaskKept": 1,
+      "nestedSyscallErrnoKept": 1,
+      "afterRaiseErrnoMatched": 0,
+      "priorMaskRestored": 1,
+      "passed": false
+    },
+    {
+      "name": "protected-page-delivery",
+      "signal": 11,
+      "code": 2,
+      "faults": 1,
+      "addressCorrect": 1,
+      "instructionCorrect": 1,
+      "resumedAfterInstruction": true,
+      "errnoKept": 0,
+      "handlerRestored": true,
+      "passed": false
+    },
+    {
+      "name": "java-exception-preserved",
+      "passed": true
+    }
+  ],
+  "note": "The trapped syscall delivery assertion is guest-runtime-specific; only matching protected-page semantics are used as the system comparator."
+}

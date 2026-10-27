@@ -15,8 +15,7 @@ final class RuntimeControllerHooks {
             try(Cursor c=broker.store.getReadableDatabase().rawQuery("SELECT generation,pid,processName FROM sessions WHERE space=? AND package=? AND installGeneration=? AND authorityGeneration=? AND state='RUNNING'",new String[]{target.getString("space"),target.getString("package"),target.getString("generation"),broker.store.authorityGeneration})){
                 while(c.moveToNext()){
                     String gen=c.getString(0);var slot=broker.processSlots().stream().filter(s->s.allocation.session.processGeneration.equals(gen)).findFirst().orElse(null);
-                    String mode=slot!=null?slot.mode.wire:target.getString("mode");
-                    processes.put(new JSONObject().put("processGeneration",gen).put("pid",c.getInt(1)).put("processName",c.getString(2)).put("mode",mode));
+                    processes.put(new JSONObject().put("processGeneration",gen).put("pid",c.getInt(1)).put("processName",c.getString(2)));
                 }
             }
         }

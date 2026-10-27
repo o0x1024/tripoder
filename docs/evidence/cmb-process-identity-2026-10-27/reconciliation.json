@@ -1,0 +1,94 @@
+{
+  "operation": {
+    "protocol": 2,
+    "requestId": "7a9e0099-51f0-4e14-b7f1-76a8215f6683",
+    "ok": true,
+    "result": {
+      "operationId": "236dc995-f453-47cb-9811-798200211d81",
+      "state": "UNKNOWN",
+      "detail": "LAUNCH_PREPARATION_UNCONFIRMED",
+      "result": "",
+      "evidence": ""
+    },
+    "errorCode": "OPERATION_OUTCOME_UNKNOWN",
+    "pendingOperationId": "236dc995-f453-47cb-9811-798200211d81",
+    "recovery": {
+      "action": "Preserve the original UNKNOWN result and evidence. Query the original operation and exact launch recovery. targets=[] is not proof of failure. If entryIssued=false, do not call launch_manage(close). A deliberate application_stop with its own new operationId may establish stop/dead-session evidence; inspect launch_recovery again before planning a new launch. Changing the launch ID alone never authorizes retry.",
+      "steps": [
+        {
+          "tool": "application_query",
+          "arguments": {
+            "action": "targets"
+          }
+        }
+      ],
+      "replayAllowed": false,
+      "newIdRetryAllowed": false,
+      "preserveOriginalEvidence": true,
+      "pollingDoesNotResolve": true,
+      "requiresOriginalTarget": true
+    }
+  },
+  "recovery": {
+    "protocol": 2,
+    "requestId": "b79a65b0-e96a-454e-8579-c656164d82fa",
+    "ok": true,
+    "result": {
+      "entryInert": true,
+      "canAcknowledge": false,
+      "entryIssued": false,
+      "detail": "LAUNCH_PREPARATION_UNCONFIRMED",
+      "resourcesRetired": false,
+      "state": "UNKNOWN",
+      "targetVerification": "SCOPE_ONLY_ORIGINAL_INSTALLATION_IDENTITY_REQUIRED",
+      "targetVerified": false,
+      "operation": "236dc995-f453-47cb-9811-798200211d81",
+      "recoveryState": "NO_ENTRY_TO_FENCE_OUTCOME_UNKNOWN"
+    },
+    "errorCode": "OPERATION_OUTCOME_UNKNOWN",
+    "pendingOperationId": "236dc995-f453-47cb-9811-798200211d81",
+    "recovery": {
+      "action": "Preserve the original UNKNOWN result and evidence. Query the original operation and exact launch recovery. targets=[] is not proof of failure. If entryIssued=false, do not call launch_manage(close). A deliberate application_stop with its own new operationId may establish stop/dead-session evidence; inspect launch_recovery again before planning a new launch. Changing the launch ID alone never authorizes retry.",
+      "steps": [
+        {
+          "tool": "operation_get",
+          "arguments": {
+            "operationId": "236dc995-f453-47cb-9811-798200211d81"
+          }
+        },
+        {
+          "tool": "application_query",
+          "arguments": {
+            "action": "targets"
+          }
+        }
+      ],
+      "replayAllowed": false,
+      "newIdRetryAllowed": false,
+      "preserveOriginalEvidence": true,
+      "pollingDoesNotResolve": true,
+      "requiresOriginalTarget": true
+    }
+  },
+  "entries": {
+    "protocol": 2,
+    "requestId": "4c390a08-05ad-42fd-98fa-8b88f7b8b93e",
+    "ok": true,
+    "result": {
+      "entries": [],
+      "dataId": "dbe3cc66-5d67-48b4-9103-62312c8c0904",
+      "bindingOperation": "8dee81e8-efaf-3580-9063-0daf5309242d",
+      "package": "cmb.pb",
+      "project": "4748a608-6ea4-4d16-bac4-ba8c90b43bd9",
+      "space": "default",
+      "generation": "d6d45af0-b8d6-4f69-8d76-8505d6c008da",
+      "integrity": {
+        "trustedLoads": 2,
+        "fullVerifications": 0,
+        "hits": 0,
+        "sets": 2,
+        "retainedBytes": 1890546
+      }
+    }
+  }
+}

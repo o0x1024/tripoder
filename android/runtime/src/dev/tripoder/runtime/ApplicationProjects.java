@@ -23,10 +23,10 @@ public final class ApplicationProjects {
         // Keep the full old metadata for recovery; new binding receipts are issued explicitly.
         db.execSQL("ALTER TABLE project_refs RENAME TO project_refs_archive_v34");
         createTargets(db);
-        db.execSQL("INSERT INTO project_refs SELECT CASE WHEN p.kind='DIRECT' THEN a.id ELSE p.id END,p.space,p.package,p.generation,p.sourceSha,p.snapshot,'STALE',p.operation,p.kind,p.mode FROM project_refs_archive_v34 p LEFT JOIN application_projects a ON a.package=p.package WHERE p.id=(SELECT MIN(q.id) FROM project_refs_archive_v34 q WHERE q.space=p.space AND q.package=p.package)");
+        db.execSQL("INSERT INTO project_refs SELECT CASE WHEN p.kind='DIRECT' THEN a.id ELSE p.id END,p.space,p.package,p.generation,p.sourceSha,p.snapshot,'STALE',p.operation,p.kind FROM project_refs_archive_v34 p LEFT JOIN application_projects a ON a.package=p.package WHERE p.id=(SELECT MIN(q.id) FROM project_refs_archive_v34 q WHERE q.space=p.space AND q.package=p.package)");
     }
     static void createTargets(SQLiteDatabase db){
-        db.execSQL("CREATE TABLE project_refs(id TEXT NOT NULL, space TEXT NOT NULL, package TEXT NOT NULL, generation TEXT NOT NULL, sourceSha TEXT NOT NULL, snapshot TEXT NOT NULL, state TEXT NOT NULL, operation TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'MIGRATED', mode TEXT NOT NULL DEFAULT 'thin', PRIMARY KEY(id,space))");
+        db.execSQL("CREATE TABLE project_refs(id TEXT NOT NULL, space TEXT NOT NULL, package TEXT NOT NULL, generation TEXT NOT NULL, sourceSha TEXT NOT NULL, snapshot TEXT NOT NULL, state TEXT NOT NULL, operation TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'MIGRATED', PRIMARY KEY(id,space))");
         db.execSQL("CREATE UNIQUE INDEX direct_application_target ON project_refs(space,package) WHERE kind='DIRECT'");
     }
     public String ensure(String pkg){

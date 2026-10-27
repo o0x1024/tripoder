@@ -1,5 +1,6 @@
 package dev.tripoder.runtime;
 
+import android.app.Service;
 import android.app.job.*;
 import android.content.*;
 import android.os.*;
@@ -11,16 +12,33 @@ final class RuntimeJobs {
     private final RuntimeEngine engine;
     private final Map<RuntimeJobGateway,Delegate> delegates=new IdentityHashMap<>();
     private final Map<JobService,Delegate> services=new IdentityHashMap<>();
+    private final Map<Service,Delegate> boundServices=new IdentityHashMap<>();
     private final Map<JobParameters,View> views=new WeakHashMap<>();
     private final Map<IBinder,Attempt> callbacks=new HashMap<>(),terminalCallbacks=new HashMap<>();
     private final Map<JobWorkItem,Work> workItems=new IdentityHashMap<>();
     private static final class Work {final Attempt attempt;final JobWorkItem physical;boolean completing;Work(Attempt attempt,JobWorkItem physical){this.attempt=attempt;this.physical=physical;}}
-    private static final class Delegate {final RuntimeJobGateway gateway;final JobService service;final String component;Delegate(RuntimeJobGateway g,JobService s,String c){gateway=g;service=s;component=c;}}
+    /** A JobService, or a plain Service declared BIND_JOB_SERVICE (androidx JobIntentService) that the platform would bind and drive through the IJobService binder returned by onBind. */
+    private static final class Delegate {final RuntimeJobGateway gateway;final JobService service;final Service bound;final IBinder engine;final String component;Delegate(RuntimeJobGateway g,JobService s,Service b,IBinder e,String c){gateway=g;service=s;bound=b;engine=e;component=c;}}
+    private static final String JOB_SERVICE_DESCRIPTOR="android.app.job.IJobService";
+    private static final int START_JOB=IBinder.FIRST_CALL_TRANSACTION,STOP_JOB=IBinder.FIRST_CALL_TRANSACTION+1;
+    /** The binder is the guest's own in-process JobServiceEngine, so this is a direct call into the guest, never a system Binder transaction. */
+    private static void drive(Delegate delegate,int code,JobParameters view)throws Exception{
+        Parcel data=Parcel.obtain();
+        try{data.writeInterfaceToken(JOB_SERVICE_DESCRIPTOR);data.writeInt(1);view.writeToParcel(data,0);if(!delegate.engine.transact(code,data,null,IBinder.FLAG_ONEWAY))throw new IllegalStateException("JOB_ENGINE_REJECTED");}
+        finally{data.recycle();}
+    }
     private static final class Attempt {final Delegate delegate;final String id,version;final int jobId;final IBinder callback;final PersistableBundle extras;final String namespace;JobParameters physical;boolean active=true,finishRequested,workBlocked;Attempt(Delegate d,String id,String version,JobParameters p,JobInfo logical,String namespace){delegate=d;this.id=id;this.version=version;jobId=p.getJobId();callback=JobFrameworkAccess.callback(p);physical=p;extras=new PersistableBundle(logical.getExtras());this.namespace=namespace;}}
     private static final class View {final Attempt attempt;View(Attempt a){attempt=a;}}
     RuntimeJobs(RuntimeEngine engine){this.engine=engine;}
-    synchronized boolean ownsService(Object value){if(services.containsKey(value))return true;for(View view:views.values())if(view.attempt.delegate.service==value)return true;return false;}
-    synchronized boolean ownsParameters(Object value){return views.containsKey(value);}
+    synchronized boolean ownsService(Object value){if(services.containsKey(value)||boundServices.containsKey(value))return true;for(View view:views.values())if(view.attempt.delegate.service==value)return true;return false;}
+    synchronized boolean ownsParameters(Object value){return viewOf(value)!=null;}
+    /** A bound engine re-creates JobParameters from the parcel it was driven with, so those copies resolve by the one active attempt they describe. */
+    private View viewOf(Object value){
+        View known=views.get(value);if(known!=null||!(value instanceof JobParameters))return known;
+        JobParameters copy=(JobParameters)value;
+        for(Attempt attempt:callbacks.values())if(attempt.delegate.bound!=null&&attempt.active&&attempt.jobId==copy.getJobId()&&Objects.equals(attempt.namespace,JobFrameworkAccess.namespace(copy)))return new View(attempt);
+        return null;
+    }
     boolean start(RuntimeJobGateway gateway,JobParameters physical)throws Exception{
         String version=physical.getExtras().getString(RuntimeJobInfo.VERSION);IBinder callback=JobFrameworkAccess.callback(physical);
         Bundle request=engine.auth();request.putString("version",version);request.putString("instance",gateway.instance);request.putString("stub",gateway.getClass().getName());request.putInt("jobId",physical.getJobId());request.putString("namespace",JobFrameworkAccess.namespace(physical));request.putBinder("callback",callback);
@@ -29,15 +47,22 @@ final class RuntimeJobs {
         synchronized(this){delegate=delegates.get(gateway);}
         if(delegate==null){
             String component=RuntimeWire.required(admitted,"component");var created=engine.componentFactory.instantiateService(engine.guestLoader(),component,new Intent().setComponent(new ComponentName(engine.packageName,component)));
-            if(!(created instanceof JobService)||!engine.ownsLoader(created.getClass().getClassLoader()))throw new SecurityException("JOB_SERVICE_CLASS_REJECTED");
-            JobService service=(JobService)created;delegate=new Delegate(gateway,service,component);
-            synchronized(this){delegates.put(gateway,delegate);services.put(service,delegate);}
+            if(!(created instanceof Service)||!engine.ownsLoader(created.getClass().getClassLoader()))throw new SecurityException("JOB_SERVICE_CLASS_REJECTED");
+            Service service=(Service)created;
             JobFrameworkAccess.attach(service,engine.application,engine.application,component);service.onCreate();
+            if(service instanceof JobService){delegate=new Delegate(gateway,(JobService)service,null,null,component);synchronized(this){delegates.put(gateway,delegate);services.put((JobService)service,delegate);}}
+            else{
+                IBinder driver=service.onBind(new Intent().setComponent(new ComponentName(engine.packageName,component)));
+                if(driver==null||!JOB_SERVICE_DESCRIPTOR.equals(driver.getInterfaceDescriptor())){service.onDestroy();throw new SecurityException("JOB_SERVICE_CLASS_REJECTED");}
+                delegate=new Delegate(gateway,null,service,driver,component);synchronized(this){delegates.put(gateway,delegate);boundServices.put(service,delegate);}
+            }
         }else if(!delegate.component.equals(logical.getService().getClassName()))throw new SecurityException("JOB_GATEWAY_COMPONENT_CHANGED");
         Attempt attempt=new Attempt(delegate,RuntimeWire.required(admitted,"attempt"),version,physical,logical,admitted.getString("namespace"));
         synchronized(this){if(callbacks.putIfAbsent(callback,attempt)!=null)throw new SecurityException("JOB_CALLBACK_REUSED");terminalCallbacks.remove(callback);}
         JobParameters view=view(attempt,physical,logical.getExtras(),admitted.getString("namespace"));
-        boolean ongoing=delegate.service.onStartJob(view);event(attempt,"START_RETURNED",ongoing);
+        boolean ongoing;
+        if(delegate.bound!=null){drive(delegate,START_JOB,view);ongoing=true;}else ongoing=delegate.service.onStartJob(view);
+        event(attempt,"START_RETURNED",ongoing);
         synchronized(this){if(!ongoing)attempt.active=false;}
         return ongoing;
     }
@@ -45,17 +70,18 @@ final class RuntimeJobs {
         Attempt attempt;
         synchronized(this){Attempt closed=terminalCallbacks.get(JobFrameworkAccess.callback(parameters));if(matches(closed,gateway,parameters))return false;}
         attempt=resolve(gateway,parameters);event(attempt,"STOP_ENTERED",false);
-        JobParameters view=followup(attempt,parameters);boolean retry=attempt.delegate.service.onStopJob(view);
+        JobParameters view=followup(attempt,parameters);boolean retry=false;
+        if(attempt.delegate.bound!=null)drive(attempt.delegate,STOP_JOB,view);else retry=attempt.delegate.service.onStopJob(view);
         synchronized(this){attempt.active=false;}event(attempt,"STOP_RETURNED",retry);return retry;
     }
-    void network(RuntimeJobGateway gateway,JobParameters parameters)throws Exception{Attempt attempt=resolve(gateway,parameters);event(attempt,"NETWORK_CHANGED",false);attempt.delegate.service.onNetworkChanged(followup(attempt,parameters));}
+    void network(RuntimeJobGateway gateway,JobParameters parameters)throws Exception{Attempt attempt=resolve(gateway,parameters);event(attempt,"NETWORK_CHANGED",false);if(attempt.delegate.service!=null)attempt.delegate.service.onNetworkChanged(followup(attempt,parameters));}
     private synchronized Attempt resolve(RuntimeJobGateway gateway,JobParameters parameters){
         Attempt attempt=callbacks.get(JobFrameworkAccess.callback(parameters));
         if(!matches(attempt,gateway,parameters))throw new SecurityException("JOB_CALLBACK_ATTEMPT_STALE");return attempt;
     }
     private static boolean matches(Attempt attempt,RuntimeJobGateway gateway,JobParameters parameters){return attempt!=null&&attempt.delegate.gateway==gateway&&attempt.jobId==parameters.getJobId()&&attempt.version.equals(parameters.getExtras().getString(RuntimeJobInfo.VERSION));}
     private synchronized Attempt workAttempt(JobParameters parameters){
-        View view=views.get(parameters);if(view==null||!view.attempt.active||view.attempt.finishRequested||view.attempt.physical==null)throw new SecurityException("JOB_WORK_CAPABILITY_STALE");
+        View view=viewOf(parameters);if(view==null||!view.attempt.active||view.attempt.finishRequested||view.attempt.physical==null)throw new SecurityException("JOB_WORK_CAPABILITY_STALE");
         if(view.attempt.workBlocked)throw new IllegalStateException("JOB_WORK_OUTCOME_UNKNOWN");return view.attempt;
     }
     JobWorkItem dequeue(JobParameters parameters)throws Exception{
@@ -96,8 +122,8 @@ final class RuntimeJobs {
         if(event.equals("FINISH_RPC_RETURNED")||event.equals("STOP_RPC_RETURNED")||event.equals("START_RPC_RETURNED")&&!value)synchronized(this){retire(attempt);}
     }
     void destroyed(RuntimeJobGateway gateway)throws Exception{
-        Delegate delegate;synchronized(this){delegate=delegates.remove(gateway);if(delegate==null)return;services.remove(delegate.service);}
-        delegate.service.onDestroy();Bundle request=engine.auth();request.putString("instance",gateway.instance);request.putString("event","DESTROYED");engine.brokerCall(RuntimeWire.JOB_EVENT,request);
+        Delegate delegate;synchronized(this){delegate=delegates.remove(gateway);if(delegate==null)return;if(delegate.service!=null)services.remove(delegate.service);else boundServices.remove(delegate.bound);}
+        if(delegate.service!=null)delegate.service.onDestroy();else delegate.bound.onDestroy();Bundle request=engine.auth();request.putString("instance",gateway.instance);request.putString("event","DESTROYED");engine.brokerCall(RuntimeWire.JOB_EVENT,request);
         synchronized(this){for(var iterator=callbacks.entrySet().iterator();iterator.hasNext();){Attempt attempt=iterator.next().getValue();if(attempt.delegate==delegate){attempt.active=false;attempt.physical=null;iterator.remove();}}terminalCallbacks.entrySet().removeIf(entry->entry.getValue().delegate==delegate);workItems.entrySet().removeIf(entry->entry.getValue().attempt.delegate==delegate);}
     }
     private void event(Attempt attempt,String event,boolean value)throws Exception{Bundle request=engine.auth();request.putString("attempt",attempt.id);request.putString("instance",attempt.delegate.gateway.instance);request.putBinder("callback",attempt.callback);request.putString("event",event);request.putBoolean("value",value);engine.brokerCall(RuntimeWire.JOB_EVENT,request);}

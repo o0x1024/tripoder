@@ -35,6 +35,7 @@ final class RuntimeComponentDelivery {
         if(extras!=null){intent.putExtras(bundle(extras,0));}
         if(kind.equals("activity"))intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try{
+            RuntimeMalwareProbeState.checkAndRecordIntent("component_send_intent:" + kind, intent);
             switch(kind){
                 case "activity":engine.application.startActivity(intent);break;
                 case "service":if(engine.application.startService(intent)==null)throw reject("COMPONENT_SERVICE_NOT_FOUND");break;
@@ -46,7 +47,7 @@ final class RuntimeComponentDelivery {
             // The engine refuses these before anything is launched, so they are certain rejections rather than unknown outcomes.
             for(Throwable cause=failure;cause!=null;cause=cause.getCause()){
                 String message=String.valueOf(cause.getMessage());
-                for(String code:new String[]{"COMPONENT_NOT_DECLARED","ACTIVITY_COMPONENT_REQUIRED","PACKAGE_NOT_IN_SPACE","COMPONENT_NOT_EXPORTED"})if(message.contains(code))throw reject(message.substring(message.indexOf(code)));
+                for(String code:new String[]{"COMPONENT_NOT_DECLARED","ACTIVITY_COMPONENT_REQUIRED","PACKAGE_NOT_IN_SPACE","COMPONENT_NOT_EXPORTED","MALWARE_PROBE_HIGH_RISK_INTENT_BLOCKED"})if(message.contains(code))throw reject(message.substring(message.indexOf(code)));
             }
             throw failure;
         }

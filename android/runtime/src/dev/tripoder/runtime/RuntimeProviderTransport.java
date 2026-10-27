@@ -33,7 +33,7 @@ public class RuntimeProviderTransport extends RuntimeProviderBase {
         return (Bundle)dispatch(extras);
     }
     private Object dispatchThin(Bundle envelope){
-        RuntimeEngine engine=RuntimeEngine.current;if(engine==null||!engine.mode.routesThroughPlatform())throw new SecurityException("PROVIDER_PROCESS_NOT_AUTHENTICATED");
+        RuntimeEngine engine=RuntimeEngine.current;if(engine==null)throw new SecurityException("PROVIDER_PROCESS_NOT_AUTHENTICATED");
         int callerPid=Binder.getCallingPid(),callerUid=Binder.getCallingUid();
         if(callerUid!=android.os.Process.myUid())throw new SecurityException("PROVIDER_CALLER_UID_MISMATCH");
         if(!envelope.keySet().equals(Set.of("lease","source","kind","uri","authority","payload","projection")))throw new SecurityException("PROVIDER_ENVELOPE_INVALID");
@@ -63,7 +63,7 @@ public class RuntimeProviderTransport extends RuntimeProviderBase {
         Bundle request=engine.auth();request.putString("source",RuntimeWire.required(claim,"source"));request.putString("lease",RuntimeWire.required(claim,"lease"));request.putString("uri",RuntimeWire.required(claim,"uri"));request.putString("kind",kind);request.putInt("callerPid",pid);request.putInt("callerUid",uid);return request;
     }
     static Bundle thinCursorAccess(Bundle claim,int pid,int uid)throws Exception{
-        RuntimeEngine engine=RuntimeEngine.current;if(engine==null||!engine.mode.routesThroughPlatform())throw new SecurityException("PROVIDER_PROCESS_NOT_AUTHENTICATED");
+        RuntimeEngine engine=RuntimeEngine.current;if(engine==null)throw new SecurityException("PROVIDER_PROCESS_NOT_AUTHENTICATED");
         return authority(engine,RuntimeWire.PROVIDER_THIN_ACCESS,thinRequest(engine,claim,"query",pid,uid));
     }
     private Object dispatch(Bundle envelope){

@@ -3,36 +3,27 @@ import dev.tripoder.runtime.script.HookEvidence;
 import dev.tripoder.runtime.script.ScriptValues;
 import dev.tripoder.runtime.script.NativeHookValues;
 import dev.tripoder.selfhook.NativeModules;
+import dev.tripoder.runtime.RuntimeNativeLibraryCatalog.Artifact;
 import java.io.File;
 import java.util.*;
 import java.util.function.BooleanSupplier;
 /** The artifact catalog owns the allowed files; the fixed linker owns live
  * identity. No global symbol search or dlopen pin is used for observation. */
 final class RuntimeNativeObservation {
-    interface Inventory {List<String> names();String path(String name)throws Exception;Map<String,Object> inspect(String name)throws Exception;}
-    record Artifact(int index,String name,String path){}
     record Library(int index,String name,String path,String buildId,long size,Map<String,Object> metadata){}
     record Target(Library library,long generation,long base,long rva,Map<String,Object> symbol){}
-    private final Inventory inventory;private final BooleanSupplier ownerLive;private final Map<String,Object> identity;
-    private final Map<String,Artifact> artifacts=new LinkedHashMap<>();private final Map<String,Target> targets=new HashMap<>();
+    private final RuntimeNativeLibraryCatalog catalog;private final BooleanSupplier ownerLive;private final Map<String,Object> identity;
+    private final Map<String,Artifact> artifacts;private final Map<String,Target> targets=new HashMap<>();
     private List<Map<String,Object>> metadata=List.of();
-    @SuppressWarnings("unchecked") RuntimeNativeObservation(Inventory inventory,BooleanSupplier ownerLive,Map<String,Object> identity)throws Exception {
-        this.inventory=inventory;this.ownerLive=ownerLive;this.identity=(Map<String,Object>)ScriptValues.freeze(identity);
-        List<String> names=List.copyOf(inventory.names());if(names.size()>4096||new HashSet<>(names).size()!=names.size())throw new IllegalArgumentException("HOOK_MODULE_CATALOG");
-        String[] paths=new String[names.size()];
-        for(int i=0;i<names.size();i++){
-            String name=names.get(i);if(!name.matches("lib[a-zA-Z0-9_+.$-]+\\.so"))throw new IllegalArgumentException("HOOK_MODULE_NAME");
-            String path=inventory.path(name);
-            if(path==null||!path.startsWith("/")||!new File(path).getName().equals(name))throw new SecurityException("HOOK_MODULE_ARTIFACT_PATH");
-            artifacts.put(name,new Artifact(i,name,path));paths[i]=path;
-        }
-        if(!ownerLive.getAsBoolean())throw new IllegalStateException("HOOK_PROCESS_STALE");NativeModules.initialize(paths);
+    @SuppressWarnings("unchecked") RuntimeNativeObservation(RuntimeNativeLibraryCatalog catalog,BooleanSupplier ownerLive,Map<String,Object> identity){
+        catalog.requireReady();this.catalog=catalog;this.artifacts=catalog.artifacts();
+        this.ownerLive=ownerLive;this.identity=(Map<String,Object>)ScriptValues.freeze(identity);
     }
     /** Loading an allowed JNI library and granting Native Hook authority are
      * different boundaries. Every selected target still requires the complete
      * original GNU Build ID, file digest, canonical path and live ELF checks. */
     private Library inspect(Artifact artifact)throws Exception{
-        Map<String,Object> info=immutable(inventory.inspect(artifact.name()));String path=text(info,"path"),buildId=text(info,"buildId");
+        Map<String,Object> info=immutable(catalog.inspect(artifact.name()));String path=text(info,"path"),buildId=text(info,"buildId");
         if(!artifact.path().equals(path)||!artifact.name().equals(info.get("moduleName"))||!text(info,"sha256").matches("[a-f0-9]{64}")||!buildId.matches("(?:[a-f0-9]{2}){4,64}"))throw new SecurityException("HOOK_MODULE_ARTIFACT_IDENTITY");
         Object rawSize=info.get("virtualSize");if(!(rawSize instanceof Number))throw new IllegalArgumentException("HOOK_MODULE_SIZE");
         long size=((Number)rawSize).longValue();if(size<=0||size>Integer.MAX_VALUE||((Number)rawSize).doubleValue()!=size)throw new IllegalArgumentException("HOOK_MODULE_SIZE");
@@ -76,7 +67,7 @@ final class RuntimeNativeObservation {
         return now.live&&!now.ambiguous&&now.generation==target.generation()&&now.base==target.base()
             &&NativeModules.attestExport(target.library().index(),target.generation(),target.rva(),target.library().buildId());
     }
-    private void verify(Library library)throws Exception {if(!library.metadata().equals(immutable(inventory.inspect(library.name()))))throw new SecurityException("HOOK_MODULE_ARTIFACT_CHANGED");}
+    private void verify(Library library)throws Exception {if(!library.metadata().equals(immutable(catalog.inspect(library.name()))))throw new SecurityException("HOOK_MODULE_ARTIFACT_CHANGED");}
     synchronized List<Map<String,Object>> modules(){
         List<Map<String,Object>> out=new ArrayList<>();for(Artifact artifact:artifacts.values()){
             NativeModules.Snapshot now=NativeModules.snapshot(artifact.index());if(!now.live)continue;

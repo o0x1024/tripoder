@@ -1,0 +1,117 @@
+{
+  "conversationId": "bee14afa-2b54-4af8-ab6a-d7193fb79b45",
+  "modelToolCallsVerified": 8,
+  "modelRequests": 6,
+  "parameterRejections": 0,
+  "calls": [
+    {
+      "toolCallId": "call_00_x3nj8vmmdimc5g40s7hgt7hp",
+      "tool": "mcp__tripoder-stdio__application_query",
+      "action": "targets",
+      "ok": true,
+      "state": null,
+      "receiptSha256": "51537311b5c3d3881dc8f8044d55d2294d8fe50878c59b0c77f0e509e4ac925f",
+      "errorCode": null
+    },
+    {
+      "toolCallId": "call_00_lieiu84jjo4tahk8megh3dvk",
+      "tool": "mcp__tripoder-stdio__application_query",
+      "action": "launch_targets",
+      "ok": true,
+      "state": null,
+      "receiptSha256": "e2d0f5bd4b75f936ed3f3debb969b6b8d2adbabcbb4b193011f2643936304ed0",
+      "errorCode": null
+    },
+    {
+      "toolCallId": "call_00_c2ljz071zll9cb926z1zp42b",
+      "tool": "mcp__tripoder-stdio__operation_get",
+      "action": null,
+      "ok": true,
+      "state": "UNKNOWN",
+      "receiptSha256": "691295aff0556af2bf7e73a40045c674e67cc818bb779c15d8e4b8ce1c158ee4",
+      "errorCode": "OPERATION_OUTCOME_UNKNOWN"
+    },
+    {
+      "toolCallId": "call_01_bic7tlfr0xwi4qcp1l2rdwkl",
+      "tool": "mcp__tripoder-stdio__operation_get",
+      "action": null,
+      "ok": true,
+      "state": "UNKNOWN",
+      "receiptSha256": "29e8669e1e28026196a458a24b93b84ca6dd74b2bafa502ec0ad394d702967e1",
+      "errorCode": "OPERATION_OUTCOME_UNKNOWN"
+    },
+    {
+      "toolCallId": "call_00_1ymt5tybc8q8fh8wo1wl5awt",
+      "tool": "mcp__tripoder-stdio__application_query",
+      "action": "launch_recovery",
+      "ok": true,
+      "state": "UNKNOWN",
+      "receiptSha256": "6612f90de1b9adc32cb616ae70d3a388bec7372f11b9d8066062e6d2bb2ad21e",
+      "errorCode": "OPERATION_OUTCOME_UNKNOWN"
+    },
+    {
+      "toolCallId": "call_01_nvnu8qmykptxaxgdepioc3aa",
+      "tool": "mcp__tripoder-stdio__application_query",
+      "action": "launch_recovery",
+      "ok": true,
+      "state": "UNKNOWN",
+      "receiptSha256": "352553a29eb43eaff66a441b59bb358b0332f98e3eff15a86b88a145e053f9e8",
+      "errorCode": "OPERATION_OUTCOME_UNKNOWN"
+    },
+    {
+      "toolCallId": "call_00_x5ju6l1u8bdaqaofddugjmjk",
+      "tool": "mcp__tripoder-stdio__application_query",
+      "action": "process_history",
+      "ok": true,
+      "state": null,
+      "receiptSha256": "925c0efc9ddb072ea72c084fd150a81bd803390c4c40fe63a98c92b39afaa5df",
+      "errorCode": null
+    },
+    {
+      "toolCallId": "call_01_ivnrqfrloso2z5nt1f4r0bhd",
+      "tool": "mcp__tripoder-stdio__artifact_verify",
+      "action": null,
+      "ok": false,
+      "state": "FAILED",
+      "receiptSha256": "c25e758a3fa64af45a2e549983059328ad67eba200326f0b997f0973faa8410c",
+      "errorCode": "ARTIFACT_ACCEPTANCE_FAILED"
+    }
+  ],
+  "artifactAcceptance": {
+    "operationId": "mcp-download-acceptance-20261025-a",
+    "destination": "/Users/like/android/cmb_analysis/mcp-download-acceptance-20261025/cmb_dynamic_10.dex",
+    "manifestPath": "/Users/like/android/cmb_analysis/mcp-download-acceptance-20261025/cmb_dynamic_10.dex.manifest.json",
+    "sha256": "a51f022b04b0101e99ebaaf7fb95f2179641278927a44bbadc30ae402802ec40",
+    "size": 6552947,
+    "stages": {
+      "capture": {
+        "state": "CAPTURED",
+        "artifactId": "0b69232d-3dc3-458e-bb40-0a3bb6d70a3d",
+        "processGeneration": "9ffc7089fb97723a2224a2a4d531e8612e193dac1e07525f979cfe962f41acec",
+        "scope": "persisted engine capture receipt; not reconstructed code"
+      },
+      "download": {
+        "state": "VERIFIED",
+        "expectedSha256": "a51f022b04b0101e99ebaaf7fb95f2179641278927a44bbadc30ae402802ec40"
+      },
+      "format": {
+        "state": "FAILED",
+        "issues": [
+          "DEX_SIGNATURE_MISMATCH",
+          "DEX_CHECKSUM_MISMATCH",
+          "DEX_DATA_SECTION_INVALID"
+        ],
+        "scope": "header hashes and bounded section layout; not method reconstruction"
+      },
+      "usability": {
+        "state": "NOT_CHECKED",
+        "reason": "DEX_VALIDATOR_NOT_CONFIGURED"
+      }
+    },
+    "state": "FAILED",
+    "taskComplete": false,
+    "completionScope": "this artifact only; does not establish whole-run coverage"
+  },
+  "scope": "real provider and installed phone MCP; read-only; no new THICK launch",
+  "finding": "This session exposed a no-entry recovery target-binding gap, fixed in final source and covered by host tests. Final APK deployment and fresh THICK reproduction deferred until concurrent device work finishes."
+}

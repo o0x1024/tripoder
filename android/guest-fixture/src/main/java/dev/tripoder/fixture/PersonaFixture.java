@@ -28,6 +28,20 @@ public final class PersonaFixture {
     }
     public static String lastUpdate() { return updates + "|" + lastUpdate; }
     public static String stopUpdates() { lm().removeUpdates(LISTENER); return "stopped"; }
+    public static String currentLocaleTag() { return java.util.Locale.getDefault().toLanguageTag(); }
+    public static String currentTimeZoneId() { return java.util.TimeZone.getDefault().getID(); }
+    @SuppressWarnings("deprecation")
+    public static String networkSummary() {
+        android.net.ConnectivityManager cm = (android.net.ConnectivityManager) FixtureApplication.instance.getSystemService(Context.CONNECTIVITY_SERVICE);
+        android.net.Network active = cm.getActiveNetwork();
+        boolean metered = cm.isActiveNetworkMetered();
+        android.net.NetworkInfo vpnInfo = cm.getNetworkInfo(android.net.ConnectivityManager.TYPE_VPN);
+        android.net.NetworkCapabilities caps = active == null ? null : cm.getNetworkCapabilities(active);
+        boolean hasVpnCap = caps != null && caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN);
+        boolean hasWifi = caps != null && caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI);
+        boolean hasCell = caps != null && caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR);
+        return "active=" + (active != null) + "|metered=" + metered + "|vpnInfo=" + (vpnInfo != null) + "|vpnCap=" + hasVpnCap + "|wifi=" + hasWifi + "|cell=" + hasCell;
+    }
     private static TelephonyManager tm() { return (TelephonyManager) FixtureApplication.instance.getSystemService(Context.TELEPHONY_SERVICE); }
     private static BatteryManager bm() { return (BatteryManager) FixtureApplication.instance.getSystemService(Context.BATTERY_SERVICE); }
 }

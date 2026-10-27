@@ -32,21 +32,6 @@ final class WorkbenchCatalog {
         }
         return main?"运行中":other?"后台运行":"";
     }
-    /** Mode is fixed for a live process; committed target metadata is also the next launch's mode. */
-    String modeLabel(String pkg,String space){
-        Set<String> modes=new HashSet<>();
-        for(JSONObject install:installations(pkg)){
-            if(space!=null&&!space.isEmpty()&&!space.equals(install.optString("space")))continue;
-            boolean bound=false;
-            for(JSONObject target:targets)if("COMMITTED".equals(target.optString("state"))&&pkg.equals(target.optString("package"))&&install.optString("space").equals(target.optString("space"))&&install.optString("generation").equals(target.optString("generation"))){
-                String mode=target.optString("mode","thin");if(!mode.equals("thin")&&!mode.equals("thick"))return "未知模式";modes.add(mode);bound=true;
-            }
-            // RuntimeMode.DEFAULT is thin when no committed direct target exists.
-            if(!bound)modes.add("thin");
-        }
-        if(modes.isEmpty())return "";
-        return modes.size()>1?"THIN / THICK":modes.contains("thin")?"THIN":"THICK";
-    }
     List<JSONObject> projects(List<JSONObject> projects,String pkg){List<JSONObject> out=new ArrayList<>();for(JSONObject project:projects){JSONObject ref=bindings.get(project.optString("id"));if(ref!=null&&pkg.equals(ref.optString("package")))out.add(project);}return out;}
     /** Application name (once its presentation is known), space name and version, for choosing among installations. */
     static String label(WorkbenchApplication app,JSONObject install){return name(app,install)+"\n空间："+app.spaces.name(install.optString("space"))+" · 版本 "+install.optLong("version");}

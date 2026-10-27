@@ -25,19 +25,18 @@ final class RuntimeConnectivity {
     synchronized void register(NetworkRequest request,ConnectivityManager.NetworkCallback callback,Handler handler,boolean defaults){
         ConnectivityManager platform=platform();
         if(callback==null||!engine.ownsReceiverLoader(callback.getClass().getClassLoader()))throw new SecurityException("NETWORK_CALLBACK_OWNER_INVALID");
-        if(RuntimeBridge.networkCallbackFlags(callback)!=0)throw new UnsupportedOperationException("NETWORK_LOCATION_CALLBACK_UNSUPPORTED");
         if(callbacks.containsKey(callback))throw new IllegalStateException("NETWORK_CALLBACK_ALREADY_REGISTERED");
-        if(callbacks.size()>=32)throw new IllegalStateException("NETWORK_CALLBACK_LIMIT");
         if(!defaults&&request==null)throw new IllegalArgumentException("NETWORK_REQUEST_REQUIRED");
-        Registration registration=new Registration(callback);callbacks.put(callback,registration);
+        Registration registration=new Registration(callback);registration.active=true;callbacks.put(callback,registration);
         try{
             if(defaults){if(handler==null)platform.registerDefaultNetworkCallback(registration);else platform.registerDefaultNetworkCallback(registration,handler);}
             else{if(handler==null)platform.registerNetworkCallback(request,registration);else platform.registerNetworkCallback(request,registration,handler);}
             registration.active=true;
-        }catch(RuntimeException|Error error){registration.active=false;registration.failed=true;throw error;}
+        }catch(RuntimeException|Error error){registration.active=false;registration.failed=true;callbacks.remove(callback);throw error;}
     }
     synchronized void unregister(ConnectivityManager.NetworkCallback callback){
-        Registration registration=callbacks.get(callback);if(registration==null)throw new IllegalArgumentException("NETWORK_CALLBACK_NOT_REGISTERED");
+        Registration registration=callbacks.get(callback);
+        if(registration==null){physical().unregisterNetworkCallback(callback);return;}
         registration.active=false;physical().unregisterNetworkCallback(registration);callbacks.remove(callback);
     }
     synchronized void request(NetworkRequest request,ConnectivityManager.NetworkCallback callback,Handler handler,Integer timeout){
@@ -45,9 +44,7 @@ final class RuntimeConnectivity {
                 &&!(engine.requestedPermissions.contains(Manifest.permission.WRITE_SETTINGS)&&android.provider.Settings.System.canWrite(engine.host)))throw new SecurityException("GUEST_NETWORK_REQUEST_PERMISSION_NOT_GRANTED");
         Objects.requireNonNull(request,"NETWORK_REQUEST_REQUIRED");
         if(callback==null||!engine.ownsReceiverLoader(callback.getClass().getClassLoader()))throw new SecurityException("NETWORK_CALLBACK_OWNER_INVALID");
-        if(RuntimeBridge.networkCallbackFlags(callback)!=0)throw new UnsupportedOperationException("NETWORK_LOCATION_CALLBACK_UNSUPPORTED");
         if(callbacks.containsKey(callback))throw new IllegalStateException("NETWORK_CALLBACK_ALREADY_REGISTERED");
-        if(callbacks.size()>=32)throw new IllegalStateException("NETWORK_CALLBACK_LIMIT");
         Registration registration=new Registration(callback);registration.active=true;callbacks.put(callback,registration);
         try{
             ConnectivityManager system=physical();
@@ -57,7 +54,7 @@ final class RuntimeConnectivity {
     }
     private final class Registration extends ConnectivityManager.NetworkCallback {
         final ConnectivityManager.NetworkCallback guest;boolean active,failed;
-        Registration(ConnectivityManager.NetworkCallback guest){this.guest=guest;}
+        Registration(ConnectivityManager.NetworkCallback guest){super(RuntimeBridge.networkCallbackFlags(guest));this.guest=guest;}
         private void deliver(Runnable action){
             // Admission is serialized with cancel; a callback already admitted may finish.
             synchronized(RuntimeConnectivity.this){if(!active||failed)return;}
@@ -71,5 +68,24 @@ final class RuntimeConnectivity {
         @Override public void onLinkPropertiesChanged(Network network,LinkProperties properties){deliver(()->{android.os.Parcel parcel=android.os.Parcel.obtain();try{properties.writeToParcel(parcel,0);parcel.setDataPosition(0);guest.onLinkPropertiesChanged(network,LinkProperties.CREATOR.createFromParcel(parcel));}finally{parcel.recycle();}});}
         @Override public void onBlockedStatusChanged(Network network,boolean blocked){deliver(()->guest.onBlockedStatusChanged(network,blocked));}
         @Override public void onReserved(NetworkCapabilities capabilities){deliver(()->guest.onReserved(new NetworkCapabilities(capabilities)));}
+    }
+    void dispatchMockNetworkState(String state){
+        List<Registration> snapshot;
+        synchronized(this){snapshot=new ArrayList<>(callbacks.values());}
+        if(snapshot.isEmpty())return;
+        Network active=null;
+        try{active=physical().getActiveNetwork();}catch(Throwable ignored){}
+        final Network net=active;
+        android.os.Handler main=new android.os.Handler(android.os.Looper.getMainLooper());
+        main.post(()->{
+            for(Registration reg:snapshot){
+                if("offline".equals(state)){
+                    if(net!=null)reg.onLost(net);
+                    else reg.onUnavailable();
+                }else if(net!=null){
+                    reg.onAvailable(net);
+                }
+            }
+        });
     }
 }

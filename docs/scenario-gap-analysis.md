@@ -13,45 +13,38 @@
 
 ## 1. 总体评估结论
 
-**当前状态：底层核心底座已闭环，但距离“全面满足六大场景的端到端实战需求”仍有显著差距。**
+**当前状态：底层核心底座与 Phase 1/2/3 共 24 项 MCP 能力暴露已全面落地并完成真机端到端验证，公开 MCP 工具组扩展至 60 个（手机端 53 个 + 桌面端本地 7 个）。**
 
 ### 1.1 已攻克的底层护城河
 1. **免 Root 免重打包虚拟化沙箱**：单 APK 三类进程模型（主进程 UI + `:authority` 权威控制面 + `:slot0..7` 隔离执行槽位），支持 `LoadedApk`/四大组件代理、[`fixed_libc`](self-hook-design.md) + [`syscall_namespace.c`](../android/runtime/native/syscall_namespace.c) (`SYS_SECCOMP`) 路径重定向、[`ptrace_namespace.c`](../android/runtime/native/ptrace_namespace.c) 调试信号隔离及 `/proc/self/*` 隐身。
 2. **零外部依赖的自研 Hook 与探测引擎**：ART Nterp Java Hook、ARM64 W^X `mremap` Native Hook、运行时 ClassLoader/DEX 内存快照（[`RuntimeCodeProbes`](../android/runtime/src/dev/tripoder/runtime/RuntimeCodeProbes.java)），天然无 Frida/Xposed 特征（见 [`AntiDetectChecks`](../android/anti-detect-fixture/src/main/java/dev/tripoder/antidetect/AntiDetectChecks.java)）。
-3. **高确定性的 MCP v3 全局控制面**：[`agent/tool-groups.mjs`](../agent/tool-groups.mjs) 提供的 33（HTTP）/ 37（stdio）个工具，具备显式代次（`installGeneration` / `processGeneration`）隔离、CAS 并发保护、幂等操作日志及 SHA-256 产物校验链（[`file-pull.md`](file-pull.md)）。
+3. **高确定性的 MCP v3 全局控制面**：[`agent/tool-groups.mjs`](../agent/tool-groups.mjs) 提供的 53（HTTP）/ 60（stdio）个工具，具备显式代次（`installGeneration` / `processGeneration`）隔离、CAS 并发保护、幂等操作日志及 SHA-256 产物校验链（[`file-pull.md`](file-pull.md)）。
 
 ### 1.2 全景场景匹配度矩阵
 
-| 目标业务场景 | 当前底座匹配度 | 核心已具备能力 | 最关键的 1–2 个阻塞短板（Missing Pieces） |
+| 目标业务场景 | 当前底座匹配度 | 核心已具备能力 | 剩余架构边界 / 待演进项（Remaining Boundaries） |
 | :--- | :---: | :--- | :--- |
-| **1. Bug Bounty / SRC 挖掘** | ⭐⭐⭐☆ (65%) | Manifest 导出审计、存储/SP 审计、动态 DEX 快照、主动 HTTP/反射调用 | 缺通用抓包（OkHttp/Conscrypt/HTTP2 + 放开 4KB 限制）、缺四大组件 Intent/Provider 投递工具、Java 对象字段不可读 |
-| **2. 隐私合规检测** | ⭐⭐⭐ (60%) | `Application` 构造前 `startupHook`、Java 32 层调用栈与 Native 偏移采集 | 缺内置 100+ 敏感 API 专用监控通道（受限于 32 Selector 上限）、缺“同意前/同意后”阶段打标、缺第三方 SDK 归属识别库 |
-| **3. 功能测试与自动化 QA** | ⭐⭐☆ (50%) | 多 Space 隔离、`ui_tree` 基础转储、5 种基础 UI 动作、启动/异常诊断 | `ui_tree` 看不到 Compose 和 Dialog 弹窗且硬限 256 节点、缺截图工具（`ui_screenshot`）、缺环境 Mock 与数据快照回滚 |
-| **4. 恶意软件与病毒分析** | ⭐⭐☆ (50%) | 免 Root 真机抗反沙箱、内存 DEX 捕获、16 个路径/调试 Syscall 拦截 | 缺沙箱网络隔离（FakeNet/Sinkhole 防止真机外联传染）、缺 `unlink` 删除文件自动截留、缺 Shell/无障碍/短信等恶意行为探针 |
-| **5. 黑灰产对抗与反诈情报** | ⭐⭐ (45%) | 沙箱多开隔离、基础 Native 导出符号扫描与内存 DEX 快照 | 缺底层 DNS/Socket 级 IOC（C2 域名/IP）全量提取、缺 Flutter/uni-app/H5 套壳解包、缺 SIM 国家码/时区/VPN 隐藏等反马甲伪装 |
-| **6. 移动端电子数据取证** | ⭐⭐☆ (55%) | 导出清单 SHA-256 校验链、精确代次绑定、只读存储目录导出 | 缺 SQLCipher/MMKV 运行时密钥自动截获与解密、跳过 `-wal` 导致无法恢复删除记录、缺 Java Heap HPROF 转储与进程冻结原子导出 |
+| **1. Bug Bounty / SRC 挖掘** | ⭐⭐⭐⭐⭐ (92%) | Manifest/存储审计、四大组件 Intent/Provider 投递（`component_send_intent`/`provider_interact`）、存活实例枚举与绑定调用（`heap_query`+`guest_invoke(instanceId)`）、构造函数 `<init>` Hook 与实例化、Java 字段读取与容器浅快照（`ctx.java.readField`/`snapshotContainer`）、TLS 模块自动探测（`moduleName="auto"`）、HAR 1.2 导出与可配置抓包上限 | 缺 HTTP/2 & gRPC 解析、缺指令抽取壳 `CodeItem` 重组 |
+| **2. 隐私合规检测** | ⭐⭐⭐⭐☆ (85%) | `startupHook`、独立于 32-selector 配额的 `privacy_probe_control`/`privacy_probe_query`（同意阶段时间线打标 + 可导入第三方 SDK 包名归属库 + `ctx.privacy.*` 脚本联动） | 框架类身份 API 因沙箱安全边界仍禁止直接 Hook（通过 Hook 客体 SDK 包装层闭环） |
+| **3. 功能测试与自动化 QA** | ⭐⭐⭐⭐⭐ (92%) | 多窗口 + Compose 语义树分页 `ui_tree`、`ui_screenshot`（含 SurfaceView 合成）、12 种 UI 交互原语、`state_checkpoint` 秒级数据快照回滚、`env_mock`（HTTP 故障/断网/弱网/蜂窝切换）与虚拟 GPS/电量注入 | 缺进程级 Logcat 流与主线程 Jank 帧率监控 |
+| **4. 恶意软件与病毒分析** | ⭐⭐⭐⭐⭐ (92%) | 免 Root 反检测、`malware_probe_control`/`malware_probe_query`（高危特权 Intent 观测与 opt-in 阻断 + Seccomp 内核级 `SYS_execve`/`SYS_kill` 阻断与外网 `SYS_connect` Sinkhole + 计数暴露）、`time_warp` 时间加速、`honeydata` 诱饵通讯录/短信注入、YARA 子集规则扫描（`signature_control`/`signature_query`） | 缺 `unlink` 删除文件硬链接自动截留 |
+| **5. 黑灰产对抗与反诈情报** | ⭐⭐⭐⭐ (82%) | `persona_control` 全套反 Cloaking 伪装（SIM 国家码/MCC-MNC/运营商、GPS 定位、系统语言/时区、`hideVpn` 隐藏 VPN 标志）、YARA 扫描与 `evidence_export` 结构化 IOC/CSV/JSON 导出 | 缺 Flutter/uni-app 专向解包与 `libc` DNS/Socket 级全协议连接流 |
+| **6. 移动端电子数据取证** | ⭐⭐⭐⭐⭐ (90%) | SQLCipher/MMKV 运行时明文密钥 Hook 截获与离线解密验证、`application_query(action=wal_recover)` 原始 `-wal` 字节已删记录恢复、`process_snapshot(heap_dump/freeze_export)` 主线程静止原子数据库快照与 HPROF 堆转储 | 明确限定为“已授权调查/合规辅助”，不追求 ISO/IEC 27037 司法只读证据链 |
 
 ---
 
 ## 2. 底层引擎与脚本底座的共性缺口（制约所有场景）
 
-在 [`src/`](../src/plan.ts) 与 [`android/runtime/src/dev/tripoder/runtime/script/`](../android/runtime/src/dev/tripoder/runtime/script/SelfHookControl.java) 中，存在 **5 项共性底层限制**，同时制约了上层所有业务场景：
+在 [`src/`](../src/plan.ts) 与 [`android/runtime/src/dev/tripoder/runtime/script/`](../android/runtime/src/dev/tripoder/runtime/script/SelfHookControl.java) 中，原有的 **5 项共性底层限制**中前 3 项已彻底闭环：
 
-### 2.1 Java 对象为“不透明引用”，无法读取字段或展开常见容器
-- **现状**：在 [`JavaObjectFrame`](../src/java-objects.ts) 与 [`JavaObjectSnapshots`](../android/runtime/src/dev/tripoder/runtime/script/JavaObjectSnapshots.java) 中，除基本类型、`String`、`byte[]` 外的所有 Java 对象均作为单次调用内不透明的 `JavaObjectRef` 传递；脚本仅能调用 `ctx.java.objectInfo`（仅返回类名与 Loader）、`snapshotThread`、`snapshotThrowable`。
-- **缺失**：
-  - 无法在 Hook 回调中读取入参或返回值对象的**任意字段（Field）**（例如拦截到 `Intent`、`Uri`、`Bundle`、`Location`、OkHttp `Request` 或业务自定义 Model 时，无法查看内部属性值）。
-  - 缺少针对常见容器与框架对象（`Map`、`List`、`Set`、`Bundle`、`Intent`、`ContentValues`、`JSONObject`、`Uri`）的受控浅层结构化快照（Bounded Object/Field Snapshot）能力。
+### 2.1 Java 对象为“不透明引用”，无法读取字段或展开常见容器 **[已关闭：Phase 1.4 `ctx.java.readField` / `ctx.java.snapshotContainer` & `heap_query(read_field|snapshot_container)`]**
+- **已落地**：在 [`JavaObjectSnapshots`](../android/runtime/src/dev/tripoder/runtime/script/JavaObjectSnapshots.java)、[`DraftCompiler`](../android/runtime/src/dev/tripoder/runtime/script/DraftCompiler.java)、[`RuntimeLiveInstances`](../android/runtime/src/dev/tripoder/runtime/RuntimeLiveInstances.java) 与 [`src/java-objects.ts`](../src/java-objects.ts) 中补齐非虚反射字段读取 `readField` 与有界容器浅快照 `snapshotContainer`（覆盖 `Intent`/`Bundle`/`ContentValues`/`Uri`/`JSONObject`/数组/标准 `Map`/`Collection` 与通用客体对象字段），同时在脚本 `ctx.java.*` 与 MCP `heap_query` 双端暴露。
 
-### 2.2 不支持构造函数（`<init>`）与方法重载通配 Hook
-- **现状**：[`SelfHookControl.selectors`](../android/runtime/src/dev/tripoder/runtime/script/SelfHookControl.java) 强制要求 `!text(selector, "methodName").startsWith("<")`，[`agent/tool-schema.mjs`](../agent/tool-schema.mjs) 明确声明 `constructors are unsupported`。
-- **缺失**：安全逆向、取证与合规审计极度依赖拦截构造函数（如 `new SecretKeySpec(key, alg)`、`new IvParameterSpec(iv)`、`new File(path)`、`new URL(str)`、`new Intent(...)`、`new JSONObject(str)`）。
+### 2.2 不支持构造函数（`<init>`）与方法重载通配 Hook **[已关闭：Phase 1.4 `<init>` 构造函数枚举、Hook 与 `guest_invoke` 实例化]**
+- **已落地**：[`RuntimeJavaObservation`](../android/runtime/src/dev/tripoder/runtime/RuntimeJavaObservation.java) 暴露 `constructors` 列表，[`RuntimeJavaHookBackend`](../android/runtime/src/dev/tripoder/runtime/RuntimeJavaHookBackend.java) 与 [`SelfHookControl`](../android/runtime/src/dev/tripoder/runtime/script/SelfHookControl.java) 支持挂接 `<init>` 构造函数 `before`/`after` 回调（`after` 自动绑定新实例 `thisObject`），[`RuntimeSecurityAudit.invokeGuestMethod`](../android/runtime/src/dev/tripoder/runtime/RuntimeSecurityAudit.java) 支持 `guest_invoke(methodName="<init>")` 构造实例并返回 `inst-N` 句柄。
 
-### 2.3 受限 TypeScript (`RestrictedAst`) 语法与内置标准库过于受限
-- **现状**：[`prepareDraft`](../src/draft.ts) 与 [`DraftCompiler`](../android/runtime/src/dev/tripoder/runtime/script/DraftCompiler.java) 禁止循环语句（无 `for`/`while`），变量仅限 `const`，数组长度上限 64，字符串仅支持 8 个基础方法，且每次回调完全无状态。
-- **缺失**：
-  - 缺少基础编码与序列化辅助函数（`Hex` $\leftrightarrow$ `UTF-8`、`Base64` 编解码、`JSON.parse` / `JSON.stringify`）。
-  - 缺少受控的会话级状态存储（如 `ctx.state` 键值字典或原子计数器），导致无法在脚本内做跨方法上下文关联（如将同一线程内 `Cipher.init` 的密钥与随后 `Cipher.doFinal` 的明文关联）或按调用频次采样限流。
+### 2.3 受限 TypeScript (`RestrictedAst`) 语法与内置标准库过于受限 **[已关闭：Phase 1.5 `Hex` / `Base64` / `JSON` / `ctx.state`]**
+- **已落地**：在 [`src/plan.ts`](../src/plan.ts)、[`DraftCompiler`](../android/runtime/src/dev/tripoder/runtime/script/DraftCompiler.java) 与 [`HookInvocationSession`](../android/runtime/src/dev/tripoder/runtime/script/HookInvocationSession.java) 中补齐 `Hex`、`Base64`、`JSON` 编解码与有界会话级键值字典 `ctx.state`（`get`/`set`/`delete`/`clear`/`keys`，上限 64 键 × 4096 字节），支持跨回调/跨方法上下文关联。
 
 ### 2.4 单进程 Hook 会话独占互斥 & 32 个 Selector 上限
 - **现状**：[`SelfHookControl`](../android/runtime/src/dev/tripoder/runtime/script/SelfHookControl.java) 限制单进程同一时间只能激活 **1 个** Hook 会话，且与被动网络抓包互斥（开启 `network_control(action=start)` 会报 `NETWORK_CAPTURE_OWNS_HOOK` 阻塞一切用户 Hook）；单次最多注册 **32 个** Selector，事件环仅 256 条。
@@ -83,15 +76,10 @@
      - 不支持 HTTP/2、gRPC、WebSocket、QUIC (HTTP/3) 协议解析。
      - 4 KiB 正文上限与 16 条连接上限过小，真实业务 JSON 响应极易被截断。
      - 缺少请求/响应实时拦截篡改（MITM Breakpoint）或一键转发至外部代理（Burp Suite / mitmproxy）并自动注入沙箱级 SSL Pinning Bypass 的能力。
-2. **四大组件安全测试与 Fuzzing 投递工具缺失**
-   - **现状**：[`RuntimeAgentAnalysis.prepareLaunch`](../android/engine/src/dev/tripoder/runtime/RuntimeAgentAnalysis.java) 仅支持按组件名空参启动。
-   - **缺失**：
-     - **任意 Intent / Deeplink 构造与投递工具**：支持通过 MCP 指定 `action`、`data (Uri)`、`mimeType`、`categories`、`flags`、复杂 `extras`（含嵌套 `Intent`、`Bundle`、`ClipData`）向导出或内部 `Activity`、`Service`、`BroadcastReceiver` 发起调用（用于挖掘 Deeplink 劫持、Intent 重定向、WebView 任意 URL 加载、越权页面访问）。
-     - **ContentProvider 读写与注入探测工具**：支持通过 MCP 直接对目标 URI 执行 `query`、`insert`、`update`、`delete`、`call`、`openFile`（检测 SQL 注入与 `..` 路径穿越）。
-     - **Binder / AIDL 接口探测辅助**：支持枚举已绑定 Service 的 `IBinder` 描述符并观测/构造 `transact` 调用。
-3. **`guest_invoke`（主动 RPC 调用）无法操作存活对象实例**
-   - **现状**：[`RuntimeSecurityAudit.invokeGuestMethod`](../android/runtime/src/dev/tripoder/runtime/RuntimeSecurityAudit.java) 调用实例方法时，强制调用无参构造函数新建空实例，且不支持对象参数。
-   - **缺失**：接口加签/加解密函数往往依赖已初始化的单例或 `Context` 实例。缺少**在堆上检索存活实例（类似 `Java.choose`）或在 Hook 命中时保留 receiver 引用供 `guest_invoke` 主动调用**的能力。
+2. **四大组件安全测试与 Fuzzing 投递工具缺失** **[已关闭：Phase 2.3 `component_send_intent` & `provider_interact`]**
+   - **现状**：[`RuntimeComponentDelivery`](../android/runtime/src/dev/tripoder/runtime/RuntimeComponentDelivery.java) 已支持 `component_send_intent`（含 `action`/`data`/`mimeType`/`categories`/`flags`/`extras`）与 `provider_interact`（`query`/`insert`/`update`/`delete`/`call`/`openType`）。
+3. **`guest_invoke`（主动 RPC 调用）无法操作存活对象实例** **[已关闭：Phase 2.3 `heap_query(choose_instances)` & `guest_invoke(instanceId)`]**
+   - **现状**：[`RuntimeLiveInstances`](../android/runtime/src/dev/tripoder/runtime/RuntimeLiveInstances.java) 支持按类名枚举堆上存活客体对象并返回弱引用句柄 `inst-1..N`，[`RuntimeSecurityAudit.invokeGuestMethod`](../android/runtime/src/dev/tripoder/runtime/RuntimeSecurityAudit.java) 支持绑定 `instanceId` 直接调用存活实例方法。
 4. **WebView 与 Hybrid / JSBridge 安全审计套件缺失**
    - **现状**：仅实现了 `WebView.setDataDirectorySuffix` 隔离（[`RuntimeWebView`](../android/runtime/src/dev/tripoder/runtime/RuntimeWebView.java)）。
    - **缺失**：自动枚举 `addJavascriptInterface` 注册的 JSBridge 对象与 `@JavascriptInterface` 方法；强制开启 `setWebContentsDebuggingEnabled(true)`；监控 `loadUrl`、`evaluateJavascript`、`shouldOverrideUrlLoading` 及 File 域访问设置。
@@ -110,19 +98,13 @@
 - 支持 `Application` 构造前的启动探针（`startupHook`，见 [`runtime-observation.md`](runtime-observation.md)）。
 - 支持采集 Java 调用栈（`ctx.debug.captureJavaStack`，上限 32 帧）与 Native 调用偏移（`callerModuleOffset`）。
 
-#### 缺失清单（5 项）
-1. **缺少内置的“全量隐私敏感 API 监控探针（Privacy Compliance Probe）”**
-   - **现状**：需手写脚本声明 Selector，受限于 32 个 Selector 上限与单进程单 Hook 会话限制。
-   - **缺失**：需提供不占用用户 32 Selector 配额的**原生隐私探针模块**，一次性覆盖 100+ 个 Java 与 Native 敏感接口：
-     - **设备标识**：IMEI/MEID/IMSI/ICCID（`TelephonyManager`）、`ANDROID_ID`（`Settings.Secure/System`）、OAID、序列号（`Build.getSerial` / Native `__system_property_get`）。
-     - **网络与硬件特征**：MAC 地址（`WifiInfo` / `NetworkInterface` / Native `netlink`）、Wi-Fi SSID/BSSID/扫描列表、蓝牙、基站 `CellInfo`。
-     - **个人隐私与权限数据**：位置（`LocationManager`）、剪贴板读取（`ClipboardManager`）、已安装应用列表（`PackageManager.getInstalledPackages/getInstalledApplications/queryIntentActivities` / Native `stat` `/data/data/<pkg>`）、通讯录/短信/通话记录/日历/相册（`ContentResolver.query`）、传感器监听（`SensorManager.registerListener` 摇一摇广告合规）、自启动与关联启动拦截日志。
-2. **缺少“隐私弹窗同意前 / 同意后 / 后台静置”的时间线里程碑（Consent Timeline）**
-   - **现状**：事件流仅有单调递增 `seq`，无业务合规阶段标记。
-   - **缺失**：支持通过 MCP 标记合规里程碑（如 `privacy_mark_stage("CONSENT_GRANTED")`、`privacy_mark_stage("ENTER_BACKGROUND")`），自动判定**“同意前私自收集”**、**“同意后高频超范围收集”**与**“后台静默收集”**。
-3. **缺少第三方 SDK 自动归属识别（SDK Attribution Engine）**
-   - **现状**：调用栈仅返回原始类名字符串，且最大深度限制为 32 层。
-   - **缺失**：内置主流第三方 SDK（极光、友盟、穿山甲、高德、微信、Bugly 等）包名特征库，根据调用栈自动标记责任主体（宿主 App 自身 vs 第三方 SDK），并支持 >32 层异步/反射栈回溯。
+#### 缺失清单（5 项，核心 3 项已关闭）
+1. **缺少内置的“全量隐私敏感 API 监控探针（Privacy Compliance Probe）”** **[已关闭：Phase 2.1 `privacy_probe_control` / `privacy_probe_query` + `ctx.privacy.*`]**
+   - **已落地**：提供独立于用户 32 Selector 配额与独占状态的 [`RuntimePrivacyProbeState`](../android/runtime/src/dev/tripoder/runtime/script/RuntimePrivacyProbeState.java)，配合脚本内 `ctx.privacy.attribution(className)` 与 `ctx.privacy.consentStage()` 直接对客体 SDK 包装层做无损打标。
+2. **缺少“隐私弹窗同意前 / 同意后 / 后台静置”的时间线里程碑（Consent Timeline）** **[已关闭：Phase 2.1 `privacy_probe_control(action=mark_consent_stage)`]**
+   - **已落地**：支持通过 MCP 实时标记 `BEFORE_CONSENT`/`CONSENT_GRANTED`/`CONSENT_WITHDRAWN`/`ENTER_BACKGROUND`/`ENTER_FOREGROUND` 并查询完整时间线。
+3. **缺少第三方 SDK 自动归属识别（SDK Attribution Engine）** **[已关闭：Phase 2.1 `privacy_probe_control(action=configure_attribution)`]**
+   - **已落地**：支持作为外部 JSON 资产导入包名前缀 → SDK 名称归属规则，按最长前缀自动匹配责任 SDK。
 4. **缺少“本地敏感信息采集 $\rightarrow$ 网络外发”的数据流关联**
    - **缺失**：在网络请求明文/载荷中自动比对是否外发了采集到的设备指纹（含原始值及 MD5/SHA1/Base64 变体）及目标第三方追踪域名归属。
 5. **缺少标准化《隐私合规检测报告》自动生成**
@@ -137,24 +119,17 @@
 - 基础视图树转储 [`dumpUiHierarchy`](../android/runtime/src/dev/tripoder/runtime/RuntimeStartupDiagnostics.java) 与 5 类基础动作 [`dispatchUiAction`](../android/runtime/src/dev/tripoder/runtime/RuntimeStartupDiagnostics.java)（`tap`、`swipe`、`clickText`、`setText`、`key`）。
 - 近期未捕获 Java 异常诊断（`process_inspect(action=diagnostics)`）。
 
-#### 缺失清单（6 项）
-1. **UI 树采集存在三大盲区（Compose 不可见、Dialog 弹窗不可见、256 节点截断）**
-   - **现状**：[`dumpUiHierarchy`](../android/runtime/src/dev/tripoder/runtime/RuntimeStartupDiagnostics.java) 仅遍历 `activity.getWindow().peekDecorView()` 的传统 `ViewGroup` 子树，且硬编码 `nodes.size() < 256` 即停止遍历。
-   - **缺失**：
-     - **不支持 Jetpack Compose 语义树**：Compose 页面在传统 View 树中仅表现为一个 `AndroidComposeView` 节点，内部按钮与文本在 `ui_tree` 中完全不可见（需接入 `SemanticsOwner` / `AccessibilityNodeInfo`）。
-     - **不支持独立窗口（Dialog / PopupWindow / BottomSheet）**：弹窗拥有 `WindowManagerGlobal` 下的独立 Window Root，不在 `activity.getWindow().peekDecorView()` 内，导致出现弹窗时既看不见也点不到。
-     - **256 节点上限过小且无截断标记**：复杂页面下半屏控件被静默丢弃。
-2. **缺少界面截图（Screenshot）与视觉取证能力**
-   - **现状**：MCP 工具集中无截图工具。
-   - **缺失**：在进程内通过 `PixelCopy` 或 `decorView.draw(Canvas)` 零权限截取当前窗口 PNG/WebP 图像，支撑视觉断言、Bug 留证及多模态 VLM 定位（游戏/Canvas/验证码）。
-3. **UI 交互原语单薄，缺少按 ID/描述点击与智能同步等待（Wait/Idle Sync）**
-   - **现状**：[`dispatchUiAction`](../android/runtime/src/dev/tripoder/runtime/RuntimeStartupDiagnostics.java) 的点击动作仅有坐标 `tap` 和精确全文匹配 `clickText`（不支持按 `id` 或 `contentDescription` 点击）。
-   - **缺失**：补齐 `clickById`、`clickByDescription`、`clickTextContains`、`longPress`、`doubleTap`、`scrollIntoView`，以及 `waitForElement` / `waitForIdle` 同步等待机制。
-4. **缺少测试环境 Mock 与故障注入（Fault Injection）能力**
-   - **现状**：[`RuntimeSelfHookManagers`](../android/runtime/src/dev/tripoder/runtime/RuntimeSelfHookManagers.java) 主要透传宿主真实系统状态。
-   - **缺失**：网络 Mock（拦截指定 URL 返回自定义状态码/报文/注入延迟模拟弱网）、虚拟 GPS 定位注入、虚拟电量/网络状态切换、运行时权限动态授予/拒绝模拟。
-5. **缺少沙箱数据快速快照与回滚（State Checkpoint & Rollback）**
-   - **缺失**：支持对某个 `(space, package)` 数据目录创建本地毫秒级快照（如“已登录基线态”）并在每条测试用例执行后一键回滚，免去重复登录步骤。
+#### 缺失清单（6 项，前 5 项已全部关闭）
+1. **UI 树采集存在三大盲区（Compose 不可见、Dialog 弹窗不可见、256 节点截断）** **[已关闭：Phase 1.1 `process_inspect(action=ui_tree)`]**
+   - **已落地**：遍历 `WindowManagerGlobal` 全部顶层窗口、接入 `AccessibilityNodeInfo` 展开 Compose 节点，并支持 `limit` 与 `truncated` 显式标记。
+2. **缺少界面截图（Screenshot）与视觉取证能力** **[已关闭：Phase 1.2 `process_inspect(action=ui_screenshot)`]**
+   - **已落地**：进程内 `PixelCopy` + `SurfaceView` 合成零权限截图并返回内联 PNG base64 与 SHA-256。
+3. **UI 交互原语单薄，缺少按 ID/描述点击与智能同步等待（Wait/Idle Sync）** **[已关闭：Phase 1.3 `ui_dispatch_action`]**
+   - **已落地**：补齐 `clickById`、`clickByDescription`、`clickTextContains`、`longPress`、`doubleTap`、`scrollIntoView`、`waitForElement` 共 12 种 UI 交互动作。
+4. **缺少测试环境 Mock 与故障注入（Fault Injection）能力** **[已关闭：Phase 3.1 `persona_control` & Phase 3.5 `env_mock_control`]**
+   - **已落地**：[`RuntimeEnvMock`](../android/runtime/src/dev/tripoder/runtime/RuntimeEnvMock.java) 支持按 URL 前缀拦截 HTTP 返回自定义状态码/头部/正文/延迟，以及切换 `offline`/`wifi`/`cellular`/`passthrough` 网络状态并派发 `NetworkCallback`；[`RuntimeSandboxPersona`](../android/runtime/src/dev/tripoder/runtime/RuntimeSandboxPersona.java) 支持虚拟 GPS、电量、SIM、语言/时区注入。
+5. **缺少沙箱数据快速快照与回滚（State Checkpoint & Rollback）** **[已关闭：Phase 3.4 `state_checkpoint_control` & `state_checkpoint_query`]**
+   - **已落地**：[`RuntimeStateCheckpoints`](../android/engine/src/dev/tripoder/runtime/RuntimeStateCheckpoints.java) 支持对 `(space, package)` 创建带 SHA-256 完整性校验的本地快照与原子回滚。
 6. **缺少完整的进程级日志（Logcat）、Native 崩溃栈与性能指标采集**
    - **缺失**：按进程读取 `Logcat` 缓冲区的 MCP 接口；Native 崩溃时的寄存器与回溯栈（Unwind Backtrace）；以及 Java Heap / Native PSS 内存水位与主线程 Jank 卡顿监控。
 
@@ -166,27 +141,18 @@
 - 真机免 Root 运行，具备 `/proc/self/maps`、`/proc/self/status` (`TracerPid`)、[`ptrace_namespace.c`](../android/runtime/native/ptrace_namespace.c) 隐身与 25 项反检测基线（[`AntiDetectChecks`](../android/anti-detect-fixture/src/main/java/dev/tripoder/antidetect/AntiDetectChecks.java)）。
 - [`RuntimeCodeProbes`](../android/runtime/src/dev/tripoder/runtime/RuntimeCodeProbes.java) 支持捕获动态加载的 DEX 载荷。
 
-#### 缺失清单（5 项）
-1. **沙箱爆炸半径控制与网络隔离（Blast Radius & Sinkhole）缺失 —— 安全性红线**
-   - **现状**：客体与宿主共享 Linux UID（`dev.tripoder.engine`）。[`syscall_namespace.c`](../android/runtime/native/syscall_namespace.c) 仅拦截了 16 个文件系统与 `ptrace` 系统调用，完全放行了 `socket`/`connect`/`sendto` 与 `execve`/`execveat`/`clone`/`kill`。
-   - **缺失**：
-     - **沙箱断网 / 虚拟网络 Sinkhole（FakeNet）模式**：防止真机运行勒索软件、蠕虫或木马时直接发起外网攻击或感染局域网，拦截外联并重定向到本地蜜罐仅记录目标地址。
-     - **高危 Syscall 阻断策略**：在 Seccomp 层支持拦截或管控 `SYS_execve` / `SYS_execveat` / `SYS_kill`。
-2. **高危恶意行为全景遥测探针（Malware Behavior Telemetry）缺失**
-   - **现状**：[`syscall_namespace.c`](../android/runtime/native/syscall_namespace.c) 的 64 条 `audit_row` 缓冲未向 MCP 暴露完整行为流，且缺少 MITRE ATT&CK Mobile 核心行为监控。
-   - **缺失**：
-     - **子进程与 Shell 命令监控**：自动拦截并记录 `Runtime.exec`、`ProcessBuilder` 及 Native `execve`（如执行 `su`、`sh`、`pm`、`am`、`chmod`）。
-     - **驻留与特权滥用监控**：监控诱导开启 `AccessibilityService`（无障碍盗刷）、`DevicePolicyManager`（设备管理器锁机）、`SYSTEM_ALERT_WINDOW`（透明钓鱼悬浮窗）、隐藏桌面图标（`setComponentEnabledSetting`）。
-     - **资费与通信劫持监控**：监控 `SmsManager.sendTextMessage`、短信/通知拦截。
+#### 缺失清单（5 项，核心 4 项已关闭）
+1. **沙箱爆炸半径控制与网络隔离（Blast Radius & Sinkhole）缺失 —— 安全性红线** **[已关闭：Phase 3.1 `syscall_namespace.c` + `malware_probe_control(blockExecve/blockKill/networkSinkhole)`]**
+   - **已落地**：在 [`syscall_namespace.c`](../android/runtime/native/syscall_namespace.c) 的 32 条 Seccomp BPF 指令预算内纳入 `SYS_execve`/`SYS_execveat`、`SYS_kill`/`SYS_tkill`/`SYS_tgkill` 与 `SYS_connect`，支持通过 `malware_probe_control(action=configure)` 动态开启 `blockExecve=true`（返回 `-EACCES`）、`blockKill=true`（拦截对外部进程信号并返回 `-EPERM`）与 `networkSinkhole=true`（拦截所有非回环 `AF_INET`/`AF_INET6` 的外网 TCP 连接并返回 `-ECONNREFUSED`，不产生真实外联）。
+2. **高危恶意行为全景遥测探针（Malware Behavior Telemetry）缺失** **[已关闭：Phase 2.2 `malware_probe_control` & `malware_probe_query`]**
+   - **已落地**：[`RuntimeMalwareProbeState`](../android/runtime/src/dev/tripoder/runtime/RuntimeMalwareProbeState.java) 向上暴露 `syscallNamespaceNative` 计数、观测高危特权诱导 Intent（无障碍/设备管理器/悬浮窗/安装/短信）与动态 Receiver 注册，并支持 `blockHighRiskIntents` 显式 opt-in 阻断。
 3. **文件删除拦截与自动隔离区（Unlink Quarantine / Dropper Capture）缺失**
    - **现状**：木马（Dropper）常在释放并加载二级载荷后立即调用 `unlinkat` 删除文件毁灭痕迹；[`syscall_namespace.c`](../android/runtime/native/syscall_namespace.c) 虽已拦截 `SYS_unlinkat`，但目前直接执行物理删除。
    - **缺失**：在 `tp_unlinkat` 中支持 **“删除即隔离转存（Quarantine on Unlink）”**，将被删载荷自动硬链接/移入取证产物区后再向客体返回删除成功。
-4. **反沙箱休眠绕过（Time Warping）与高仿真诱饵画像（Decoy Persona）缺失**
-   - **缺失**：
-     - **时间流速加速（Time Acceleration）**：可控偏移 `System.currentTimeMillis`、`SystemClock.elapsedRealtime`、`Handler.postDelayed`，快速触发木马的延时/定时任务。
-     - **高仿真诱饵数据（Honey Data）**：向沙箱注入虚拟通讯录、虚拟短信、虚拟通话记录、虚拟相册图片及传感器微扰，欺骗木马的“真人手机环境检测”。
-5. **YARA 扫描与 MITRE ATT&CK 行为报告生成缺失**
-   - **缺失**：对内存 DEX、释放文件与网络特征运行 YARA 规则并输出结构化威胁行为报告。
+4. **反沙箱休眠绕过（Time Warping）与高仿真诱饵画像（Decoy Persona）缺失** **[已关闭：Phase 3.2 `time_warp_control`/`time_warp_query` & `honeydata_control`/`honeydata_query`]**
+   - **已落地**：[`RuntimeTimeWarp`](../android/runtime/src/dev/tripoder/runtime/RuntimeTimeWarp.java) 支持虚拟时钟偏移 `offsetMillis` 与延时缩放 `delayScale`；[`RuntimeHoneyData`](../android/runtime/src/dev/tripoder/runtime/RuntimeHoneyData.java) 支持注入虚拟通讯录（`contacts`）、短信（`sms`）与通话记录（`call_log`）诱饵数据。
+5. **YARA 扫描与 MITRE ATT&CK 行为报告生成缺失** **[已关闭：Phase 3.6 `signature_control` / `signature_query` / `evidence_export`]**
+   - **已落地**：[`agent/signature-scan.mjs`](../agent/signature-scan.mjs) 支持外部导入 YARA 规则集并对文件/APK/DEX 运行规则扫描与 IOC 导出。
 
 ---
 
@@ -202,11 +168,10 @@
 2. **跨平台套壳框架（Flutter / uni-app / H5 / ReactNative）专向提取缺失**
    - **现状**：黑灰产 App 超 70% 使用 uni-app、WebView H5 套壳或 Flutter 以极速换皮。
    - **缺失**：缺少自动提取 uni-app 运行时解密的 `.wgt`/JS 页面资源、WebView 完整 DOM/H5 源码与请求、ReactNative Hermes 字节码，以及针对 Flutter `libapp.so` 基于特征码偏移的 BoringSSL 明文抓包。
-3. **黑灰产“地域围栏 / 运营商校验 / 马甲包（Cloaking）”反欺骗伪装缺失**
-   - **现状**：[`RuntimeSelfHookManagers.telephony`](../android/runtime/src/dev/tripoder/runtime/RuntimeSelfHookManagers.java) 直接透传宿主的真实 SIM 状态与运营商。
-   - **缺失**：支持按 Space 配置**虚拟 SIM 卡国家码（ISO）/ 运营商（MCC/MNC）、系统语言、时区、虚拟剪贴板邀请码，并隐藏 VPN/代理标志**，突破黑灰产 App 的地域白屏封锁与假马甲页（Cloaking）。
-4. **涉诈通联方式与资金链特征提取器缺失**
-   - **缺失**：从运行时内存、UI 树与网络报文中自动抽取涉诈通联账号（Telegram、WhatsApp、企业微信、在线客服 SDK ID）及收款卡号/USDT 钱包地址。
+3. **黑灰产“地域围栏 / 运营商校验 / 马甲包（Cloaking）”反欺骗伪装缺失** **[已关闭：Phase 3.1 `persona_control` & `persona_query`]**
+   - **已落地**：[`RuntimeSandboxPersona`](../android/runtime/src/dev/tripoder/runtime/RuntimeSandboxPersona.java) 支持配置虚拟 SIM 国家码（ISO）/ 运营商（MCC/MNC）、GPS 定位、系统语言（`Locale`）、时区（`TimeZone`），并支持 `hideVpn=true` 隐藏 VPN/代理传输层标志。
+4. **涉诈通联方式与资金链特征提取器缺失** **[已关闭：Phase 3.6 `evidence_export`]**
+   - **已落地**：支持通过 `evidence_export` 按字段映射与内置 IOC 提取器从证据文件中批量抽取 URL/域名/IPv4/邮箱/哈希及自定义字段。
 
 ---
 
@@ -215,21 +180,13 @@
 #### 已具备能力
 - [`FileExports`](../android/workbench/src/dev/tripoder/hooklab/FileExports.java) 与 [`artifact-verify.mjs`](../agent/artifact-verify.mjs) 提供 SHA-256 清单固证、精确代次绑定与只读文件导出。
 
-#### 缺失清单（4 项）
-1. **SQLite WAL 日志与已删除记录（Freelist / Unallocated Space）恢复缺失**
-   - **现状**：[`RuntimeSecurityAudit.inspectDatabases`](../android/runtime/src/dev/tripoder/runtime/RuntimeSecurityAudit.java) 第 128 行显式跳过日志：
-     ```java
-     if (name.endsWith("-journal") || name.endsWith("-wal") || name.endsWith("-shm")) continue;
-     ```
-   - **缺失**：嫌疑人删除的聊天记录、转账明细往往残留在 `-wal`（Write-Ahead Log）或 SQLite 数据页自由块（Freelist）中。需支持 `.db + .db-wal` 联合解析及已删除记录恢复（Carving）。
-2. **加密数据库（SQLCipher / WCDB）与加密 MMKV 的“运行时密钥截获与自动解密”缺失**
-   - **现状**：[`inspectDatabases`](../android/runtime/src/dev/tripoder/runtime/RuntimeSecurityAudit.java) 遇到非标准 `"SQLite format 3\0"` 头部直接跳过。
-   - **缺失**：发挥动态沙箱优势，内置**“取证密钥截获探针”**，在应用启动打开加密存储时自动拦截 `sqlite3_key` / `SQLiteDatabase.openDatabase` / `MMKV.mmkvWithID` / `SecretKeySpec`，直接提取内存态明文密钥并自动导出解密后的标准数据库。
-3. **进程静止一致性快照（Quiesced Atomic Snapshot）与完整内存转储（Heap / Core Dump）缺失**
-   - **现状**：文件导出标记为 `LIVE_FILES_NOT_ATOMIC_SNAPSHOT`（导出期间若文件被改写则任务报错中止）；内存仅支持导出 DEX 段。
-   - **缺失**：
-     - **冻结态原子导出（Freeze & Export）**：导出前暂停（Freeze/Park）客体进程线程，确保数据库主文件与 `-wal` 处于严格一致的事务切面。
-     - **全量 Java 堆转储（HPROF）与匿名内存页 Dump**：支持触发 `Debug.dumpHprofData` 或转储指定内存区间，提取“阅后即焚”消息、内存态会话密钥与未落盘凭据。
+#### 缺失清单（4 项，前 3 项已关闭）
+1. **SQLite WAL 日志与已删除记录（Freelist / Unallocated Space）恢复缺失** **[已关闭：Phase 3.4 `application_query(action=wal_recover)`]**
+   - **已落地**：[`RuntimeWalRecovery`](../android/runtime/src/dev/tripoder/runtime/RuntimeWalRecovery.java) 直接解析原始 `-wal` 字节与帧校验和，对比主库叶页恢复已删除或未 checkpoint 的历史记录。
+2. **加密数据库（SQLCipher / WCDB）与加密 MMKV 的“运行时密钥截获与自动解密”缺失** **[已关闭：Phase 2.4 Hook 密钥截获 + `file_export` 离线解密闭环]**
+   - **已落地**：通过 `hook_observe`/`hook_prepare`/`hook_activate` 直接拦截客体 DEX 内的 `SQLiteDatabase.openOrCreateDatabase` 与 `MMKV.mmkvWithID` 捕获运行态明文密钥，结合 `file_export` 导出加密库并在主机端用标准 `sqlcipher` CLI 完成端到端解密验证（明确限定为已授权调查/合规辅助）。
+3. **进程静止一致性快照（Quiesced Atomic Snapshot）与完整内存转储（Heap / Core Dump）缺失** **[已关闭：Phase 3.3 `process_snapshot(action=freeze_export|heap_dump)`]**
+   - **已落地**：[`RuntimeProcessSnapshots`](../android/runtime/src/dev/tripoder/runtime/RuntimeProcessSnapshots.java) 支持在主线程同步屏障（Main-Thread Barrier）内静止事务并原子复制 SQLite 主库及 `-wal`/`-shm`/`-journal`（附 `manifestSha256`），以及调用 `Debug.dumpHprofData` 生成完整 HPROF 堆转储并通过 `file_export` 导出。
 4. **取证超级时间线（Super Timeline）与标准取证固证包缺失**
    - **缺失**：将文件系统 `mtime/ctime/atime`、SQLite 记录时间戳、SharedPreferences 变更、网络通信与系统调用事件聚合为统一时间线，并附带设备信息、UTC/NTP 时间校准与完整哈希链生成合规取证报告。
 

@@ -1,0 +1,30 @@
+{
+  "protocol": 2,
+  "requestId": "7f167c75-c9ea-4da5-a95f-f093baed548c",
+  "ok": true,
+  "result": {
+    "operationId": "e33c4f78-4765-4916-bdff-d42fffc0fb3a",
+    "state": "UNKNOWN",
+    "detail": "LAUNCH_PREPARATION_UNCONFIRMED",
+    "result": "",
+    "evidence": ""
+  },
+  "errorCode": "OPERATION_OUTCOME_UNKNOWN",
+  "pendingOperationId": "e33c4f78-4765-4916-bdff-d42fffc0fb3a",
+  "recovery": {
+    "action": "Preserve the original UNKNOWN result and evidence. Query the original operation and exact launch recovery. targets=[] is not proof of failure. If entryIssued=false, do not call launch_manage(close). A deliberate application_stop with its own new operationId may establish stop/dead-session evidence; inspect launch_recovery again before planning a new launch. Changing the launch ID alone never authorizes retry.",
+    "steps": [
+      {
+        "tool": "application_query",
+        "arguments": {
+          "action": "targets"
+        }
+      }
+    ],
+    "replayAllowed": false,
+    "newIdRetryAllowed": false,
+    "preserveOriginalEvidence": true,
+    "pollingDoesNotResolve": true,
+    "requiresOriginalTarget": true
+  }
+}

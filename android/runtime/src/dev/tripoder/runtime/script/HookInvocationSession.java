@@ -37,6 +37,7 @@ public final class HookInvocationSession {
     private boolean controlInFlight;
     private final ThreadLocal<Integer> depth=ThreadLocal.withInitial(()->0);
     private final ArrayDeque<Map<String,Object>> events=new ArrayDeque<>();
+    private final LinkedHashMap<String,Object> sessionState=new LinkedHashMap<>();
 
     public HookInvocationSession(String generation,String revision,List<HookRule> ruleList,
                                  Map<String,ParameterSpec> specs,Map<String,Object> input,PreparedBackend backend) {
@@ -91,6 +92,50 @@ public final class HookInvocationSession {
         ActiveContext current=ACTIVE_CONTEXT.get().peek();
         if(current==null)return "unknown+0x0";
         return current.symbol+"+0x0";
+    }
+    static Object stateGet(String key) {
+        ActiveContext current=ACTIVE_CONTEXT.get().peek();
+        require(current!=null,"HOOK_STATE_OUTSIDE_INVOCATION");
+        return current.session.getStateValue(key);
+    }
+    static Object stateSet(String key,Object value) {
+        ActiveContext current=ACTIVE_CONTEXT.get().peek();
+        require(current!=null,"HOOK_STATE_OUTSIDE_INVOCATION");
+        return current.session.setStateValue(key,value);
+    }
+    static boolean stateDelete(String key) {
+        ActiveContext current=ACTIVE_CONTEXT.get().peek();
+        require(current!=null,"HOOK_STATE_OUTSIDE_INVOCATION");
+        return current.session.deleteStateValue(key);
+    }
+    static void stateClear() {
+        ActiveContext current=ACTIVE_CONTEXT.get().peek();
+        require(current!=null,"HOOK_STATE_OUTSIDE_INVOCATION");
+        current.session.clearStateValues();
+    }
+    static List<String> stateKeys() {
+        ActiveContext current=ACTIVE_CONTEXT.get().peek();
+        require(current!=null,"HOOK_STATE_OUTSIDE_INVOCATION");
+        return current.session.listStateKeys();
+    }
+    private synchronized Object getStateValue(String key){
+        return sessionState.containsKey(key)?sessionState.get(key):ScriptValues.UNDEFINED;
+    }
+    private synchronized Object setStateValue(String key,Object value){
+        if(!sessionState.containsKey(key))require(sessionState.size()<64,"HOOK_STATE_CAPACITY");
+        String encoded=HookWire.encode(Map.of("k",key,"v",toJsonSafe(value)));
+        require(encoded.length()<=4096,"HOOK_STATE_VALUE_SIZE");
+        sessionState.put(key,value);
+        return value;
+    }
+    private synchronized boolean deleteStateValue(String key){
+        return sessionState.remove(key)!=null;
+    }
+    private synchronized void clearStateValues(){
+        sessionState.clear();
+    }
+    private synchronized List<String> listStateKeys(){
+        return List.copyOf(sessionState.keySet());
     }
     private static Object toJsonSafe(Object value) {
         if(value==null||value instanceof String||value instanceof Boolean||value instanceof Double)return value;

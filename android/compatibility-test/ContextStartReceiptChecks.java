@@ -17,7 +17,7 @@ final class ContextStartReceiptChecks {
     private static long count(SQLiteDatabase db,String table){try(var rows=db.rawQuery("SELECT COUNT(*) FROM "+table,null)){rows.moveToFirst();return rows.getLong(0);}}
     private static RuntimeBroker.Slot slot(RuntimeBroker broker,ApkStore.BundleInstall install,String process,int index){
         var allocation=broker.contract.allocate(install.space,install.info.packageName,install.generation,process,android.os.Process.myUid());
-        broker.store.reserve(allocation.session,RuntimeSlot.activity(index).getName());return new RuntimeBroker.Slot(install,allocation,RuntimeSlot.activity(index).getName(),RuntimeMode.THICK,null);
+        broker.store.reserve(allocation.session,RuntimeSlot.activity(index).getName());return new RuntimeBroker.Slot(install,allocation,RuntimeSlot.activity(index).getName(),null);
     }
     private static Prepared prepare(RuntimeBroker broker,RuntimeBroker.Slot target,RuntimeBroker.Slot source,String owner,boolean context){
         String operation=UUID.randomUUID().toString();broker.contract.accept(operation,owner,"a".repeat(64));broker.contract.start(operation);

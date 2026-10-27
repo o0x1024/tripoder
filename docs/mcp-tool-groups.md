@@ -6,7 +6,7 @@
 | --- | --- | --- | --- |
 | runtime_query | capabilities, status, resources, spaces, applications, device_applications | 查询 | HTTP / stdio |
 | application_query | targets, process, launch_targets, launch_entries, launch_recovery, import_status, manifest, storage, process_history | 查询 | HTTP / stdio |
-| application_manage | import_device, set_mode, reverify | 修改 | HTTP / stdio |
+| application_manage | import_device, reverify | 修改 | HTTP / stdio |
 | space_manage | create, rename | 修改 | HTTP / stdio |
 | project_query | get, archives, archive | 查询 | HTTP / stdio |
 | project_update | script, selectors, restore, accept_migration | 修改 | HTTP / stdio |

@@ -15,7 +15,7 @@ public final class PairedLaunchIntegration extends Instrumentation {
     private Bundle args;private JSONObject report;private File output;
     @Override public void onCreate(Bundle value){super.onCreate(value);args=value;start();}
     private static String id(){return UUID.randomUUID().toString();}
-    private void save(String phase)throws Exception{report.put("phase",phase);Files.writeString(output.toPath(),report.toString());android.util.Log.i("TripoderPair",phase+":"+report.optString("package")+":"+report.optString("mode"));}
+    private void save(String phase)throws Exception{report.put("phase",phase);Files.writeString(output.toPath(),report.toString());android.util.Log.i("TripoderPair",phase+":"+report.optString("package"));}
     /** The observation deadline stays fixed. The driver acknowledges its one
      * bounded capture before this harness stops the owned worker. */
     private boolean awaitCapture(String run)throws Exception{
@@ -106,9 +106,9 @@ public final class PairedLaunchIntegration extends Instrumentation {
         Bundle result=new Bundle();android.app.NotificationManager notificationWitness=null;String peerTargetGeneration=null;
         try{
             String host=getTargetContext().getPackageName();if(!host.startsWith("dev.tripoder.compat"))throw new SecurityException("SEPARATE_QA_REQUIRED");
-            String pkg=args.getString("package"),space=args.getString("space"),mode=args.getString("mode"),run=args.getString("run");
-            if(!run.matches("[a-zA-Z0-9_-]+")||!space.matches("[a-zA-Z0-9_-]+")||!java.util.Set.of("thin","thick").contains(mode))throw new IllegalArgumentException("PAIR_ARGS");
-            report=new JSONObject().put("package",pkg).put("space",space).put("mode",mode).put("run",run).put("dataCleared",false);
+            String pkg=args.getString("package"),space=args.getString("space"),run=args.getString("run");
+            if(!run.matches("[a-zA-Z0-9_-]+")||!space.matches("[a-zA-Z0-9_-]+"))throw new IllegalArgumentException("PAIR_ARGS");
+            report=new JSONObject().put("package",pkg).put("space",space).put("run",run).put("dataCleared",false);
             output=new File(getTargetContext().getExternalFilesDir(null),"paired-"+run+".json");save("connecting");
             if("true".equals(args.getString("queryNativeCodeMetadata"))){report.put("nativeOriginalCode",NativePublicationInspection.platform(getTargetContext()));save("complete");result.putString("report",report.toString());finish(-1,result);return;}
             WorkbenchApplication app=(WorkbenchApplication)getTargetContext().getApplicationContext();long deadline=SystemClock.elapsedRealtime()+35000;
@@ -213,8 +213,8 @@ public final class PairedLaunchIntegration extends Instrumentation {
                     peerTargetGeneration=upgraded.getString("generation");report.put("peerTargetInputSha256",upgraded.getString("sha256")).put("peerTargetUpgradedGeneration",peerTargetGeneration);
                 }
                 Bundle peerBinding=execute(app,"applicationTarget","space",space,"package",peerTarget,"generation",peerTargetGeneration);
-                execute(app,"setApplicationMode","operation",id(),"project",peerBinding.getString("project"),"space",space,"generation",peerTargetGeneration,"mode",mode);
-                report.put("peerTarget",new JSONObject().put("package",peerTarget).put("space",space).put("installGeneration",peerTargetGeneration).put("mode",mode));
+
+                report.put("peerTarget",new JSONObject().put("package",peerTarget).put("space",space).put("installGeneration",peerTargetGeneration));
                 // Permission tests use a deliberately prepared fixture. Cold
                 // provider startup has its own concurrent owned-process test.
                 String fixtureOperation=id();Bundle preparedFixture=execute(app,"prepareApplicationLaunch","operation",fixtureOperation,"space",space,"package",peerTarget,"generation",peerTargetGeneration);
@@ -247,8 +247,7 @@ public final class PairedLaunchIntegration extends Instrumentation {
             execute(app,"stopApplication","operation",id(),"space",space,"package",pkg,"generation",generation);
             save("resolving-target");
             Bundle target=execute(app,"applicationTarget","space",space,"package",pkg,"generation",generation);report.put("project",target.getString("project")).put("bindingOperation",target.getString("bindingOperation"));
-            save("setting-mode");
-            execute(app,"setApplicationMode","operation",id(),"project",target.getString("project"),"space",space,"generation",generation,"mode",mode);
+
             if(pkg.equals("dev.tripoder.closurefixture")){
                 notificationWitness=app.getSystemService(android.app.NotificationManager.class);
                 report.put("notificationPolicyAccessGranted",notificationWitness.isNotificationPolicyAccessGranted());

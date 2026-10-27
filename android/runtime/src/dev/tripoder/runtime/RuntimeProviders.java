@@ -110,7 +110,7 @@ final class RuntimeProviders {
         }
         if(owner)initialize(entry);else if(entry.initializing==Thread.currentThread())throw new IllegalStateException("PROVIDER_INITIALIZATION_CYCLE");
     }
-    private void publish(Entry entry,String state)throws Exception{if(engine.mode.routesThroughPlatform())return;Bundle b=engine.auth();b.putString("lease",entry.lease);b.putString("state",state);engine.brokerCall(RuntimeWire.PROVIDER_PUBLICATION,b);}
+    private void publish(Entry entry,String state)throws Exception{return;}
     boolean owns(ContentProvider provider){synchronized(instances){return instances.contains(provider);}}
     ContentProvider ready(String lease)throws Exception{
         Entry entry;synchronized(entries){entry=entries.get(lease);}
@@ -205,7 +205,7 @@ final class RuntimeProviders {
         private boolean settings(Uri uri){return uri!=null&&"content".equals(uri.getScheme())&&"settings".equals(uri.getAuthority());}
         private String logical(Uri uri){if(uri==null||!"content".equals(uri.getScheme()))throw new IllegalArgumentException("PROVIDER_URI_INVALID");return RuntimeProviderBroker.authority(uri.getAuthority());}
         private boolean allowExternalPassthrough(String authority){
-            return engine.mode.routesThroughPlatform()&&authority!=null&&engine.providerIndex.authority(authority)==null&&!authority.startsWith(engine.host.getPackageName())&&!authority.startsWith("dev.tripoder.");
+            return authority!=null&&engine.providerIndex.authority(authority)==null&&!authority.startsWith(engine.host.getPackageName())&&!authority.startsWith("dev.tripoder.");
         }
         private Bundle localCaller(){
             Bundle caller=new Bundle();
@@ -242,6 +242,8 @@ final class RuntimeProviders {
         @Override public Cursor query(Uri uri,String[] projection,Bundle args,CancellationSignal signal){
             if(settings(uri)){if(signal!=null)throw unsupported();return engine.settingsProvider().query(uri,projection,args,signal);}
             String auth=logical(uri);
+            Cursor honey=RuntimeHoneyData.query(auth,uri,projection);
+            if(honey!=null)return honey;
             ContentProvider local=findLocal(auth);
             if(local!=null){
                 try(RuntimeProviderIdentity.Scope scope=RuntimeProviderIdentity.enter(local,localCaller())){

@@ -17,6 +17,10 @@ final class NetworkCaptureControl {
     void event(Map<String,Object> event){NetworkCaptureSession current=session;if(current!=null){if(revision.isEmpty())revision=(String)event.get("revision");current.event(event);}}
     private Map<String,Object> invoke(String name,Map<String,Object> args){Map<String,Object> input=new LinkedHashMap<>(args);input.put("command",name);input.put("processGeneration",generation);return command.apply(input);}
     Map<String,Object> inspect(String module){
+        if("auto".equals(module))return inspectAuto();
+        return inspectSingle(module);
+    }
+    private Map<String,Object> inspectSingle(String module){
         List<String> missing=new ArrayList<>();String build="";
         for(String name:List.of("SSL_new","SSL_free","SSL_read","SSL_write")){
             List<Map<String,Object>> matches=platform.searchNativeExports(module,name,16).stream().filter(row->name.equals(row.get("name"))||name.equals(row.get("symbol"))).toList();
@@ -25,16 +29,45 @@ final class NetworkCaptureControl {
         }
         return Map.of("moduleName",module,"buildId",build,"profile","openssl-ssl-read-write-v1","candidate",missing.isEmpty(),"missingExports",missing,"signatureConfirmationRequired",true,"automaticAbiInference",false);
     }
+    private Map<String,Object> inspectAuto(){
+        List<String> candidates=new ArrayList<>();
+        for(Map<String,Object> mod:platform.modules()){
+            Object rawName=mod.get("moduleName");if(!(rawName instanceof String))rawName=mod.get("name");
+            if(rawName instanceof String mName&&mName.startsWith("lib")&&mName.endsWith(".so")&&!mName.startsWith("libtripoder")&&!mName.equals("libc.so")&&!mName.equals("libm.so")&&!mName.equals("libdl.so")){
+                if(!candidates.contains(mName))candidates.add(mName);
+            }
+        }
+        for(String preferred:List.of("libssl.so","libconscrypt_jni.so","libjavacrypto.so","libcronet.so")){
+            if(!candidates.contains(preferred))candidates.add(preferred);
+        }
+        List<String> scanned=new ArrayList<>();
+        for(String mName:candidates){
+            scanned.add(mName);
+            try{
+                Map<String,Object> res=inspectSingle(mName);
+                if(Boolean.TRUE.equals(res.get("candidate"))){
+                    Map<String,Object> out=new LinkedHashMap<>(res);
+                    out.put("resolvedFrom","auto");
+                    out.put("scannedModules",List.copyOf(scanned));
+                    return Collections.unmodifiableMap(out);
+                }
+            }catch(Throwable ignored){}
+        }
+        return Map.of("moduleName","auto","buildId","","profile","openssl-ssl-read-write-v1","candidate",false,"missingExports",List.of("SSL_new","SSL_free","SSL_read","SSL_write"),"scannedModules",List.copyOf(scanned),"signatureConfirmationRequired",true,"automaticAbiInference",false);
+    }
     Map<String,Object> start(String module,String buildId,String profile,String confirmation){
         if(ownsHook())throw new HookPreflightRejected("NETWORK_CAPTURE_ALREADY_ACTIVE");
         if(!profile.equals("openssl-ssl-read-write-v1")||!confirmation.equals("confirmed"))throw new HookPreflightRejected("NETWORK_PROFILE_NOT_CONFIRMED");
         Map<String,Object> candidate=inspect(module);
-        if(!Boolean.TRUE.equals(candidate.get("candidate"))||!buildId.equals(candidate.get("buildId")))throw new HookPreflightRejected("NETWORK_PROFILE_UNAVAILABLE_OR_STALE");
-        List<Map<String,Object>> selectors=List.of(selector("open",module,"SSL_new",List.of("uint64"),"uint64",buildId),selector("close",module,"SSL_free",List.of("uint64"),"void",buildId),selector("read",module,"SSL_read",List.of("uint64","uint64","int32"),"int32",buildId),selector("write",module,"SSL_write",List.of("uint64","uint64","int32"),"int32",buildId));
+        String resolvedModule=String.valueOf(candidate.get("moduleName"));
+        String resolvedBuild=String.valueOf(candidate.get("buildId"));
+        String expectedBuild="auto".equals(buildId)?resolvedBuild:buildId;
+        if(!Boolean.TRUE.equals(candidate.get("candidate"))||resolvedBuild.isEmpty()||!expectedBuild.equals(resolvedBuild))throw new HookPreflightRejected("NETWORK_PROFILE_UNAVAILABLE_OR_STALE");
+        List<Map<String,Object>> selectors=List.of(selector("open",resolvedModule,"SSL_new",List.of("uint64"),"uint64",resolvedBuild),selector("close",resolvedModule,"SSL_free",List.of("uint64"),"void",resolvedBuild),selector("read",resolvedModule,"SSL_read",List.of("uint64","uint64","int32"),"int32",resolvedBuild),selector("write",resolvedModule,"SSL_write",List.of("uint64","uint64","int32"),"int32",resolvedBuild));
         Map<String,Object> observed=invoke("observe",Map.of("selectors",selectors));
         @SuppressWarnings("unchecked") String evidence=(String)((Map<String,Object>)observed.get("evidence")).get("id");
-        Map<String,Object> prepared=invoke("prepare",Map.of("evidenceId",evidence,"source",source(module,buildId)));
-        moduleName=module;moduleBuild=buildId;sourceSha=(String)prepared.get("sourceSha256");revision="";stopping=false;
+        Map<String,Object> prepared=invoke("prepare",Map.of("evidenceId",evidence,"source",source(resolvedModule,resolvedBuild)));
+        moduleName=resolvedModule;moduleBuild=resolvedBuild;sourceSha=(String)prepared.get("sourceSha256");revision="";stopping=false;
         session=new NetworkCaptureSession(token.get(),(tag,payload)->platform.persistNetworkCapture(tag,payload,sourceSha,revision),configuredConnections,configuredMessages,configuredTotalBytes);
         Map<String,Object> activated=invoke("activate",Map.of("token",prepared.get("token"),"sourceSha256",sourceSha));
         revision=(String)activated.get("revision");return status();

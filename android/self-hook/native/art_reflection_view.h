@@ -17,7 +17,8 @@ bool tp_art_reflection_prepare(JNIEnv *env,jobject field,jobject owner,jobject p
 bool tp_art_reflection_prepare_pending(JNIEnv *env,jobject field,jobject owner,jobject physical,jclass value_type);
 bool tp_art_reflection_promote(JNIEnv *env,jobject logical);
 bool tp_art_reflection_complete(JNIEnv *env);
-bool tp_art_reflection_adopt(JNIEnv *env,jobject application);
+/** derived: the adapter already proved the Application is built around this guest's own base Context. */
+bool tp_art_reflection_adopt(JNIEnv *env,jobject application,bool derived);
 jobject tp_art_reflection_value(JNIEnv *env);
 bool tp_art_reflection_toggle(JNIEnv *env,bool enabled);
 void tp_art_reflection_report(struct tp_art_reflection_report *report);

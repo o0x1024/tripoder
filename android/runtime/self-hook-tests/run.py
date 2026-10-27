@@ -99,6 +99,13 @@ def main():
         outputs.append(run(java,'-cp',str(mapping_classes)+':'+str(sdk_classes)+':'+str(args.android_jar),'dev.tripoder.runtime.RuntimeNativeMappingEvidenceTest'))
         if mapping_before!=digest(mapping_test):raise RuntimeError('MAPPING_FIXTURE_CHANGED_DURING_CHECK')
         report['mappingFixtureSha256']={str(mapping_test.relative_to(repo)):mapping_before}
+        catalog_classes=build/'native-catalog';catalog_classes.mkdir(exist_ok=True)
+        catalog_sources=sorted((here/'src/native-catalog-fixture').rglob('*.java'))
+        catalog_before={str(path.relative_to(repo)):digest(path) for path in catalog_sources}
+        run(javac,'--release','17','-classpath',str(sdk_classes)+':'+str(args.android_jar),'-d',catalog_classes,*catalog_sources)
+        outputs.append(run(java,'-cp',str(catalog_classes)+':'+str(sdk_classes)+':'+str(args.android_jar),'dev.tripoder.runtime.RuntimeNativeLibraryCatalogTest'))
+        if catalog_before!={str(path.relative_to(repo)):digest(path) for path in catalog_sources}:raise RuntimeError('NATIVE_CATALOG_FIXTURE_CHANGED_DURING_CHECK')
+        report['nativeCatalogFixtureSha256']=catalog_before
     (build/'report.json').write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps({'hostOutputs':outputs,'sdkSources':report.get('sdkCompile',{}).get('sources'),
                       'report':str(build/'report.json'),'deviceExecuted':False}))

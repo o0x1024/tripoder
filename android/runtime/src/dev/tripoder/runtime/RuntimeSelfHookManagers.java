@@ -6,6 +6,8 @@ import android.media.AudioDeviceCallback;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkInfo;
 import android.net.NetworkRequest;
 import android.os.Handler;
 import android.os.Looper;
@@ -104,11 +106,24 @@ final class RuntimeSelfHookManagers {
             default:throw new IllegalArgumentException("SYSTEM_MANAGER_FAMILY");
         }
         return RuntimeSelfHookManagerPolicy.plan(family,owner,completeFixedInventory,new RuntimeSelfHookManagerPolicy.Route() {
+            public boolean platformDevice(){return switch(family){case CONNECTIVITY,TELEPHONY,BATTERY,LOCATION->true;default->false;};}
+            public boolean interceptsDevice(String signature){
+                if(family==RuntimeSelfHookManagerPolicy.Family.TELEPHONY){
+                    String name=signature.substring(0,signature.indexOf('('));
+                    String field=switch(name){case "getNetworkCountryIso"->"networkCountryIso";case "getSimCountryIso"->"simCountryIso";case "getNetworkOperator"->"networkOperator";case "getNetworkOperatorName"->"networkOperatorName";case "getSimOperator"->"simOperator";case "getSimOperatorName"->"simOperatorName";default->null;};
+                    return field!=null&&RuntimeSandboxPersona.telephonyOverride(field)!=null;
+                }
+                if(family==RuntimeSelfHookManagerPolicy.Family.BATTERY)return RuntimeSandboxPersona.batteryLevelOverride()!=null||RuntimeSandboxPersona.batteryChargingOverride()!=null;
+                return true;
+            }
             public Object platform(){
                 switch(family){
                     case AUDIO:return RuntimeBridge.audioPlatform();
                     case CONNECTIVITY:return RuntimeBridge.networkPlatform();
                     case POWER:return RuntimeBridge.powerPlatform();
+                    case TELEPHONY:return RuntimeBridge.telephonyPlatform();
+                    case BATTERY:return RuntimeBridge.batteryPlatform();
+                    case LOCATION:return RuntimeBridge.locationPlatform();
                     default:throw new IllegalStateException("SYSTEM_MANAGER_PHYSICAL_ROUTE_UNSUPPORTED:"+family);
                 }
             }
@@ -182,17 +197,45 @@ final class RuntimeSelfHookManagers {
         }
     }
     @SuppressWarnings("deprecation") private static Object network(String key,Object[] args) {
+        String mockState = RuntimeEnvMock.networkState();
+        boolean hideVpn = RuntimeSandboxPersona.hideVpn();
         switch(key) {
-            case "getActiveNetwork()":return RuntimeBridge.networkPlatform().getActiveNetwork();
-            case "getActiveNetworkInfo()":return RuntimeBridge.networkPlatform().getActiveNetworkInfo();
-            case "getAllNetworks()":return RuntimeBridge.networkPlatform().getAllNetworks();
-            case "getAllNetworkInfo()":return RuntimeBridge.networkPlatform().getAllNetworkInfo();
-            case "getNetworkInfo(int)":return RuntimeBridge.networkPlatform().getNetworkInfo((Integer)args[0]);
-            case "getNetworkInfo(android.net.Network)":return RuntimeBridge.networkPlatform().getNetworkInfo((Network)args[0]);
-            case "getNetworkCapabilities(android.net.Network)":return RuntimeBridge.networkPlatform().getNetworkCapabilities((Network)args[0]);
-            case "getLinkProperties(android.net.Network)":return RuntimeBridge.networkPlatform().getLinkProperties((Network)args[0]);
+            case "getActiveNetwork()":
+                if ("offline".equals(mockState)) return null;
+                return RuntimeBridge.networkPlatform().getActiveNetwork();
+            case "getActiveNetworkInfo()":
+                if ("offline".equals(mockState)) return null;
+                return RuntimeBridge.networkPlatform().getActiveNetworkInfo();
+            case "getAllNetworks()":
+                if ("offline".equals(mockState)) return new Network[0];
+                return RuntimeBridge.networkPlatform().getAllNetworks();
+            case "getAllNetworkInfo()":
+                if ("offline".equals(mockState)) return new NetworkInfo[0];
+                return RuntimeBridge.networkPlatform().getAllNetworkInfo();
+            case "getNetworkInfo(int)": {
+                int type = (Integer) args[0];
+                if ("offline".equals(mockState)) return null;
+                if (hideVpn && type == ConnectivityManager.TYPE_VPN) return null;
+                return RuntimeBridge.networkPlatform().getNetworkInfo(type);
+            }
+            case "getNetworkInfo(android.net.Network)":
+                if ("offline".equals(mockState)) return null;
+                return RuntimeBridge.networkPlatform().getNetworkInfo((Network)args[0]);
+            case "getNetworkCapabilities(android.net.Network)": {
+                if ("offline".equals(mockState)) return null;
+                NetworkCapabilities real = RuntimeBridge.networkPlatform().getNetworkCapabilities((Network)args[0]);
+                if (real == null) return null;
+                if (!hideVpn && "passthrough".equals(mockState)) return real;
+                return mutateNetworkCapabilities(real, hideVpn, mockState);
+            }
+            case "getLinkProperties(android.net.Network)":
+                if ("offline".equals(mockState)) return null;
+                return RuntimeBridge.networkPlatform().getLinkProperties((Network)args[0]);
             case "getDefaultProxy()":return RuntimeBridge.networkPlatform().getDefaultProxy();
-            case "isActiveNetworkMetered()":return RuntimeBridge.networkPlatform().isActiveNetworkMetered();
+            case "isActiveNetworkMetered()":
+                if ("wifi".equals(mockState)) return false;
+                if ("cellular".equals(mockState)) return true;
+                return RuntimeBridge.networkPlatform().isActiveNetworkMetered();
             case "getRestrictBackgroundStatus()":return RuntimeBridge.networkPlatform().getRestrictBackgroundStatus();
             case "registerDefaultNetworkCallback(android.net.ConnectivityManager$NetworkCallback)":
                 RuntimeBridge.networkRegister(null,(ConnectivityManager.NetworkCallback)args[0],null,true);return null;
@@ -208,6 +251,53 @@ final class RuntimeSelfHookManagers {
             case "requestNetwork(android.net.NetworkRequest,android.net.ConnectivityManager$NetworkCallback,int)":RuntimeBridge.networkRequest((NetworkRequest)args[0],(ConnectivityManager.NetworkCallback)args[1],null,(Integer)args[2]);return null;
             case "requestNetwork(android.net.NetworkRequest,android.net.ConnectivityManager$NetworkCallback,android.os.Handler,int)":RuntimeBridge.networkRequest((NetworkRequest)args[0],(ConnectivityManager.NetworkCallback)args[1],java.util.Objects.requireNonNull((Handler)args[2]),(Integer)args[3]);return null;
             default:throw new UnsupportedOperationException("CONNECTIVITY_CAPABILITY_UNSUPPORTED:"+key);
+        }
+    }
+    private static NetworkCapabilities mutateNetworkCapabilities(NetworkCapabilities real, boolean hideVpn, String mockState) {
+        long origMask = 0L;
+        for (int t = 0; t < 16; t++) {
+            if (real.hasTransport(t)) {
+                origMask |= (1L << t);
+            }
+        }
+        long newMask = origMask;
+        if (hideVpn) {
+            newMask &= ~(1L << NetworkCapabilities.TRANSPORT_VPN);
+        }
+        if ("wifi".equals(mockState)) {
+            newMask &= ~(1L << NetworkCapabilities.TRANSPORT_CELLULAR);
+            newMask |= (1L << NetworkCapabilities.TRANSPORT_WIFI);
+        } else if ("cellular".equals(mockState)) {
+            newMask &= ~(1L << NetworkCapabilities.TRANSPORT_WIFI);
+            newMask |= (1L << NetworkCapabilities.TRANSPORT_CELLULAR);
+        }
+        if (newMask == origMask) return real;
+        android.os.Parcel parcel = android.os.Parcel.obtain();
+        try {
+            real.writeToParcel(parcel, 0);
+            byte[] bytes = parcel.marshall();
+            // NetworkCapabilities writes mNetworkCapabilities (8 bytes) then mTransportTypes (8 bytes) at the start of the parcel.
+            for (int offset = 0; offset + 8 <= Math.min(bytes.length, 32); offset += 4) {
+                long val = ((long) (bytes[offset] & 0xff))
+                        | (((long) (bytes[offset + 1] & 0xff)) << 8)
+                        | (((long) (bytes[offset + 2] & 0xff)) << 16)
+                        | (((long) (bytes[offset + 3] & 0xff)) << 24)
+                        | (((long) (bytes[offset + 4] & 0xff)) << 32)
+                        | (((long) (bytes[offset + 5] & 0xff)) << 40)
+                        | (((long) (bytes[offset + 6] & 0xff)) << 48)
+                        | (((long) (bytes[offset + 7] & 0xff)) << 56);
+                if (val == origMask) {
+                    for (int b = 0; b < 8; b++) {
+                        bytes[offset + b] = (byte) ((newMask >>> (8 * b)) & 0xff);
+                    }
+                    parcel.unmarshall(bytes, 0, bytes.length);
+                    parcel.setDataPosition(0);
+                    return NetworkCapabilities.CREATOR.createFromParcel(parcel);
+                }
+            }
+            return new NetworkCapabilities(real);
+        } finally {
+            parcel.recycle();
         }
     }
     @SuppressWarnings("deprecation") private static Object telephony(String key,Object[] args) {

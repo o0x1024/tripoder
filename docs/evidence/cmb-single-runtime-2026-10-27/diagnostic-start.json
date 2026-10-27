@@ -1,0 +1,57 @@
+{
+  "protocol": 2,
+  "requestId": "3c9ff2cc-b38e-422d-aa86-1787926cfac3",
+  "ok": false,
+  "error": "IllegalStateException:android.os.DeadObjectException:null",
+  "operationId": "3c9ff2cc-b38e-422d-aa86-1787926cfac3",
+  "state": "UNKNOWN",
+  "errorCode": "COMMAND_FAILED",
+  "pendingOperationId": "3c9ff2cc-b38e-422d-aa86-1787926cfac3",
+  "recovery": {
+    "action": "Preserve the original UNKNOWN result and evidence. Query the original operation and exact launch recovery. targets=[] is not proof of failure. If entryIssued=false, do not call launch_manage(close). A deliberate application_stop with its own new operationId may establish stop/dead-session evidence; inspect launch_recovery again before planning a new launch. Changing the launch ID alone never authorizes retry.",
+    "steps": [
+      {
+        "tool": "operation_get",
+        "arguments": {
+          "operationId": "3c9ff2cc-b38e-422d-aa86-1787926cfac3"
+        }
+      },
+      {
+        "tool": "application_query",
+        "arguments": {
+          "action": "targets"
+        }
+      },
+      {
+        "tool": "application_query",
+        "arguments": {
+          "action": "launch_recovery",
+          "operationId": "3c9ff2cc-b38e-422d-aa86-1787926cfac3",
+          "target": {
+            "space": "default",
+            "package": "cmb.pb",
+            "installGeneration": "d6d45af0-b8d6-4f69-8d76-8505d6c008da"
+          }
+        }
+      },
+      {
+        "tool": "application_query",
+        "arguments": {
+          "action": "process_history",
+          "target": {
+            "space": "default",
+            "package": "cmb.pb",
+            "installGeneration": "d6d45af0-b8d6-4f69-8d76-8505d6c008da"
+          },
+          "cursor": 0,
+          "limit": 16
+        }
+      }
+    ],
+    "replayAllowed": false,
+    "newIdRetryAllowed": false,
+    "preserveOriginalEvidence": true,
+    "pollingDoesNotResolve": true,
+    "requiresOriginalTarget": false
+  }
+}

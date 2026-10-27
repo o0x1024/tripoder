@@ -1,0 +1,79 @@
+{
+  "target": {
+    "space": "runtime-boundary-fault-v2-20261027",
+    "package": "dev.tripoder.signalcontract",
+    "installGeneration": "d6a6764c-fddf-4018-aba4-b3d805e67199"
+  },
+  "case": "Foreground explicitly established; independent run after stopping original own process",
+  "calls": [
+    {
+      "method": "application.stop",
+      "args": {
+        "target": {
+          "space": "runtime-boundary-fault-v2-20261027",
+          "package": "dev.tripoder.signalcontract",
+          "installGeneration": "d6a6764c-fddf-4018-aba4-b3d805e67199"
+        },
+        "operationId": "6e8af55f-04ff-4da4-a359-223c137c47f1"
+      },
+      "receipt": {
+        "protocol": 2,
+        "requestId": "6e8af55f-04ff-4da4-a359-223c137c47f1",
+        "ok": false,
+        "error": "IllegalStateException:ENGINE_NOT_CONNECTED",
+        "operationId": "6e8af55f-04ff-4da4-a359-223c137c47f1",
+        "state": "UNKNOWN",
+        "errorCode": "ENGINE_NOT_CONNECTED",
+        "pendingOperationId": "6e8af55f-04ff-4da4-a359-223c137c47f1",
+        "recovery": {
+          "action": "Preserve the original UNKNOWN result and evidence. Query the original operation and exact launch recovery. targets=[] is not proof of failure. If entryIssued=false, do not call launch_manage(close). A deliberate application_stop with its own new operationId may establish stop/dead-session evidence; inspect launch_recovery again before planning a new launch. Changing the launch ID alone never authorizes retry.",
+          "steps": [
+            {
+              "tool": "operation_get",
+              "arguments": {
+                "operationId": "6e8af55f-04ff-4da4-a359-223c137c47f1"
+              }
+            },
+            {
+              "tool": "application_query",
+              "arguments": {
+                "action": "targets"
+              }
+            },
+            {
+              "tool": "application_query",
+              "arguments": {
+                "action": "launch_recovery",
+                "operationId": "6e8af55f-04ff-4da4-a359-223c137c47f1",
+                "target": {
+                  "space": "runtime-boundary-fault-v2-20261027",
+                  "package": "dev.tripoder.signalcontract",
+                  "installGeneration": "d6a6764c-fddf-4018-aba4-b3d805e67199"
+                }
+              }
+            },
+            {
+              "tool": "application_query",
+              "arguments": {
+                "action": "process_history",
+                "target": {
+                  "space": "runtime-boundary-fault-v2-20261027",
+                  "package": "dev.tripoder.signalcontract",
+                  "installGeneration": "d6a6764c-fddf-4018-aba4-b3d805e67199"
+                },
+                "cursor": 0,
+                "limit": 16
+              }
+            }
+          ],
+          "replayAllowed": false,
+          "newIdRetryAllowed": false,
+          "preserveOriginalEvidence": true,
+          "pollingDoesNotResolve": true,
+          "requiresOriginalTarget": false
+        }
+      }
+    }
+  ],
+  "error": "AssertionError [ERR_ASSERTION]: application.stop"
+}

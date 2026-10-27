@@ -1,0 +1,76 @@
+[
+  {
+    "protocol": 2,
+    "requestId": "7008392c-cab1-4dbe-9325-9f0d89271804",
+    "ok": true,
+    "result": {
+      "operationId": "fa5536d1-730e-4985-84f7-450c694a513e",
+      "state": "UNKNOWN",
+      "detail": "HOOK_WORKER_OUTCOME_UNCONFIRMED",
+      "result": "",
+      "evidence": ""
+    },
+    "errorCode": "OPERATION_OUTCOME_UNKNOWN",
+    "pendingOperationId": "fa5536d1-730e-4985-84f7-450c694a513e",
+    "recovery": {
+      "action": "Preserve the original UNKNOWN result and evidence. Query the original operation and exact launch recovery. targets=[] is not proof of failure. If entryIssued=false, do not call launch_manage(close). A deliberate application_stop with its own new operationId may establish stop/dead-session evidence; inspect launch_recovery again before planning a new launch. Changing the launch ID alone never authorizes retry.",
+      "steps": [
+        {
+          "tool": "application_query",
+          "arguments": {
+            "action": "targets"
+          }
+        }
+      ],
+      "replayAllowed": false,
+      "newIdRetryAllowed": false,
+      "preserveOriginalEvidence": true,
+      "pollingDoesNotResolve": true,
+      "requiresOriginalTarget": true
+    }
+  },
+  {
+    "protocol": 2,
+    "requestId": "5c5092fc-cd81-4b7a-b44f-1df686cd612a",
+    "ok": false,
+    "operationId": "5c5092fc-cd81-4b7a-b44f-1df686cd612a",
+    "state": "FAILED",
+    "error": "IllegalStateException:HOOK_OUTCOME_QUERY_REQUIRED:fa5536d1-730e-4985-84f7-450c694a513e",
+    "target": {
+      "space": "network-d4fb288a-eda",
+      "package": "dev.tripoder.nativetlsfixture",
+      "installGeneration": "31c1f558-19c5-4592-ac1c-e3c9a322b495",
+      "processGeneration": "d6ff96fd63e232159745b5337c7c81e2a143eb242855714ea9cd291d5506f77f"
+    },
+    "errorCode": "HOOK_OUTCOME_QUERY_REQUIRED",
+    "pendingOperationId": "fa5536d1-730e-4985-84f7-450c694a513e",
+    "recovery": {
+      "action": "Query the original operation and exact Hook status. Reading events does not clear the gate. Never replay this mutation, including under a new operationId.",
+      "steps": [
+        {
+          "tool": "operation_get",
+          "arguments": {
+            "operationId": "fa5536d1-730e-4985-84f7-450c694a513e"
+          }
+        },
+        {
+          "tool": "process_inspect",
+          "arguments": {
+            "action": "hook_status",
+            "target": {
+              "space": "network-d4fb288a-eda",
+              "package": "dev.tripoder.nativetlsfixture",
+              "installGeneration": "31c1f558-19c5-4592-ac1c-e3c9a322b495",
+              "processGeneration": "d6ff96fd63e232159745b5337c7c81e2a143eb242855714ea9cd291d5506f77f"
+            }
+          }
+        }
+      ],
+      "replayAllowed": false,
+      "newIdRetryAllowed": false,
+      "preserveOriginalEvidence": true,
+      "pollingDoesNotResolve": true,
+      "requiresOriginalTarget": false
+    }
+  }
+]

@@ -36,7 +36,29 @@ final class RuntimeSelfHookPlatform implements SelfHookControl.Platform {
     public Map<String,Object> personaConfigureTelephony(Map<String,Object> fields){try{return RuntimeSandboxPersona.configureTelephony(fields);}catch(IllegalArgumentException invalid){throw new HookPreflightRejected(String.valueOf(invalid.getMessage()));}}
     public Map<String,Object> personaConfigureLocation(Map<String,Object> fields){try{return RuntimeSandboxPersona.configureLocation(fields);}catch(IllegalArgumentException invalid){throw new HookPreflightRejected(String.valueOf(invalid.getMessage()));}}
     public Map<String,Object> personaConfigureBattery(Integer level,Boolean charging){try{return RuntimeSandboxPersona.configureBattery(level,charging);}catch(IllegalArgumentException invalid){throw new HookPreflightRejected(String.valueOf(invalid.getMessage()));}}
+    public Map<String,Object> personaConfigureLocale(String language,String country,String timeZoneId){try{return RuntimeSandboxPersona.configureLocale(language,country,timeZoneId);}catch(IllegalArgumentException invalid){throw new HookPreflightRejected(String.valueOf(invalid.getMessage()));}}
+    public Map<String,Object> personaConfigureNetwork(boolean hideVpn){return RuntimeSandboxPersona.configureNetwork(hideVpn);}
     public Map<String,Object> personaStatus(){return RuntimeSandboxPersona.status();}
+    public Map<String,Object> malwareConfigure(boolean enabled,boolean blockHighRiskIntents){return RuntimeMalwareProbeState.configure(enabled,blockHighRiskIntents);}
+    public Map<String,Object> malwareConfigure(boolean enabled,boolean blockHighRiskIntents,boolean blockExecve,boolean blockKill,boolean networkSinkhole){return RuntimeMalwareProbeState.configure(enabled,blockHighRiskIntents,blockExecve,blockKill,networkSinkhole);}
+    public Map<String,Object> malwareClear(){return RuntimeMalwareProbeState.clear();}
+    public Map<String,Object> malwareStatus(){return RuntimeMalwareProbeState.status();}
+    public Map<String,Object> malwareEvents(long sinceSeq,int limit){try{return RuntimeMalwareProbeState.events(sinceSeq,limit);}catch(IllegalArgumentException invalid){throw new HookPreflightRejected(String.valueOf(invalid.getMessage()));}}
+    public Map<String,Object> heapChooseInstances(String className,int limit){try{return RuntimeLiveInstances.chooseInstances(className,limit);}catch(IllegalArgumentException invalid){throw new HookPreflightRejected(String.valueOf(invalid.getMessage()));}}
+    public Map<String,Object> heapReadField(String instanceId,String fieldName){try{return RuntimeLiveInstances.readField(instanceId,fieldName);}catch(IllegalArgumentException|IllegalStateException invalid){throw new HookPreflightRejected(String.valueOf(invalid.getMessage()));}}
+    public Map<String,Object> heapSnapshotContainer(String instanceId,int maxEntries){try{return RuntimeLiveInstances.snapshotContainer(instanceId,maxEntries);}catch(IllegalArgumentException|IllegalStateException invalid){throw new HookPreflightRejected(String.valueOf(invalid.getMessage()));}}
+    public Map<String,Object> timeWarpConfigure(long offsetMillis,double delayScale){try{return RuntimeTimeWarp.configure(offsetMillis,delayScale);}catch(IllegalArgumentException invalid){throw new HookPreflightRejected(String.valueOf(invalid.getMessage()));}}
+    public Map<String,Object> timeWarpReset(){return RuntimeTimeWarp.reset();}
+    public Map<String,Object> timeWarpStatus(){return RuntimeTimeWarp.status();}
+    public Map<String,Object> honeydataConfigure(String category,List<Map<String,Object>> rows){try{return RuntimeHoneyData.configure(category,rows);}catch(IllegalArgumentException invalid){throw new HookPreflightRejected(String.valueOf(invalid.getMessage()));}}
+    public Map<String,Object> honeydataClear(){return RuntimeHoneyData.clear();}
+    public Map<String,Object> honeydataStatus(){return RuntimeHoneyData.status();}
+    public Map<String,Object> processSnapshotHeap(){return RuntimeProcessSnapshots.heapDump();}
+    public Map<String,Object> processSnapshotFreeze(String databaseName){try{return RuntimeProcessSnapshots.freezeExport(databaseName);}catch(IllegalArgumentException invalid){throw new HookPreflightRejected(String.valueOf(invalid.getMessage()));}}
+    public Map<String,Object> envMockConfigureHttp(List<Map<String,Object>> rules){try{return RuntimeEnvMock.configureHttp(rules);}catch(IllegalArgumentException invalid){throw new HookPreflightRejected(String.valueOf(invalid.getMessage()));}}
+    public Map<String,Object> envMockConfigureNetwork(String networkState){try{return RuntimeEnvMock.configureNetwork(networkState);}catch(IllegalArgumentException invalid){throw new HookPreflightRejected(String.valueOf(invalid.getMessage()));}}
+    public Map<String,Object> envMockClear(){return RuntimeEnvMock.clear();}
+    public Map<String,Object> envMockStatus(){return RuntimeEnvMock.status();}
     public Map<String,Object> sendComponent(Map<String,Object> request){try{return RuntimeComponentDelivery.send(request);}catch(HookPreflightRejected rejected){throw rejected;}catch(Exception error){throw new IllegalStateException(error);}}
     public Map<String,Object> providerInteract(Map<String,Object> request){try{return RuntimeComponentDelivery.provider(request);}catch(HookPreflightRejected rejected){throw rejected;}catch(Exception error){throw new IllegalStateException(error);}}
     public Map<String,Object> invokeGuestMethod(Map<String,Object> target){try{return RuntimeSecurityAudit.invokeGuestMethod(target);}catch(HookPreflightRejected rejected){throw rejected;}catch(Exception error){throw new IllegalStateException(error);}}

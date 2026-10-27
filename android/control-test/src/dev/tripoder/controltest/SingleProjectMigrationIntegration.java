@@ -9,7 +9,7 @@ import java.nio.file.*;
 import java.util.*;
 import org.json.*;
 
-/** Actual Android SQLiteOpenHelper v34->v35 and source recovery, isolated from the app's real database. */
+/** Actual Android SQLiteOpenHelper v34->v41 and source recovery, isolated from the app's real database. */
 public final class SingleProjectMigrationIntegration extends ControlTestBase {
     @Override void test()throws Exception{
         report.put("scope","android-sqlite-v34-upgrade-and-source-recovery");
@@ -22,8 +22,14 @@ public final class SingleProjectMigrationIntegration extends ControlTestBase {
         };
         Class<?> type=Class.forName("dev.tripoder.runtime.RuntimeStore");Constructor<?> constructor=type.getConstructor(Context.class);SQLiteOpenHelper helper=(SQLiteOpenHelper)constructor.newInstance(context);
         helper.getWritableDatabase();helper.close();
+        singleRuntimeUpgrade(context,constructor);
         try(SQLiteDatabase legacy=context.openOrCreateDatabase("tripoder-runtime-v2.db",0,null)){
             legacy.beginTransaction();try{
+                // Reconstruct the actual v34 schema before SQLiteOpenHelper runs every later migration.
+                for(String table:List.of("operation_scopes","recovery_paused","component_settings","state_checkpoints"))legacy.execSQL("DROP TABLE "+table);
+                legacy.execSQL("DROP INDEX isolated_session_owner");
+                for(String column:List.of("componentRestartOperation","processKind","processInstance","realUid"))legacy.execSQL("ALTER TABLE sessions DROP COLUMN "+column);
+                legacy.execSQL("ALTER TABLE service_leases DROP COLUMN isolatedInstanceName");
                 legacy.execSQL("DROP TABLE project_refs");legacy.execSQL("DROP TABLE application_projects");legacy.execSQL("DROP TABLE project_aliases");
                 legacy.execSQL("CREATE TABLE project_refs(id TEXT PRIMARY KEY, space TEXT NOT NULL, package TEXT NOT NULL, generation TEXT NOT NULL, sourceSha TEXT NOT NULL, snapshot TEXT NOT NULL, state TEXT NOT NULL, operation TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'MIGRATED', mode TEXT NOT NULL DEFAULT 'thin')");
                 for(String id:List.of("migration-a","migration-b","migration-c"))legacy.execSQL("INSERT INTO project_refs VALUES(?,?,?,?,?,?,?,?,?,?)",new Object[]{id,id.equals("migration-c")?"space-b":"space-a","owned.migration","generation",id,"snapshot-"+id,"COMMITTED","operation-"+id,"DIRECT","thin"});
@@ -38,7 +44,7 @@ public final class SingleProjectMigrationIntegration extends ControlTestBase {
         helper=(SQLiteOpenHelper)constructor.newInstance(context);
         JSONArray owners=new JSONArray();
         try{
-            SQLiteDatabase db=helper.getWritableDatabase();check("android-helper-upgrades-to-schema-35",db.getVersion()==35,db.getVersion());
+            SQLiteDatabase db=helper.getWritableDatabase();check("android-helper-upgrades-to-schema-41",db.getVersion()==41,db.getVersion());
             check("old-binding-metadata-preserved",DatabaseUtils.longForQuery(db,"SELECT COUNT(*) FROM project_refs_archive_v34",null)==3,true);
             check("one-application-owner-after-upgrade",DatabaseUtils.longForQuery(db,"SELECT COUNT(*) FROM application_projects",null)==1,true);
             check("two-installation-bindings-share-one-project",DatabaseUtils.longForQuery(db,"SELECT COUNT(*) FROM project_refs",null)==2&&DatabaseUtils.longForQuery(db,"SELECT COUNT(DISTINCT id) FROM project_refs",null)==1,true);
@@ -61,6 +67,28 @@ public final class SingleProjectMigrationIntegration extends ControlTestBase {
         invoke(projects,"delete",new Class<?>[]{String.class},"migration-a");invoke(projects,"reconcile",new Class<?>[]{JSONArray.class},owners);
         check("stale-snapshot-cannot-resurrect-deleted-source",((List<?>)invoke(projects,"all",new Class<?>[0])).isEmpty(),true);
         report.put("fixtureOnly",true).put("productionDatabaseTouched",false).put("fixtureDirectory",fixture.toString());
+    }
+    private void singleRuntimeUpgrade(Context context,Constructor<?> constructor)throws Exception{
+        String unknown="{\"mode\":\"thick\",\"evidence\":\"keep-original\"}";
+        try(SQLiteDatabase db=context.openOrCreateDatabase("tripoder-runtime-v2.db",0,null)){
+            db.execSQL("ALTER TABLE project_refs ADD COLUMN mode TEXT NOT NULL DEFAULT 'thin'");
+            db.execSQL("INSERT INTO project_refs VALUES ('owned','a','owned.app','g-a','source','snapshot','COMMITTED','bind-a','DIRECT','thin')");
+            db.execSQL("INSERT INTO project_refs VALUES ('owned','b','owned.app','g-b','source','snapshot','STALE','bind-b','DIRECT','thick')");
+            db.execSQL("INSERT INTO operations VALUES ('old-mode-operation','caller','digest','UNKNOWN',?,'original',1,1,'retained')",new Object[]{unknown});
+            db.execSQL("INSERT INTO recovery_paused VALUES ('old-process','b','owned.app','g-b','owned.app')");
+            db.setVersion(40);
+        }
+        SQLiteOpenHelper upgraded=(SQLiteOpenHelper)constructor.newInstance(context);
+        try{
+            SQLiteDatabase db=upgraded.getWritableDatabase();
+            check("android-helper-upgrades-v40-to-41",db.getVersion()==41,db.getVersion());
+            check("active-mode-column-removed",DatabaseUtils.longForQuery(db,"SELECT COUNT(*) FROM pragma_table_info('project_refs') WHERE name='mode'",null)==0,true);
+            check("mixed-old-modes-retain-bindings-and-states",DatabaseUtils.longForQuery(db,"SELECT COUNT(*) FROM project_refs WHERE (space='a' AND generation='g-a' AND state='COMMITTED' AND operation='bind-a') OR (space='b' AND generation='g-b' AND state='STALE' AND operation='bind-b')",null)==2,true);
+            check("unknown-mode-operation-is-preserved",unknown.equals(DatabaseUtils.stringForQuery(db,"SELECT result FROM operations WHERE id='old-mode-operation' AND state='UNKNOWN'",null)),true);
+            check("recovery-fence-is-preserved",DatabaseUtils.longForQuery(db,"SELECT COUNT(*) FROM recovery_paused WHERE generation='old-process'",null)==1,true);
+            // Only this isolated fixture is reset before constructing its older v34 snapshot.
+            db.execSQL("DELETE FROM project_refs");db.execSQL("DELETE FROM operations");db.execSQL("DELETE FROM recovery_paused");
+        }finally{upgraded.close();}
     }
     private static Object invoke(Object object,String name,Class<?>[] parameters,Object...args)throws Exception{Method method=object.getClass().getDeclaredMethod(name,parameters);method.setAccessible(true);return method.invoke(object,args);}
 }

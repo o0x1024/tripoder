@@ -32,22 +32,20 @@ public final class CatalogMetadataTest {
         check(catalog.getString("projects").equals(RuntimeControllerCatalog.read(broker).getString("projects")),"repeat reads preserve revisions");
         check(receipts==broker.store.operations.size()&&broker.apks.loads==0,"repeat reads create no receipts or APK loads");
 
-        bindings.setModeIn("mode1","trusted-workbench",project,"a","thick");
         install(broker,"a","g3","data1");
         broker.store.db.execSQL("UPDATE project_refs SET state='STALE' WHERE space='a'");
         new ApplicationProjects(broker).targetMetadata("a","owned.app","g3");Bundle upgraded=bindings.resolveMetadataIn(project,"a");
-        check(upgraded.getString("generation").equals("g3")&&upgraded.getString("mode").equals("thick"),"metadata repair preserves mode on upgrade");
+        check(upgraded.getString("generation").equals("g3")&&!upgraded.containsKey("mode"),"metadata repair preserves identity without mode on upgrade");
         check(new ApplicationProjects(broker).ensure("owned.app").equals(project),"upgrade preserves canonical project");
         check(bindings.resolveMetadataIn(project,"b").getString("bindingOperation").equals(second.getString("bindingOperation")),"upgrade does not replace sibling binding");
         rejects(()->bindings.resolveBinding(project,first.getString("bindingOperation")),"PROJECT_NOT_BOUND");
 
-        // An installed space that was never launched has no binding: choosing its mode binds the named generation first.
+        // A new space binds its exact installation without a second execution configuration.
         install(broker,"c","g4","data4");
         rejects(()->bindings.resolveMetadataIn(project,"c"),"PROJECT_NOT_BOUND");
-        Bundle unbound=bindings.setModeIn("mode-unbound","trusted-workbench",project,"c","g4","thick");
-        check(unbound.getString("mode").equals("thick")&&unbound.getString("generation").equals("g4"),"mode chosen before the first launch binds the generation");
-        check(bindings.resolveMetadataIn(project,"c").getString("mode").equals("thick"),"mode survives the implicit binding");
-        rejects(()->bindings.setModeIn("mode-stale","trusted-workbench",project,"c","gX","thin"),"INSTALL_GENERATION_CONFLICT");
+        Bundle unbound=owner.targetMetadata("c","owned.app","g4");
+        check(!unbound.containsKey("mode")&&unbound.getString("generation").equals("g4"),"first target has one runtime and the named generation");
+        rejects(()->owner.targetMetadata("c","owned.app","gX"),"INSTALL_GENERATION_CONFLICT");
         check(broker.apks.loads==0,"stale identity rejected before opening APK");
 
         // A slow real target must leave the global lock available to a concurrent list read.

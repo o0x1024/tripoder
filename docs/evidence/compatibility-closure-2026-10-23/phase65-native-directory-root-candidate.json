@@ -1,0 +1,16 @@
+{
+  "status": "OWNED_REPRODUCTION_PENDING",
+  "evidence": "com-dianping-v1-thick-1792824416",
+  "observedFault": "libmsc_jsi.so msc_quickjs::GetJNIEnv null dereference",
+  "observedDuplicateBackingFiles": true,
+  "sourceMismatch": {
+    "classLoaderNativeSearch": "RuntimeSharedLibraries uses engine.info.nativeLibraryDir: sealed artifacts/lib",
+    "absoluteNativeLoads": "GuestPackageManager projects applicationInfo.nativeLibraryDir to verified execution copy/lib/arm64",
+    "nativeHookAttestation": "RuntimeHookBridge already verifies executionCode.libraryFile"
+  },
+  "proposedRepair": "Use the same verified execution native directory for the class-loader namespace and ApplicationInfo; retain authenticated shared APK JNI dependencies and physical namespace permissions",
+  "ownedProbe": "owned-native-library-fixture-v1/receipt.json",
+  "noApplicationLibraryPatched": true,
+  "dataCleared": false,
+  "appCaseClosed": false
+}

@@ -93,7 +93,8 @@ final class RuntimeReceivers {
         if(!engine.ownsReceiverType(receiver.getClass()))throw new SecurityException("RECEIVER_LOADER_MISMATCH:"+receiver.getClass().getName()+"@"+receiver.getClass().getClassLoader()+";webview="+engine.webView.ownsProviderLoader(receiver.getClass().getClassLoader()));
         Registration prior;String receiverKey;
         synchronized(this){if(transitions.contains(receiver))throw new IllegalStateException("RECEIVER_REGISTRATION_IN_PROGRESS");prior=receivers.get(receiver);if(prior!=null&&prior.closed)prior=null;receiverKey=prior==null?UUID.randomUUID().toString():prior.receiverKey;int retained=retiredActions.size();for(Registration entry:receivers.values())retained+=entry.entries.size();if(retained>=4096)throw new IllegalStateException("RECEIVER_REGISTRATION_LIMIT");transitions.add(receiver);}
-        Bundle b=engine.auth();b.putString("receiverKey",receiverKey);b.putByteArray("filter",encoded);b.putBoolean("exported",flags==Context.RECEIVER_EXPORTED||(legacyZeroFlags&&!RuntimeSystemBroadcasts.only(filter)&&filter.countActions()>0));b.putString("permission",permission);
+        Bundle b=engine.auth();b.putString("receiverKey",receiverKey);b.putByteArray("filter",encoded);boolean exportedFlag=flags==Context.RECEIVER_EXPORTED||(legacyZeroFlags&&!RuntimeSystemBroadcasts.only(filter)&&filter.countActions()>0);b.putBoolean("exported",exportedFlag);b.putString("permission",permission);
+        RuntimeMalwareProbeState.recordReceiverRegistration(receiver.getClass().getName(),filter,exportedFlag);
         try{
             Bundle admitted=engine.brokerCall(RuntimeWire.BROADCAST_REGISTER,b);String id=admitted.getString("registration");Registration registration=new Registration("",id,true,Set.copyOf(systems),filter,receiverKey);
             Bundle ack=engine.auth();ack.putString("registration",id);

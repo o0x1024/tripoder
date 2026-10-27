@@ -12,7 +12,7 @@ public final class FrameworkAccess {
     private FrameworkAccess() {}
     private static boolean prepared;
     // One slot per fixed boot class root; the index space is defined by art_framework.c names[].
-    private static final Object[][] declarationCache=new Object[87][];
+    private static final Object[][] declarationCache=new Object[88][];
     private static native boolean prepareNative(Method field,Method count,Method method);
     public static native String statusNative();
     @FastNative private static native Field fieldNative(int slot);
@@ -117,6 +117,13 @@ public final class FrameworkAccess {
     }
     public static Method processNameMethod()throws Exception{
         return FixedFrameworkMembers.method(0,"getProcessName","()Ljava/lang/String;",true);
+    }
+    /** Set the process's real argv0/comm through Android's existing entry point.
+     * This is a fixed invocation, not another Hook target or procfs projection. */
+    public static void setProcessArgV0(String name)throws Exception{
+        if(name==null||name.isEmpty()||name.indexOf('\0')>=0||name.getBytes(java.nio.charset.StandardCharsets.UTF_8).length>=256)
+            throw new IllegalArgumentException("GUEST_PROCESS_NAME_INVALID");
+        FixedFrameworkMembers.call(FixedFrameworkMembers.method(87,"setArgV0","(Ljava/lang/String;)V",true),null,name);
     }
     /**
      * Fixed slot of {@code ActivityThread.currentPackageName()}: the host bind record, which a guest process must

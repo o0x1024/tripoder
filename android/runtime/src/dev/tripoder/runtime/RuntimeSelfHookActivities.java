@@ -185,6 +185,7 @@ final class RuntimeSelfHookActivities {
                 // A null Activity is a start through an Application or Service Context.
                 if(activity!=null&&!RuntimeBridge.owns(activity))throw new SecurityException("ACTIVITY_START_CALLER_UNOWNED");
                 if(intent==null||RuntimeBridge.startsHost(intent))throw new SecurityException("ACTIVITY_START_HOST_COMPONENT_DENIED");
+                RuntimeMalwareProbeState.checkAndRecordIntent("execStartActivity", intent);
                 // A component of a guest in this space is routed through the ledger. Anything else (an implicit action, a real installed app, the system) is the platform's to resolve, as it is for any app.
                 // An implicit intent that one of the guest's own filters matches is a start of that component, exactly as Android would resolve it.
                 if(intent.getComponent()==null){android.content.ComponentName own=RuntimeBridge.resolveOwnActivity(intent);if(own!=null){intent=new Intent(intent).setComponent(own);args=args.clone();args[4]=intent;}}

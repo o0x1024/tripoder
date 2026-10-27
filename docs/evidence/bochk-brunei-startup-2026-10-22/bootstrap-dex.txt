@@ -1,0 +1,221 @@
+Class descriptor  : 'Lymmqh/X;'
+  Access flags      : 0x0001 (PUBLIC)
+  Superclass        : 'Ljava/lang/Object;'
+  Interfaces        -
+  Static fields     -
+    #0              : (in Lymmqh/X;)
+      name          : 'a'
+      type          : 'Z'
+      access        : 0x000a (PRIVATE STATIC)
+      value         : true
+    #1              : (in Lymmqh/X;)
+      name          : 'b'
+      type          : 'J'
+      access        : 0x000a (PRIVATE STATIC)
+      value         : 0
+    #2              : (in Lymmqh/X;)
+      name          : 'c'
+      type          : 'Z'
+      access        : 0x000a (PRIVATE STATIC)
+      value         : true
+  Instance fields   -
+  Direct methods    -
+    #0              : (in Lymmqh/X;)
+      name          : '<clinit>'
+      type          : '()V'
+      access        : 0x10008 (STATIC CONSTRUCTOR)
+      code          -
+      registers     : 2
+      ins           : 0
+      outs          : 2
+      insns size    : 12 16-bit code units
+5ac894:                                        |[5ac894] ymmqh.X.<clinit>:()V
+5ac8a4: 1c00 f51c                              |0000: const-class v0, Lymmqh/X; // type@1cf5
+5ac8a8: 7100 9db0 0000                         |0002: invoke-static {}, Lymmqh/X;.d:()V // method@b09d
+5ac8ae: 1401 cf6e 0000                         |0005: const v1, #float 3.97506e-41 // #00006ecf
+5ac8b4: 7120 c0b0 1000                         |0008: invoke-static {v0, v1}, Lymmqh/e;.a:(Ljava/lang/Class;I)V // method@b0c0
+5ac8ba: 0e00                                   |000b: return-void
+      catches       : (none)
+      positions     :
+      locals        :
+
+    #1              : (in Lymmqh/X;)
+      name          : '<init>'
+      type          : '()V'
+      access        : 0x10001 (PUBLIC CONSTRUCTOR)
+      code          -
+      registers     : 1
+      ins           : 1
+      outs          : 1
+      insns size    : 4 16-bit code units
+5ac8bc:                                        |[5ac8bc] ymmqh.X.<init>:()V
+5ac8cc: 7010 e8a3 0000                         |0000: invoke-direct {v0}, Ljava/lang/Object;.<init>:()V // method@a3e8
+5ac8d2: 0e00                                   |0003: return-void
+      catches       : (none)
+      positions     :
+      locals        :
+
+    #2              : (in Lymmqh/X;)
+      name          : 'a'
+      type          : '()V'
+      access        : 0x000a (PRIVATE STATIC)
+      code          -
+      registers     : 0
+      ins           : 0
+      outs          : 0
+      insns size    : 7 16-bit code units
+5ac8d4:                                        |[5ac8d4] ymmqh.X.a:()V
+5ac8e4: 7100 28b1 0000                         |0000: invoke-static {}, Lymmqh/x;.b:()V // method@b128
+5ac8ea: 7100 99b0 0000                         |0003: invoke-static {}, Lymmqh/X;.b:()V // method@b099
+5ac8f0: 0e00                                   |0006: return-void
+      catches       : (none)
+      positions     :
+      locals        :
+
+    #3              : (in Lymmqh/X;)
+      name          : 'a'
+      type          : '(Lymmqh/aa;)V'
+      access        : 0x2000a (PRIVATE STATIC DECLARED_SYNCHRONIZED)
+      code          -
+      registers     : 7
+      ins           : 1
+      outs          : 2
+      insns size    : 53 16-bit code units
+5ac8f4:                                        |[5ac8f4] ymmqh.X.a:(Lymmqh/aa;)V
+5ac904: 1c00 f51c                              |0000: const-class v0, Lymmqh/X; // type@1cf5
+5ac908: 1d00                                   |0002: monitor-enter v0
+5ac90a: 6101 2ae8                              |0003: sget-wide v1, Lymmqh/X;.b:J // field@e82a
+5ac90e: 1603 0000                              |0005: const-wide/16 v3, #int 0 // #0
+5ac912: 3105 0103                              |0007: cmp-long v5, v1, v3
+5ac916: 3905 0d00                              |0009: if-nez v5, 0016 // +000d
+5ac91a: 7100 5da4 0000                         |000b: invoke-static {}, Ljava/lang/System;.currentTimeMillis:()J // method@a45d
+5ac920: 0b01                                   |000e: move-result-wide v1
+5ac922: 6801 2ae8                              |000f: sput-wide v1, Lymmqh/X;.b:J // field@e82a
+5ac926: 2805                                   |0011: goto 0016 // +0005
+5ac928: 0d06                                   |0012: move-exception v6
+5ac92a: 2820                                   |0013: goto 0033 // +0020
+5ac92c: 0d06                                   |0014: move-exception v6
+5ac92e: 2818                                   |0015: goto 002d // +0018
+5ac930: 6301 2be8                              |0016: sget-boolean v1, Lymmqh/X;.c:Z // field@e82b
+5ac934: 1202                                   |0018: const/4 v2, #int 0 // #0
+5ac936: 3801 0700                              |0019: if-eqz v1, 0020 // +0007
+5ac93a: 6a02 2be8                              |001b: sput-boolean v2, Lymmqh/X;.c:Z // field@e82b
+5ac93e: 7100 97b0 0000                         |001d: invoke-static {}, Lymmqh/X;.a:()V // method@b097
+5ac944: 6301 29e8                              |0020: sget-boolean v1, Lymmqh/X;.a:Z // field@e829
+5ac948: 3801 0900                              |0022: if-eqz v1, 002b // +0009
+5ac94c: 3806 0700                              |0024: if-eqz v6, 002b // +0007
+5ac950: 6a02 29e8                              |0026: sput-boolean v2, Lymmqh/X;.a:Z // field@e829
+5ac954: 7110 9eb0 0600                         |0028: invoke-static {v6}, Lymmqh/X;.d:(Lymmqh/aa;)V // method@b09e
+5ac95a: 1e00                                   |002b: monitor-exit v0
+5ac95c: 0e00                                   |002c: return-void
+5ac95e: 2201 9619                              |002d: new-instance v1, Ljava/lang/RuntimeException; // type@1996
+5ac962: 7020 f9a3 6100                         |002f: invoke-direct {v1, v6}, Ljava/lang/RuntimeException;.<init>:(Ljava/lang/Throwable;)V // method@a3f9
+5ac968: 2701                                   |0032: throw v1
+5ac96a: 1e00                                   |0033: monitor-exit v0
+5ac96c: 2706                                   |0034: throw v6
+      catches       : 2
+        0x0003 - 0x002b
+          Ljava/io/IOException; -> 0x0014
+          <any> -> 0x0012
+        0x002d - 0x0034
+          <any> -> 0x0012
+      positions     :
+      locals        :
+
+    #4              : (in Lymmqh/X;)
+      name          : 'b'
+      type          : '()V'
+      access        : 0x000a (PRIVATE STATIC)
+      code          -
+      registers     : 1
+      ins           : 0
+      outs          : 1
+      insns size    : 6 16-bit code units
+5ac988:                                        |[5ac988] ymmqh.X.b:()V
+5ac998: 1a00 ee57                              |0000: const-string v0, "bochk_bn_aos" // string@57ee
+5ac99c: 7110 63a4 0000                         |0002: invoke-static {v0}, Ljava/lang/System;.loadLibrary:(Ljava/lang/String;)V // method@a463
+5ac9a2: 0e00                                   |0005: return-void
+      catches       : (none)
+      positions     :
+      locals        :
+
+    #5              : (in Lymmqh/X;)
+      name          : 'b'
+      type          : '(Lymmqh/aa;)V'
+      access        : 0x0109 (PUBLIC STATIC NATIVE)
+      code          : (none)
+
+    #6              : (in Lymmqh/X;)
+      name          : 'c'
+      type          : '(Lymmqh/aa;)V'
+      access        : 0x0009 (PUBLIC STATIC)
+      code          -
+      registers     : 1
+      ins           : 1
+      outs          : 1
+      insns size    : 7 16-bit code units
+5ac9a4:                                        |[5ac9a4] ymmqh.X.c:(Lymmqh/aa;)V
+5ac9b4: 6e10 eca3 0000                         |0000: invoke-virtual {v0}, Ljava/lang/Object;.getClass:()Ljava/lang/Class; // method@a3ec
+5ac9ba: 7110 98b0 0000                         |0003: invoke-static {v0}, Lymmqh/X;.a:(Lymmqh/aa;)V // method@b098
+5ac9c0: 0e00                                   |0006: return-void
+      catches       : (none)
+      positions     :
+      locals        :
+
+    #7              : (in Lymmqh/X;)
+      name          : 'c'
+      type          : '()Z'
+      access        : 0x0109 (PUBLIC STATIC NATIVE)
+      code          : (none)
+
+    #8              : (in Lymmqh/X;)
+      name          : 'd'
+      type          : '()V'
+      access        : 0x20009 (PUBLIC STATIC DECLARED_SYNCHRONIZED)
+      code          -
+      registers     : 2
+      ins           : 0
+      outs          : 1
+      insns size    : 18 16-bit code units
+5ac9c4:                                        |[5ac9c4] ymmqh.X.d:()V
+5ac9d4: 1c00 f51c                              |0000: const-class v0, Lymmqh/X; // type@1cf5
+5ac9d8: 1d00                                   |0002: monitor-enter v0
+5ac9da: 6301 2be8                              |0003: sget-boolean v1, Lymmqh/X;.c:Z // field@e82b
+5ac9de: 3901 0400                              |0005: if-nez v1, 0009 // +0004
+5ac9e2: 1e00                                   |0007: monitor-exit v0
+5ac9e4: 0e00                                   |0008: return-void
+5ac9e6: 1201                                   |0009: const/4 v1, #int 0 // #0
+5ac9e8: 7110 98b0 0100                         |000a: invoke-static {v1}, Lymmqh/X;.a:(Lymmqh/aa;)V // method@b098
+5ac9ee: 1e00                                   |000d: monitor-exit v0
+5ac9f0: 0e00                                   |000e: return-void
+5ac9f2: 0d01                                   |000f: move-exception v1
+5ac9f4: 1e00                                   |0010: monitor-exit v0
+5ac9f6: 2701                                   |0011: throw v1
+      catches       : 3
+        0x0003 - 0x0005
+          <any> -> 0x000f
+        0x000a - 0x000d
+          <any> -> 0x000f
+        0x0010 - 0x0011
+          <any> -> 0x000f
+      positions     :
+      locals        :
+
+    #9              : (in Lymmqh/X;)
+      name          : 'd'
+      type          : '(Lymmqh/aa;)V'
+      access        : 0x000a (PRIVATE STATIC)
+      code          -
+      registers     : 1
+      ins           : 1
+      outs          : 1
+      insns size    : 4 16-bit code units
+5aca14:                                        |[5aca14] ymmqh.X.d:(Lymmqh/aa;)V
+5aca24: 7110 9ab0 0000                         |0000: invoke-static {v0}, Lymmqh/X;.b:(Lymmqh/aa;)V // method@b09a
+5aca2a: 0e00                                   |0003: return-void
+      catches       : (none)
+      positions     :
+      locals        :
+
+  Virtual methods   -
+  source_file_idx   : 17548 (SourceFile)

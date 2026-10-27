@@ -1,0 +1,58 @@
+Class descriptor  : 'Lymmqh/o;'
+  Access flags      : 0x0000 ()
+  Superclass        : 'Ljava/lang/Thread;'
+  Interfaces        -
+  Static fields     -
+  Instance fields   -
+  Direct methods    -
+    #0              : (in Lymmqh/o;)
+      name          : '<init>'
+      type          : '()V'
+      access        : 0x10000 (CONSTRUCTOR)
+      code          -
+      registers     : 1
+      ins           : 1
+      outs          : 1
+      insns size    : 4 16-bit code units
+5ad230:                                        |[5ad230] ymmqh.o.<init>:()V
+5ad240: 7010 66a4 0000                         |0000: invoke-direct {v0}, Ljava/lang/Thread;.<init>:()V // method@a466
+5ad246: 0e00                                   |0003: return-void
+      catches       : (none)
+      positions     :
+      locals        :
+
+  Virtual methods   -
+    #0              : (in Lymmqh/o;)
+      name          : 'run'
+      type          : '()V'
+      access        : 0x0001 (PUBLIC)
+      code          -
+      registers     : 5
+      ins           : 1
+      outs          : 2
+      insns size    : 31 16-bit code units
+5ad248:                                        |[5ad248] ymmqh.o.run:()V
+5ad258: 1200                                   |0000: const/4 v0, #int 0 // #0
+5ad25a: 1201                                   |0001: const/4 v1, #int 0 // #0
+5ad25c: 1302 0a00                              |0002: const/16 v2, #int 10 // #a
+5ad260: 3521 1700                              |0004: if-ge v1, v2, 001b // +0017
+5ad264: 7100 25b1 0000                         |0006: invoke-static {}, Lymmqh/x;.a:()I // method@b125
+5ad26a: 0a02                                   |0009: move-result v2
+5ad26c: 3a02 0900                              |000a: if-ltz v2, 0013 // +0009
+5ad270: 7100 2ab1 0000                         |000c: invoke-static {}, Lymmqh/x;.d:()Ljava/lang/String; // method@b12a
+5ad276: 0c00                                   |000f: move-result-object v0
+5ad278: 3800 0300                              |0010: if-eqz v0, 0013 // +0003
+5ad27c: 2809                                   |0012: goto 001b // +0009
+5ad27e: 1602 e803                              |0013: const-wide/16 v2, #int 1000 // #3e8
+5ad282: 7120 7aa4 3200                         |0015: invoke-static {v2, v3}, Ljava/lang/Thread;.sleep:(J)V // method@a47a
+5ad288: d801 0101                              |0018: add-int/lit8 v1, v1, #int 1 // #01
+5ad28c: 28e8                                   |001a: goto 0002 // -0018
+5ad28e: 7110 26b1 0000                         |001b: invoke-static {v0}, Lymmqh/x;.a:(Ljava/lang/String;)V // method@b126
+5ad294: 0e00                                   |001e: return-void
+      catches       : 1
+        0x0015 - 0x0018
+          Ljava/lang/Exception; -> 0x0018
+      positions     :
+      locals        :
+
+  source_file_idx   : 17548 (SourceFile)
