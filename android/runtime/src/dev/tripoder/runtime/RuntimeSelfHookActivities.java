@@ -58,7 +58,7 @@ final class RuntimeSelfHookActivities {
                             // view states (e.g. custom View.BaseSavedState) must resolve through the
                             // guest loader, not the boot loader, or Activity restore aborts the process.
                             Bundle restored=ActivityFrameworkAccess.recordState(args[0]);
-                            if(restored!=null)restored.setClassLoader(permit.loader());
+                            if(restored!=null)ActivityFrameworkAccess.recordState(args[0],RuntimeGuestPayload.copy(restored,permit.loader()));
                         }
                         RuntimeEngine engine=RuntimeEngine.current;if(engine!=null)engine.packages.traceEndpoints("BEFORE_FRAMEWORK_ACTIVITY_CREATE");
                         Object result=original.call(args);
@@ -203,7 +203,7 @@ final class RuntimeSelfHookActivities {
             try{
                 // Unparcel application-defined results in the admitted receiver's current
                 // loader, including a legitimate packed/hot-fixed Application loader.
-                if(args[3] instanceof Intent data)data.setExtrasClassLoader(RuntimeEngine.current.guestLoader());
+                if(args[3] instanceof Intent data)RuntimeGuestPayload.prepare(data,RuntimeEngine.current.guestLoader());
                 Object result=original.call(args);success=true;return result;
             }catch(Throwable error){failure=error;throw error;}
             finally{try{RuntimeBridge.received(activity,operation,(Integer)args[2],success);}catch(Throwable acknowledgement){if(failure==null)throw acknowledgement;if(failure!=acknowledgement)failure.addSuppressed(acknowledgement);}}

@@ -33,6 +33,8 @@ enum tp_park_status tp_park_init(void);
  * tp_park_init remains a one-shot API; BUSY is never treated as ownership. */
 enum tp_park_status tp_park_prepare_process(void);
 enum tp_park_status tp_park_begin(struct tp_park_snapshot *snapshot);
+/* Retry only fully released transient snapshots, never a publication. */
+enum tp_park_status tp_park_begin_bounded(struct tp_park_snapshot *snapshot,unsigned *attempts);
 enum tp_park_status tp_park_end(unsigned epoch);
 enum tp_park_status tp_park_context(unsigned epoch, unsigned index, struct tp_park_context *context);
 unsigned tp_park_late_signals(unsigned epoch);

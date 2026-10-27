@@ -79,6 +79,11 @@ def main():
     biometric_probe=builder.apk('biometric-contract-guest',sorted(biometric_contract.glob('*.java')),biometric_contract/'AndroidManifest.xml')
     task_fixture=android/'control-test/task-presentation-fixture'
     task_probe=builder.apk('task-presentation-guest',sorted(task_fixture.glob('*.java')),task_fixture/'AndroidManifest.xml',resources=task_fixture/'res')
+    ingress_fixture=android/'control-test/ingress-fixture'
+    ingress_native=build/'libingressnative.so'
+    subprocess.run([str(args.ndk.resolve()/'toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android36-clang'),'-std=c11','-O2','-shared','-fPIC','-Wall','-Wextra','-Werror',str(ingress_fixture/'native.c'),'-o',str(ingress_native)],check=True)
+    ingress_probe=builder.apk('ingress-guest',sorted(ingress_fixture.glob('*.java')),ingress_fixture/'AndroidManifest.xml',libraries=[ingress_native])
+    fixture_info['ingressSha256']=sha(ingress_probe)
     fixture_info['taskPresentationSha256']=sha(task_probe)
     fixture_info['applicationContractSha256']=sha(contract_probe)
     generated=build/'generated';generated.mkdir(exist_ok=True)
@@ -141,6 +146,7 @@ def main():
     shutil.copyfile(result_probe,test_assets/'result-contract-guest.apk')
     shutil.copyfile(biometric_probe,test_assets/'biometric-contract-guest.apk')
     shutil.copyfile(task_probe,test_assets/'task-presentation-guest.apk')
+    shutil.copyfile(ingress_probe,test_assets/'ingress-guest.apk')
     control_test=builder.apk('tripoder-control-test',common+sorted((android/'control-test/src').rglob('*.java')),control_manifest,assets=test_assets)
     after={str(p.relative_to(repo)):sha(p) for p in files}
     if before!=after:raise RuntimeError('SOURCES_CHANGED_DURING_BUILD')

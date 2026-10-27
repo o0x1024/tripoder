@@ -39,7 +39,7 @@ final class RuntimeServiceIntent {
             parcel.unmarshall(encoded,0,encoded.length);parcel.setDataPosition(0);
             Intent restored=Intent.CREATOR.createFromParcel(parcel);
             if(parcel.dataAvail()!=0)throw new IllegalArgumentException("SERVICE_PAYLOAD_TRAILING_DATA");
-            restored.setExtrasClassLoader(Objects.requireNonNull(loader,"SERVICE_PAYLOAD_LOADER_REQUIRED"));
+            RuntimeGuestPayload.prepare(restored,Objects.requireNonNull(loader,"SERVICE_PAYLOAD_LOADER_REQUIRED"));
             shape(restored);return restored;
         }finally{parcel.recycle();}
     }

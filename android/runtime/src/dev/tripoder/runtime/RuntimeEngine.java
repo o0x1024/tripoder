@@ -201,7 +201,6 @@ public final class RuntimeEngine {
         boot("hooks",bootStart);
         if(!adapterReady)throw new IllegalStateException("SELF_HOOK_READY_PUBLICATION_MISSING");
         installWindowSessionProxy();
-        installAppWidgetBoundary();
         if (Boolean.getBoolean("tripoder.debug.mainSampler")) {
             Thread sampler = new Thread(() -> {
                 Thread main = Looper.getMainLooper().getThread();

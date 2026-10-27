@@ -141,7 +141,6 @@ public final class RuntimeBridge {
     public static int[] batchSelectionKeys(ContentProviderOperation operation,int index){return RuntimeSelfHookComponents.selectionKeys(operation,index);}
     /** The physical summary is the Runtime exit-attribution marker; guest summaries are retained logically and never overwrite it. */
     public static void setProcessStateSummary(byte[] summary){RuntimeEngine.current.setGuestProcessStateSummary(summary);}
-    public static void installReceiverAdapter(BroadcastReceiver receiver){RuntimeSelfHookComponents.installReceiver(receiver);}
     public static boolean ownsReceiver(BroadcastReceiver receiver){return RuntimeEngine.current!=null&&RuntimeEngine.current.receivers.owns(receiver);}
     public static Intent receiverBefore(BroadcastReceiver receiver,Intent intent,Object pending){return RuntimeEngine.current.receivers.before(receiver,intent,pending);}
     public static void receiverAfter(BroadcastReceiver receiver,boolean success){RuntimeEngine.current.receivers.after(receiver,success);}

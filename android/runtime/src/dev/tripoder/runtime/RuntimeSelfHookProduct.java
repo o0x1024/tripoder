@@ -1,8 +1,6 @@
 package dev.tripoder.runtime;
 
-import dev.tripoder.selfhook.FixedManagerInventory;
 import dev.tripoder.selfhook.ManagedHook;
-import java.lang.reflect.Method;
 import java.util.EnumMap;
 import static dev.tripoder.runtime.RuntimeSelfHookBootstrap.Capability.*;
 
@@ -10,7 +8,9 @@ import static dev.tripoder.runtime.RuntimeSelfHookBootstrap.Capability.*;
  * Existing Runtime owners retain every business ledger and authorization. */
 final class RuntimeSelfHookProduct {
     private static volatile int installedBindings;
+    private static volatile int installedManagerBindings;
     static int installedBindings(){return installedBindings;}
+    static int installedManagerBindings(){return installedManagerBindings;}
     private RuntimeManagedInstaller managed;
     private RuntimeSelfHookInstallers adapters;
     private RuntimeSelfHookProduct(RuntimeEngine engine){
@@ -35,21 +35,21 @@ final class RuntimeSelfHookProduct {
         plan.put(SERVICES,()->{RuntimeSelfHookFixedComponents.services();RuntimeSelfHookRawServices.install(value.managed);});
         plan.put(PROVIDERS,()->{RuntimeSelfHookFixedComponents.providers();RuntimeSelfHookProviderInstallation.install(value.managed);});
         plan.put(RECEIVERS,()->{RuntimeSelfHookFixedComponents.receivers();RuntimeSelfHookRawReceivers.install(value.managed);});
-        plan.put(WIDGETS,RuntimeSelfHookFixedComponents::widgets);
+        plan.put(WIDGETS,()->{});
         plan.put(PACKAGES,()->{RuntimeSelfHookPackages.install(value.managed);RuntimeSelfHookResourceRegistration.install(value.managed);});
-        plan.put(STORAGE,RuntimeSelfHookStorage::install);
-        plan.put(ACTIVITY_MANAGER,()->value.manager(RuntimeSelfHookManagerPolicy.Family.ACTIVITY_MANAGER));
-        plan.put(CONNECTIVITY,()->value.manager(RuntimeSelfHookManagerPolicy.Family.CONNECTIVITY));
-        plan.put(WIFI_P2P,()->value.manager(RuntimeSelfHookManagerPolicy.Family.WIFI_P2P));
-        plan.put(NETWORK_STATS,()->value.manager(RuntimeSelfHookManagerPolicy.Family.NETWORK_STATS));
-        plan.put(TELEPHONY,()->value.manager(RuntimeSelfHookManagerPolicy.Family.TELEPHONY));
-        plan.put(AUDIO,()->value.manager(RuntimeSelfHookManagerPolicy.Family.AUDIO));
-        plan.put(BATTERY,()->value.manager(RuntimeSelfHookManagerPolicy.Family.BATTERY));
-        plan.put(POWER,()->value.manager(RuntimeSelfHookManagerPolicy.Family.POWER));
-        plan.put(NOTIFICATIONS,()->value.manager(RuntimeSelfHookManagerPolicy.Family.NOTIFICATIONS));
-        plan.put(SHORTCUTS,()->value.manager(RuntimeSelfHookManagerPolicy.Family.SHORTCUTS));
-        plan.put(LOCATION,()->value.manager(RuntimeSelfHookManagerPolicy.Family.LOCATION));
-        plan.put(JOBS,()->{value.manager(RuntimeSelfHookManagerPolicy.Family.JOB_SCHEDULER);RuntimeSelfHookJobs.install(value.managed);});
+        plan.put(STORAGE,()->{RuntimeSelfHookRawStorage.install(value.managed);RuntimeSelfHookStorage.install();});
+        plan.put(ACTIVITY_MANAGER,()->{});
+        plan.put(CONNECTIVITY,()->{});
+        plan.put(WIFI_P2P,()->{});
+        plan.put(NETWORK_STATS,()->{});
+        plan.put(TELEPHONY,()->{});
+        plan.put(AUDIO,()->{});
+        plan.put(BATTERY,()->{});
+        plan.put(POWER,()->{});
+        plan.put(NOTIFICATIONS,engine.notifications::installBoundary);
+        plan.put(SHORTCUTS,()->{});
+        plan.put(LOCATION,()->{});
+        plan.put(JOBS,()->RuntimeSelfHookJobs.install(value.managed));
         plan.put(PENDING_INTENTS,()->RuntimePendingIntents.install(value.managed));
         plan.put(UI_EFFECTS,()->{RuntimeSelfHookSystemEdges.autofill(value.managed);});
         plan.put(FAILURE_DIAGNOSTICS,()->{});
@@ -64,14 +64,12 @@ final class RuntimeSelfHookProduct {
         long start=android.os.SystemClock.elapsedRealtimeNanos();
         RuntimeSelfHookBootstrap.PROCESS.install(measured,()->{value.managed.requirePreparedConsumed();value.managed.publishPrepared();ManagedHook.completeBootstrap();RuntimeBridge.selfHookReady();});
         installedBindings=value.managed.installedCount();
+        installedManagerBindings=value.managed.installedManagerCount();
         android.util.Log.i("TripoderSelfHook","READY:"+RuntimeSelfHookBootstrap.PROCESS.status()+":bindings="+value.managed.installedCount()+":ns="+(android.os.SystemClock.elapsedRealtimeNanos()-start));
         android.util.Log.i("TripoderSelfHook","FIXED_PUBLICATION:bindings="+installedBindings+":ns="+value.managed.publishNs());
         android.util.Log.i("TripoderSelfHook","PREPARATION_METRICS:"+dev.tripoder.selfhook.OriginalMethodStorage.preparationMetrics());
         android.util.Log.i("TripoderSelfHook","MANAGED_PREPARATION_METRICS:"+ManagedHook.preparationMetrics());
         android.util.Log.i("TripoderSelfHook","EXECUTION_POLICY:"+ManagedHook.processPolicy());
-    }
-    private void manager(RuntimeSelfHookManagerPolicy.Family family)throws Exception{
-        if(RuntimePlatformPolicy.platformManager(family))return;
-        RuntimeSelfHookManagers.install(family,FixedManagerInventory.methods(family.ordinal()).toArray(new Method[0]),adapters);
+        android.util.Log.i("TripoderSelfHook","PUBLICATION_METRICS:"+ManagedHook.publicationMetrics());
     }
 }

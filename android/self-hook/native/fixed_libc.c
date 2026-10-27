@@ -189,9 +189,8 @@ static enum tp_fixed_libc_status transition(bool enable) {
     uint64_t start=tp_park_now();bool committed=false;
     if(!start){fixed.report.admission_outcome=TP_FIXED_LIBC_ADMISSION_CLOCK;goto cancelled;}
     for(unsigned attempt=0;attempt<64;attempt++){
-        fixed.report.admission_attempts++;
         struct tp_park_snapshot snapshot={0};
-        fixed.report.pause_status=tp_park_begin(&snapshot);fixed.report.pause=snapshot;
+        fixed.report.pause_status=tp_park_begin_bounded(&snapshot,&fixed.report.admission_attempts);fixed.report.pause=snapshot;
         if(fixed.report.pause_status!=TP_PARK_OK){
             uint64_t now=tp_park_now();
             if(now>=start)fixed.report.admission_elapsed_ns=now-start;

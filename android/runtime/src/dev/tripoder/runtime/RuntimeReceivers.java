@@ -8,6 +8,7 @@ import java.util.*;
 final class RuntimeReceivers {
     private final RuntimeEngine engine;
     private final Map<BroadcastReceiver,Registration> receivers=new IdentityHashMap<>();
+    private final Map<BroadcastReceiver,RuntimeReceiverProxy> proxies=new IdentityHashMap<>();
     private final Map<Object,Invocation> pending=new IdentityHashMap<>();
     private final Map<String,FinalDelivery> finals=new HashMap<>();
     private final ThreadLocal<Deque<Invocation>> current=ThreadLocal.withInitial(ArrayDeque::new);
@@ -29,6 +30,13 @@ final class RuntimeReceivers {
     private static final class Invocation {final BroadcastReceiver receiver;final String ticket,instance;final Object pending;boolean returned,finished,finalResult;Invocation(BroadcastReceiver r,String t,String i,Object p){receiver=r;ticket=t;instance=i;pending=p;}}
     private static final class FinalDelivery {final BroadcastReceiver receiver;final Intent logical;FinalDelivery(BroadcastReceiver r,Intent i){receiver=r;logical=i;}}
     RuntimeReceivers(RuntimeEngine engine){this.engine=engine;}
+    private RuntimeReceiverProxy proxy(BroadcastReceiver receiver){
+        return new RuntimeReceiverProxy(receiver,new RuntimeReceiverProxy.Delivery(){
+            public Intent before(BroadcastReceiver guest,Intent physical,Object pending){return RuntimeReceivers.this.before(guest,physical,pending);}
+            public Context context(Context physical){return RuntimeBridge.context(physical);}
+            public void after(BroadcastReceiver guest,boolean success){RuntimeReceivers.this.after(guest,success);}
+        });
+    }
     boolean platformContext(Context context){
         Set<Context> seen=Collections.newSetFromMap(new IdentityHashMap<>());
         while(context!=null&&seen.size()<16&&seen.add(context)){
@@ -46,7 +54,7 @@ final class RuntimeReceivers {
         BroadcastReceiver receiver=engine.componentFactory.instantiateReceiver(engine.guestLoader(),component,logical);
         if(receiver==null||!engine.ownsReceiverLoader(receiver.getClass().getClassLoader()))throw new SecurityException("RECEIVER_LOADER_MISMATCH");
         Registration registration=new Registration(component,ticket,false);
-        synchronized(this){receivers.put(receiver,registration);}RuntimeBridge.installReceiverAdapter(receiver);return receiver;
+        synchronized(this){receivers.put(receiver,registration);}return proxy(receiver);
     }
     /** Sticky broadcasts sent by this application. Android keeps them system-wide; in a guest only this application can send or see them, so the process-local
      *  latest-per-action store gives the same answers within one process (another process of the same app does not see it). */
@@ -65,6 +73,8 @@ final class RuntimeReceivers {
         if(intent!=null&&intent.getAction()!=null)synchronized(appSticky){appSticky.remove(intent.getAction());}
     }
     private Intent appStickyFor(IntentFilter filter){
+        java.util.Objects.requireNonNull(filter,"RECEIVER_FILTER_REQUIRED");
+        if(filter.countActions()==0)return null;
         synchronized(appSticky){for(Intent held:appSticky.values())if(filter.match(held.getAction(),held.getType(),held.getScheme(),held.getData(),held.getCategories(),"TripoderSticky")>=0)return new Intent(held);}
         return null;
     }
@@ -86,6 +96,7 @@ final class RuntimeReceivers {
         // sends of system actions stay blocked on the send path, so this is listen-only.
         Set<String> systems=new HashSet<>();for(int i=0;i<filter.countActions();i++){String action=filter.getAction(i);if(RuntimeSystemBroadcasts.ACTIONS.contains(action))systems.add(action);}
         if(receiver==null){
+            if(filter.countActions()==0)return null;
             if(permission!=null||filter.countActions()!=1||!RuntimeSystemBroadcasts.STICKY.contains(filter.getAction(0)))throw new UnsupportedOperationException("STICKY_QUERY_SHAPE_UNSUPPORTED");
             Bundle request=engine.auth();request.putBoolean("stickyQuery",true);request.putByteArray("filter",encoded);
             try{Bundle response=engine.brokerCall(RuntimeWire.BROADCAST_REGISTER,request);return response.containsKey("payload")?RuntimeBroadcastIntent.decode(response.getByteArray("payload")):null;}catch(Exception error){throw new IllegalStateException("STICKY_QUERY_FAILED",error);}
@@ -99,17 +110,15 @@ final class RuntimeReceivers {
             Bundle admitted=engine.brokerCall(RuntimeWire.BROADCAST_REGISTER,b);String id=admitted.getString("registration");Registration registration=new Registration("",id,true,Set.copyOf(systems),filter,receiverKey);
             Bundle ack=engine.auth();ack.putString("registration",id);
             boolean registered=false;Intent stickyReturn=null;try{
-                // Never hold the registry monitor while entering the JavaScript adapter.
-                // Publish only after installation, so an incoming callback cannot wait
-                // for activation while blocking the adapter that activates it.
-                RuntimeBridge.installReceiverAdapter(receiver);synchronized(this){Registration root=receivers.get(receiver);if(root==null||root.closed)receivers.put(receiver,registration);else root.entries.add(registration);}
+                RuntimeReceiverProxy physicalReceiver;
+                synchronized(this){Registration root=receivers.get(receiver);if(root==null||root.closed)receivers.put(receiver,registration);else root.entries.add(registration);physicalReceiver=proxies.computeIfAbsent(receiver,this::proxy);}
                 // Logical payloads travel inside an authority ticket, so their private
                 // physical action has no URI. System events keep Android's real filter.
-                Intent sticky=engine.host.registerReceiver(receiver,new IntentFilter(admitted.getString("action")),null,scheduler,Context.RECEIVER_NOT_EXPORTED);registered=true;
+                Intent sticky=engine.host.registerReceiver(physicalReceiver,new IntentFilter(admitted.getString("action")),null,scheduler,Context.RECEIVER_NOT_EXPORTED);registered=true;
                 if(sticky!=null)throw new IllegalStateException("UNEXPECTED_STICKY_PRIVATE_BROADCAST");
                 if(!systems.isEmpty()){
                     IntentFilter physical=RuntimeReceiverFilters.system(filter,systems);
-                    stickyReturn=engine.host.registerReceiver(receiver,physical,permission,scheduler,Context.RECEIVER_NOT_EXPORTED);
+                    stickyReturn=engine.host.registerReceiver(physicalReceiver,physical,permission,scheduler,Context.RECEIVER_NOT_EXPORTED);
                 }
                 ack.putString("state","ACTIVE");engine.brokerCall(RuntimeWire.BROADCAST_REGISTRATION,ack);registration.active=true;
                 if(stickyReturn==null)return null;
@@ -128,7 +137,9 @@ final class RuntimeReceivers {
     private void closeRegistered(BroadcastReceiver receiver,boolean physical)throws Exception{
         List<Registration> entries;
         synchronized(this){Registration root=receivers.get(receiver);if(root==null)return;entries=new ArrayList<>(root.entries);for(Registration entry:entries){entry.closed=true;retiredActions.add(BroadcastLedger.action(entry.id));}}
-        if(physical)engine.host.unregisterReceiver(receiver);
+        RuntimeReceiverProxy proxy;synchronized(this){proxy=proxies.get(receiver);}
+        if(physical&&proxy!=null)engine.host.unregisterReceiver(proxy);
+        synchronized(this){proxies.remove(receiver);}
         for(Registration entry:entries){Bundle request=engine.auth();request.putString("registration",entry.id);request.putString("state","CLOSED");if(!entry.active)request.putBoolean("failed",true);engine.brokerCall(RuntimeWire.BROADCAST_REGISTRATION,request);}
     }
 
@@ -142,7 +153,6 @@ final class RuntimeReceivers {
         if(result!=null){
             if(!ordered)throw new IllegalArgumentException("BROADCAST_RESULT_REQUIRES_ORDERED");
             if(!engine.ownsReceiverLoader(result.getClass().getClassLoader()))throw new SecurityException("RECEIVER_LOADER_MISMATCH");
-            RuntimeBridge.installReceiverAdapter(result);
         }
         Bundle extras=RuntimeProviderFacade.primitive(initialExtras);byte[] payload;
         Intent bytesOnly=new Intent(logical);Bundle binders=RuntimeBroadcastIntent.detachBinders(bytesOnly);
@@ -164,7 +174,7 @@ final class RuntimeReceivers {
                 if(!prepared.ordered){engine.host.sendBroadcast(physical);continue;}
                 BroadcastReceiver finalReceiver=prepared.result;
                 if(finalReceiver==null)finalReceiver=new BroadcastReceiver(){@Override public void onReceive(Context c,Intent i){event(ticket,"","systemDone");}};
-                else{synchronized(this){finals.put(ticket,new FinalDelivery(finalReceiver,new Intent(prepared.logical)));}}
+                else{synchronized(this){finals.put(ticket,new FinalDelivery(finalReceiver,new Intent(prepared.logical)));}finalReceiver=proxy(finalReceiver);}
                 engine.host.sendOrderedBroadcast(physical,null,finalReceiver,prepared.scheduler,prepared.initialCode,prepared.initialData,prepared.initialExtras);
             }
         }catch(Exception error){throw new IllegalStateException("BROADCAST_SEND_UNCONFIRMED",error);}

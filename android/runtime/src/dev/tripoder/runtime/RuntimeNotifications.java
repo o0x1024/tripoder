@@ -13,7 +13,39 @@ final class RuntimeNotifications {
     private final RuntimeEngine engine;
     private volatile NotificationManager facade;
     RuntimeNotifications(RuntimeEngine engine){this.engine=engine;}
-    synchronized NotificationManager facade(){if(facade==null){facade=RuntimeBridge.createNotificationManager(engine.host);if(facade==null||facade==platform())throw new SecurityException("NOTIFICATION_FACADE_IDENTITY_INVALID");}return facade;}
+    synchronized NotificationManager facade(){if(facade==null)facade=platform();return facade;}
+    private final ThreadLocal<Boolean> physicalCall=ThreadLocal.withInitial(()->false);
+    void installBoundary()throws Exception{
+        dev.tripoder.selfhook.ManagerServiceAccess.notifications((original,method,args)->{
+            if(physicalCall.get())return dev.tripoder.selfhook.ManagerServiceAccess.call(original,method,args);
+            physicalCall.set(true);
+            try{return dispatchService(original,method,args);}finally{physicalCall.remove();}
+        });
+    }
+    @SuppressWarnings("unchecked")
+    private Object dispatchService(Object original,java.lang.reflect.Method method,Object[] a)throws Throwable{
+        String name=method.getName();
+        switch(name){
+            case "enqueueNotificationWithTag":post((String)a[2],(Integer)a[3],(Notification)a[4]);return null;
+            case "cancelNotificationWithTag":cancel((String)a[2],(Integer)a[3]);return null;
+            case "cancelAllNotifications":cancelAll();return null;
+            case "createNotificationChannels":createChannels((List<NotificationChannel>)(List<?>)dev.tripoder.selfhook.ManagerServiceAccess.list(a[1]));return null;
+            case "createNotificationChannelGroups":createGroups((List<NotificationChannelGroup>)(List<?>)dev.tripoder.selfhook.ManagerServiceAccess.list(a[1]));return null;
+            case "getNotificationChannel":return channel((String)a[3],null);
+            case "getConversationNotificationChannel":return channel((String)a[3],(String)a[5]);
+            case "getNotificationChannels":return dev.tripoder.selfhook.ManagerServiceAccess.slice(channels());
+            case "getNotificationChannelGroup":return group((String)a[1]);
+            case "getNotificationChannelGroups":return dev.tripoder.selfhook.ManagerServiceAccess.slice(groups());
+            case "deleteNotificationChannel":deleteChannel((String)a[1]);return null;
+            case "deleteNotificationChannelGroup":deleteGroup((String)a[1]);return null;
+            case "getAppActiveNotifications":return dev.tripoder.selfhook.ManagerServiceAccess.slice(Arrays.asList(active()));
+            case "setNotificationDelegate":delegate((String)a[1]);return null;
+            case "getNotificationDelegate":return delegate();
+            case "canNotifyAsPackage":return canNotify((String)a[1]);
+            default:return dev.tripoder.selfhook.ManagerServiceAccess.call(original,method,a);
+        }
+    }
+
     boolean owns(NotificationManager manager){return manager!=null&&manager==facade;}
     NotificationManager platform(){return Objects.requireNonNull(engine.host.getSystemService(NotificationManager.class),"PLATFORM_NOTIFICATION_UNAVAILABLE");}
     private android.content.SharedPreferences delegation(){return engine.storage.preferences("tripoder-notification-policy",Context.MODE_PRIVATE);}
@@ -34,6 +66,19 @@ final class RuntimeNotifications {
     }
     boolean canNotify(String target){return engine.packageName.equals(target);}
     void postAs(String target,String tag,int id,Notification value){if(!canNotify(target))throw new SecurityException("NOTIFICATION_TARGET_NOT_AUTHORIZED");post(tag,id,value);}
+    void createChannels(List<NotificationChannel> values){physical(()->{createChannelsPhysical(values);return null;});}
+    void createGroups(List<NotificationChannelGroup> values){physical(()->{createGroupsPhysical(values);return null;});}
+    NotificationChannel channel(String id,String conversation){return physical(()->channelPhysical(id,conversation));}
+    List<NotificationChannel> channels(){return physical(()->channelsPhysical());}
+    NotificationChannelGroup group(String id){return physical(()->groupPhysical(id));}
+    List<NotificationChannelGroup> groups(){return physical(()->groupsPhysical());}
+    void deleteChannel(String id){physical(()->{deleteChannelPhysical(id);return null;});}
+    void deleteGroup(String id){physical(()->{deleteGroupPhysical(id);return null;});}
+    void post(String tag,int id,Notification guest){physical(()->{postPhysical(tag,id,guest);return null;});}
+    android.service.notification.StatusBarNotification[] active(){return physical(()->activePhysical());}
+    void cancel(String tag,int id){physical(()->{cancelPhysical(tag,id);return null;});}
+    void cancelAll(){physical(()->{cancelAllPhysical();return null;});}
+    private <T>T physical(java.util.function.Supplier<T> action){boolean previous=physicalCall.get();physicalCall.set(true);try{return action.get();}finally{if(previous)physicalCall.set(true);else physicalCall.remove();}}
     private RuntimeNotificationNamespace scope(){return new RuntimeNotificationNamespace(engine.storage.dataId);}
     private static <T extends Parcelable>T copy(T value,Parcelable.Creator<T> creator){Parcel p=Parcel.obtain();try{value.writeToParcel(p,0);if(p.hasFileDescriptors()||p.dataSize()>32768)throw new IllegalArgumentException("NOTIFICATION_PAYLOAD_UNSUPPORTED");p.setDataPosition(0);return creator.createFromParcel(p);}finally{p.recycle();}}
     private static void text(CharSequence value){if(value!=null&&(!(value instanceof String)||value.length()>1000))throw new IllegalArgumentException("NOTIFICATION_TEXT_UNSUPPORTED");}
@@ -56,26 +101,26 @@ final class RuntimeNotifications {
         if(value==null)return null;channelKind(value);NotificationChannel out=copy(value,NotificationChannel.CREATOR);var scope=scope();
         RuntimeBridge.notificationChannelIdentity(out,scope.logical(value.getId()),value.getGroup()==null?null:scope.logical(value.getGroup()));return out;
     }
-    void createChannels(List<NotificationChannel> values){
+    private void createChannelsPhysical(List<NotificationChannel> values){
         if(values==null||values.size()>64)throw new IllegalArgumentException("NOTIFICATION_BATCH_LIMIT");List<NotificationChannel> mapped=new ArrayList<>();for(NotificationChannel value:values)mapped.add(toSystem(value));platform().createNotificationChannels(mapped);
     }
-    void createGroups(List<NotificationChannelGroup> values){
+    private void createGroupsPhysical(List<NotificationChannelGroup> values){
         if(values==null||values.size()>64)throw new IllegalArgumentException("NOTIFICATION_BATCH_LIMIT");List<NotificationChannelGroup> mapped=new ArrayList<>();var scope=scope();
         for(NotificationChannelGroup value:values){Objects.requireNonNull(value);text(value.getName());text(value.getDescription());if(!value.getChannels().isEmpty())throw new UnsupportedOperationException("NOTIFICATION_GROUP_INPUT_CHANNELS_UNSUPPORTED");NotificationChannelGroup out=copy(value,NotificationChannelGroup.CREATOR);RuntimeBridge.notificationGroupIdentity(out,scope.physical(value.getId()),new ArrayList<>());mapped.add(out);}platform().createNotificationChannelGroups(mapped);
     }
-    NotificationChannel channel(String id,String conversation){if(conversation!=null)throw new UnsupportedOperationException("NOTIFICATION_CONVERSATION_UNSUPPORTED");return toGuest(platform().getNotificationChannel(scope().physical(id)));}
-    List<NotificationChannel> channels(){List<NotificationChannel> result=new ArrayList<>();var scope=scope();for(NotificationChannel value:platform().getNotificationChannels())if(scope.owns(value.getId()))result.add(toGuest(value));return result;}
+    private NotificationChannel channelPhysical(String id,String conversation){if(conversation!=null)throw new UnsupportedOperationException("NOTIFICATION_CONVERSATION_UNSUPPORTED");return toGuest(platform().getNotificationChannel(scope().physical(id)));}
+    private List<NotificationChannel> channelsPhysical(){List<NotificationChannel> result=new ArrayList<>();var scope=scope();for(NotificationChannel value:platform().getNotificationChannels())if(scope.owns(value.getId()))result.add(toGuest(value));return result;}
     private NotificationChannelGroup toGuest(NotificationChannelGroup value){
         if(value==null)return null;NotificationChannelGroup out=copy(value,NotificationChannelGroup.CREATOR);List<NotificationChannel> members=new ArrayList<>();for(NotificationChannel channel:value.getChannels())members.add(toGuest(channel));RuntimeBridge.notificationGroupIdentity(out,scope().logical(value.getId()),members);return out;
     }
-    NotificationChannelGroup group(String id){return toGuest(platform().getNotificationChannelGroup(scope().physical(id)));}
-    List<NotificationChannelGroup> groups(){List<NotificationChannelGroup> result=new ArrayList<>();var scope=scope();for(NotificationChannelGroup value:platform().getNotificationChannelGroups())if(scope.owns(value.getId()))result.add(toGuest(value));return result;}
-    void deleteChannel(String id){platform().deleteNotificationChannel(scope().physical(id));}
-    void deleteGroup(String id){platform().deleteNotificationChannelGroup(scope().physical(id));}
+    private NotificationChannelGroup groupPhysical(String id){return toGuest(platform().getNotificationChannelGroup(scope().physical(id)));}
+    private List<NotificationChannelGroup> groupsPhysical(){List<NotificationChannelGroup> result=new ArrayList<>();var scope=scope();for(NotificationChannelGroup value:platform().getNotificationChannelGroups())if(scope.owns(value.getId()))result.add(toGuest(value));return result;}
+    private void deleteChannelPhysical(String id){platform().deleteNotificationChannel(scope().physical(id));}
+    private void deleteGroupPhysical(String id){platform().deleteNotificationChannelGroup(scope().physical(id));}
     /** Posts a guest notification as this host. SystemUI resolves icons and resources by the posting package, which for a guest is not installed, so everything it would look up is
      *  rendered here (icons become bitmaps) and everything addressed by name goes through the guest's own channel/tag namespaces. Content that only exists as guest-package
      *  resources (custom RemoteViews) cannot be shown and is left out. PendingIntent tokens are already host-issued and pass unchanged. */
-    void post(String tag,int id,Notification guest){
+    private void postPhysical(String tag,int id,Notification guest){
         if(guest==null)throw new NullPointerException("notification");
         Context guestContext=engine.application!=null?engine.application:engine.host;
         Icon small=render(guest.getSmallIcon(),guestContext,96);
@@ -119,7 +164,7 @@ final class RuntimeNotifications {
         android.graphics.Canvas canvas=new android.graphics.Canvas(bitmap);drawable.setBounds(0,0,width,height);drawable.draw(canvas);
         return Icon.createWithBitmap(bitmap);
     }
-    android.service.notification.StatusBarNotification[] active(){
+    private android.service.notification.StatusBarNotification[] activePhysical(){
         var observed=platform().getActiveNotifications();if(observed==null)throw new IllegalStateException("NOTIFICATION_STATUS_OBSERVATION_UNAVAILABLE");
         var owner=new RuntimeNotificationCancellation(engine.storage.dataId);List<android.service.notification.StatusBarNotification> result=new ArrayList<>();
         for(var item:observed){
@@ -131,6 +176,6 @@ final class RuntimeNotifications {
         }
         return result.toArray(new android.service.notification.StatusBarNotification[0]);
     }
-    void cancel(String tag,int id){new RuntimeNotificationCancellation(engine.storage.dataId).cancel(platform(),tag,id);}
-    void cancelAll(){new RuntimeNotificationCancellation(engine.storage.dataId).cancelAll(platform());}
+    private void cancelPhysical(String tag,int id){new RuntimeNotificationCancellation(engine.storage.dataId).cancel(platform(),tag,id);}
+    private void cancelAllPhysical(){new RuntimeNotificationCancellation(engine.storage.dataId).cancelAll(platform());}
 }

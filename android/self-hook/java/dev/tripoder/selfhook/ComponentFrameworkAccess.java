@@ -13,12 +13,13 @@ import java.util.Objects;
 public final class ComponentFrameworkAccess {
     private static boolean attempted;
     private static volatile ComponentFrameworkAccess instance;
-    private final Method pending,protectedQuery,flags,provider;
+    private final Method pending,setPending,protectedQuery,flags,provider;
     private final Object packages;
     private final Field selection,index,key,pendingKind;
     private final Class<?> backReference;
     private ComponentFrameworkAccess()throws Exception {
         pending=FixedFrameworkMembers.method(15,"getPendingResult","()Landroid/content/BroadcastReceiver$PendingResult;",false);
+        setPending=FixedFrameworkMembers.method(15,"setPendingResult","(Landroid/content/BroadcastReceiver$PendingResult;)V",false);
         Method pm=FixedFrameworkMembers.method(1,"getPackageManager","()Landroid/content/pm/IPackageManager;",true);
         protectedQuery=FixedFrameworkMembers.method(16,"isProtectedBroadcast","(Ljava/lang/String;)Z",false);
         flags=FixedFrameworkMembers.method(17,"getValue","()J",false);
@@ -37,6 +38,7 @@ public final class ComponentFrameworkAccess {
     private static ComponentFrameworkAccess require(){ComponentFrameworkAccess v=instance;if(v==null)throw new IllegalStateException("COMPONENT_FRAMEWORK_NOT_READY");return v;}
     static Object physicalPackages(){return require().packages;}
     public static Object pendingResult(BroadcastReceiver receiver){return FixedFrameworkMembers.call(require().pending,Objects.requireNonNull(receiver));}
+    public static void pendingResult(BroadcastReceiver receiver,Object token){FixedFrameworkMembers.call(require().setPending,Objects.requireNonNull(receiver),token);}
     /** SDK dispatch role, never inferred from a mutable Intent or a result code. */
     public static int pendingKind(Object pending){
         int kind=(Integer)FixedFrameworkMembers.get(require().pendingKind,Objects.requireNonNull(pending));

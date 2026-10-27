@@ -92,6 +92,7 @@ public final class RuntimeEnvMock {
         if (state == null || !NETWORK_STATES.contains(state)) {
             throw new IllegalArgumentException("ENV_MOCK_NETWORK_STATE:" + state);
         }
+        if(!"passthrough".equals(state))throw new UnsupportedOperationException("DEVICE_MANAGER_OBSERVATION_NOT_INSTALLED");
         networkState = state;
         RuntimeEngine engine = RuntimeEngine.current;
         if (engine != null && engine.connectivity != null) {

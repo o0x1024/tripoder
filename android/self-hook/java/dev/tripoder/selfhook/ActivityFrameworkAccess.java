@@ -36,6 +36,7 @@ public final class ActivityFrameworkAccess {
     public static Intent recordIntent(Object record){return (Intent)FixedFrameworkMembers.get(require().recordIntent,Objects.requireNonNull(record));}
     public static IBinder recordToken(Object record){return (IBinder)Objects.requireNonNull(FixedFrameworkMembers.get(require().recordToken,Objects.requireNonNull(record)),"ACTIVITY_RECORD_TOKEN_REQUIRED");}
     public static Bundle recordState(Object record){return (Bundle)FixedFrameworkMembers.get(require().recordState,Objects.requireNonNull(record));}
+    public static void recordState(Object record,Bundle state){FixedFrameworkMembers.set(require().recordState,Objects.requireNonNull(record),state);}
     public static boolean launchItem(Object item){return item!=null&&item.getClass()==require().launchIntent.getDeclaringClass();}
     public static boolean physicalClient(Object client){return client==PhysicalApplication.thread();}
     public static Intent launchIntent(Object item){if(!launchItem(item))throw new SecurityException("ACTIVITY_LAUNCH_ITEM_IDENTITY");return (Intent)FixedFrameworkMembers.get(require().launchIntent,item);}

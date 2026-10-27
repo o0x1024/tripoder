@@ -47,6 +47,7 @@ final class RuntimeActivityIntent {
         return digest(comparable);
     }
     static Intent visible(Intent physical,String pkg,ClassLoader loader){
+        RuntimeGuestPayload.prepare(physical,loader);
         String component=RuntimeWire.required(physical.getExtras(),"tripoder.component");Intent visible=new Intent(physical);
         for(String key:new String[]{"callback","operation","generation","component","ticket","delivery","flags","extras","thinRoute","callerKind","callerPackage","callerComponent","callerPhysical","expectsResult"})visible.removeExtra("tripoder."+key);
         if(!physical.getBooleanExtra("tripoder.extras",true)){Bundle remaining=visible.getExtras();if(remaining!=null&&!remaining.isEmpty())throw new SecurityException("ACTIVITY_EXTRAS_PRESENCE_MISMATCH");visible.replaceExtras((Bundle)null);}

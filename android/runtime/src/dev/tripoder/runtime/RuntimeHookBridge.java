@@ -75,6 +75,8 @@ public final class RuntimeHookBridge {
             long mappingsDone=android.os.SystemClock.elapsedRealtime();
             Map<String,Object> policy=HookWire.request(dev.tripoder.selfhook.ManagedHook.processPolicy());
             policy.put("fixedBindings",RuntimeSelfHookProduct.installedBindings());result.put("executionPolicy",policy);
+            policy.put("managerFixedBindings",RuntimeSelfHookProduct.installedManagerBindings());
+            result.put("managedPublication",HookWire.request(dev.tripoder.selfhook.ManagedHook.publicationMetrics()));
             result.put("nativeCoreResources",dev.tripoder.selfhook.NativeHook.resources());
             result.put("nativeSyscalls",HookWire.request(RuntimeSelfHookStorage.syscallNamespaceNative()));
             result.put("nativeSignalChain",HookWire.request(RuntimeSelfHookStorage.signalChainNative()));

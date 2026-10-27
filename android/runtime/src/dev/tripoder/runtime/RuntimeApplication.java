@@ -9,7 +9,8 @@ public class RuntimeApplication extends Application implements Application.Activ
     @Override public void onCreate(){super.onCreate();registerActivityLifecycleCallbacks(this);}
     /** Guest view state contains app-defined Parcelables; resolve them with the guest loader. */
     private static void stateLoader(Activity a,Bundle b){
-        ClassLoader loader=a.getClass().getClassLoader();
+        if(!RuntimeBridge.owns(a))return;
+        ClassLoader loader=RuntimeEngine.current.guestLoader();
         if(b!=null)b.setClassLoader(loader);
         try{Bundle saved=ActivityFrameworkAccess.savedState(a);if(saved!=null)saved.setClassLoader(loader);}
         catch(Throwable error){android.util.Log.w("TripoderActivities","saved-state-loader",error);}

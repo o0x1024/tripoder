@@ -77,6 +77,16 @@ public final class ManagedHook {
     public static synchronized String preparationMetrics(){return "{\"entries\":"+used+",\"validationNs\":"+validationNs+",\"dexBuildNs\":"+dexBuildNs+",\"dexLoadNs\":"+dexLoadNs+",\"helperResolveNs\":"+helperResolveNs+",\"storageNs\":"+storageNs+",\"entryPrepareNs\":"+entryPrepareNs+"}";}
     private static boolean processInitializationAttempted,processInitialized;
     private static boolean changing;
+    private static boolean bootstrapCompleted;
+    private static long toggleCalls,toggleSuccesses,runtimeToggleCalls,runtimeMainThreadToggleCalls;
+    public static synchronized String publicationMetrics(){return "{\"bindings\":"+used+",\"bootstrapComplete\":"+bootstrapCompleted+",\"toggleCalls\":"+toggleCalls+",\"toggleSuccesses\":"+toggleSuccesses+",\"runtimeToggleCalls\":"+runtimeToggleCalls+",\"runtimeMainThreadToggleCalls\":"+runtimeMainThreadToggleCalls+"}";}
+    private static boolean toggleBatch(int[] slots,boolean active,boolean entryOnly){
+        toggleCalls++;
+        if(bootstrapCompleted){runtimeToggleCalls++;if(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())runtimeMainThreadToggleCalls++;}
+        boolean result=toggleBatchNative(slots,active,entryOnly);
+        if(result)toggleSuccesses++;
+        return result;
+    }
     private ManagedHook(){}
     private static native boolean prepareNative(int slot,Executable target,Method helper,Class<?> owner,String shorty,Executable[] callers);
     private static native int prepareBatchNative(int first,Executable[] targets,Method[] helpers,Class<?>[] owners,String[] shorties,Executable[][] callerArrays);
@@ -131,7 +141,7 @@ public final class ManagedHook {
         catch(ClassNotFoundException error){throw new IllegalStateException("CLASS_INITIALIZATION_FAILED",error);}
         batch.forEach((handle,handler)->handle.entry.handler=handler);
         long phaseMid=android.os.SystemClock.elapsedRealtimeNanos();
-        boolean toggled=toggleBatchNative(slots,true,entryOnly);
+        boolean toggled=toggleBatch(slots,true,entryOnly);
         android.util.Log.i("TripoderSelfHook","ENABLE_BATCH_PHASES owners="+owners.size()+" classInit="+(phaseMid-phaseStart)/1000000+"ms toggle="+(android.os.SystemClock.elapsedRealtimeNanos()-phaseMid)/1000000+"ms entries="+slots.length+" "+togglePhasesNative());
         if(!toggled){batch.keySet().forEach(handle->handle.entry.handler=null);throw new IllegalStateException("HOOK_ACTIVATION_REJECTED");}
     }
@@ -145,7 +155,7 @@ public final class ManagedHook {
         int[] slots=new int[batch.size()];int i=0;
         for(Handle handle:batch){if(handle==null||handle.entry.handler==null||entries.get(handle.entry.id)!=handle.entry)throw new IllegalStateException("HOOK_DISABLE_STATE");slots[i++]=handle.entry.id;}
         batch.forEach(handle->handle.entry.handler=null);
-        if(!toggleBatchNative(slots,false,false))throw new IllegalStateException("HOOK_DISABLE_REJECTED");
+        if(!toggleBatch(slots,false,false))throw new IllegalStateException("HOOK_DISABLE_REJECTED");
     }
 
     /** Process bootstrap, before constructing/loading any guest application code.
@@ -155,6 +165,7 @@ public final class ManagedHook {
     public static synchronized void completeBootstrap(){
         requireProcessInitialization();
         if(!completeBootstrapNative())throw new IllegalStateException("PROCESS_BOOTSTRAP_COMPLETION_FAILED");
+        bootstrapCompleted=true;
     }
     public static synchronized void initializeProcess(){
         initializeProcess(false);

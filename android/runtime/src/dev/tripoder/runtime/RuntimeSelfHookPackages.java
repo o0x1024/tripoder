@@ -11,6 +11,7 @@ final class RuntimeSelfHookPackages {
     static void install(RuntimeManagedInstaller installer)throws Exception{
         Map<Executable,RuntimeManagedInstaller.Callback> callbacks=new LinkedHashMap<>();
         for(Executable target:FixedRuntimeHooks.methods(FixedRuntimeHooks.Group.PACKAGES)){
+            if(!RuntimePlatformPolicy.packageHook(target))continue;
             Method method=(Method)target;
             if(RuntimeFixedPassthrough.packageMethod(method.getDeclaringClass().getName(),method.getName(),method.getParameterCount()))continue;
             if(method.getDeclaringClass().getName().equals("android.app.ContextImpl"))callbacks.put(method,(receiver,args,original)->{

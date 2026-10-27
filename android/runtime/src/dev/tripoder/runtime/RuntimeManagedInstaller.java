@@ -75,6 +75,11 @@ final class RuntimeManagedInstaller {
     }
     synchronized void requirePreparedConsumed(){if(!reserved.isEmpty())throw new IllegalStateException("FIXED_PREPARED_BINDINGS_UNUSED:"+reserved.size());}
     synchronized int installedCount(){if(failed||!pending.isEmpty())throw new IllegalStateException("FIXED_INSTALLER_NOT_PUBLISHED");return installed.size();}
+    synchronized int installedManagerCount(){
+        installedCount();
+        java.util.Set<String> owners=java.util.Set.of("android.app.ActivityManager","android.net.ConnectivityManager","android.telephony.TelephonyManager","android.media.AudioManager","android.os.BatteryManager","android.os.PowerManager","android.net.wifi.p2p.WifiP2pManager","android.app.usage.NetworkStatsManager","android.app.NotificationManager","android.content.pm.ShortcutManager","android.app.JobSchedulerImpl","android.location.LocationManager");
+        return (int)installed.keySet().stream().filter(method->owners.contains(method.getDeclaringClass().getName())).count();
+    }
     synchronized long prepareNs(){return lastPrepareNs;}
     synchronized long publishNs(){return lastPublishNs;}
 }

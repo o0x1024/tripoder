@@ -64,6 +64,7 @@ final class RuntimeSandboxPersona {
     }
 
     static synchronized Map<String,Object> configureNetwork(boolean hide) {
+        if(hide)throw new UnsupportedOperationException("DEVICE_MANAGER_OBSERVATION_NOT_INSTALLED");
         hideVpn = hide;
         return status();
     }
@@ -88,6 +89,7 @@ final class RuntimeSandboxPersona {
                 throw new IllegalArgumentException("PERSONA_TELEPHONY_OPERATOR_NAME:" + key);
             next.put(key, text);
         }
+        if(!next.isEmpty())throw new UnsupportedOperationException("DEVICE_MANAGER_OBSERVATION_NOT_INSTALLED");
         telephony = Map.copyOf(next);
         return status();
     }
@@ -107,6 +109,7 @@ final class RuntimeSandboxPersona {
         if (!(speed >= 0 && speed <= 400)) throw new IllegalArgumentException("PERSONA_LOCATION_SPEED");
         double bearing = fields.containsKey("bearing") ? number(fields, "bearing") : 0.0;
         if (!(bearing >= 0 && bearing < 360)) throw new IllegalArgumentException("PERSONA_LOCATION_BEARING");
+        if(!fields.isEmpty())throw new UnsupportedOperationException("DEVICE_MANAGER_OBSERVATION_NOT_INSTALLED");
         location = new Fix(lat, lon, (float) accuracy, altitude, (float) speed, (float) bearing);
         RuntimeLocation.personaChanged();
         return status();
@@ -121,6 +124,7 @@ final class RuntimeSandboxPersona {
 
     static Map<String,Object> configureBattery(Integer level, Boolean charging) {
         if (level != null && (level < 0 || level > 100)) throw new IllegalArgumentException("PERSONA_BATTERY_LEVEL");
+        if(level!=null||charging!=null)throw new UnsupportedOperationException("DEVICE_MANAGER_OBSERVATION_NOT_INSTALLED");
         batteryLevel = level;
         batteryCharging = charging;
         return status();

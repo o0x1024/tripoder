@@ -43,12 +43,13 @@ public final class RuntimePolicyIntegration extends ControlTestBase {
     @Override void test()throws Exception{
         report.put("scope","product-runtime-publication-and-callback-policy");System.loadLibrary("tripoderselfhook");
         hooks=Class.forName("dev.tripoder.selfhook.ManagedHook");handler=Class.forName("dev.tripoder.selfhook.ManagedHook$Handler");
-        hooks.getMethod("initializeProcessForBootstrap",boolean.class).invoke(null,false);
-        JSONObject initial=policy();check("preparation-does-not-deoptimize-process",!initial.getBoolean("owned")&&initial.getInt("publicationDeoptimizations")==0&&initial.getBoolean("bootstrapDeferred"),initial);
+        boolean entryBootstrap=Boolean.parseBoolean(args.getString("entryBootstrap","false"));int initialDeopts=entryBootstrap?0:1;
+        hooks.getMethod("initializeProcessForBootstrap",boolean.class).invoke(null,entryBootstrap);
+        JSONObject initial=policy();check("preparation-does-not-deoptimize-process",!initial.getBoolean("owned")&&initial.getInt("publicationDeoptimizations")==0&&initial.getBoolean("bootstrapDeferred")==!entryBootstrap,initial);
         Method target=Target.class.getMethod("value",int.class);Object fixed=prepare(target);AtomicInteger fixedHits=new AtomicInteger();
         hooks.getMethod("enableBatch",Map.class).invoke(null,Map.of(fixed,originalHandler(fixedHits)));
         hooks.getMethod("completeBootstrap").invoke(null);
-        JSONObject ready=policy();check("fixed-publication-invalidates-once",ready.getInt("publicationDeoptimizations")==1&&ready.getBoolean("bootstrapComplete"),ready);
+        JSONObject ready=policy();check("fixed-publication-matches-bootstrap-policy",ready.getInt("publicationDeoptimizations")==initialDeopts&&ready.getBoolean("bootstrapComplete"),ready);
         check("bootstrap-restores-runtime-flags-and-jit",ready.getBoolean("runtimeStateRestored")&&ready.getBoolean("jitEnabled")&&ready.getInt("observedLevel")==0&&!ready.getBoolean("processLifetimeLease"),ready);
         check("fixed-entry-runs-original-once",Target.value(7)==22&&fixedHits.get()==1,fixedHits.get());
         Callback callback=new Callback();Method delivery=Callback.class.getMethod("onReceive",Context.class,Intent.class);
@@ -63,11 +64,11 @@ public final class RuntimePolicyIntegration extends ControlTestBase {
             getTargetContext().sendBroadcast(new Intent(action).setPackage(enginePackage()));
             check("android-delivery-reaches-warmed-callback-and-pending-result",callback.done.await(10,java.util.concurrent.TimeUnit.SECONDS)&&callback.realPending&&callbackHits.get()==2,callbackHits.get());
         }finally{getTargetContext().unregisterReceiver(callback);}
-        JSONObject late=policy();check("late-callback-does-not-repeat-global-deoptimization",late.getInt("publicationDeoptimizations")==1&&late.getInt("callbackPublications")==1,late);
+        JSONObject late=policy();check("late-callback-does-not-repeat-global-deoptimization",late.getInt("publicationDeoptimizations")==initialDeopts&&late.getInt("callbackPublications")==1,late);
         handle.getClass().getMethod("disable").invoke(handle);prior=callback.deliveries;delivery.invoke(callback,null,null);
         check("callback-disable-restores-original",callbackHits.get()==2&&callback.deliveries==prior+1,callback.deliveries);
         handle.getClass().getMethod("enable",handler).invoke(handle,originalHandler(callbackHits));
-        check("entry-to-general-upgrade-invalidates-callers",policy().getInt("publicationDeoptimizations")==2,policy());
+        check("entry-to-general-upgrade-invalidates-callers",policy().getInt("publicationDeoptimizations")==initialDeopts+1,policy());
         handle.getClass().getMethod("disable").invoke(handle);
         fixed.getClass().getMethod("disable").invoke(fixed);
         Object callerProof=prepare(HotCaller.class.getMethod("call",int.class));
@@ -77,7 +78,7 @@ public final class RuntimePolicyIntegration extends ControlTestBase {
         Method caller=Target.class.getMethod("caller",int.class);Object lateCaller=prepare(caller);
         Object replacement=Proxy.newProxyInstance(handler.getClassLoader(),new Class<?>[]{handler},(proxy,method,args)->777);
         hooks.getMethod("enableBatch",Map.class).invoke(null,Map.of(lateCaller,replacement));
-        check("late-general-hook-still-invalidates-compiled-callers",policy().getInt("publicationDeoptimizations")==3,policy());
+        check("late-general-hook-still-invalidates-compiled-callers",policy().getInt("publicationDeoptimizations")==initialDeopts+2,policy());
         check("warmed-general-hook-changes-real-result",HotCaller.call(3)==777,HotCaller.call(3));
         lateCaller.getClass().getMethod("disable").invoke(lateCaller);
         check("general-disable-restores-result",HotCaller.call(3)==12,HotCaller.call(3));

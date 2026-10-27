@@ -31,7 +31,7 @@ struct string_view { const char *data; size_t size; };
 struct range { uintptr_t begin,end; };
 static struct {
     struct tp_art_access access;
-    jclass classes[88];
+    jclass classes[90];
     struct range ranges[2048];
     unsigned range_count;
     void *manager;
@@ -89,7 +89,7 @@ static const char *names[]={"android/app/Application","android/app/ActivityThrea
     "android/app/ActivityThread$ActivityClientRecord","android/os/UserHandle",
     "android/app/JobSchedulerImpl","android/app/job/JobInfo","android/app/job/JobParameters","android/app/job/JobService","android/app/job/IJobCallback$Stub$Proxy",
     "android/app/PendingIntent","android/content/IntentSender","android/app/AlarmManager","android/app/ApplicationExitInfo",
-    "android/appwidget/AppWidgetManager","android/view/autofill/AutofillClientController","android/hardware/biometrics/BiometricPrompt","android/content/pm/SharedLibraryInfo","android/content/res/Resources","android/os/UserManager","android/util/Xml","android/app/ActivityThread$AppBindData","android/service/notification/StatusBarNotification","com/android/internal/os/ClassLoaderFactory","android/content/res/AssetManager","android/content/res/ApkAssets","android/provider/Settings$System","android/provider/Settings$Secure","android/provider/Settings$Global","android/provider/Settings$Config","android/provider/Settings$NameValueCache","android/provider/Settings$ContentProviderHolder","android/app/ResourcesManager","android/app/ResourcesManager$SharedLibraryAssets","android/app/IntentService","android/net/http/internal/org/chromium/net/NetworkChangeNotifierAutoDetect","android/net/http/internal/org/chromium/net/ProxyBroadcastReceiver","android/net/http/internal/org/chromium/net/ProxyChangeListener$ProxyReceiver","android/app/servertransaction/LaunchActivityItem","android/app/role/RoleManager","dalvik/system/BaseDexClassLoader","android/location/LocationManager","android/os/Process"};
+    "android/appwidget/AppWidgetManager","android/view/autofill/AutofillClientController","android/hardware/biometrics/BiometricPrompt","android/content/pm/SharedLibraryInfo","android/content/res/Resources","android/os/UserManager","android/util/Xml","android/app/ActivityThread$AppBindData","android/service/notification/StatusBarNotification","com/android/internal/os/ClassLoaderFactory","android/content/res/AssetManager","android/content/res/ApkAssets","android/provider/Settings$System","android/provider/Settings$Secure","android/provider/Settings$Global","android/provider/Settings$Config","android/provider/Settings$NameValueCache","android/provider/Settings$ContentProviderHolder","android/app/ResourcesManager","android/app/ResourcesManager$SharedLibraryAssets","android/app/IntentService","android/net/http/internal/org/chromium/net/NetworkChangeNotifierAutoDetect","android/net/http/internal/org/chromium/net/ProxyBroadcastReceiver","android/net/http/internal/org/chromium/net/ProxyChangeListener$ProxyReceiver","android/app/servertransaction/LaunchActivityItem","android/app/role/RoleManager","dalvik/system/BaseDexClassLoader","android/location/LocationManager","android/os/Process","android/content/pm/ParceledListSlice","android/content/pm/BaseParceledListSlice"};
 _Static_assert(sizeof(names)/sizeof(names[0])==sizeof(registry.classes)/sizeof(registry.classes[0]),"fixed boot class roots");
 static const struct { unsigned owner;const char *name,*type; } fields[]={
     {1,"mInitialApplication","Landroid/app/Application;"},{0,"mLoadedApk","Landroid/app/LoadedApk;"},
@@ -131,14 +131,14 @@ static const struct { unsigned owner;const char *name,*type; } fields[]={
     {77,"mLock","Ljava/lang/Object;"},{77,"mSharedLibAssetsMap","Landroid/util/ArrayMap;"},
     {25,"mType","I"},{83,"mIntent","Landroid/content/Intent;"},{83,"mInfo","Landroid/content/pm/ActivityInfo;"},{84,"mService","Landroid/app/role/IRoleManager;"},
     {85,"sharedLibraryLoaders","[Ljava/lang/ClassLoader;"},{85,"sharedLibraryLoadersAfter","[Ljava/lang/ClassLoader;"},
-    {86,"mService","Landroid/location/ILocationManager;"}};
+    {86,"mService","Landroid/location/ILocationManager;"},{38,"sService","Landroid/app/INotificationManager;"}};
 static const bool field_static[]={
     false,false,false,false,false,false,false,false,false,false,false,true,
     false,false,false,false,false,false,false,true,true,false,false,false,
     false,false,false,false,false,false,false,false,false,false,false,false,
     true,true,false,false,false,false,false,false,false,false,false,false,
     false,false,false,false,false,false,false,false,false,true,true,true,
-    true,false,false,false,false,false,false,false,false,false,false,false,false};
+    true,false,false,false,false,false,false,false,false,false,false,false,false,true};
 _Static_assert(sizeof(field_static)/sizeof(field_static[0])==sizeof(fields)/sizeof(fields[0]),"fixed field storage kinds");
 
 static bool readable(uintptr_t address,size_t bytes) {

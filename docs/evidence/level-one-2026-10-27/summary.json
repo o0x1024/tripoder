@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "date": "2026-10-27",
+  "timezone": "Asia/Shanghai",
+  "stage": "implementation-snapshot-not-accepted",
+  "lastCompleteHostedRun": {
+    "receipt": "ingress-attempt-1/GuestIngressIntegration-result.json",
+    "androidAssertions": 19,
+    "fixedBindings": 220,
+    "managerFixedBindings": 0,
+    "runtimeToggleCalls": 0,
+    "nativeSyscalls": {
+      "transport": "fixed-libc-paths",
+      "addedSeccompFilters": 0,
+      "nativePathEntries": 10,
+      "enabled": true,
+      "publicationPages": 2,
+      "parkAttempts": 1,
+      "parkStatus": 0,
+      "admissionElapsedNs": 1048333,
+      "directGuestSvcRewritten": false,
+      "nativeDumpSuppressed": false
+    },
+    "artSpecialSignalClaims": 0,
+    "fixedPublicationMs": 1349.591302,
+    "hooksCumulativeMs": 1953
+  },
+  "interruptedRun": {
+    "state": "DEVICE_DISCONNECTED_RESULT_NOT_COLLECTED",
+    "serial": "d861a4fa",
+    "runId": "control-d35cce528c3b48ea",
+    "runner": "GuestIngressIntegration",
+    "observedError": "adb: device 'd861a4fa' not found",
+    "expectedRemoteResult": "/sdcard/Android/data/dev.tripoder.leveloneqa/files/result-control-d35cce528c3b48ea.json",
+    "instrumentationResultReceived": false,
+    "passed": null,
+    "guestOperationReplayed": false,
+    "cleanupConfirmed": false
+  },
+  "lastAttemptNativeFixturePassed": true,
+  "lastAttemptDirectedAndroidChecksPassed": 16,
+  "finalLocalBuild": {
+    "apkSha256": "6e096e4ac3a35d12413528ef0325d6c7300f6a6b1fa35eee41f17faac1861c51",
+    "coreSha256": "0c4d6240d34bb9b3de29029ab17e6eaf8b95f60d6ff9226ae7cac6af1f47f14e",
+    "controlTestSha256": "160bd872b43a1e04ad70dcbe17f60ddc817533f5e91e4352914b2978b40c367d",
+    "installed": false,
+    "hostedAcceptance": false,
+    "receipt": "final-build/build-receipt.json",
+    "sourceSnapshotLocalPath": "/Users/len/code/tripoder/android/product/build-level-one/source-snapshot.zip",
+    "sourceSnapshotSha256": "7fea8c29197f4029b5700e27f3a756b6e05c0f39f4c61b768cfc347ce6b8e426"
+  },
+  "sixAppSmokeGate": {
+    "state": "NOT_STARTED",
+    "applications": [
+      "cmb.pb",
+      "com.hunantv.imgo.activity",
+      "com.netease.cloudmusic",
+      "com.taobao.taobao",
+      "com.tencent.qqlive",
+      "com.xunmeng.pinduoduo"
+    ],
+    "passed": false
+  },
+  "releaseGatePassed": false,
+  "productionPackageUpdated": false,
+  "pending": [
+    "Recover interrupted run evidence after device reconnect",
+    "Verify fixed entry bootstrap and compiled caller coverage",
+    "Run RuntimePolicyIntegration with entryBootstrap=true",
+    "Verify protected-page recovery, full signal masks, libc from handler and debuggerd in hosted fixture",
+    "Verify manager Binder namespace/permission boundaries beyond the owned fixture",
+    "Run all six native/Level 1 Smoke Gates without replaying failures"
+  ],
+  "hostRegression": {
+    "passed": true,
+    "sdkSources": 404,
+    "report": "host-regression.json"
+  }
+}

@@ -94,7 +94,7 @@ static bool runtime_state_restored(void){
 static bool claim_and_enable_nterp_locked(bool invalidate_callers){
     // Thin hosting leaves JIT, AOT, debuggability and instrumentation untouched.
     // Entry ownership below is per method, never a process-wide interpreter lease.
-    if(native_compilation)return interpreter.level(interpreter.instrumentation)==0;
+    if(native_compilation&&(!atomic_load_explicit(&bootstrap_complete,memory_order_acquire)||!invalidate_callers))return interpreter.level(interpreter.instrumentation)==0;
     bool already=atomic_load_explicit(&interpreter.claimed,memory_order_acquire);
     bool accepted;
     bool invalidate=already&&atomic_load_explicit(&bootstrap_complete,memory_order_acquire)&&invalidate_callers;
@@ -118,7 +118,7 @@ static bool claim_and_enable_nterp_locked(bool invalidate_callers){
         // inlined body, even though the target entry is correctly hooked.
         uint64_t c1=phase_now();if(!tp_art_entry_writer_invalidate_compiled_callers())return false;claim_sub_ns[1]=phase_now()-c1;
         atomic_fetch_add_explicit(&publication_deoptimizations,1,memory_order_relaxed);
-        if(!already){
+        if(!already&&!atomic_load_explicit(&bootstrap_complete,memory_order_acquire)){
             uintptr_t jit=*(uintptr_t *)(runtime+0x298),options=jit?*(uintptr_t *)(jit+0x10):0;bootstrap_jit_option=(uint8_t *)options;if(bootstrap_jit_option){saved_jit_option=*bootstrap_jit_option;*bootstrap_jit_option=0;}
         }
         if(runtime){*(uint8_t *)(runtime+0x362)=0;*(uint32_t *)(runtime+0x3f0)=1;}
@@ -341,7 +341,7 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNat
         failure=!valid_snapshot(e,&identity)?2:!tp_art_backup_rooted_slot_locked((unsigned)slot,e->target,e->backup)?3:
             !quick_ok?4:(e->transitions&&!e->native&&!(e->target->flags&UINT32_C(0x02000000)))?5:0;
         accepted=failure==0;
-        if(!native_compilation&&!entry_only&&e->transitions==0)for(unsigned n=0;n<e->caller_count;n++)if(
+        if((!native_compilation||atomic_load_explicit(&bootstrap_complete,memory_order_acquire))&&!entry_only&&e->transitions==0)for(unsigned n=0;n<e->caller_count;n++)if(
             !unhooked_managed_entry(((struct tp_art_method_view *)e->callers[n])->quick)){accepted=false;failure=6;}
         if(!accepted){failed_index=slot;observed_quick=e->target->quick;expected_quick=expected;observed_flags=e->target->flags;
             prepared_quick=e->prepared_quick;expected_flags=e->semantic_flags;expected_dex=e->dex_index;expected_index=e->method_index;}
@@ -367,7 +367,7 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ManagedHook_toggleBatchNat
         atomic_store_explicit(&e->desired_entry,desired,memory_order_release);e->target->quick=desired;
         accepted=valid(e)&&e->target->quick==atomic_load_explicit(&e->desired_entry,memory_order_acquire);
         if(!accepted){failure=8;failed_index=indices[i];}
-        if(accepted){if(enabled&&!entry_only&&!native_compilation)e->callers_invalidated=true;atomic_store_explicit(&e->active,enabled,memory_order_release);e->transitions++;e->stage=enabled?"ACTIVE":"DISABLED";}
+        if(accepted){if(enabled&&!entry_only&&(!native_compilation||atomic_load_explicit(&bootstrap_complete,memory_order_acquire)))e->callers_invalidated=true;atomic_store_explicit(&e->active,enabled,memory_order_release);e->transitions++;e->stage=enabled?"ACTIVE":"DISABLED";}
     }
     uint64_t p5=phase_now();art.managed.access.resume(&mutators);art.managed.jit_resume(&jit);
     {uint64_t p6=phase_now();toggle_phase_ns[0]=p1-p0;toggle_phase_ns[1]=p2-p1;toggle_phase_ns[2]=p3-p2;toggle_phase_ns[3]=p4-p3;toggle_phase_ns[4]=p5-p4;toggle_phase_ns[5]=p6-p5;}
@@ -396,7 +396,7 @@ JNIEXPORT jstring JNICALL Java_dev_tripoder_selfhook_ManagedHook_reportNative(JN
         atomic_load(&e->active)?"true":"false",e->transitions,(unsigned long long)atomic_load(&e->originals),e->root_count,e->relay?1:0,
         e->caller_count,rooted?"true":"false",e->shorty,e->instance?"true":"false",(unsigned long)e->relay,(unsigned long)e->helper,
         (unsigned long)art.managed.interpreter_bridge,target.flags,backup.flags,(unsigned long)target.quick,
-        (unsigned long)atomic_load(&e->desired_entry),e->transitions?"true":"false",tp_art_entry_writer_installed()?"true":"false",native_compilation?"method-entry-only":"publication-deoptimization-lease",
+        (unsigned long)atomic_load(&e->desired_entry),e->transitions?"true":"false",tp_art_entry_writer_installed()?"true":"false",native_compilation?"entry-bootstrap-request-deoptimization":"publication-deoptimization-lease",
         atomic_load_explicit(&interpreter.claimed,memory_order_acquire)?"true":"false",
         atomic_load(&interpreter.observed_level),atomic_load(&interpreter.claims));return (*env)->NewStringUTF(env,text);
 }
@@ -410,7 +410,7 @@ JNIEXPORT jstring JNICALL Java_dev_tripoder_selfhook_ManagedHook_processPolicyNa
         "\"bootstrapComplete\":%s,\"publicationDeoptimizations\":%u,\"callbackPublications\":%u,\"bootstrapDeferred\":%s,\"runtimeStateRestored\":%s,\"allowUnhookedCompilation\":true,\"jitEnabled\":%s,\"explicitInitialization\":%s,\"preexistingCompiledFramesCovered\":false,\"fullCallerCoverage\":false}",
         bound?"true":"false",atomic_load_explicit(&interpreter.claimed,memory_order_acquire)?"true":"false",
         bound?interpreter.level(interpreter.instrumentation):-1,atomic_load(&interpreter.claims),tp_art_interpreter_client,
-        "false",native_compilation?"method-entry-only":"publication-deoptimization-lease",native_compilation?"true":"false",
+        "false",native_compilation?"entry-bootstrap-request-deoptimization":"publication-deoptimization-lease",native_compilation?"true":"false",
         atomic_load_explicit(&bootstrap_complete,memory_order_acquire)?"true":"false",atomic_load_explicit(&publication_deoptimizations,memory_order_relaxed),atomic_load_explicit(&callback_publications,memory_order_relaxed),bootstrap_deferred?"true":"false",runtime_state_restored()?"true":"false",jit_enabled?"true":"false",atomic_load_explicit(&explicitly_initialized,memory_order_acquire)?"true":"false");
     return (*env)->NewStringUTF(env,text);
 }

@@ -281,6 +281,18 @@ static enum tp_park_status owned(unsigned epoch) {
         (int)tp_park_syscall(SYS_gettid, 0, 0, 0, 0, 0, 0)) return TP_PARK_WRONG_OWNER;
     return park.active && epoch == park.epoch ? TP_PARK_OK : TP_PARK_STALE;
 }
+enum tp_park_status tp_park_begin_bounded(struct tp_park_snapshot *snapshot,unsigned *attempts) {
+    enum tp_park_status status=TP_PARK_NOT_READY;
+    for(unsigned i=0;i<3;i++){
+        if(attempts)(*attempts)++;
+        status=tp_park_begin(snapshot);
+        if(status!=TP_PARK_TIMEOUT&&status!=TP_PARK_INVENTORY)return status;
+        // begin has called release_all before returning. Structural errors,
+        // lost ownership and an uncertain commit are never retried here.
+        if(i<2)tp_park_sleep(UINT64_C(1000000)<<i);
+    }
+    return status;
+}
 enum tp_park_status tp_park_end(unsigned epoch) {
     enum tp_park_status status = owned(epoch);
     if (status == TP_PARK_OK) release_all();

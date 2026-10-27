@@ -37,14 +37,15 @@ final class RuntimeBroadcastIntent {
         Parcel p=Parcel.obtain();try{copy.writeToParcel(p,0);if(p.dataSize()>48000)throw new IllegalArgumentException("START_INTENT_TOO_LARGE");return p.marshall();}finally{p.recycle();}
     }
     static byte[] encodeFor(String kind,Intent original){return kind.equals("broadcast")?encode(original):encodeStart(original);}
-    static Intent decode(byte[] bytes){if(bytes==null||bytes.length>48000)throw new SecurityException("BROADCAST_PAYLOAD_INVALID");Parcel p=Parcel.obtain();try{p.unmarshall(bytes,0,bytes.length);p.setDataPosition(0);Intent intent=Intent.CREATOR.createFromParcel(p);RuntimeEngine guest=RuntimeEngine.current;if(guest!=null&&guest.loader!=null)intent.setExtrasClassLoader(guest.loader);if(p.dataAvail()!=0)throw new SecurityException("BROADCAST_PAYLOAD_TRAILING_DATA");return intent;}finally{p.recycle();}}
+    static Intent decode(byte[] bytes){if(bytes==null||bytes.length>48000)throw new SecurityException("BROADCAST_PAYLOAD_INVALID");Parcel p=Parcel.obtain();try{p.unmarshall(bytes,0,bytes.length);p.setDataPosition(0);Intent intent=Intent.CREATOR.createFromParcel(p);RuntimeEngine guest=RuntimeEngine.current;if(guest!=null&&guest.loader!=null)RuntimeGuestPayload.prepare(intent,guest.guestLoader());if(p.dataAvail()!=0)throw new SecurityException("BROADCAST_PAYLOAD_TRAILING_DATA");return intent;}finally{p.recycle();}}
     static String digest(byte[] value)throws Exception{return ArtifactSet.hex(MessageDigest.getInstance("SHA-256").digest(value));}
     private static final Set<String> UNDELIVERED=Collections.synchronizedSet(new HashSet<>());
     static byte[] filter(IntentFilter filter){
         if(filter==null)throw new IllegalArgumentException("RECEIVER_FILTER_REQUIRED");
         // Priority only orders receivers of an ordered broadcast, and ordered delivery is limited to one target (ORDERED_BROADCAST_SINGLE_TARGET_REQUIRED), so accepting it cannot change any delivery. It stays in the parcel.
         if(filter.countActions()>32||filter.countCategories()>32)throw new IllegalArgumentException("RECEIVER_FILTER_UNSUPPORTED:actions="+filter.countActions()+";categories="+filter.countCategories()+";priority="+filter.getPriority());
-        if(filter.countActions()==0&&(filter.countCategories()!=0||filter.countDataSchemes()!=0||filter.countDataTypes()!=0||filter.countDataAuthorities()!=0||filter.countDataPaths()!=0))throw new UnsupportedOperationException("ACTIONLESS_DATA_FILTER_UNSUPPORTED");
+        // Android accepts actionless filters, including data/categories. They
+        // have no action-index entry and cannot receive an implicit broadcast.
         for(int i=0;i<filter.countActions();i++){String action=filter.getAction(i);if(action.length()>512)throw new IllegalArgumentException("RECEIVER_ACTION_TOO_LONG");
             // A registration only declares interest. A platform action with no physical observer here is simply never delivered, as for any app the system does not send it to; failing the registration would kill apps that merely listen.
             if(action.startsWith("android.")&&!RuntimeSystemBroadcasts.ACTIONS.contains(action)&&UNDELIVERED.add(action))android.util.Log.w("TripoderBroadcast","receiver registered for a platform action this runtime does not deliver: "+action);}

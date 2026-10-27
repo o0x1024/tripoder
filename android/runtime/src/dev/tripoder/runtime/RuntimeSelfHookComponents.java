@@ -98,16 +98,6 @@ final class RuntimeSelfHookComponents {
         }
         value.install(callbacks);
     }
-    static void installReceiver(BroadcastReceiver receiver) {
-        RuntimeSelfHookComponents value=require();
-        if(receiver==null||!value.engine.ownsReceiverType(receiver.getClass()))throw new SecurityException("SELF_COMPONENT_LOADER_MISMATCH");
-        Method target=publicLifecycle(receiver.getClass(),"onReceive",Context.class,Intent.class);
-        if(target==null){
-            if(!dev.tripoder.selfhook.SystemReceiverAccess.ownsType(receiver.getClass()))throw new SecurityException("SELF_RECEIVER_FIXED_CALLBACK_REQUIRED");
-            return;
-        }
-        value.install(Map.of(target,(instance,arguments,original)->RuntimeSelfHookLifecycle.receiver(value.receivers,target,instance,arguments,original)));
-    }
     private void ownedType(Object component) {
         if(component==null||!engine.ownsLoader(component.getClass().getClassLoader()))throw new SecurityException("SELF_COMPONENT_LOADER_MISMATCH");
     }

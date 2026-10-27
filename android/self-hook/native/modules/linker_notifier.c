@@ -203,7 +203,7 @@ bool tp_linker_install(const char *const *paths,unsigned count){
     struct tp_code_page_update update={0};
     if(tp_code_page_prepare(&observer.page,tp_linker_page,observer.patched,&update)!=1)goto done;
     observer.report.stage="INITIAL_CONSISTENT_SNAPSHOT_AND_PUBLICATION";struct tp_park_snapshot parked;
-    if(tp_park_begin(&parked)!=TP_PARK_OK){tp_code_page_cancel(&update);goto done;}
+    if(tp_park_begin_bounded(&parked,NULL)!=TP_PARK_OK){tp_code_page_cancel(&update);goto done;}
     ok=tp_linker_install_parked(&update,parked.epoch);
     if(ok){tp_code_page_finish(&update);observer.report.parked=parked.parked;observer.report.stage="INSTALLED";}
     else tp_code_page_cancel(&update);

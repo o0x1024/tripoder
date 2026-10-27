@@ -12,7 +12,20 @@ final class RuntimeJobScheduler {
     private JobScheduler defaultFacade;
     RuntimeJobScheduler(RuntimeEngine engine){this.engine=engine;}
     synchronized JobScheduler facade(){if(defaultFacade==null)defaultFacade=facade(null);return defaultFacade;}
-    synchronized JobScheduler facade(String namespace){String key=RuntimeJobNamespace.logical(namespace);JobScheduler value=JobFrameworkAccess.facade(engine.host);scopes.put(value,key);return value;}
+    synchronized JobScheduler facade(String namespace){String key=RuntimeJobNamespace.logical(namespace);JobScheduler value=new Facade();scopes.put(value,key);return value;}
+    private final class Facade extends JobScheduler {
+        @SuppressWarnings("unchecked") private <T>T route(String key,Object...args){try{return (T)dispatch(this,key,args);}catch(RuntimeException e){throw e;}catch(Exception e){throw new IllegalStateException("JOB_ROUTE_FAILED",e);}}
+        @Override public int schedule(JobInfo job){return route("schedule(android.app.job.JobInfo)",job);}
+        @Override public int enqueue(JobInfo job,JobWorkItem item){return route("enqueue(android.app.job.JobInfo,android.app.job.JobWorkItem)",job,item);}
+        @Override public void cancel(int id){route("cancel(int)",id);}
+        @Override public void cancelAll(){route("cancelAll()");}
+        @Override public void cancelInAllNamespaces(){route("cancelInAllNamespaces()");}
+        @Override public JobScheduler forNamespace(String namespace){return route("forNamespace(java.lang.String)",namespace);}
+        @Override public String getNamespace(){return route("getNamespace()");}
+        @Override public List<JobInfo> getAllPendingJobs(){return route("getAllPendingJobs()");}
+        @Override public JobInfo getPendingJob(int id){return route("getPendingJob(int)",id);}
+        @Override public Map<String,List<JobInfo>> getPendingJobsInAllNamespaces(){return route("getPendingJobsInAllNamespaces()");}
+    }
     synchronized boolean owns(Object receiver){return scopes.containsKey(receiver);}
     Object dispatch(JobScheduler receiver,String signature,Object[] args)throws Exception{
         String namespace;synchronized(this){namespace=scopes.get(receiver);if(namespace==null)throw new SecurityException("JOB_FACADE_NOT_OWNED");}
