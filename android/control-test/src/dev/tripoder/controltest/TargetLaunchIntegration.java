@@ -152,7 +152,12 @@ public final class TargetLaunchIntegration extends ControlTestBase {
         maxGap=Math.max(maxGap,SystemClock.elapsedRealtime()-lastSample);
         check("target-stability-observation-is-continuous",samples.length()>=2&&maxGap<=5000,new JSONObject().put("samples",samples.length()).put("maxGapMs",maxGap).put("elapsedMs",SystemClock.elapsedRealtime()-started));
         check("target-original-worker-remains-running-for-30-seconds",true,samples.length());
-        if("true".equals(args.getString("wake")))wakeRunningApplication(session,pkg,record,launcher,prepared);
+        if("true".equals(args.getString("wake")))wakeRunningApplication(session,pkg,record,launcher,prepared,0);
+        if(args.containsKey("bgFgCycles")){
+            int cycles=Integer.parseInt(args.getString("bgFgCycles"));if(cycles<1||cycles>20)throw new IllegalArgumentException("BG_FG_CYCLES_RANGE");
+            for(int cycle=1;cycle<=cycles;cycle++)wakeRunningApplication(session,pkg,record,launcher,prepared,cycle);
+            report.put("bgFgCyclesCompleted",cycles);
+        }
         if("true".equals(args.getString("nativeHook")))new TargetNativeHookChecks(this,session,record,prepared.getString("generation"),wechat).run();
         if("true".equals(args.getString("managedJniHook")))new TargetNativeHookChecks(this,session,record,prepared.getString("generation"),wechat).managedJni();
         android.graphics.Bitmap screenshot=getUiAutomation().takeScreenshot();
@@ -169,24 +174,34 @@ public final class TargetLaunchIntegration extends ControlTestBase {
         }
         check("original-apk-unchanged",expected.equals(digest(source)),expected);
     }
-    /** Tapping an application that is already running must bring its own task back, in the same process, with no second root. */
-    private void wakeRunningApplication(IBinder session,String pkg,JSONObject record,JSONObject launcher,Bundle first)throws Exception{
+    /** Tapping an application that is already running must bring its own task back, in the same process, with no second root.
+     * cycle==0 names checks for the single-shot "wake" flag (unchanged); cycle>=1 is one round of a bgFgCycles loop and
+     * suffixes every check name so a mid-loop failure in round N is distinguishable from round 1..N-1 passing. */
+    private void wakeRunningApplication(IBinder session,String pkg,JSONObject record,JSONObject launcher,Bundle first,int cycle)throws Exception{
+        String suffix=cycle==0?"":"-cycle-"+cycle;
         shell("input keyevent KEYCODE_HOME");SystemClock.sleep(1500);
-        check("wake-guest-is-backgrounded",!focusedWindow().contains(enginePackage()+"/")&&!focusedWindow().contains(pkg+"/"),focusedWindow());
+        check("wake-guest-is-backgrounded"+suffix,!focusedWindow().contains(enginePackage()+"/")&&!focusedWindow().contains(pkg+"/"),focusedWindow());
         // The user taps the icon inside the workbench, so the app is in the foreground when the wake is requested.
         shell("am start -n "+enginePackage()+"/dev.tripoder.hooklab.WorkbenchActivity");SystemClock.sleep(2000);
-        check("wake-requested-from-foreground-workbench",focusedWindow().contains("WorkbenchActivity"),focusedWindow());
+        // The task brought forward may already have WorkbenchProjectActivity on top instead of the
+        // just-requested WorkbenchActivity (the test itself navigated there via startThroughWorkbench
+        // earlier); either is "the workbench app in foreground, not the target", which is all this
+        // check needs before asking it to wake the target back up.
+        check("wake-requested-from-foreground-workbench"+suffix,focusedWindow().contains(enginePackage()+"/dev.tripoder.hooklab.Workbench"),focusedWindow());
         String wake=id();
         Bundle woken=execute(session,"prepareLaunch","operation",wake,"project",record.getString("project"),"bindingOperation",record.getString("binding"),"generation",record.getString("generation"),"component",launcher.getString("component"));
-        check("wake-returns-woken-without-entry",woken.getBoolean("woken",false)&&!woken.containsKey("intent"),json(woken));
+        check("wake-returns-woken-without-entry"+suffix,woken.getBoolean("woken",false)&&!woken.containsKey("intent"),json(woken));
         Bundle receipt=execute(session,"query","operation",wake);
-        check("wake-operation-succeeded","SUCCEEDED".equals(receipt.getString("state")),json(receipt));
+        check("wake-operation-succeeded"+suffix,"SUCCEEDED".equals(receipt.getString("state")),json(receipt));
         SystemClock.sleep(1500);
-        report.put("wakeFocus",focusedWindow()).put("wakeTasks",shell("dumpsys activity activities").lines().filter(l->l.contains(enginePackage())&&(l.contains("topResumedActivity")||l.contains("ResumedActivity")||l.contains("Task{"))).limit(20).collect(java.util.stream.Collectors.joining("\n")));
-        check("wake-guest-is-foreground-again",(focusedWindow().contains(enginePackage()+"/")||focusedWindow().contains(pkg+"/"))&&!focusedWindow().contains("WorkbenchActivity"),focusedWindow());
+        report.put("wakeFocus"+suffix,focusedWindow()).put("wakeTasks"+suffix,shell("dumpsys activity activities").lines().filter(l->l.contains(enginePackage())&&(l.contains("topResumedActivity")||l.contains("ResumedActivity")||l.contains("Task{"))).limit(20).collect(java.util.stream.Collectors.joining("\n")));
+        // Same widening as above: any workbench-owned activity left in focus (WorkbenchActivity or
+        // WorkbenchProjectActivity) means the wake did not actually bring the target back, not just
+        // the one literal activity name this used to check for.
+        check("wake-guest-is-foreground-again"+suffix,(focusedWindow().contains(enginePackage()+"/")||focusedWindow().contains(pkg+"/"))&&!focusedWindow().contains("dev.tripoder.hooklab.Workbench"),focusedWindow());
         JSONArray live=new JSONArray(execute(session,"hookProcesses","project",record.getString("project")).getString("processes"));boolean same=false;
         for(int i=0;i<live.length();i++){JSONObject process=live.getJSONObject(i);if(first.getString("generation").equals(process.getString("processGeneration"))&&first.getInt("pid")==process.getInt("pid"))same=true;}
-        check("wake-keeps-the-same-guest-process",same,live);
+        check("wake-keeps-the-same-guest-process"+suffix,same,live);
     }
     private String focusedWindow()throws Exception{
         StringBuilder focus=new StringBuilder();

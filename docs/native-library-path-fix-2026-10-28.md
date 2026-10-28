@@ -74,6 +74,19 @@
 
 仍然要强调：这只是 5 次冷启动，不是完整 Smoke Gate（还差 3 分钟核心交互、5 轮前后台切换）——现有测试代码只会装、启动、看 Activity 创建和存活，不会模拟真实用户操作，补齐"交互"这一项需要新写测试代码，这次没有做。
 
+## P0 续：5 轮前后台切换（2026-10-28 当日晚些时候）
+
+[六应用诊断方案](six-app-runtime-diagnosis-2026-10-27.md) 定义的 Smoke Gate 还包含"5 轮前后台切换"。这部分不需要模拟业务交互（和"3 分钟核心交互"不同），用已有的 `wake` 机制（按 HOME、从 workbench 唤醒目标应用、校验还是同一个进程）循环 N 次即可，所以补上了：
+
+- `TargetLaunchIntegration.java` 新增 `-e bgFgCycles N` 参数，循环 N 次 `wakeRunningApplication`，每轮检查名加 `-cycle-<n>` 后缀，任何一轮失败整个测试就失败。
+- `diagnose-six-app-startup.py` 新增 `--bg-fg-cycles N`，默认 0（不变更现有行为）。
+
+过程中发现并修了一个真实的测试代码 bug：`wakeRunningApplication` 原来要求重新唤醒时前台焦点字符串字面包含 `"WorkbenchActivity"`，但测试一开始 `startThroughWorkbench` 已经导航到 `WorkbenchProjectActivity`，这个任务栈的栈顶在后续唤醒时仍然是 `WorkbenchProjectActivity`——不包含 `"WorkbenchActivity"` 这个子串，于是检查必然失败。改成匹配 `enginePackage()+"/dev.tripoder.hooklab.Workbench"` 前缀，同时覆盖两个 Activity。
+
+对招行、淘宝、腾讯视频、拼多多各跑了 5 轮前后台切换（单次 `--bg-fg-cycles 5`调用），全部通过（招行单独验证 30 项检查全过，另外三个一次调用一起过）。证据：[six-app-bgfg-check-2](evidence/level-one-2026-10-27/six-app-bgfg-check-2/summary.json)（招行）、[six-app-bgfg-check-3](evidence/level-one-2026-10-27/six-app-bgfg-check-3/summary.json)（淘宝/腾讯视频/拼多多）。
+
+距离完整 Smoke Gate 还差"3 分钟核心交互"——这部分需要真的点页面，依赖每个应用自己的业务 UI，不是能复用现有机制补的,留给下一轮。
+
 ## 还没做的事
 
 - 四个"通过"的应用只做了一次 30 秒冒烟,不是 [六应用诊断方案](six-app-runtime-diagnosis-2026-10-27.md) 里定义的 Smoke Gate（5 次独立冷启动、3 分钟业务交互、5 轮前后台）,更不是 Release Gate。

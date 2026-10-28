@@ -104,11 +104,14 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--package', action='append', dest='selected')
     parser.add_argument('--guest-only', action='store_true', help='Explicitly omit new native controls when checking a changed QA build; prior controls remain separate evidence')
+    parser.add_argument('--bg-fg-cycles', type=int, default=0, help='After the 30s stability window, add N background/foreground round-trips (home, then wake from the workbench) and require the same guest process throughout; 0 (default) keeps the existing install+launch+liveness-only scope')
     parser.add_argument('--cmb-caught-exceptions', action='store_true',
                         help='For --package cmb.pb only: retain UID/PID/time-bounded System.err exception types and code frames; no raw messages')
     args = parser.parse_args()
     if args.cmb_caught_exceptions and args.selected != ['cmb.pb']:
         parser.error('--cmb-caught-exceptions requires exactly one --package cmb.pb')
+    if args.bg_fg_cycles < 0 or args.bg_fg_cycles > 20:
+        parser.error('--bg-fg-cycles out of range')
     receipt = json.loads(args.receipt.read_text())
     inventory = json.loads(args.inventory.read_text())
     host = receipt['artifacts']['engine']['package']
@@ -295,6 +298,7 @@ def main():
                    '-e', 'customPackage', package, '-e', 'customSha256', part['sha256'],
                    '-e', 'customSource', part['path'], '-e', 'stabilitySeconds', '30',
                    '-e', 'capture', 'false', '-e', 'stopAfterTest', 'true',
+                   ] + (['-e', 'bgFgCycles', str(args.bg_fg_cycles)] if args.bg_fg_cycles else []) + [
                    tests + '/dev.tripoder.controltest.TargetLaunchIntegration']
         item['guest'] = {'runId': run, 'state': 'REQUESTED', 'operationReplayed': False}
         (directory / 'guest-run.json').write_text(json.dumps({'command': command, 'remoteResult': remote + 'result-' + run + '.json'}, indent=2) + '\n')
