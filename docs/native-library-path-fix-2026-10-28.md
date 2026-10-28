@@ -57,6 +57,23 @@
 - **`exitHistory` 只读 controller 命令**（`RuntimeControllerCommands`/`RuntimeControllerInstallationQueries`/`RuntimeExitHistory.queryForController`）：让已经观察到 `WORKER_DIED` 的测试脚本能查到客体的真实系统退出原因，而不是只看到"原因未知"。鉴权方式：信任来自"会话记录为 DEAD + 当前已提交安装匹配"，不要求（已经死掉的）客体自证身份。已用真实 `kill -9` 在真机验证过。接入点在 `TargetLaunchIntegration` 的两处——`awaitWorker` 超时、30 秒稳定性循环检测到进程消失——这两处都是**已经拿到 processGeneration 之后**才会死的场景；在 `prepareLaunch` 调用本身内部就死掉（拿不到 processGeneration）的场景仍不覆盖。
 - **`diagnose-six-app-startup.py` 的级联熔断**：一旦检测到 `real-workbench-foreground-startup-connected` 失败且 `observed=="SUPERVISOR_INTERRUPTED"`（engine 自身的恢复策略拒绝接管上一个进程——这是设计内行为,不是 bug）,立即停止,把所有还没跑的应用标记为 `NOT_ATTEMPTED_UPSTREAM_ENGINE_FAILURE`,不再让它们每个都背一个和自己无关的"未通过"。已用真实触发场景验证。
 
+## P0：四个已通过应用的 5 次独立冷启动（2026-10-28 当日晚些时候）
+
+对招行、淘宝、腾讯视频、拼多多四个应用各自做了 5 次独立冷启动（每次 `pm clear` 重置引擎状态，单次脚本调用覆盖全部四个应用，依赖上一节的 harness 自动重连）：
+
+| 轮次 | 招行 | 淘宝 | 腾讯视频 | 拼多多 |
+|---|---|---|---|---|
+| 1 | 通过 | **失败** | 通过 | 通过 |
+| 2–5 | 通过 | 通过 | 通过 | 通过 |
+
+20 次里 19 次通过。淘宝第 1 轮的失败是一次真实的未捕获异常（`workerExitHistory` 给出 `reason=4` 即 `REASON_CRASH`），栈顶在 `RuntimeWebView.notifyDexLoad`——这是处理 Android 标准 `IPackageManager.notifyDexLoad` 回调（和 WebView 本身无关，只是类名历史遗留）的路径白名单检查，栈的下半段显示触发方是淘宝自己的安全框架（`com.alibaba.wireless.security.framework`）动态创建一个新的 `PathClassLoader` 加载插件。源码里已有注释说明这条路径此前因为类似原因放宽过一次（"Alibaba SecurityGuard libsgmain.so, Tinker ... 这类自报告不该变成崩溃"），这次大概率是同一机制下还没被覆盖的另一个路径模式。
+
+之后追加 6 次专门复现（带完整 logcat，不经过脚本侧的消息过滤）都没有再命中，没能拿到被拒绝的具体路径，因此没有去动 `RuntimeWebView.notifyDexLoad` 的白名单逻辑——不确认具体路径之前不想猜着改。这是一个低频问题（这次统计口径下约 1/12），记录下来，下次撞上时留全量 logcat 再定位。
+
+证据：[round-1](evidence/level-one-2026-10-27/six-app-smoke5-round-1/summary.json)（淘宝失败）、[round-2](evidence/level-one-2026-10-27/six-app-smoke5-round-2/summary.json)–[round-5](evidence/level-one-2026-10-27/six-app-smoke5-round-5/summary.json)（全部通过）。
+
+仍然要强调：这只是 5 次冷启动，不是完整 Smoke Gate（还差 3 分钟核心交互、5 轮前后台切换）——现有测试代码只会装、启动、看 Activity 创建和存活，不会模拟真实用户操作，补齐"交互"这一项需要新写测试代码，这次没有做。
+
 ## 还没做的事
 
 - 四个"通过"的应用只做了一次 30 秒冒烟,不是 [六应用诊断方案](six-app-runtime-diagnosis-2026-10-27.md) 里定义的 Smoke Gate（5 次独立冷启动、3 分钟业务交互、5 轮前后台）,更不是 Release Gate。
