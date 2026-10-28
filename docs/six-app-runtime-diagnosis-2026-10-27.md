@@ -2,6 +2,8 @@
 
 2026-10-27，依据连接真机的当前应用目录、持久进程历史、系统退出记录、logcat、Native 故障文件及工作区源码。整改方向采纳用户提出的顺序：**先取消所有 Hook，验证运行和性能，再按证据做加法。** 下文主体保留实施前诊断；当日首批实现与实测结果见文末「实施进度」。最新 Manager/Native/ART 改动、设备断开造成的验证缺口及恢复步骤见 [Level 1 实施状态](level-one-runtime-status-2026-10-27.md)。六应用 Level 1 尚未验收。
 
+**2026-10-28 更新：** 下表中招行、芒果TV、网易云、拼多多各自记录的 native 相关崩溃，一部分实际共享同一个系统性根因（客体 native 库 linker 搜索路径配错），已定位并修复，四个应用（招行、淘宝、腾讯视频、拼多多）复测通过，芒果TV 从确定性失败变为低频偶发，网易云仍失败但原因已与此无关。详见 [客体 native 库搜索路径修复与六应用复测](native-library-path-fix-2026-10-28.md)。
+
 **结论**
 
 目前已经证实：多个 Android 合法调用在承载层被拒绝或身份转换不完整；启动和运行期的 Hook 发布存在可观测开销；Native 信号/系统调用接管也引入了独立失败点。继续在这一整套修改之上逐个补应用，难以区分平台缺口、Hook 副作用和客体自身行为。应建立可重复的零 Hook 对照，再重建最小承载集合。
@@ -21,7 +23,7 @@
 
 | 应用 | 当前安装的故障证据 | 判断与边界 |
 |---|---|---|
-| 招商银行 `cmb.pb` / 1446 | PID 8229，17:21:00 SIGSEGV；本代次故障文件记录 stage=2，`libCmbShield.so+0x7af58` 的 `LDR W9,[X8]` 读取匿名 `---p` 页 | 已定位到 Application.attach 阶段的保护页访问。银行加固壳常通过 `PROT_NONE`（`---p`）守卫页配合自定义 `SIGSEGV` handler 实现动态解密或自校验；需重点核查 Tripoder 的 signal chain / `other_sigaction` / 故障捕获器是否抢先拦截或破坏了客体自定义 `SIGSEGV` 的派发与恢复，不能直接归结为反沙箱或吞掉信号。 |
+| 招商银行 `cmb.pb` / 1446 | PID 8229，17:21:00 SIGSEGV；本代次故障文件记录 stage=2，`libCmbShield.so+0x7af58` 的 `LDR W9,[X8]` 读取匿名 `---p` 页 | **本节结论已被 2026-10-28 的复跑部分推翻，见下方更新。** 原假设（自定义 `SIGSEGV` handler 配合保护页，被 signal chain 抢先拦截）未被证实；新证据显示根因更可能是旧 QA 宿主包名加空间名过长，导致 `ApplicationInfo.dataDir` 约 117 字节，`libCmbShield.so` 把它拼进 127 字节缓冲区触发 `FORTIFY: vsprintf` 中止，而非保护页访问本身。换用短名宿主（dataDir 约 105 字节）后 12 项检查、30 个采样全部存活，未再出现 FORTIFY。详见 [腾讯视频启动问题与 CMB 短名复跑进度](qqlive-startup-investigation-2026-10-28.md#1-cmb-fortify-崩溃的根因假设与复跑)。这是单次对照复跑，旧 117 字节场景没有在完全相同条件下重跑，“长度是唯一变量”仍是强支持而非严格证明；也还没有执行登录和真实业务场景。 |
 | 芒果 TV `com.hunantv.imgo.activity` / 9403100 | PID 8797 在 stage=5、`libmsaoaidsec.so+0x20d10` SIGSEGV；下一次 PID 10129 的 Chrome_ProcessLauncherThread 抛 `BIND_EXTERNAL_SERVICE failed, calling package not owned by calling UID` | 至少两个独立故障。Native 指针异常待追踪；WebView 崩溃根因与腾讯视频 `mkdirs` 异常同源：调用绕过了外层 `GuestContext`，触达了 `mPackageInfo` 为客体包名但 `mOpPackageName` 为宿主包名的底层裸 `ContextImpl`，导致 AMS 校验物理包名/UID 失配。 |
 | 网易云音乐 `com.netease.cloudmusic` / 9006005 | PID 11137，17:21:25，系统记为 `EXIT_SELF / status=28`，约启动后 6 秒退出 | 已确认主动退出，缺少退出调用栈；尚不能认定是保护检测、Hook 故障或某个业务判断。需要同版本原生对照和有界退出来源采集。 |
 | 淘宝 `com.taobao.taobao` / 862 | PID 12316，商品详情页焦点事件等待 5 秒触发 ANR；有一次跳过 554 帧的记录；Scout 样本显示主线程执行资源读取、TextView 构造和页面测量/布局 | 已确认交互不可用。需要 CPU/调度与原生配对测量，才能区分执行放大、布局开销及后台竞争；现有样本不足以给所有耗时分摊比例。 |
@@ -76,7 +78,7 @@
   - **解决：** 全面核查 `ContextWrapper.getBaseContext()` 暴露链、`ApplicationAdapter.createNative` 生成的 `ContextImpl` 以及 Activity/Service base context，确保任何可触达系统 Binder 校验（AMS `bindServiceInstance`、StorageManager `mkdirs`）的 `ContextImpl` 入口在物理调用包名、UID、attribution 上保持一致，不因外层 `GuestContext` 被剥离而裸露分裂身份。
 - **Parcelable 与嵌套 Bundle 类加载器（前置必修）：** 拼多多在 `BaseBundle.getSerializable → Parcel$LazyValue.apply` 解包 `ForwardProps` 时抛 `ClassNotFoundException`（`Parcel.java:5411` 的 `Class.forName` 使用了 null 或非客体 loader）。原因在于 Android 13+ `LazyValue` 延迟解包时，顶层 `intent.setExtrasClassLoader()` 不会自动传播到已被拷贝的 `Bundle` 副本或内部嵌套的子 `Bundle`。需检查 `RuntimeActivityIntent.visible()`、`RuntimeBroadcastIntent` 及 Activity `getIntent/newIntent/savedInstanceState` 边界，确保所有层级的 `Bundle` 在首次触发 `unparcel` / `LazyValue` 解包前均关联 `engine.guestLoader()`，且不在 authority 进程解码客体专有 Parcelable。
 - **Native 信号链与线程暂停（招行 SIGSEGV & 拼多多 `userDeliveryStatus=5`）：**
-  - **招行 `libCmbShield.so` 保护页访问：** 不能通过强行改页权限或吞掉 `SIGSEGV` 处理。需优先排查 `libCmbShield.so` 是否注册了自定义 `SIGSEGV` handler（用于 `---p` 保护页自解密/反调试），并验证 `syscall_namespace.c`（`other_sigaction`）、`signal_chain.c` 及 `TP_FAULT_V1` 故障记录器是否在 `SIGSEGV` 触发时抢先终止了进程或未正确将 `ucontext` 转发给客体 handler。
+  - **招行 `libCmbShield.so` 保护页访问（结论已更新，见 2026-10-28）：** 原「signal chain 抢先拦截自定义 handler」假设未被证实。2026-10-28 的短名宿主复跑显示该崩溃更可能是 `ApplicationInfo.dataDir` 过长（旧宿主约 117 字节）触发 `libCmbShield.so` 127 字节缓冲区的 `FORTIFY: vsprintf` 中止，不是保护页本身被错误处理。换短名宿主（dataDir 约 105 字节）后未再复现。仍需：① 用同一条件重跑旧 117 字节场景做严格对照，而非仅凭一次复跑下结论；② 评估最终产品宿主包名/空间命名策略，确保 dataDir 长度有稳定上界，不依赖临时短名 QA 包；③ 补齐登录后的真实业务场景验证。详见 [腾讯视频启动问题与 CMB 短名复跑进度](qqlive-startup-investigation-2026-10-28.md)。
   - **拼多多 `userDeliveryStatus=5`（PARK 失败）：** 首先评估最小承载是否必须在每个组件进程启动时执行全线程暂停（thread park）；若仍需要，需将安装时机前移至单线程最早阶段，并为 `tp_park` 增加有界退避重试（Bounded Retry with Backoff），避免多进程并发启动时因后台线程瞬时不可 Park 而直接抛 `IllegalStateException` 杀死 Service 进程；同时修复拒绝 debuggerd Native dump 请求的问题，恢复 ANR Native 堆栈采集能力。
 - **生命周期与资源：** 当前快照为 8 槽、0 allocated、6 available、2 retained，存在已死亡进程的 Activity/Job 引用和 9 条 UNKNOWN 操作。证据不足以把当前主因归结为槽位耗尽。应按 generation 和平台对象存续证据回收；不能仅因为进程已死就删账本，也不能将 slot 错配直接重绑定到可能属于其他代次的进程。一应用一空间可辅助隔离实验，但不会凭空增加 Android manifest 中的物理进程槽。
 

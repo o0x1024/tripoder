@@ -1,7 +1,9 @@
 # 腾讯视频启动问题与 CMB 短名复跑进度（2026-10-28）
 
-承接 [六应用诊断方案](six-app-runtime-diagnosis-2026-10-27.md) 与 [Application 合同修复](application-context-contract-repair-2026-10-27.md)。
+承接 [六应用诊断方案](six-app-runtime-diagnosis-2026-10-27.md) 与 [Level 1 实施状态](level-one-runtime-status-2026-10-27.md)（原引用的「Application 合同修复」文档未曾存在，此处修正为实际承接文档，避免死链）。
 本文记录本轮的实际结果、已排除的假设和未解决的问题。**这不是六应用验收，也不是 Smoke/Release Gate 结论。** 所有运行只做 30 秒启动存活，未登录、未执行业务操作，数据未清除，未重放 UNKNOWN 操作。
+
+**2026-10-28 当日晚些时候更新：** 本文第 2 节记录的腾讯视频/拼多多/芒果TV/淘宝启动失败，相当一部分实际与本文无关，而是另一个系统性 bug（客体 native 库 linker 搜索路径配错，影响全部六应用）造成的，已定位修复，见 [客体 native 库搜索路径修复与六应用复测](native-library-path-fix-2026-10-28.md)。本文第 3 节腾讯视频的 `SecurityException`/线程爆发问题仍然独立存在、未解决。
 
 ## 1. CMB FORTIFY 崩溃的根因假设与复跑
 
@@ -74,4 +76,4 @@
 - `android/scripts/diagnose-six-app-startup.py`：
   - 新增 `cmb.pb` 的 dataDir 长度守卫（超过 109 字节拒绝），仅限 CMB。
   - 修正 UID 解析：`pm list packages -U` 按前缀匹配，改为精确匹配宿主行。
-- `android/runtime/src/dev/tripoder/runtime/RuntimeSelfHookRawApplicationRoutes.java`：仅新增跨用户拒绝的诊断日志（数值/UserHandle 文本，不记录消息内容）。**该文件在仓库中为未跟踪文件，本次提交未包含它，待决定后单独提交。**
+- `android/runtime/src/dev/tripoder/runtime/RuntimeSelfHookRawApplicationRoutes.java`：仅新增跨用户拒绝的诊断日志（数值/UserHandle 文本，不记录消息内容）。**该文件在仓库中为未跟踪文件，本次提交未包含它，且本机工作区当前已找不到该文件——这项诊断日志改动实际已丢失，不是「待决定后单独提交」。** 若仍需要 `CROSS_USER_CONTEXT_REJECTED` 诊断能力，需要重新实现并提交，第 3.1 节和第 5 节描述的「诊断日志已加入」应视为不可复现。
