@@ -313,10 +313,20 @@ public final class ProcessSupervisor {
         if(selected==null){
             RuntimeBroker.Slot cold;IBinder peer;
             synchronized(broker){if(broker.store.isDead(generation))return null;cold=broker.slotForTermination(generation);cold.closing=true;peer=cold.peer;}
-            if(peer==null)throw new IllegalStateException("PROCESS_STOP_BEFORE_ATTACH_UNKNOWN");
+            if(peer==null){
+                synchronized(broker){broker.dead(generation);}
+                cold.stopDispatch.observedDead();
+                return null;
+            }
             requestStop(cold,peer,true);return cold.stopDispatch;
         }
-        if(selected.peer==null){drain(selected,new IllegalStateException("PROCESS_STOP_BEFORE_ATTACH_UNKNOWN"));throw new IllegalStateException("PROCESS_STOP_BEFORE_ATTACH_UNKNOWN");}
+        if(selected.peer==null){
+            drain(selected,new IllegalStateException("PROCESS_STOP_BEFORE_ATTACH"));
+            synchronized(broker){broker.dead(generation);}
+            final Launch toRelease=selected;
+            main.post(()->release(toRelease));
+            return null;
+        }
         requestStop(selected);return selected.slot.stopDispatch;
     }
     private void release(Launch launch){

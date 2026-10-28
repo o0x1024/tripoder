@@ -44,7 +44,21 @@ final class FixedFrameworkMembers {
     static Class<?> owner(int index)throws Exception{return Class.forName(NAMES[index],false,null);}
     static Field field(int slot,int owner,String name,String type,boolean isStatic)throws Exception {
         Field value=FrameworkAccess.fixedField(slot);
-        if(value==null||value.getDeclaringClass()!=owner(owner)||!value.getName().equals(name)||!descriptor(value.getType()).equals(type)
+        if(value==null){
+            try{
+                Class<?> targetClass=owner(owner);
+                while(targetClass!=null&&targetClass!=Object.class){
+                    try{
+                        Field candidate=targetClass.getDeclaredField(name);
+                        if(descriptor(candidate.getType()).equals(type)&&Modifier.isStatic(candidate.getModifiers())==isStatic){
+                            value=candidate;break;
+                        }
+                    }catch(NoSuchFieldException ignored){}
+                    targetClass=targetClass.getSuperclass();
+                }
+            }catch(Throwable ignored){}
+        }
+        if(value==null||!value.getName().equals(name)||!descriptor(value.getType()).equals(type)
             ||Modifier.isStatic(value.getModifiers())!=isStatic)throw new IllegalStateException("PRODUCT_FIELD_IDENTITY:"+name);
         value.setAccessible(true);return value;
     }

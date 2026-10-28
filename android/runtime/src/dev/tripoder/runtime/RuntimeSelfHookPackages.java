@@ -23,9 +23,18 @@ final class RuntimeSelfHookPackages {
                     // platform route. A guest receiver uses the one owned seam.
                     if(!engine.packageName.equals(context.getPackageName()))return original.call(args);
                     if(method.getName().equals("getContentResolver")){
-                        dev.tripoder.selfhook.ApplicationAdapter.requireLogicalContext(context);return engine.settingsResolver();
+                        try{
+                            dev.tripoder.selfhook.ApplicationAdapter.requireLogicalContext(context);
+                            return engine.settingsResolver();
+                        }catch(Throwable fallback){
+                            return original.call(args);
+                        }
                     }
-                    return engine.packageContexts.createFromPlatform(context,(String)args[0],(Integer)args[1],args.length==3?(android.os.UserHandle)args[2]:null);
+                    String targetPackage=(String)args[0];
+                    android.os.UserHandle user=args.length==3?(android.os.UserHandle)args[2]:null;
+                    if(!engine.packageName.equals(targetPackage)||(user!=null&&dev.tripoder.selfhook.PackageFrameworkAccess.userId(user)!=RuntimePackageBridge.userId()))
+                        return original.call(args);
+                    return engine.packageContexts.createFromPlatform(context,targetPackage,(Integer)args[1],user);
                 }
                 PackageManager value=RuntimePackageBridge.contextManager(context);PackageFrameworkAccess.cache(context,value);return value;
             });

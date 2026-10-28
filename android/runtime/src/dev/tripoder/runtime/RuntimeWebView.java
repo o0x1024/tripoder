@@ -166,6 +166,7 @@ final class RuntimeWebView {
         if(provider!=null){allowed.add(provider.applicationInfo.sourceDir);
             if(provider.applicationInfo.splitSourceDirs!=null)allowed.addAll(Arrays.asList(provider.applicationInfo.splitSourceDirs));
             if(provider.applicationInfo.sharedLibraryFiles!=null)allowed.addAll(Arrays.asList(provider.applicationInfo.sharedLibraryFiles));}
+        for(String a:new java.util.ArrayList<>(allowed))try{allowed.add(new java.io.File(a).getCanonicalPath());}catch(Exception ignored){}
         // The guest's own artifact tree (base.apk, splits, lib/*.so, dex/*) is authenticated and
         // sealed immutable by the install verifier, so a dex-load report naming a file inside it is a
         // legitimate self-reference -- apps routinely pack a secondary dex inside a native library
@@ -182,7 +183,8 @@ final class RuntimeWebView {
                 boolean ownArtifact=canonical.startsWith(new java.io.File(engine.info.nativeLibraryDir).getParentFile().getCanonicalPath()+java.io.File.separator);
                 boolean platform=(canonical.startsWith("/system/")||canonical.startsWith("/system_ext/")||canonical.startsWith("/product/")||canonical.startsWith("/apex/")||canonical.startsWith("/vendor/")||canonical.startsWith("/odm/"))
                     &&(path.startsWith("/system/")||path.startsWith("/system_ext/")||path.startsWith("/product/")||path.startsWith("/apex/")||path.startsWith("/vendor/")||path.startsWith("/odm/"));
-                if(!canonical.equals(file.getAbsolutePath())||(!allowed.contains(path)&&!ownData&&!ownArtifact&&!platform)||!file.isFile())
+                boolean allowedPath=allowed.contains(path)||allowed.contains(canonical);
+                if((!allowedPath&&!ownData&&!ownArtifact&&!platform)||!file.isFile())
                     throw new SecurityException("DEX_LOAD_REPORT_PATH_DENIED:"+path);
             }catch(java.io.IOException error){throw new IllegalStateException("DEX_LOAD_REPORT_PATH_UNAVAILABLE",error);}
             checked.put(path,context);

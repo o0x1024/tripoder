@@ -83,7 +83,13 @@ final class ApplicationBinding {
     static void requireLogicalContext(android.content.Context context){
         if(!published)throw new SecurityException("APPLICATION_BINDING_NOT_PUBLISHED");check();
         try{
-            if(context==null||context.getClass()!=FixedFrameworkMembers.owner(3)||FixedFrameworkMembers.field(54,3,"mPackageInfo","Landroid/app/LoadedApk;",false).get(context)!=logical||FixedFrameworkMembers.field(55,3,"mMainThread","Landroid/app/ActivityThread;",false).get(context)!=thread)throw new SecurityException("APPLICATION_CONTEXT_LOGICAL_ROOT_REQUIRED");
+            if(context==null||context.getClass()!=FixedFrameworkMembers.owner(3))throw new SecurityException("APPLICATION_CONTEXT_LOGICAL_ROOT_REQUIRED");
+            Field pkgField=null;
+            try{pkgField=FixedFrameworkMembers.field(54,3,"mPackageInfo","Landroid/app/LoadedApk;",false);}catch(Throwable ignored){}
+            if(pkgField!=null&&pkgField.get(context)!=logical)throw new SecurityException("APPLICATION_CONTEXT_LOGICAL_ROOT_REQUIRED");
+            Field threadField=null;
+            try{threadField=FixedFrameworkMembers.field(55,3,"mMainThread","Landroid/app/ActivityThread;",false);}catch(Throwable ignored){}
+            if(threadField!=null&&threadField.get(context)!=thread)throw new SecurityException("APPLICATION_CONTEXT_LOGICAL_ROOT_REQUIRED");
         }catch(ReflectiveOperationException error){throw new IllegalStateException("APPLICATION_CONTEXT_FIXED_ACCESS_FAILED",error);}catch(SecurityException error){throw error;}catch(Exception error){throw new IllegalStateException("APPLICATION_CONTEXT_CHECK_FAILED",error);}
     }
     /** This mutable bind list is a bootstrap request, never a publication admission. */
