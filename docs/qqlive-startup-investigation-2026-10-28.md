@@ -7,12 +7,12 @@
 
 - 旧 QA 宿主 `dev.tripoder.leveloneresumeqa`（29 字节包名）+ 空间 `p6-20261014` 使 CMB 的 `ApplicationInfo.dataDir` 约 117 字节。
 - `libCmbShield.so` 把 dataDir 拼进 127 字节缓冲区，触发 `FORTIFY: vsprintf: prevented 133-byte write into 127-byte buffer`，随后 `__fortify_fatal` 中止。
-- 使用短名宿主 `dev.tripoder.cmbq`（dataDir 约 105 字节）复跑：12 项检查全部通过，30 个采样全部存活，之后未再出现 FORTIFY。证据：[application-context-9-cmb-shortname](../docs/evidence/level-one-2026-10-27/application-context-9-cmb-shortname/summary.json)。
+- 使用短名宿主 `dev.tripoder.cmbq`（dataDir 约 105 字节）复跑：12 项检查全部通过，30 个采样全部存活，之后未再出现 FORTIFY。证据：[application-context-9-cmb-shortname](evidence/level-one-2026-10-27/application-context-9-cmb-shortname/summary.json)。
 - 边界：这是一次单独复跑，旧 117 字节运行没有在完全相同条件下重跑，“长度是唯一变量”仍是强支持而非严格证明。
 
 ## 2. 六应用启动诊断（短名宿主，guest-only）
 
-证据：[six-app-cmbq-startup-1](../docs/evidence/level-one-2026-10-27/six-app-cmbq-startup-1/summary.json)。
+证据：[six-app-cmbq-startup-1](evidence/level-one-2026-10-27/six-app-cmbq-startup-1/summary.json)。
 
 | 应用 | 结果 | 说明 |
 |---|---|---|
@@ -31,9 +31,9 @@
 
 | 运行 | 结果 | 证据 |
 |---|---|---|
-| diag-1 | 30 秒检查全部通过；收尾超时 `HOOK_WORKER_TIMEOUT_UNKNOWN`；同一 worker 期间出现 `SecurityException` | [diag-1](../docs/evidence/level-one-2026-10-27/six-app-cmbq-qqlive-diag-1/summary.json) |
-| diag-2 | guest 工作进程原生中止（SIGABRT），线程 `Idle Thread-762`，`mprotect` 报 `Out of memory`；harness 报 `DeadObjectException` | [diag-2](../docs/evidence/level-one-2026-10-27/six-app-cmbq-qqlive-diag-2/README.md) |
-| diag-3 至 diag-6 | 全部通过 | [diag-3](../docs/evidence/level-one-2026-10-27/six-app-cmbq-qqlive-diag-3/summary.json)…[diag-6](../docs/evidence/level-one-2026-10-27/six-app-cmbq-qqlive-diag-6/summary.json) |
+| diag-1 | 30 秒检查全部通过；收尾超时 `HOOK_WORKER_TIMEOUT_UNKNOWN`；同一 worker 期间出现 `SecurityException` | [diag-1](evidence/level-one-2026-10-27/six-app-cmbq-qqlive-diag-1/summary.json) |
+| diag-2 | guest 工作进程原生中止（SIGABRT），线程 `Idle Thread-762`，`mprotect` 报 `Out of memory`；harness 报 `DeadObjectException` | [diag-2](evidence/level-one-2026-10-27/six-app-cmbq-qqlive-diag-2/README.md) |
+| diag-3 至 diag-6 | 全部通过 | [diag-3](evidence/level-one-2026-10-27/six-app-cmbq-qqlive-diag-3/summary.json)…[diag-6](evidence/level-one-2026-10-27/six-app-cmbq-qqlive-diag-6/summary.json) |
 
 ### 3.1 `SecurityException` 的调用栈（diag-1）
 
