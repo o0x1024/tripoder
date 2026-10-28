@@ -31,6 +31,7 @@ final class RuntimeControllerCommands {
         }
         if("applicationWalRecover".equals(command))return RuntimeControllerInstallationQueries.walRecover(broker,input);
         if("applicationProcessHistory".equals(command))return RuntimeControllerInstallationQueries.processHistory(broker,input);
+        if("exitHistory".equals(command))return RuntimeControllerInstallationQueries.exitHistory(broker,input);
         if("applicationManifest".equals(command))return RuntimeControllerInstallationQueries.inspect(broker,input);Bundle out=new Bundle();
         if(command.equals("catalog")){fields(input,"command");return RuntimeControllerCatalog.read(broker);}
         if(command.equals("appPresentation"))return RuntimeControllerPresentation.read(broker,input);

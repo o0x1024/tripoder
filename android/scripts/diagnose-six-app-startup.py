@@ -320,6 +320,26 @@ def main():
                           'authenticated': authenticated, 'passed': item['guest']['passed']}), flush=True)
         if not authenticated:
             raise RuntimeError('INVALID_TERMINAL_RECEIPT_NO_REPLAY:' + run)
+        # The engine itself (not this app) can go down mid-run (e.g. a prior app's native
+        # crash left EngineRecoveryPolicy BLOCKED); every app after that point would fail
+        # identically regardless of its own behavior. Stop immediately and say so, instead
+        # of letting each remaining app collect a misleading per-app "did not pass".
+        upstream_checks = result.get('checks') or []
+        if (upstream_checks and upstream_checks[0].get('name') == 'real-workbench-foreground-startup-connected'
+                and not upstream_checks[0].get('passed') and upstream_checks[0].get('observed') == 'SUPERVISOR_INTERRUPTED'):
+            item['guest']['upstreamEngineFailure'] = 'SUPERVISOR_INTERRUPTED'
+            remaining = [a['package'] for a in applications
+                         if (not args.selected or a['package'] in args.selected) and a['package'] != package
+                         and a['package'] not in {existing['package'] for existing in summary['applications']}]
+            for other in remaining:
+                summary['applications'].append({'package': other, 'businessAccepted': None,
+                                                  'guest': {'state': 'NOT_ATTEMPTED_UPSTREAM_ENGINE_FAILURE'}})
+            summary['state'] = 'ABORTED_UPSTREAM_ENGINE_FAILURE'
+            summary['abortedAfter'] = package
+            save()
+            print(json.dumps({'stage': 'aborted-upstream-engine-failure', 'after': package,
+                              'skipped': remaining}), flush=True)
+            return
     summary['state'] = 'DIAGNOSTICS_COLLECTED_NOT_SMOKE_ACCEPTANCE'
     save()
 

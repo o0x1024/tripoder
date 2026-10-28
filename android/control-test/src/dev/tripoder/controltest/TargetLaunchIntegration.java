@@ -117,7 +117,9 @@ public final class TargetLaunchIntegration extends ControlTestBase {
             throw error;
         }
         long prepareLaunchMs=SystemClock.elapsedRealtime()-prepareStartMs;
-        Bundle worker=awaitWorker(session,record.getString("project"),prepared);
+        Bundle worker;
+        try{worker=awaitWorker(session,record.getString("project"),prepared);}
+        catch(Exception error){attachExitHistory(session,pkg,prepared.getString("generation"));throw error;}
         long workerReadyMs=SystemClock.elapsedRealtime()-prepareStartMs;
         report.put("prepareLaunchMs",prepareLaunchMs).put("workerReadyMs",workerReadyMs).put("workerPid",worker.getInt("pid")).put("workerUid",worker.getInt("uid")).put("processGeneration",prepared.getString("generation"));check("target-application-initialized",worker.getInt("pid")>0&&worker.getInt("uid")==android.os.Process.myUid()&&worker.getInt("pid")!=android.os.Process.myPid(),json(preparedWithoutEntry(prepared)));
         java.util.concurrent.atomic.AtomicReference<Activity> page=new java.util.concurrent.atomic.AtomicReference<>();Application application=(Application)app;
@@ -145,7 +147,7 @@ public final class TargetLaunchIntegration extends ControlTestBase {
             // and it has died only when the generation stays absent across several samples (tolerating the brief restart gap).
             if(generationAlive)emptyStreak=0;else emptyStreak++;
             samples.put(new JSONObject().put("time",System.currentTimeMillis()).put("originalAlive",generationAlive).put("generationAlive",generationAlive).put("originalPidAlive",originalPidAlive).put("livePids",livePids).put("processes",live));
-            if(emptyStreak>=3){check("target-original-worker-remains-running-for-30-seconds",false,live);break;}SystemClock.sleep(1000);
+            if(emptyStreak>=3){attachExitHistory(session,pkg,prepared.getString("generation"));check("target-original-worker-remains-running-for-30-seconds",false,live);break;}SystemClock.sleep(1000);
         }
         maxGap=Math.max(maxGap,SystemClock.elapsedRealtime()-lastSample);
         check("target-stability-observation-is-continuous",samples.length()>=2&&maxGap<=5000,new JSONObject().put("samples",samples.length()).put("maxGapMs",maxGap).put("elapsedMs",SystemClock.elapsedRealtime()-started));
@@ -244,6 +246,14 @@ public final class TargetLaunchIntegration extends ControlTestBase {
         Bundle old=execute(session,"entryClosureReceipt","operation",closure),receipt=execute(session,"query","operation",closure);
         check("entry-closure-keeps-original-unknown","UNKNOWN".equals(old.getString("state"))&&Objects.equals(original.getString("detail"),old.getString("detail"))&&"SUCCEEDED".equals(receipt.getString("state")),json(old));
         if(!report.has("entryClosures"))report.put("entryClosures",new JSONArray());report.getJSONArray("entryClosures").put(new JSONObject().put("prior",json(original)).put("eligible",selected).put("closed",json(closed)).put("receipt",json(receipt)).put("resources",json(execute(session,"resources"))));
+    }
+    /** Best-effort diagnosis only: a failure here must never replace or mask the real test failure,
+     * so every exception is captured into the report instead of thrown. Only usable once a process
+     * generation is actually known (prepareLaunch already returned); a worker that dies before that
+     * point leaves this uncovered, there is no reliable generation to ask about yet. */
+    private void attachExitHistory(IBinder session,String pkg,String processGeneration){
+        try{report.put("workerExitHistory",new JSONObject(execute(session,"exitHistory","space",SPACE,"package",pkg,"processGeneration",processGeneration,"maxNum","4").getString("result")));}
+        catch(Exception error){try{report.put("workerExitHistoryError",String.valueOf(error));}catch(Exception ignored){}}
     }
     private static Bundle preparedWithoutEntry(Bundle value){Bundle copy=new Bundle(value);copy.remove("intent");return copy;}
     private static String digest(File file)throws Exception{MessageDigest digest=MessageDigest.getInstance("SHA-256");try(var in=new FileInputStream(file)){byte[] buffer=new byte[1024*1024];int count;while((count=in.read(buffer))>=0)digest.update(buffer,0,count);}return HexFormat.of().formatHex(digest.digest());}

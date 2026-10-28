@@ -174,7 +174,13 @@ public final class RuntimeEngine {
         // Declared platform dependencies use the same pinned boot-member registry
         // as the later managed hooks; resolve it before reconstructing their loader.
         RuntimeFixedPreparation.framework();boot("fixedFramework",bootStart);
-        sharedLibraries=new RuntimeSharedLibraries(host.getPackageManager(),artifacts,parent,info,applicationInfo.nativeLibraryDir);
+        // info.nativeLibraryDir is the real, physically-populated execution copy (see
+        // RuntimeExecutionCode/ArtifactSet extraction); applicationInfo.nativeLibraryDir is the
+        // cosmetic, guest-visible synthetic path the guest sees when it inspects its own
+        // ApplicationInfo and never exists on disk. RuntimeDexLoader.createForGuest() takes this
+        // exact value as the real linker namespace search path (via sharedLibraries.nativeSearch),
+        // so passing the synthetic one here made every guest native library unresolvable.
+        sharedLibraries=new RuntimeSharedLibraries(host.getPackageManager(),artifacts,parent,info,info.nativeLibraryDir);
         info.sharedLibraryFiles=sharedLibraries.files.clone();applicationInfo.sharedLibraryFiles=sharedLibraries.files.clone();
         dev.tripoder.selfhook.SharedLibraryFrameworkAccess.project(info,sharedLibraries.metadata);dev.tripoder.selfhook.SharedLibraryFrameworkAccess.project(applicationInfo,sharedLibraries.metadata);
         boot("sharedLibraries",bootStart);

@@ -19,6 +19,25 @@ final class RuntimeControllerInstallationQueries {
             .put("source","PERSISTED_PROCESS_SESSION_HISTORY").put("semantics","Historical identity only. A recorded PID/state grants no execution authority; use exact generation fences for live operations.");
         Bundle out=new Bundle();out.putString("result",result.toString());return out;
     }
+    /** Diagnosis only, for a worker a controller test already observed as dead (e.g. WORKER_DIED).
+     * No live authority: trust comes from the DEAD session row plus the current committed install,
+     * not from the (already gone) process authenticating itself. Never reads trace contents. */
+    static Bundle exitHistory(RuntimeBroker broker,Bundle input)throws Exception{
+        RuntimeControllerCommands.fields(input,"command","space","package","processGeneration","maxNum");
+        String space=ControlWire.required(input,"space"),pkg=ControlWire.required(input,"package"),processGeneration=ControlWire.required(input,"processGeneration");
+        int max=Integer.parseInt(input.getString("maxNum"));
+        java.util.ArrayList<android.os.Bundle> exits=RuntimeExitHistory.queryForController(broker,space,pkg,processGeneration,max).getParcelableArrayList("exits",android.os.Bundle.class);
+        JSONObject result=new JSONObject().put("target",new JSONObject().put("space",space).put("package",pkg).put("processGeneration",processGeneration));
+        org.json.JSONArray rows=new org.json.JSONArray();
+        if(exits!=null)for(android.os.Bundle row:exits){
+            android.app.ApplicationExitInfo info=row.getParcelable("info",android.app.ApplicationExitInfo.class);
+            JSONObject entry=new JSONObject().put("pid",info.getPid()).put("timestamp",info.getTimestamp()).put("reason",info.getReason()).put("status",info.getStatus()).put("importance",info.getImportance());
+            try(var trace=info.getTraceInputStream()){entry.put("traceAvailable",trace!=null);}catch(java.io.IOException error){entry.put("traceAvailable",false).put("traceErrorType",error.getClass().getName());}
+            rows.put(entry);
+        }
+        result.put("exits",rows).put("traceContentsRead",false).put("semantics","Only exit records stamped for this exact space/package/processGeneration/data id; a DEAD session row is required before this ever runs.");
+        Bundle out=new Bundle();out.putString("result",result.toString());return out;
+    }
     static Bundle storage(RuntimeBroker broker,Bundle input)throws Exception{
         RuntimeControllerCommands.fields(input,"command","space","package","generation","category","limit");
         String space=ControlWire.required(input,"space"),pkg=ControlWire.required(input,"package"),generation=ControlWire.required(input,"generation");

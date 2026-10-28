@@ -47,5 +47,37 @@ final class RuntimeExitHistory {
         }
         Bundle out=new Bundle();out.putParcelableArrayList("exits",rows);return out;
     }
+    /** Controller-side diagnosis for a worker that already died: the generation cannot authenticate
+     * itself any more, so trust comes from the controller lease plus the DEAD session row, not from a
+     * live pid/uid. Only ever returns rows for THIS space/package/installGeneration/dataId, and only
+     * once the session is recorded DEAD; never widens to any other process the host can see. */
+    static Bundle queryForController(RuntimeBroker broker,String space,String pkg,String processGeneration,int max)throws Exception{
+        if(Thread.holdsLock(broker))throw new IllegalStateException("EXIT_SYSTEM_QUERY_INSIDE_BROKER_LOCK");
+        if(max<0)throw new IllegalArgumentException("EXIT_HISTORY_QUERY_RANGE");
+        int pid;String installGeneration,dataId,activityStub;
+        synchronized(broker){
+            try(var c=broker.store.getReadableDatabase().rawQuery("SELECT s.space,s.package,s.installGeneration,s.pid,s.state,s.activityStub,s.processKind,i.dataId FROM sessions s JOIN installs i ON s.space=i.space AND s.package=i.package AND s.installGeneration=i.generation WHERE s.generation=?",new String[]{processGeneration})){
+                if(!c.moveToFirst())throw new IllegalStateException("EXIT_HISTORY_SESSION_NOT_FOUND");
+                if(!space.equals(c.getString(0))||!pkg.equals(c.getString(1)))throw new SecurityException("EXIT_HISTORY_OTHER_PACKAGE_DENIED");
+                if(!"DEAD".equals(c.getString(4)))throw new IllegalStateException("EXIT_HISTORY_PROCESS_NOT_DEAD");
+                if(!"ORDINARY".equals(c.getString(6)))throw new UnsupportedOperationException("ISOLATED_EXIT_STAMP_NOT_IMPLEMENTED");
+                pid=c.getInt(3);installGeneration=c.getString(2);activityStub=c.getString(5);dataId=c.getString(7);
+                var current=broker.apks.row(space,pkg);
+                if(current==null||!"COMMITTED".equals(current.state)||!installGeneration.equals(current.generation)||!dataId.equals(current.dataId))throw new SecurityException("EXIT_HISTORY_INSTALL_CHANGED");
+            }
+        }
+        int uid=android.os.Process.myUid();String expectedProcessName=broker.host.getPackageName()+":slot"+RuntimeSlot.index(activityStub);
+        List<ApplicationExitInfo> observed=Objects.requireNonNull(broker.host.getSystemService(ActivityManager.class).getHistoricalProcessExitReasons(broker.host.getPackageName(),pid,0),"EXIT_SYSTEM_HISTORY_UNAVAILABLE");
+        if(observed.size()>256)throw new IllegalStateException("EXIT_SYSTEM_HISTORY_BUDGET");
+        byte[] expected=marker(processGeneration,dataId);ArrayList<Bundle> rows=new ArrayList<>();
+        for(ApplicationExitInfo physical:observed){
+            byte[] summary=physical.getProcessStateSummary();
+            if(summary==null||!Arrays.equals(expected,summary))continue;
+            if(physical.getPid()!=pid||physical.getRealUid()!=uid||physical.getPackageUid()!=uid||!expectedProcessName.equals(physical.getProcessName()))continue;
+            Bundle row=new Bundle();row.putParcelable("info",physical);rows.add(row);
+            if(max>0&&rows.size()==max)break;
+        }
+        Bundle out=new Bundle();out.putParcelableArrayList("exits",rows);return out;
+    }
     private RuntimeExitHistory(){}
 }
