@@ -47,6 +47,18 @@ final class RuntimeSelfHookManagers {
         return value;
     }
     static void requireActive(){require();}
+    static boolean isInstalled(RuntimeSelfHookManagerPolicy.Family family){
+        RuntimeSelfHookManagers value=current;
+        if(value==null||value.engine!=RuntimeEngine.current||value.failure!=null||family==null)return false;
+        synchronized(value){return value.installed.contains(family);}
+    }
+    static void ensureInstalled(RuntimeSelfHookManagerPolicy.Family family){
+        RuntimeSelfHookManagers value;
+        try{value=require();}catch(Throwable unavailable){throw new UnsupportedOperationException("DEVICE_MANAGER_OBSERVATION_NOT_INSTALLED",unavailable);}
+        synchronized(value){if(value.installed.contains(family))return;}
+        try{RuntimeSelfHookProduct.installManagerFamily(family);}
+        catch(Throwable error){throw new UnsupportedOperationException("DEVICE_MANAGER_OBSERVATION_NOT_INSTALLED:"+family,error);}
+    }
     private static RuntimeSelfHookManagerFramework framework(Context host,RuntimeSelfHookManagerPolicy.Family family) {
         RuntimeSelfHookManagers value=require();
         if(host!=value.engine.host)throw new SecurityException("SELF_MANAGER_PHYSICAL_CONTEXT_REQUIRED");

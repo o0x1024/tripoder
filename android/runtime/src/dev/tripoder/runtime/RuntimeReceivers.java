@@ -115,7 +115,10 @@ final class RuntimeReceivers {
                 // Logical payloads travel inside an authority ticket, so their private
                 // physical action has no URI. System events keep Android's real filter.
                 Intent sticky=engine.host.registerReceiver(physicalReceiver,new IntentFilter(admitted.getString("action")),null,scheduler,Context.RECEIVER_NOT_EXPORTED);registered=true;
-                if(sticky!=null)throw new IllegalStateException("UNEXPECTED_STICKY_PRIVATE_BROADCAST");
+                // The private action is a fresh authority token and carries only ticketed deliveries, so a sticky
+                // returned here can never be a logical payload. Failing the guest's registerReceiver for it (as
+                // before) aborted static initializers such as Tencent Video's LoginDataStore; record and discard.
+                if(sticky!=null)android.util.Log.w("TripoderReceiver","UNEXPECTED_STICKY_PRIVATE_BROADCAST ignored action="+admitted.getString("action")+" sticky="+sticky);
                 if(!systems.isEmpty()){
                     IntentFilter physical=RuntimeReceiverFilters.system(filter,systems);
                     stickyReturn=engine.host.registerReceiver(physicalReceiver,physical,permission,scheduler,Context.RECEIVER_NOT_EXPORTED);

@@ -162,7 +162,7 @@ final class RuntimeWebView {
         if((!physical.equals(name)&&!engine.packageName.equals(name))||!"arm64".equals(isa)
                 ||contexts==null||contexts.isEmpty()||contexts.size()>32)throw new SecurityException("DEX_LOAD_REPORT_IDENTITY_DENIED");
         java.util.Set<String> allowed=new java.util.HashSet<>();
-        allowed.add(engine.host.getApplicationInfo().sourceDir);allowed.add(engine.info.sourceDir);allowed.add("/system/framework/org.apache.http.legacy.jar");
+        allowed.add(engine.host.getApplicationInfo().sourceDir);allowed.add(engine.info.sourceDir);allowed.add(engine.applicationInfo.sourceDir);allowed.add("/system/framework/org.apache.http.legacy.jar");
         if(provider!=null){allowed.add(provider.applicationInfo.sourceDir);
             if(provider.applicationInfo.splitSourceDirs!=null)allowed.addAll(Arrays.asList(provider.applicationInfo.splitSourceDirs));
             if(provider.applicationInfo.sharedLibraryFiles!=null)allowed.addAll(Arrays.asList(provider.applicationInfo.sharedLibraryFiles));}
@@ -173,18 +173,30 @@ final class RuntimeWebView {
         // (Alibaba SecurityGuard libsgmain.so, Tinker, ...) and report it to PMS for background dexopt.
         // This is strictly more conservative than the ownData branch below, which already permits the
         // guest's MUTABLE data dir; refusing it only turned a normal self-report into an app crash.
+        String guestPkg=engine.packageName;
+        java.util.List<String> ownDataRoots=java.util.List.of(
+            engine.data.getPath()+"/",engine.dataCanonicalDirectory+"/",
+            "/data/user/0/"+guestPkg+"/","/data/data/"+guestPkg+"/","/data/user_de/0/"+guestPkg+"/");
+        java.util.List<String> ownArtifactRoots=java.util.List.of(
+            engine.artifactDirectory.getPath()+"/",engine.artifactCanonicalDirectory+"/",
+            engine.executionCode.directory.getPath()+"/",engine.executionCode.canonicalDirectory+"/",
+            engine.executionCode.visibleDirectory+"/","/data/app/~~tripoder/"+guestPkg+"/");
         java.util.Map<String,String> checked=new java.util.LinkedHashMap<>();
         for(var entry:contexts.entrySet()){
-            if(!(entry.getKey() instanceof String path)||!(entry.getValue() instanceof String context)||context.length()>65536)
+            if(!(entry.getKey() instanceof String path)||!(entry.getValue() instanceof String context)||context.length()>65536
+                ||path.contains("/../")||path.endsWith("/.."))
                 throw new SecurityException("DEX_LOAD_REPORT_SHAPE_DENIED");
             try{
                 java.io.File file=new java.io.File(path);String canonical=file.getCanonicalPath();
-                boolean ownData=canonical.startsWith(engine.data.getCanonicalPath()+java.io.File.separator);
-                boolean ownArtifact=canonical.startsWith(new java.io.File(engine.info.nativeLibraryDir).getParentFile().getCanonicalPath()+java.io.File.separator);
+                boolean ownData=false,ownArtifact=false;
+                for(String root:ownDataRoots)if(path.startsWith(root)||canonical.startsWith(root)){ownData=true;break;}
+                if(!ownData)try{ownData=canonical.startsWith(engine.data.getCanonicalPath()+java.io.File.separator);}catch(Exception ignored){}
+                for(String root:ownArtifactRoots)if(path.startsWith(root)||canonical.startsWith(root)){ownArtifact=true;break;}
+                if(!ownArtifact&&canonical.startsWith("/data/app/~~")&&canonical.contains("/"+guestPkg+"-"))ownArtifact=true;
                 boolean platform=(canonical.startsWith("/system/")||canonical.startsWith("/system_ext/")||canonical.startsWith("/product/")||canonical.startsWith("/apex/")||canonical.startsWith("/vendor/")||canonical.startsWith("/odm/"))
                     &&(path.startsWith("/system/")||path.startsWith("/system_ext/")||path.startsWith("/product/")||path.startsWith("/apex/")||path.startsWith("/vendor/")||path.startsWith("/odm/"));
                 boolean allowedPath=allowed.contains(path)||allowed.contains(canonical);
-                if((!allowedPath&&!ownData&&!ownArtifact&&!platform)||!file.isFile())
+                if((!allowedPath&&!ownData&&!ownArtifact&&!platform)||(!ownData&&!file.isFile()))
                     throw new SecurityException("DEX_LOAD_REPORT_PATH_DENIED:"+path);
             }catch(java.io.IOException error){throw new IllegalStateException("DEX_LOAD_REPORT_PATH_UNAVAILABLE",error);}
             checked.put(path,context);

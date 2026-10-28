@@ -128,6 +128,8 @@ final class RuntimeSelfHookApplication {
         if(context instanceof GuestContext)((GuestContext)context).attachedApplication(guest);
         ApplicationAdapter.attach(context);
         value.attached=true;
+        Application installed=ApplicationAdapter.installedApplication();
+        if(installed!=null&&context instanceof GuestContext)((GuestContext)context).attachedApplication(installed);
     }
 
     /** The application the guest published on its LoadedApk after onCreate, or the created instance before that. */

@@ -13,8 +13,11 @@ final class RuntimePackageContexts {
     RuntimePackageContexts(RuntimeEngine engine){this.engine=engine;}
     Context createFromPlatform(Context source,String packageName,int flags,android.os.UserHandle user)throws android.content.pm.PackageManager.NameNotFoundException{
         try{dev.tripoder.selfhook.ApplicationAdapter.requireLogicalContext(source);}catch(Throwable ignored){}
-        if(user!=null&&dev.tripoder.selfhook.PackageFrameworkAccess.userId(user)!=RuntimePackageBridge.userId())
+        if(user!=null&&dev.tripoder.selfhook.PackageFrameworkAccess.userId(user)!=RuntimePackageBridge.userId()){
+            if(engine.packageName.equals(packageName)&&dev.tripoder.selfhook.PackageFrameworkAccess.userId(user)<0)
+                return create(packageName,flags);
             return source.createPackageContext(packageName,flags);
+        }
         if(!engine.packageName.equals(packageName))
             return source.createPackageContext(packageName,flags);
         return create(packageName,flags);

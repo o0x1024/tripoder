@@ -7,6 +7,7 @@ import static dev.tripoder.runtime.RuntimeSelfHookBootstrap.Capability.*;
 /** Complete product plan, before any guest factory, initializer or constructor.
  * Existing Runtime owners retain every business ledger and authorization. */
 final class RuntimeSelfHookProduct {
+    private static volatile RuntimeSelfHookProduct current;
     private static volatile int installedBindings;
     private static volatile int installedManagerBindings;
     static int installedBindings(){return installedBindings;}
@@ -16,8 +17,19 @@ final class RuntimeSelfHookProduct {
     private RuntimeSelfHookProduct(RuntimeEngine engine){
         if(engine==null||engine!=RuntimeEngine.current)throw new SecurityException("SELF_HOOK_PRODUCT_ENGINE_REQUIRED");
     }
+    static synchronized void installManagerFamily(RuntimeSelfHookManagerPolicy.Family family)throws Exception{
+        RuntimeSelfHookProduct value=current;
+        if(value==null||value.managed==null||value.adapters==null)throw new IllegalStateException("SELF_HOOK_PRODUCT_NOT_READY");
+        if(RuntimeSelfHookManagers.isInstalled(family))return;
+        dev.tripoder.selfhook.FixedManagerInventory.inspect();
+        java.util.List<java.lang.reflect.Method> methods=dev.tripoder.selfhook.FixedManagerInventory.methods(family.ordinal());
+        RuntimeSelfHookManagers.install(family,methods.toArray(new java.lang.reflect.Method[0]),value.adapters);
+        installedBindings=value.managed.installedCount();
+        installedManagerBindings=value.managed.installedManagerCount();
+    }
     static void install(RuntimeEngine engine)throws Exception{
         RuntimeSelfHookProduct value=new RuntimeSelfHookProduct(engine);
+        current=value;
         EnumMap<RuntimeSelfHookBootstrap.Capability,RuntimeSelfHookBootstrap.Installer> plan=new EnumMap<>(RuntimeSelfHookBootstrap.Capability.class);
         plan.put(PROCESS_EXECUTION_POLICY,()->{
             RuntimeFixedPreparation.process();value.managed=new RuntimeManagedInstaller(RuntimeFixedPreparation.take(),true);value.adapters=new RuntimeSelfHookInstallers(value.managed);

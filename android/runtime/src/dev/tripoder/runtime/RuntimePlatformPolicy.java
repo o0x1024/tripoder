@@ -14,7 +14,14 @@ final class RuntimePlatformPolicy {
     private static final Set<String> PLATFORM=Set.of(Context.AUDIO_SERVICE,Context.POWER_SERVICE,
         Context.WIFI_SERVICE,Context.WIFI_P2P_SERVICE,Context.NETWORK_STATS_SERVICE,
         Context.ACTIVITY_SERVICE,Context.CONNECTIVITY_SERVICE,Context.TELEPHONY_SERVICE,Context.BATTERY_SERVICE,Context.LOCATION_SERVICE);
-    static boolean platformService(String name){return name!=null&&PLATFORM.contains(name);}
+    static boolean platformService(String name){
+        if(name==null||!PLATFORM.contains(name))return false;
+        if(Context.CONNECTIVITY_SERVICE.equals(name)&&RuntimeSelfHookManagers.isInstalled(RuntimeSelfHookManagerPolicy.Family.CONNECTIVITY))return false;
+        if(Context.TELEPHONY_SERVICE.equals(name)&&RuntimeSelfHookManagers.isInstalled(RuntimeSelfHookManagerPolicy.Family.TELEPHONY))return false;
+        if(Context.BATTERY_SERVICE.equals(name)&&RuntimeSelfHookManagers.isInstalled(RuntimeSelfHookManagerPolicy.Family.BATTERY))return false;
+        if(Context.LOCATION_SERVICE.equals(name)&&RuntimeSelfHookManagers.isInstalled(RuntimeSelfHookManagerPolicy.Family.LOCATION))return false;
+        return true;
+    }
     /** Package queries already use the explicitly installed IPackageManager
      * endpoint. Only raw Context and ServiceManager acquisition need a seam. */
     static boolean packageHook(java.lang.reflect.Executable method){

@@ -294,10 +294,18 @@ JNIEXPORT void JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_attachNativ
     (*env)->CallNonvirtualVoidMethod(env,state.roots[GUEST],state.classes[0],state.methods[6],wrapper);
     if((*env)->ExceptionCheck(env))goto done;
     // Android's LoadedApk assigns mApplication after newApplication/attach returns.
-    // Keep a delegate explicitly installed by the guest; otherwise publish the attached instance now.
-    jobject installed=(*env)->GetObjectField(env,state.roots[LOGICAL],state.fields[2]);
-    if(!installed)(*env)->SetObjectField(env,state.roots[LOGICAL],state.fields[2],state.roots[GUEST]);
+    // Keep a delegate explicitly installed by the guest (either on LoadedApk.mApplication
+    // or on ActivityThread.mInitialApplication via Field.set); otherwise publish the attached instance now.
     if(!tp_art_reflection_complete(env)) {fail(env,"APPLICATION_PUBLICATION_FAILED");goto done;}
+    jobject installed=(*env)->GetObjectField(env,state.roots[LOGICAL],state.fields[2]);
+    if(!installed){
+        jobject reflected=tp_art_reflection_value(env);
+        if(reflected&&(guest_attached(env,reflected)||guest_delegate(env,reflected)))installed=reflected;
+        else installed=state.roots[GUEST];
+        (*env)->SetObjectField(env,state.roots[LOGICAL],state.fields[2],installed);
+    }else if(!same(env,installed,state.roots[GUEST])&&(guest_attached(env,installed)||guest_delegate(env,installed))){
+        tp_art_reflection_adopt(env,installed,!guest_attached(env,installed));
+    }
     if(!physical(env,true)){static char why[192];snprintf(why,sizeof(why),"APPLICATION_POST_ATTACH_IDENTITY:%s",state.broken?state.broken:"?");fail(env,why);goto done;}
     state.stage="ATTACHED";
 done:

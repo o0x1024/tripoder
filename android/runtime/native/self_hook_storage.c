@@ -24,6 +24,13 @@
 #define syscall tp_kernel_syscall
 
 static _Atomic bool attempted;
+static _Atomic bool syscall_namespace_active;
+static bool trace_debugger_diagnostics;
+static int reserve_signal_delivery(void){
+    uintptr_t base,libc,real_mask;
+    if(!tp_signal_chain_platform(&base,&libc,&real_mask))return -1;
+    return tp_signal_user_delivery_reserve(base,libc,real_mask)==TP_SIGNAL_DELIVERY_OK?0:-1;
+}
 static void fail(JNIEnv *env,const char *reason){
     if((*env)->ExceptionCheck(env))return;
     jclass type=(*env)->FindClass(env,"java/lang/IllegalStateException");
@@ -69,12 +76,12 @@ JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_installN
     }
     if(tp_configure(paths[0],paths[1],paths[2],paths[3],paths[4])!=0){fail(env,"NATIVE_STORAGE_CONFIGURATION_FAILED");return;}
     if(tp_configure_host_storage(paths[5],paths[6],paths[7])!=0){fail(env,"NATIVE_HOST_STORAGE_CONFIGURATION_FAILED");return;}
-    (void)diagnostics;
+    trace_debugger_diagnostics=(bool)diagnostics;
     if(tp_park_prepare_process()!=TP_PARK_OK){fail(env,"NATIVE_STORAGE_THREAD_RESERVATION_FAILED");return;}
     if(!tp_signal_chain_prepare()){fail(env,"ART_SIGNAL_CHAIN_UNAVAILABLE");return;}
     /* Path adaptation belongs at the existing ten libc filesystem entries.
-     * No process-wide seccomp filter: exec/debuggerd and guest signal masks keep
-     * platform semantics. Direct guest SVC is not rewritten by this boundary. */
+     * No process-wide seccomp filter by default: exec/debuggerd and guest signal masks keep
+     * platform semantics. Direct guest SVC is only intercepted when opt-in syscall policy is enabled. */
     const struct tp_fixed_libc_replacements paths_only={tp_openat,tp_fstatat,tp_unlinkat,tp_mkdirat,tp_renameat2,tp_faccessat,tp_readlinkat,tp_chdir,tp_symlinkat,tp_linkat};
     enum tp_fixed_libc_status status=tp_fixed_libc_prepare(&paths_only);
     if(status==TP_FIXED_LIBC_OK)status=tp_fixed_libc_activate();
@@ -84,13 +91,35 @@ JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_installN
 JNIEXPORT jstring JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_syscallNamespaceNative(JNIEnv *env,jclass type){
     (void)type;
     struct tp_fixed_libc_report report;tp_fixed_libc_report(&report);
-    char value[512];
-    snprintf(value,sizeof(value),"{\"transport\":\"fixed-libc-paths\",\"addedSeccompFilters\":0,\"nativePathEntries\":%u,\"enabled\":%s,\"publicationPages\":%u,\"parkAttempts\":%u,\"parkStatus\":%d,\"admissionElapsedNs\":%llu,\"directGuestSvcRewritten\":false,\"nativeDumpSuppressed\":false}",report.validated_entries,report.enabled?"true":"false",report.publications,report.admission_attempts,report.pause_status,(unsigned long long)report.admission_elapsed_ns);
+    uint64_t counts[4]={0},pcounts[6]={0};bool bexec=false,bkill=false,bsink=false;
+    bool seccomp_active=atomic_load_explicit(&syscall_namespace_active,memory_order_acquire);
+    if(seccomp_active){tp_syscall_namespace_counts(counts);tp_syscall_namespace_get_policy(&bexec,&bkill,&bsink,pcounts);}
+    char value[768];
+    snprintf(value,sizeof(value),"{\"transport\":\"%s\",\"addedSeccompFilters\":%u,\"nativePathEntries\":%u,\"enabled\":%s,\"publicationPages\":%u,\"parkAttempts\":%u,\"parkStatus\":%d,\"admissionElapsedNs\":%llu,\"directGuestSvcRewritten\":%s,\"nativeDumpSuppressed\":%s,\"openat\":%llu,\"fstatat\":%llu,\"readlinkat\":%llu,\"faccessat\":%llu,\"blockExecve\":%s,\"blockKill\":%s,\"networkSinkhole\":%s,\"execveAttempts\":%llu,\"execveBlocked\":%llu,\"killAttempts\":%llu,\"killBlocked\":%llu,\"connectAttempts\":%llu,\"connectSinkholed\":%llu}",
+        seccomp_active?"fixed-libc-paths+seccomp-opt-in":"fixed-libc-paths",seccomp_active?1u:0u,
+        report.validated_entries,report.enabled?"true":"false",report.publications,report.admission_attempts,report.pause_status,(unsigned long long)report.admission_elapsed_ns,
+        seccomp_active?"true":"false",seccomp_active?"true":"false",
+        (unsigned long long)counts[0],(unsigned long long)counts[1],(unsigned long long)counts[2],(unsigned long long)counts[3],
+        bexec?"true":"false",bkill?"true":"false",bsink?"true":"false",
+        (unsigned long long)pcounts[0],(unsigned long long)pcounts[1],(unsigned long long)pcounts[2],(unsigned long long)pcounts[3],(unsigned long long)pcounts[4],(unsigned long long)pcounts[5]);
     return (*env)->NewStringUTF(env,value);
 }
 JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_setSyscallPolicyNative(JNIEnv *env,jclass type,jboolean block_execve,jboolean block_kill,jboolean network_sinkhole){
     (void)type;
-    if(block_execve||block_kill||network_sinkhole)fail(env,"SYSCALL_ANALYSIS_POLICY_NOT_INSTALLED");
+    if(block_execve||block_kill||network_sinkhole){
+        if(!atomic_load_explicit(&syscall_namespace_active,memory_order_acquire)){
+            tp_syscall_namespace_trace_debugger(trace_debugger_diagnostics);
+            if(tp_syscall_namespace_install_with_signal_chain(tp_signal_chain_claim,reserve_signal_delivery,tp_signal_chain_user_action)!=0){
+                bool ready;unsigned status;uint64_t roles,other;tp_signal_user_delivery_state(&ready,&status,&roles,&other);
+                char reason[128];snprintf(reason,sizeof(reason),"SYSCALL_ANALYSIS_POLICY_NOT_INSTALLED:userDeliveryStatus=%u",status);
+                fail(env,reason);return;
+            }
+            atomic_store_explicit(&syscall_namespace_active,true,memory_order_release);
+        }
+    }
+    if(atomic_load_explicit(&syscall_namespace_active,memory_order_acquire)){
+        tp_syscall_namespace_set_policy((bool)block_execve,(bool)block_kill,(bool)network_sinkhole);
+    }
 }
 
 JNIEXPORT jbyteArray JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_readPhysicalProc(JNIEnv *env,jclass unused,jstring path,jint limit){

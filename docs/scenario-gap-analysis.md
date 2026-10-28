@@ -1,6 +1,7 @@
 # Tripoder 全场景能力评估与演进缺口分析 (Scenario Gap Analysis)
 
-- **更新日期**：2026-10-26
+- **更新日期**：2026-10-28
+- **关联架构与计划**：[当前总体架构](current-architecture.md) · [单运行时与最小底座收敛](single-runtime.md) · [架构梳理与实施计划](implementation-plan.md)
 - **评估范围**：基于当前 `android/runtime`、`android/self-hook`、`android/engine`、`android/workbench`、`src/` 与 `agent/`（MCP v3）的实际代码实现，对照六大目标业务场景进行全景能力盘点与差距分析：
   1. **Bug Bounty 与 SRC 安全风险挖掘**
   2. **隐私合规检测（工信部 / 监管测评标准）**
@@ -13,10 +14,10 @@
 
 ## 1. 总体评估结论
 
-**当前状态：底层核心底座与 Phase 1/2/3 共 24 项 MCP 能力暴露已全面落地并完成真机端到端验证，公开 MCP 工具组扩展至 60 个（手机端 53 个 + 桌面端本地 7 个）。**
+**当前状态：采用「统一最小承载底座（Level 1）+ 按需策略扩展（Opt-in）」双层架构，Phase 1/2/3 共 24 项 MCP 能力契约已完成暴露与验证，公开 MCP 工具组达 60 个（手机端 53 个 + 桌面端本地 7 个）；底座裁剪后的 Opt-in 动态装配闭环见 [架构梳理与实施计划](implementation-plan.md)。**
 
 ### 1.1 已攻克的底层护城河
-1. **免 Root 免重打包虚拟化沙箱**：单 APK 三类进程模型（主进程 UI + `:authority` 权威控制面 + `:slot0..7` 隔离执行槽位），支持 `LoadedApk`/四大组件代理、[`fixed_libc`](self-hook-design.md) + [`syscall_namespace.c`](../android/runtime/native/syscall_namespace.c) (`SYS_SECCOMP`) 路径重定向、[`ptrace_namespace.c`](../android/runtime/native/ptrace_namespace.c) 调试信号隔离及 `/proc/self/*` 隐身。
+1. **免 Root 免重打包虚拟化沙箱**：单 APK 四类进程模型（主进程 UI + `:authority` 权威控制面 + `:recovery` 恢复门禁 + `:slot0..7` 隔离执行槽位），默认最小底座支持 `LoadedApk`/四大组件代理、真实 linker 路径、[`fixed_libc`](self-hook-design.md) 10 入口路径重定向与 `/proc/self/*` 视图；[`syscall_namespace.c`](../android/runtime/native/syscall_namespace.c) (`SYS_SECCOMP`) 与 [`ptrace_namespace.c`](../android/runtime/native/ptrace_namespace.c) 作为按需扩展策略（Opt-in）演进。
 2. **零外部依赖的自研 Hook 与探测引擎**：ART Nterp Java Hook、ARM64 W^X `mremap` Native Hook、运行时 ClassLoader/DEX 内存快照（[`RuntimeCodeProbes`](../android/runtime/src/dev/tripoder/runtime/RuntimeCodeProbes.java)），天然无 Frida/Xposed 特征（见 [`AntiDetectChecks`](../android/anti-detect-fixture/src/main/java/dev/tripoder/antidetect/AntiDetectChecks.java)）。
 3. **高确定性的 MCP v3 全局控制面**：[`agent/tool-groups.mjs`](../agent/tool-groups.mjs) 提供的 53（HTTP）/ 60（stdio）个工具，具备显式代次（`installGeneration` / `processGeneration`）隔离、CAS 并发保护、幂等操作日志及 SHA-256 产物校验链（[`file-pull.md`](file-pull.md)）。
 

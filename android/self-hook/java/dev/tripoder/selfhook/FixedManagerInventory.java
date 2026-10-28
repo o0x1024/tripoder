@@ -43,6 +43,7 @@ public final class FixedManagerInventory {
         }
     }
     public static synchronized List<Family> inspect() throws Exception {
+        if(verified!=null)return verified;
         if(attempted)throw new IllegalStateException("FIXED_MANAGER_INVENTORY_ALREADY_ATTEMPTED");
         attempted=true;List<Family> result=new ArrayList<>();
         for(int family=0;family<OWNERS.length;family++) {

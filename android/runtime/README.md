@@ -1,64 +1,43 @@
-# Tripoder shared Runtime
+# Tripoder Shared Runtime (`android/runtime`)
 
-这份源码同时用于正式独立 UID Engine 和自有验收 APK。`runtime-probe` 只编排断言，Application 装载、Context、Binder、组件路由、SQLite 和执行状态机均位于本目录。2026-10-16 已切换单一自研 Java/Native 核心，客体首条代码前安装25项/2177绑定；完整组件与控制长流程仍在验收，见 [当前证据](../../docs/self-hook-handoff-2026-10-15.md)。不存在验收专用的第二套装载引擎。
+本模块实现 Tripoder 的「第一层：统一最小承载底座（Level 1 Skeleton Baseline）」与「第二层：按需扩展能力（Opt-in Capabilities）」，同时用于正式产品包（`dev.tripoder.engine`）与真机验收套件。
 
-## 边界
+权威架构与契约文档见：
+- **[总体架构 (`docs/current-architecture.md`)](../../docs/current-architecture.md)**
+- **[单运行时与最小底座收敛 (`docs/single-runtime.md`)](../../docs/single-runtime.md)**
+- **[Runtime 虚拟化设计 (`docs/runtime-design.md`)](../../docs/runtime-design.md)**
+- **[执行契约与状态机 (`docs/execution-contract.md`)](../../docs/execution-contract.md)**
+- **[架构梳理与分阶段实施计划 (`docs/implementation-plan.md`)](../../docs/implementation-plan.md)**
 
-- 安装层在设备上使用官方 apksig 验证完整 base/split 集合与签名、ABI、Manifest、ZIP 和所有制品摘要；128 MiB/包、256 MiB/集合、最多 64 包。不支持 v1-only、非 ARM64 库和 ZIP64。运行层目前仍只执行自有单 base APK；没有重写 Dex/Manifest，也不依赖 Tripoder SDK。
-- P1 的独立 authority 进程、进程内登记/系统文件锁、永久关闭门禁、SQLite 事务、代次保护与显式项目迁移见 [P1 设计](../../docs/runtime-p1-design.md)。DEX 使用有界 InMemoryDexClassLoader，制品目录仍严格只读。
-- `RuntimePlatform` 锁定已测 Xiaomi Madrid Android 17 / API 37 / ARM64 / 4096 页及完整 build fingerprint。其他固件明确拒绝；不能只改门禁就宣布支持。
-- 八个 Manifest worker 进程槽，一槽一个不可变应用身份；真实 Application、Activity/Service/Provider/Receiver、XML/asset、JNI。物理组件/任务租约与进程死亡分别处理，不清除 UNKNOWN 来回收槽位。
-- Java 文件 Context 按空间归属；十个固定 libc 入口使用同一 C 路径策略，处理已约定绝对/相对路径和FD语义。external files/cache 是空间内目录，不模拟完整共享外部存储；直接 syscall 不在拦截保证内。
-- UI、输入、显示、无障碍、Autofill/ContentCapture、UiMode 和已测 OEM parental-control 服务是明确的宿主能力；Settings system/secure/global 仅只读。它们不是独立虚拟系统状态。保留平台家长控制，未关闭或绕过。
-- 组件、包域及十类系统服务仅开放已明确实现的语义；未知能力拒绝，支持清单和具体契约见 `docs/runtime-*-design.md`。尚未覆盖完整 Android API 面；直接 Binder/Native/反射绕过不在强安全保证内。
-- 同 UID 客体可以通过 Native 读到宿主合成标记。不同进程与目录不构成强隔离。
+---
 
-## 构建和复现
+## 核心边界
 
-从仓库根目录执行。依赖：Node 24、npm lock 对应编译依赖、JDK、Android SDK platform/build tools 37、NDK r30，以及从已锁定固件取得的 libc/libart/linker64 实物。构建逐文件验证系统二进制、固定模板与导出；缺工具或身份不匹配直接退出。产品不构建、包装或加载 Gadget、旧JS adapter 或独立 tripoderio 库。
+1. **安装与物理执行副本**：在设备端使用官方 `apksig` 校验 APK/Split 集合、签名、ABI、Manifest 与制品摘要；[`RuntimeExecutionCode`](src/dev/tripoder/runtime/RuntimeExecutionCode.java) 生成只读运行副本并保留 `oat/odex` 编译缓存，[`RuntimeSharedLibraries`](src/dev/tripoder/runtime/RuntimeSharedLibraries.java) 与 [`RuntimeDexLoader`](src/dev/tripoder/runtime/RuntimeDexLoader.java) 使用真实解压目录 `info.nativeLibraryDir` 建立客体 `PathClassLoader` 的 linker 搜索路径。
+2. **8 个预声明槽位与权威控制面**：`:authority` 进程维护唯一 SQLite 状态机与组件租约，`:slot0..7` 每个槽位同一时刻绑定唯一 `(spaceId, packageName, processName, installGeneration)` 不可变应用身份。
+3. **Level 1 最小底座（默认开启）**：
+   - **Java / Framework**：[`RuntimeSelfHookProduct`](src/dev/tripoder/runtime/RuntimeSelfHookProduct.java) 与 [`RuntimeFixedPreparation`](src/dev/tripoder/runtime/RuntimeFixedPreparation.java) 仅安装 ~220–264 项最小容器骨架绑定（启动期一次发布，100% 保留 ART JIT，移除 12 个系统 Manager 家族的全量固定 Hook），动态广播经 [`RuntimeReceiverProxy`](src/dev/tripoder/runtime/RuntimeReceiverProxy.java) 显式转发（运行期主线程 `toggleBatchNative = 0`），跨组件 `Parcel` 经 [`RuntimeGuestPayload`](src/dev/tripoder/runtime/RuntimeGuestPayload.java) 保真客体 `ClassLoader`。
+   - **Native / Libc**：[`self_hook_storage.c`](native/self_hook_storage.c) 默认仅激活 `fixed_libc` 的 10 个核心文件入口（共用 [`path_policy.c`](native/path_policy.c)），默认 `addedSeccompFilters = 0`，不抑制 `debuggerd`。
+4. **按需扩展能力（Opt-in）**：动态业务 Hook（`startupHook` / `hook_activate`）、ClassLoader/DEX 快照（[`RuntimeCodeProbes`](src/dev/tripoder/runtime/RuntimeCodeProbes.java)）、被动 TLS 明文抓包、设备画像模拟（[`RuntimeSandboxPersona`](src/dev/tripoder/runtime/RuntimeSandboxPersona.java) / [`RuntimeEnvMock`](src/dev/tripoder/runtime/RuntimeEnvMock.java)）及强对抗沙箱策略（[`syscall_namespace.c`](native/syscall_namespace.c)）仅在显式请求时挂载。
 
-本机已验证命令：
+---
+
+## 构建与测试
 
 ```sh
-rtk proxy python3 android/scripts/build-runtime-probe.py \
-  --sdk /opt/homebrew/share/android-commandlinetools \
-  --platform android-37.0 --build-tools 37.0.0 \
-  --java-home /opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home \
-  --ndk /opt/homebrew/share/android-commandlinetools/ndk/30.0.16248370 \
+# 运行 Runtime 与 Self-Hook 主机回归测试
+python3 android/runtime/self-hook-tests/run.py
+python3 android/runtime/test/ApplicationProjectsSchemaTest.py
+python3 android/runtime/test/CatalogMetadataHostTest.py
+
+# 构建工作台与引擎 APK
+python3 android/scripts/build-workbench.py \
+  --build-dir android/product/build-level-one \
+  --sdk /Users/len/Library/Android/sdk --platform android-37.0 --build-tools 37.0.0 \
+  --java-home /Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home \
+  --ndk /Users/len/Library/Android/sdk/ndk/30.0.16248370 \
   --platform-libc android/runtime-probe/build/device-libc.so \
   --platform-art android/self-hook-probe/build/device-libart.so \
-  --platform-linker android/self-hook-probe/build/device-linker64
-
-rtk proxy python3 android/scripts/validate-runtime-probe.py \
-  --serial d861a4fa --phase p0 --install \
-  --evidence docs/evidence/runtime-p0-new-run
+  --platform-linker android/self-hook-probe/build/device-linker64 \
+  --package dev.tripoder.engine
 ```
-
-P1 使用相同构建和验证器，将 `--phase p0` 改为 `--phase p1`，并指定新的证据目录。P1 真正终止自有 authority 进程并重新打开 SQLite，故障注入仅存在于探针子类；公开控制 API 没有故障注入命令。
-
-正式工作台使用 `android/scripts/build-workbench.py` 和同一组 SDK/JDK/NDK/平台参数，生成单一产品包 `android/product/build/tripoder.apk`（工作台 + 引擎，包名 `dev.tripoder.engine`）和 `tripoder-control-test.apk`。它只含自研核心库，探针 JNI 和验收控制器不进入 Engine。`validate-workbench-control.py` 的 `control`、`hook-ui` 与 `validate-agent-control.py` 的 `normal`、`disconnect` 分别验证控制、真实 UI、手机审批与断连回执；它们不等于第三方应用业务或外部模型验收。
-
-NDK 路径仅复用已经下载的工具链，不链接 VM 研究的代码或制品。换机器时显式提供其 SDK/JDK/NDK 路径。
-
-安装的是 `dev.tripoder.runtimeprobe` 与系统同包诱饵 `dev.tripoder.p0.b`；手机需允许安装。不要在系统安装 A，也不要手动运行诱饵 B。验证器保留诱饵启动标记作为反证，遇到标记不会自动删除。已有 `dev.tripoder.hooklab` 不被替换。ADB 只安装、启动并收集本测试的证据；运行过程无需 ADB 激活、Root、授权脚本或远程 attach。
-
-产物在被 Git 忽略的 `android/runtime-probe/build/`：自有 A/B APK、runtime-probe.apk、独立签名报告、源文件与制品摘要。测试签名密钥仅供本地验收，不能用于发布。APK 重建时 ZIP 时间戳可能改变摘要，验证器要求源码、安装包和证据来自同一次构建。
-
-验证器从一次冷启动生成唯一 run ID，并检查宿主/客体 SHA、全部设备断言及宿主诱饵未启动。异常、超时、文件缺失或错误构建都非通过。它只验证本 README 列出的能力，不是 APK 通用性测试器。
-
-执行契约主机检查见 [test/README.md](test/README.md)。设备报告见 [P0 验收](../../docs/evidence/runtime-p0-2026-10-13/README.md) 与 [P1 及 P0 回归](../../docs/evidence/runtime-p1-2026-10-14/README.md)。
-
-## 来源记录
-
-本轮新增 Java/TypeScript/Python/C fixture 源码独立编写，基于 Android SDK API、已连接设备行为和本项目既有类型/接口；没有引入、移植或重命名 VirtualApp 实现。`DeniedPackageManager` 使用本项目既有 PackageManager 子类的 API 签名，方法默认拒绝。
-
-复用的第三方依赖仍独立记账：
-
-| 输入 | 固定信息与证据 |
-|---|---|
-| 自研 Java/Native 核心 | 源码 `android/self-hook`，产品编译/模板/依赖/导出/系统实物SHA和单份IO策略见 build-receipt.json 的 selfHookNative；只依赖 libc/libm/libdl |
-| esbuild / TypeScript | 0.28.2 / 7.0.2；npm lock 和本地包元数据分别为 MIT / Apache-2.0；构建工具 |
-| Android apksig | 从 SDK build-tools 37.0.0 的 apksigner.jar 只抽取 com/android/apksig；Apache-2.0，SDK 许可证和 attribution 见 `licenses/`，打包到探针 assets；原始 jar 与抽取 classes 的 SHA 在构建回执 |
-| Android SDK/NDK | 构建回执记录 platform/build tools 与 NDK `source.properties`；使用已安装工具链 |
-
-这是研发来源记录，不是发布许可证审计。当前使用开发签名；正式发布需独立审核完整依赖与 notices/SBOM。旧 hooklab 实验运行器及其 Gadget 依赖记录保留在 `android/README.md`，不属于上述正式 Runtime 构建。

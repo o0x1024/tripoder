@@ -1,107 +1,91 @@
 # Self-Hook 与脚本引擎设计规范 (Self-Hook Design)
 
-本文档定义 `android/self-hook` 模块的底层架构与第一性原理实现，涵盖 ART Java 方法 Hook、ARM64 Native Inline/PLT Hook、固定 `libc` 双页导出包装器以及受限 TypeScript（Restricted AST）脚本编译与执行引擎。
+本文档定义 `android/self-hook` 模块在**「统一最小承载底座（Level 1）+ 按需策略扩展（Opt-in）」**架构下的底层设计与实现，涵盖 ART Java 方法 Hook、ARM64 Native Inline/PLT Hook、固定 `libc` 双页导出包装器以及受限 TypeScript（`RestrictedAst`）脚本编译与执行引擎。
 
 ---
 
-## 1. 架构总览与分层
+## 1. 架构总览与双层职责划分
 
-`self-hook` 完全自研，不依赖 Frida、Xposed 或 LSPlant 等外部框架，分为四个紧密协作的子系统：
+`self-hook` 完全自研，零 Frida / 零 Xposed 依赖，在架构上严格区分为**默认底座能力**与**按需动态挂载能力**：
 
 ```mermaid
 flowchart TD
-    Script["Restricted TS 脚本 (DraftCompiler -> RestrictedAst)"]
-    Adapter["运行时与业务适配器 (Application / Framework / Custom Adapters)"]
-    JavaHook["ART Managed Hook (Nterp + Quick Bridge + GC Root Read Barrier)"]
-    NativeHook["ARM64 Native Hook (Instruction Planner + W^X mremap + Thread Park)"]
-    FixedLibc["Fixed libc 双页事务 (10 Path Syscall Wrappers + path_policy)"]
+    subgraph DefaultBase["第一层：最小底座默认装配 (启动期一次性完成，零运行期重发布)"]
+        FixedLibc["fixed_libc 双页事务\n(libc.so 10 个核心路径入口 + path_policy)"]
+        SkeletonART["ART 最小骨架固定绑定 (~220-264 项)\n(一次批量发布 + 100% 保留 JIT + 0 次运行期 toggleBatchNative)"]
+    end
 
-    Script --> Adapter
-    Adapter --> JavaHook
-    Adapter --> NativeHook
-    Adapter --> FixedLibc
+    subgraph OptInDynamic["第二层：按需动态分析与扩展 (MCP / 脚本显式触发)"]
+        Script["受限 TS 脚本编译器与解释器\n(DraftCompiler -> RestrictedAst -> ProcessInterpreter)"]
+        DynamicJava["按需业务 Java Hook (ManagedHook)\n(支持普通方法与 <init> 构造函数 + 局部调用者反优化)"]
+        DynamicNative["按需 ARM64 Native Hook (NativeHook)\n(指令重定位规划 + 线程安全 Park + W^X mremap 原子发布)"]
+        NativeBuffer["有界 Native 缓冲区快照 (native_buffer.c)\n(process_vm_readv 内核安全拷贝，支撑 TLS 明文捕获)"]
+    end
+
+    DefaultBase --> Guest["Guest 进程零冗余稳定运行"]
+    Script --> DynamicJava
+    Script --> DynamicNative
+    DynamicNative --> NativeBuffer
 ```
 
 ---
 
 ## 2. ART Java 方法 Hook (`ManagedHook`)
 
-### 2.1 ArtMethod 入口与发布策略
+### 2.1 最小底座启动发布 vs. 按需业务 Hook 发布
 
-当前实现绑定仓库已验证的 ART 二进制合约。修改目标入口不能自动覆盖已经内联的调用者，`fullCallerCoverage` 和 `preexistingCompiledFramesCovered` 始终报告 false。
-
-固定 helper、备份方法和回调先在正常 ART 状态下准备，再以一次暂停发布。初次发布及后续普通 Hook 的新目标发布，会反优化并使 JIT code cache 失效；只调用 `DeoptimizeEverything` 可能在 `ConfigureStubs` 时重新发布仍含旧内联代码的 JIT 调用者。缓存对象必须来自已绑定的 Runtime/Jit，并核对其身份与固定函数体。
-
-固定发布完成后恢复原有运行标志和 JIT 选项，受控方法保留编译/内联屏障及稳定备份入口。Guest Service/Receiver 在注册给 Android 前安装实际回调入口，不为每个组件重复反优化全进程；若该入口升级为普通 Hook，仍补做调用者失效。所有普通客体使用同一批量发布与调用者失效规则。
-
-原方法备份保持 GC root 和稳定桥，中央入口管理器继续维护已注册目标的入口所有权。实际冷启动、编译调用者及停用恢复的验证见 [THICK P0/P1 记录](thick-startup-p0-p1.md)。
+- **最小底座启动期发布（Level 1 Baseline）**：
+  - [`RuntimeFixedPreparation`](../android/runtime/src/dev/tripoder/runtime/RuntimeFixedPreparation.java) 先在正常 ART 状态下准备最小容器骨架所需的 ~220–264 个固定目标（仅限组件生命周期、`Application`/`LoadedApk`、Package/Storage/Job/PendingIntent 最小入口，不包含 12 个系统 Manager 家族与 Widget）。
+  - 在客体代码执行前通过一次批量发布完成入口绑定，**保留正常 ART JIT 编译（`jitEnabled=true`）**，不在启动期执行全进程无差别调用者反优化，且运行期 UI 主线程 `toggleBatchNative` 保持为 **0 次**。
+- **按需业务 Hook 发布（Opt-in Analysis Hook）**：
+  - 当用户或 AI Agent 通过 `startupHook` 或 `hook_activate` 显式部署业务 Hook（支持普通方法与 `<init>` 构造函数）时，才针对新目标执行调用者反优化与已绑定 JIT code cache 失效，并为受控方法设置编译/内联屏障（`kAccCompileDontBother`）。
+  - 修改目标入口不承诺热迁移早已存在活动栈帧或全部历史内联调用者（`fullCallerCoverage` 与 `preexistingCompiledFramesCovered` 诚实报告 `false`）。
 
 ### 2.2 GC Root 读屏障安全 (`DeclaringClass` Read Barrier)
 
-- `ArtMethod::declaring_class_` 是一个 32 位压缩的 `GcRoot<mirror::Class>`。在并发拷贝 GC（Concurrent Copying / CMC GC）下，直接按裸指针读取 `declaring_class_` 会读到未转发的陈旧地址（From-Space）并引发段错误。
-- `self-hook` 在读取 `ArtMethod` 所属类及维护备份方法时，严格执行 Baker 读屏障语义与 JNI 全局引用锚定，确保目标类与备份方法在 GC 周期中始终有效且不被回收。
+- `ArtMethod::declaring_class_` 是 32 位压缩 `GcRoot<mirror::Class>`。在 ART 并发拷贝 GC 下，[`art_method_storage.c`](../android/self-hook/native/art_method_storage.c) 与 [`OriginalMethodStorage`](../android/self-hook/java/dev/tripoder/selfhook/OriginalMethodStorage.java) 在声明方法表之外维护备份槽与 `ClassExt` Native 根，严格执行读屏障语义与 JNI 全局引用锚定，杜绝陈旧地址段错误与持久化映像损坏。
 
-### 2.3 调用栈归属与反射隐藏 (`Caller Coverage` & `Reflection View`)
+### 2.3 调用栈归属与反射视图隐藏 (`Caller Coverage` & `Reflection View`)
 
-- **Caller-Sensitive 方法兼容**：针对 `Field.get/set`、`Method.invoke`、`Class.forName`、`System.loadLibrary` 等依赖调用栈回溯调用方 `ClassLoader` 的系统方法，通过原生跳板栈帧修正与 caller 传递，确保被 Hook 后调用方身份依然被识别为真实的 Guest 类而非 `dev.tripoder` 桥接类。
-- **反射视图隐身**：向 Guest 暴露的 `Method.getModifiers()` 与方法入口特征保持原始形态，避免安全 SDK 通过检查 `Modifier.NATIVE` 位或 `ArtMethod` 字段异常发现 Hook。
+- **Caller-Sensitive 方法兼容**：针对 `Field.get/set`、`Method.invoke`、`Class.forName`、`System.loadLibrary` 等回溯调用方 `ClassLoader` 的系统方法，通过原生跳板栈帧修正与 caller 传递，确保调用方身份仍被识别为真实 Guest 类（[`FixedFrameworkMembers`](../android/self-hook/java/dev/tripoder/selfhook/FixedFrameworkMembers.java) 支持未解析 ART native 槽位的反射回退）。
+- **反射视图隐身（[`art_reflection_view.c`](../android/self-hook/native/art_reflection_view.c)）**：向 Guest 暴露的 `Method.getModifiers()` 与方法入口特征保持原始形态，隐藏 Hook 痕迹。
 
 ---
 
 ## 3. ARM64 Native Hook 引擎 (`NativeHook`)
 
-### 3.1 指令规划器 (`Instruction Planner`)
+### 3.1 指令规划器 ([`a64_relocate.c`](../android/self-hook/native/a64_relocate.c) / [`a64_entry.c`](../android/self-hook/native/a64_entry.c))
 
-在改写目标 ARM64 函数入口前，反汇编器对入口前 4–5 条指令（16–20 字节）进行静态分析与重定位规划：
+在改写目标 ARM64 函数入口前，对入口指令序列进行白名单静态分析与重定位规划：
 
 - 识别并重定位 PC 相对寻址指令：`ADR`、`ADRP`、`B`、`BL`、`B.cond`、`CBZ`/`CBNZ`、`TBZ`/`TBNZ`、`LDR (literal)`。
-- 识别并处理 `BTI`（Branch Target Identification）与 `PACIASP`/`PACIBSP`（Pointer Authentication）前导指令，确保构造的 Trampoline 符合 ARMv8.5+ 硬件安全约束。
-- 若函数体过短或包含无法安全重定位的早退分支，规划器显式返回不可内联原因码，绝不破坏目标指令流。
+- 识别并保留 `BTI c/jc`（Branch Target Identification）与 `PACIASP`/`PACIBSP` 前导指令。
+- 若函数体过短或含不可重定位分支，规划器显式返回错误码，绝不盲目覆写破坏目标指令流。
 
-### 3.2 信号停顿与 W^X 匿名页原子发布 (`Thread Park` & `Page Publication`)
+### 3.2 有界信号停顿与 W^X 匿名页原子发布 ([`thread_park.c`](../android/self-hook/native/thread_park.c) / [`page_commit.c`](../android/self-hook/native/page_commit.c))
 
-为了在多线程高并发执行的目标进程中安全替换函数入口指令，且不触发 SELinux / 内核对代码页同时可写可执行（W^X）的审计告警：
-
-1. **线程安全停顿 (`NativeThreadPark`)**：通过遍历 `/proc/self/task` 并向同进程其他工作线程发送专用信号，确保没有任何线程的 `PC` 正停留在待改写的 16 字节窗口内；若检测到线程 `PC` 落在窗口内，自动推进或等待其离开窗口。
-2. **W^X 匿名页重映射发布 (`PagePublication`)**：
-   - 将原代码页拷贝至新分配的 `RW` 匿名页，在匿名页上完成跳板指令写入、缓存刷新（`__builtin___clear_cache`）并切换为只读可执行（`RX`）。
-   - 使用 `mremap(..., MREMAP_MAYMOVE | MREMAP_FIXED)` 将准备好的 `RX` 页原子覆盖到目标虚拟地址，全程目标地址不出现 `RWX` 状态。
-
-### 3.3 模块代数与 `dlclose` 生命周期
-
-- 监控链接器（Linker）的 `dlopen` / `dlclose` 事件，维护每个 `.so` 模块的加载代数（Module Generation）。
-- 支持针对尚未加载的延迟 `.so` 注册待定（Pending）Hook，在 `dlopen` 构造函数（`.init_array`）执行前即完成拦截；当模块被卸载时自动清理关联跳板引用。
+1. **有界线程安全停顿 (`tp_park_begin_bounded`)**：遍历 `/proc/self/task` 发送专用停顿信号（Signal 60），确保无任何线程 `PC` 落在待改写窗口内；对瞬时 `TIMEOUT`/`INVENTORY` 状态支持最多 3 次有界退避重试（间隔 1–2ms）。
+2. **W^X 匿名页重映射发布**：将原代码页拷贝至新分配的 `RW` 匿名页，写入跳板、刷新指令缓存后切换为 `RX`，再通过 `mremap(..., MREMAP_MAYMOVE | MREMAP_FIXED)` 原子覆盖目标虚拟地址，全程绝不出现 `RWX` 页；停用时完整恢复原文件映射。
 
 ---
 
-## 4. 固定 `libc` 双页导出包装器 (`fixed_libc`)
+## 4. 固定 `libc` 双页导出包装器 ([`fixed_libc.c`](../android/self-hook/native/fixed_libc.c))
 
-Guest 应用及第三方加固 SDK 常直接调用 `libc.so` 导出的底层文件操作函数。`self-hook` 通过双页事务机制接管 `libc.so` 的 **10 个核心路径入口函数**：
+`self-hook` 在进程启动期通过一次双页事务接管 `libc.so` 的 **10 个核心路径入口函数**：
 
-- `open`、`open64`、`__open_2`、`openat`、`openat64`、`__openat_2`
-- `faccessat`、`fstatat64`、`statx`、`readlinkat`
+- `openat`、`fstatat`、`unlinkat`、`mkdirat`、`renameat2`、`faccessat`、`readlinkat`、`chdir`、`symlinkat`、`linkat`（见 [`self_hook_storage.c`](../android/runtime/native/self_hook_storage.c#L78)）。
 
-### 双页原子替换与 `path_policy`
-
-- 在一次停顿与页发布事务中，接管上述 10 个导出入口并转发至 `fixed_libc` C++ 包装器。
-- 包装器使用线程局部重入保护（TLS Reentrancy Guard），查询当前进程激活的 `path_policy` 快照：
-  - 命中沙箱路径规则时，将虚拟路径重写为宿主机上的隔离物理路径后再调用原始 `libc` 实现；
-  - 命中 `/proc/self/*` 隐身规则时，转向伪造的文件描述符或过滤流；
-  - 未命中任何重写规则时，零拷贝直通原始备份跳板。
+包装器带线程局部重入保护（TLS Reentrancy Guard），查询当前进程的 [`path_policy.c`](../android/runtime/native/path_policy.c)：
+- 命中客体私有数据目录或 `/proc/self/*` 规则时，执行路径重定向或视图过滤；
+- 未命中规则时零拷贝直通原始备份跳板；
+- 默认**不启用全进程 `seccomp`**，保持原生系统调用性能与 `debuggerd` 崩溃转储能力。
 
 ---
 
-## 5. 25 项启动引导契约与脚本引擎 (`RestrictedAst`)
+## 5. 受限 TypeScript 编译与解释器 (`DraftCompiler` & `RestrictedAst`)
 
-### 5.1 25 项 / 2177 绑定引导契约 (`RuntimeBootstrap`)
-
-当 Guest 进程启动时，`SelfHook` 按确定性顺序装载 25 个核心引导单元（涵盖 `ActivityThread`、`LoadedApk`、`Instrumentation`、`ContextImpl`、各大系统服务 Binder Proxy 以及 Native `fixed_libc` 10 个入口，共计 2177 个方法/符号绑定点），并在共享内存中维护启动健康快照。
-
-### 5.2 受限 TypeScript 编译与解释器 (`DraftCompiler` & `RestrictedAst`)
-
-为了支持工程师与 AI Agent 编写安全、高性能且不会导致宿主崩溃的动态 Hook 脚本：
-
-- **编译期 (`DraftCompiler`)**：将用户或 Agent 编写的受限 TypeScript 脚本静态编译并校验为确定性的 `RestrictedAst`（支持 JSON 序列化下发至 `:slotN`）。
-- **执行期 (`ScriptControl` & `ProcessInterpreter`)**：
-  - 在目标 Java 或 Native 方法的 `onEnter`（Before）与 `onLeave`（After）阶段直接解释执行 `RestrictedAst`。
-  - 支持读取/篡改基本类型参数、字符串、对象字段、`byte[]` 字节数组（用于加解密与网络 Buffer 分析）、提前短路返回自定义值（Short-Circuit Return）以及发射结构化观测事件至 `:authority` 与 MCP 网关。
+- **编译期 ([`DraftCompiler.java`](../android/runtime/src/dev/tripoder/runtime/script/DraftCompiler.java) / [`src/plan.ts`](../src/plan.ts))**：将受限 TypeScript 脚本静态编译并校验为确定性的 `RestrictedAst`。
+- **执行期 ([`SelfHookControl.java`](../android/runtime/src/dev/tripoder/runtime/script/SelfHookControl.java) / [`HookInvocationSession.java`](../android/runtime/src/dev/tripoder/runtime/script/HookInvocationSession.java))**：
+  - 支持 Java 方法（含 `<init>` 构造函数）与 Native 函数的 `before` / `replace` / `after` 拦截。
+  - 内置 `Hex`、`Base64`、`JSON` 标准编解码库与跨回调有界状态字典 `ctx.state`（64 键 × 4,096 字节）。
+  - 支持非虚反射对象内省 `ctx.java.readField`、有界容器浅快照 `ctx.java.snapshotContainer`、线程/异常快照 `snapshotThread`/`snapshotThrowable`、DEX 内存快照 `ctx.code.snapshotDex`、Native 缓冲区安全采集 `ctx.native.captureBuffer` 以及原子持久化证据写入 `ctx.debug.captureEvidence`。

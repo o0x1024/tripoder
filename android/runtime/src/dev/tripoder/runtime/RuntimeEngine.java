@@ -623,7 +623,15 @@ public final class RuntimeEngine {
                 try {
                     java.lang.reflect.Field initAppField = atCls.getDeclaredField("mInitialApplication");
                     initAppField.setAccessible(true);
-                    initAppField.set(at, app);
+                    // Shell Applications (NetEase NIS, Jiagu, Bangcle...) publish their real delegate here from
+                    // attachBaseContext and later read it back to forward onCreate. Overwriting a guest-published
+                    // delegate with the shell itself makes the shell forward onCreate to itself forever. Only the
+                    // physical host value is ours to replace.
+                    Object published = initAppField.get(at);
+                    RuntimeEngine engine = RuntimeEngine.current;
+                    boolean ours = published == null || (engine != null && published == engine.host);
+                    if (ours) initAppField.set(at, app);
+                    else android.util.Log.i("TripoderHardened", "Kept guest-published initial application " + published.getClass().getName());
                 } catch (Throwable ignored) {}
 
                 try {

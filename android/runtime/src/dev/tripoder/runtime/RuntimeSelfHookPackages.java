@@ -32,7 +32,7 @@ final class RuntimeSelfHookPackages {
                     }
                     String targetPackage=(String)args[0];
                     android.os.UserHandle user=args.length==3?(android.os.UserHandle)args[2]:null;
-                    if(!engine.packageName.equals(targetPackage)||(user!=null&&dev.tripoder.selfhook.PackageFrameworkAccess.userId(user)!=RuntimePackageBridge.userId()))
+                    if(!engine.packageName.equals(targetPackage))
                         return original.call(args);
                     return engine.packageContexts.createFromPlatform(context,targetPackage,(Integer)args[1],user);
                 }

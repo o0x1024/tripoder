@@ -1,46 +1,41 @@
-# AI Agent 全局控制面与 MCP
+# AI Agent 全局控制面与 MCP 规范
 
-MCP 连接到设备上的 Tripoder 全局入口，不绑定任何空间、应用、项目或进程。每次有作用域的调用都显式携带目标，完整配置与参数示例见 [MCP 使用说明](../agent/README.md)，以 `agent/tools.mjs` 的 `tools/list` 为准。
+MCP 连接到设备上的 Tripoder 全局入口，不绑定任何默认空间、应用、项目或进程。每次有作用域的调用都显式携带目标，完整连接配置与参数示例见 [MCP 客户端说明](../agent/README.md)，工具列表以 [`agent/tools.mjs`](../agent/tools.mjs) 与 [MCP 工具分组 v3](mcp-tool-groups.md) 为准。
 
-## 控制链路
+---
 
-两种显式选择的入口：
+## 1. 控制链路
 
-- stdio MCP → 本地 Node 适配器 → 手机 HTTPS `/mcp`。
-- Streamable HTTP MCP 客户端 → 手机 HTTPS `/mcp`。
+提供两种显式选择的接入入口：
 
-手机 `AgentMcp` 统一处理初始化、工具发现、参数校验和分派 → `WorkbenchAgentControl` → 主进程 Binder → authority → 安装或具体客体进程。工具契约由 `agent/tools.mjs` 构建生成并随 APK 发布，stdio 读取手机工具列表，额外提供读取电脑本地 APK 的便利工具。手机发布共享上传 begin/write/commit；HTTP 不接受电脑本地路径。
+- **stdio MCP** → 本地 Node 适配器（[`agent/server.mjs`](../agent/server.mjs)） → 手机 HTTP `/mcp`
+- **Streamable HTTP MCP 客户端** → 手机 HTTP `/mcp`
 
-网络入口首次默认关闭，只绑定 Wi-Fi/以太网 IPv4 地址。TLS 使用 AndroidKeyStore 私钥和导出证书信任；连接无需访问令牌，导出配置仅包含地址和公开证书；业务派发前校验 Host/Origin 和有界 HTTP 请求。原协议 2 只用于手机内部命令，不再开放旧的未认证长度帧入口。无 ADB、旧配置兼容或自动切换。
+手机端 `AgentMcp` 统一处理初始化、工具发现、参数校验和分派 → `WorkbenchAgentControl` → 主进程 Binder → `:authority` → 安装或具体 `:slotN` 客体进程。网络入口默认关闭，仅绑定局域网 Wi-Fi/以太网 IPv4 地址（`http://IP:29731/mcp`），派发前校验 `Host`/`Origin`、协议版本 `2025-11-25` 和有界 HTTP 请求（详见 [MCP 网络接入规约](mcp-network-implementation.md)）。
 
-MCP 会话只管理协议就绪状态，最多 64 个、空闲 24 小时过期；不持有目标或业务权限。关闭会话或全局入口不停止应用或已激活 Hook；可能已经派发的操作不能因断网推断已取消。初始化和工具发现均由手机真实响应。
+MCP 会话只管理协议就绪状态（最多 64 个、空闲 24 小时过期），不持有目标或业务权限。关闭会话或全局入口不停止应用或已激活 Hook；可能已经派发的操作不能因断网推断已取消。
 
-## 对象与目标
+---
 
-- 空间操作使用 `space`；应用删除使用包名和明确的安装代次清单。
-- 安装操作使用 `target: {space, package, installGeneration}`。
-- 进程操作使用 `target: {space, package, installGeneration, processGeneration}`。
-- 源码操作按包名定位应用唯一项目，写入同时校验当前源码/声明 SHA。
-- 操作查询使用原 `operationId`，不可变产物使用原进程代次及产物 ID。
+## 2. 显式对象与目标作用域
 
-没有连接级的当前目标，也没有单候选自动选择。`target_select` / `session_get` / `session_close` 不再发布。Android 内部为准确的项目绑定与进程保留有界控制上下文，用于准备令牌、回执关联和所有权检查；每次请求都重新解析显式目标，不读取连接选中状态。内部上下文不会限制全局枚举或其他资源的操作。
+- **空间操作**：使用 `space`；应用删除使用包名和明确的安装代次清单。
+- **安装级操作**：使用 `target: {space, package, installGeneration}`。
+- **进程级操作**：使用 `target: {space, package, installGeneration, processGeneration}`。
+- **项目源码操作**：按包名定位应用唯一项目，写入同时校验当前源码/声明 SHA（CAS 防并发覆盖）。
+- **异步对账与产物读取**：操作查询使用原 `operationId`；不可变产物读取使用原 `processGeneration` 及 `artifactId`。
 
-目标列表从有效安装及已有精确绑定的 RUNNING 进程生成，不要求用户先创建项目。安装时建立应用项目身份；首次明确请求该安装的分析目标时，authority 通过持久幂等操作补齐绑定。目录枚举只读，不在全局查询中修复或创建绑定。
+没有连接级的“当前选中目标”，也没有单候选自动选择（旧 `target_select` / `session_get` / `session_close` 已废弃）。目标列表从有效安装及已有精确绑定的 `RUNNING` 进程生成，不要求用户预先手动创建项目。
 
-## 能力覆盖
+---
 
-全局状态/资源、空间管理、设备应用发现、原始 APK/splits 导入与升级、安装移除、应用彻底删除、运行模式、源码读写与恢复、启动目标枚举、进程启停、启动入口恢复、Hook 生命周期、Java/Native 观察、ClassLoader/DEX 与代码快照、UI 操作、存储与网络审计、HTTP、客体方法调用和产物读取。
+## 3. 核心能力覆盖
 
-电脑 APK 导入保持原始字节，分块上限 12 KiB、最多 64 个 APK；SHA 与只读 FD 在安装前再次验证。暂存可查询、取消或在安装终结后清理，未知结果不重放。直接从手机导入读取所选系统应用的原始 base/split APK。
+全局状态与槽位资源查询、空间管理、设备已装应用发现、原始 APK/Splits 导入与升级、安装移除、应用彻底删除、项目源码读写与历史恢复、进程启停与退出历史查询（`process_history`）、启动探针（`startupHook` / `probes_control`）、按需 Java/Native Hook 生命周期、运行时对象内省与存活实例调用（`heap_query` / `guest_invoke`）、ClassLoader/DEX 内存快照、多窗口/Compose UI 树查询与截图交互、存储与网络审计（被动 TLS/HTTP1/HAR）、环境伪装（`persona_control` / `env_mock`）、隐私/恶意行为探针及通用文件拉取（[file-pull.md](file-pull.md)）。
 
-## 状态与恢复
+---
 
-运行时修改使用 authority 操作日志；主进程源码/名称等修改使用原子落盘的本地操作日志，同一个 `operation_get` 入口可查询两者。相同操作 ID 改变内容拒绝。进程退出或重启后，原代次拒绝执行；结果未知时保留原操作 ID 对账，不能换 ID 重放。Hook 仍保留观察证据、准备令牌、源码 SHA、所有权和未知结果状态门。
+## 4. 状态幂等与恢复契约
 
-多个 Agent 和手机编辑器可以同时访问。源码 SHA/CAS 避免覆盖；运行时命令通过原控制管线判断并发冲突。全局入口的能力与单次调用的明确作用范围分别检查。
-
-## 验证边界
-
-主机测试覆盖 MCP schema、显式目标隔离、传输、上传与失败不重放、实际 SQLite 迁移 SQL、源码保留/归档/恢复与 CAS。Android 源码须用 API 37 平台及匹配 apksig 编译。真机安装、真实 Hook 命中及停用恢复仍需独立验收，不能由主机测试代替。历史证据按其对应版本解释。
-
-静态 Manifest 与存储审计属于安装层。Java 对象 Hook、快照、精确错误和 v3 发布边界见 [工具分组 v3](mcp-tool-groups.md)。
+- 运行时修改使用 `:authority` 持久化操作日志；主进程源码/名称修改使用原子落盘的本地操作日志，统一由 `operation_get` 查询。
+- 相同 `operationId` 传入不同参数明确拒绝。进程退出或重启后，旧 `processGeneration` 拒绝执行；结果 `UNKNOWN` 时必须保留原 `operationId` 对账，严禁换新 ID 自动重放。

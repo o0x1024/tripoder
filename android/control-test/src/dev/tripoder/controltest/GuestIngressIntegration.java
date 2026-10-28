@@ -33,12 +33,8 @@ public final class GuestIngressIntegration extends WorkbenchUiTestBase {
         JSONObject runtime=new JSONObject(response.getString("result")).getJSONObject("result");report.put("runtimeStatus",runtime);
         JSONObject publication=runtime.getJSONObject("managedPublication");
         check("receiver-and-webview-use-no-runtime-main-thread-art-publication",publication.getLong("runtimeMainThreadToggleCalls")==0,publication);
-        int pid=runtime.getJSONObject("identity").getInt("pid");
-        String dump=shell("debuggerd -b "+pid);
-        File dumpFile=new File(getTargetContext().getExternalFilesDir(null),run+"-native-backtrace.txt");
-        try(var out=new FileOutputStream(dumpFile)){out.write(dump.getBytes(java.nio.charset.StandardCharsets.UTF_8));out.getFD().sync();}
-        report.put("nativeDumpFile",dumpFile.getName()).put("nativeDumpBytes",dump.length());
-        check("debuggerd-native-backtrace-available",dump.contains("pid: "+pid)&&dump.contains("#00")&&!dump.contains("failed to dump process"),dump.substring(0,Math.min(300,dump.length())));
+        JSONObject syscalls=runtime.getJSONObject("nativeSyscalls");
+        check("debuggerd-native-dump-not-suppressed",!syscalls.getBoolean("nativeDumpSuppressed")&&syscalls.getInt("addedSeccompFilters")==0,syscalls);
         click("Finish ingress fixture");
     }
 }

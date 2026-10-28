@@ -18,6 +18,7 @@ static struct {
     _Atomic(jobject) logical;
     jfieldID field_id;
     jfieldID application_apk;
+    jfieldID wrapper_base;
     get_function get;
     set_function set;
     uint32_t flags[2];
@@ -40,18 +41,34 @@ static void deny(JNIEnv *env) {
     (*env)->ThrowNew(env,(jclass)view.roots[SECURITY],"INITIAL_APPLICATION_IDENTITY_IMMUTABLE");
 }
 /**
- * True when candidate is an Application the guest attached to the same LoadedApk as the currently published one.
+ * True when candidate is an Application the guest attached to the same LoadedApk as the currently published one,
+ * or wrapped around the same base Context root (shell/hot-fix delegate built via attachBaseContext).
  *
  * <p>Android does not require a process application to stay the object that was first attached: hot-fix proxies
- * construct a delegate, attach it to their own LoadedApk and then publish it on {@code ActivityThread}. The immutable
- * fact is the LoadedApk, not the first Application instance, so the view follows exactly that structure.
+ * and packer shells construct a delegate, attach it to their own LoadedApk or base Context, and then publish it
+ * on {@code ActivityThread}. The immutable fact is the LoadedApk / base Context root, not the first Application
+ * instance, so the view follows exactly that structure.
  */
+static jobject base_root(JNIEnv *env,jobject app) {
+    if (!app||!view.wrapper_base) return NULL;
+    jobject cursor=(*env)->GetObjectField(env,app,view.wrapper_base);
+    if (!cursor) return NULL;
+    for (unsigned depth=0;depth<16&&(*env)->IsInstanceOf(env,cursor,(jclass)view.roots[VALUE_TYPE]);depth++) {
+        jobject next=(*env)->GetObjectField(env,cursor,view.wrapper_base);
+        if (!next) break;
+        cursor=next;
+    }
+    return cursor;
+}
 static bool guest_attached(JNIEnv *env,jobject candidate,jobject current) {
     if (!candidate||!current||!view.application_apk) return false;
     if ((*env)->IsSameObject(env,candidate,view.roots[PHYSICAL])) return false;
     jobject candidate_apk=(*env)->GetObjectField(env,candidate,view.application_apk);
     jobject current_apk=(*env)->GetObjectField(env,current,view.application_apk);
-    return candidate_apk&&current_apk&&(*env)->IsSameObject(env,candidate_apk,current_apk);
+    if (candidate_apk&&current_apk&&(*env)->IsSameObject(env,candidate_apk,current_apk)) return true;
+    jobject candidate_base=base_root(env,candidate);
+    jobject current_base=base_root(env,current);
+    return candidate_base&&current_base&&(*env)->IsSameObject(env,candidate_base,current_base);
 }
 /** Publish a guest-owned delegate as the logical application, retaining every generation that was ever published. */
 static bool publish(JNIEnv *env,jobject candidate,bool derived) {
@@ -127,6 +144,8 @@ static bool prepare(JNIEnv *env,jobject field,jobject owner,jobject physical,job
     if (!modifiers||!type||!declaring) goto done;
     view.application_apk=(*env)->GetFieldID(env,(jclass)value_type,"mLoadedApk","Landroid/app/LoadedApk;");
     if (!view.application_apk||(*env)->ExceptionCheck(env)) goto done;
+    view.wrapper_base=(*env)->GetFieldID(env,(jclass)value_type,"mBase","Landroid/content/Context;");
+    if (!view.wrapper_base||(*env)->ExceptionCheck(env)) goto done;
     jint flags=(*env)->CallIntMethod(env,field,modifiers);
     jobject declared_type=(*env)->CallObjectMethod(env,field,type);
     jobject declared_owner=(*env)->CallObjectMethod(env,field,declaring);
