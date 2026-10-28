@@ -10,6 +10,7 @@ import shlex
 import subprocess
 import time
 import uuid
+import xml.etree.ElementTree as ET
 
 
 SYSTEM_ERR_FILTER_VERSION = 'system-err-code-v3'
@@ -125,6 +126,31 @@ def main():
 
     def shell(*argv, **kwargs):
         return adb('shell', shlex.join(argv), **kwargs).stdout.strip()
+
+    def attempt_reconnect(package):
+        # Mirrors validate-runtime-ingress.py's proven pattern: a brand new instrumentation
+        # process cannot prove it owns the previous one, so the engine blocks on
+        # SUPERVISOR_INTERRUPTED and shows one explicit "重新连接" (reconnect) button. Tap it
+        # once if present; never replay a guest operation, never retry past this single tap.
+        window = '/data/local/tmp/tripoder-six-app-reconnect.xml'
+        for _ in range(4):
+            adb('shell', 'uiautomator', 'dump', window, check=False, timeout=15)
+            snapshot = adb('shell', 'cat', window, check=False)
+            if snapshot.returncode:
+                return False
+            owned = [n for n in ET.fromstring(snapshot.stdout).iter('node') if n.get('package') == package]
+            button = next((n for n in owned if n.get('text') == '重新连接' and n.get('clickable') == 'true'), None)
+            if any('SUPERVISOR_INTERRUPTED' in n.get('text', '') for n in owned) and button is not None:
+                bounds = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', button.get('bounds', ''))
+                if bounds is None:
+                    return False
+                x1, y1, x2, y2 = map(int, bounds.groups())
+                adb('shell', 'input', 'tap', str((x1 + x2) // 2), str((y1 + y2) // 2))
+                return True
+            if button is None:
+                return False
+            time.sleep(.2)
+        return False
 
     for kind in ('engine', 'controlTest'):
         item = receipt['artifacts'][kind]
@@ -293,6 +319,10 @@ def main():
                         if json.loads(signal.stdout) != expected:
                             raise RuntimeError('WORKBENCH_SIGNAL_MISMATCH')
                         shell('am', 'start', '-W', '-n', expected['component'])
+                        reconnected = attempt_reconnect(host)
+                        if reconnected:
+                            (directory / 'explicit-reconnect.json').write_text(json.dumps(
+                                {'runId': run, 'reason': 'SUPERVISOR_INTERRUPTED', 'count': 1, 'guestOperationReplayed': False}, indent=2) + '\n')
                         launched = True
                 time.sleep(.15)
         raw = adb('shell', 'cat', remote + 'result-' + run + '.json', check=False)
