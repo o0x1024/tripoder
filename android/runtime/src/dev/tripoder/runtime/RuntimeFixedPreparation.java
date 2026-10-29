@@ -53,6 +53,7 @@ final class RuntimeFixedPreparation {
         targets.put(FrameworkAccess.activityThreadApplicationMethod(),new Executable[0]);
         targets.put(FrameworkAccess.processNameMethod(),new Executable[0]);
         targets.put((Method)members.methods[FrameworkAccess.CURRENT_PACKAGE_NAME],new Executable[0]);
+        targets.put(FrameworkAccess.currentOpPackageNameMethod(),new Executable[0]);
         return targets;
     }
     static synchronized Map<Executable,ManagedHook.Handle> take()throws Exception{

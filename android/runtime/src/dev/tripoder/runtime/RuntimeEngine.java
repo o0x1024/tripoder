@@ -666,6 +666,25 @@ public final class RuntimeEngine {
                     }
                 } catch (Throwable ignored) {}
 
+                try {
+                    RuntimeEngine engine = RuntimeEngine.current;
+                    if (engine != null) {
+                        String hostPkg = engine.host.getPackageName();
+                        Context base = app.getBaseContext();
+                        while (base instanceof android.content.ContextWrapper) {
+                            base = ((android.content.ContextWrapper) base).getBaseContext();
+                        }
+                        if (base != null) {
+                            try {
+                                java.lang.reflect.Field opField = base.getClass().getDeclaredField("mOpPackageName");
+                                opField.setAccessible(true);
+                                opField.set(base, hostPkg);
+                                android.util.Log.i("TripoderHardened", "Enforced host opPackageName on base ContextImpl of " + app.getClass().getName());
+                            } catch (NoSuchFieldException ignored) {}
+                        }
+                    }
+                } catch (Throwable ignored) {}
+
                 android.util.Log.i("TripoderHardened", "Updated ActivityThread application to " + app.getClass().getName());
             }
         } catch (Throwable t) {

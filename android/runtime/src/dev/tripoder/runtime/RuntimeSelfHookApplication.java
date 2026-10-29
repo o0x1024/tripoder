@@ -64,6 +64,8 @@ final class RuntimeSelfHookApplication {
         callbacks.put(FrameworkAccess.processNameMethod(),(receiver,args,original)->value.engine.processName);
         // currentPackageName() reads the host's bind record; guest code asking who it is must get the guest package.
         callbacks.put((Method)value.members.methods[FrameworkAccess.CURRENT_PACKAGE_NAME],(receiver,args,original)->value.engine.packageName);
+        // currentOpPackageName() is validated by system services (StorageManager, AppOps, etc.) against the real UID (host).
+        callbacks.put(FrameworkAccess.currentOpPackageNameMethod(),(receiver,args,original)->value.engine.host.getPackageName());
         installer.install(callbacks);
     }
 

@@ -115,6 +115,9 @@ public final class FrameworkAccess {
     public static Method activityThreadApplicationMethod()throws Exception{
         return FixedFrameworkMembers.method(1,"getApplication","()Landroid/app/Application;",false);
     }
+    public static Method currentOpPackageNameMethod()throws Exception{
+        return FixedFrameworkMembers.method(1,"currentOpPackageName","()Ljava/lang/String;",true);
+    }
     public static Method processNameMethod()throws Exception{
         return FixedFrameworkMembers.method(0,"getProcessName","()Ljava/lang/String;",true);
     }
@@ -173,6 +176,8 @@ public final class FrameworkAccess {
             &&Modifier.isStatic(target.getModifiers()))return;
         if(owner.getName().equals("android.app.ActivityThread")&&name.equals("getApplication")&&descriptor.equals("()Landroid/app/Application;")
             &&!Modifier.isStatic(target.getModifiers()))return;
+        if(owner.getName().equals("android.app.ActivityThread")&&name.equals("currentOpPackageName")&&descriptor.equals("()Ljava/lang/String;")
+            &&Modifier.isStatic(target.getModifiers()))return;
         throw new IllegalArgumentException("FIXED_BOOT_MANAGED_ADAPTER_REQUIRED:"+owner.getName()+"."+target.getName());
     }
     private static String type(Class<?> value){
