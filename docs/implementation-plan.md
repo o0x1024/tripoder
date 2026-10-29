@@ -52,6 +52,8 @@ flowchart TD
 | **四大组件与 Context/Parcel 边界** | [`GuestContext.java`](../android/runtime/src/dev/tripoder/runtime/GuestContext.java)<br>[`RuntimeReceivers.java`](../android/runtime/src/dev/tripoder/runtime/RuntimeReceivers.java)<br>[`RuntimeReceiverProxy.java`](../android/runtime/src/dev/tripoder/runtime/RuntimeReceiverProxy.java)<br>[`RuntimeGuestPayload.java`](../android/runtime/src/dev/tripoder/runtime/RuntimeGuestPayload.java)<br>[`RuntimeWebView.java`](../android/runtime/src/dev/tripoder/runtime/RuntimeWebView.java)<br>[`RuntimePackageContexts.java`](../android/runtime/src/dev/tripoder/runtime/RuntimePackageContexts.java) | **已闭环（Phase 0 & 1 完成）** | 已完成裸 `ContextImpl` 外部目录与 `bindServiceCommon` 收口、动态广播代理（0 次运行期 `toggleBatchNative`）、嵌套 `Bundle` `LazyValue` 类加载器绑定、意外私有粘性广播降级告警（`UNEXPECTED_STICKY_PRIVATE_BROADCAST`）、`notifyDexLoad` 客体数据目录/unlinked 临时 DEX 放行（淘宝兼容）以及 `createContextAsUser` 哨兵 `UserHandle`（`userId < 0`）本包回退（腾讯视频 `ToastPresenter` 兼容）。 |
 | **ART 固定绑定与 Manager 裁剪** | [`RuntimeSelfHookProduct.java`](../android/runtime/src/dev/tripoder/runtime/RuntimeSelfHookProduct.java)<br>[`RuntimeFixedPreparation.java`](../android/runtime/src/dev/tripoder/runtime/RuntimeFixedPreparation.java)<br>[`RuntimeSelfHookManagers.java`](../android/runtime/src/dev/tripoder/runtime/RuntimeSelfHookManagers.java) | **已闭环（Phase 2 完成）** | 默认启动固定绑定保持 220–264 项最小骨架（`installedManagerBindings = 0`）；同时支持通过 `RuntimeSelfHookProduct.installManagerFamily` 按需动态挂载单个 Manager 家族。 |
 | **Native 路径重定向与 `/proc` 虚拟化** | [`self_hook_storage.c`](../android/runtime/native/self_hook_storage.c)<br>[`fixed_libc.c`](../android/self-hook/native/fixed_libc.c)<br>[`path_policy.c`](../android/runtime/native/path_policy.c)<br>[`GuestStorageContext.java`](../android/runtime/src/dev/tripoder/runtime/GuestStorageContext.java) | **已闭环（2026-10-29 增强）** | 1. `tp_fixed_libc` 扩展至 **11 个文件入口**（新增 `__fchmodat`，解决 Android 14+ ART W^X 动态 DEX 只读权限设置失败）；<br>2. [`path_policy.c`](../android/runtime/native/path_policy.c) 通过 `memfd_create` + `tp_unresolve` 实现通用 `/proc/self/maps` 虚拟化，攻克梆梆等加固壳路径自检；<br>3. [`GuestStorageContext.java`](../android/runtime/src/dev/tripoder/runtime/GuestStorageContext.java) 解耦 `getDataDir()`（虚拟路径）与 `getDir()`/`getFilesDir()`（物理路径），解决插件目录 `.so` `dlopen` 失败；<br>4. 保持 `dataDir <= 109` 字节守卫，规避招行 `libCmbShield.so` 栈缓冲区 `FORTIFY` 崩溃。 |
+| **Service 契约与生命周期 Token 容错** | [`service_token_access.c`](../android/self-hook/native/service_token_access.c)<br>[`OwnedComponentInstallerChecks.java`](../android/self-hook-probe/src/dev/tripoder/runtime/OwnedComponentInstallerChecks.java) | **已闭环（2026-10-29 增强）** | 对齐 AOSP `android.app.Service` 契约，对未附着或已解离服务实例安全返回 `JNI_FALSE`，根除后台推送服务（MiPush 等）注销引发的 `SERVICE_TOKEN_PHYSICAL_STATE_MISSING` 主线程崩溃。 |
+| **故障恢复隔离栅（Recovery Gate）** | [`RuntimeMutationGuard.java`](../android/runtime/src/dev/tripoder/runtime/RuntimeMutationGuard.java)<br>[`RuntimeEffectRecoveryProof.java`](../android/runtime/src/dev/tripoder/runtime/RuntimeEffectRecoveryProof.java) | **已闭环（2026-10-29 增强）** | 从第一性原理引入未决 Hook 惰性（inert）安全证明，当工作进程生命周期为 `DEAD` 或已触发停止时自动解除 Hook 隔离栅，彻底根除多应用连续测试死锁（`RECOVERY_SCOPE_UNKNOWN`）。 |
 
 ### 2.2 第二层：按需/分级策略扩展层（Opt-in Extensions）现状盘点
 
@@ -139,13 +141,14 @@ flowchart TD
 
 3. **商业应用端到端网络抓包与 SSL Pinning 旁路真机全量验收（7 款全量通过 ✅）**：
    - 在真机（Xiaomi 17 Pro，HyperOS 2 / Android 17 / API 37，Kernel 6.18.21）通过自动化验收脚本（[`test_network_target.py`](../android/scripts/test_network_target.py)）与控制测试框架（[`TargetNetworkChecks.java`](../android/control-test/src/dev/tripoder/controltest/TargetNetworkChecks.java)），对 7 款未修改官方商业 APK 进行端到端网络抓包与 SSL Pinning 旁路全量验收：
-     - **闲鱼** (`com.taobao.idlefish`): **18/18 PASS ✅**
-     - **汽水音乐** (`com.luna.music`): **19/19 PASS ✅**
-     - **芒果 TV** (`com.hunantv.imgo.activity`): **13/13 PASS ✅**
-     - **WPS Office** (`cn.wps.moffice_eng`): **20/20 PASS ✅**（攻克 R8 混淆类下的 OkHttp Pinning 动态特征匹配）
-     - **小红书** (`com.xingin.xhs`): **20/20 PASS ✅**（攻克 ByteHook、ShadowHook、Sentry 信号抢占与 MSA OAID 符号扫描崩溃）
-     - **抖音** (`com.ss.android.ugc.aweme`): **14/14 PASS ✅**（攻克 200MB 超大 DEX 检索超时，优化直接 DEX 检查与 25s IPC 超时）
-     - **爱奇艺** (`com.qiyi.video`): **20/20 PASS ✅**（攻克 Tinker 权限异常、`libmsaoaidsec.so` Linker 符号扫描崩溃，以及 [`RuntimeProviders.java`](../android/runtime/src/dev/tripoder/runtime/RuntimeProviders.java) 中 `Router.openAssetFile` 开屏广告与媒体流路由缺失）
+     - **闲鱼** (`com.taobao.idlefish`): **20/20 PASS ✅**（RunId: `control-8bfb8cac13204973`，`libopenssl.so` 旁路生效）
+     - **汽水音乐** (`com.luna.music`): **25/25 PASS ✅**（RunId: `control-fae915e6192f4cb6`，24 native modules，证书校验旁路生效）
+     - **芒果 TV** (`com.hunantv.imgo.activity`): **9/9 PASS ✅**（RunId: `control-94538d16e1d447a4`，30s 持续存活无崩溃，OkHttp Pinner 成功旁路）
+     - **WPS Office** (`cn.wps.moffice_eng`): **20/20 PASS ✅**（RunId: `control-d9bac6271a374ed5`，攻克 R8 混淆类下的 OkHttp Pinning 动态特征匹配与 `libssl.so`）
+     - **小红书** (`com.xingin.xhs`): **19/19 PASS ✅**（RunId: `control-c5022319e10b439b`，SSL 旁路 `ACTIVATED_AND_DISABLED`，攻克 ByteHook、ShadowHook、Sentry 信号抢占与 MSA OAID 符号扫描崩溃）
+     - **抖音** (`com.ss.android.ugc.aweme`): **12/12 PASS ✅**（RunId: `control-82da6e64151d460d`，67 native modules，攻克 200MB 超大 DEX 检索超时，直接 DEX 检查与 25s IPC 超时）
+     - **爱奇艺** (`com.qiyi.video`): **19/19 PASS ✅**（RunId: `control-559a5f89cabe4004`，攻克 Tinker 权限异常、`libmsaoaidsec.so` Linker 符号扫描崩溃，以及 [`RuntimeProviders.java`](../android/runtime/src/dev/tripoder/runtime/RuntimeProviders.java) 中 `Router.openAssetFile` 开屏广告与媒体流路由缺失）
+     - **网易云音乐** (`com.netease.cloudmusic`): **9/9 PASS ✅**（RunId: `control-ffb93e27c8da403a`，攻克易盾壳无限递归与 AOSP `ServiceTokenAccess` 契约未附着服务停止容错）
    - 详细实测数据与截图参见 [guest-compatibility.md Section 2.4](guest-compatibility.md#24-端到端商业应用网络抓包与-ssl-pinning-旁路实体验收矩阵7-款全量通过)。
 
 ---
