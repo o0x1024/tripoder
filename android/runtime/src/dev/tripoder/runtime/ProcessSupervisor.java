@@ -52,6 +52,19 @@ public final class ProcessSupervisor {
         main.post(()->{if(value.bound){value.bound=false;try{broker.host.unbindService(value);}catch(RuntimeException ignored){}}});
     }
     private static String key(String space,String pkg,String process){return space+"/"+pkg+"/"+process;}
+    public void reconcile(){
+        synchronized(broker){
+            Iterator<Map.Entry<String,Launch>> iter=launches.entrySet().iterator();
+            while(iter.hasNext()){
+                Launch l=iter.next().getValue();
+                if(l.dead||(l.peer!=null&&!l.peer.isBinderAlive())||broker.store.isDead(l.slot.allocation.session.processGeneration)){
+                    iter.remove();
+                    broker.dead(l.slot.allocation.session.processGeneration);
+                    l.slot.stopDispatch.observedDead();
+                }
+            }
+        }
+    }
     public RuntimeBroker.Slot ensure(String space,String pkg,String process)throws Exception{
         return acquire(space,pkg,process,true);
     }
@@ -85,8 +98,16 @@ public final class ProcessSupervisor {
             if(current==null||!"COMMITTED".equals(current.state)||!install.generation.equals(current.generation)||!install.data.getName().equals(current.dataId))throw new IllegalStateException("STALE_INSTALL");
             if(!install.artifacts.processes.contains(process))throw new IllegalArgumentException("PROCESS_NOT_DECLARED");
             launch=launches.get(key);
+            if(launch!=null&&(launch.dead||(launch.peer!=null&&!launch.peer.isBinderAlive())||broker.store.isDead(launch.slot.allocation.session.processGeneration))){
+                launches.remove(key,launch);
+                launch=null;
+            }
             if(launch==null){
                 var existing=broker.findProcess(space,pkg,process);
+                if(existing!=null&&(broker.store.isDead(existing.allocation.session.processGeneration)||(existing.peer!=null&&!existing.peer.isBinderAlive()))){
+                    broker.dead(existing.allocation.session.processGeneration);
+                    existing=null;
+                }
                 if(existing!=null){broker.requiredSlot(existing.allocation.session.processGeneration);var state=broker.contract.getSession(existing.allocation.session.processGeneration).state;if(state!=ExecutionContract.ProcessState.RUNNING&&(awaitApplication||state!=ExecutionContract.ProcessState.ATTACHED))throw new IllegalStateException("PROCESS_NOT_READY");return existing;}
                 launch=reserveLaunch(install,process,key,false);owner=true;
             }

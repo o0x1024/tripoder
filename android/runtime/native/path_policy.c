@@ -3,11 +3,15 @@
 #include "path_policy.h"
 #include <errno.h>
 #include <fcntl.h>
+#include <linux/memfd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/syscall.h>
 #include <unistd.h>
+#ifndef MFD_CLOEXEC
+#define MFD_CLOEXEC 0x0001U
+#endif
 #define syscall tp_kernel_syscall
 
 /* Independent, process-immutable namespace policy. Direct internal syscalls avoid
@@ -324,10 +328,114 @@ ssize_t tp_unresolve(const char *physical,size_t physical_len,char *out,size_t s
                     }
                 }
             }
+            const char *host_rel=NULL;
+            if(host_runtime_subpath(raw,&host_rel)){
+                char rewritten[PATH_MAX];
+                int n=snprintf(rewritten,sizeof(rewritten),"%s%s",data_paths[3],host_rel);
+                if(n>0&&(size_t)n<sizeof(rewritten)){
+                    size_t copied=(size_t)n<size?(size_t)n:size;
+                    if(copied>0)memcpy(out,rewritten,copied);
+                    return (ssize_t)copied;
+                }
+            }
         }
     }
     size_t copied=physical_len<size?physical_len:size;
     if(copied>0)memcpy(out,physical,copied);
     return (ssize_t)copied;
+}
+
+bool tp_is_proc_maps(const struct tp_path *path){
+    if(!path||path->parent!=AT_FDCWD)return false;
+    const char *leaf=path->leaf;
+    if(strncmp(leaf,"/proc/",6)!=0)return false;
+    const char *sub=leaf+6;
+    if(!strcmp(sub,"self/maps")||!strcmp(sub,"thread-self/maps"))return true;
+    char *end=NULL;unsigned long pid=strtoul(sub,&end,10);
+    if(end>sub&&!strcmp(end,"/maps")&&owned_proc_pid(pid))return true;
+    return false;
+}
+
+static void tp_write_virtual_maps_line(int memfd,const char *line,size_t len){
+    const char *p=line;
+    while(*p&&*p!=' ')p++;while(*p==' ')p++;
+    while(*p&&*p!=' ')p++;while(*p==' ')p++;
+    while(*p&&*p!=' ')p++;while(*p==' ')p++;
+    while(*p&&*p!=' ')p++;while(*p==' ')p++;
+    while(*p&&*p!=' ')p++;while(*p==' ')p++;
+
+    if(*p=='/'){
+        const char *path_start=p;
+        bool is_deleted=false;
+        size_t path_len=strlen(path_start);
+        if(path_len>10&&!strcmp(path_start+path_len-10," (deleted)")){
+            is_deleted=true;
+            path_len-=10;
+        }
+        char path_buf[PATH_MAX];
+        if(path_len<sizeof(path_buf)){
+            memcpy(path_buf,path_start,path_len);
+            path_buf[path_len]='\0';
+            char rewritten[PATH_MAX];
+            ssize_t unres_len=tp_unresolve(path_buf,path_len,rewritten,sizeof(rewritten)-1);
+            if(unres_len>0){
+                rewritten[unres_len]='\0';
+                if(strstr(rewritten,"libtripoderselfhook.so")!=NULL||
+                   strstr(rewritten,"/dev.tripoder.")!=NULL){
+                    return;
+                }
+                syscall(SYS_write,memfd,line,(size_t)(path_start-line));
+                syscall(SYS_write,memfd,rewritten,(size_t)unres_len);
+                if(is_deleted){
+                    syscall(SYS_write,memfd," (deleted)",10);
+                }
+                syscall(SYS_write,memfd,"\n",1);
+                return;
+            }
+        }
+    }
+    syscall(SYS_write,memfd,line,len);
+    syscall(SYS_write,memfd,"\n",1);
+}
+
+int tp_open_virtual_maps(void){
+    int real_fd=(int)syscall(SYS_openat,AT_FDCWD,"/proc/self/maps",O_RDONLY|O_CLOEXEC,0);
+    if(real_fd<0)return -1;
+
+    int memfd=(int)syscall(SYS_memfd_create,"maps",MFD_CLOEXEC);
+    if(memfd<0){
+        int saved=errno;
+        syscall(SYS_close,real_fd);
+        errno=saved;
+        return -1;
+    }
+
+    char read_buf[2048];
+    char line_buf[2048];
+    size_t line_len=0;
+    long bytes_read;
+
+    while((bytes_read=(long)syscall(SYS_read,real_fd,read_buf,sizeof(read_buf)))>0){
+        for(long i=0;i<bytes_read;i++){
+            char c=read_buf[i];
+            if(c=='\n'){
+                line_buf[line_len]='\0';
+                tp_write_virtual_maps_line(memfd,line_buf,line_len);
+                line_len=0;
+            }else{
+                if(line_len<sizeof(line_buf)-1){
+                    line_buf[line_len++]=c;
+                }
+            }
+        }
+    }
+    if(line_len>0){
+        line_buf[line_len]='\0';
+        tp_write_virtual_maps_line(memfd,line_buf,line_len);
+    }
+
+    syscall(SYS_close,real_fd);
+    syscall(SYS_lseek,memfd,0,SEEK_SET);
+    return memfd;
 }
 void tp_release(struct tp_path *path){int saved=errno;if(path->close_parent)syscall(SYS_close,path->parent);errno=saved;}

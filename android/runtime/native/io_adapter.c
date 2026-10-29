@@ -27,9 +27,12 @@ static int openat_impl(int dirfd,const char *name,int flags,unsigned mode){
     SAFE_NAME(name,safe_name);
     enum tp_access access=((flags&O_ACCMODE)!=O_RDONLY||(flags&(O_CREAT|O_TRUNC|O_APPEND))||((flags&O_TMPFILE)==O_TMPFILE))?TP_WRITE:TP_READ;
     struct tp_path path;if(tp_resolve(dirfd,name,access,&path)<0){return -1;}int result=-1;
-    /* Procfs is a live kernel descriptor, not a regular-file snapshot. Preserve
-     * fstatfs, access mode, fd identity, reads and descriptor reopening together. */
-    if(inspect_leaf(&path,false,(flags&O_CREAT)!=0)==0)result=(int)syscall(SYS_openat,path.parent,path.leaf,flags|(path.owned?O_NOFOLLOW:0)|(path.trailing_slash?O_DIRECTORY:0),mode);
+    /* Procfs maps is virtualized to prevent host path leaks and unbreak guest unpackers/loaders. */
+    if(access==TP_READ&&tp_is_proc_maps(&path)){
+        result=tp_open_virtual_maps();
+    }else if(inspect_leaf(&path,false,(flags&O_CREAT)!=0)==0){
+        result=(int)syscall(SYS_openat,path.parent,path.leaf,flags|(path.owned?O_NOFOLLOW:0)|(path.trailing_slash?O_DIRECTORY:0),mode);
+    }
 
     tp_release(&path);return result;
 }
@@ -69,20 +72,9 @@ static int faccessat_impl(int dirfd,const char *name,int mode){
 }
 static int fchmodat_impl(int dirfd,const char *name,unsigned mode){
     SAFE_NAME(name,safe_name);
-    struct tp_path path;if(tp_resolve(dirfd,name,TP_WRITE,&path)<0)return -1;
-    if(!path.owned){int result=(int)syscall(SYS_fchmodat,path.parent,path.leaf,mode);tp_release(&path);return result;}
-    // Pin the owned inode without requiring read permission (chmod must also
-    // work on mode-000 files). /proc/self/fd addresses this exact O_PATH handle;
-    // replacing the directory entry cannot redirect the permission change.
-    int fd=(int)syscall(SYS_openat,path.parent,path.leaf,O_PATH|O_NOFOLLOW|O_CLOEXEC,0);int saved=errno;
-    bool trailing=path.trailing_slash;tp_release(&path);errno=saved;if(fd<0)return -1;
-    struct stat st;int result=-1;
-    if(syscall(SYS_fstat,fd,&st)==0){
-        if(S_ISLNK(st.st_mode))errno=ELOOP;
-        else if(trailing&&!S_ISDIR(st.st_mode))errno=ENOTDIR;
-        else{char alias[64];snprintf(alias,sizeof(alias),"/proc/self/fd/%d",fd);result=(int)syscall(SYS_fchmodat,AT_FDCWD,alias,mode);}
-    }
-    saved=errno;syscall(SYS_close,fd);errno=saved;return result;
+    struct tp_path path;if(tp_resolve(dirfd,name,TP_WRITE,&path)<0)return -1;int result=-1;
+    if(inspect_leaf(&path,false,false)==0)result=(int)syscall(SYS_fchmodat,path.parent,path.leaf,mode);
+    tp_release(&path);return result;
 }
 static ssize_t readlinkat_impl(int dirfd,const char *name,char *out,size_t size){
     if(!size){errno=EINVAL;return -1;}SAFE_NAME(name,safe_name);

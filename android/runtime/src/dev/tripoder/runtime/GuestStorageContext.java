@@ -10,12 +10,12 @@ abstract class GuestStorageContext extends ContextWrapper {
     final RuntimeStorage storage;
     GuestStorageContext(Context base,RuntimeStorage storage){super(base);this.storage=storage;}
     @Override public File getDataDir(){return new File("/data/user/0/"+getPackageName());}
-    @Override public File getFilesDir(){storage.dir("files");return new File(getDataDir(),"files");}
-    @Override public File getCacheDir(){storage.dir("cache");return new File(getDataDir(),"cache");}
-    @Override public File getCodeCacheDir(){storage.dir("code_cache");return new File(getDataDir(),"code_cache");}
-    @Override public File getNoBackupFilesDir(){storage.dir("no_backup");return new File(getDataDir(),"no_backup");}
+    @Override public File getFilesDir(){return storage.dir("files");}
+    @Override public File getCacheDir(){return storage.dir("cache");}
+    @Override public File getCodeCacheDir(){return storage.dir("code_cache");}
+    @Override public File getNoBackupFilesDir(){return storage.dir("no_backup");}
     @Override public File getFileStreamPath(String name){return new File(getFilesDir(),name);}
-    @Override public File getDir(String name,int mode){storage.dir("app_"+RuntimeStorage.name(name));return new File(getDataDir(),"app_"+RuntimeStorage.name(name));}
+    @Override public File getDir(String name,int mode){return storage.dir("app_"+RuntimeStorage.name(name));}
     @Override public boolean deleteFile(String name){return getFileStreamPath(name).delete();}
     @Override public String[] fileList(){return storage.list("files");}
     // Typed external directories stay guest-private; the type is a single path segment, never a host path.

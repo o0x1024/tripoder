@@ -61,7 +61,7 @@ def inspect(libc, output):
         if image[location:location + 24] != struct.pack('<6I', *words):
             raise RuntimeError('LIBC_COMPLETE_FUNCTION_BODY:' + name)
         entries.append({'name': name, 'rva': address, 'words': words})
-    if len(entries) != 10:
+    if len(entries) != 11:
         raise RuntimeError('LIBC_ENTRY_COUNT')
     absolute_audit=audit(image,sections,entries)
     raw_id = re.search(r'tp_libc_build_id\[16\]\s*=\s*\{([^}]+)\}', header)[1]

@@ -18,7 +18,7 @@
 #include <unistd.h>
 
 static struct {
-    _Atomic unsigned long long hits[10], worker_calls;
+    _Atomic unsigned long long hits[11], worker_calls;
     _Atomic unsigned worker_errors;
     _Atomic bool stop;
     uintptr_t base;
@@ -36,8 +36,9 @@ static ssize_t hook_readlink(int d,const char *p,char *b,size_t n){atomic_fetch_
 static int hook_chdir(const char *p){atomic_fetch_add(&test.hits[7],1);return tp_chdir(p);}
 static int hook_symlink(const char *a,int b,const char *c){atomic_fetch_add(&test.hits[8],1);return tp_symlinkat(a,b,c);}
 static int hook_link(int a,const char *b,int c,const char *d,int f){atomic_fetch_add(&test.hits[9],1);return tp_linkat(a,b,c,d,f);}
+static int hook_chmod(int d,const char *p,unsigned m){atomic_fetch_add(&test.hits[10],1);return tp_fchmodat(d,p,m);}
 static const struct tp_fixed_libc_replacements replacements={hook_open,hook_stat,hook_unlink,hook_mkdir,hook_rename,
-    hook_access,hook_readlink,hook_chdir,hook_symlink,hook_link};
+    hook_access,hook_readlink,hook_chdir,hook_symlink,hook_link,hook_chmod};
 static void check(int condition,const char *name){test.checks++;if(!condition){test.failures++;if(!test.first)test.first=name;}}
 static void *worker(void *unused){
     (void)unused;

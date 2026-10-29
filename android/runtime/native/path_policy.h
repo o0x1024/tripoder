@@ -13,5 +13,7 @@ int tp_configure_host_storage(const char *data,const char *canonical,const char 
 /* Immutable logical data/identity routing. Procfs remains a kernel descriptor. */
 int tp_resolve(int dirfd, const char *path, enum tp_access access, struct tp_path *out);
 ssize_t tp_unresolve(const char *physical, size_t physical_len, char *out, size_t size);
+bool tp_is_proc_maps(const struct tp_path *path);
+int tp_open_virtual_maps(void);
 void tp_release(struct tp_path *path);
 #endif

@@ -79,10 +79,10 @@ JNIEXPORT void JNICALL Java_dev_tripoder_runtime_RuntimeSelfHookStorage_installN
     trace_debugger_diagnostics=(bool)diagnostics;
     if(tp_park_prepare_process()!=TP_PARK_OK){fail(env,"NATIVE_STORAGE_THREAD_RESERVATION_FAILED");return;}
     if(!tp_signal_chain_prepare()){fail(env,"ART_SIGNAL_CHAIN_UNAVAILABLE");return;}
-    /* Path adaptation belongs at the existing ten libc filesystem entries.
+    /* Path adaptation belongs at the existing fixed libc filesystem entries.
      * No process-wide seccomp filter by default: exec/debuggerd and guest signal masks keep
      * platform semantics. Direct guest SVC is only intercepted when opt-in syscall policy is enabled. */
-    const struct tp_fixed_libc_replacements paths_only={tp_openat,tp_fstatat,tp_unlinkat,tp_mkdirat,tp_renameat2,tp_faccessat,tp_readlinkat,tp_chdir,tp_symlinkat,tp_linkat};
+    const struct tp_fixed_libc_replacements paths_only={tp_openat,tp_fstatat,tp_unlinkat,tp_mkdirat,tp_renameat2,tp_faccessat,tp_readlinkat,tp_chdir,tp_symlinkat,tp_linkat,tp_fchmodat};
     enum tp_fixed_libc_status status=tp_fixed_libc_prepare(&paths_only);
     if(status==TP_FIXED_LIBC_OK)status=tp_fixed_libc_activate();
     if(status!=TP_FIXED_LIBC_OK){char reason[96];snprintf(reason,sizeof(reason),"NATIVE_PATH_PUBLICATION_FAILED:%u",status);fail(env,reason);}

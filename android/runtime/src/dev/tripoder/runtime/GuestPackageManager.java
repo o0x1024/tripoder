@@ -92,7 +92,7 @@ final class GuestPackageManager extends DeniedPackageManager {
             copy.sourceDir=code.part("base.apk");copy.publicSourceDir=copy.sourceDir;
             if(copy.splitSourceDirs!=null)for(int i=0;i<copy.splitSourceDirs.length;i++)if(copy.splitSourceDirs[i]!=null)copy.splitSourceDirs[i]=code.part(new java.io.File(copy.splitSourceDirs[i]).getName());
             if(copy.splitPublicSourceDirs!=null)for(int i=0;i<copy.splitPublicSourceDirs.length;i++)if(copy.splitPublicSourceDirs[i]!=null)copy.splitPublicSourceDirs[i]=code.part(new java.io.File(copy.splitPublicSourceDirs[i]).getName());
-            copy.nativeLibraryDir=code.visibleDirectory+"/lib/arm64";
+            copy.nativeLibraryDir=new java.io.File(code.directory,"lib/arm64").getAbsolutePath();
             setPrimaryCpuAbi(copy, "arm64-v8a");
         }
         return copy;

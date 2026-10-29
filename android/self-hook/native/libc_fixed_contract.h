@@ -6,7 +6,9 @@
  * Java's platform gate verifies the entire file before entering this native API.
  * Each offset and complete six-word body is independently tied to that ELF. */
 #define TP_FIXED_LIBC_PATH "/apex/com.android.runtime/lib64/bionic/libc.so"
-#define TP_FIXED_LIBC_ENTRIES 10
+#ifndef TP_FIXED_LIBC_ENTRIES
+#define TP_FIXED_LIBC_ENTRIES 11
+#endif
 struct tp_libc_entry_contract { const char *name; uintptr_t offset; uint32_t words[6]; };
 static const struct tp_libc_entry_contract tp_libc_contract[TP_FIXED_LIBC_ENTRIES] = {
     {"__openat",   0xe0a40, {0xd503245f,0xd2800708,0xd4000001,0xb13ffc1f,0x54cd9322,0xd65f03c0}},
@@ -19,6 +21,7 @@ static const struct tp_libc_entry_contract tp_libc_contract[TP_FIXED_LIBC_ENTRIE
     {"chdir",      0xe1040, {0xd503245f,0xd2800628,0xd4000001,0xb13ffc1f,0x54cd6322,0xd65f03c0}},
     {"symlinkat",  0xe0cc0, {0xd503245f,0xd2800488,0xd4000001,0xb13ffc1f,0x54cd7f22,0xd65f03c0}},
     {"linkat",     0xe0b80, {0xd503245f,0xd28004a8,0xd4000001,0xb13ffc1f,0x54cd8922,0xd65f03c0}},
+    {"__fchmodat", 0xe0ac0, {0xd503245f,0xd28006a8,0xd4000001,0xb13ffc1f,0x54cd8f22,0xd65f03c0}},
 };
 static const unsigned char tp_libc_build_id[16] = {
     0x48,0xc4,0xb1,0x83,0x04,0xac,0xf5,0x19,0xb2,0x64,0x57,0xcc,0xbc,0x3d,0x43,0x5f

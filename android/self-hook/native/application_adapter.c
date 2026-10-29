@@ -20,7 +20,12 @@ static void fail(JNIEnv *env,const char *reason){
     state.stage=reason;
     if((*env)->ExceptionCheck(env))return;
     jclass type=(*env)->FindClass(env,"java/lang/IllegalStateException");
-    if(type)(*env)->ThrowNew(env,type,reason);
+    char msg[256];
+    snprintf(msg,sizeof(msg),"%s[stage=%s,broken=%s,tid=%d/%d,log=%d,gst=%d,fac=%d]",
+        reason,state.stage?state.stage:"null",state.broken?state.broken:"none",
+        (int)state.tid,(int)gettid(),
+        (int)(state.roots[LOGICAL]!=NULL),(int)(state.roots[GUEST]!=NULL),(int)(state.roots[FACTORY]!=NULL));
+    if(type)(*env)->ThrowNew(env,type,msg);
 }
 static bool same(JNIEnv *env,jobject a,jobject b){return a&&b&&(*env)->IsSameObject(env,a,b);}
 static bool keep(JNIEnv *env,unsigned slot,jobject value){
@@ -125,6 +130,7 @@ static bool physical(JNIEnv *env,bool attached){
         // inside this installation's verified DEX sequence, and reject one that would escape it.
         const unsigned expected[]={OWNER,OWNER,RESOURCES,state.roots[FACTORY]?FACTORY:PREPARED_FACTORY,DECLARED};
         const char *names[]={"logical.mClassLoader","logical.mDefaultClassLoader","logical.mResources","logical.mAppComponentFactory","logical.mApplicationInfo"};
+        static char loader_diag[256];
         for(unsigned i=0;valid&&i<5;i++){
             jobject value=(*env)->GetObjectField(env,state.roots[LOGICAL],state.fields[4+i]);
             if(expected[i]==RESOURCES&&value&&!same(env,value,state.roots[RESOURCES])){
@@ -133,7 +139,18 @@ static bool physical(JNIEnv *env,bool attached){
                 if(followed){(*env)->DeleteGlobalRef(env,state.roots[RESOURCES]);state.roots[RESOURCES]=followed;}
             }
             if(expected[i]==OWNER){
-                if(!owned_loader(env,value)){valid=false;state.broken=names[i];}
+                if(!owned_loader(env,value)){
+                    valid=false;
+                    jclass obj_class=value?(*env)->GetObjectClass(env,value):NULL;
+                    jmethodID to_str=obj_class?(*env)->GetMethodID(env,obj_class,"toString","()Ljava/lang/String;"):NULL;
+                    jstring str=to_str?(jstring)(*env)->CallObjectMethod(env,value,to_str):NULL;
+                    const char *chars=str?(*env)->GetStringUTFChars(env,str,NULL):"null";
+                    snprintf(loader_diag,sizeof(loader_diag),"%s[val=%p,str=%.150s,owner=%p]",
+                        names[i],value,chars,state.roots[OWNER]);
+                    if(str)(*env)->ReleaseStringUTFChars(env,str,chars);
+                    (*env)->ExceptionClear(env);
+                    state.broken=loader_diag;
+                }
             }else{
                 valid=(!value&&!state.roots[expected[i]])||same(env,value,state.roots[expected[i]]);
                 if(!valid)state.broken=names[i];

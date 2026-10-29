@@ -71,7 +71,8 @@ enum tp_fixed_libc_status tp_fixed_libc_prepare(const struct tp_fixed_libc_repla
         (uintptr_t)replacements->openat,(uintptr_t)replacements->fstatat,(uintptr_t)replacements->unlinkat,
         (uintptr_t)replacements->mkdirat,(uintptr_t)replacements->renameat2,(uintptr_t)replacements->faccessat,
         (uintptr_t)replacements->readlinkat,(uintptr_t)replacements->chdir,
-        (uintptr_t)replacements->symlinkat,(uintptr_t)replacements->linkat};
+        (uintptr_t)replacements->symlinkat,(uintptr_t)replacements->linkat,
+        (uintptr_t)replacements->fchmodat};
     for (unsigned i=0;i<TP_FIXED_LIBC_ENTRIES;i++) if (!callbacks[i] || (callbacks[i]&3)) goto done;
     status = TP_FIXED_LIBC_IDENTITY;
     fixed.lease = dlopen(TP_FIXED_LIBC_PATH,RTLD_NOW|RTLD_LOCAL|RTLD_NOLOAD);

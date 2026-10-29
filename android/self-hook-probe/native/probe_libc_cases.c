@@ -19,7 +19,8 @@ void tp_probe_libc_cases(uintptr_t base,const char *logical_directory,const char
         .openat=(void *)(base+0xe0a40), .fstatat=(void *)(base+0xe0b40), .unlinkat=(void *)(base+0xe0d00),
         .mkdirat=(void *)(base+0xe0bc0), .renameat2=(void *)(base+0xe0c80), .faccessat=(void *)(base+0xe0a80),
         .readlinkat=(void *)(base+0xe0c40), .chdir=(void *)(base+0xe1040),
-        .symlinkat=(void *)(base+0xe0cc0), .linkat=(void *)(base+0xe0b80)};
+        .symlinkat=(void *)(base+0xe0cc0), .linkat=(void *)(base+0xe0b80),
+        .fchmodat=(void *)(base+0xe0ac0)};
     char file[PATH_MAX],renamed[PATH_MAX],directory[PATH_MAX],link[PATH_MAX],attempt[PATH_MAX],artifact[PATH_MAX];
     int lengths[]={snprintf(file,sizeof(file),"%s/value",logical_directory),
         snprintf(renamed,sizeof(renamed),"%s/renamed",logical_directory),
@@ -42,8 +43,8 @@ void tp_probe_libc_cases(uintptr_t base,const char *logical_directory,const char
     check(r,entry.renameat2(AT_FDCWD,file,AT_FDCWD,renamed,1)==0,"REAL_RENAMEAT2_NOREPLACE");
     errno=0;
     check(r,entry.openat(AT_FDCWD,file,O_RDONLY|O_CLOEXEC,0)==-1 && errno==ENOENT,"ORIGINAL_ENOENT");
-    int (*unmodified_fchmodat)(int,const char *,unsigned)=(void *)(base+0xe0ac0);
-    check(r,unmodified_fchmodat(AT_FDCWD,renamed,0600)==0,"UNMODIFIED_SHARED_PAGE_FUNCTION");
+    int (*unmodified_fchownat)(int,const char *,uid_t,gid_t,int)=(void *)(base+0xe0b00);
+    check(r,unmodified_fchownat(AT_FDCWD,renamed,-1,-1,0)==0,"UNMODIFIED_SHARED_PAGE_FUNCTION");
     check(r,syscall(SYS_symlinkat,"renamed",AT_FDCWD,link)==0,"OWN_SYMLINK_FIXTURE");
     char buffer[64];
     ssize_t size=entry.readlinkat(AT_FDCWD,link,buffer,sizeof(buffer));

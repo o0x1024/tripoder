@@ -11,6 +11,8 @@
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <unistd.h>
+#include <setjmp.h>
+#include <ucontext.h>
 
 /* A guest loader has its own native namespace. Its versioned libc signal
  * imports must still participate in ART's process-wide implicit-fault chain. */
@@ -44,13 +46,34 @@ static uintptr_t export_at(const char *path,uintptr_t base,const char *name){
     }
  done:munmap((void *)bytes,size);return result;
 }
+static bool safe_probe_recover(int signal,siginfo_t *info,void *context){
+    if((signal!=SIGSEGV&&signal!=SIGBUS)||!info||!context)return false;
+    ucontext_t *uc=(ucontext_t *)context;
+    uintptr_t pc=(uintptr_t)uc->uc_mcontext.pc,sp=(uintptr_t)uc->uc_mcontext.sp;
+    if((pc&3)!=0||pc<0x10000||sp<0x10000)return false;
+    const uint32_t *p=(const uint32_t *)pc;
+    /* ByteHook ARM64 safe GOT write probe:
+     *   pc - 8: 0x910003e1 (mov x1, sp)
+     *   pc - 4: 0x2a1903e0 (mov w0, w25)
+     *   pc:     0xc89ffe97 (stlr x23, [x20])
+     * ByteHook arms this probe with sigsetjmp(sp + 8, 1). On modern kernels (e.g. mseal GNU_RELRO),
+     * write fails with SEGV_ACCERR. Without our special handler recovery, Sentry intercepts the
+     * signal and aborts the process instead of letting ByteHook recover cleanly via siglongjmp. */
+    if(p[0]==0xc89ffe97&&p[-1]==0x2a1903e0&&p[-2]==0x910003e1){
+        siglongjmp((void *)(sp+8),1);
+    }
+    return false;
+}
 bool tp_signal_chain_prepare(void){
     if(atomic_load_explicit(&ready,memory_order_acquire))return true;
     const char *chain="/apex/com.android.art/lib64/libsigchain.so",*libc="/apex/com.android.runtime/lib64/bionic/libc.so";
     uintptr_t chain_base=base_of(chain),libc_base=base_of(libc);if(!chain_base||!libc_base)return false;
     for(unsigned i=0;i<sizeof(entries)/sizeof(entries[0]);i++){entries[i].original=export_at(libc,libc_base,entries[i].name);entries[i].replacement=export_at(chain,chain_base,entries[i].target);if(!entries[i].original||!entries[i].replacement)return false;}
     add_special=(void *)export_at(chain,chain_base,"AddSpecialSignalHandlerFn");if(!add_special)return false;
-    platform_base=chain_base;platform_libc=libc_base;atomic_store_explicit(&ready,true,memory_order_release);return true;
+    platform_base=chain_base;platform_libc=libc_base;atomic_store_explicit(&ready,true,memory_order_release);
+    tp_signal_chain_claim(SIGSEGV,safe_probe_recover);
+    tp_signal_chain_claim(SIGBUS,safe_probe_recover);
+    return true;
 }
 bool tp_signal_chain_platform(uintptr_t *base,uintptr_t *libc,uintptr_t *real_mask){
     if(!base||!libc||!real_mask||!atomic_load_explicit(&ready,memory_order_acquire))return false;

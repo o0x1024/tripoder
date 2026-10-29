@@ -218,6 +218,20 @@ final class RuntimePackages implements InvocationHandler {
             case "notifyDexLoad[class java.lang.String, interface java.util.Map, class java.lang.String]":RuntimePackageBridge.notifyDexLoad((String)a[0],(Map<?,?>)a[1],(String)a[2]);return null;
             case "notifyPackagesReplacedReceived[class [Ljava.lang.String;]":RuntimePackageBridge.notifyPackagesReplacedReceived((String[])a[0]);return null;
             case "getComponentEnabledSetting[class android.content.ComponentName, int]":user(a[1]);return componentEnabled((ComponentName)a[0],(Integer)a[1]);
+            case "setComponentEnabledSetting[class android.content.ComponentName, int, int, int, class java.lang.String]":
+            case "setComponentEnabledSetting[class android.content.ComponentName, int, int, int]":{
+                user(a[3]);setComponentEnabled((ComponentName)a[0],(Integer)a[1],(Integer)a[2]);return null;
+            }
+            case "setComponentEnabledSettings[interface java.util.List, int, class java.lang.String]":
+            case "setComponentEnabledSettings[interface java.util.List, int]":{
+                user(a[1]);
+                java.util.List<?> list=(java.util.List<?>)a[0];
+                if(list!=null)for(Object item:list){
+                    if(item instanceof PackageManager.ComponentEnabledSetting setting)
+                        setComponentEnabled(setting.getComponentName(),setting.getEnabledState(),setting.getEnabledFlags());
+                }
+                return null;
+            }
             case "isInstantApp[class java.lang.String, int]":user(a[1]);infrastructure((String)a[0]);return false;
             case "getPropertyAsUser[class java.lang.String, class java.lang.String, class java.lang.String, int]":user(a[3]);return null;
             case "queryProperty[class java.lang.String, int]":return null;
