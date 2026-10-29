@@ -35,7 +35,8 @@ JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ServiceTokenAccess_stopNat
     if((*env)->ExceptionCheck(env))goto done;
     jobject token=(*env)->GetObjectField(env,service,token_field);
     if((*env)->ExceptionCheck(env))goto done;
-    if(!manager||!token||!(*env)->IsInstanceOf(env,manager,manager_class)){fail(env,"SERVICE_TOKEN_PHYSICAL_STATE_MISSING");goto done;}
+    if(!manager||!token)goto done;
+    if(!(*env)->IsInstanceOf(env,manager,manager_class)){fail(env,"SERVICE_TOKEN_PHYSICAL_STATE_MISSING");goto done;}
     result=(*env)->CallBooleanMethod(env,manager,stop_method,component,token,start_id);
 done:
     (*env)->PopLocalFrame(env,NULL);return result;

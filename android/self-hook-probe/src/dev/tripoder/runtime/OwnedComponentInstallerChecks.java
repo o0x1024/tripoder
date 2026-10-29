@@ -85,7 +85,7 @@ public final class OwnedComponentInstallerChecks {
         service.onCreate();service.onDestroy();service.onRebind(null);check(!service.onUnbind(null)&&service.onStartCommand(null,7,Integer.MAX_VALUE)==Service.START_STICKY,"ORIGINAL_INHERITED_SERVICE_LIFECYCLES");
         check(service.stopSelfResult(123),"ORIGINAL_SERVICE_STOP_RESULT");service.stopSelf(9);service.stopSelf();
         check(stopped.equals(List.of(123,9,-1)),"ORIGINAL_SERVICE_TOKEN_AND_START_IDS");
-        check(ServiceTokenAccess.stop(service,new ComponentName(context,service.getClass()),124)&&stopped.equals(List.of(123,9,-1,124)),"FIXED_JNI_TOKEN_BYPASS_AFTER_MANAGED_HOOKS");
+        check(ServiceTokenAccess.stop(service,new ComponentName(context,service.getClass()),124)&&!ServiceTokenAccess.stop(new OwnedService(),new ComponentName(context,service.getClass()),125)&&stopped.equals(List.of(123,9,-1,124)),"FIXED_JNI_TOKEN_BYPASS_AFTER_MANAGED_HOOKS");
         android.util.Log.i("TripoderFixedStage","SERVICE_TOKEN_SCOPE");JSONObject serviceTokenScope=OwnedServiceTokenChecks.run();
 
         OwnedIntentService intentService=new OwnedIntentService();
