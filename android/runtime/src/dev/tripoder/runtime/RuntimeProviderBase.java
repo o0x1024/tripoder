@@ -29,6 +29,9 @@ abstract class RuntimeProviderBase extends ContentProvider {
     @Override public Uri uncanonicalize(Uri uri){throw unsupported();}
     @Override public boolean refresh(Uri uri,Bundle extras,CancellationSignal signal){throw unsupported();}
     @Override public ParcelFileDescriptor openFile(Uri uri,String mode)throws FileNotFoundException{throw unsupported();}
+    @Override public ParcelFileDescriptor openFile(Uri uri,String mode,CancellationSignal signal)throws FileNotFoundException{return openFile(uri,mode);}
     @Override public AssetFileDescriptor openAssetFile(Uri uri,String mode)throws FileNotFoundException{throw unsupported();}
+    @Override public AssetFileDescriptor openAssetFile(Uri uri,String mode,CancellationSignal signal)throws FileNotFoundException{return openAssetFile(uri,mode);}
     @Override public AssetFileDescriptor openTypedAssetFile(Uri uri,String type,Bundle opts)throws FileNotFoundException{throw unsupported();}
+    @Override public AssetFileDescriptor openTypedAssetFile(Uri uri,String type,Bundle opts,CancellationSignal signal)throws FileNotFoundException{return openTypedAssetFile(uri,type,opts);}
 }

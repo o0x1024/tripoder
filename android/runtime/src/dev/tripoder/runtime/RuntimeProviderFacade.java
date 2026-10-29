@@ -2,9 +2,11 @@ package dev.tripoder.runtime;
 
 import android.content.*;
 import android.content.pm.ProviderInfo;
+import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.*;
+import java.io.FileNotFoundException;
 import java.util.*;
 
 /** One logical acquisition owns exactly one real Android stable/unstable client reference. */
@@ -139,6 +141,21 @@ public final class RuntimeProviderFacade extends RuntimeProviderBase implements 
     @Override public ContentProviderResult[] applyBatch(ArrayList<ContentProviderOperation> operations){return applyBatch(reference.getString("authority"),operations);}
     @Override public Bundle call(String authority,String method,String arg,Bundle extras){if(!reference.getString("authority").equals(authority))throw new SecurityException("PROVIDER_AUTHORITY_MISMATCH");if(method==null||method.isEmpty()||method.length()>200||arg!=null&&arg.length()>8192)throw new IllegalArgumentException("PROVIDER_CALL_INVALID");Bundle payload=new Bundle();payload.putString("method",method);payload.putString("arg",arg);payload.putBundle("extras",primitive(extras));try{return (Bundle)invoke("call",Uri.parse("content://"+authority),payload,null);}catch(RuntimeException e){throw e;}catch(Exception e){throw new IllegalStateException("PROVIDER_CALL_FAILED",e);}}
     @Override public Bundle call(String method,String arg,Bundle extras){return call(reference.getString("authority"),method,arg,extras);}
+    @Override public ParcelFileDescriptor openFile(Uri uri,String mode,CancellationSignal signal)throws FileNotFoundException{
+        try{return client.openFile(uri,mode,signal);}
+        catch(RemoteException e){throw new IllegalStateException("PROVIDER_OPEN_FILE_FAILED",e);}
+    }
+    @Override public ParcelFileDescriptor openFile(Uri uri,String mode)throws FileNotFoundException{return openFile(uri,mode,null);}
+    @Override public AssetFileDescriptor openAssetFile(Uri uri,String mode,CancellationSignal signal)throws FileNotFoundException{
+        try{return client.openAssetFile(uri,mode,signal);}
+        catch(RemoteException e){throw new IllegalStateException("PROVIDER_OPEN_ASSET_FILE_FAILED",e);}
+    }
+    @Override public AssetFileDescriptor openAssetFile(Uri uri,String mode)throws FileNotFoundException{return openAssetFile(uri,mode,null);}
+    @Override public AssetFileDescriptor openTypedAssetFile(Uri uri,String type,Bundle opts,CancellationSignal signal)throws FileNotFoundException{
+        try{return client.openTypedAssetFileDescriptor(uri,type,opts,signal);}
+        catch(RemoteException e){throw new IllegalStateException("PROVIDER_OPEN_TYPED_ASSET_FILE_FAILED",e);}
+    }
+    @Override public AssetFileDescriptor openTypedAssetFile(Uri uri,String type,Bundle opts)throws FileNotFoundException{return openTypedAssetFile(uri,type,opts,null);}
     private Cursor retain(Cursor cursor){
         if(cursor==null)return null;synchronized(this){uses++;}
         return new android.database.CursorWrapper(cursor){private final java.util.concurrent.atomic.AtomicBoolean closing=new java.util.concurrent.atomic.AtomicBoolean();

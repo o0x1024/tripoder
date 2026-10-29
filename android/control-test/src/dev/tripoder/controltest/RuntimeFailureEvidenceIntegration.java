@@ -15,6 +15,6 @@ public final class RuntimeFailureEvidenceIntegration extends ControlTestBase {
     private static void scan(File file,int depth,int[] visited,List<File> files){
         if(depth>8||++visited[0]>12000||Files.isSymbolicLink(file.toPath()))return;
         if(file.isDirectory()){if(file.getName().equals("code"))return;File[] children=file.listFiles();if(children!=null)for(File child:children)scan(child,depth+1,visited,files);}
-        else if((file.getName().endsWith(".xcrash")&&!file.getName().endsWith(".clean.xcrash"))||file.getName().startsWith("tombstone")||file.getName().endsWith(".trace"))files.add(file);
+        else if((file.getName().endsWith(".xcrash")&&!file.getName().endsWith(".clean.xcrash"))||file.getName().startsWith("tombstone")||file.getName().endsWith(".trace")||file.getName().startsWith("S_")||file.getName().startsWith("A_")||file.getPath().contains("sentry"))files.add(file);
     }
 }

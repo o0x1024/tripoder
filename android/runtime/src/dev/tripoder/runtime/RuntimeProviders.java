@@ -2,10 +2,12 @@ package dev.tripoder.runtime;
 
 import android.content.*;
 import android.content.pm.*;
+import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
 import android.database.CursorWrapper;
 import android.net.Uri;
 import android.os.*;
+import java.io.FileNotFoundException;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -395,5 +397,68 @@ final class RuntimeProviders {
             }
         }
         @Override public Bundle call(String method,String arg,Bundle extras){throw new SecurityException("PROVIDER_AUTHORITY_REQUIRED");}
+        @Override public ParcelFileDescriptor openFile(Uri uri,String mode)throws FileNotFoundException{
+            return openFile(uri,mode,null);
+        }
+        @Override public ParcelFileDescriptor openFile(Uri uri,String mode,CancellationSignal signal)throws FileNotFoundException{
+            if(settings(uri))return engine.settingsProvider().openFile(uri,mode,signal);
+            String auth=logical(uri);
+            ContentProvider local=findLocal(auth);
+            if(local!=null){
+                try(RuntimeProviderIdentity.Scope scope=RuntimeProviderIdentity.enter(local,localCaller())){
+                    return local.openFile(uri,mode,signal);
+                }
+            }
+            RuntimeProviderFacade facade=getFacade(auth,allowExternalPassthrough(auth)?null:"Unknown URI "+uri);
+            if(facade==null)return engine.host.getContentResolver().openFileDescriptor(uri,mode,signal);
+            try{
+                return facade.openFile(uri,mode,signal);
+            }catch(RuntimeException error){
+                if(facade.isClosed()||error.getCause() instanceof DeadObjectException)invalidate(auth,facade);
+                throw error;
+            }
+        }
+        @Override public AssetFileDescriptor openAssetFile(Uri uri,String mode)throws FileNotFoundException{
+            return openAssetFile(uri,mode,null);
+        }
+        @Override public AssetFileDescriptor openAssetFile(Uri uri,String mode,CancellationSignal signal)throws FileNotFoundException{
+            if(settings(uri))return engine.settingsProvider().openAssetFile(uri,mode,signal);
+            String auth=logical(uri);
+            ContentProvider local=findLocal(auth);
+            if(local!=null){
+                try(RuntimeProviderIdentity.Scope scope=RuntimeProviderIdentity.enter(local,localCaller())){
+                    return local.openAssetFile(uri,mode,signal);
+                }
+            }
+            RuntimeProviderFacade facade=getFacade(auth,allowExternalPassthrough(auth)?null:"Unknown URI "+uri);
+            if(facade==null)return engine.host.getContentResolver().openAssetFileDescriptor(uri,mode,signal);
+            try{
+                return facade.openAssetFile(uri,mode,signal);
+            }catch(RuntimeException error){
+                if(facade.isClosed()||error.getCause() instanceof DeadObjectException)invalidate(auth,facade);
+                throw error;
+            }
+        }
+        @Override public AssetFileDescriptor openTypedAssetFile(Uri uri,String type,Bundle opts)throws FileNotFoundException{
+            return openTypedAssetFile(uri,type,opts,null);
+        }
+        @Override public AssetFileDescriptor openTypedAssetFile(Uri uri,String type,Bundle opts,CancellationSignal signal)throws FileNotFoundException{
+            if(settings(uri))return engine.settingsProvider().openTypedAssetFile(uri,type,opts,signal);
+            String auth=logical(uri);
+            ContentProvider local=findLocal(auth);
+            if(local!=null){
+                try(RuntimeProviderIdentity.Scope scope=RuntimeProviderIdentity.enter(local,localCaller())){
+                    return local.openTypedAssetFile(uri,type,opts,signal);
+                }
+            }
+            RuntimeProviderFacade facade=getFacade(auth,allowExternalPassthrough(auth)?null:"Unknown URI "+uri);
+            if(facade==null)return engine.host.getContentResolver().openTypedAssetFileDescriptor(uri,type,opts,signal);
+            try{
+                return facade.openTypedAssetFile(uri,type,opts,signal);
+            }catch(RuntimeException error){
+                if(facade.isClosed()||error.getCause() instanceof DeadObjectException)invalidate(auth,facade);
+                throw error;
+            }
+        }
     }
 }

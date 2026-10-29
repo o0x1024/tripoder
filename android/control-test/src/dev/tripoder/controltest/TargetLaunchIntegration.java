@@ -160,6 +160,7 @@ public final class TargetLaunchIntegration extends ControlTestBase {
         }
         if("true".equals(args.getString("nativeHook")))new TargetNativeHookChecks(this,session,record,prepared.getString("generation"),wechat).run();
         if("true".equals(args.getString("managedJniHook")))new TargetNativeHookChecks(this,session,record,prepared.getString("generation"),wechat).managedJni();
+        if("true".equals(args.getString("networkChecks")))new TargetNetworkChecks(this,session,record,prepared.getString("generation"),pkg,args.getString("networkModule")).run();
         android.graphics.Bitmap screenshot=getUiAutomation().takeScreenshot();
         if(screenshot==null){
             // No screenshot is acceptable only when the application itself forbids it; anything else is still a failure.
