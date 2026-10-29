@@ -47,15 +47,14 @@
 ### 2.3 受限 TypeScript (`RestrictedAst`) 语法与内置标准库过于受限 **[已关闭：Phase 1.5 `Hex` / `Base64` / `JSON` / `ctx.state`]**
 - **已落地**：在 [`src/plan.ts`](../src/plan.ts)、[`DraftCompiler`](../android/runtime/src/dev/tripoder/runtime/script/DraftCompiler.java) 与 [`HookInvocationSession`](../android/runtime/src/dev/tripoder/runtime/script/HookInvocationSession.java) 中补齐 `Hex`、`Base64`、`JSON` 编解码与有界会话级键值字典 `ctx.state`（`get`/`set`/`delete`/`clear`/`keys`，上限 64 键 × 4096 字节），支持跨回调/跨方法上下文关联。
 
-### 2.4 单进程 Hook 会话独占互斥 & 32 个 Selector 上限
-- **现状**：[`SelfHookControl`](../android/runtime/src/dev/tripoder/runtime/script/SelfHookControl.java) 限制单进程同一时间只能激活 **1 个** Hook 会话，且与被动网络抓包互斥（开启 `network_control(action=start)` 会报 `NETWORK_CAPTURE_OWNS_HOOK` 阻塞一切用户 Hook）；单次最多注册 **32 个** Selector，事件环仅 256 条。
-- **缺失**：无法同时运行“网络抓包 + 业务逻辑加解密 Hook + 隐私/恶意行为监控”，且 32 个 Selector 远不足以覆盖隐私合规（80–150+ API）或批量插桩需求。
+### 2.4 单进程 Hook 会话独占互斥 & 32 个 Selector 上限 **[已关闭：Phase 2 多轨道正交解耦与 128 Selector 扩容]**
+- **已落地**：
+  1. [`SelfHookControl`](../android/runtime/src/dev/tripoder/runtime/script/SelfHookControl.java) 与 [`NetworkCaptureControl`](../android/runtime/src/dev/tripoder/runtime/script/NetworkCaptureControl.java) 拆分为被动网络抓包、用户自定义脚本和内置探针三条正交独立轨道。被动抓包拥有专属的内部 Hook 会话，不再挤占用户 Hook 槽位，彻底消除 `NETWORK_CAPTURE_OWNS_HOOK` 与 `HOOK_CONTEXT_IN_USE`。
+  2. 将单会话 Selector 上限由 32 扩容至 128，单次可覆盖大型合规检测与批量逆向分析场景。
 
-### 2.5 Native Hook 缺少 `before` 阶段缓冲区读取、任意偏移 Hook 与 C 字符串读取
-- **现状**：[`NativeBufferScope`](../android/runtime/src/dev/tripoder/runtime/script/NativeBufferScope.java) 规定 `ctx.native.captureBuffer` 只能在 `after` 阶段调用、要求原函数返回值为有符号字节数，且单次最多读取 1024 字节；[`SelfHookControl`](../android/runtime/src/dev/tripoder/runtime/script/SelfHookControl.java) 仅支持已导出 ELF 符号（`native_exports`）。
-- **缺失**：
-  - 无法在 `before` 阶段读取入参指针缓冲区（如 `SSL_write` 或 `EVP_EncryptUpdate` 执行前的输入缓冲区、或以 `\0` 结尾的 `const char*` 字符串参数）。
-  - 无法按 `moduleName + offset` Hook 去符号表（stripped）商业 `.so` 中的内部未导出函数（`sub_xxxx`）。
+### 2.5 Native Hook `before` 阶段缓冲区读取、C 字符串读取与任意偏移 Hook **[已关闭核心：Phase 3 `before` `captureBuffer` & `readCString`]**
+- **已落地**：[`NativeBufferScope`](../android/runtime/src/dev/tripoder/runtime/script/NativeBufferScope.java)、[`DraftCompiler`](../android/runtime/src/dev/tripoder/runtime/script/DraftCompiler.java) 与 [`src/plan.ts`](../src/plan.ts) 已支持在 `before` 与 `after` 阶段调用 `ctx.native.captureBuffer`（支持按显式长度参数读取输入指针缓冲区，上限扩容至 4096 字节）及 `ctx.native.readCString(addressArgIndex, maxBytes)` 读取以 `\0` 结尾的 C 字符串。
+- **剩余待补**：按 `moduleName + offset` Hook 去符号表（stripped）商业 `.so` 中的内部未导出函数（`sub_xxxx`）。
 
 ---
 

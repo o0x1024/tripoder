@@ -12,11 +12,11 @@
    - [`RuntimeExecutionCode`](../android/runtime/src/dev/tripoder/runtime/RuntimeExecutionCode.java) 在安装数据代次内建立物理执行副本。
    - [`RuntimeSharedLibraries`](../android/runtime/src/dev/tripoder/runtime/RuntimeSharedLibraries.java) 与 [`RuntimeDexLoader.createForGuest`](../android/runtime/src/dev/tripoder/runtime/RuntimeDexLoader.java) 使用物理提取目录 `info.nativeLibraryDir` 建立客体 `PathClassLoader` 的真实 linker namespace 搜索路径，确保 `System.loadLibrary` / `dlopen` 100% 命中真实 `.so`；同时在 `applicationInfo.nativeLibraryDir` 保留供客体自检的逻辑路径视图。
 2. **激活 Native 基础路径重定向 (`fixed_libc` + `path_policy`)**：
-   - [`RuntimeSelfHookStorage.install()`](../android/runtime/src/dev/tripoder/runtime/RuntimeSelfHookStorage.java) 激活 `libc.so` 10 个核心路径入口的 `path_policy` 重定向，将 `/data/data/<guestPkg>`、`/data/user/0/<guestPkg>`、`/data/user_de/0/<guestPkg>` 映射至该 Space 与 `dataId` 专属沙箱目录（默认 0 `seccomp` 过滤器）。
+   - [`RuntimeSelfHookStorage.install()`](../android/runtime/src/dev/tripoder/runtime/RuntimeSelfHookStorage.java) 激活 `libc.so` 11 个核心路径入口（含 `__fchmodat`）的 `path_policy` 重定向，将 `/data/data/<guestPkg>`、`/data/user/0/<guestPkg>`、`/data/user_de/0/<guestPkg>` 映射至该 Space 与 `dataId` 专属沙箱目录（默认 0 `seccomp` 过滤器），并通过 `memfd_create` + `tp_unresolve` 提供通用 `/proc/self/maps` 虚拟化。
 3. **构造逻辑 `LoadedApk`、`GuestContext` 与裸 `ContextImpl` 收口**：
    - 构造关联 Guest APK/Splits、资源（`AssetManager` / `Resources`）与 `PathClassLoader` 的逻辑 `LoadedApk`。
    - 保留 `ApplicationInfo.metaData`、`sourceDir`、`dataDir`、`signingInfo` 等完整清单属性。
-   - 将底层裸 `ContextImpl` 的 7 个外部存储目录入口收口至同一 [`GuestStorageContext`](../android/runtime/src/dev/tripoder/runtime/GuestStorageContext.java)，确保即使客体、壳或 WebView 通过 `getBaseContext()` 拆包调用也不会触发宿主/客体包名失配的 `SecurityException`。
+   - 将底层裸 `ContextImpl` 的外部存储目录入口收口至同一 [`GuestStorageContext`](../android/runtime/src/dev/tripoder/runtime/GuestStorageContext.java)：`getDataDir()` 返回虚拟路径 `/data/user/0/<pkg>`，而 `getDir()`、`getFilesDir()`、`getCacheDir()`、`getCodeCacheDir()` 返回物理路径 `storage.dir(...)`，兼顾安全 SDK 路径校验与 `linker64` 直接系统调用 `dlopen` 兼容性。
 4. **启动顺序与壳委托（Shell Delegate）兼容**：
    - 严格按顺序执行：建立真实进程名 (`RuntimeProcessIdentity.establish`) ──► 按需激活 `startupHook`（若显式配置） ──► `AppComponentFactory.instantiateClassLoader / instantiateApplication` ──► `Application.attachBaseContext(guestContext)` ──► 安装当前进程匹配的 `ContentProvider` ──► `Application.onCreate()`。
    - 若加壳应用在 `attachBaseContext` 中已将真实代理 `Application` 写入 `ActivityThread.mInitialApplication`，`RuntimeEngine` 保留该客体委托实例而不覆盖，防止壳在 `onCreate` 转发时自调用死循环。

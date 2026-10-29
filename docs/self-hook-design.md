@@ -11,7 +11,7 @@
 ```mermaid
 flowchart TD
     subgraph DefaultBase["第一层：最小底座默认装配 (启动期一次性完成，零运行期重发布)"]
-        FixedLibc["fixed_libc 双页事务\n(libc.so 10 个核心路径入口 + path_policy)"]
+        FixedLibc["fixed_libc 双页事务\n(libc.so 11 个核心路径入口 + path_policy)"]
         SkeletonART["ART 最小骨架固定绑定 (~220-264 项)\n(一次批量发布 + 100% 保留 JIT + 0 次运行期 toggleBatchNative)"]
     end
 
@@ -71,9 +71,10 @@ flowchart TD
 
 ## 4. 固定 `libc` 双页导出包装器 ([`fixed_libc.c`](../android/self-hook/native/fixed_libc.c))
 
-`self-hook` 在进程启动期通过一次双页事务接管 `libc.so` 的 **10 个核心路径入口函数**：
+`self-hook` 在进程启动期通过一次双页事务接管 `libc.so` 的 **11 个核心路径入口函数**：
 
-- `openat`、`fstatat`、`unlinkat`、`mkdirat`、`renameat2`、`faccessat`、`readlinkat`、`chdir`、`symlinkat`、`linkat`（见 [`self_hook_storage.c`](../android/runtime/native/self_hook_storage.c#L78)）。
+- `openat`、`fstatat`、`unlinkat`、`mkdirat`、`renameat2`、`faccessat`、`readlinkat`、`chdir`、`symlinkat`、`linkat`、`__fchmodat`（见 [`self_hook_storage.c`](../android/runtime/native/self_hook_storage.c#L78) 与 [`libc_fixed_contract.h`](../android/self-hook/native/libc_fixed_contract.h)）。
+- 其中 `__fchmodat` 确保客体动态插件框架（如支付宝 Quinox）调用 `File.setReadOnly()` / `chmod(0444)` 时能正确重定向至真实沙箱路径，满足 Android 14+ ART W^X 动态 DEX 不可写校验。
 
 包装器带线程局部重入保护（TLS Reentrancy Guard），查询当前进程的 [`path_policy.c`](../android/runtime/native/path_policy.c)：
 - 命中客体私有数据目录或 `/proc/self/*` 规则时，执行路径重定向或视图过滤；

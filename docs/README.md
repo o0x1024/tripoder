@@ -13,9 +13,9 @@
 | [single-runtime.md](single-runtime.md) | **单运行时与最小底座收敛规约**：废除 THIN/THICK 双模式，启动期移除 12 个 Manager 家族的 1,700+ 项固定 Hook 与默认 Seccomp，收敛至 ~220–264 项最小容器骨架绑定、保留 ART JIT 的执行规则与验证入口。 |
 | [execution-contract.md](execution-contract.md) | **控制面与执行面状态机契约**：APK 安装状态机（`staging -> published -> committed`）、进程槽位与 `ProcessSession`、四大组件租约（Lease）、幂等异步操作（`Operation`）、一次性回调令牌（`CallbackCapability`）及退出排空围栏（`ShutdownFence`）。 |
 | [runtime-design.md](runtime-design.md) | **Runtime 虚拟化核心设计**：真实 linker 搜索路径与 `LoadedApk`/`Application` 引导、四大组件路由、`RuntimeReceiverProxy` 显式代理、`RuntimeGuestPayload` 延迟解包、存储隔离（`dataDir <= 109B` 契约）及 `/proc/self/*` 隐身机制。 |
-| [self-hook-design.md](self-hook-design.md) | **Self-Hook 与脚本引擎设计**：ART Java Hook（最小底座一次发布保留 JIT vs. 按需业务 Hook 局部反优化、GC Root 读屏障、栈归属隐藏）、ARM64 Native Hook（指令重定位、有界线程停顿、W^X `mremap` 原子发布）、`fixed_libc` 双页 10 入口包装器及 `RestrictedAst` 编译器。 |
+| [self-hook-design.md](self-hook-design.md) | **Self-Hook 与脚本引擎设计**：ART Java Hook（最小底座一次发布保留 JIT vs. 按需业务 Hook 局部反优化、GC Root 读屏障、栈归属隐藏）、ARM64 Native Hook（指令重定位、有界线程停顿、W^X `mremap` 原子发布）、`fixed_libc` 双页 11 入口包装器（含 `__fchmodat`）及 `RestrictedAst` 编译器。 |
 | [runtime-crash-recovery.md](runtime-crash-recovery.md) | **引擎崩溃后的有界恢复门禁**：独立 `:recovery` 进程、恢复预算与 `UNKNOWN` 范围门禁。 |
-| [guest-compatibility.md](guest-compatibility.md) | **Guest 兼容性分层与真机基线**：L1–L13 兼容性契约矩阵（区分底座默认闭环层 vs. Opt-in 扩展层 vs. 免 Root 物理硬边界）及六大重度商业应用（招行、淘宝、腾讯视频、拼多多、芒果 TV、网易云音乐）真机实测基线。 |
+| [guest-compatibility.md](guest-compatibility.md) | **Guest 兼容性分层与真机基线**：L1–L13 兼容性契约矩阵、核心商业应用真实登录与业务闭环（支付宝、淘宝、微博、京东、美团、美团外卖、招行、拼多多、腾讯视频、芒果 TV）及 27 款主流第三方应用真机大盘基线（实际可用率 81.5%）。 |
 
 ---
 
