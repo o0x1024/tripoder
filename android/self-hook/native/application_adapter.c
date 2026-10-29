@@ -1,7 +1,15 @@
 #include "art_reflection_view.h"
 #include "physical_application.h"
+#include <dlfcn.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <pthread.h>
+#include <stdarg.h>
 #include <stdatomic.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 enum { HOST,GUEST,INFO,LOADER,OWNER,FACTORY,RESOURCES,THREAD,PHYSICAL,LOGICAL,CONTEXT,DECLARED,PREPARED_FACTORY,ROOTS };
@@ -373,4 +381,306 @@ JNIEXPORT jstring JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_reportNa
         view.ready?"true":"false",view.enabled?"true":"false",view.transitions,view.retained_roots,
         (unsigned long long)view.mapped_gets,(unsigned long long)view.mapped_sets,(unsigned long long)view.denials,(unsigned long long)view.metadata_decodes);
     return (*env)->NewStringUTF(env,text);
+}
+struct scout_worker_ctx {
+    JavaVM *vm;
+    bool success;
+};
+
+static void *scout_neutralize_worker(void *arg) {
+    struct scout_worker_ctx *ctx = (struct scout_worker_ctx *)arg;
+    JavaVM *vm = ctx->vm;
+    JNIEnv *env = NULL;
+    if ((*vm)->AttachCurrentThread(vm, &env, NULL) != JNI_OK || !env) {
+        return NULL;
+    }
+
+    // 1. Lift HiddenAPI restrictions globally for the entire process.
+    // In this native pthread, there are NO managed Java stack frames (visitor.caller == nullptr).
+    // ART evaluates AccessContext(is_trusted=true) and grants full access to VMRuntime.setHiddenApiExemptions.
+    jclass vm_runtime_class = (*env)->FindClass(env, "dalvik/system/VMRuntime");
+    if (vm_runtime_class) {
+        jmethodID get_runtime = (*env)->GetStaticMethodID(env, vm_runtime_class, "getRuntime", "()Ldalvik/system/VMRuntime;");
+        if (get_runtime) {
+            jobject vm_runtime = (*env)->CallStaticObjectMethod(env, vm_runtime_class, get_runtime);
+            if (vm_runtime) {
+                jmethodID set_exemptions = (*env)->GetMethodID(env, vm_runtime_class, "setHiddenApiExemptions", "([Ljava/lang/String;)V");
+                if (set_exemptions) {
+                    jclass str_class = (*env)->FindClass(env, "java/lang/String");
+                    if (str_class) {
+                        jstring prefix = (*env)->NewStringUTF(env, "L");
+                        jobjectArray array = (*env)->NewObjectArray(env, 1, str_class, prefix);
+                        if (array) {
+                            (*env)->CallVoidMethod(env, vm_runtime, set_exemptions, array);
+                            if (!(*env)->ExceptionCheck(env)) {
+                                ctx->success = true;
+                            } else {
+                                (*env)->ExceptionClear(env);
+                            }
+                            (*env)->DeleteLocalRef(env, array);
+                        }
+                        if (prefix) (*env)->DeleteLocalRef(env, prefix);
+                        (*env)->DeleteLocalRef(env, str_class);
+                    }
+                }
+                if ((*env)->ExceptionCheck(env)) (*env)->ExceptionClear(env);
+                (*env)->DeleteLocalRef(env, vm_runtime);
+            }
+        }
+        if ((*env)->ExceptionCheck(env)) (*env)->ExceptionClear(env);
+        (*env)->DeleteLocalRef(env, vm_runtime_class);
+    }
+
+    // 2. Neutralize HyperOS Scout Watchdog
+    jclass delegate_class = (*env)->FindClass(env, "miui/mqsas/sdk/MQSEventManagerDelegate");
+    if (delegate_class) {
+        jmethodID get_instance = (*env)->GetStaticMethodID(env, delegate_class, "getInstance", "()Lmiui/mqsas/sdk/MQSEventManagerDelegate;");
+        if (get_instance) {
+            jobject delegate = (*env)->CallStaticObjectMethod(env, delegate_class, get_instance);
+            if (delegate) {
+                jmethodID unregister = (*env)->GetMethodID(env, delegate_class, "unregisterApplicationScoutThread", "(I)V");
+                if (unregister) {
+                    (*env)->CallVoidMethod(env, delegate, unregister, (jint)getpid());
+                }
+                if ((*env)->ExceptionCheck(env)) (*env)->ExceptionClear(env);
+                (*env)->DeleteLocalRef(env, delegate);
+            }
+        }
+        if ((*env)->ExceptionCheck(env)) (*env)->ExceptionClear(env);
+        (*env)->DeleteLocalRef(env, delegate_class);
+    }
+    jclass scout_utils = (*env)->FindClass(env, "miui/mqsas/scout/ScoutUtils");
+    if (scout_utils) {
+        jfieldID enabled_scout = (*env)->GetStaticFieldID(env, scout_utils, "ENABLED_SCOUT", "Z");
+        if (enabled_scout) {
+            (*env)->SetStaticBooleanField(env, scout_utils, enabled_scout, JNI_FALSE);
+        }
+        if ((*env)->ExceptionCheck(env)) (*env)->ExceptionClear(env);
+        (*env)->DeleteLocalRef(env, scout_utils);
+    }
+    jclass ati = (*env)->FindClass(env, "android/app/ActivityThreadImpl");
+    if (ati) {
+        jfieldID s_disable = (*env)->GetStaticFieldID(env, ati, "sDisablePackage", "Z");
+        if (s_disable) {
+            (*env)->SetStaticBooleanField(env, ati, s_disable, JNI_TRUE);
+        }
+        if ((*env)->ExceptionCheck(env)) (*env)->ExceptionClear(env);
+        jfieldID sm_field = (*env)->GetStaticFieldID(env, ati, "mAppScoutStateMachine", "Landroid/app/AppScoutStateMachine;");
+        if (sm_field) {
+            jobject sm = (*env)->GetStaticObjectField(env, ati, sm_field);
+            if (sm) {
+                jclass sm_class = (*env)->GetObjectClass(env, sm);
+                if (sm_class) {
+                    jmethodID quit_now = (*env)->GetMethodID(env, sm_class, "quitNow", "()V");
+                    if (quit_now) {
+                        (*env)->CallVoidMethod(env, sm, quit_now);
+                    } else {
+                        if ((*env)->ExceptionCheck(env)) (*env)->ExceptionClear(env);
+                        jmethodID quit = (*env)->GetMethodID(env, sm_class, "quit", "()V");
+                        if (quit) (*env)->CallVoidMethod(env, sm, quit);
+                    }
+                    if ((*env)->ExceptionCheck(env)) (*env)->ExceptionClear(env);
+                    (*env)->DeleteLocalRef(env, sm_class);
+                }
+                (*env)->SetStaticObjectField(env, ati, sm_field, NULL);
+                (*env)->DeleteLocalRef(env, sm);
+            }
+        }
+        if ((*env)->ExceptionCheck(env)) (*env)->ExceptionClear(env);
+        jfieldID st_field = (*env)->GetStaticFieldID(env, ati, "mAppScoutThread", "Landroid/app/ActivityThreadImpl$AppScoutThread;");
+        if (st_field) {
+            (*env)->SetStaticObjectField(env, ati, st_field, NULL);
+        }
+        if ((*env)->ExceptionCheck(env)) (*env)->ExceptionClear(env);
+        (*env)->DeleteLocalRef(env, ati);
+    }
+
+    (*vm)->DetachCurrentThread(vm);
+    return NULL;
+}
+
+JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_neutralizeScoutNative(JNIEnv *env,jclass unused){
+    (void)unused;
+    JavaVM *vm = NULL;
+    if ((*env)->GetJavaVM(env, &vm) != JNI_OK || !vm) {
+        return JNI_FALSE;
+    }
+    struct scout_worker_ctx ctx = {.vm = vm, .success = false};
+    pthread_t thread;
+    if (pthread_create(&thread, NULL, scout_neutralize_worker, &ctx) != 0) {
+        return JNI_FALSE;
+    }
+    pthread_join(thread, NULL);
+    return ctx.success ? JNI_TRUE : JNI_FALSE;
+}
+
+static void cso_log(const char *fmt, ...) {
+    static int (*log_fn)(int, const char*, const char*, ...) = NULL;
+    if (!log_fn) {
+        void *h = dlopen("liblog.so", RTLD_NOW);
+        if (h) log_fn = dlsym(h, "__android_log_print");
+    }
+    if (log_fn) {
+        va_list ap;
+        va_start(ap, fmt);
+        char buf[512];
+        vsnprintf(buf, sizeof(buf), fmt, ap);
+        va_end(ap);
+        log_fn(4, "TripoderCSO", "%s", buf);
+    }
+}
+
+JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_decompressCsoNative(
+    JNIEnv *env, jclass unused, jstring src_path, jstring dst_path, jstring zstd_lib_path) {
+    (void)unused;
+    if (!src_path || !dst_path) return JNI_FALSE;
+    const char *src_str = (*env)->GetStringUTFChars(env, src_path, NULL);
+    const char *dst_str = (*env)->GetStringUTFChars(env, dst_path, NULL);
+    const char *zstd_str = zstd_lib_path ? (*env)->GetStringUTFChars(env, zstd_lib_path, NULL) : NULL;
+
+    bool success = false;
+    void *zstd = NULL;
+    if (zstd_str && zstd_str[0]) {
+        zstd = dlopen(zstd_str, RTLD_NOW);
+    }
+    if (!zstd) zstd = dlopen("libzstd.so", RTLD_NOW);
+    if (!zstd) zstd = dlopen("libwechatzstd.so", RTLD_NOW);
+    if (!zstd) {
+        cso_log("decompressCsoNative: failed to dlopen zstd");
+        goto cleanup_strings;
+    }
+
+    size_t (*fn_decompress)(void*, size_t, const void*, size_t) = (size_t (*)(void*, size_t, const void*, size_t))dlsym(zstd, "ZSTD_decompress");
+    unsigned long long (*fn_get_size)(const void*, size_t) = (unsigned long long (*)(const void*, size_t))dlsym(zstd, "ZSTD_getFrameContentSize");
+    unsigned (*fn_is_error)(size_t) = (unsigned (*)(size_t))dlsym(zstd, "ZSTD_isError");
+
+    if (!fn_decompress || !fn_get_size) {
+        cso_log("decompressCsoNative: missing ZSTD symbols in library");
+        dlclose(zstd);
+        goto cleanup_strings;
+    }
+
+    int in_fd = open(src_str, O_RDONLY);
+    if (in_fd < 0) {
+        cso_log("decompressCsoNative: failed to open src %s: %s", src_str, strerror(errno));
+        dlclose(zstd);
+        goto cleanup_strings;
+    }
+
+    off_t in_size = lseek(in_fd, 0, SEEK_END);
+    lseek(in_fd, 0, SEEK_SET);
+
+    if (in_size <= 16) {
+        cso_log("decompressCsoNative: src file too small (%ld bytes)", (long)in_size);
+        close(in_fd);
+        dlclose(zstd);
+        goto cleanup_strings;
+    }
+
+    // Skip 16-byte CSOP header
+    size_t comp_size = (size_t)(in_size - 16);
+    void *comp_buf = malloc(comp_size);
+    if (!comp_buf) {
+        cso_log("decompressCsoNative: failed to malloc comp_buf %zu", comp_size);
+        close(in_fd);
+        dlclose(zstd);
+        goto cleanup_strings;
+    }
+
+    lseek(in_fd, 16, SEEK_SET);
+    size_t read_bytes = 0;
+    while (read_bytes < comp_size) {
+        ssize_t n = read(in_fd, (char*)comp_buf + read_bytes, comp_size - read_bytes);
+        if (n <= 0) break;
+        read_bytes += (size_t)n;
+    }
+    close(in_fd);
+
+    if (read_bytes != comp_size) {
+        cso_log("decompressCsoNative: read error (%zu != %zu)", read_bytes, comp_size);
+        free(comp_buf);
+        dlclose(zstd);
+        goto cleanup_strings;
+    }
+
+    unsigned long long raw_decomp_size = fn_get_size(comp_buf, comp_size);
+    if (raw_decomp_size == (unsigned long long)-1 || raw_decomp_size == (unsigned long long)-2 || raw_decomp_size > 256*1024*1024) {
+        cso_log("decompressCsoNative: invalid decompressed size %llu", raw_decomp_size);
+        free(comp_buf);
+        dlclose(zstd);
+        goto cleanup_strings;
+    }
+
+    size_t decomp_size = (size_t)raw_decomp_size;
+    void *decomp_buf = malloc(decomp_size);
+    if (!decomp_buf) {
+        cso_log("decompressCsoNative: failed to malloc decomp_buf %zu", decomp_size);
+        free(comp_buf);
+        dlclose(zstd);
+        goto cleanup_strings;
+    }
+
+    size_t res = fn_decompress(decomp_buf, decomp_size, comp_buf, comp_size);
+    free(comp_buf);
+
+    if (fn_is_error && fn_is_error(res)) {
+        cso_log("decompressCsoNative: ZSTD_decompress error code %zu", res);
+        free(decomp_buf);
+        dlclose(zstd);
+        goto cleanup_strings;
+    }
+
+    // Ensure directory is writable and existing destination is writable
+    char dir_path[1024];
+    snprintf(dir_path, sizeof(dir_path), "%s", dst_str);
+    char *slash = strrchr(dir_path, '/');
+    if (slash) {
+        *slash = '\0';
+        chmod(dir_path, 0755);
+    }
+    chmod(dst_str, 0755);
+
+    // Write to dst_str (with temp file and atomic rename)
+    char tmp_path[1024];
+    snprintf(tmp_path, sizeof(tmp_path), "%s.tmp.%d", dst_str, getpid());
+    unlink(tmp_path);
+    int out_fd = open(tmp_path, O_WRONLY | O_CREAT | O_TRUNC, 0755);
+    if (out_fd < 0) {
+        cso_log("decompressCsoNative: failed to open dst tmp %s: %s", tmp_path, strerror(errno));
+        free(decomp_buf);
+        dlclose(zstd);
+        goto cleanup_strings;
+    }
+
+    size_t written = 0;
+    while (written < decomp_size) {
+        ssize_t n = write(out_fd, (char*)decomp_buf + written, decomp_size - written);
+        if (n <= 0) break;
+        written += (size_t)n;
+    }
+    fsync(out_fd);
+    close(out_fd);
+    free(decomp_buf);
+    dlclose(zstd);
+
+    if (written == decomp_size) {
+        unlink(dst_str);
+        if (rename(tmp_path, dst_str) == 0) {
+            chmod(dst_str, 0755);
+            cso_log("decompressCsoNative: successfully decompressed %s -> %s (%zu bytes)", src_str, dst_str, decomp_size);
+            success = true;
+        } else {
+            cso_log("decompressCsoNative: failed to rename %s to %s: %s", tmp_path, dst_str, strerror(errno));
+            unlink(tmp_path);
+        }
+    } else {
+        cso_log("decompressCsoNative: write incomplete (%zu of %zu)", written, decomp_size);
+        unlink(tmp_path);
+    }
+
+cleanup_strings:
+    (*env)->ReleaseStringUTFChars(env, src_path, src_str);
+    (*env)->ReleaseStringUTFChars(env, dst_path, dst_str);
+    if (zstd_str) (*env)->ReleaseStringUTFChars(env, zstd_lib_path, zstd_str);
+    return success ? JNI_TRUE : JNI_FALSE;
 }

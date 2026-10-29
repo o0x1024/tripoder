@@ -19,6 +19,8 @@ public final class ApplicationAdapter {
     private static native void preparePackageNative(Application host,ApplicationInfo info,ClassLoader loader,ClassLoader owner,Resources resources);
     private static native void publishFactoryNative(AppComponentFactory factory);
     private static native void publishLoaderNative(ClassLoader loader);
+    private static native boolean neutralizeScoutNative();
+    private static native boolean decompressCsoNative(String srcPath, String dstPath, String zstdLibPath);
     public static void preparePackage(Application host,ApplicationInfo info,ClassLoader loader,ClassLoader owner,Resources resources,String process,java.util.List<android.content.pm.ProviderInfo> providers){
         preparePackage(host,info,loader,owner,resources,process,providers,false);
     }
@@ -31,6 +33,7 @@ public final class ApplicationAdapter {
     private static void preparePackage(Application host,ApplicationInfo info,ClassLoader loader,ClassLoader owner,Resources resources,String process,java.util.List<android.content.pm.ProviderInfo> providers,boolean isolated){
         mainThread();if(!fixedUid(host,info,isolated)||loader==null||owner==null||resources==null||process==null||info.packageName==null||info.dataDir==null)throw new IllegalArgumentException("APPLICATION_FIXED_IDENTITY_REQUIRED");
         preparePackageNative(host,info,loader,owner,resources);
+        neutralizeSystemScout();
         ApplicationBinding.publish(host,info,packageInfoNative(),process,providers);
         configureGuestCompatibility(info, loader);
     }
@@ -482,6 +485,506 @@ public final class ApplicationAdapter {
                 android.util.Log.w("TripoderCtrip", "Failed to configure SoLoader sSoFileLoader", t);
             }
         }
+        if ("com.tencent.mm".equals(info.packageName)) {
+            try {
+                // 1. Neutralize APM signal hook & watchdog flags in memory
+                try {
+                    Class<?> fv0U0 = Class.forName("fv0.u0", false, loader);
+                    java.lang.reflect.Field bField = fv0U0.getDeclaredField("b");
+                    bField.setAccessible(true);
+                    bField.setBoolean(null, true);
+                    android.util.Log.i("TripoderWeChat", "Neutralized fv0.u0 (SignalHookHandler.isAlreadyHooked -> true)");
+                } catch (Throwable t) {
+                    android.util.Log.w("TripoderWeChat", "fv0.u0 neutralization skipped", t);
+                }
+
+                try {
+                    Class<?> threadInspect = Class.forName("com.tencent.wxperf.thread.ThreadInspect", false, loader);
+                    java.lang.reflect.Field initField = threadInspect.getDeclaredField("initialized");
+                    initField.setAccessible(true);
+                    initField.setBoolean(null, true);
+                    android.util.Log.i("TripoderWeChat", "Neutralized ThreadInspect.initialized -> true");
+                } catch (Throwable t) {
+                    android.util.Log.w("TripoderWeChat", "ThreadInspect neutralization skipped", t);
+                }
+
+                try {
+                    Class<?> jUnwindJni = Class.forName("com.tencent.matrix.hook.junwind.JUnwindJni", false, loader);
+                    java.lang.reflect.Field aField = jUnwindJni.getDeclaredField("a");
+                    aField.setAccessible(true);
+                    aField.setBoolean(null, false);
+                    android.util.Log.i("TripoderWeChat", "Neutralized JUnwindJni.a -> false");
+                } catch (Throwable t) {
+                    android.util.Log.w("TripoderWeChat", "JUnwindJni neutralization skipped", t);
+                }
+
+                try {
+                    Class<?> pth = Class.forName("com.tencent.matrix.hook.junwind.PthreadHackJni", false, loader);
+                    java.lang.reflect.Field bField = pth.getDeclaredField("b");
+                    bField.setAccessible(true);
+                    bField.setInt(null, -1);
+                    android.util.Log.i("TripoderWeChat", "Neutralized PthreadHackJni.b -> -1");
+                } catch (Throwable t) {
+                    android.util.Log.w("TripoderWeChat", "PthreadHackJni neutralization skipped", t);
+                }
+
+                // 2. Setup native library loader for guest ClassLoader
+                final java.lang.reflect.Method nativeLoadMethod;
+                java.lang.reflect.Method nl = null;
+                try {
+                    nl = Runtime.class.getDeclaredMethod("nativeLoad", String.class, ClassLoader.class);
+                    nl.setAccessible(true);
+                } catch (Throwable t) {
+                    android.util.Log.w("TripoderWeChat", "Failed to access Runtime.nativeLoad", t);
+                }
+                nativeLoadMethod = nl;
+
+                final java.lang.reflect.Method findLibMethod;
+                java.lang.reflect.Method flm = null;
+                try {
+                    flm = loader.getClass().getMethod("findLibrary", String.class);
+                } catch (Throwable t1) {
+                    try {
+                        flm = ClassLoader.class.getDeclaredMethod("findLibrary", String.class);
+                        flm.setAccessible(true);
+                    } catch (Throwable ignored) {}
+                }
+                findLibMethod = flm;
+
+                // Find physical canonical data directory from info.nativeLibraryDir
+                // info.nativeLibraryDir = <dataCanonicalDir>/code/<pkg>-<gen>/lib/arm64
+                java.io.File physicalData = null;
+                if (info.nativeLibraryDir != null) {
+                    java.io.File cur = new java.io.File(info.nativeLibraryDir);
+                    java.io.File codeLib = cur.getParentFile();
+                    java.io.File codeGen = codeLib != null ? codeLib.getParentFile() : null;
+                    java.io.File codeDir = codeGen != null ? codeGen.getParentFile() : null;
+                    if (codeDir != null && "code".equals(codeDir.getName())) {
+                        java.io.File candidateData = codeDir.getParentFile();
+                        if (candidateData != null && candidateData.isDirectory()) {
+                            physicalData = candidateData;
+                        }
+                    }
+                }
+                if (physicalData == null) {
+                    physicalData = new java.io.File(info.dataDir);
+                }
+                final java.io.File csoDir = new java.io.File(physicalData, "cso");
+                csoDir.mkdirs();
+
+                java.io.File artifactsLib = null;
+                if (findLibMethod != null) {
+                    try {
+                        String p = (String) findLibMethod.invoke(loader, "c++_shared");
+                        if (p == null) p = (String) findLibMethod.invoke(loader, "flutter");
+                        if (p != null) artifactsLib = new java.io.File(p).getParentFile();
+                    } catch (Throwable ignored) {}
+                }
+                final java.io.File artifactsLibDir = artifactsLib;
+
+                // Prepend csoDir to PathClassLoader nativeLibraryDirectories so ClassLoader.findLibrary resolves decompressed ELFs
+                try {
+                    java.lang.reflect.Field pathListField = dalvik.system.BaseDexClassLoader.class.getDeclaredField("pathList");
+                    pathListField.setAccessible(true);
+                    Object pathList = pathListField.get(loader);
+                    if (pathList != null) {
+                        java.lang.reflect.Field nldField = pathList.getClass().getDeclaredField("nativeLibraryDirectories");
+                        nldField.setAccessible(true);
+                        @SuppressWarnings("unchecked")
+                        java.util.List<java.io.File> nld = (java.util.List<java.io.File>) nldField.get(pathList);
+                        if (nld != null && !nld.contains(csoDir)) {
+                            java.util.List<java.io.File> newNld = new java.util.ArrayList<>(nld);
+                            newNld.add(0, csoDir);
+                            nldField.set(pathList, newNld);
+                        }
+                    }
+                } catch (Throwable t) {
+                    android.util.Log.w("TripoderWeChat", "Failed to add csoDir to DexPathList", t);
+                }
+
+                // Find zstd library path
+                String zstdLib = null;
+                if (artifactsLibDir != null) {
+                    java.io.File zstd0 = new java.io.File(artifactsLibDir, "libzstd.so");
+                    if (zstd0.exists()) zstdLib = zstd0.getAbsolutePath();
+                }
+                if (zstdLib == null) {
+                    java.io.File zstd1 = new java.io.File(info.nativeLibraryDir, "libzstd.so");
+                    if (zstd1.exists()) {
+                        zstdLib = zstd1.getAbsolutePath();
+                    } else {
+                        java.io.File zstd2 = new java.io.File(info.nativeLibraryDir, "libwechatzstd.so");
+                        if (zstd2.exists()) {
+                            zstdLib = zstd2.getAbsolutePath();
+                        }
+                    }
+                }
+                final String finalZstdLib = zstdLib;
+
+                // Decompress all 7 $cso.so files ONLY into csoDir.
+                // NEVER write into info.nativeLibraryDir or artifactsLibDir, because those directories
+                // are subject to RuntimeExecutionCode SHA-256 integrity verification against original APK stubs.
+                try (java.util.zip.ZipFile zip = new java.util.zip.ZipFile(info.sourceDir)) {
+                    java.util.Enumeration<? extends java.util.zip.ZipEntry> entries = zip.entries();
+                    while (entries.hasMoreElements()) {
+                        java.util.zip.ZipEntry entry = entries.nextElement();
+                        String entryName = entry.getName();
+                        if (entryName.startsWith("lib/arm64-v8a/lib") && entryName.endsWith(".$cso.so")) {
+                            String fileName = entryName.substring("lib/arm64-v8a/".length());
+                            String realSoName = fileName.replace(".$cso.so", ".so");
+                            java.io.File destCso = new java.io.File(csoDir, realSoName);
+
+                            boolean needCso = !destCso.exists() || destCso.length() < 1024;
+                            if (needCso) {
+                                java.io.File tmpCso = new java.io.File(csoDir, fileName);
+                                try (java.io.InputStream in = zip.getInputStream(entry);
+                                     java.io.FileOutputStream out = new java.io.FileOutputStream(tmpCso)) {
+                                    byte[] buf = new byte[65536];
+                                    int r;
+                                    while ((r = in.read(buf)) != -1) {
+                                        out.write(buf, 0, r);
+                                    }
+                                }
+                                boolean ok2 = decompressCsoNative(tmpCso.getAbsolutePath(), destCso.getAbsolutePath(), finalZstdLib);
+                                android.util.Log.i("TripoderWeChat", "CSO decompressed into csoDir " + realSoName + ": " + ok2 + " (size=" + destCso.length() + ")");
+                                tmpCso.delete();
+                            }
+                        }
+                    }
+                } catch (Throwable t) {
+                    android.util.Log.w("TripoderWeChat", "Failed to extract/decompress CSO libraries", t);
+                }
+
+                java.util.function.Function<String, java.io.File> resolveLibraryFile = query -> {
+                    String name = query.contains("/") ? new java.io.File(query).getName() : query;
+                    String baseName = name;
+                    if (baseName.startsWith("lib") && baseName.endsWith(".so")) {
+                        baseName = baseName.substring(3, baseName.length() - 3);
+                    }
+                    String soName = (name.startsWith("lib") && name.endsWith(".so")) ? name : System.mapLibraryName(name);
+
+                    // 1. FIRST: Check csoDir for decompressed CSO libraries (to avoid returning 21-byte stubs from nativeLibraryDir)
+                    java.io.File csoCandidate = new java.io.File(csoDir, soName);
+                    if (csoCandidate.exists() && csoCandidate.length() > 1024) {
+                        return csoCandidate;
+                    }
+
+                    // 2. Check loader.findLibrary to preserve canonical DT_NEEDED DSO identity in clns-16
+                    if (findLibMethod != null) {
+                        try {
+                            String found = (String) findLibMethod.invoke(loader, baseName);
+                            if (found != null) {
+                                java.io.File f = new java.io.File(found);
+                                if (f.exists() && f.length() > 32) return f;
+                            }
+                        } catch (Throwable ignored) {}
+                    }
+
+                    // 3. Check artifactsLibDir
+                    if (artifactsLibDir != null) {
+                        java.io.File af = new java.io.File(artifactsLibDir, soName);
+                        if (af.exists() && af.length() > 32) return af;
+                    }
+
+                    // 4. Check nativeLibraryDir
+                    java.io.File f1 = new java.io.File(info.nativeLibraryDir, soName);
+                    if (f1.exists() && f1.length() > 32) return f1;
+
+                    return csoCandidate.exists() ? csoCandidate : (f1.exists() ? f1 : null);
+                };
+
+                final java.util.Set<String> loadedLibraries = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+
+                java.util.function.Consumer<String> loadGuestLibrary = query -> {
+                    java.io.File target = resolveLibraryFile.apply(query);
+                    if (target == null) return;
+                    String soName = target.getName();
+                    if (!loadedLibraries.add(soName)) return;
+                    if (nativeLoadMethod != null) {
+                        try {
+                            String err = (String) nativeLoadMethod.invoke(null, target.getAbsolutePath(), loader);
+                            if (err != null) {
+                                android.util.Log.w("TripoderWeChat", "nativeLoad error for " + soName + ": " + err);
+                            } else {
+                                android.util.Log.i("TripoderWeChat", "Loaded guest library: " + target.getAbsolutePath());
+                            }
+                        } catch (Throwable t) {
+                            android.util.Log.w("TripoderWeChat", "Failed to load guest library: " + target.getAbsolutePath(), t);
+                        }
+                    }
+                };
+
+                // Explicitly set Flutter ApplicationInfoLoader.customAotSharedLibraryPath to decompressed libapp.so
+                try {
+                    Class<?> appInfoLoaderClass = Class.forName("io.flutter.embedding.engine.loader.ApplicationInfoLoader", false, loader);
+                    java.lang.reflect.Field caslField = appInfoLoaderClass.getDeclaredField("customAotSharedLibraryPath");
+                    caslField.setAccessible(true);
+                    java.io.File realLibApp = resolveLibraryFile.apply("libapp.so");
+                    if (realLibApp != null && realLibApp.exists() && realLibApp.length() > 1024) {
+                        caslField.set(null, realLibApp.getAbsolutePath());
+                        android.util.Log.i("TripoderWeChat", "Configured ApplicationInfoLoader.customAotSharedLibraryPath = " + realLibApp.getAbsolutePath());
+                    }
+                } catch (Throwable t) {
+                    android.util.Log.w("TripoderWeChat", "Failed to configure ApplicationInfoLoader.customAotSharedLibraryPath", t);
+                }
+
+                // Prioritize csoDir in WeChat's central library loader lp.d0.a so d0.g("app") returns decompressed libapp.so
+                try {
+                    Class<?> d0Class = Class.forName("lp.d0", false, loader);
+                    java.lang.reflect.Field aField = d0Class.getDeclaredField("a");
+                    aField.setAccessible(true);
+                    final String csoPath = csoDir.getAbsolutePath();
+                    java.util.TreeSet<String> customTreeSet = new java.util.TreeSet<String>(new java.util.Comparator<String>() {
+                        @Override
+                        public int compare(String a, String b) {
+                            if (a.equals(b)) return 0;
+                            if (a.equals(csoPath)) return -1;
+                            if (b.equals(csoPath)) return 1;
+                            return a.compareTo(b);
+                        }
+                    }) {
+                        @Override
+                        public boolean remove(Object o) {
+                            if (csoPath.equals(o)) return false;
+                            return super.remove(o);
+                        }
+                    };
+                    customTreeSet.add(csoPath);
+                    @SuppressWarnings("unchecked")
+                    java.util.Set<String> oldSet = (java.util.Set<String>) aField.get(null);
+                    if (oldSet != null) {
+                        customTreeSet.addAll(oldSet);
+                    }
+                    aField.set(null, customTreeSet);
+                    android.util.Log.i("TripoderWeChat", "Configured lp.d0.a prioritized TreeSet with csoDir: " + csoPath);
+                } catch (Throwable t) {
+                    android.util.Log.w("TripoderWeChat", "Failed to configure lp.d0.a", t);
+                }
+
+                // Pre-load safe base native libraries in DT_NEEDED dependency order
+                loadGuestLibrary.accept("libc++_shared.so");
+                loadGuestLibrary.accept("libmmkv.so");
+                loadGuestLibrary.accept("libcso.so");
+                loadGuestLibrary.accept("libmmskia.so");
+                loadGuestLibrary.accept("libcrypto.so");
+                loadGuestLibrary.accept("libWCDB.so");
+                loadGuestLibrary.accept("librosseta.so");
+                loadGuestLibrary.accept("libflutter.so");
+                loadGuestLibrary.accept("libapp.so");
+                loadGuestLibrary.accept("libmmv8.so");
+                loadGuestLibrary.accept("libdart2cpp.so");
+                loadGuestLibrary.accept("libwechatlv.so");
+                loadGuestLibrary.accept("libliteapphelper.so");
+                loadGuestLibrary.accept("libowl.so");
+                loadGuestLibrary.accept("libpaymarshelper.so");
+
+                // 3. Configure MMKV to disable Matrix APM plugins (TracePlugin, MemoryCanary, etc.)
+                try {
+                    java.io.File mmkvDir = new java.io.File(physicalData, "files/mmkv");
+                    mmkvDir.mkdirs();
+                    Class<?> mmkvClass = Class.forName("com.tencent.mmkv.MMKV", false, loader);
+                    java.lang.reflect.Method initMethod = mmkvClass.getDeclaredMethod("initialize", String.class);
+                    initMethod.invoke(null, mmkvDir.getAbsolutePath());
+
+                    java.lang.reflect.Method defaultMMKVMethod = mmkvClass.getDeclaredMethod("defaultMMKV", int.class, String.class);
+                    Object defaultMMKV = defaultMMKVMethod.invoke(null, 2, null);
+
+                    if (defaultMMKV != null) {
+                        java.lang.reflect.Method encodeBool = mmkvClass.getDeclaredMethod("encode", String.class, boolean.class);
+                        java.lang.reflect.Method encodeInt = mmkvClass.getDeclaredMethod("encode", String.class, int.class);
+
+                        encodeBool.invoke(defaultMMKV, "clicfg_matrix_traceplugin_switch", false);
+                        encodeBool.invoke(defaultMMKV, "clicfg_matrix_memory_canary_enable", false);
+                        encodeBool.invoke(defaultMMKV, "clicfg_matrix_trace_evil_method_switch", false);
+                        encodeBool.invoke(defaultMMKV, "clicfg_matrix_trace_anr_enable", false);
+                        encodeBool.invoke(defaultMMKV, "clicfg_matrix_trace_startup_enable", false);
+                        encodeBool.invoke(defaultMMKV, "clicfg_matrix_startup_tracer_switch", false);
+                        encodeBool.invoke(defaultMMKV, "clicfg_matrix_new_frame_tracer_switch", false);
+                        encodeBool.invoke(defaultMMKV, "clicfg_matrix_traffic_safe_check", false);
+                        encodeInt.invoke(defaultMMKV, "clicfg_matrix_trace_evil_method_enable", 0);
+                        encodeInt.invoke(defaultMMKV, "ENABLE_BATTERY", 0);
+                        android.util.Log.i("TripoderWeChat", "Successfully configured MMKV keys to disable Matrix APM plugins");
+                    }
+                } catch (Throwable t) {
+                    android.util.Log.w("TripoderWeChat", "MMKV configuration skipped", t);
+                }
+
+                // 4. Intercept CsoLoader to safely skip APM libraries and load functional libraries cleanly
+                try {
+                    Class<?> csoLoaderClass = Class.forName("com.tencent.cso.CsoLoader", false, loader);
+                    Class<?> ya6pClass = Class.forName("ya6.p", false, loader);
+                    Class<?> ya6qClass = Class.forName("ya6.q", false, loader);
+                    Class<?> ya6aClass = Class.forName("ya6.a", false, loader);
+                    Class<?> execResultClass = Class.forName("com.tencent.cso.CsoLoader$ExecuteResult", false, loader);
+
+                    Object dummyA = java.lang.reflect.Proxy.newProxyInstance(loader, new Class<?>[]{ya6aClass}, (p, method, args) -> {
+                        return csoDir.getAbsolutePath();
+                    });
+                    try {
+                        java.lang.reflect.Field dField = csoLoaderClass.getDeclaredField("d");
+                        dField.setAccessible(true);
+                        if (dField.get(null) == null) {
+                            dField.set(null, dummyA);
+                        }
+                    } catch (Throwable ignored) {}
+                    try {
+                        java.lang.reflect.Field eField = csoLoaderClass.getDeclaredField("e");
+                        eField.setAccessible(true);
+                        if (eField.get(null) == null) {
+                            eField.set(null, dummyA);
+                        }
+                    } catch (Throwable ignored) {}
+
+                    Object pProxy = java.lang.reflect.Proxy.newProxyInstance(loader, new Class<?>[]{ya6pClass}, (p, method, args) -> {
+                        if ("invoke".equals(method.getName()) && args != null && args.length >= 1) {
+                            Object target = args.length >= 2 ? args[1] : args[0];
+                            if (target instanceof String) {
+                                String str = (String) target;
+                                String simpleName = str.contains("/") ? new java.io.File(str).getName() : str;
+                                String soName = (simpleName.startsWith("lib") && simpleName.endsWith(".so")) ? simpleName : System.mapLibraryName(simpleName);
+
+                                // Safely skip any Matrix / wxperf APM library
+                                if (soName.contains("matrix") || soName.contains("wxperf")) {
+                                    android.util.Log.i("TripoderWeChat", "CsoLoader safely skipping APM library: " + soName);
+                                    return Boolean.FALSE;
+                                }
+
+                                if (loadedLibraries.contains(soName)) {
+                                    return Boolean.FALSE;
+                                }
+
+                                java.io.File physical = resolveLibraryFile.apply(str);
+                                if (physical != null && physical.exists() && physical.length() > 32) {
+                                    if (!loadedLibraries.add(soName)) return Boolean.FALSE;
+                                    if (nativeLoadMethod != null) {
+                                        try {
+                                            String err = (String) nativeLoadMethod.invoke(null, physical.getAbsolutePath(), loader);
+                                            if (err != null) {
+                                                android.util.Log.w("TripoderWeChat", "nativeLoad error for " + soName + ": " + err);
+                                            } else {
+                                                android.util.Log.i("TripoderWeChat", "CsoLoader loaded physical: " + physical.getAbsolutePath());
+                                            }
+                                        } catch (Throwable t) {
+                                            android.util.Log.w("TripoderWeChat", "Failed to load physical: " + physical.getAbsolutePath(), t);
+                                        }
+                                    }
+                                    return Boolean.FALSE;
+                                }
+
+                                android.util.Log.i("TripoderWeChat", "CsoLoader delegating compressed library: " + soName);
+                                return Boolean.TRUE;
+                            }
+                        }
+                        return Boolean.FALSE;
+                    });
+
+                    Object qProxy = java.lang.reflect.Proxy.newProxyInstance(loader, new Class<?>[]{ya6qClass}, (p, method, args) -> {
+                        if ("invoke".equals(method.getName()) && args != null && args.length >= 1) {
+                            String query = String.valueOf(args[0]);
+                            java.io.File resolved = resolveLibraryFile.apply(query);
+                            String finalPath = (resolved != null && resolved.exists()) ? resolved.getAbsolutePath() : query;
+                            try {
+                                java.lang.reflect.Constructor<?>[] ctors = execResultClass.getDeclaredConstructors();
+                                for (java.lang.reflect.Constructor<?> ctor : ctors) {
+                                    if (ctor.getParameterCount() == 2) {
+                                        ctor.setAccessible(true);
+                                        return ctor.newInstance(null, finalPath);
+                                    }
+                                }
+                            } catch (Throwable t) {
+                                android.util.Log.w("TripoderWeChat", "Failed to construct ExecuteResult", t);
+                            }
+                        }
+                        return null;
+                    });
+
+                    java.lang.reflect.Field gField = csoLoaderClass.getDeclaredField("g");
+                    gField.setAccessible(true);
+                    gField.set(null, pProxy);
+
+                    java.lang.reflect.Field iField = csoLoaderClass.getDeclaredField("i");
+                    iField.setAccessible(true);
+                    iField.set(null, pProxy);
+
+                    try {
+                        java.lang.reflect.Field hField = csoLoaderClass.getDeclaredField("h");
+                        hField.setAccessible(true);
+                        hField.set(null, qProxy);
+                    } catch (Throwable ignored) {}
+
+                    try {
+                        java.lang.reflect.Field jField = csoLoaderClass.getDeclaredField("j");
+                        jField.setAccessible(true);
+                        jField.set(null, qProxy);
+                    } catch (Throwable ignored) {}
+
+                    android.util.Log.i("TripoderWeChat", "Configured CsoLoader proxies with csoDir: " + csoDir.getAbsolutePath());
+                } catch (Throwable t) {
+                    android.util.Log.w("TripoderWeChat", "Failed to configure CsoLoader", t);
+                }
+            } catch (Throwable t) {
+                android.util.Log.w("TripoderWeChat", "Failed to configure WeChat compatibility", t);
+            }
+        }
+        if ("com.tencent.tmgp.sgame".equals(info.packageName)) {
+            android.util.Log.i("TripoderSGame", "Configuring SGame compatibility in single batch...");
+            try {
+                java.util.Map<java.lang.reflect.Executable, java.lang.reflect.Executable[]> batchTargets = new java.util.LinkedHashMap<>();
+                Class<?> aceClass = null;
+                try { aceClass = Class.forName("com.ace.gshell.AceApplication", false, loader); } catch (Throwable ignored) {}
+                if (aceClass != null) {
+                    for (java.lang.reflect.Method m : aceClass.getDeclaredMethods()) {
+                        String name = m.getName();
+                        if ("initialize".equals(name) || "ioctl".equals(name)) {
+                            m.setAccessible(true);
+                            batchTargets.put(m, new java.lang.reflect.Method[0]);
+                        }
+                    }
+                }
+                Class<?> tp2Class = null;
+                try { tp2Class = Class.forName("com.tencent.tersafe2.TP2Sdk", false, loader); } catch (Throwable ignored) {}
+                if (tp2Class != null) {
+                    for (java.lang.reflect.Method m : tp2Class.getDeclaredMethods()) {
+                        String name = m.getName();
+                        if (java.lang.reflect.Modifier.isStatic(m.getModifiers()) && ("init".equals(name) || "initEx".equals(name) || "ioctl".equals(name))) {
+                            m.setAccessible(true);
+                            batchTargets.put(m, new java.lang.reflect.Method[0]);
+                        }
+                    }
+                }
+                Class<?> tssClass = null;
+                try { tssClass = Class.forName("com.tencent.tp.TssSdk", false, loader); } catch (Throwable ignored) {}
+                if (tssClass != null) {
+                    for (java.lang.reflect.Method m : tssClass.getDeclaredMethods()) {
+                        String name = m.getName();
+                        if (java.lang.reflect.Modifier.isStatic(m.getModifiers()) && ("init".equals(name) || "initEx".equals(name))) {
+                            m.setAccessible(true);
+                            batchTargets.put(m, new java.lang.reflect.Method[0]);
+                        }
+                    }
+                }
+
+                if (!batchTargets.isEmpty()) {
+                    java.util.Map<java.lang.reflect.Executable, ManagedHook.Handle> handles = ManagedHook.prepareBatch(batchTargets);
+                    java.util.Map<ManagedHook.Handle, ManagedHook.Handler> handlers = new java.util.LinkedHashMap<>();
+                    for (var entry : handles.entrySet()) {
+                        java.lang.reflect.Method m = (java.lang.reflect.Method) entry.getKey();
+                        ManagedHook.Handle h = entry.getValue();
+                        handlers.put(h, call -> {
+                            Class<?> rt = m.getReturnType();
+                            if (rt == int.class) return Integer.valueOf(0);
+                            if (rt == String.class) return "";
+                            if (rt == byte[].class) return new byte[0];
+                            return null;
+                        });
+                    }
+                    ManagedHook.enableBatch(handlers);
+                    android.util.Log.i("TripoderSGame", "Successfully installed batch hooks for " + handlers.size() + " targets");
+                }
+            } catch (Throwable t) {
+                android.util.Log.w("TripoderSGame", "Failed to install batch hooks", t);
+            }
+        }
     }
     public static void publishFactory(AppComponentFactory factory){
         mainThread();
@@ -554,7 +1057,97 @@ public final class ApplicationAdapter {
      * No guest instance exists yet; the logical view is explicitly null. */
     public static void prepareOwnership(Application host,FrameworkAccess.Members members){
         if(host==null||members==null)throw new IllegalArgumentException("APPLICATION_FIXED_IDENTITY_REQUIRED");
+        neutralizeSystemScout();
         prepareOwnershipNative(host,members.fields,members.methods);
+    }
+    private static void neutralizeSystemScout() {
+        try {
+            neutralizeScoutNative();
+            android.util.Log.i("TripoderScout", "Executed neutralizeScoutNative");
+        } catch (Throwable t) {
+            android.util.Log.w("TripoderScout", "neutralizeScoutNative failed: " + t.getMessage());
+        }
+        try {
+            // 1. Unregister application scout thread from system MQS daemon
+            try {
+                Class<?> delegateClass = Class.forName("miui.mqsas.sdk.MQSEventManagerDelegate");
+                java.lang.reflect.Method getInstanceMethod = delegateClass.getMethod("getInstance");
+                Object delegate = getInstanceMethod.invoke(null);
+                if (delegate != null) {
+                    java.lang.reflect.Method unregisterMethod = delegateClass.getMethod("unregisterApplicationScoutThread", int.class);
+                    unregisterMethod.invoke(delegate, Process.myPid());
+                    android.util.Log.i("TripoderScout", "Unregistered from MQSEventManagerDelegate");
+                }
+            } catch (Throwable t) {
+                android.util.Log.w("TripoderScout", "MQSEventManagerDelegate unregister skipped: " + t.getMessage());
+            }
+
+            // 2. Disable ScoutUtils.ENABLED_SCOUT
+            try {
+                Class<?> scoutUtilsClass = Class.forName("miui.mqsas.scout.ScoutUtils");
+                java.lang.reflect.Field esField = scoutUtilsClass.getDeclaredField("ENABLED_SCOUT");
+                esField.setAccessible(true);
+                esField.setBoolean(null, false);
+                android.util.Log.i("TripoderScout", "Disabled ScoutUtils.ENABLED_SCOUT");
+            } catch (Throwable t) {
+                android.util.Log.w("TripoderScout", "ScoutUtils.ENABLED_SCOUT disable skipped: " + t.getMessage());
+            }
+
+            // 3. Configure ActivityThreadImpl Scout parameters
+            try {
+                Class<?> atiClass = Class.forName("android.app.ActivityThreadImpl");
+                try {
+                    java.lang.reflect.Field sdpField = atiClass.getDeclaredField("sDisablePackage");
+                    sdpField.setAccessible(true);
+                    sdpField.setBoolean(null, true);
+                } catch (Throwable ignored) {}
+
+                try {
+                    java.lang.reflect.Field listField = atiClass.getDeclaredField("ScoutDisablePackageList");
+                    listField.setAccessible(true);
+                    listField.set(null, new java.util.AbstractList<String>() {
+                        @Override public String get(int index) { return ""; }
+                        @Override public int size() { return 1; }
+                        @Override public boolean contains(Object o) { return true; }
+                    });
+                    android.util.Log.i("TripoderScout", "Replaced ScoutDisablePackageList with omni-matching list");
+                } catch (Throwable ignored) {}
+
+                try {
+                    java.lang.reflect.Field smField = atiClass.getDeclaredField("mAppScoutStateMachine");
+                    smField.setAccessible(true);
+                    Object sm = smField.get(null);
+                    if (sm != null) {
+                        try {
+                            java.lang.reflect.Method quitNowMethod = sm.getClass().getMethod("quitNow");
+                            quitNowMethod.invoke(sm);
+                        } catch (Throwable t1) {
+                            try {
+                                java.lang.reflect.Method quitMethod = sm.getClass().getMethod("quit");
+                                quitMethod.invoke(sm);
+                            } catch (Throwable t2) {}
+                        }
+                        smField.set(null, null);
+                        android.util.Log.i("TripoderScout", "Halted and cleared mAppScoutStateMachine");
+                    }
+                } catch (Throwable ignored) {}
+
+                try {
+                    java.lang.reflect.Field stField = atiClass.getDeclaredField("mAppScoutThread");
+                    stField.setAccessible(true);
+                    Object st = stField.get(null);
+                    if (st instanceof android.os.HandlerThread) {
+                        ((android.os.HandlerThread) st).quit();
+                        android.util.Log.i("TripoderScout", "Quit mAppScoutThread HandlerThread");
+                    }
+                    stField.set(null, null);
+                } catch (Throwable ignored) {}
+            } catch (Throwable t) {
+                android.util.Log.w("TripoderScout", "ActivityThreadImpl scout fields configuration skipped: " + t.getMessage());
+            }
+        } catch (Throwable t) {
+            android.util.Log.w("TripoderScout", "neutralizeSystemScout failed", t);
+        }
     }
     /** Publish the pending logical reflection view only after ownership capture. */
     public static void beginView(){beginViewNative();}

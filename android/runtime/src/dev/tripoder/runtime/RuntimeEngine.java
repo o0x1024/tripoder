@@ -285,6 +285,7 @@ public final class RuntimeEngine {
                 android.util.Log.e("TripoderTestFile", "FAILED TO READ sourceDir", t);
             }
             RuntimeSelfHookStorage.faultStageNative(2); // Application.attach.
+            updateActivityThreadApplication(application);
             try{RuntimeBridge.attachApplication(application,guestContext);}
             catch(RuntimeException|Error failure){android.util.Log.e("TripoderLoader","attach-failed published="+RuntimeSelfHookApplication.loaderChain(RuntimeSelfHookApplication.publishedLoader()));RuntimeStartupDiagnostics.failure("application-attach",failure);throw failure;}
             finally{RuntimeBridge.observeApplicationOwnership("after-attach",host,application);packages.traceEndpoints("AFTER_APPLICATION_ATTACH");if(codeProbes!=null)codeProbes.stage("APPLICATION_ATTACHED");}
@@ -543,6 +544,7 @@ public final class RuntimeEngine {
         try{response=RuntimeWire.call(broker,RuntimeWire.ROUTE,request);}catch(IllegalStateException e){if(String.valueOf(e.getMessage()).contains("PACKAGE_NOT_IN_SPACE"))throw new ActivityNotFoundException("PACKAGE_NOT_IN_SPACE:"+intent.getComponent().getPackageName());throw e;}
         if(requestCode>=0)pending.put(requestCode,RuntimeWire.required(response,"operation"));
         String stub=RuntimeWire.required(response,"stub"),ticket=RuntimeWire.required(response,"ticket");
+        android.util.Log.i("TripoderActivities", "ROUTING activity: caller=" + caller.getClass().getName() + " target=" + intent.getComponent().getClassName() + " stub=" + stub + " flags=0x" + Integer.toHexString(intent.getFlags()));
         thinTicketStubs.put(ticket,stub);
         Intent routed=new Intent(intent).setComponent(new ComponentName(host,stub));
         Bundle origExtras=intent.getExtras();routed.putExtra("tripoder.extras",origExtras!=null&&!origExtras.isEmpty());
@@ -563,6 +565,7 @@ public final class RuntimeEngine {
         Bundle response;
         try{response=RuntimeWire.call(broker,RuntimeWire.ROUTE,request);}catch(IllegalStateException e){if(String.valueOf(e.getMessage()).contains("PACKAGE_NOT_IN_SPACE"))throw new ActivityNotFoundException("PACKAGE_NOT_IN_SPACE:"+intent.getComponent().getPackageName());throw e;}
         String stub=RuntimeWire.required(response,"stub"),ticket=RuntimeWire.required(response,"ticket");
+        android.util.Log.i("TripoderActivities", "ROUTING context activity: target=" + intent.getComponent().getClassName() + " stub=" + stub + " flags=0x" + Integer.toHexString(intent.getFlags()));
         thinTicketStubs.put(ticket,stub);
         Intent routed=new Intent(intent).setComponent(new ComponentName(host,stub));
         Bundle origExtras=intent.getExtras();routed.putExtra("tripoder.extras",origExtras!=null&&!origExtras.isEmpty());
@@ -647,7 +650,7 @@ public final class RuntimeEngine {
                     Object allApps = allAppsField.get(at);
                     if (allApps instanceof java.util.List list) {
                         synchronized (list) {
-                            if (!list.contains(app)) list.add(app);
+                            if (!list.contains(app)) list.add(0, app);
                         }
                     }
                 } catch (Throwable ignored) {}

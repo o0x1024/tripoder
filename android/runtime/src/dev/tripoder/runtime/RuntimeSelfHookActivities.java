@@ -46,6 +46,7 @@ final class RuntimeSelfHookActivities {
                         physical=leased;
                     }
                     RuntimeActivityCreation.Permit permit=RuntimeActivityCreation.begin(physical);
+                    android.util.Log.i("TripoderActivities", "performLaunchActivity: physical=" + (physical != null ? physical.getComponent() : null));
                     try{
                         // A rejected hot launch still runs the real performLaunchActivity so Android registers the
                         // client record for this token; newActivity below returns the terminal host RejectedActivity.
@@ -126,6 +127,7 @@ final class RuntimeSelfHookActivities {
             if("ACTIVITY_CREATION_ARGUMENTS_MISMATCH".equals(rejected.getMessage()))permit.rejectedArguments(target,receiver,(ClassLoader)args[0],(String)args[1],(Intent)args[2]);
             throw rejected;
         }
+        android.util.Log.i("TripoderActivities", "newActivity: target=" + args[1] + " intent=" + args[2]);
         permit.enter();
         Activity result=base?RuntimeActivityCreation.constructDefault((Instrumentation)receiver,permit.loader(),permit.name(),permit.intent())
             :(Activity)original.call(permit.loader(),permit.name(),permit.intent());return permit.complete(result);

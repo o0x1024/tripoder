@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 #include "signal_chain.h"
+#include <dlfcn.h>
 #include <elf.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -50,8 +51,7 @@ static bool safe_probe_recover(int signal,siginfo_t *info,void *context){
     if((signal!=SIGSEGV&&signal!=SIGBUS)||!info||!context)return false;
     ucontext_t *uc=(ucontext_t *)context;
     uintptr_t pc=(uintptr_t)uc->uc_mcontext.pc,sp=(uintptr_t)uc->uc_mcontext.sp;
-    if((pc&3)!=0||pc<0x10000||sp<0x10000)return false;
-    const uint32_t *p=(const uint32_t *)pc;
+    uintptr_t lr=(uintptr_t)uc->uc_mcontext.regs[30];
     /* ByteHook ARM64 safe GOT write probe:
      *   pc - 8: 0x910003e1 (mov x1, sp)
      *   pc - 4: 0x2a1903e0 (mov w0, w25)
@@ -59,8 +59,25 @@ static bool safe_probe_recover(int signal,siginfo_t *info,void *context){
      * ByteHook arms this probe with sigsetjmp(sp + 8, 1). On modern kernels (e.g. mseal GNU_RELRO),
      * write fails with SEGV_ACCERR. Without our special handler recovery, Sentry intercepts the
      * signal and aborts the process instead of letting ByteHook recover cleanly via siglongjmp. */
-    if(p[0]==0xc89ffe97&&p[-1]==0x2a1903e0&&p[-2]==0x910003e1){
-        siglongjmp((void *)(sp+8),1);
+    if((pc&3)==0&&pc>=0x10000&&sp>=0x10000){
+        const uint32_t *p=(const uint32_t *)pc;
+        if(p[0]==0xc89ffe97&&p[-1]==0x2a1903e0&&p[-2]==0x910003e1){
+            siglongjmp((void *)(sp+8),1);
+        }
+    }
+    static int (*log_print)(int, const char*, const char*, ...) = NULL;
+    if(!log_print){
+        void *h = dlopen("liblog.so", RTLD_NOW);
+        if(h) log_print = dlsym(h, "__android_log_print");
+    }
+    if(log_print){
+        Dl_info pc_info = {0}, lr_info = {0};
+        const char *pc_mod = dladdr((void *)pc, &pc_info) && pc_info.dli_fname ? pc_info.dli_fname : "unknown";
+        uintptr_t pc_off = pc_info.dli_fbase ? (pc - (uintptr_t)pc_info.dli_fbase) : pc;
+        const char *lr_mod = dladdr((void *)lr, &lr_info) && lr_info.dli_fname ? lr_info.dli_fname : "unknown";
+        uintptr_t lr_off = lr_info.dli_fbase ? (lr - (uintptr_t)lr_info.dli_fbase) : lr;
+        log_print(6, "TripoderCrash", "UNHANDLED SIGNAL %d (code %d) at addr=%p pc=%lx [%s+0x%lx] lr=%lx [%s+0x%lx] sp=%lx",
+                  signal, info->si_code, info->si_addr, pc, pc_mod, pc_off, lr, lr_mod, lr_off, sp);
     }
     return false;
 }

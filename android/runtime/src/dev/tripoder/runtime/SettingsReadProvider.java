@@ -28,6 +28,9 @@ final class SettingsReadProvider extends ContentProvider {
         if(!"settings".equals(authority)||!(config||java.util.Set.of("GET_system","GET_secure","GET_global","GET_config").contains(method))||
             (config?arg!=null:arg==null||arg.length()>200))throw new UnsupportedOperationException("PROVIDER_CALL_UNSUPPORTED");
         if(extras!=null&&extras.containsKey("_user")&&(!(extras.get("_user") instanceof Integer)||!ownUser(extras.getInt("_user"))))throw new UnsupportedOperationException("SETTINGS_OTHER_USER_UNSUPPORTED");
+        if("adb_enabled".equals(arg)||"development_settings_enabled".equals(arg)){
+            Bundle res=new Bundle();res.putString("value","0");return res;
+        }
         return system.call(authority,method,arg,RuntimeProviderFacade.primitive(extras));
     }
     /** Framework code (MIUI haptics, for one) asks for the current user by its symbolic id (UserHandle.USER_CURRENT -2, USER_CURRENT_OR_SELF -3, hidden constants); that is this application's own user. */
