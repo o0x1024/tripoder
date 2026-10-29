@@ -130,20 +130,19 @@ public final class RuntimeHookBridge {
     private String canonicalLibraryPath(String name)throws Exception{
         var item=nativeFilesByName.get(name);
         if(item!=null){
-            java.io.File file=engine.executionCode.libraryFile(name);
+            java.io.File file=new java.io.File(engine.info.nativeLibraryDir,name);
             if(file.length()!=item.size)throw new SecurityException("HOOK_MODULE_ARTIFACT_CHANGED");
-            return engine.executionCode.libraryPath(name);
+            return file.getPath();
         }
         throw new SecurityException("HOOK_MODULE_OUTSIDE_GUEST");
     }
     private JSONObject verifiedLibraryArtifact(String name)throws Exception{
         var item=nativeFilesByName.get(name);
         if(item!=null){
-            java.io.File file=engine.executionCode.libraryFile(name);ArtifactSet.regular(file.toPath());
-            String canonical=RuntimeSelfHookStorage.physicalArtifactPath(file.toString());
-            if(!canonical.equals(engine.executionCode.canonicalDirectory+"/lib/arm64/"+name))throw new SecurityException("HOOK_MODULE_CANONICAL_ROOT_CHANGED");
+            java.io.File file=new java.io.File(engine.info.nativeLibraryDir,name);ArtifactSet.regular(file.toPath());
+            String path=file.getPath();
             if(file.length()!=item.size||!ArtifactSet.digest(file).equals(item.sha256))throw new SecurityException("HOOK_MODULE_ARTIFACT_CHANGED");
-            return new JSONObject().put("moduleName",name).put("path",engine.executionCode.libraryPath(name)).put("sourcePath",file.toString()).put("sha256",item.sha256);
+            return new JSONObject().put("moduleName",name).put("path",path).put("sourcePath",file.toString()).put("sha256",item.sha256);
         }
         throw new SecurityException("HOOK_MODULE_OUTSIDE_GUEST");
     }

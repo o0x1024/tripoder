@@ -80,7 +80,7 @@ public final class DraftCompiler {
             Map<String,Object> holder=Collections.singletonMap("schema",Collections.unmodifiableMap(schema));schemas.put(holder,spec);return holder;
         }));return Collections.unmodifiableMap(out);
     }
-    private Map<String,Object> context(){return Map.of("java",Map.of("method",RestrictedAst.capability(this::javaMethod),"objectInfo",RestrictedAst.capability(args->{objectInvocation(args);arity(args,1,1);return ScriptValues.freeze(JavaObjectScope.info(args.get(0)));}),"snapshotThread",RestrictedAst.capability(args->{objectInvocation(args);arity(args,1,1);return ScriptValues.freeze(JavaObjectSnapshots.thread(args.get(0)));}),"snapshotThrowable",RestrictedAst.capability(this::snapshotThrowable),"readField",RestrictedAst.capability(this::readField),"snapshotContainer",RestrictedAst.capability(this::snapshotContainer)),"native",Map.of("function",RestrictedAst.capability(this::nativeFunction),"captureBuffer",RestrictedAst.capability(this::captureNativeBuffer),"readCString",RestrictedAst.capability(this::readNativeCString)),"code",Map.of("snapshotDex",RestrictedAst.capability(args->{require(!collecting,"CODE_CAPTURE_OUTSIDE_INVOCATION");arity(args,1,1);String id=string(args.get(0));require(id.matches("[A-Za-z0-9_-]{1,80}"),"DEX_REFERENCE");return ScriptValues.freeze(codeSnapshot.apply(id));})),"debug",Map.of("emitEvent",RestrictedAst.capability(this::emitEvent),"captureEvidence",RestrictedAst.capability(this::captureEvidence),"captureJavaStack",RestrictedAst.capability(this::captureJavaStack),"callerModuleOffset",RestrictedAst.capability(this::callerModuleOffset)),"privacy",Map.of("attribution",RestrictedAst.capability(this::privacyAttributionOf),"consentStage",RestrictedAst.capability(args->{arity(args,0,0);return ScriptValues.freeze(privacyConsentStage.get());})),"state",Map.of("get",RestrictedAst.capability(this::stateGet),"set",RestrictedAst.capability(this::stateSet),"delete",RestrictedAst.capability(this::stateDelete),"clear",RestrictedAst.capability(this::stateClear),"keys",RestrictedAst.capability(this::stateKeys)));}
+    private Map<String,Object> context(){return Map.of("java",Map.of("method",RestrictedAst.capability(this::javaMethod),"objectInfo",RestrictedAst.capability(args->{objectInvocation(args);arity(args,1,1);return ScriptValues.freeze(JavaObjectScope.info(args.get(0)));}),"snapshotThread",RestrictedAst.capability(args->{objectInvocation(args);arity(args,1,1);return ScriptValues.freeze(JavaObjectSnapshots.thread(args.get(0)));}),"snapshotThrowable",RestrictedAst.capability(this::snapshotThrowable),"readField",RestrictedAst.capability(this::readField),"snapshotContainer",RestrictedAst.capability(this::snapshotContainer)),"native",Map.of("function",RestrictedAst.capability(this::nativeFunction),"offset",RestrictedAst.capability(this::nativeFunction),"captureBuffer",RestrictedAst.capability(this::captureNativeBuffer),"readCString",RestrictedAst.capability(this::readNativeCString)),"code",Map.of("snapshotDex",RestrictedAst.capability(args->{require(!collecting,"CODE_CAPTURE_OUTSIDE_INVOCATION");arity(args,1,1);String id=string(args.get(0));require(id.matches("[A-Za-z0-9_-]{1,80}"),"DEX_REFERENCE");return ScriptValues.freeze(codeSnapshot.apply(id));})),"debug",Map.of("emitEvent",RestrictedAst.capability(this::emitEvent),"captureEvidence",RestrictedAst.capability(this::captureEvidence),"captureJavaStack",RestrictedAst.capability(this::captureJavaStack),"callerModuleOffset",RestrictedAst.capability(this::callerModuleOffset)),"privacy",Map.of("attribution",RestrictedAst.capability(this::privacyAttributionOf),"consentStage",RestrictedAst.capability(args->{arity(args,0,0);return ScriptValues.freeze(privacyConsentStage.get());})),"state",Map.of("get",RestrictedAst.capability(this::stateGet),"set",RestrictedAst.capability(this::stateSet),"delete",RestrictedAst.capability(this::stateDelete),"clear",RestrictedAst.capability(this::stateClear),"keys",RestrictedAst.capability(this::stateKeys)));}
     private Object privacyAttributionOf(List<Object> args){arity(args,1,1);return ScriptValues.freeze(privacyAttribution.apply(string(args.get(0))));}
     private Object readField(List<Object> args){
         objectInvocation(args);arity(args,2,2);String name=string(args.get(1));
@@ -181,11 +181,44 @@ public final class DraftCompiler {
     }
     private Object nativeFunction(List<Object> args){
         require(collecting,"SETUP_CLOSED");arity(args,3,3);require(evidence.capabilities.contains("native-hook"),"CAPABILITY_MISSING");
-        String module=string(args.get(0)),name=string(args.get(1));Map<String,Object> signature=object(args.get(2));require(signature.keySet().equals(Set.of("argumentTypes","returnType","buildId")),"HOOK_NATIVE_SIGNATURE_FIELDS");
-        List<Map<String,Object>> selected=new ArrayList<>();for(var symbol:evidence.symbols)if("native".equals(symbol.get("kind"))&&module.equals(symbol.get("moduleName"))&&name.equals(symbol.get("symbol")))selected.add(symbol);
+        String module=string(args.get(0));Object target=args.get(1);
+        require(target instanceof String||target instanceof Double,"HOOK_NATIVE_TARGET");
+        if(target instanceof Double){double val=(Double)target;require(Double.isFinite(val)&&val==Math.rint(val)&&val>0,"HOOK_NATIVE_OFFSET");}
+        Map<String,Object> signature=object(args.get(2));require(signature.keySet().equals(Set.of("argumentTypes","returnType","buildId")),"HOOK_NATIVE_SIGNATURE_FIELDS");
+        List<Map<String,Object>> selected=new ArrayList<>();Long targetRva=parseRva(target);
+        for(var symbol:evidence.symbols){
+            if(!"native".equals(symbol.get("kind"))||!module.equals(symbol.get("moduleName")))continue;
+            boolean match=false;
+            if(target instanceof String&&target.equals(symbol.get("symbol"))){
+                match=true;
+            }else if(targetRva!=null){
+                Long symRva=parseRva(symbol.get("offset"));
+                if(symRva==null)symRva=parseRva(symbol.get("symbol"));
+                if(targetRva.equals(symRva))match=true;
+            }
+            if(match)selected.add(symbol);
+        }
         require(!selected.isEmpty(),"TARGET_NOT_FOUND");require(selected.size()==1,"TARGET_AMBIGUOUS");Map<String,Object> symbol=selected.get(0);
         require(!"unknown".equals(symbol.get("signatureSource")),"SIGNATURE_UNKNOWN");require(text(signature,"buildId").equals(symbol.get("buildId")),"BUILD_ID_MISMATCH");
         require(strings(signature.get("argumentTypes")).equals(symbol.get("argumentTypes"))&&Objects.equals(signature.get("returnType"),symbol.get("returnType")),"SIGNATURE_MISMATCH");return builder(symbol);
+    }
+    static Long parseRva(Object value){
+        if(value instanceof Double d){
+            if(!Double.isFinite(d)||d!=Math.rint(d)||d<=0||d>(double)Long.MAX_VALUE)return null;
+            return d.longValue();
+        }
+        if(value instanceof Number n){
+            long l=n.longValue();return l>0?l:null;
+        }
+        if(value instanceof String s){
+            String trimmed=s.trim();
+            try{
+                if(trimmed.startsWith("0x")||trimmed.startsWith("0X"))return Long.parseUnsignedLong(trimmed.substring(2),16);
+                if(trimmed.regionMatches(true,0,"sub_",0,4))return Long.parseUnsignedLong(trimmed.substring(4),16);
+                if(trimmed.matches("^[0-9]+$"))return Long.parseUnsignedLong(trimmed,10);
+            }catch(Exception ignored){}
+        }
+        return null;
     }
     private Object builder(Map<String,Object> symbol){
         require(Boolean.TRUE.equals(symbol.get("loaded")),"HOOK_TARGET_NOT_LOADED");RuleBuilder selected=rules.computeIfAbsent(text(symbol,"id"),ignored->new RuleBuilder(symbol));Map<String,Object> builder=new LinkedHashMap<>();

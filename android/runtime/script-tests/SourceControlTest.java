@@ -46,8 +46,12 @@ public final class SourceControlTest {
         check(evidenceId.equals(status.get("evidenceId")),"rejected selector preserves existing observation");
         Map<String,Object> uncertain=command(control,"activate","token","invalid","sourceSha256","a".repeat(64));
         check("UNKNOWN".equals(uncertain.get("outcome")),"execution-phase failures never claim safe rejection");
+        Map<String,Object> offsetSelector=m("id","sub1","kind","native","moduleName","libowned.so","symbol","sub_12a0","offset","0x12a0","argumentTypes",l("int32"),"returnType","int32","buildId","aabb","signatureSource","confirmed");
+        check(Boolean.TRUE.equals(command(control,"observe","selectors",l(offsetSelector)).get("ok")),"selector with offset accepted");
+        Map<String,Object> badOffset=new LinkedHashMap<>(offsetSelector);badOffset.put("offset","invalid_offset");
+        failed(command(control,"observe","selectors",l(badOffset)),"HOOK_NATIVE_OFFSET");
         observe(control);
-        check(platform.observations==2,"corrected observation runs after validation rejection");
+        check(platform.observations==3,"corrected observation runs after validation rejection");
     }
     static void compilation()throws Throwable {
         String captureSource="import {definePlan} from '@abox/hook';export default definePlan({id:'code',target,params:{},setup(ctx){ctx.java.method('owned.Fixture','value',['int']).replace(({args})=>{const capture=ctx.code.snapshotDex('dex-1');return args[0];});}});";
@@ -83,6 +87,18 @@ public final class SourceControlTest {
         rejects(()->DraftCompiler.compile(nativeSource.replace("'aabb'","'ccdd'"),nativeEvidence),"BUILD_ID_MISMATCH");
         rejects(()->DraftCompiler.compile(nativeSource.replace("['int64']","['int32']"),nativeEvidence),"SIGNATURE_MISMATCH");
         nativeSymbol.put("signatureSource","unknown");rejects(()->DraftCompiler.compile(nativeSource,new HookEvidence(nativeWire)),"SIGNATURE_UNKNOWN");
+        // Native stripped SO relative offset tests
+        Map<String,Object> strippedSymbol=m("id","sub12a0","kind","native","loaded",true,"moduleName","libowned.so","symbol","sub_12a0","offset","0x12a0","buildId","aabb","argumentTypes",l("int32","int32"),"returnType","int32","signatureSource","confirmed");
+        HookEvidence strippedEvidence=new HookEvidence(m("id","stripped-ev","source","fixture","target",TARGET,"processInstanceId","123:process-1","abi","arm64-v8a","capabilities",l("native-hook"),"symbols",l(strippedSymbol)));
+        String offsetHexSource="import {definePlan} from '@abox/hook'; export default definePlan({id:'offset-hex',target,params:{},setup(ctx){ctx.native.offset('libowned.so','0x12a0',{argumentTypes:['int32','int32'],returnType:'int32',buildId:'aabb'}).replace(({args})=>Number(args[0])+Number(args[1]));}});";
+        DraftCompiler.Plan offsetHexPlan=DraftCompiler.compile(offsetHexSource,strippedEvidence);
+        check(offsetHexPlan.rules().get(0).execute(Map.of(),l(10d,20d),a->0d).equals(30d),"native offset hex string hook");
+        String offsetNumSource="import {definePlan} from '@abox/hook'; export default definePlan({id:'offset-num',target,params:{},setup(ctx){ctx.native.offset('libowned.so',0x12a0,{argumentTypes:['int32','int32'],returnType:'int32',buildId:'aabb'}).replace(({args})=>Number(args[0])*2);}});";
+        DraftCompiler.Plan offsetNumPlan=DraftCompiler.compile(offsetNumSource,strippedEvidence);
+        check(offsetNumPlan.rules().get(0).execute(Map.of(),l(15d,0d),a->0d).equals(30d),"native offset numeric literal hook");
+        String subNameSource="import {definePlan} from '@abox/hook'; export default definePlan({id:'sub-name',target,params:{},setup(ctx){ctx.native.function('libowned.so','sub_12a0',{argumentTypes:['int32','int32'],returnType:'int32',buildId:'aabb'}).replace(({args})=>Number(args[0])+5);}});";
+        DraftCompiler.Plan subNamePlan=DraftCompiler.compile(subNameSource,strippedEvidence);
+        check(subNamePlan.rules().get(0).execute(Map.of(),l(25d,0d),a->0d).equals(30d),"native function sub_ name hook");
         String closed=SOURCE.replace(".before(({args})=>[args[0]+1]).after(({result,params})=>result+params.delta)",".replace(()=>{ctx.java.method('owned.Fixture','value',['int']).replace(()=>2);return 1;})");
         DraftCompiler.Plan closedPlan=DraftCompiler.compile(closed,evidence());rejects(()->closedPlan.rules().get(0).execute(closedPlan.parameters(),l(1d),a->0d),"SETUP_CLOSED");
         rejects(()->DraftCompiler.compile(SOURCE.replace("setup(ctx){","setup(ctx){ctx.debug.emitEvent('setup.tag',1);"),evidence()),"HOOK_EMIT_OUTSIDE_INVOCATION");

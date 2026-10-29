@@ -21,7 +21,16 @@ public final class HookEvidence {
             require(symbol.get("loaded") instanceof Boolean,"HOOK_SYMBOL_LOADED");List<String> arguments=strings(symbol.get("argumentTypes"));require(arguments.size()<=16,"HOOK_ARGUMENT_COUNT");
             Set<String> types;
             if(kind.equals("java")){text(symbol,"className");text(symbol,"methodName");text(symbol,"classLoaderId");types=Set.of("boolean","byte","short","int","long","char","float","double","java.lang.String","[B","byte[]");}
-            else {require(kind.equals("native"),"HOOK_SYMBOL_KIND");text(symbol,"moduleName");text(symbol,"symbol");text(symbol,"buildId");require(Set.of("debug-info","confirmed","unknown").contains(text(symbol,"signatureSource")),"HOOK_SIGNATURE_SOURCE");types=Set.of("int32","uint32","int64","uint64","float","double");}
+            else {
+                require(kind.equals("native"),"HOOK_SYMBOL_KIND");text(symbol,"moduleName");text(symbol,"symbol");text(symbol,"buildId");
+                if(symbol.containsKey("offset")){
+                    Object rawOffset=symbol.get("offset");
+                    boolean validOffset=(rawOffset instanceof Double d&&Double.isFinite(d)&&d==Math.rint(d)&&d>0)||(rawOffset instanceof Long l&&l>0)||(rawOffset instanceof Integer i&&i>0)||(rawOffset instanceof String s&&s.matches("^(0[xX][0-9a-fA-F]+|[sS][uU][bB]_[0-9a-fA-F]+|[0-9]+)$"));
+                    require(validOffset,"HOOK_NATIVE_OFFSET");
+                }
+                require(Set.of("debug-info","confirmed","unknown").contains(text(symbol,"signatureSource")),"HOOK_SIGNATURE_SOURCE");
+                types=Set.of("int32","uint32","int64","uint64","float","double");
+            }
             require((kind.equals("java")?arguments.stream().allMatch(t->JavaTypes.valid(t,false))&&JavaTypes.valid(text(symbol,"returnType"),true):types.containsAll(arguments)&&(types.contains(text(symbol,"returnType"))||"void".equals(symbol.get("returnType")))),"HOOK_ABI_UNSUPPORTED");selected.add(symbol);
         }
         symbols=List.copyOf(selected);

@@ -58,10 +58,14 @@ APPS = {
 }
 
 def adb(*argv, check=True, timeout=30):
-    result = subprocess.run(['adb', '-s', SERIAL, *argv], capture_output=True, text=True, timeout=timeout)
-    if check and result.returncode:
-        raise RuntimeError('ADB_FAILED: ' + result.stderr.strip())
-    return result
+    try:
+        result = subprocess.run(['adb', '-s', SERIAL, *argv], capture_output=True, text=True, timeout=timeout)
+        if check and result.returncode:
+            raise RuntimeError('ADB_FAILED: ' + result.stderr.strip())
+        return result
+    except subprocess.TimeoutExpired:
+        if check: raise
+        return subprocess.CompletedProcess(['adb', '-s', SERIAL, *argv], 1, "", "TIMEOUT")
 
 def attempt_reconnect(package):
     window = '/data/local/tmp/tripoder-batch-reconnect.xml'

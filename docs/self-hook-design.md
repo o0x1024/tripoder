@@ -67,6 +67,20 @@ flowchart TD
 1. **有界线程安全停顿 (`tp_park_begin_bounded`)**：遍历 `/proc/self/task` 发送专用停顿信号（Signal 60），确保无任何线程 `PC` 落在待改写窗口内；对瞬时 `TIMEOUT`/`INVENTORY` 状态支持最多 3 次有界退避重试（间隔 1–2ms）。
 2. **W^X 匿名页重映射发布**：将原代码页拷贝至新分配的 `RW` 匿名页，写入跳板、刷新指令缓存后切换为 `RX`，再通过 `mremap(..., MREMAP_MAYMOVE | MREMAP_FIXED)` 原子覆盖目标虚拟地址，全程绝不出现 `RWX` 页；停用时完整恢复原文件映射。
 
+### 3.3 无符号 Native 相对偏移 Hook (Stripped SO & RVA)
+
+针对现代 Android 应用中被剥离符号表（Stripped）、或不经 `dlsym` 导出的内部关键 C/C++ 业务逻辑，Tripoder 提供了基于相对虚拟地址（Relative Virtual Address, RVA / 相对库文件偏移）的确定性 Hook 能力：
+
+1. **TypeScript 语法契约与 IDA 风格自动识别**：
+   - 显式相对偏移 API：`ctx.native.offset(moduleName, relativeOffset, signature)`，支持十六进制字符串（如 `"0x3e6c"`）或整型偏移。
+   - 符号语义兼容：在 `ctx.native.function(moduleName, name, signature)` 中，若传入 IDA 风格命名（形如 `sub_3e6c`、`sub_00003e6c`），规划器与编译器自动识别提取其后继十六进制串作为 RVA，降低反编译工程向 Hook 脚本转换的心智负担。
+2. **Bionic Linker 真实路径映射与模块基址探测**：
+   - 第一性原理：客体运行时装载 `.so` 时，ART `PathClassLoader` 传给 Bionic Linker 的是物理落地路径 `engine.info.nativeLibraryDir`（例如 `/data/data/<host>/files/runtime/artifacts/<installGen>/lib/`）。
+   - Linker Notifier（[`linker_notifier.c`](../android/self-hook/native/linker_notifier.c) / [`NativeModules.java`](../android/self-hook/java/dev/tripoder/selfhook/NativeModules.java)）直接扫描 Bionic Linker 维护的 `r_debug->r_map` 双向链表，通过 `link_map->l_name` 精准匹配库物理路径，获取库加载基址（`baseAddress`）与 ELF Build ID。
+3. **安全对齐与指令保护**：
+   - ARM64 指令固定宽度为 4 字节，编译器与 Hook 控制面严格校验 `(offset & 0x3) == 0`，对非 4 字节对齐的非法偏移予以明确拦截。
+   - 同样完整经过 3.1 节的前导指令静态重定位规划、3.2 节的有界停顿与 W^X 原子页发布，保障已剥离符号模块的挂载与卸载具备同等安全稳定性。
+
 ---
 
 ## 4. 固定 `libc` 双页导出包装器 ([`fixed_libc.c`](../android/self-hook/native/fixed_libc.c))

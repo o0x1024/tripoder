@@ -12,7 +12,7 @@ final class NetworkControlTest {
         HookInvocationSession.Dispatch dispatch;DraftCompiler.Plan plan;int published,retired,saved;
         public Map<String,Object> identity(){return SourceControlTest.IDENTITY;}
         public Set<String> capabilities(){return Set.of("native-hook");}
-        public List<Map<String,Object>> modules(){return List.of();}public List<Map<String,Object>> moduleEvents(){return List.of();}
+        public List<Map<String,Object>> modules(){return List.of(m("moduleName","libowned.so","state","AVAILABLE"));}public List<Map<String,Object>> moduleEvents(){return List.of();}
         public List<Map<String,Object>> searchNativeExports(String module,String prefix,int limit){return List.of(m("symbol",prefix,"buildId","aabb"));}
         public SelfHookControl.Observation observe(List<Map<String,Object>> selectors){List<Map<String,Object>> symbols=new ArrayList<>();for(var selector:selectors){Map<String,Object> row=new LinkedHashMap<>(selector);row.put("loaded",true);symbols.add(row);}return new SelfHookControl.Observation(symbols,List.of());}
         public boolean evidenceLive(HookEvidence e){return true;}public void discardObservation(){}

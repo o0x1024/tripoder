@@ -47,7 +47,10 @@ export interface PlanContext<P> {
     /** Before or after original; signed byte-count result, uint64 pointer slot, integral capacity slot. */
     captureBuffer(pointerArgument: number, capacityArgument: number, maxBytes: number): Readonly<Record<string, unknown>>;
     readCString(pointerArgument: number, maxBytes?: number): string | null;
-    function(moduleName: string, symbol: string, signature: {
+    function(moduleName: string, symbolOrOffset: string | number, signature: {
+      argumentTypes: readonly NativeType[]; returnType: NativeType; buildId: string;
+    }): HookBuilder<P>;
+    offset(moduleName: string, relativeOffset: string | number, signature: {
       argumentTypes: readonly NativeType[]; returnType: NativeType; buildId: string;
     }): HookBuilder<P>;
   };
@@ -97,6 +100,28 @@ export interface PreparedPlan<S extends Parameters> {
 
 export function definePlan<S extends Parameters>(plan: HookPlan<S>): HookPlan<S> {
   return plan;
+}
+
+function parseRvaNumber(value: unknown): number | null {
+  if (typeof value === "number") {
+    return Number.isSafeInteger(value) && value > 0 ? value : null;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (/^0[xX][0-9a-fA-F]+$/.test(trimmed)) {
+      const n = parseInt(trimmed.slice(2), 16);
+      return Number.isSafeInteger(n) && n > 0 ? n : null;
+    }
+    if (/^[sS][uU][bB]_[0-9a-fA-F]+$/.test(trimmed)) {
+      const n = parseInt(trimmed.slice(4), 16);
+      return Number.isSafeInteger(n) && n > 0 ? n : null;
+    }
+    if (/^[0-9]+$/.test(trimmed)) {
+      const n = parseInt(trimmed, 10);
+      return Number.isSafeInteger(n) && n > 0 ? n : null;
+    }
+  }
+  return null;
 }
 
 /** Executes trusted setup code. This is NOT an isolation boundary for AI-generated code. */
@@ -185,16 +210,28 @@ export function preparePlan<S extends Parameters>(plan: HookPlan<S>, observed: E
         requireThat(emitSink.readCString,"NATIVE_BUFFER_UNSUPPORTED","An invocation-owned native string provider is required");
         return emitSink.readCString(pointerArgument,maxBytes);
       },
-      function(moduleName, name, signature) {
+      function(moduleName, symbolOrOffset, signature) {
         requireThat(evidence.capabilities.includes("native-hook"), "CAPABILITY_MISSING", "native-hook capability is unavailable");
-        const matches = evidence.symbols.filter(s => s.kind === "native" && s.moduleName === moduleName && s.symbol === name);
-        requireThat(matches.length === 1, matches.length === 0 ? "TARGET_NOT_FOUND" : "TARGET_AMBIGUOUS", `Cannot uniquely resolve ${moduleName}!${name}`);
+        const targetRva = parseRvaNumber(symbolOrOffset);
+        const matches = evidence.symbols.filter(s => {
+          if (s.kind !== "native" || s.moduleName !== moduleName) return false;
+          if (typeof symbolOrOffset === "string" && s.symbol === symbolOrOffset) return true;
+          if (targetRva !== null) {
+            const symRva = parseRvaNumber(s.offset) ?? parseRvaNumber(s.symbol);
+            if (targetRva === symRva) return true;
+          }
+          return false;
+        });
+        requireThat(matches.length === 1, matches.length === 0 ? "TARGET_NOT_FOUND" : "TARGET_AMBIGUOUS", `Cannot uniquely resolve ${moduleName}!${symbolOrOffset}`);
         const symbol = matches[0]!;
         requireThat(symbol.kind === "native" && symbol.signatureSource !== "unknown", "SIGNATURE_UNKNOWN", "A Native signature needs evidence or confirmation");
         requireThat(signature.buildId.length > 0 && symbol.buildId === signature.buildId, "BUILD_ID_MISMATCH", "Native library Build ID changed");
         requireThat(symbol.returnType === signature.returnType && JSON.stringify(symbol.argumentTypes) === JSON.stringify(signature.argumentTypes),
           "SIGNATURE_MISMATCH", "Native ABI does not match the observed signature");
         return builder(symbol);
+      },
+      offset(moduleName, relativeOffset, signature) {
+        return this.function(moduleName, relativeOffset, signature);
       },
     },
     debug: {

@@ -26,8 +26,8 @@ public final class ScriptValues {
         if (value instanceof String) ScriptFault.require(((String)value).length() <= 8192, "DRAFT_STRING_SIZE");
         if (value instanceof Double) ScriptFault.require(Double.isFinite((Double)value), "DRAFT_NON_FINITE");
         if (value instanceof BigInteger) ScriptFault.require(((BigInteger)value).compareTo(LOW) >= 0 && ((BigInteger)value).compareTo(HIGH) < 0, "DRAFT_BIGINT_SIZE");
-        if (value instanceof List) ScriptFault.require(((List<?>)value).size() <= 64, "DRAFT_ARRAY_SIZE");
-        if (value instanceof Map) ScriptFault.require(((Map<?,?>)value).size() <= 64, "DRAFT_OBJECT_SIZE");
+        if (value instanceof List) ScriptFault.require(((List<?>)value).size() <= 256, "DRAFT_ARRAY_SIZE");
+        if (value instanceof Map) ScriptFault.require(((Map<?,?>)value).size() <= 128, "DRAFT_OBJECT_SIZE");
         return value;
     }
     /** Deep copy checks identity cycles and total size before publishing an immutable snapshot. */

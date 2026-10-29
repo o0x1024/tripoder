@@ -36,7 +36,10 @@ final class RuntimeNativeObservation {
         if(!ownerLive.getAsBoolean()||selectors.size()>128)throw new IllegalStateException("HOOK_NATIVE_OBSERVATION_STATE");
         Map<String,Target> selected=new HashMap<>();List<Map<String,Object>> symbols=new ArrayList<>();Set<Long> addresses=new HashSet<>();
         for(Map<String,Object> selector:selectors){
-            if(!selector.keySet().equals(Set.of("id","kind","moduleName","symbol","argumentTypes","returnType","buildId","signatureSource"))||!"native".equals(selector.get("kind"))||!"confirmed".equals(selector.get("signatureSource")))throw new IllegalArgumentException("HOOK_NATIVE_SELECTOR_FIELDS");
+            Set<String> requiredNativeKeys=Set.of("id","kind","moduleName","symbol","argumentTypes","returnType","buildId","signatureSource");
+            Set<String> keys=selector.keySet();
+            boolean validKeys=keys.equals(requiredNativeKeys)||(keys.size()==requiredNativeKeys.size()+1&&keys.containsAll(requiredNativeKeys)&&keys.contains("offset"));
+            if(!validKeys||!"native".equals(selector.get("kind"))||!"confirmed".equals(selector.get("signatureSource")))throw new IllegalArgumentException("HOOK_NATIVE_SELECTOR_FIELDS");
             String id=text(selector,"id"),module=text(selector,"moduleName"),name=text(selector,"symbol");
             if(!id.matches("[a-zA-Z][a-zA-Z0-9_-]{0,63}")||selected.containsKey(id)||name.length()>256)throw new IllegalArgumentException("HOOK_NATIVE_SELECTOR_IDENTITY");
             List<String> types=strings(selector.get("argumentTypes"));if(types.size()>16)throw new IllegalArgumentException("HOOK_NATIVE_ARGUMENT_COUNT");
@@ -44,10 +47,21 @@ final class RuntimeNativeObservation {
             Artifact artifact=artifacts.get(module);if(artifact==null)throw new SecurityException("HOOK_MODULE_OUTSIDE_GUEST");
             NativeModules.Snapshot live=NativeModules.snapshot(artifact.index());if(!live.live||live.ambiguous)throw new IllegalStateException("HOOK_MODULE_NOT_UNIQUELY_LOADED");
             Library library=inspect(artifact);if(!library.buildId().equals(selector.get("buildId")))throw new IllegalArgumentException("HOOK_MODULE_BUILD_ID_STALE");
-            long rva=RuntimeElfExports.address(new File(library.path()),name);
+            long rva=-1;
+            if(selector.containsKey("offset")){
+                rva=parseRva(selector.get("offset"));
+                if(rva<=0)throw new IllegalArgumentException("HOOK_NATIVE_OFFSET_INVALID");
+            }else{
+                long parsed=parseRva(name);
+                if(parsed>0){
+                    rva=parsed;
+                }else{
+                    rva=RuntimeElfExports.address(new File(library.path()),name);
+                }
+            }
             if(rva<=0||rva>=library.size()||(rva&3)!=0||!NativeModules.attestExport(library.index(),live.generation,rva,library.buildId()))throw new IllegalArgumentException("HOOK_NATIVE_EXPORT_NOT_ADMITTED");
             if(!addresses.add(Math.addExact(live.base,rva)))throw new IllegalArgumentException("HOOK_NATIVE_ADDRESS_ALIAS");
-            Map<String,Object> symbol=new LinkedHashMap<>(selector);symbol.put("loaded",true);symbol=immutable(symbol);
+            Map<String,Object> symbol=new LinkedHashMap<>(selector);symbol.put("loaded",true);symbol.put("offset","0x"+Long.toHexString(rva));symbol=immutable(symbol);
             selected.put(id,new Target(library,live.generation,live.base,rva,symbol));symbols.add(symbol);
         }
         if(!ownerLive.getAsBoolean())throw new IllegalStateException("HOOK_PROCESS_STALE");
@@ -104,4 +118,22 @@ final class RuntimeNativeObservation {
     private static String text(Map<String,Object> value,String key){Object raw=value.get(key);if(!(raw instanceof String)||((String)raw).isEmpty())throw new IllegalArgumentException("HOOK_NATIVE_FIELD:"+key);return (String)raw;}
     private static List<String> strings(Object input){if(!(input instanceof List<?>))throw new IllegalArgumentException("HOOK_NATIVE_TYPES");List<String> values=new ArrayList<>();for(Object value:(List<?>)input){if(!(value instanceof String))throw new IllegalArgumentException("HOOK_NATIVE_TYPE");values.add((String)value);}return List.copyOf(values);}
     @SuppressWarnings("unchecked") private static Map<String,Object> immutable(Map<String,Object> value){return (Map<String,Object>)ScriptValues.freeze(value);}
+    static long parseRva(Object value){
+        if(value instanceof Double d){
+            if(!Double.isFinite(d)||d!=Math.rint(d)||d<=0||d>(double)Long.MAX_VALUE)return -1;
+            return d.longValue();
+        }
+        if(value instanceof Number n){
+            long l=n.longValue();return l>0?l:-1;
+        }
+        if(value instanceof String s){
+            String trimmed=s.trim();
+            try{
+                if(trimmed.startsWith("0x")||trimmed.startsWith("0X"))return Long.parseUnsignedLong(trimmed.substring(2),16);
+                if(trimmed.regionMatches(true,0,"sub_",0,4))return Long.parseUnsignedLong(trimmed.substring(4),16);
+                if(trimmed.matches("^[0-9]+$"))return Long.parseUnsignedLong(trimmed,10);
+            }catch(Exception ignored){}
+        }
+        return -1;
+    }
 }

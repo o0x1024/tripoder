@@ -27,6 +27,7 @@ export interface NativeFunction extends SymbolBase {
   readonly kind: "native";
   readonly moduleName: string;
   readonly symbol: string;
+  readonly offset?: number | string;
   readonly buildId: string;
   readonly argumentTypes: readonly NativeType[];
   readonly returnType: NativeType;
@@ -71,6 +72,11 @@ export function snapshotEvidence(evidence: EvidenceSnapshot): EvidenceSnapshot {
     requireThat(symbol.kind === "native", "INVALID_EVIDENCE", "Unknown symbol kind");
     requireThat(symbol.moduleName.length > 0 && symbol.symbol.length > 0 && symbol.buildId.length > 0,
       "INVALID_EVIDENCE", "Native module, symbol and Build ID are required");
+    if (symbol.offset !== undefined) {
+      const validOffset = (typeof symbol.offset === "number" && Number.isInteger(symbol.offset) && symbol.offset > 0) ||
+        (typeof symbol.offset === "string" && /^(0[xX][0-9a-fA-F]+|[sS][uU][bB]_[0-9a-fA-F]+|[0-9]+)$/.test(symbol.offset));
+      requireThat(validOffset, "INVALID_EVIDENCE", "Invalid native offset format");
+    }
     requireThat(["debug-info", "confirmed", "unknown"].includes(symbol.signatureSource), "INVALID_EVIDENCE", "Unknown signature provenance");
     requireThat(nativeTypes.has(symbol.returnType) && symbol.argumentTypes.every(t => nativeTypes.has(t)), "INVALID_SIGNATURE", "Unsupported Native signature");
     return Object.freeze({ ...symbol, argumentTypes: Object.freeze([...symbol.argumentTypes]) });
@@ -84,7 +90,7 @@ export function evidenceKey(e: EvidenceSnapshot): string {
   return JSON.stringify([e.id, e.source, e.target.packageName, e.target.versionCode, e.target.apkSha256,
     e.processInstanceId, e.abi, [...e.capabilities].sort(), [...e.symbols].sort((a, b) => a.id.localeCompare(b.id)).map(s =>
       s.kind === "java" ? [s.kind, s.id, s.loaded, s.className, s.methodName, s.classLoaderId, s.argumentTypes, s.returnType]
-        : [s.kind, s.id, s.loaded, s.moduleName, s.symbol, s.buildId, s.argumentTypes, s.returnType, s.signatureSource])]);
+        : [s.kind, s.id, s.loaded, s.moduleName, s.symbol, s.buildId, s.argumentTypes, s.returnType, s.signatureSource, s.offset ?? null])]);
 }
 
 export function validateHookValue(type: AbiType, value: unknown, location: string): asserts value is HookValue {

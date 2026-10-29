@@ -39,19 +39,29 @@ export class NativeTargets {
     const bindings: NativeBinding[] = [];
     for (const selector of selectors) {
       const fields = ["id", "kind", "moduleName", "symbol", "argumentTypes", "returnType", "buildId", "signatureSource"];
-      if (Object.keys(selector).length !== fields.length || !fields.every(key => Object.hasOwn(selector, key)) || selector.kind !== "native"
+      const keys = Object.keys(selector);
+      const validKeys = (keys.length === fields.length && fields.every(key => Object.hasOwn(selector, key)))
+        || (keys.length === fields.length + 1 && fields.every(key => Object.hasOwn(selector, key)) && Object.hasOwn(selector, "offset"));
+      if (!validKeys || selector.kind !== "native"
         || !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(selector.id) || typeof selector.symbol !== "string" || selector.symbol.length > 256
         || typeof selector.moduleName !== "string" || !/^lib[a-zA-Z0-9_.-]+\.so$/.test(selector.moduleName)
         || !Array.isArray(selector.argumentTypes) || selector.argumentTypes.length > 16 || selector.signatureSource !== "confirmed") throw new Error("HOOK_NATIVE_SELECTOR_FIELDS");
       const { loaded, metadata } = this.attest(selector.moduleName);
       if (selector.buildId !== metadata.buildId) throw new Error("HOOK_MODULE_BUILD_ID_STALE");
-      const offset = Number(this.Bridge.exportAddress(selector.moduleName,selector.symbol));
-      if (!Number.isSafeInteger(offset)||offset<=0||offset>=metadata.size) throw new Error("HOOK_EXPORT_OFFSET_BOUNDS");
-      const address = loaded.base.add(offset);
+      let offset: number | null = null;
+      if (selector.offset !== undefined) {
+        offset = parseOffset(selector.offset);
+      } else {
+        const parsed = parseOffset(selector.symbol);
+        if (parsed !== null) offset = parsed;
+        else offset = Number(this.Bridge.exportAddress(selector.moduleName, selector.symbol));
+      }
+      if (!Number.isSafeInteger(offset) || offset! <= 0 || offset! >= metadata.size) throw new Error("HOOK_EXPORT_OFFSET_BOUNDS");
+      const address = loaded.base.add(offset!);
       if (address.compare(loaded.base) < 0 || address.compare(loaded.base.add(metadata.size)) >= 0
         || !Process.getRangeByAddress(address).protection.includes("x")) throw new Error("HOOK_EXPORT_OUTSIDE_MODULE");
       if (bindings.some(binding => binding.address.equals(address))) throw new Error("HOOK_NATIVE_ADDRESS_ALIAS");
-      const symbol: NativeSymbol = { ...selector, loaded: true };
+      const symbol: NativeSymbol = { ...selector, loaded: true, offset: "0x" + offset!.toString(16) };
       bindings.push({ kind: "native", symbol, loaded, address, metadata, original: undefined, installed: false });
     }
     this.selected.clear();for (const binding of bindings) this.selected.set(binding.symbol.id, binding);
@@ -71,4 +81,14 @@ export function decodeNative(type: NativeType, value: any): HookValue { return t
 export function encodeNative(type: NativeType, value: HookValue): any {
   if (type === "int64") return new Int64(String(value));if (type === "uint64") return new UInt64(String(value));
   return type === "float" ? Math.fround(value as number) : value;
+}
+function parseOffset(val: any): number | null {
+  if (typeof val === "number" && Number.isSafeInteger(val) && val > 0) return val;
+  if (typeof val === "string") {
+    const s = val.trim();
+    if (/^0[xX][0-9a-fA-F]+$/.test(s)) return parseInt(s.slice(2), 16);
+    if (/^[sS][uU][bB]_[0-9a-fA-F]+$/.test(s)) return parseInt(s.slice(4), 16);
+    if (/^[0-9]+$/.test(s)) return parseInt(s, 10);
+  }
+  return null;
 }

@@ -50,6 +50,7 @@ Tripoder 编译并分发为单一 APK：**`dev.tripoder.engine`**。所有进程
 1. **只读执行副本与真实 Native 库搜索路径**：
    - 安装制品目录封存原始 APK、签名与摘要描述符。[`RuntimeExecutionCode`](../android/runtime/src/dev/tripoder/runtime/RuntimeExecutionCode.java) 在安装的数据代次内生成运行副本，统一 APK/Split、ClassLoader、资源与 `.so` 的物理 ABI 目录（`info.nativeLibraryDir`）。
    - [`RuntimeSharedLibraries`](../android/runtime/src/dev/tripoder/runtime/RuntimeSharedLibraries.java) 与 [`RuntimeDexLoader`](../android/runtime/src/dev/tripoder/runtime/RuntimeDexLoader.java) 使用真实解压的 `info.nativeLibraryDir` 配置客体 ClassLoader 的 linker namespace 搜索路径，同时在 `applicationInfo.nativeLibraryDir` 保留供客体自检的逻辑路径视图。可执行副本保持只读，其父目录允许 Android 和客体生成 `profile/oat/odex/vdex` 等派生编译缓存。
+   - **Native 模块发现与无符号偏移 Hook**：[`RuntimeHookBridge`](../android/runtime/src/dev/tripoder/runtime/RuntimeHookBridge.java) 与底层 Linker Notifier 以真实装载目录 `engine.info.nativeLibraryDir` 为白名单锚点，枚举 Bionic Linker `r_debug->r_map` 链路，支持针对导出符号及剥离符号（Stripped SO，通过 `ctx.native.offset` / `sub_XXXX` RVA 偏移）实施 ARM64 前导指令重定位与 W^X 匿名页原子跳板 Hook。
 2. **Application 与壳委托（Shell Delegate）生命周期**：
    - `LoadedApk` 在 `Application.attach` 前绑定到启动记录；`Application` 实例在 `attach` 完成后发布。
    - 兼容加壳应用（如网易易盾、梆梆、360 加固）：若壳 `Application` 在 `attachBaseContext` 阶段已向 `ActivityThread.mInitialApplication` 发布了真实业务委托 `Application`，[`RuntimeEngine`](../android/runtime/src/dev/tripoder/runtime/RuntimeEngine.java) 保留该客体委托实例，仅在字段仍为物理宿主时才替换为壳实例，防止壳在 `onCreate` 中自调用陷入无限递归。

@@ -118,13 +118,14 @@ const core = join(root, "android/runtime/src/dev/tripoder/runtime/script");
 const sources = (await readdir(core)).filter(n => n.endsWith(".java")).map(n => join(core, n));
 sources.push(...["NativeHook.java","NativeModules.java"].map(name=>join(root,"android/self-hook/java/dev/tripoder/selfhook",name)));
 const javaHome = process.env.TRIPODER_JAVA_HOME ?? "/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home";
+const androidJar = process.env.ANDROID_JAR ?? "/opt/homebrew/share/android-commandlinetools/platforms/android-37.0/android.jar";
 const snapshotLibrary=join(output,"libobject-snapshots.dylib");
 const nativeBuild=spawnSync("/usr/bin/clang",["-dynamiclib","-Wall","-Wextra","-Werror","-I"+join(javaHome,"include"),"-I"+join(javaHome,"include/darwin"),join(root,"android/self-hook/native/object_snapshots.c"),"-o",snapshotLibrary],{encoding:"utf8"});
 if(nativeBuild.status!==0)throw Error(nativeBuild.stderr);
 let testOutput="";
 const tests=(await readdir(here)).filter(n=>n.endsWith(".java")).map(n=>join(here,n));
-for (const [command, args] of [[join(javaHome,"bin/javac"), ["--release", "17", "-Xlint:all", "-d", output, ...sources, ...tests, join(output,"OracleFixtures.java")]],
-                              [join(javaHome,"bin/java"), ["-ea", "-Dtripoder.snapshotLibrary="+snapshotLibrary, "-cp", output, "dev.tripoder.runtime.script.ScriptContractTest"]]]) {
+for (const [command, args] of [[join(javaHome,"bin/javac"), ["--release", "17", "-classpath", androidJar, "-Xlint:all", "-d", output, ...sources, ...tests, join(output,"OracleFixtures.java")]],
+                              [join(javaHome,"bin/java"), ["-ea", "-Dtripoder.snapshotLibrary="+snapshotLibrary, "-cp", output + ":" + androidJar, "dev.tripoder.runtime.script.ScriptContractTest"]]]) {
   const result = spawnSync(command, args, { encoding: "utf8" });
   process.stdout.write(result.stdout ?? "");process.stderr.write(result.stderr ?? "");
   if (result.status !== 0) process.exit(result.status ?? 1);

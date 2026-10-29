@@ -424,6 +424,12 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
         for(Object entry:array){Map<String,Object> selector=object(entry);String kind=text(selector,"kind"),id=text(selector,"id");require(id.matches("[a-zA-Z][a-zA-Z0-9_-]{0,63}")&&ids.add(id),"HOOK_SYMBOL_ID");
             Set<String> keys=kind.equals("java")?Set.of("id","kind","className","methodName","argumentTypes"):Set.of("id","kind","moduleName","symbol","argumentTypes","returnType","buildId","signatureSource");
             if(kind.equals("java")&&selector.containsKey("classLoaderId")){keys=new HashSet<>(keys);keys.add("classLoaderId");require(text(selector,"classLoaderId").matches("[A-Za-z0-9_-]{1,80}"),"CLASS_LOADER_REFERENCE");}
+            if(kind.equals("native")&&selector.containsKey("offset")){
+                keys=new HashSet<>(keys);keys.add("offset");
+                Object rawOffset=selector.get("offset");
+                boolean validOffset=(rawOffset instanceof Double d&&Double.isFinite(d)&&d==Math.rint(d)&&d>0)||(rawOffset instanceof Long l&&l>0)||(rawOffset instanceof Integer i&&i>0)||(rawOffset instanceof String s&&s.matches("^(0[xX][0-9a-fA-F]+|[sS][uU][bB]_[0-9a-fA-F]+|[0-9]+)$"));
+                require(validOffset,"HOOK_NATIVE_OFFSET");
+            }
             require(Set.of("java","native").contains(kind)&&selector.keySet().equals(keys),"HOOK_SELECTOR_FIELDS");require(strings(selector.get("argumentTypes")).size()<=16,"HOOK_ARGUMENT_COUNT");
             if(kind.equals("java")){require(text(selector,"className").length()<=512&&text(selector,"methodName").length()<=128&&(!text(selector,"methodName").startsWith("<")||"<init>".equals(text(selector,"methodName"))),"HOOK_METHOD_NAME");}
             else require(text(selector,"moduleName").matches("lib[a-zA-Z0-9_+.$-]+\\.so")&&text(selector,"symbol").length()<=256&&"confirmed".equals(selector.get("signatureSource")),"HOOK_NATIVE_SELECTOR_FIELDS");
