@@ -16,7 +16,7 @@ public final class HookEvidence {
         target=object(wire.get("target"));require(text(target,"versionCode").matches("[0-9]+")&&text(target,"apkSha256").matches("[a-f0-9]{64}"),"HOOK_TARGET_IDENTITY");text(target,"packageName");
         capabilities=Set.copyOf(strings(wire.get("capabilities")));require(Set.of("java-hook","native-hook").containsAll(capabilities),"HOOK_CAPABILITY");
         List<Map<String,Object>> selected=new ArrayList<>();Set<String> ids=new HashSet<>();
-        List<?> values=array(wire.get("symbols"));require(!values.isEmpty()&&values.size()<=32,"HOOK_SYMBOL_COUNT");
+        List<?> values=array(wire.get("symbols"));require(!values.isEmpty()&&values.size()<=128,"HOOK_SYMBOL_COUNT");
         for(Object item:values){Map<String,Object> symbol=object(item);String symbolId=text(symbol,"id"),kind=text(symbol,"kind");require(symbolId.matches("[a-zA-Z][a-zA-Z0-9_-]{0,63}")&&ids.add(symbolId),"HOOK_SYMBOL_ID");
             require(symbol.get("loaded") instanceof Boolean,"HOOK_SYMBOL_LOADED");List<String> arguments=strings(symbol.get("argumentTypes"));require(arguments.size()<=16,"HOOK_ARGUMENT_COUNT");
             Set<String> types;

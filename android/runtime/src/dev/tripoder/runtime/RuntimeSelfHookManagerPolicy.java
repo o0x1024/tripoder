@@ -120,7 +120,7 @@ final class RuntimeSelfHookManagerPolicy {
         // clients and Bluetooth addresses) are not among them.
         if(family==Family.AUDIO)return AUDIO_CONTROL.matcher(signature).matches();
         if(family==Family.TELEPHONY)return telephonyObservation(signature);
-        if(family!=Family.CONNECTIVITY&&family!=Family.POWER&&family!=Family.LOCATION)return false;
+        if(family!=Family.CONNECTIVITY&&family!=Family.POWER&&family!=Family.LOCATION&&family!=Family.ACTIVITY_MANAGER)return false;
         if(family==Family.CONNECTIVITY&&PROCESS_NETWORK.contains(signature))return true;
         return OBSERVATION.matcher(signature).matches()&&!signature.contains("Callback")&&!signature.contains("Listener");
     }

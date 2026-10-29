@@ -47,7 +47,7 @@ final class RuntimeSelfHookProduct {
         plan.put(SERVICES,()->{RuntimeSelfHookFixedComponents.services();RuntimeSelfHookRawServices.install(value.managed);});
         plan.put(PROVIDERS,()->{RuntimeSelfHookFixedComponents.providers();RuntimeSelfHookProviderInstallation.install(value.managed);});
         plan.put(RECEIVERS,()->{RuntimeSelfHookFixedComponents.receivers();RuntimeSelfHookRawReceivers.install(value.managed);});
-        plan.put(WIDGETS,()->{});
+        plan.put(WIDGETS,RuntimeSelfHookFixedComponents::widgets);
         plan.put(PACKAGES,()->{RuntimeSelfHookPackages.install(value.managed);RuntimeSelfHookResourceRegistration.install(value.managed);});
         plan.put(STORAGE,()->{RuntimeSelfHookRawStorage.install(value.managed);RuntimeSelfHookStorage.install();});
         plan.put(ACTIVITY_MANAGER,()->{});

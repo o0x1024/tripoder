@@ -37,9 +37,10 @@ final class RuntimeNativeHookBackend {
                 try {
                 for(Binding binding:bindings){var target=binding.target();int[] types=binding.arguments().stream().mapToInt(type->NativeHookValues.type(type,false)).toArray();
                     prepared.add(NativeHook.prepare(target.library().index(),target.generation(),target.rva(),target.library().path(),NativeHookValues.type(binding.result(),true),types,call->{
-                        try(var scope=new NativeBufferScope(binding.id(),binding.arguments(),binding.result(),call::snapshotArgument)){
+                        List<Object> initialArgs=NativeHookValues.decodeArguments(binding.arguments(),call.arguments());
+                        try(var scope=new NativeBufferScope(binding.id(),binding.arguments(),binding.result(),call::snapshotArgument,initialArgs)){
                         int[] errorNumber={call.incomingErrno()};
-                        Object value=dispatch.call(binding.id(),NativeHookValues.decodeArguments(binding.arguments(),call.arguments()),arguments->{
+                        Object value=dispatch.call(binding.id(),initialArgs,arguments->{
                             NativeHook.Result original=call.original(NativeHookValues.encodeArguments(binding.arguments(),arguments),errorNumber[0]);errorNumber[0]=original.errorNumber;
                             Object decoded=NativeHookValues.decode(binding.result(),original.bits);scope.complete(arguments,decoded);return decoded;
                         });

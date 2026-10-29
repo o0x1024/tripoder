@@ -44,8 +44,9 @@ export interface PlanContext<P> {
     keys(): readonly string[];
   };
   readonly native: {
-    /** After original only; signed byte-count result, uint64 pointer slot, integral capacity slot. */
+    /** Before or after original; signed byte-count result, uint64 pointer slot, integral capacity slot. */
     captureBuffer(pointerArgument: number, capacityArgument: number, maxBytes: number): Readonly<Record<string, unknown>>;
+    readCString(pointerArgument: number, maxBytes?: number): string | null;
     function(moduleName: string, symbol: string, signature: {
       argumentTypes: readonly NativeType[]; returnType: NativeType; buildId: string;
     }): HookBuilder<P>;
@@ -82,6 +83,7 @@ export interface PreparedPlan<S extends Parameters> {
   readonly rules: readonly PreparedRule<ParameterValues<S>>[];
   readonly emitSink?: {
     nativeBuffer?: ((pointerArgument:number,capacityArgument:number,maxBytes:number)=>Readonly<Record<string,unknown>>) | undefined;
+    readCString?: ((pointerArgument:number,maxBytes:number)=>string|null) | undefined;
     snapshotDex?: ((dexId: string) => Readonly<{ artifactId: string; state: string }>) | undefined;
     fn?: ((tag: string, payload: unknown) => void) | undefined;
     evidence?: ((tag:string,payload:unknown)=>Readonly<{artifactId:string;state:string}>) | undefined;
@@ -109,6 +111,7 @@ export function preparePlan<S extends Parameters>(plan: HookPlan<S>, observed: E
   const rules = new Map<string, { symbol: HookSymbol; handlers: HookHandlers<ParameterValues<S>> }>();
   const emitSink: {
     nativeBuffer?: ((pointerArgument:number,capacityArgument:number,maxBytes:number)=>Readonly<Record<string,unknown>>) | undefined;
+    readCString?: ((pointerArgument:number,maxBytes:number)=>string|null) | undefined;
     snapshotDex?: ((dexId: string) => Readonly<{ artifactId: string; state: string }>) | undefined;
     fn?: ((tag: string, payload: unknown) => void) | undefined;
     evidence?: ((tag:string,payload:unknown)=>Readonly<{artifactId:string;state:string}>) | undefined;
@@ -175,6 +178,12 @@ export function preparePlan<S extends Parameters>(plan: HookPlan<S>, observed: E
         requireThat(Number.isInteger(pointerArgument)&&pointerArgument>=0&&pointerArgument<16&&Number.isInteger(capacityArgument)&&capacityArgument>=0&&capacityArgument<16&&pointerArgument!==capacityArgument&&Number.isInteger(maxBytes)&&maxBytes>=1&&maxBytes<=1024,"NATIVE_BUFFER_ARGUMENT","Invalid native capture bounds");
         requireThat(emitSink.nativeBuffer,"NATIVE_BUFFER_UNSUPPORTED","An invocation-owned native buffer provider is required");
         return Object.freeze({...emitSink.nativeBuffer(pointerArgument,capacityArgument,maxBytes)});
+      },
+      readCString(pointerArgument,maxBytes=256){
+        requireThat(!collecting,"NATIVE_BUFFER_OUTSIDE_INVOCATION","Native capture requires an active invocation");
+        requireThat(Number.isInteger(pointerArgument)&&pointerArgument>=0&&pointerArgument<16&&Number.isInteger(maxBytes)&&maxBytes>=1&&maxBytes<=1024,"NATIVE_BUFFER_ARGUMENT","Invalid native string bounds");
+        requireThat(emitSink.readCString,"NATIVE_BUFFER_UNSUPPORTED","An invocation-owned native string provider is required");
+        return emitSink.readCString(pointerArgument,maxBytes);
       },
       function(moduleName, name, signature) {
         requireThat(evidence.capabilities.includes("native-hook"), "CAPABILITY_MISSING", "native-hook capability is unavailable");

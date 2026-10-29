@@ -33,7 +33,7 @@ final class RuntimeNativeObservation {
     synchronized void clear(){targets.clear();metadata=List.of();}
     synchronized List<Map<String,Object>> observe(List<Map<String,Object>> selectors)throws Exception {
         clear();
-        if(!ownerLive.getAsBoolean()||selectors.size()>32)throw new IllegalStateException("HOOK_NATIVE_OBSERVATION_STATE");
+        if(!ownerLive.getAsBoolean()||selectors.size()>128)throw new IllegalStateException("HOOK_NATIVE_OBSERVATION_STATE");
         Map<String,Target> selected=new HashMap<>();List<Map<String,Object>> symbols=new ArrayList<>();Set<Long> addresses=new HashSet<>();
         for(Map<String,Object> selector:selectors){
             if(!selector.keySet().equals(Set.of("id","kind","moduleName","symbol","argumentTypes","returnType","buildId","signatureSource"))||!"native".equals(selector.get("kind"))||!"confirmed".equals(selector.get("signatureSource")))throw new IllegalArgumentException("HOOK_NATIVE_SELECTOR_FIELDS");

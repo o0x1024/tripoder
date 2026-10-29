@@ -161,7 +161,13 @@ public final class RuntimeEngine {
         // ApplicationInfo's copy constructor copies its own fields but not PackageItemInfo.metaData. The archive
         // metadata is part of the verified manifest an installed application receives from PackageManager, so carry it
         // explicitly; otherwise every guest reading its own <meta-data> sees null (Alipay's logging key, for example).
-        info=new ApplicationInfo(pkg.applicationInfo);info.metaData=pkg.applicationInfo.metaData==null?null:new android.os.Bundle(pkg.applicationInfo.metaData);info.sourceDir=apk.getCanonicalPath();info.publicSourceDir=info.sourceDir;info.dataDir=data.toString();info.deviceProtectedDataDir=new File(data,"device-protected").toString();info.nativeLibraryDir=new File(apk.getParentFile(),"lib").getCanonicalPath();info.uid=android.os.Process.myUid();GuestPackageManager.setPrimaryCpuAbi(info,"arm64-v8a");
+        info=new ApplicationInfo(pkg.applicationInfo);info.metaData=pkg.applicationInfo.metaData==null?null:new android.os.Bundle(pkg.applicationInfo.metaData);info.sourceDir=apk.getCanonicalPath();info.publicSourceDir=info.sourceDir;info.dataDir=data.toString();info.deviceProtectedDataDir=new File(data,"device-protected").toString();        File libDir=new File(apk.getParentFile(),"lib");
+        File nativeDir=new File(libDir,"arm64");
+        if(!nativeDir.isDirectory())nativeDir=new File(libDir,"arm64-v8a");
+        if(!nativeDir.isDirectory())nativeDir=new File(libDir,"arm");
+        if(!nativeDir.isDirectory())nativeDir=new File(libDir,"armeabi-v7a");
+        if(!nativeDir.isDirectory())nativeDir=libDir;
+        info.nativeLibraryDir=nativeDir.getCanonicalPath();info.uid=android.os.Process.myUid();GuestPackageManager.setPrimaryCpuAbi(info,"arm64-v8a");
         current=this;
         executionCode=RuntimeExecutionCode.prepare(artifacts,data,installGeneration);
         boot("executionCode",bootStart);
@@ -235,6 +241,7 @@ public final class RuntimeEngine {
             RuntimeProcessIdentity.establish(processName);
             android.util.Log.i("TripoderBoot","PROCESS_IDENTITY_READY");
             Thread.currentThread().setContextClassLoader(loader);
+            activityManager.facade();
             // Explicit startup tools run after real process identity is established,
             // and still before any guest factory, class initializer or Application.
             if(probeConfiguration!=null){codeProbes=new RuntimeCodeProbes(this,probeConfiguration);codeProbes.start();JSONObject startup=new JSONObject(probeConfiguration).getJSONObject("configuration");if(startup.has("startupHook"))hooks.activateStartup(startup.getJSONObject("startupHook"));}

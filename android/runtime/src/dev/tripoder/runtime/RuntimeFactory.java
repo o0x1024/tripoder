@@ -13,10 +13,26 @@ public final class RuntimeFactory extends AppComponentFactory {
             if(rejected!=null)return new RuntimeRejectedReceiver(rejected);
             return RuntimeEngine.current.receivers.instantiate(intent);
         }catch(Exception error){if("PROCESS_CLOSING".equals(error.getMessage()))return new RuntimeRejectedReceiver("PROCESS_CLOSING");throw new IllegalStateException("GUEST_RECEIVER_FAILED",error);}
+        RuntimeEngine engine=RuntimeEngine.current;
+        if(engine!=null){
+            ClassLoader guest=engine.guestLoader();
+            if(guest!=null&&guest!=cl){
+                try{return super.instantiateReceiver(guest,name,intent);}
+                catch(ClassNotFoundException ignored){}
+            }
+        }
         return super.instantiateReceiver(cl,name,intent);
     }
     @Override public Service instantiateService(ClassLoader cl,String name,Intent intent)throws InstantiationException,IllegalAccessException,ClassNotFoundException{
         if(RuntimeServices.isStub(name))try{if(bootstrap(name,"restoreService",null)!=null)return new RuntimeRejectedService();return RuntimeEngine.current.services.instantiate(name,intent);}catch(Exception error){throw new IllegalStateException("GUEST_SERVICE_FAILED",error);}
+        RuntimeEngine engine=RuntimeEngine.current;
+        if(engine!=null){
+            ClassLoader guest=engine.guestLoader();
+            if(guest!=null&&guest!=cl){
+                try{return super.instantiateService(guest,name,intent);}
+                catch(ClassNotFoundException ignored){}
+            }
+        }
         return super.instantiateService(cl,name,intent);
     }
     static String bootstrap(String name,String method,String ticket)throws Exception{

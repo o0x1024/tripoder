@@ -39,7 +39,7 @@ final class RuntimeFixedPreparation {
     }
     private static Map<Executable,Executable[]> targets()throws Exception{
         Map<Executable,Executable[]> targets=new LinkedHashMap<>();
-        for(var group:FixedComponentHooks.Group.values())if(group!=FixedComponentHooks.Group.WIDGETS)for(Method method:FixedComponentHooks.methods(group))targets.put(method,new Executable[0]);
+        for(var group:FixedComponentHooks.Group.values())for(Method method:FixedComponentHooks.methods(group))targets.put(method,new Executable[0]);
         for(var group:FixedRuntimeHooks.Group.values())if(!RuntimePlatformPolicy.platformHooks(group))for(Executable method:FixedRuntimeHooks.methods(group)){
             if(group==FixedRuntimeHooks.Group.PACKAGES&&!RuntimePlatformPolicy.packageHook(method))continue;
             if(group==FixedRuntimeHooks.Group.PACKAGES&&RuntimeFixedPassthrough.packageMethod(method.getDeclaringClass().getName(),method.getName(),method.getParameterCount()))continue;

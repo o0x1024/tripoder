@@ -130,6 +130,7 @@ final class RuntimeSelfHookManagers {
             }
             public Object platform(){
                 switch(family){
+                    case ACTIVITY_MANAGER:return RuntimeBridge.activityPlatform();
                     case AUDIO:return RuntimeBridge.audioPlatform();
                     case CONNECTIVITY:return RuntimeBridge.networkPlatform();
                     case POWER:return RuntimeBridge.powerPlatform();
@@ -325,14 +326,22 @@ final class RuntimeSelfHookManagers {
             case "isDataCapable()":return RuntimeBridge.telephonyPlatform().isDataCapable();
             case "getNetworkCountryIso()":{String o=RuntimeSandboxPersona.telephonyOverride("networkCountryIso");return o!=null?o:RuntimeBridge.telephonyPlatform().getNetworkCountryIso();}
             case "getSimCountryIso()":{String o=RuntimeSandboxPersona.telephonyOverride("simCountryIso");return o!=null?o:RuntimeBridge.telephonyPlatform().getSimCountryIso();}
-            case "getNetworkType()":return RuntimeBridge.telephonyPlatform().getNetworkType();
-            case "getDataNetworkType()":return RuntimeBridge.telephonyPlatform().getDataNetworkType();
+            case "getNetworkType()":
+                try{return RuntimeBridge.telephonyPlatform().getNetworkType();}
+                catch(SecurityException denied){return TelephonyManager.NETWORK_TYPE_UNKNOWN;}
+            case "getDataNetworkType()":
+                try{return RuntimeBridge.telephonyPlatform().getDataNetworkType();}
+                catch(SecurityException denied){return TelephonyManager.NETWORK_TYPE_UNKNOWN;}
             case "getNetworkOperator()":{String o=RuntimeSandboxPersona.telephonyOverride("networkOperator");return o!=null?o:RuntimeBridge.telephonyPlatform().getNetworkOperator();}
             case "getNetworkOperatorName()":{String o=RuntimeSandboxPersona.telephonyOverride("networkOperatorName");return o!=null?o:RuntimeBridge.telephonyPlatform().getNetworkOperatorName();}
             case "getSimOperator()":{String o=RuntimeSandboxPersona.telephonyOverride("simOperator");return o!=null?o:RuntimeBridge.telephonyPlatform().getSimOperator();}
             case "getSimOperatorName()":{String o=RuntimeSandboxPersona.telephonyOverride("simOperatorName");return o!=null?o:RuntimeBridge.telephonyPlatform().getSimOperatorName();}
-            case "getVoiceNetworkType()":return RuntimeBridge.telephonyPlatform().getVoiceNetworkType();
-            case "getDataState()":return RuntimeBridge.telephonyPlatform().getDataState();
+            case "getVoiceNetworkType()":
+                try{return RuntimeBridge.telephonyPlatform().getVoiceNetworkType();}
+                catch(SecurityException denied){return TelephonyManager.NETWORK_TYPE_UNKNOWN;}
+            case "getDataState()":
+                try{return RuntimeBridge.telephonyPlatform().getDataState();}
+                catch(SecurityException denied){return TelephonyManager.DATA_DISCONNECTED;}
             case "createForSubscriptionId(int)":return RuntimeBridge.telephonyPlatform().createForSubscriptionId((Integer)args[0]);
             case "getAllCellInfo()":
                 try{return RuntimeBridge.telephonyPlatform().getAllCellInfo();}

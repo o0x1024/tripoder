@@ -51,7 +51,7 @@ public final class HookInvocationSession {
     public HookInvocationSession(String generation,String revision,List<HookRule> ruleList,Map<String,ParameterSpec> specs,Map<String,Object> input,PreparedBackend backend,java.util.function.Supplier<Map<String,Object>> invocationContext,String sourceSha256) {
         this.sourceSha256=sourceSha256;
         require(generation!=null&&!generation.isBlank()&&revision!=null&&!revision.isBlank(),"HOOK_IDENTITY");
-        require(!ruleList.isEmpty()&&ruleList.size()<=32&&backend!=null,"HOOK_RULE_BUDGET");
+        require(!ruleList.isEmpty()&&ruleList.size()<=128&&backend!=null,"HOOK_RULE_BUDGET");
         Map<String,HookRule> selected=new LinkedHashMap<>();
         for(HookRule rule:ruleList)require(selected.put(rule.symbol,rule)==null,"HOOK_CONFLICT");
         this.generation=generation;this.revision=revision;this.rules=Collections.unmodifiableMap(selected);

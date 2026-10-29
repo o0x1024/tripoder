@@ -63,7 +63,7 @@ public final class DraftCompiler {
         Map<String,Object> values=ParameterSpec.resolve(specs,Map.of());
         collecting=true;
         try{RestrictedAst.invokeSetup(plan.get("setup"),context(),new RestrictedAst.Budget());}finally{collecting=false;}
-        require(!rules.isEmpty()&&rules.size()<=32,"EMPTY_PLAN_OR_RULE_BUDGET");List<HookRule> compiled=new ArrayList<>();List<Map<String,Object>> bindings=new ArrayList<>();
+        require(!rules.isEmpty()&&rules.size()<=128,"EMPTY_PLAN_OR_RULE_BUDGET");List<HookRule> compiled=new ArrayList<>();List<Map<String,Object>> bindings=new ArrayList<>();
         for(RuleBuilder rule:rules.values()){
             compiled.add(new HookRule(text(rule.symbol,"id"),strings(rule.symbol.get("argumentTypes")),text(rule.symbol,"returnType"),rule.before,rule.replace,rule.after));bindings.add(rule.symbol);
         }
@@ -80,7 +80,7 @@ public final class DraftCompiler {
             Map<String,Object> holder=Collections.singletonMap("schema",Collections.unmodifiableMap(schema));schemas.put(holder,spec);return holder;
         }));return Collections.unmodifiableMap(out);
     }
-    private Map<String,Object> context(){return Map.of("java",Map.of("method",RestrictedAst.capability(this::javaMethod),"objectInfo",RestrictedAst.capability(args->{objectInvocation(args);arity(args,1,1);return ScriptValues.freeze(JavaObjectScope.info(args.get(0)));}),"snapshotThread",RestrictedAst.capability(args->{objectInvocation(args);arity(args,1,1);return ScriptValues.freeze(JavaObjectSnapshots.thread(args.get(0)));}),"snapshotThrowable",RestrictedAst.capability(this::snapshotThrowable),"readField",RestrictedAst.capability(this::readField),"snapshotContainer",RestrictedAst.capability(this::snapshotContainer)),"native",Map.of("function",RestrictedAst.capability(this::nativeFunction),"captureBuffer",RestrictedAst.capability(this::captureNativeBuffer)),"code",Map.of("snapshotDex",RestrictedAst.capability(args->{require(!collecting,"CODE_CAPTURE_OUTSIDE_INVOCATION");arity(args,1,1);String id=string(args.get(0));require(id.matches("[A-Za-z0-9_-]{1,80}"),"DEX_REFERENCE");return ScriptValues.freeze(codeSnapshot.apply(id));})),"debug",Map.of("emitEvent",RestrictedAst.capability(this::emitEvent),"captureEvidence",RestrictedAst.capability(this::captureEvidence),"captureJavaStack",RestrictedAst.capability(this::captureJavaStack),"callerModuleOffset",RestrictedAst.capability(this::callerModuleOffset)),"privacy",Map.of("attribution",RestrictedAst.capability(this::privacyAttributionOf),"consentStage",RestrictedAst.capability(args->{arity(args,0,0);return ScriptValues.freeze(privacyConsentStage.get());})),"state",Map.of("get",RestrictedAst.capability(this::stateGet),"set",RestrictedAst.capability(this::stateSet),"delete",RestrictedAst.capability(this::stateDelete),"clear",RestrictedAst.capability(this::stateClear),"keys",RestrictedAst.capability(this::stateKeys)));}
+    private Map<String,Object> context(){return Map.of("java",Map.of("method",RestrictedAst.capability(this::javaMethod),"objectInfo",RestrictedAst.capability(args->{objectInvocation(args);arity(args,1,1);return ScriptValues.freeze(JavaObjectScope.info(args.get(0)));}),"snapshotThread",RestrictedAst.capability(args->{objectInvocation(args);arity(args,1,1);return ScriptValues.freeze(JavaObjectSnapshots.thread(args.get(0)));}),"snapshotThrowable",RestrictedAst.capability(this::snapshotThrowable),"readField",RestrictedAst.capability(this::readField),"snapshotContainer",RestrictedAst.capability(this::snapshotContainer)),"native",Map.of("function",RestrictedAst.capability(this::nativeFunction),"captureBuffer",RestrictedAst.capability(this::captureNativeBuffer),"readCString",RestrictedAst.capability(this::readNativeCString)),"code",Map.of("snapshotDex",RestrictedAst.capability(args->{require(!collecting,"CODE_CAPTURE_OUTSIDE_INVOCATION");arity(args,1,1);String id=string(args.get(0));require(id.matches("[A-Za-z0-9_-]{1,80}"),"DEX_REFERENCE");return ScriptValues.freeze(codeSnapshot.apply(id));})),"debug",Map.of("emitEvent",RestrictedAst.capability(this::emitEvent),"captureEvidence",RestrictedAst.capability(this::captureEvidence),"captureJavaStack",RestrictedAst.capability(this::captureJavaStack),"callerModuleOffset",RestrictedAst.capability(this::callerModuleOffset)),"privacy",Map.of("attribution",RestrictedAst.capability(this::privacyAttributionOf),"consentStage",RestrictedAst.capability(args->{arity(args,0,0);return ScriptValues.freeze(privacyConsentStage.get());})),"state",Map.of("get",RestrictedAst.capability(this::stateGet),"set",RestrictedAst.capability(this::stateSet),"delete",RestrictedAst.capability(this::stateDelete),"clear",RestrictedAst.capability(this::stateClear),"keys",RestrictedAst.capability(this::stateKeys)));}
     private Object privacyAttributionOf(List<Object> args){arity(args,1,1);return ScriptValues.freeze(privacyAttribution.apply(string(args.get(0))));}
     private Object readField(List<Object> args){
         objectInvocation(args);arity(args,2,2);String name=string(args.get(1));
@@ -126,6 +126,14 @@ public final class DraftCompiler {
         require(!collecting,"NATIVE_BUFFER_OUTSIDE_INVOCATION");arity(args,3,3);
         int[] values=new int[3];for(int i=0;i<3;i++){Object value=args.get(i);require(value instanceof Double&&(Double)value==Math.rint((Double)value)&&(Double)value>=0&&(Double)value<=1024,"NATIVE_BUFFER_ARGUMENT");values[i]=((Double)value).intValue();}
         return ScriptValues.freeze(NativeBufferScope.capture(values[0],values[1],values[2]));
+    }
+    private Object readNativeCString(List<Object> args){
+        require(!collecting,"NATIVE_BUFFER_OUTSIDE_INVOCATION");arity(args,1,2);
+        Object ptr=args.get(0);require(ptr instanceof Double&&(Double)ptr==Math.rint((Double)ptr)&&(Double)ptr>=0,"NATIVE_BUFFER_ARGUMENT");
+        int maxBytes=256;
+        if(args.size()==2){Object limit=args.get(1);require(limit instanceof Double&&(Double)limit==Math.rint((Double)limit)&&(Double)limit>=1&&(Double)limit<=1024,"NATIVE_BUFFER_ARGUMENT");maxBytes=((Double)limit).intValue();}
+        String result=NativeBufferScope.readCString(((Double)ptr).intValue(),maxBytes);
+        return result==null?null:ScriptValues.freeze(result);
     }
     private void objectInvocation(List<Object> args){require(!collecting,"HOOK_OBJECT_OUTSIDE_INVOCATION");}
     private Object snapshotThrowable(List<Object> args){

@@ -22,12 +22,18 @@ final class NetworkCaptureControl {
     }
     private Map<String,Object> inspectSingle(String module){
         List<String> missing=new ArrayList<>();String build="";
+        boolean liveLoaded=false;
+        for(Map<String,Object> mod:platform.modules()){
+            Object rawName=mod.get("moduleName");if(!(rawName instanceof String))rawName=mod.get("name");
+            if(module.equals(rawName)){liveLoaded=true;break;}
+        }
         for(String name:List.of("SSL_new","SSL_free","SSL_read","SSL_write")){
             List<Map<String,Object>> matches=platform.searchNativeExports(module,name,16).stream().filter(row->name.equals(row.get("name"))||name.equals(row.get("symbol"))).toList();
             if(matches.size()!=1){missing.add(name);continue;}
             String id=String.valueOf(matches.get(0).get("buildId"));if(build.isEmpty())build=id;else if(!build.equals(id))throw new HookPreflightRejected("NETWORK_MODULE_BUILD_ID_MISMATCH");
         }
-        return Map.of("moduleName",module,"buildId",build,"profile","openssl-ssl-read-write-v1","candidate",missing.isEmpty(),"missingExports",missing,"signatureConfirmationRequired",true,"automaticAbiInference",false);
+        boolean candidate=missing.isEmpty()&&liveLoaded;
+        return Map.of("moduleName",module,"buildId",build,"profile","openssl-ssl-read-write-v1","candidate",candidate,"loaded",liveLoaded,"missingExports",missing,"signatureConfirmationRequired",true,"automaticAbiInference",false);
     }
     private Map<String,Object> inspectAuto(){
         List<String> candidates=new ArrayList<>();
@@ -64,12 +70,17 @@ final class NetworkCaptureControl {
         String expectedBuild="auto".equals(buildId)?resolvedBuild:buildId;
         if(!Boolean.TRUE.equals(candidate.get("candidate"))||resolvedBuild.isEmpty()||!expectedBuild.equals(resolvedBuild))throw new HookPreflightRejected("NETWORK_PROFILE_UNAVAILABLE_OR_STALE");
         List<Map<String,Object>> selectors=List.of(selector("open",resolvedModule,"SSL_new",List.of("uint64"),"uint64",resolvedBuild),selector("close",resolvedModule,"SSL_free",List.of("uint64"),"void",resolvedBuild),selector("read",resolvedModule,"SSL_read",List.of("uint64","uint64","int32"),"int32",resolvedBuild),selector("write",resolvedModule,"SSL_write",List.of("uint64","uint64","int32"),"int32",resolvedBuild));
-        Map<String,Object> observed=invoke("observe",Map.of("selectors",selectors));
+        Map<String,Object> observed;
+        try{
+            observed=invoke("_networkObserve",Map.of("selectors",selectors));
+        }catch(Exception failure){
+            throw new HookPreflightRejected("NETWORK_MODULE_NOT_OBSERVABLE: "+failure.getMessage());
+        }
         @SuppressWarnings("unchecked") String evidence=(String)((Map<String,Object>)observed.get("evidence")).get("id");
-        Map<String,Object> prepared=invoke("prepare",Map.of("evidenceId",evidence,"source",source(resolvedModule,resolvedBuild)));
+        Map<String,Object> prepared=invoke("_networkPrepare",Map.of("evidenceId",evidence,"source",source(resolvedModule,resolvedBuild)));
         moduleName=resolvedModule;moduleBuild=resolvedBuild;sourceSha=(String)prepared.get("sourceSha256");revision="";stopping=false;
         session=new NetworkCaptureSession(token.get(),(tag,payload)->platform.persistNetworkCapture(tag,payload,sourceSha,revision),configuredConnections,configuredMessages,configuredTotalBytes);
-        Map<String,Object> activated=invoke("activate",Map.of("token",prepared.get("token"),"sourceSha256",sourceSha));
+        Map<String,Object> activated=invoke("_networkActivate",Map.of("token",prepared.get("token"),"sourceSha256",sourceSha));
         revision=(String)activated.get("revision");return status();
     }
     /** Applies to the next capture only. Values above the defaults need explicit confirmation; per-direction bytes stay fixed by the 32 KiB evidence artifact and 128 KiB response ceilings. */
@@ -84,11 +95,11 @@ final class NetworkCaptureControl {
     Map<String,Object> har(String id,long cursor,int limit){requireSession(id);return session.har(cursor,limit);}
     Map<String,Object> stop(String id){
         requireSession(id);if(!ownsHook())return status();
-        if(!stopping){stopping=true;invoke("disable",Map.of("revision",revision));}
+        if(!stopping){stopping=true;invoke("_networkDisable",Map.of("revision",revision));}
         return status();
     }
     Map<String,Object> status(){
-        Map<String,Object> hook=invoke("status",Map.of());String state=(String)hook.get("state");
+        Map<String,Object> hook=invoke("_networkStatus",Map.of());String state=(String)hook.get("state");
         if(state.equals("ACTIVE")||state.equals("DRAINING"))revision=(String)hook.get("revision");
         if(session==null)return Map.of("state",state,"captureState","IDLE");
         if(stopping&&Set.of("IDLE","DISABLED").contains(state))session.stop();

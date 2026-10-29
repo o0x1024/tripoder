@@ -16,6 +16,7 @@ final class RuntimePlatformPolicy {
         Context.ACTIVITY_SERVICE,Context.CONNECTIVITY_SERVICE,Context.TELEPHONY_SERVICE,Context.BATTERY_SERVICE,Context.LOCATION_SERVICE);
     static boolean platformService(String name){
         if(name==null||!PLATFORM.contains(name))return false;
+        if(Context.ACTIVITY_SERVICE.equals(name)&&RuntimeSelfHookManagers.isInstalled(RuntimeSelfHookManagerPolicy.Family.ACTIVITY_MANAGER))return false;
         if(Context.CONNECTIVITY_SERVICE.equals(name)&&RuntimeSelfHookManagers.isInstalled(RuntimeSelfHookManagerPolicy.Family.CONNECTIVITY))return false;
         if(Context.TELEPHONY_SERVICE.equals(name)&&RuntimeSelfHookManagers.isInstalled(RuntimeSelfHookManagerPolicy.Family.TELEPHONY))return false;
         if(Context.BATTERY_SERVICE.equals(name)&&RuntimeSelfHookManagers.isInstalled(RuntimeSelfHookManagerPolicy.Family.BATTERY))return false;

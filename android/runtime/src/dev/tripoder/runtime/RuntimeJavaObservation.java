@@ -47,7 +47,7 @@ final class RuntimeJavaObservation {
     synchronized List<Map<String,Object>> observe(List<Map<String,Object>> selectors)throws Exception {inspect(new JSONArray(selectors));return metadata;}
     synchronized JSONArray inspect(JSONArray selectors)throws Exception {
         if(!ownerLive.getAsBoolean())throw new IllegalStateException("HOOK_PROCESS_STALE");
-        if(selectors.length()>32)throw new IllegalArgumentException("HOOK_SELECTOR_COUNT");
+        if(selectors.length()>128)throw new IllegalArgumentException("HOOK_SELECTOR_COUNT");
         Map<String,Executable> selected=new HashMap<>();
         List<Map<String,Object>> symbols=new ArrayList<>();JSONArray out=new JSONArray();
         ClassLoader resolution=selectedLoader.get();

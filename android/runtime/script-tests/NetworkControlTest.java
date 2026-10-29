@@ -26,7 +26,14 @@ final class NetworkControlTest {
         check(result(command(c,"networkInspect","moduleName","libowned.so")).get("candidate").equals(true),"profile candidate needs separate ABI confirmation");
         Map<String,Object> start=result(command(c,"networkStart","moduleName","libowned.so","buildId","aabb","profile","openssl-ssl-read-write-v1","signatureSource","confirmed"));String id=(String)start.get("captureId");
         check(start.get("state").equals("ACTIVE")&&p.published==1,"managed session publishes existing backend once");
-        check(command(c,"discard").get("outcome").equals("REJECTED"),"user hooks cannot replace managed capture");
+        check(command(c,"discard").get("ok").equals(true)&&result(command(c,"discard")).get("state").equals("IDLE"),"user hooks operate independently without mutating managed capture");
+        check(result(command(c,"networkStatus")).get("state").equals("ACTIVE"),"managed capture remains active through user hook operations");
+        List<Map<String,Object>> selectors128=new ArrayList<>();
+        for(int i=0;i<128;i++)selectors128.add(m("id","s"+i,"kind","native","moduleName","libowned.so","symbol","sym"+i,"argumentTypes",l("int32"),"returnType","int32","buildId","aabb","signatureSource","confirmed"));
+        check(command(c,"observe","selectors",selectors128).get("ok").equals(true),"128 selectors accepted");
+        selectors128.add(m("id","s128","kind","native","moduleName","libowned.so","symbol","sym128","argumentTypes",l("int32"),"returnType","int32","buildId","aabb","signatureSource","confirmed"));
+        check(command(c,"observe","selectors",selectors128).get("outcome").equals("REJECTED"),"129 selectors rejected by selector budget");
+        command(c,"discard");
         p.dispatch.call("open",l(BigInteger.ONE),a->BigInteger.TEN);
         for(String direction:List.of("write","read")){
             byte[] bytes=(direction.equals("write")?NetworkCaptureTest.REQUEST:NetworkCaptureTest.RESPONSE).getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);

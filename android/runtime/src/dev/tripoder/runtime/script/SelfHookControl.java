@@ -77,7 +77,8 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
         Map.entry("uiAction",Set.of("action")),Map.entry("diagnostics",Set.of()),
 
         Map.entry("networkInspect",Set.of("moduleName")),Map.entry("networkStart",Set.of("moduleName","buildId","profile","signatureSource")),Map.entry("networkStop",Set.of("captureId")),Map.entry("networkStatus",Set.of()),Map.entry("networkMessages",Set.of("captureId","sinceSeq","limit")),Map.entry("networkHar",Set.of("captureId","sinceSeq","limit")),Map.entry("componentSend",Set.of("request")),Map.entry("privacyConfigureAttribution",Set.of("entries")),Map.entry("personaConfigureTelephony",Set.of("fields")),Map.entry("personaConfigureBattery",Set.of("level","charging")),Map.entry("personaConfigureLocation",Set.of("fields")),Map.entry("personaConfigureLocale",Set.of("language","country","timeZoneId")),Map.entry("personaConfigureNetwork",Set.of("hideVpn")),Map.entry("personaStatus",Set.of()),Map.entry("malwareConfigure",Set.of("enabled","blockHighRiskIntents")),Map.entry("malwareClear",Set.of()),Map.entry("malwareStatus",Set.of()),Map.entry("malwareEvents",Set.of("sinceSeq","limit")),Map.entry("heapChooseInstances",Set.of("className","limit")),Map.entry("heapReadField",Set.of("instanceId","fieldName")),Map.entry("heapSnapshotContainer",Set.of("instanceId","maxEntries")),Map.entry("timeWarpConfigure",Set.of("offsetMillis","delayScale")),Map.entry("timeWarpReset",Set.of()),Map.entry("timeWarpStatus",Set.of()),Map.entry("honeydataConfigure",Set.of("category","rows")),Map.entry("honeydataClear",Set.of()),Map.entry("honeydataStatus",Set.of()),Map.entry("processSnapshotHeap",Set.of()),Map.entry("processSnapshotFreeze",Set.of("databaseName")),Map.entry("envMockConfigureHttp",Set.of("rules")),Map.entry("envMockConfigureNetwork",Set.of("networkState")),Map.entry("envMockClear",Set.of()),Map.entry("envMockStatus",Set.of()),Map.entry("privacyMarkConsentStage",Set.of("stage","note")),Map.entry("privacyAttribution",Set.of("className")),Map.entry("privacyTimeline",Set.of("sinceSeq","limit")),Map.entry("providerInteract",Set.of("request")),Map.entry("networkConfigure",Set.of("connections","messages","totalBytes","confirmHigherLimits")),Map.entry("networkTraffic",Set.of("captureId","sinceSeq","limit")),Map.entry("httpRequest",Set.of("request")),
-        Map.entry("guestInvoke",Set.of("target")),Map.entry("probeStatus",Set.of()),Map.entry("probeStop",Set.of()),Map.entry("classLoaders",Set.of()),Map.entry("classLoaderCreate",Set.of("dexId","parentClassLoaderId")),Map.entry("dexList",Set.of("classLoaderId","cursor","limit")),Map.entry("dexSnapshot",Set.of("dexId")),Map.entry("codeArtifacts",Set.of()),Map.entry("runtimeEvents",Set.of("sinceSeq","limit")),Map.entry("classInspect",Set.of("classLoaderId","className")));
+        Map.entry("guestInvoke",Set.of("target")),Map.entry("probeStatus",Set.of()),Map.entry("probeStop",Set.of()),Map.entry("classLoaders",Set.of()),Map.entry("classLoaderCreate",Set.of("dexId","parentClassLoaderId")),Map.entry("dexList",Set.of("classLoaderId","cursor","limit")),Map.entry("dexSnapshot",Set.of("dexId")),Map.entry("codeArtifacts",Set.of()),Map.entry("runtimeEvents",Set.of("sinceSeq","limit")),Map.entry("classInspect",Set.of("classLoaderId","className")),
+        Map.entry("_networkObserve",Set.of("selectors")),Map.entry("_networkPrepare",Set.of("evidenceId","source")),Map.entry("_networkActivate",Set.of("token","sourceSha256")),Map.entry("_networkDisable",Set.of("revision")),Map.entry("_networkStatus",Set.of()));
     private final Map<String,Object> identity;
     private final String generation;
     private final Platform platform;
@@ -88,11 +89,11 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
     private final AtomicBoolean commanding=new AtomicBoolean();
     private final AtomicLong invalidation=new AtomicLong();
     private final List<HookInvocationSession> retired=new ArrayList<>();
-    private HookEvidence evidence;
-    private Prepared prepared;
-    private volatile HookInvocationSession active;
-    private DraftCompiler.Plan activePlan;
-    private long observedEpoch,lastClock=-1;
+    private HookEvidence evidence,networkEvidence;
+    private Prepared prepared,networkPrepared;
+    private volatile HookInvocationSession active,networkActive;
+    private DraftCompiler.Plan activePlan,networkActivePlan;
+    private long observedEpoch,networkObservedEpoch,lastClock=-1;
     private int activations;
     @SuppressWarnings("unchecked") public SelfHookControl(Map<String,Object> identity,Platform platform,LongSupplier elapsedClock,Supplier<String> token){
         this.identity=(Map<String,Object>)ScriptValues.freeze(identity);this.platform=Objects.requireNonNull(platform);this.clock=Objects.requireNonNull(elapsedClock);this.token=Objects.requireNonNull(token);
@@ -104,7 +105,11 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
     /** Lifecycle observer may invalidate preparations without waiting on a command/backend publication lock. */
     public void invalidateObservation(){invalidation.incrementAndGet();}
     /** A module/loader observer calls this only when an active target's retained ownership is lost. */
-    public void invalidateActiveTarget(Throwable cause){invalidation.incrementAndGet();HookInvocationSession session=active;if(session!=null)session.invalidateTarget(cause);}
+    public void invalidateActiveTarget(Throwable cause){
+        invalidation.incrementAndGet();
+        HookInvocationSession session=active;if(session!=null)session.invalidateTarget(cause);
+        HookInvocationSession netSession=networkActive;if(netSession!=null)netSession.invalidateTarget(cause);
+    }
     @Override public String handle(String raw){
         require(commanding.compareAndSet(false,true),"HOOK_CONTROL_BUSY");
         boolean dispatched=false,query=false;
@@ -128,9 +133,7 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
             require(input.keySet().equals(expected),"HOOK_COMMAND_FIELDS");
         }
         require(generation.equals(input.get("processGeneration"))&&identity.equals(platform.identity()),"HOOK_PROCESS_STALE");
-        if(name.equals("networkStart")&&(active!=null||prepared!=null))throw new HookPreflightRejected("HOOK_CONTEXT_IN_USE");
-        if(network.ownsHook()&&Set.of("observe","prepare","activate","disable","discard","updateParameters","cancelPreparation").contains(name))throw new HookPreflightRejected("NETWORK_CAPTURE_OWNS_HOOK");
-        if(name.equals("observe"))selectors(input.get("selectors"));
+        if(name.equals("observe")||name.equals("_networkObserve"))selectors(input.get("selectors"));
     }
     private Map<String,Object> command(Map<String,Object> input){
         String name=text(input,"command");Set<String> fields=FIELDS.get(name);require(fields!=null,"HOOK_COMMAND_UNSUPPORTED");Set<String> expected=new HashSet<>(fields);expected.add("command");expected.add("processGeneration");
@@ -144,6 +147,8 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
         long now=clock.getAsLong();require(now>=lastClock&&now>=0&&now<=Long.MAX_VALUE-60000,"HOOK_CLOCK_INVALID");lastClock=now;
         if(prepared!=null&&(now>prepared.deadline||prepared.evidenceEpoch!=invalidation.get()))prepared=null;
         if(evidence!=null&&observedEpoch!=invalidation.get())evidence=null;
+        if(networkPrepared!=null&&(now>networkPrepared.deadline||networkPrepared.evidenceEpoch!=invalidation.get()))networkPrepared=null;
+        if(networkEvidence!=null&&networkObservedEpoch!=invalidation.get())networkEvidence=null;
         switch(name){
             case "networkInspect":return withIdentity(new LinkedHashMap<>(network.inspect(text(input,"moduleName"))));
             case "networkStart":return withIdentity(new LinkedHashMap<>(network.start(text(input,"moduleName"),text(input,"buildId"),text(input,"profile"),text(input,"signatureSource"))));
@@ -165,6 +170,40 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
                 return withIdentity(platform.codeCommand(name,params));
             }
             case "modules":return map("modules",platform.modules(),"identity",identity);
+            case "_networkObserve":{
+                require(networkActive==null&&networkPrepared==null,"HOOK_CONTEXT_IN_USE");networkEvidence=null;
+                List<Map<String,Object>> selectors=selectors(input.get("selectors"));long epoch=invalidation.get();Observation observed=platform.observe(selectors);
+                require(epoch==invalidation.get(),"HOOK_EVIDENCE_STALE");String id=newToken();
+                Map<String,Object> wire=map("id",id,"source","guest-agent","target",identity.get("target"),"processInstanceId",ScriptValues.text(identity.get("pid"))+":"+generation,"abi","arm64-v8a","capabilities",new ArrayList<>(platform.capabilities()),"symbols",observed.symbols());
+                networkEvidence=new HookEvidence(wire);networkObservedEpoch=epoch;require(platform.evidenceLive(networkEvidence),"HOOK_EVIDENCE_STALE");
+                return map("evidence",networkEvidence.wire,"identity",identity,"nativeModules",observed.nativeModules());
+            }
+            case "_networkPrepare":{
+                require(networkActive==null&&networkPrepared==null,"HOOK_CONTEXT_IN_USE");require(networkEvidence!=null&&networkEvidence.id.equals(input.get("evidenceId"))&&platform.evidenceLive(networkEvidence),"HOOK_EVIDENCE_STALE");
+                String source=text(input,"source");long epoch=invalidation.get();DraftCompiler.Plan plan=DraftCompiler.compile(source,networkEvidence,platform::requestCodeSnapshot,platform::requestEvidenceSnapshot,privacy::attributionOf,privacy::currentStage);
+                require(epoch==invalidation.get()&&platform.evidenceLive(networkEvidence),"HOOK_EVIDENCE_STALE");networkPrepared=new Prepared(newToken(),plan,now+60000,epoch);
+                return map("state","PREPARED","token",networkPrepared.token,"sourceSha256",plan.sourceSha256(),"evidenceId",networkEvidence.id,"rules",plan.rules().size(),"identity",identity);
+            }
+            case "_networkActivate":{
+                require(networkActive==null&&networkPrepared!=null&&networkPrepared.token.equals(input.get("token"))&&networkPrepared.plan.sourceSha256().equals(input.get("sourceSha256")),"HOOK_PREPARATION_STALE");
+                Prepared candidate=networkPrepared;networkPrepared=null;require(platform.evidenceLive(candidate.plan.evidence())&&candidate.evidenceEpoch==invalidation.get(),"HOOK_EVIDENCE_STALE");
+                HookInvocationSession.PreparedBackend backend=platform.prepare(candidate.plan);
+                require(candidate.evidenceEpoch==invalidation.get()&&platform.evidenceLive(candidate.plan.evidence()),"HOOK_EVIDENCE_STALE");
+                networkActivePlan=candidate.plan;networkActive=new HookInvocationSession(generation,newToken(),candidate.plan.rules(),candidate.plan.specs(),candidate.plan.parameters(),backend,platform::invocationContext,candidate.plan.sourceSha256());
+                networkActive.observeEvents(network::event);
+                try{networkActive.activate(generation,networkActive.status().revision());}
+                catch(IllegalStateException failure){
+                    if(failure.getCause() instanceof HookPublicationRejected){
+                        networkActive=null;networkActivePlan=null;networkEvidence=null;
+                    }
+                    throw failure;
+                }
+                return withIdentity(networkHookStatus());
+            }
+            case "_networkDisable":{
+                require(networkActive!=null,"HOOK_REVISION_STALE");networkActive.disable(generation,text(input,"revision"));return withIdentity(networkHookStatus());
+            }
+            case "_networkStatus":return withIdentity(networkHookStatus());
             case "observe":{
                 require(active==null&&prepared==null,"HOOK_CONTEXT_IN_USE");evidence=null;platform.discardObservation();
                 List<Map<String,Object>> selectors=selectors(input.get("selectors"));long epoch=invalidation.get();Observation observed=platform.observe(selectors);
@@ -175,7 +214,7 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
             }
             case "prepare":{
                 require(active==null&&prepared==null,"HOOK_CONTEXT_IN_USE");require(evidence!=null&&evidence.id.equals(input.get("evidenceId"))&&platform.evidenceLive(evidence),"HOOK_EVIDENCE_STALE");
-                require(activations<32,"HOOK_ACTIVATION_BUDGET");String source=text(input,"source");long epoch=invalidation.get();DraftCompiler.Plan plan=DraftCompiler.compile(source,evidence,platform::requestCodeSnapshot,platform::requestEvidenceSnapshot,privacy::attributionOf,privacy::currentStage);
+                require(activations<128,"HOOK_ACTIVATION_BUDGET");String source=text(input,"source");long epoch=invalidation.get();DraftCompiler.Plan plan=DraftCompiler.compile(source,evidence,platform::requestCodeSnapshot,platform::requestEvidenceSnapshot,privacy::attributionOf,privacy::currentStage);
                 require(epoch==invalidation.get()&&platform.evidenceLive(evidence),"HOOK_EVIDENCE_STALE");prepared=new Prepared(newToken(),plan,now+60000,epoch);
                 return map("state","PREPARED","token",prepared.token,"sourceSha256",plan.sourceSha256(),"evidenceId",evidence.id,"rules",plan.rules().size(),"identity",identity);
             }
@@ -371,8 +410,17 @@ public final class SelfHookControl implements HookCommandDispatcher.Handler {
         if(prepared!=null)return map("state","PREPARED","sourceSha256",prepared.plan.sourceSha256(),"deadlineElapsedMs",prepared.deadline);
         if(evidence!=null)return map("state","OBSERVED","evidenceId",evidence.id);return map("state","IDLE");
     }
+    private Map<String,Object> networkHookStatus(){
+        if(networkActive!=null){HookInvocationSession.Snapshot snapshot=networkActive.status();
+            if(snapshot.state()==HookInvocationSession.State.DISABLED){Map<String,Object> result=map("state","DISABLED","revision",snapshot.revision(),"hits",snapshot.hits(),"errors",snapshot.errors(),"firstInvocation",networkActive.firstInvocation());networkActive=null;networkActivePlan=null;networkEvidence=null;return result;}
+            require(snapshot.state()!=HookInvocationSession.State.FAILED,"HOOK_PROCESS_INVALIDATED");
+            return map("state",snapshot.state().name(),"revision",snapshot.revision(),"sourceSha256",networkActivePlan.sourceSha256(),"parameterVersion",snapshot.parameterVersion(),"parameters",snapshot.parameters(),"hits",snapshot.hits(),"errors",snapshot.errors(),"inFlight",snapshot.inFlight(),"firstInvocation",networkActive.firstInvocation());
+        }
+        if(networkPrepared!=null)return map("state","PREPARED","sourceSha256",networkPrepared.plan.sourceSha256(),"deadlineElapsedMs",networkPrepared.deadline);
+        if(networkEvidence!=null)return map("state","OBSERVED","evidenceId",networkEvidence.id);return map("state","IDLE");
+    }
     private static List<Map<String,Object>> selectors(Object value){
-        List<?> array=array(value);require(!array.isEmpty()&&array.size()<=32,"HOOK_SELECTOR_COUNT_OR_KIND");List<Map<String,Object>> selected=new ArrayList<>();Set<String> ids=new HashSet<>();
+        List<?> array=array(value);require(!array.isEmpty()&&array.size()<=128,"HOOK_SELECTOR_COUNT_OR_KIND");List<Map<String,Object>> selected=new ArrayList<>();Set<String> ids=new HashSet<>();
         for(Object entry:array){Map<String,Object> selector=object(entry);String kind=text(selector,"kind"),id=text(selector,"id");require(id.matches("[a-zA-Z][a-zA-Z0-9_-]{0,63}")&&ids.add(id),"HOOK_SYMBOL_ID");
             Set<String> keys=kind.equals("java")?Set.of("id","kind","className","methodName","argumentTypes"):Set.of("id","kind","moduleName","symbol","argumentTypes","returnType","buildId","signatureSource");
             if(kind.equals("java")&&selector.containsKey("classLoaderId")){keys=new HashSet<>(keys);keys.add("classLoaderId");require(text(selector,"classLoaderId").matches("[A-Za-z0-9_-]{1,80}"),"CLASS_LOADER_REFERENCE");}

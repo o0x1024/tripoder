@@ -10,7 +10,11 @@ final class RuntimeActivityManager {
     private volatile ActivityManager facade;
     RuntimeActivityManager(RuntimeEngine engine){this.engine=engine;}
     synchronized ActivityManager facade(){
-        if(facade==null){facade=RuntimeBridge.createActivityManager(engine.host);if(facade==null||facade==platform())throw new SecurityException("ACTIVITY_MANAGER_FACADE_IDENTITY_INVALID");}
+        if(facade==null){
+            RuntimeSelfHookManagers.ensureInstalled(RuntimeSelfHookManagerPolicy.Family.ACTIVITY_MANAGER);
+            facade=RuntimeBridge.createActivityManager(engine.host);
+            if(facade==null||facade==platform())throw new SecurityException("ACTIVITY_MANAGER_FACADE_IDENTITY_INVALID");
+        }
         return facade;
     }
     boolean owns(ActivityManager value){return value!=null&&value==facade;}

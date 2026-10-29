@@ -50,7 +50,7 @@ public final class RuntimeHookBridge {
     public static String execute(String request)throws Exception{
         current();String id=token();CompletableFuture<String> result=new CompletableFuture<>();
         synchronized(requests){if(requests.size()>=8)throw new IllegalStateException("HOOK_REQUEST_CAPACITY");requests.put(id,result);}
-        try{submit(id,request);return result.get(12,TimeUnit.SECONDS);}
+        try{submit(id,request);return result.get(25,TimeUnit.SECONDS);}
         catch(TimeoutException error){throw new IllegalStateException("HOOK_AGENT_TIMEOUT_UNKNOWN",error);}
         finally{requests.remove(id,result);}
     }
