@@ -452,6 +452,36 @@ public final class ApplicationAdapter {
                 android.util.Log.i("TripoderQiyi", "Neutralized ShadowHook.init -> OK");
             } catch (Throwable ignored) {}
         }
+        if ("ctrip.android.view".equals(info.packageName)) {
+            try {
+                Class<?> soLoaderClass = Class.forName("com.facebook.soloader.SoLoader", false, loader);
+                Class<?> soFileLoaderClass = Class.forName("com.facebook.soloader.SoFileLoader", false, loader);
+                Class<?> implClass = Class.forName("com.facebook.soloader.SoFileLoaderImpl", false, loader);
+                Class<?> instrumentedClass = Class.forName("com.facebook.soloader.InstrumentedSoFileLoader", false, loader);
+
+                Object impl = implClass.getConstructor().newInstance();
+                Object instrumented = instrumentedClass.getConstructor(soFileLoaderClass).newInstance(impl);
+
+                Object proxy = java.lang.reflect.Proxy.newProxyInstance(loader, new Class<?>[]{soFileLoaderClass}, (p, method, args) -> {
+                    if ("load".equals(method.getName()) && args != null && args.length >= 1 && args[0] instanceof String) {
+                        String pathToSo = (String) args[0];
+                        String name = new java.io.File(pathToSo).getName();
+                        java.io.File physical = new java.io.File(info.nativeLibraryDir, name);
+                        if (physical.exists()) {
+                            args[0] = physical.getAbsolutePath();
+                        }
+                    }
+                    return method.invoke(instrumented, args);
+                });
+
+                java.lang.reflect.Field sSoFileLoaderField = soLoaderClass.getDeclaredField("sSoFileLoader");
+                sSoFileLoaderField.setAccessible(true);
+                sSoFileLoaderField.set(null, proxy);
+                android.util.Log.i("TripoderCtrip", "Configured SoLoader sSoFileLoader proxy with nativeLibraryDir: " + info.nativeLibraryDir);
+            } catch (Throwable t) {
+                android.util.Log.w("TripoderCtrip", "Failed to configure SoLoader sSoFileLoader", t);
+            }
+        }
     }
     public static void publishFactory(AppComponentFactory factory){
         mainThread();
