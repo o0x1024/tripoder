@@ -64,6 +64,11 @@ final class RuntimeEffectRecoveryProof {
         // still runs. A timeout or a vanished connection never reaches DEAD, so those attempts keep waiting for an explicit stop.
         String owned="'space/'||s.space||'/package/'||s.package=own.scope";
         try(var rows=db.rawQuery(prepared+" AND EXISTS(SELECT 1 FROM sessions s WHERE "+owned+" AND s.state='DEAD') LIMIT 1",new String[]{operation,owner})){
+            if(rows.moveToFirst())return true;
+        }
+        // Hook activation/observation whose process has confirmed death or stop and no live sessions survive.
+        String hook="SELECT 1 FROM operations original JOIN operation_scopes own ON own.operation=original.id WHERE original.id=? AND original.state='UNKNOWN' AND original.detail='HOOK_WORKER_OUTCOME_UNCONFIRMED' AND own.scope=? AND own.command IN ('hook:activate','hook:observe')"+live;
+        try(var rows=db.rawQuery(hook+" AND (EXISTS(SELECT 1 FROM sessions s WHERE "+owned+" AND s.state='DEAD') OR EXISTS(SELECT 1 FROM operations stopped JOIN operation_scopes ss ON ss.operation=stopped.id WHERE stopped.state='SUCCEEDED' AND ss.scope=own.scope AND ss.command IN ('stopApplication','agentStopApplication') AND stopped.created>=original.updated)) LIMIT 1",new String[]{operation,owner})){
             return rows.moveToFirst();
         }
     }
