@@ -496,7 +496,47 @@ public final class RuntimeEngine {
     }
     public void activityAttached(Activity activity){taskPresentation.attached(activity);if(!thinControllerRoots.contains(activity))return;try{Bundle b=activityAuth(activity);b.putInt("taskId",activity.getTaskId());RuntimeWire.call(broker,RuntimeWire.ACTIVITY_ATTACHED,b);}catch(Exception error){throw new IllegalStateException("ACTIVITY_ATTACH_ACK_FAILED",error);}}
     private final java.util.Set<Activity> createdActivities=java.util.Collections.synchronizedSet(java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>()));
-    public void activityCreated(Activity activity){if(!createdActivities.add(activity))return;applyGuestWindowInsetsIfNeeded(activity);return;}
+    public void activityCreated(Activity activity){
+        if(!createdActivities.add(activity))return;
+        applyGuestWindowInsetsIfNeeded(activity);
+        prewarmGameLibrariesIfNeeded(activity);
+        return;
+    }
+    private void prewarmGameLibrariesIfNeeded(Activity activity){
+        if(activity==null)return;
+        String pkg=activity.getPackageName();
+        if(!"com.tencent.tmgp.sgame".equals(pkg))return;
+        android.content.pm.ApplicationInfo appInfo=activity.getApplicationInfo();
+        if(appInfo==null||appInfo.nativeLibraryDir==null)return;
+        final String libDir=appInfo.nativeLibraryDir;
+        final Class<?> guestCaller=activity.getClass();
+        Thread prewarm=new Thread(()->{
+            try{
+                long t0=android.os.SystemClock.uptimeMillis();
+                android.util.Log.i("TripoderSGame","Background pre-warming Unity libraries for "+guestCaller+" from "+libDir);
+                java.lang.reflect.Method load0=Runtime.class.getDeclaredMethod("load0",Class.class,String.class);
+                load0.setAccessible(true);
+                String[] libs={"libLightProfiler.so","libunity.so","libil2cpp.so"};
+                for(String lib:libs){
+                    java.io.File f=new java.io.File(libDir,lib);
+                    if(f.exists()){
+                        long tLib=android.os.SystemClock.uptimeMillis();
+                        try{
+                            load0.invoke(Runtime.getRuntime(),guestCaller,f.getAbsolutePath());
+                            android.util.Log.i("TripoderSGame","Pre-warmed "+lib+" in "+(android.os.SystemClock.uptimeMillis()-tLib)+"ms");
+                        }catch(Throwable t){
+                            android.util.Log.w("TripoderSGame","Pre-warm of "+lib+" skipped: "+t.getMessage());
+                        }
+                    }
+                }
+                android.util.Log.i("TripoderSGame","Completed background pre-warm in "+(android.os.SystemClock.uptimeMillis()-t0)+"ms");
+            }catch(Throwable t){
+                android.util.Log.w("TripoderSGame","Pre-warm worker exception: "+t.getMessage());
+            }
+        },"Tripoder-UnityPrewarm");
+        prewarm.setPriority(Thread.NORM_PRIORITY);
+        prewarm.start();
+    }
     private void applyGuestWindowInsetsIfNeeded(Activity activity){
         if(info==null||info.targetSdkVersion<=0||info.targetSdkVersion>=35)return;
         android.view.Window window=activity.getWindow();if(window==null)return;

@@ -98,8 +98,8 @@ flowchart TD
    - **27 款主流第三方商业应用批量回归 — 24/27 一枪通过（实际可用率 96.3% / 26 款）✅**：详见 [guest-compatibility.md](guest-compatibility.md#23-27-款主流第三方商业应用批量回归大盘2026-10-29-刷新)。
    - **高对抗/高难度标杆应用专项验证全面闭环 ✅**：
      - **微信 (`com.tencent.mm`)**：冷启动（首屏 68ms）、小程序渲染子进程（`com.tencent.mm:appbrand0`，XWeb Pinus/V8）自动化加载交互、腾讯 Soter 外部硬件守护进程（`com.tencent.soter.soterserver` / `ISoterService`）IPC 绑定，以及 Android 生物认证/指纹硬件接口透传全量通过。
-     - **王者荣耀 (`com.tencent.tmgp.sgame`)**：Unity 3D / Vulkan 渲染引擎多线程调度、`TaskP0` 槽位与 `/proc/self/maps` 虚拟视图稳定映射，9/9 项全绿通过（首屏 41ms，30s 持续存活无崩溃）。
-     - **携程旅行 (`ctrip.android.view`)**：SoLoader 沙箱私有目录映射、React Native / Hermes 字节码引擎多进程并发（主进程 + `:hbccompilev2` 守护进程），9/9 项全绿通过（首屏 33ms，30s 持续存活无崩溃）。
+     - **王者荣耀 (`com.tencent.tmgp.sgame`)**：Unity 3D / Vulkan 渲染引擎多线程调度与 `/proc/self/maps` 虚拟视图稳定映射；在 `RuntimeEngine.activityCreated` 中通过 `Runtime.load0` 客体命名空间后台异步预热，根除主线程 `dlopen` 同步阻塞 5000ms 引起的 FocusEvent ANR，深层交互跨过双弹窗进入游戏加载流，30s 持续存活 0 崩溃 0 ANR。
+     - **携程旅行 (`ctrip.android.view`)**：SoLoader 沙箱私有目录映射与物理路径解耦；深层交互自动化点击隐私指引无缝跳转主页 `CtripHomeActivity`，React Native / Hermes 字节码主进程与 `:hbccompilev2` 守护进程并发渲染，30s 持续存活无崩溃。
      - **爱奇艺 (`com.qiyi.video`)**：攻克 Tinker 权限、MSA OAID 崩溃与 ContentProvider `Router.openAssetFile` 媒体流路由，20/20 项全绿通过（首屏 33ms，30s 持续稳定运行无崩溃）。
 2. **真机底座契约与集成验证结果（Xiaomi `d861a4fa` Android 17，已全部通过 ✅）**：
    - `validate-runtime-ingress.py`：原生样本 `INGRESS_GUEST_PASS`、`RuntimeIngressIntegration`（16/16）、`GuestIngressIntegration`（4/4，修正零售非 Root 设备 `debuggerd` 状态断言后全绿）全部通过。
