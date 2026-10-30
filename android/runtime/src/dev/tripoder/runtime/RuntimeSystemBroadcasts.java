@@ -34,7 +34,8 @@ final class RuntimeSystemBroadcasts {
         android.media.AudioManager.ACTION_MICROPHONE_MUTE_CHANGED,
         "android.intent.action.SIM_STATE_CHANGED","android.intent.action.ANY_DATA_STATE","android.intent.action.SERVICE_STATE","android.intent.action.PHONE_STATE","android.telephony.action.CARRIER_CONFIG_CHANGED","android.telephony.action.SUBSCRIPTION_CARRIER_IDENTITY_CHANGED","android.intent.action.ACTION_DEFAULT_DATA_SUBSCRIPTION_CHANGED","android.intent.action.ACTION_DEFAULT_VOICE_SUBSCRIPTION_CHANGED",
         "android.nfc.action.ADAPTER_STATE_CHANGED","android.location.PROVIDERS_CHANGED","android.location.MODE_CHANGED",
-        "android.os.action.SETTING_RESTORED","android.intent.action.WALLPAPER_CHANGED","android.intent.action.INPUT_METHOD_CHANGED","android.intent.action.DOCK_EVENT"
+        "android.os.action.SETTING_RESTORED","android.intent.action.WALLPAPER_CHANGED","android.intent.action.INPUT_METHOD_CHANGED","android.intent.action.DOCK_EVENT",
+        "android.app.action.APP_BLOCK_STATE_CHANGED","android.app.action.NOTIFICATION_CHANNEL_BLOCK_STATE_CHANGED","android.app.action.NOTIFICATION_CHANNEL_GROUP_BLOCK_STATE_CHANGED"
     );
     static final Set<String> STICKY=Set.of(
         Intent.ACTION_BATTERY_CHANGED,PROXY,Intent.ACTION_HEADSET_PLUG,
@@ -50,7 +51,8 @@ final class RuntimeSystemBroadcasts {
     static{Set<String> actions=new HashSet<>(BASIC);actions.addAll(MEDIA);actions.addAll(STICKY);actions.addAll(PACKAGE);actions.addAll(SELF_PACKAGE);ACTIONS=Set.copyOf(actions);}
     static boolean action(String action){return action!=null&&ACTIONS.contains(action);}
     static boolean contains(IntentFilter filter){for(int i=0;i<filter.countActions();i++)if(ACTIONS.contains(filter.getAction(i)))return true;return false;}
-    static boolean only(IntentFilter filter){for(int i=0;i<filter.countActions();i++)if(!ACTIONS.contains(filter.getAction(i)))return false;return filter.countActions()>0;}
+    static boolean isPlatform(String action){return action!=null&&(action.startsWith("android.")||action.startsWith("com.android.")||ACTIONS.contains(action));}
+    static boolean only(IntentFilter filter){for(int i=0;i<filter.countActions();i++)if(!isPlatform(filter.getAction(i)))return false;return filter.countActions()>0;}
     /** PACKAGE_* events are observable only for the observing guest's own package, never other installs. */
     static boolean ownPackageEvent(Intent intent,String packageName){
         if(!PACKAGE.contains(intent.getAction()))return true;

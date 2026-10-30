@@ -128,6 +128,10 @@ final class RuntimeSelfHookActivities {
             throw rejected;
         }
         android.util.Log.i("TripoderActivities", "newActivity: target=" + args[1] + " intent=" + args[2]);
+        if(args[2] instanceof Intent){
+            android.os.Bundle ex=((Intent)args[2]).getExtras();
+            if(ex!=null)for(String k:ex.keySet())try{android.util.Log.i("TripoderActivities","  extra "+k+"="+ex.get(k));}catch(Throwable ignored){}
+        }
         permit.enter();
         Activity result=base?RuntimeActivityCreation.constructDefault((Instrumentation)receiver,permit.loader(),permit.name(),permit.intent())
             :(Activity)original.call(permit.loader(),permit.name(),permit.intent());return permit.complete(result);
@@ -200,15 +204,25 @@ final class RuntimeSelfHookActivities {
                 return original.call(args);
             }
             Activity activity=(Activity)receiver;
-            if(name.equals("finish")){if(activity.getClass()==RuntimeRejectedActivity.class)return original.call(args);if(!RuntimeBridge.owns(activity)){if(activity.isDestroyed())return original.call(args);throw new SecurityException("RESULT_CALLER_UNSUPPORTED");}RuntimeBridge.returning(activity,ActivityFrameworkAccess.resultCode(activity),ActivityFrameworkAccess.resultData(activity));return original.call(args);}
-            String operation=RuntimeBridge.receiving(activity,(Integer)args[1],(Integer)args[2],(ComponentCaller)args[4]);boolean success=false;Throwable failure=null;
+            if(name.equals("finish")){if(activity.getClass()==RuntimeRejectedActivity.class)return original.call(args);if(!RuntimeBridge.owns(activity)){if(activity.isDestroyed())return original.call(args);throw new SecurityException("RESULT_CALLER_UNSUPPORTED");}try{RuntimeBridge.returning(activity,ActivityFrameworkAccess.resultCode(activity),ActivityFrameworkAccess.resultData(activity));}catch(Throwable error){android.util.Log.w("TripoderActivity","Activity finish result delivery skipped: "+error.getMessage());}return original.call(args);}
+            String operation=null;
+            try{
+                operation=RuntimeBridge.receiving(activity,(Integer)args[1],(Integer)args[2],(ComponentCaller)args[4]);
+            }catch(Throwable error){
+                android.util.Log.w("TripoderActivity","Activity result receiving unconfirmed: "+error.getMessage());
+            }
+            boolean success=false;Throwable failure=null;
             try{
                 // Unparcel application-defined results in the admitted receiver's current
                 // loader, including a legitimate packed/hot-fixed Application loader.
                 if(args[3] instanceof Intent data)RuntimeGuestPayload.prepare(data,RuntimeEngine.current.guestLoader());
                 Object result=original.call(args);success=true;return result;
             }catch(Throwable error){failure=error;throw error;}
-            finally{try{RuntimeBridge.received(activity,operation,(Integer)args[2],success);}catch(Throwable acknowledgement){if(failure==null)throw acknowledgement;if(failure!=acknowledgement)failure.addSuppressed(acknowledgement);}}
+            finally{
+                if(operation!=null&&!operation.isEmpty()){
+                    try{RuntimeBridge.received(activity,operation,(Integer)args[2],success);}catch(Throwable acknowledgement){if(failure==null)throw acknowledgement;if(failure!=acknowledgement)failure.addSuppressed(acknowledgement);}
+                }
+            }
         });installer.install(callbacks);
     }
 }

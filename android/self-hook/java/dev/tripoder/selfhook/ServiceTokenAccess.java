@@ -30,16 +30,18 @@ public final class ServiceTokenAccess {
         if(!managerType.isInstance(physicalManager)||physicalToken==null||physicalComponent==null||logicalPackage==null||logicalPackage.isEmpty())throw new IllegalArgumentException("SERVICE_MANAGER_PHYSICAL_IDENTITY_REQUIRED");
         ComponentName sdkComponent=new ComponentName(logicalPackage,physicalComponent.getClassName());
         return Proxy.newProxyInstance(managerType.getClassLoader(),new Class<?>[]{managerType},(proxy,method,arguments)->{
-            if(method.equals(stopMember)){
+            if(method.equals(stopMember)||(method.getName().equals("stopServiceToken")&&method.getParameterCount()==3)){
                 if(arguments==null||arguments.length!=3||arguments[1]!=physicalToken)throw new SecurityException("SERVICE_STOP_TOKEN_MISMATCH");
                 if(!physicalComponent.equals(arguments[0])&&!sdkComponent.equals(arguments[0]))throw new SecurityException("SERVICE_STOP_COMPONENT_MISMATCH");
                 Object[] physical=arguments.clone();physical[0]=physicalComponent;
                 if(trace)android.util.Log.i("TripoderServiceToken","SCOPED_STOP:startId="+arguments[2]+":physicalSelector="+physicalComponent.equals(arguments[0])+":sdkMixedSelector="+sdkComponent.equals(arguments[0])+":tokenExact=true");
                 Object result=FixedFrameworkMembers.call(stopMember,physicalManager,physical);
                 if(trace)android.util.Log.i("TripoderServiceToken","SCOPED_RESULT:startId="+arguments[2]+":stopped="+result);
-                return result;
+                return result instanceof Boolean ? result : Boolean.FALSE;
             }
-            return FixedFrameworkMembers.call(method,physicalManager,arguments);
+            Object result=FixedFrameworkMembers.call(method,physicalManager,arguments);
+            if(result==null&&method.getReturnType()==boolean.class)return Boolean.FALSE;
+            return result;
         });
     }
     public static boolean stop(Service service,ComponentName physicalComponent,int startId)throws Exception {

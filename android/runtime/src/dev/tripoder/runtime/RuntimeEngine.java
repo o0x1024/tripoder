@@ -390,7 +390,19 @@ public final class RuntimeEngine {
     boolean isBroker(Object value){return value!=null&&value==broker;}
     /** The verified defining loader: the only ClassLoader that holds this installation's DEX. */
     ClassLoader artifactLoader(){return artifactLoader;}
-    boolean ownsLoader(ClassLoader candidate){return RuntimeSelfHookLoaders.owns(artifactLoader,candidate,application==null?null:application.getClass());}
+    boolean ownsDataDirLoader(ClassLoader candidate) {
+        if (candidate == null || info == null) return false;
+        for (ClassLoader cursor = candidate; cursor != null; cursor = cursor.getParent()) {
+            if (cursor instanceof dalvik.system.BaseDexClassLoader) {
+                String desc = cursor.toString();
+                if (info.dataDir != null && desc.contains(info.dataDir)) return true;
+                if (info.deviceProtectedDataDir != null && desc.contains(info.deviceProtectedDataDir)) return true;
+                if (info.sourceDir != null && desc.contains(info.sourceDir)) return true;
+            }
+        }
+        return false;
+    }
+    boolean ownsLoader(ClassLoader candidate){return RuntimeSelfHookLoaders.owns(artifactLoader,candidate,application==null?null:application.getClass())||ownsDataDirLoader(candidate);}
     /**
      * The physical form of a launch record.
      *
@@ -588,8 +600,11 @@ public final class RuntimeEngine {
         if(returned.contains(activity))return;
         RuntimeActivityResult.require(result,activityCallers.samePackageResult(activity,packageName));
         String[] callback=callbacks.get(activity);if(callback==null){returned.add(activity);return;} // The controller receives the same checked result shape.
-        Bundle request=auth();request.putString("callback",callback[0]);request.putString("operation",callback[1]);RuntimeWire.call(broker,RuntimeWire.RESULT,request);
-        returned.add(activity);callbacks.remove(activity);
+        try{
+            Bundle request=auth();request.putString("callback",callback[0]);request.putString("operation",callback[1]);RuntimeWire.call(broker,RuntimeWire.RESULT,request);
+        }finally{
+            returned.add(activity);callbacks.remove(activity);
+        }
     }
     public Bundle check(Bundle input)throws Exception {Bundle b=auth();b.putString("callback",RuntimeWire.required(input,"callback"));b.putString("operation",RuntimeWire.required(input,"operation"));if(input.containsKey("overrideGeneration"))b.putString("generation",input.getString("overrideGeneration"));return RuntimeWire.call(broker,RuntimeWire.RESULT,b);}
     private final Map<String,Set<Integer>> systemResults=new HashMap<>();

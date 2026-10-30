@@ -18,6 +18,78 @@ public final class TargetLaunchIntegration extends ControlTestBase {
         try(var diagnostic=new ControlThreadWatchdog(getTargetContext(),run)){runTarget();}
     }
     private void runTarget()throws Exception{
+        if("true".equals(args.getString("verifyBiometricSoter"))){
+            Context ctx=getTargetContext();
+            Intent soterIntent=new Intent("com.tencent.soter.soterserver.ISoterService");
+            soterIntent.setPackage("com.tencent.soter.soterserver");
+            var pm=ctx.getPackageManager();
+            var ri=pm.resolveService(soterIntent,0);
+            boolean resolved=ri!=null&&ri.serviceInfo!=null;
+            String compName=resolved?ri.serviceInfo.packageName+"/"+ri.serviceInfo.name:"unresolved";
+
+            java.util.concurrent.atomic.AtomicReference<IBinder> soterBinder=new java.util.concurrent.atomic.AtomicReference<>();
+            java.util.concurrent.atomic.AtomicReference<ComponentName> connectedName=new java.util.concurrent.atomic.AtomicReference<>();
+            java.util.concurrent.CountDownLatch latch=new java.util.concurrent.CountDownLatch(1);
+
+            ServiceConnection conn=new ServiceConnection(){
+                @Override public void onServiceConnected(ComponentName name,IBinder service){
+                    connectedName.set(name);
+                    soterBinder.set(service);
+                    latch.countDown();
+                }
+                @Override public void onServiceDisconnected(ComponentName name){}
+            };
+
+            boolean bound=ctx.bindService(soterIntent,conn,Context.BIND_AUTO_CREATE);
+            boolean connected=latch.await(5,java.util.concurrent.TimeUnit.SECONDS);
+            int version=-1;
+            String interfaceDescriptor=null;
+            if(connected&&soterBinder.get()!=null){
+                IBinder binder=soterBinder.get();
+                try{interfaceDescriptor=binder.getInterfaceDescriptor();}catch(Throwable ignored){}
+                Parcel data=Parcel.obtain();
+                Parcel reply=Parcel.obtain();
+                try{
+                    data.writeInterfaceToken("com.tencent.soter.soterserver.ISoterService");
+                    binder.transact(1,data,reply,0);
+                    reply.readException();
+                    version=reply.readInt();
+                }catch(Throwable t){
+                    report.put("soterTransactError",t.getMessage());
+                }finally{
+                    data.recycle();
+                    reply.recycle();
+                }
+                ctx.unbindService(conn);
+            }
+
+            android.hardware.biometrics.BiometricManager bm=ctx.getSystemService(android.hardware.biometrics.BiometricManager.class);
+            int canAuth=bm!=null?bm.canAuthenticate(android.hardware.biometrics.BiometricManager.Authenticators.BIOMETRIC_WEAK):-999;
+            boolean fpDetected=false,fpEnrolled=false;
+            try{
+                Object fm=ctx.getSystemService("fingerprint");
+                if(fm!=null){
+                    fpDetected=(Boolean)fm.getClass().getMethod("isHardwareDetected").invoke(fm);
+                    fpEnrolled=(Boolean)fm.getClass().getMethod("hasEnrolledFingerprints").invoke(fm);
+                }
+            }catch(Throwable ignored){}
+
+            report.put("soterResolved",resolved)
+                .put("soterComponent",compName)
+                .put("soterBound",bound)
+                .put("soterConnected",connected)
+                .put("soterConnectedComponent",String.valueOf(connectedName.get()))
+                .put("soterInterfaceDescriptor",interfaceDescriptor)
+                .put("soterVersion",version)
+                .put("biometricCanAuth",canAuth)
+                .put("fingerprintHardwareDetected",fpDetected)
+                .put("fingerprintHasEnrolled",fpEnrolled);
+
+            check("soter-service-ipc-connected",connected&&soterBinder.get()!=null,String.valueOf(connectedName.get()));
+            check("soter-interface-descriptor-valid","com.tencent.soter.soterserver.ISoterService".equals(interfaceDescriptor),interfaceDescriptor);
+            check("biometric-manager-hardware-available",bm!=null&&fpDetected,"canAuth="+canAuth);
+            return;
+        }
         String target=args.getString("target");boolean wechat="wechat".equals(target);
         String pkg,expected,title;
         if(args.containsKey("customPackage")){
@@ -34,6 +106,45 @@ public final class TargetLaunchIntegration extends ControlTestBase {
         startThroughWorkbench(false);Object app=getTargetContext().getApplicationContext();IBinder session=(IBinder)field(field(app,"engine"),"session");Object projects=field(app,"projects");
         File source=args.containsKey("customSource")?new File(args.getString("customSource")):new File(getTargetContext().getExternalFilesDir(null),"acceptance/"+target+".apk");check("original-apk-digest-matches",expected.equals(digest(source)),expected);
         Bundle catalog=execute(session,"catalog");JSONArray spaces=new JSONArray(catalog.getString("spaces"));boolean exists=false;for(int i=0;i<spaces.length();i++)if(SPACE.equals(spaces.getString(i)))exists=true;
+        if(args.containsKey("killPid")){
+            int pid=Integer.parseInt(args.getString("killPid"));
+            android.os.Process.killProcess(pid);
+            report.put("killedPid",pid);
+            check("kill-pid-success",true,"killed "+pid);
+            return;
+        }
+        if("true".equals(args.getString("inspectUnknown"))){
+            android.content.Context ctx=getTargetContext();
+            File dbFile=ctx.getDatabasePath("tripoder-runtime-v2.db");
+            android.database.sqlite.SQLiteDatabase db=android.database.sqlite.SQLiteDatabase.openDatabase(dbFile.getPath(),null,android.database.sqlite.SQLiteDatabase.OPEN_READONLY);
+            JSONArray unknownOps=new JSONArray();
+            try(var c=db.rawQuery("SELECT o.id,o.state,o.detail,o.caller,s.scope,s.command,s.dispatch FROM operations o LEFT JOIN operation_scopes s ON s.operation=o.id WHERE o.state='UNKNOWN'",null)){
+                while(c.moveToNext()){
+                    JSONObject item=new JSONObject();
+                    for(int i=0;i<c.getColumnCount();i++)item.put(c.getColumnName(i),c.getString(i));
+                    String opId=c.getString(0);
+                    for(String tbl:new String[]{"activity_launches","broadcast_deliveries","service_calls","provider_calls","job_mutations"}){
+                        try(var tc=db.rawQuery("SELECT * FROM "+tbl+" WHERE operation=?",new String[]{opId})){
+                            JSONArray rows=new JSONArray();
+                            while(tc.moveToNext()){
+                                JSONObject r=new JSONObject();
+                                for(int j=0;j<tc.getColumnCount();j++){
+                                    if(tc.getType(j)==android.database.Cursor.FIELD_TYPE_BLOB)r.put(tc.getColumnName(j),"[blob]");
+                                    else r.put(tc.getColumnName(j),tc.getString(j));
+                                }
+                                rows.put(r);
+                            }
+                            if(rows.length()>0)item.put(tbl,rows);
+                        }
+                    }
+                    unknownOps.put(item);
+                }
+            }
+            db.close();
+            report.put("unknownOperations",unknownOps);
+            check("inspect-unknown-success",true,unknownOps);
+            return;
+        }
         if(args.containsKey("reverifySpace")){
             String repairSpace=args.getString("reverifySpace"),repairPackage=args.getString("reverifyPackage"),repairGeneration=args.getString("reverifyGeneration");String failure=null;
             try{execute(session,"reverifyInstall","space",repairSpace,"package",repairPackage,"generation",repairGeneration);}
@@ -93,7 +204,7 @@ public final class TargetLaunchIntegration extends ControlTestBase {
         if("true".equals(args.getString("listEntries"))){report.put("installs",new JSONArray(catalog.getString("installs"))).put("launchEntries",new JSONArray(execute(session,"launchEntries","project",record.getString("project")).getString("entries"))).put("workerUid",android.os.Process.myUid());check("launch-entries-listed-without-launch",true,record.getString("project"));return;}
         if(args.containsKey("closeLaunchEntry"))closePriorEntry(session,record,args.getString("closeLaunchEntry"));
         else if(args.containsKey("customPackage")){
-            try{execute(session,"stopApplication","operation",id(),"space",SPACE,"package",pkg,"generation",record.getString("generation"));}catch(Exception ignored){}
+            if(!"true".equals(args.getString("noPreStop")))try{execute(session,"stopApplication","operation",id(),"space",SPACE,"package",pkg,"generation",record.getString("generation"));}catch(Exception ignored){}
             JSONArray priorEntries=new JSONArray(execute(session,"launchEntries","project",record.getString("project")).getString("entries"));
             for(int i=0;i<priorEntries.length();i++){
                 JSONObject item=priorEntries.getJSONObject(i);
@@ -169,6 +280,17 @@ public final class TargetLaunchIntegration extends ControlTestBase {
             check("screenshot-unavailable-because-target-window-is-secure",true,pkg);report.put("screenshotSkipped","TARGET_DECLARES_FLAG_SECURE");
         }else{
             String capture=run+"-target-stable.png";try(var output=new FileOutputStream(new File(getTargetContext().getExternalFilesDir(null),capture))){if(!screenshot.compress(android.graphics.Bitmap.CompressFormat.PNG,100,output))throw new IOException("TARGET_SCREENSHOT_FAILED");}finally{screenshot.recycle();}report.put("captures",new JSONArray().put(capture));
+        }
+        if("true".equals(args.getString("testCrashRelaunch"))){
+            android.util.Log.i("TripoderTest","SIMULATE_CRASH killing worker pid="+worker.getInt("pid"));
+            android.os.Process.killProcess(worker.getInt("pid"));
+            SystemClock.sleep(800);
+            String relaunch=id();
+            report.put("relaunchOperation",relaunch);
+            Bundle secondPrepared=execute(session,"prepareLaunch","operation",relaunch,"project",record.getString("project"),"bindingOperation",record.getString("binding"),"generation",record.getString("generation"),"component",launcher.getString("component"));
+            Bundle secondWorker=awaitWorker(session,record.getString("project"),secondPrepared);
+            report.put("secondWorkerPid",secondWorker.getInt("pid"));
+            check("relaunch-after-crash-succeeded",secondWorker.getInt("pid")>0&&secondWorker.getInt("pid")!=worker.getInt("pid"),secondWorker.getInt("pid"));
         }
         if("true".equals(args.getString("stopAfterTest"))){
             String stop=id();execute(session,"stopApplication","operation",stop,"space",SPACE,"package",pkg,"generation",record.getString("generation"));

@@ -44,7 +44,11 @@ public final class FrameworkAccess {
         Method field=FrameworkAccess.class.getDeclaredMethod("fieldNative",int.class);
         Method count=FrameworkAccess.class.getDeclaredMethod("countNative",int.class);
         Method method=FrameworkAccess.class.getDeclaredMethod("methodNative",int.class,int.class);
-        if(!prepareNative(field,count,method))throw new IllegalStateException("FRAMEWORK_ART_CONTRACT_REJECTED");
+        if(!prepareNative(field,count,method)) {
+            String status = statusNative();
+            android.util.Log.e("TripoderStatus", "FRAMEWORK_ART_CONTRACT_REJECTED: " + status);
+            throw new IllegalStateException("FRAMEWORK_ART_CONTRACT_REJECTED: " + status);
+        }
         Class<?>[] owners=new Class<?>[CLASSES.length];
         for(int i=0;i<owners.length;i++)owners[i]=Class.forName(CLASSES[i],false,null);
         Field[] fields=new Field[FIELD_NAMES.length];

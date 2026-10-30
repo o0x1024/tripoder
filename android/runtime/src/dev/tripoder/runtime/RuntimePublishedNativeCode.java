@@ -77,7 +77,7 @@ final class RuntimePublishedNativeCode {
         var names=wire.getStringArrayList("names");var hashes=wire.getStringArrayList("hashes");long[] sizes=wire.getLongArray("sizes");
         if(paths==null||paths.isEmpty()||paths.size()>ArtifactSet.MAX_PARTS||apkHashes==null||apkSizes==null||apkHashes.size()!=paths.size()||apkSizes.length!=paths.size()||new HashSet<>(paths).size()!=paths.size()||names==null||names.isEmpty()||names.size()>512||hashes==null||sizes==null||hashes.size()!=names.size()||sizes.length!=names.size()||new HashSet<>(names).size()!=names.size())throw new SecurityException("PUBLIC_NATIVE_PLAN_SHAPE_REJECTED");
         if(!root.equals(new File(paths.get(0)).getParent()))throw new SecurityException("PUBLIC_NATIVE_ROOT_CHANGED");
-        for(int i=0;i<names.size();i++)if(names.get(i)==null||hashes.get(i)==null||!names.get(i).matches("lib[A-Za-z0-9_.+\\-]+\\.so")||!hashes.get(i).matches("[0-9a-f]{64}")||sizes[i]<=0||sizes[i]>ArtifactSet.MAX_APK_BYTES)throw new SecurityException("PUBLIC_NATIVE_LIBRARY_SHAPE_REJECTED");
+        for(int i=0;i<names.size();i++)if(names.get(i)==null||hashes.get(i)==null||!names.get(i).matches("lib[a-zA-Z0-9_+.$-]+\\.so")||!hashes.get(i).matches("[0-9a-f]{64}")||sizes[i]<=0||sizes[i]>ArtifactSet.MAX_APK_BYTES)throw new SecurityException("PUBLIC_NATIVE_LIBRARY_SHAPE_REJECTED");
         var held=new ArrayList<RuntimePublishedCodeFiles.Open>();
         try{
             for(int i=0;i<paths.size();i++){if(!root.equals(new File(paths.get(i)).getParent()))throw new SecurityException("PUBLIC_NATIVE_PART_ROOT_CHANGED");held.add(RuntimePublishedCodeFiles.open(paths.get(i),root,apkHashes.get(i),apkSizes[i]));}

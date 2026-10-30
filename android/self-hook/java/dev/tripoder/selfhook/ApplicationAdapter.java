@@ -21,6 +21,7 @@ public final class ApplicationAdapter {
     private static native void publishLoaderNative(ClassLoader loader);
     private static native boolean neutralizeScoutNative();
     private static native boolean decompressCsoNative(String srcPath, String dstPath, String zstdLibPath);
+    private static native boolean patchXWebNative();
     public static void preparePackage(Application host,ApplicationInfo info,ClassLoader loader,ClassLoader owner,Resources resources,String process,java.util.List<android.content.pm.ProviderInfo> providers){
         preparePackage(host,info,loader,owner,resources,process,providers,false);
     }
@@ -487,6 +488,91 @@ public final class ApplicationAdapter {
         }
         if ("com.tencent.mm".equals(info.packageName)) {
             try {
+                try {
+                    Thread.UncaughtExceptionHandler cur = Thread.getDefaultUncaughtExceptionHandler();
+                    if (!(cur instanceof TripoderUncaughtHandler)) {
+                        Thread.setDefaultUncaughtExceptionHandler(new TripoderUncaughtHandler(cur));
+                        android.util.Log.i("TripoderWeChat", "Installed TripoderUncaughtHandler");
+                    }
+                } catch (Throwable t) {
+                    android.util.Log.w("TripoderWeChat", "Failed to wrap uncaught exception handler", t);
+                }
+
+                try {
+                    android.webkit.WebView.setWebContentsDebuggingEnabled(true);
+                    android.util.Log.i("TripoderWeChat", "Enabled WebView debugging");
+                } catch (Throwable t) {
+                    android.util.Log.w("TripoderWeChat", "Failed to enable WebView debugging", t);
+                }
+
+                try {
+                    Class<?> xlogClass = Class.forName("com.tencent.mars.xlog.Log", false, loader);
+                    java.lang.reflect.Method setConsoleLogOpen = xlogClass.getMethod("setConsoleLogOpen", boolean.class);
+                    setConsoleLogOpen.invoke(null, true);
+                    java.lang.reflect.Method setLevel = xlogClass.getMethod("setLevel", int.class, boolean.class);
+                    setLevel.invoke(null, 0, true);
+                    android.util.Log.i("TripoderWeChat", "Enabled Mars XLog console logging");
+                } catch (Throwable t) {
+                    android.util.Log.w("TripoderWeChat", "Failed to enable Mars console log", t);
+                }
+
+                // Continuous watcher to wrap Log.logImp as soon as it initializes
+                new Thread(() -> {
+                    for (int i = 0; i < 60; i++) {
+                        try {
+                            Class<?> logClass = Class.forName("com.tencent.mars.xlog.Log", false, loader);
+                            java.lang.reflect.Field f = logClass.getDeclaredField("logImp");
+                            f.setAccessible(true);
+                            Object imp = f.get(null);
+                            if (imp != null && !java.lang.reflect.Proxy.isProxyClass(imp.getClass())) {
+                                Class<?> logImpClass = Class.forName("com.tencent.mars.xlog.Log$LogImp", false, loader);
+                                final Object originalImp = imp;
+                                Object proxy = java.lang.reflect.Proxy.newProxyInstance(loader, new Class<?>[]{logImpClass}, (p, method, mArgs) -> {
+                                    String mName = method.getName();
+                                    if (mName.startsWith("log") && mArgs != null && mArgs.length >= 8) {
+                                        String tag = String.valueOf(mArgs[1]);
+                                        String filename = String.valueOf(mArgs[2]);
+                                        String func = String.valueOf(mArgs[3]);
+                                        Object line = mArgs[4];
+                                        String msg = String.valueOf(mArgs[mArgs.length - 1]);
+                                        android.util.Log.i("TripoderMarsLog", "[" + tag + " " + filename + ":" + line + " " + func + "] " + msg);
+                                    } else if ("setConsoleLogOpen".equals(mName) && mArgs != null && mArgs.length >= 2) {
+                                        mArgs[1] = Boolean.TRUE;
+                                    }
+                                    return method.invoke(originalImp, mArgs);
+                                });
+                                f.set(null, proxy);
+                                java.lang.reflect.Method setConsoleLogOpen = logClass.getMethod("setConsoleLogOpen", boolean.class);
+                                setConsoleLogOpen.invoke(null, true);
+                                android.util.Log.i("TripoderWeChat", "Successfully wrapped Log.logImp and enabled console logging");
+                                break;
+                            }
+                        } catch (Throwable ignored) {}
+                        try {
+                            Thread.UncaughtExceptionHandler curHandler = Thread.getDefaultUncaughtExceptionHandler();
+                            if (curHandler != null && !(curHandler instanceof TripoderUncaughtHandler)) {
+                                Thread.setDefaultUncaughtExceptionHandler(new TripoderUncaughtHandler(curHandler));
+                            }
+                        } catch (Throwable ignored) {}
+                        try { Thread.sleep(250); } catch (Throwable ignored) {}
+                    }
+                }, "TripoderXLogWatcher").start();
+
+                // Continuous watcher to patch libxwebcore.so as soon as it is mapped into memory
+                new Thread(() -> {
+                    for (int i = 0; i < 600; i++) { // Poll for up to 300 seconds
+                        try {
+                            if (patchXWebNative()) {
+                                android.util.Log.i("TripoderWeChat", "TripoderXWebWatcher: successfully patched and hooked libxwebcore.so!");
+                                break;
+                            }
+                        } catch (Throwable t) {
+                            android.util.Log.w("TripoderWeChat", "TripoderXWebWatcher error", t);
+                        }
+                        try { Thread.sleep(200); } catch (Throwable ignored) {}
+                    }
+                }, "TripoderXWebWatcher").start();
+
                 // 1. Neutralize APM signal hook & watchdog flags in memory
                 try {
                     Class<?> fv0U0 = Class.forName("fv0.u0", false, loader);
@@ -663,6 +749,12 @@ public final class ApplicationAdapter {
                     }
                     String soName = (name.startsWith("lib") && name.endsWith(".so")) ? name : System.mapLibraryName(name);
 
+                    // Strictly exempt all XWeb, Pinus, and WVA libraries from resolving into PathClassLoader (clns-16).
+                    // These libraries belong exclusively to XWeb's DexClassLoader namespace (clns-17).
+                    if (soName.contains("xweb") || soName.contains("pinus") || soName.contains("wva")) {
+                        return null;
+                    }
+
                     // 1. FIRST: Check csoDir for decompressed CSO libraries (to avoid returning 21-byte stubs from nativeLibraryDir)
                     java.io.File csoCandidate = new java.io.File(csoDir, soName);
                     if (csoCandidate.exists() && csoCandidate.length() > 1024) {
@@ -764,6 +856,7 @@ public final class ApplicationAdapter {
                 // Pre-load safe base native libraries in DT_NEEDED dependency order
                 loadGuestLibrary.accept("libc++_shared.so");
                 loadGuestLibrary.accept("libmmkv.so");
+                loadGuestLibrary.accept("libwechatxlog.so");
                 loadGuestLibrary.accept("libcso.so");
                 loadGuestLibrary.accept("libmmskia.so");
                 loadGuestLibrary.accept("libcrypto.so");
@@ -813,9 +906,7 @@ public final class ApplicationAdapter {
                 try {
                     Class<?> csoLoaderClass = Class.forName("com.tencent.cso.CsoLoader", false, loader);
                     Class<?> ya6pClass = Class.forName("ya6.p", false, loader);
-                    Class<?> ya6qClass = Class.forName("ya6.q", false, loader);
                     Class<?> ya6aClass = Class.forName("ya6.a", false, loader);
-                    Class<?> execResultClass = Class.forName("com.tencent.cso.CsoLoader$ExecuteResult", false, loader);
 
                     Object dummyA = java.lang.reflect.Proxy.newProxyInstance(loader, new Class<?>[]{ya6aClass}, (p, method, args) -> {
                         return csoDir.getAbsolutePath();
@@ -849,6 +940,24 @@ public final class ApplicationAdapter {
                                     return Boolean.FALSE;
                                 }
 
+                                // Strictly exempt all XWeb, Pinus, and WVA libraries from root PathClassLoader handling.
+                                // These libraries belong strictly to XWeb's isolated DexClassLoader namespace (clns-17).
+                                if (soName.contains("xweb") || soName.contains("pinus") || soName.contains("wva")) {
+                                    android.util.Log.i("TripoderWeChat", "CsoLoader exempting XWeb/Pinus DSO from root loader: " + soName);
+                                    new Thread(() -> {
+                                        for (int k = 0; k < 60; k++) {
+                                            try {
+                                                if (patchXWebNative()) {
+                                                    android.util.Log.i("TripoderWeChat", "TripoderXWebFastWatcher: patched libxwebcore.so");
+                                                    break;
+                                                }
+                                            } catch (Throwable ignored) {}
+                                            try { Thread.sleep(25); } catch (Throwable ignored) {}
+                                        }
+                                    }, "TripoderXWebFastWatcher").start();
+                                    return Boolean.FALSE;
+                                }
+
                                 if (loadedLibraries.contains(soName)) {
                                     return Boolean.FALSE;
                                 }
@@ -878,26 +987,6 @@ public final class ApplicationAdapter {
                         return Boolean.FALSE;
                     });
 
-                    Object qProxy = java.lang.reflect.Proxy.newProxyInstance(loader, new Class<?>[]{ya6qClass}, (p, method, args) -> {
-                        if ("invoke".equals(method.getName()) && args != null && args.length >= 1) {
-                            String query = String.valueOf(args[0]);
-                            java.io.File resolved = resolveLibraryFile.apply(query);
-                            String finalPath = (resolved != null && resolved.exists()) ? resolved.getAbsolutePath() : query;
-                            try {
-                                java.lang.reflect.Constructor<?>[] ctors = execResultClass.getDeclaredConstructors();
-                                for (java.lang.reflect.Constructor<?> ctor : ctors) {
-                                    if (ctor.getParameterCount() == 2) {
-                                        ctor.setAccessible(true);
-                                        return ctor.newInstance(null, finalPath);
-                                    }
-                                }
-                            } catch (Throwable t) {
-                                android.util.Log.w("TripoderWeChat", "Failed to construct ExecuteResult", t);
-                            }
-                        }
-                        return null;
-                    });
-
                     java.lang.reflect.Field gField = csoLoaderClass.getDeclaredField("g");
                     gField.setAccessible(true);
                     gField.set(null, pProxy);
@@ -905,18 +994,6 @@ public final class ApplicationAdapter {
                     java.lang.reflect.Field iField = csoLoaderClass.getDeclaredField("i");
                     iField.setAccessible(true);
                     iField.set(null, pProxy);
-
-                    try {
-                        java.lang.reflect.Field hField = csoLoaderClass.getDeclaredField("h");
-                        hField.setAccessible(true);
-                        hField.set(null, qProxy);
-                    } catch (Throwable ignored) {}
-
-                    try {
-                        java.lang.reflect.Field jField = csoLoaderClass.getDeclaredField("j");
-                        jField.setAccessible(true);
-                        jField.set(null, qProxy);
-                    } catch (Throwable ignored) {}
 
                     android.util.Log.i("TripoderWeChat", "Configured CsoLoader proxies with csoDir: " + csoDir.getAbsolutePath());
                 } catch (Throwable t) {
@@ -1179,4 +1256,18 @@ public final class ApplicationAdapter {
     public static void check(){mainThread();ApplicationBinding.check();checkNative();}
     /** Probe teardown only. Roots/code remain resident; this is not object retirement. */
     public static void closeProbeView(){mainThread();ApplicationBinding.restoreProbe();closeViewNative();}
+
+    static final class TripoderUncaughtHandler implements Thread.UncaughtExceptionHandler {
+        private final Thread.UncaughtExceptionHandler delegate;
+        TripoderUncaughtHandler(Thread.UncaughtExceptionHandler delegate) {
+            this.delegate = delegate;
+        }
+        @Override
+        public void uncaughtException(Thread t, Throwable e) {
+            android.util.Log.e("TripoderUncaught", "=== UNCAUGHT EXCEPTION on thread [" + t.getName() + "] ===", e);
+            if (delegate != null) {
+                delegate.uncaughtException(t, e);
+            }
+        }
+    }
 }

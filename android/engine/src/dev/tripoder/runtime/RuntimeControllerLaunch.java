@@ -69,7 +69,7 @@ final class RuntimeControllerLaunch {
             var appTasks=broker.host.getSystemService(android.app.ActivityManager.class).getAppTasks();
             synchronized(broker){
                 broker.activities.releaseUnused();
-                if(!hasLiveSession)broker.activities.retireDeadUnattached(install.space,install.info.packageName,generation,operation);
+                broker.activities.retireDeadUnattached(install.space,install.info.packageName,generation,operation);
                 broker.activities.retireDeadTasks(install.space,install.info.packageName,generation,operation,appTasks);
             }
             expireEntries(broker);
@@ -96,16 +96,27 @@ final class RuntimeControllerLaunch {
      *  sibling processes that no open root belongs to (a crashed app's background service process) are closed first, so
      *  their sessions cannot keep the dead root from being retired. A live root is never touched. */
     private static void closeOrphanedProcesses(RuntimeBroker broker,String space,String pkg,String generation)throws Exception{
+        broker.processes.reconcile();
         java.util.List<String> orphans=new java.util.ArrayList<>();
         synchronized(broker){
-            var db=broker.store.getReadableDatabase();boolean deadRoot=false,liveRoot=false;
+            var db=broker.store.getReadableDatabase();
+            boolean mainProcessAlive=false;
+            try(Cursor c=db.rawQuery("SELECT 1 FROM sessions WHERE space=? AND package=? AND installGeneration=? AND processName=? AND state NOT IN ('DEAD','FAILED') LIMIT 1",new String[]{space,pkg,generation,pkg})){
+                mainProcessAlive=c.moveToFirst();
+            }
+            boolean deadRoot=false,liveRoot=false;
             try(Cursor c=db.rawQuery("SELECT s.state FROM activity_tickets t LEFT JOIN sessions s ON s.generation=t.generation WHERE t.space=? AND t.package=? AND t.installGeneration=? AND t.entryFenceOperation IS NULL AND t.state NOT IN ('FINISHED','REVOKED','RETIRED')",new String[]{space,pkg,generation})){
                 while(c.moveToNext()){String state=c.getString(0);if(state==null||"DEAD".equals(state)||"FAILED".equals(state))deadRoot=true;else liveRoot=true;}
             }
-            if(!deadRoot||liveRoot)return;
-            try(Cursor c=db.rawQuery("SELECT generation FROM sessions WHERE space=? AND package=? AND installGeneration=? AND state NOT IN ('DEAD','FAILED')",new String[]{space,pkg,generation})){while(c.moveToNext())orphans.add(c.getString(0));}
+            if(!deadRoot&&liveRoot&&mainProcessAlive)return;
+            if(deadRoot||!mainProcessAlive){
+                try(Cursor c=db.rawQuery("SELECT generation FROM sessions WHERE space=? AND package=? AND installGeneration=? AND state NOT IN ('DEAD','FAILED')",new String[]{space,pkg,generation})){while(c.moveToNext())orphans.add(c.getString(0));}
+            }
         }
-        for(String process:orphans){android.util.Log.i("TripoderLaunch","CLOSE_ORPHAN generation="+process);broker.processes.close(process);}
+        for(String process:orphans){
+            android.util.Log.i("TripoderLaunch","CLOSE_ORPHAN generation="+process);
+            try{broker.processes.close(process);}catch(Exception error){android.util.Log.w("TripoderLaunch","CLOSE_ORPHAN_FAILED generation="+process,error);}
+        }
     }
     /** Entries issued by this authority, by launch operation, with their issue time. An authority restart kills every worker, after which the stale-entry path applies. */
     private static final java.util.Map<String,Long> issued=new java.util.concurrent.ConcurrentHashMap<>();

@@ -165,7 +165,7 @@ public final class ExecutionContract {
     private boolean recovered;
     private boolean storePoisoned;
     private long lastNow;
-    private static final long MAX_CALLBACK_LIFETIME_MS = 300_000;
+    public static final long MAX_CALLBACK_LIFETIME_MS = 300_000;
 
     public ExecutionContract(Store store) { this(store, System::currentTimeMillis); }
     public ExecutionContract(Store store, LongSupplier nowMs) {

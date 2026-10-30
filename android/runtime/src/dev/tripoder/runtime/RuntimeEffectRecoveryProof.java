@@ -32,7 +32,7 @@ final class RuntimeEffectRecoveryProof {
         }
         // A late Android delivery meets a terminal ticket, and no receiving Java
         // instance survives. Every delivery of this exact operation must be inert.
-        try(var rows=db.rawQuery("SELECT COUNT(*),SUM(CASE WHEN t.state IN ('FINISHED','REVOKED','RETIRED') AND s.state='DEAD' THEN 1 ELSE 0 END) FROM activity_launches l JOIN activity_tickets t ON t.ticket=l.candidate JOIN sessions s ON s.generation=t.generation WHERE l.operation=?",new String[]{operation})){
+        try(var rows=db.rawQuery("SELECT COUNT(*),SUM(CASE WHEN (t.state IN ('FINISHED','REVOKED','RETIRED') OR s.state='DEAD') AND s.state='DEAD' THEN 1 ELSE 0 END) FROM activity_launches l JOIN activity_tickets t ON t.ticket=l.candidate JOIN sessions s ON s.generation=t.generation WHERE l.operation=?",new String[]{operation})){
             if(rows.moveToFirst()&&rows.getInt(0)>0&&rows.getInt(0)==rows.getInt(1))return true;
         }
         // Service preparation records a dispatch capability before returning one.
@@ -40,6 +40,19 @@ final class RuntimeEffectRecoveryProof {
         // and confirmed death make that exact attempt inert; the UNKNOWN result stays.
         String liveService=admitted?"":" AND NOT EXISTS(SELECT 1 FROM sessions s WHERE 'space/'||s.space||'/package/'||s.package=own.scope AND s.state NOT IN ('DEAD','FAILED'))";
         try(var rows=db.rawQuery("SELECT 1 FROM operations original JOIN operation_scopes own ON own.operation=original.id WHERE original.id=? AND original.state='UNKNOWN' AND original.detail='SERVICE_PREPARATION_UNCONFIRMED' AND own.scope=? AND own.command='legacy-or-internal' AND NOT EXISTS(SELECT 1 FROM service_calls c WHERE c.operation=original.id)"+liveService+" AND EXISTS(SELECT 1 FROM operations stopped JOIN operation_scopes ss ON ss.operation=stopped.id WHERE stopped.state='SUCCEEDED' AND ss.scope=own.scope AND ss.command IN ('stopApplication','agentStopApplication') AND stopped.created>=original.updated) LIMIT 1",new String[]{operation,owner})){
+            if(rows.moveToFirst())return true;
+        }
+        // A broadcast route delivery sub-operation that was interrupted before its delivery ticket was recorded.
+        // If sibling deliveries of the same broadcast fanout were retired and target session is confirmed dead,
+        // no receiver was ever dispatched or can ever execute; the unrecorded attempt is provably inert.
+        try(var rows=db.rawQuery("SELECT 1 FROM operations original JOIN operation_scopes own ON own.operation=original.id WHERE original.id=? AND original.state='UNKNOWN' AND original.detail='BROKER_RECOVERY' AND own.scope=? AND own.command='legacy-or-internal' AND NOT EXISTS(SELECT 1 FROM broadcast_deliveries WHERE operation=original.id)"+liveService+" AND EXISTS(SELECT 1 FROM broadcast_deliveries sibling JOIN sessions s ON s.generation=sibling.target WHERE sibling.resourceRetired=1 AND sibling.resourceProof='TARGET_DEAD_AND_INGRESS_FENCED' AND s.state='DEAD' AND (sibling.operation LIKE substr(original.id,1,37)||'%' OR (instr(original.id,'pending-implicit-')=1 AND sibling.operation LIKE substr(original.id,1,54)||'%'))) LIMIT 1",new String[]{operation,owner})){
+            if(rows.moveToFirst())return true;
+        }
+        // An internal operation marked BROKER_RECOVERY that never recorded any dispatch entry
+        // (broadcast, activity, service, provider, job, pending) into the durable tables before broker death.
+        // A later authenticated stop proves nothing of it survived.
+        String noEffects=" AND NOT EXISTS(SELECT 1 FROM broadcast_deliveries WHERE operation=original.id) AND NOT EXISTS(SELECT 1 FROM activity_launches WHERE operation=original.id) AND NOT EXISTS(SELECT 1 FROM service_calls WHERE operation=original.id) AND NOT EXISTS(SELECT 1 FROM provider_calls WHERE operation=original.id) AND NOT EXISTS(SELECT 1 FROM job_mutations WHERE operation=original.id) AND NOT EXISTS(SELECT 1 FROM pending_mutations WHERE operation=original.id) AND NOT EXISTS(SELECT 1 FROM pending_alarms WHERE operation=original.id)";
+        try(var rows=db.rawQuery("SELECT 1 FROM operations original JOIN operation_scopes own ON own.operation=original.id WHERE original.id=? AND original.state='UNKNOWN' AND original.detail='BROKER_RECOVERY' AND own.scope=? AND own.command='legacy-or-internal' AND own.dispatch!='MAY_HAVE_DISPATCHED'"+noEffects+liveService+" AND EXISTS(SELECT 1 FROM operations stopped JOIN operation_scopes ss ON ss.operation=stopped.id WHERE stopped.state='SUCCEEDED' AND ss.scope=own.scope AND ss.command IN ('stopApplication','agentStopApplication') AND stopped.created>=original.updated) LIMIT 1",new String[]{operation,owner})){
             if(rows.moveToFirst())return true;
         }
         // Failed Application preparation has no entry to close. A later explicit

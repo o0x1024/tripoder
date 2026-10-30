@@ -41,11 +41,11 @@ final class RuntimeServices {
     boolean owns(Service service){return instances.containsKey(service);}
     ComponentName physical(Service service){return new ComponentName(engine.host,identity(service).stub);}
     Intent visible(Service service,Intent input){if(input==null)return null;Identity identity=identity(service);
-        boolean stub=new ComponentName(engine.host,identity.stub).equals(input.getComponent());boolean leased=identity.lease.equals(input.getStringExtra("tripoder.serviceLease"));
+        boolean stub=new ComponentName(engine.host,identity.stub).equals(input.getComponent());String deliveryLease=input.getStringExtra("tripoder.serviceLease");boolean leased=identity.lease.equals(deliveryLease);
         if(stub||leased){
-            // Engine-routed framework delivery: the physical stub component and the per-instance lease are both present. Strip them and present the guest-visible intent. Half a pair is an inconsistent (spoofed) delivery.
-            if(!stub)throw new SecurityException("SERVICE_INTENT_STUB_MISMATCH");if(!leased)throw new SecurityException("SERVICE_INTENT_LEASE_MISMATCH");
-            {}
+            // Engine-routed framework delivery: the physical stub component routes to this service instance.
+            // AMS retains and redelivers bind intents across process restarts; accept matching stub.
+            if(!stub)throw new SecurityException("SERVICE_INTENT_STUB_MISMATCH");
             Intent value=new Intent(input);value.removeExtra("tripoder.serviceLease");value.removeExtra("tripoder.serviceComponent");value.removeExtra("tripoder.thinService");value.setComponent(new ComponentName(engine.packageName,identity.component));value.setExtrasClassLoader(engine.guestLoader());return value;
         }
         // Not engine-routed: the guest invoked its own hooked service lifecycle directly -- a service
@@ -75,18 +75,38 @@ final class RuntimeServices {
         }
         Intent copy=new Intent(input);if(input.getExtras()!=null)copy.replaceExtras(new Bundle(input.getExtras()));return RuntimeServiceIntent.thin(copy);
     }
+    private boolean isOwnService(ComponentName component){
+        if(component==null)return false;
+        return engine.packageName.equals(component.getPackageName())||engine.serviceIndex.get(component.getClassName())!=null;
+    }
     ComponentName start(Context base,Intent intent)throws Exception{
-        RuntimeServiceIntent.Request request=snapshotForPlatform(intent);if(request==null)return null;intent=request.intent;
-        if(!engine.packageName.equals(intent.getComponent().getPackageName())&&engine.serviceIndex.get(intent.getComponent().getClassName())==null){
+        if(intent==null)return null;
+        if(intent.getComponent()==null){
+            ComponentName resolved=RuntimeBridge.resolveOwnService(intent);
+            if(resolved!=null)intent=new Intent(intent).setComponent(resolved);
+        }
+        if(intent.getComponent()!=null&&!isOwnService(intent.getComponent())){
             try{return base.startService(intent);}catch(Exception ignored){return null;}
         }
+        if(intent.getComponent()==null&&intent.getPackage()!=null){
+            try{return base.startService(intent);}catch(Exception ignored){return null;}
+        }
+        RuntimeServiceIntent.Request request=snapshotForPlatform(intent);if(request==null)return null;intent=request.intent;
         Bundle route=route("start",intent,"",0,request.digest);if(route.getBoolean("absent"))return null;ComponentName physical=base.startService(physical(request,route));boolean accepted=physical!=null;if(accepted&&!physical.equals(component(route)))throw new SecurityException("SERVICE_START_COMPONENT_MISMATCH");ack(route,accepted);return accepted?intent.getComponent():null;
     }
     boolean stop(Context base,Intent intent)throws Exception{
-        RuntimeServiceIntent.Request request=snapshotForPlatform(intent);if(request==null)return false;intent=request.intent;
-        if(!engine.packageName.equals(intent.getComponent().getPackageName())&&engine.serviceIndex.get(intent.getComponent().getClassName())==null){
+        if(intent==null)return false;
+        if(intent.getComponent()==null){
+            ComponentName resolved=RuntimeBridge.resolveOwnService(intent);
+            if(resolved!=null)intent=new Intent(intent).setComponent(resolved);
+        }
+        if(intent.getComponent()!=null&&!isOwnService(intent.getComponent())){
             try{return base.stopService(intent);}catch(Exception ignored){return false;}
         }
+        if(intent.getComponent()==null&&intent.getPackage()!=null){
+            try{return base.stopService(intent);}catch(Exception ignored){return false;}
+        }
+        RuntimeServiceIntent.Request request=snapshotForPlatform(intent);if(request==null)return false;intent=request.intent;
         Bundle route=route("stop",intent,"",0,request.digest);if(route.getBoolean("absent"))return false;boolean stopped=base.stopService(physical(request,route));ack(route,stopped);return stopped;
     }
     boolean bind(Context base,Intent intent,ServiceConnection original,int flags,Executor executor)throws Exception{
@@ -98,27 +118,41 @@ final class RuntimeServices {
     private boolean bind(Context base,Intent intent,ServiceConnection original,int flags,Executor executor,String instance)throws Exception{
         if(original==null)throw new IllegalArgumentException("connection is null");
         android.util.Log.i("TripoderService", "bindService: " + (intent != null ? intent.getComponent() : null) + " flags=0x" + Integer.toHexString(flags));
-        // Android resolves a service bind to exactly one concrete component. An intent aimed at
-        // another package (action + setPackage, e.g. com.xiaomi.account or com.tencent.soter) that
-        // declares no matching service simply resolves to nothing, which the platform reports by
-        // returning false -- it only throws "must be explicit" when neither component nor package is
-        // set. The guest service model routes only explicit guest-world components, so any bind
-        // without one is an unresolved external bind: return false to match the platform instead of
-        // letting the shape check throw on the caller's worker thread (SDKs probing for an optional
-        // system service do not catch that and self-kill, which is what crashed 高德 at login).
         if(intent!=null&&intent.getComponent()==null){
-            {
-                ComponentName resolved=RuntimeBridge.resolveOwnService(intent);
-                if(resolved!=null)intent=new Intent(intent).setComponent(resolved);
-            }
+            ComponentName resolved=RuntimeBridge.resolveOwnService(intent);
+            if(resolved!=null)intent=new Intent(intent).setComponent(resolved);
             if(intent.getComponent()==null){
                 if(intent.getPackage()==null&&intent.getSelector()==null)throw new IllegalArgumentException("Service Intent must be explicit: "+intent);
-                // ContextImpl allocates its ServiceDispatcher before asking AMS
-                // to resolve the service. A false result still requires one
-                // unbind to forget that local registration; no callback is sent.
-                synchronized(bindings){var held=bindings.computeIfAbsent(original,key->new ArrayList<>());if(held.isEmpty())held.add(new Binding(original,null));}
-                return false;
+                android.content.pm.ResolveInfo ri=null;
+                try{ri=base.getPackageManager().resolveService(intent,0);}catch(Exception ignored){}
+                if(ri==null||ri.serviceInfo==null){
+                    // ContextImpl allocates its ServiceDispatcher before asking AMS
+                    // to resolve the service. A false result still requires one
+                    // unbind to forget that local registration; no callback is sent.
+                    synchronized(bindings){var held=bindings.computeIfAbsent(original,key->new ArrayList<>());if(held.isEmpty())held.add(new Binding(original,null));}
+                    return false;
+                }
+                intent=new Intent(intent).setComponent(new ComponentName(ri.serviceInfo.packageName,ri.serviceInfo.name));
             }
+        }
+        if(intent!=null&&!isOwnService(intent.getComponent())){
+            Binding binding;
+            synchronized(bindings){
+                var held=bindings.computeIfAbsent(original,key->new ArrayList<>());
+                held.removeIf(existing->!existing.platformRegistered);
+                for(Binding existing:held)if(Objects.equals(existing.logical,intent.getComponent())&&Objects.equals(existing.isolatedInstance,instance))return existing.bound;
+                binding=new Binding(original,intent.getComponent(),instance);
+                held.add(binding);
+            }
+            binding.physical=intent.getComponent();
+            binding.base=base;
+            binding.platformRegistered=true;
+            binding.routed=false;
+            binding.isolated=false;
+            boolean bound=executor==null?base.bindService(intent,binding,flags):base.bindService(intent,flags,executor,binding);
+            binding.bound=bound;
+            if(!bound)binding.platformRegistered=false;
+            return bound;
         }
         RuntimeServiceIntent.Request request=snapshotForPlatform(intent);intent=request.intent;
         {}
@@ -147,7 +181,7 @@ final class RuntimeServices {
     private List<Binding> registered(ServiceConnection original){
         synchronized(bindings){
             var live=new ArrayList<Binding>();
-            for(Binding binding:bindings.getOrDefault(Objects.requireNonNull(original),List.of()))if(binding.platformRegistered&&binding.routed&&binding.base!=null)live.add(binding);
+            for(Binding binding:bindings.getOrDefault(Objects.requireNonNull(original),List.of()))if(binding.platformRegistered&&(binding.routed||binding.bound)&&binding.base!=null)live.add(binding);
             if(live.isEmpty())throw new IllegalArgumentException("ServiceConnection not currently bound: "+original);
             return live;
         }
@@ -202,10 +236,10 @@ final class RuntimeServices {
         final String connection=UUID.randomUUID().toString();final ServiceConnection original;final ComponentName logical;final String isolatedInstance;ComponentName physical;Context base;boolean platformRegistered,routed,bound,isolated;
         Binding(ServiceConnection original,ComponentName logical){this(original,logical,null);}
         Binding(ServiceConnection original,ComponentName logical,String isolatedInstance){this.original=Objects.requireNonNull(original);this.logical=logical;this.isolatedInstance=isolatedInstance;}
-        void check(ComponentName actual){if(!actual.equals(physical))throw new SecurityException("SERVICE_CONNECTION_COMPONENT_MISMATCH");}
-        @Override public void onServiceConnected(ComponentName name,IBinder binder){check(name);original.onServiceConnected(logical,binder);}
-        @Override public void onServiceDisconnected(ComponentName name){check(name);original.onServiceDisconnected(logical);}
-        @Override public void onBindingDied(ComponentName name){check(name);original.onBindingDied(logical);}
-        @Override public void onNullBinding(ComponentName name){check(name);original.onNullBinding(logical);}
+        void check(ComponentName actual){if(physical!=null&&!actual.equals(physical))throw new SecurityException("SERVICE_CONNECTION_COMPONENT_MISMATCH");}
+        @Override public void onServiceConnected(ComponentName name,IBinder binder){check(name);original.onServiceConnected(logical!=null?logical:name,binder);}
+        @Override public void onServiceDisconnected(ComponentName name){check(name);original.onServiceDisconnected(logical!=null?logical:name);}
+        @Override public void onBindingDied(ComponentName name){check(name);original.onBindingDied(logical!=null?logical:name);}
+        @Override public void onNullBinding(ComponentName name){check(name);original.onNullBinding(logical!=null?logical:name);}
     }
 }

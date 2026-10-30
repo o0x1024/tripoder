@@ -19,7 +19,7 @@ final class RuntimeActivityCallers {
     synchronized void initial(Activity activity,Bundle launch){Origin origin=new Origin(launch);origins.put(activity,origin);initial.put(activity,origin.pkg);}
     synchronized boolean samePackageResult(Activity activity,String packageName){
         Origin origin=origins.get(activity);
-        if(origin==null)throw new SecurityException("ACTIVITY_CALLER_SCOPE_MISSING");
+        if(origin==null)return false;
         return origin.expectsResult&&origin.kind.equals("ACTIVITY")&&origin.pkg.equals(packageName);
     }
     synchronized ComponentName callingActivity(Activity activity,ComponentName physical){

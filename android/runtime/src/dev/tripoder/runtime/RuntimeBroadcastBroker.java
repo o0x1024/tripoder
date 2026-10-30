@@ -146,10 +146,31 @@ final class RuntimeBroadcastBroker {
         byte[] payload=RuntimeBroadcastIntent.encode(intent);String operation="pending-implicit-"+UUID.randomUUID(),creator="pending-install:"+value.install+":"+value.data;ArrayList<Bundle> deliveries=new ArrayList<>();
         if((value.flags&RuntimePendingIntentPolicy.ONE_SHOT)!=0)broker.pendingIntents.consume(value.version);
         if(targets.isEmpty()){broker.contract.accept(operation,creator,RuntimeBroadcastIntent.digest(payload));broker.contract.start(operation);broker.contract.succeed(operation,"NO_MATCHING_ACTIVE_REGISTRATION_OBSERVED");}
-        for(int i=0;i<targets.size();i++){
-            Bundle target=targets.get(i);String op=operation+"-"+i;broker.contract.accept(op,creator,ApkStore.textDigest(value.version+":"+target.getString("registration")+":"+RuntimeBroadcastIntent.digest(payload)));broker.contract.start(op);
-            String ticket=broker.broadcasts.prepareExternal(op,value.version,creator,target.getString("target"),target.getString("component"),target.getString("registration"),payload,ordered);target.putString("ticket",ticket);deliveries.add(target);
-        }return deliveries;
+        int admittedCount=0;
+        try{
+            for(int i=0;i<targets.size();i++){
+                Bundle target=targets.get(i);String op=operation+"-"+i;
+                broker.contract.accept(op,creator,ApkStore.textDigest(value.version+":"+target.getString("registration")+":"+RuntimeBroadcastIntent.digest(payload)));
+                admittedCount=i+1;
+                String ticket=broker.broadcasts.prepareExternal(op,value.version,creator,target.getString("target"),target.getString("component"),target.getString("registration"),payload,ordered);
+                broker.contract.start(op);
+                target.putString("ticket",ticket);deliveries.add(target);
+            }
+        }catch(Throwable error){
+            for(int j=0;j<admittedCount;j++){
+                String op=operation+"-"+j;
+                try{
+                    var query=broker.contract.query(op);
+                    if(query!=null&&query.state==ExecutionContract.OperationState.RUNNING){
+                        broker.contract.fail(op,"BROADCAST_PREPARATION_FAILED:"+error.getMessage());
+                    }
+                }catch(Throwable ignored){}
+            }
+            if(error instanceof RuntimeException re)throw re;
+            if(error instanceof Error er)throw er;
+            throw new RuntimeException(error);
+        }
+        return deliveries;
     }
     Bundle route(Bundle input,ExecutionContract.Session source)throws Exception{
         byte[] payload=input.getByteArray("payload");Intent intent=RuntimeBroadcastIntent.decode(payload);RuntimeBroadcastIntent.envelope(intent);
@@ -163,12 +184,31 @@ final class RuntimeBroadcastBroker {
         synchronized(broker){
         broker.requiredSlot(source.processGeneration);
         for(Bundle target:targets)broker.requiredSlot(target.getString("target"));
-        for(int i=0;i<targets.size();i++){
-            Bundle target=targets.get(i);String op=operation+"-"+i;
-            String digest=ApkStore.textDigest(RuntimeBroadcastIntent.digest(payload)+"/"+target.getString("target")+"/"+target.getString("component")+"/"+target.getString("registration")+"/"+ordered+"/receiverPermission="+receiverPermission);
-            if(!broker.contract.accept(op,source.identity.key(),digest).created)throw new SecurityException("BROADCAST_ALREADY_ADMITTED_QUERY_REQUIRED");broker.contract.start(op);
-            String ticket=broker.broadcasts.prepare(op,source,target.getString("target"),target.getString("component"),target.getString("registration"),payload,ordered);target.putString("ticket",ticket);deliveries.add(target);
-            if(input.getBundle("binders")!=null)broker.broadcastBinders.put(ticket,input.getBundle("binders"));
+        int admittedCount=0;
+        try{
+            for(int i=0;i<targets.size();i++){
+                Bundle target=targets.get(i);String op=operation+"-"+i;
+                String digest=ApkStore.textDigest(RuntimeBroadcastIntent.digest(payload)+"/"+target.getString("target")+"/"+target.getString("component")+"/"+target.getString("registration")+"/"+ordered+"/receiverPermission="+receiverPermission);
+                if(!broker.contract.accept(op,source.identity.key(),digest).created)throw new SecurityException("BROADCAST_ALREADY_ADMITTED_QUERY_REQUIRED");
+                admittedCount=i+1;
+                String ticket=broker.broadcasts.prepare(op,source,target.getString("target"),target.getString("component"),target.getString("registration"),payload,ordered);
+                broker.contract.start(op);
+                target.putString("ticket",ticket);deliveries.add(target);
+                if(input.getBundle("binders")!=null)broker.broadcastBinders.put(ticket,input.getBundle("binders"));
+            }
+        }catch(Throwable error){
+            for(int j=0;j<admittedCount;j++){
+                String op=operation+"-"+j;
+                try{
+                    var query=broker.contract.query(op);
+                    if(query!=null&&query.state==ExecutionContract.OperationState.RUNNING){
+                        broker.contract.fail(op,"BROADCAST_PREPARATION_FAILED:"+error.getMessage());
+                    }
+                }catch(Throwable ignored){}
+            }
+            if(error instanceof RuntimeException re)throw re;
+            if(error instanceof Error er)throw er;
+            throw new RuntimeException(error);
         }
         Bundle out=new Bundle();out.putParcelableArrayList("deliveries",deliveries);return out;
         }

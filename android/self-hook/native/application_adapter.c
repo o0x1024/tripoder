@@ -9,7 +9,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <unistd.h>
 
 enum { HOST,GUEST,INFO,LOADER,OWNER,FACTORY,RESOURCES,THREAD,PHYSICAL,LOGICAL,CONTEXT,DECLARED,PREPARED_FACTORY,ROOTS };
@@ -21,6 +23,7 @@ static struct {
     const char *broken;
 } state={.stage="NOT_STARTED"};
 static _Atomic bool attempted,ownership_ready,view_attempted,begun,package_attempted,creation_attempted;
+static JavaVM *g_jvm = NULL;
 static const char *class_names[]={"android/app/Application","android/app/ActivityThread","android/app/LoadedApk",
     "android/app/ContextImpl","android/content/pm/ApplicationInfo","android/app/QueuedWork","android/content/ContextWrapper"};
 
@@ -174,6 +177,7 @@ static bool physical(JNIEnv *env,bool attached){
 JNIEXPORT void JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_prepareOwnershipNative(JNIEnv *env,jclass unused,
     jobject host,jobjectArray fields,jobjectArray methods){
     (void)unused;bool expected=false;
+    if(!g_jvm)(*env)->GetJavaVM(env,&g_jvm);
     if(!atomic_compare_exchange_strong(&attempted,&expected,true)){fail(env,"APPLICATION_ALREADY_CONFIGURED");return;}
     state.stage="MEMBER_IDS";
     if(!fields||!methods||(*env)->GetArrayLength(env,fields)!=12||(*env)->GetArrayLength(env,methods)!=10)goto error;
@@ -683,4 +687,162 @@ cleanup_strings:
     (*env)->ReleaseStringUTFChars(env, dst_path, dst_str);
     if (zstd_str) (*env)->ReleaseStringUTFChars(env, zstd_lib_path, zstd_str);
     return success ? JNI_TRUE : JNI_FALSE;
+}
+
+static void xweb_sys_log(int prio, const char *tag, const char *fmt, ...) {
+    static int (*log_fn)(int, const char*, const char*, ...) = NULL;
+    if (!log_fn) {
+        void *h = dlopen("liblog.so", RTLD_NOW);
+        if (h) log_fn = dlsym(h, "__android_log_print");
+    }
+    if (log_fn) {
+        va_list ap;
+        va_start(ap, fmt);
+        char buf[2048];
+        vsnprintf(buf, sizeof(buf), fmt, ap);
+        va_end(ap);
+        log_fn(prio, tag, "%s", buf);
+    }
+}
+
+typedef bool (*xweb_log_handler_fn)(int severity, const char *file, int line, size_t message_start, const void *str_obj);
+static xweb_log_handler_fn s_orig_xweb_handler = NULL;
+static uintptr_t s_xweb_base = 0;
+static _Atomic bool s_xweb_patched = false;
+
+static bool tripoder_xweb_log_handler(int severity, const char *file, int line, size_t message_start, const void *str_obj) {
+    const char *text = NULL;
+    if (str_obj) {
+        int8_t flag = *((const int8_t*)str_obj + 23);
+        if (flag < 0) {
+            text = *(const char**)str_obj;
+        } else {
+            text = (const char*)str_obj;
+        }
+    }
+    const char *msg = (text && message_start <= 4096) ? (text + message_start) : (text ? text : "");
+    const char *prio_str = (severity == 3) ? "FATAL" : (severity == 2) ? "ERROR" : (severity == 1) ? "WARN" : "INFO";
+    int log_prio = (severity == 3) ? 6 : (severity == 2) ? 5 : (severity == 1) ? 4 : 3;
+
+    xweb_sys_log(log_prio, "TripoderAssertion", "[%s] %s:%d %s",
+                 prio_str, file ? file : "?", line, msg);
+
+    if (file && strstr(file, "jni_android.cc")) {
+        if (g_jvm) {
+            JNIEnv *env = NULL;
+            if ((*g_jvm)->GetEnv(g_jvm, (void**)&env, JNI_VERSION_1_6) == JNI_OK && env) {
+                jthrowable t = (*env)->ExceptionOccurred(env);
+                if (t) {
+                    (*env)->ExceptionClear(env);
+                    jclass log_cls = (*env)->FindClass(env, "android/util/Log");
+                    if (log_cls) {
+                        jmethodID mid = (*env)->GetStaticMethodID(env, log_cls, "getStackTraceString", "(Ljava/lang/Throwable;)Ljava/lang/String;");
+                        if (mid) {
+                            jstring str = (jstring)(*env)->CallStaticObjectMethod(env, log_cls, mid, t);
+                            if (str) {
+                                const char *stack = (*env)->GetStringUTFChars(env, str, NULL);
+                                xweb_sys_log(6, "TripoderAssertion", "=== CRASHING JAVA EXCEPTION DETECTED ===\n%s", stack ? stack : "(null)");
+                                if (stack) (*env)->ReleaseStringUTFChars(env, str, stack);
+                            }
+                        }
+                    }
+                    (*env)->Throw(env, t);
+                }
+            }
+        }
+        if (severity == 3) {
+            xweb_sys_log(5, "TripoderAssertion", "Suppressed LOG_FATAL call from jni_android.cc");
+            return true;
+        }
+    }
+
+    if (s_orig_xweb_handler && s_orig_xweb_handler != tripoder_xweb_log_handler) {
+        s_orig_xweb_handler(severity, file, line, message_start, str_obj);
+    }
+    return true;
+}
+
+static bool patch_code_word(uintptr_t addr, uint32_t insn, long page_size) {
+    uintptr_t page = addr & ~(page_size - 1);
+    if (mprotect((void*)page, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
+        xweb_sys_log(5, "TripoderWeChat", "Failed to mprotect text page at %p: %s", (void*)page, strerror(errno));
+        return false;
+    }
+    *(volatile uint32_t*)addr = insn;
+    mprotect((void*)page, page_size, PROT_READ | PROT_EXEC);
+    __builtin___clear_cache((char*)addr, (char*)addr + 4);
+    return true;
+}
+
+JNIEXPORT jboolean JNICALL Java_dev_tripoder_selfhook_ApplicationAdapter_patchXWebNative(
+    JNIEnv *env, jclass unused) {
+    (void)env; (void)unused;
+    if (atomic_load(&s_xweb_patched)) return JNI_TRUE;
+
+    FILE *f = fopen("/proc/self/maps", "re");
+    if (!f) return JNI_FALSE;
+
+    uintptr_t base = 0;
+    char line[1024];
+    while (fgets(line, sizeof(line), f)) {
+        if (strstr(line, "libxwebcore.so")) {
+            uintptr_t start = 0;
+            if (sscanf(line, "%lx-", &start) == 1 && start != 0) {
+                if (base == 0 || start < base) {
+                    base = start;
+                }
+            }
+        }
+    }
+    fclose(f);
+
+    if (base == 0) return JNI_FALSE;
+
+    if (!g_jvm) (*env)->GetJavaVM(env, &g_jvm);
+
+    s_xweb_base = base;
+    long page_size = sysconf(_SC_PAGESIZE);
+    if (page_size <= 0) page_size = 4096;
+
+    // 1. In XlogHandler:
+    // Patch bl 0x224eb30 at base + 0x224ce40 -> b 0x224cde4 (0x17ffffe9)
+    // Patch brk #0 at base + 0x224ce44 -> b 0x224cde4 (0x17ffffe8)
+    patch_code_word(base + 0x224ce40, 0x17ffffe9, page_size);
+    patch_code_word(base + 0x224ce44, 0x17ffffe8, page_size);
+
+    // 2. In SetLogMessageHandler:
+    // Patch str x0, [x8, #0x6c8] at base + 0x5797c2c -> nop (0xd503201f)
+    patch_code_word(base + 0x5797c2c, 0xd503201f, page_size);
+
+    // 3. In LogMessage::~LogMessage():
+    // Patch b.eq #0x5798530 at base + 0x57984a8 -> nop (0xd503201f)
+    patch_code_word(base + 0x57984a8, 0xd503201f, page_size);
+
+    // 4. In HandleFatal():
+    // Patch brk #0 at base + 0x57988f4 -> nop (0xd503201f)
+    patch_code_word(base + 0x57988f4, 0xd503201f, page_size);
+
+    // 5. In ~LogMessageFatal():
+    // Patch brk #0 at base + 0x579899c -> nop (0xd503201f)
+    patch_code_word(base + 0x579899c, 0xd503201f, page_size);
+
+    // 6. In base::android::CheckException:
+    // Patch bl 0x579898c (~LogMessageFatal) at base + 0x5856130 -> b 0x5855c30 (function epilogue ret)
+    patch_code_word(base + 0x5856130, 0x17fffec0, page_size);
+
+    // 7. Install tripoder_xweb_log_handler into g_log_message_handler (base + 0xa6ee6c8)
+    uintptr_t var_addr = base + 0xa6ee6c8;
+    uintptr_t var_page = var_addr & ~(page_size - 1);
+    if (mprotect((void*)var_page, page_size, PROT_READ | PROT_WRITE) == 0) {
+        s_orig_xweb_handler = (xweb_log_handler_fn)(base + 0x224cd88);
+        *(void**)var_addr = (void*)tripoder_xweb_log_handler;
+        xweb_sys_log(4, "TripoderWeChat",
+            "Installed tripoder_xweb_log_handler at %p (orig=%p)", (void*)var_addr, (void*)s_orig_xweb_handler);
+    } else {
+        xweb_sys_log(5, "TripoderWeChat",
+            "Failed to mprotect data page at %p: %s", (void*)var_page, strerror(errno));
+    }
+
+    atomic_store(&s_xweb_patched, true);
+    return JNI_TRUE;
 }

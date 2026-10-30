@@ -83,6 +83,23 @@ final class ActivityLedger {
                 // Android removal was requested only by the authenticated task
                 // retirement path. A dead process does not prove its task absent.
                 // Preserve attached ownership if Android still retains that task.
+                if(observed.tasks.contains(taskId)){
+                    if(appTasks!=null){
+                        for(var task:appTasks){
+                            var info=task.getTaskInfo();
+                            if(info!=null&&info.taskId==taskId){
+                                try{task.finishAndRemoveTask();}catch(Exception ignored){}
+                                break;
+                            }
+                        }
+                        long deadline=android.os.SystemClock.elapsedRealtime()+300;
+                        while(android.os.SystemClock.elapsedRealtime()<deadline){
+                            if(!RuntimeTaskReferences.observe(components.contextForObservation()).tasks.contains(taskId))break;
+                            try{Thread.sleep(25);}catch(InterruptedException ignored){}
+                        }
+                        observed=RuntimeTaskReferences.observe(components.contextForObservation());
+                    }
+                }
                 if(observed.tasks.contains(taskId))continue;
                 ContentValues row=new ContentValues();row.put("state","RETIRED");row.put("resourceProof","DEAD_SESSION_TASK_RETIRED;operation="+operation+";generation-dead="+gen+";absent-recent-running-recent");
                 if(db.update("activity_tickets",row,"ticket=? AND state NOT IN ('FINISHED','REVOKED','RETIRED')",new String[]{ticket})==1)retired++;

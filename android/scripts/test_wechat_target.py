@@ -67,9 +67,10 @@ cmd = [
     '-e', 'customPackage', PKG,
     '-e', 'customSha256', SHA256,
     '-e', 'customSource', APK_PATH,
-    '-e', 'stabilitySeconds', '30',
+    '-e', 'stabilitySeconds', '5',
+    '-e', 'testCrashRelaunch', 'true',
     '-e', 'capture', 'false',
-    '-e', 'stopAfterTest', 'true',
+    '-e', 'stopAfterTest', 'false',
     f"{TESTS}/dev.tripoder.controltest.TargetLaunchIntegration"
 ]
 

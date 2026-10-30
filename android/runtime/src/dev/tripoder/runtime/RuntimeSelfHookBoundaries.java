@@ -36,7 +36,12 @@ final class RuntimeSelfHookBoundaries {
     static Object stopService(ServiceRoute route,Object service,int startId,boolean result,Object[] arguments,
                               RuntimeSelfHookLifecycle.Original original)throws Throwable {
         if(!route.owns(service))return original.call(arguments);
-        boolean stopped=route.stop(service,startId);
+        boolean stopped=false;
+        try{
+            stopped=route.stop(service,startId);
+        }catch(Throwable error){
+            android.util.Log.w("TripoderService","Service stop failed: "+error.getMessage());
+        }
         return result?Boolean.valueOf(stopped):null;
     }
     static Object providerAttach(ProviderRoute route,Object provider,Object[] arguments,RuntimeSelfHookLifecycle.Original original)throws Throwable {

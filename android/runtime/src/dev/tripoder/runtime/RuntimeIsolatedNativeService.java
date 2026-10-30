@@ -30,11 +30,11 @@ final class RuntimeIsolatedNativeService {
     static Plan capture(ApkManifest.Component service,RuntimePublishedNativeCode.Plan nativeCode){
         if(!declared(service))return null;
         String library=property(service,"android.app.PROPERTY_NATIVE_SERVICE_LIBRARY_NAME",DEFAULT_LIBRARY),function=property(service,"android.app.PROPERTY_NATIVE_SERVICE_FUNCTION_NAME",DEFAULT_FUNCTION);
-        if(!library.matches("lib[A-Za-z0-9_.+\\-]+\\.so")||!function.matches("[A-Za-z_][A-Za-z0-9_]{0,127}"))throw new SecurityException("ISOLATED_NATIVE_SERVICE_NAME_REJECTED");
+        if(!library.matches("lib[a-zA-Z0-9_+.$-]+\\.so")||!function.matches("[A-Za-z_][A-Za-z0-9_]{0,127}"))throw new SecurityException("ISOLATED_NATIVE_SERVICE_NAME_REJECTED");
         if(nativeCode==null||!Objects.requireNonNull(nativeCode.wire.getStringArrayList("names")).contains(library))throw new UnsupportedOperationException("ISOLATED_NATIVE_SERVICE_LIBRARY_NOT_PUBLISHED");
         Bundle wire=new Bundle();wire.putString("kind",KIND);wire.putString("library",library);wire.putString("function",function);return new Plan(wire);
     }
-    static String library(Bundle wire){return field(wire,"library","lib[A-Za-z0-9_.+\\-]+\\.so");}
+    static String library(Bundle wire){return field(wire,"library","lib[a-zA-Z0-9_+.$-]+\\.so");}
     static String function(Bundle wire){return field(wire,"function","[A-Za-z_][A-Za-z0-9_]{0,127}");}
     private static String field(Bundle wire,String key,String pattern){
         String value=wire==null||!KIND.equals(wire.getString("kind"))?null:wire.getString(key);

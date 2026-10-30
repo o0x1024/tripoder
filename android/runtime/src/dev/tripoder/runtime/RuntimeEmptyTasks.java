@@ -41,8 +41,14 @@ public final class RuntimeEmptyTasks {
                 var current=task.getTaskInfo();
                 synchronized(broker){Plan checked=plan(broker,current,generation,removal);if(checked==null||!plan.digest.equals(checked.digest))throw new SecurityException("TASK_RECLAIM_IDENTITY_CHANGED");}
                 task.finishAndRemoveTask();
+                long deadline=android.os.SystemClock.elapsedRealtime()+500;
+                boolean absent=false;
+                while(android.os.SystemClock.elapsedRealtime()<deadline){
+                    if(!RuntimeTaskReferences.observe(broker.host).tasks.contains(plan.taskId)){absent=true;break;}
+                    try{Thread.sleep(25);}catch(InterruptedException ignored){}
+                }
                 synchronized(broker){
-                    if(RuntimeTaskReferences.observe(broker.host).tasks.contains(plan.taskId))throw new IllegalStateException("TASK_REMOVAL_UNCONFIRMED");
+                    if(!absent&&RuntimeTaskReferences.observe(broker.host).tasks.contains(plan.taskId))throw new IllegalStateException("TASK_REMOVAL_UNCONFIRMED");
                     complete(broker,plan.operation,plan.taskId,plan.tickets);results.put(plan.result("TASK_RESOURCES_RELEASED"));
                 }
             }catch(Exception error){android.util.Log.w("TripoderTaskReclaim","FAILED task="+plan.taskId+" "+error);synchronized(broker){
