@@ -87,6 +87,58 @@
 
 ---
 
+## 4.5 参数级排序：到底哪一个参数
+
+平面结论（§2）只能回答「哪一类」，这一节回答「哪一个」。下面每个参数都注明抖音的读取方式，便于对照我们已实测的值。
+
+| # | 参数 | 抖音怎么读到它 | 原生真值 | 容器内值 | 可投影？ | 判决 |
+|---|---|---|---|---|---|---|
+| C1 | 运行 uid 与包名归属不自洽 | `getuid()` / Binder `callingUid` 对比 `getPackageUid("com.ss.android.ugc.aweme")` | `10327` / `10327` | `10542` / `10327` | 否（uid 是安装期属性） | **最强嫌疑 ✅实测差异** |
+| C2 | 宿主 runtime 的可读痕迹 | 扫 `/proc/self/maps`：出现 `/data/app/~~…/dev.tripoder.q6…/lib*/libruntime.so`、`libselfhook*.so`、宿主 dex | 无 | 必有 | 否（去掉即去掉容器） | **并列最强 ○未取样本** |
+| C3 | 私有目录语义 | `stat("/data/user/0/<pkg>")`、属主、可写性 | 属主 `10327` | 客体跑在 `10542`，路径与属主自相矛盾 | 否 | 高 |
+| C4 | 代码来源一致性 | `getSourceDir()` / `ApplicationInfo.sourceDir` vs 进程实际加载的 APK/DexFile 路径 | 一致 | 门面答真机路径，进程实际加载宿主 APK + hook | 部分 | 中高 |
+| C5 | 包可见性完整性 | `getInstalledPackages` 条数、`queries` 解析结果 | 完整 | 被容器裁剪 | 可改善、不可完备 | 中 |
+| A1/A2 | `installer` / `installSource` 三字段 | `getInstallerPackageName` / `getInstallSourceInfo` | `com.xiaomi.market` | 已实测三态（null / 修正 / **谎报商店**） | 是 | **已排除 ✅** |
+| B1 | APK 字节 / 签名 / versionCode | 读 `base.apk`、`getPackageInfo` | `86ee4316…`、`5182ae3b…`、`400701` | 逐项一致 | 已满足 | **已排除 ✅** |
+| C6 | 双实例（同包名两进程） | `ps`/包列表 | — | 单实例实测仍弹 | — | **已排除 ✅** |
+| D1 | 设备 / 账号画像 | 设备指纹、账号风控 | — | 同机同账号原生通过 | — | **已排除 ✅** |
+| E1 | 渠道分发记录 | 服务端：该设备/账号是否曾从官方渠道获得此包 | 有 | 无（容器内不发生分发） | 否（客户端不可见） | **并列最强 ○不可验证** |
+
+**如果必须只指一个参数：C1**。理由：它是唯一「纯 Java 层就能读到、且我们已拿到硬差异」的（`10542` vs `10327`，`container-uid-forensics`）；C2 需要 native 扫描、E1 需要抖音后台数据，取证成本都更高。
+
+但要诚实——**C1 / C2 / E1 不是互斥选项，而是同一次判定里同时成立的事实**：客体确实以宿主 uid 运行（C1）、`/proc/self/maps` 里确实有宿主 runtime（C2）、服务端确实看不到这次安装的分发记录（E1）。抖音的判据很可能吃的是这三者的**组合**，而不是其中任何一个单独值。这也解释了为什么「只把某一个字段答对」永远不会改变结果。
+
+## 4.6 判别实验：唯一能把 C 与 E 分开的设计
+
+现有三次实测构成一张 2×2 表，**缺一格**：
+
+| | 商店归因（installer=com.xiaomi.market） | 无归因（installer=null） |
+|---|---|---|
+| **真实环境** | ✅ 通过（`native-login-entry-control`） | **? 缺这一格** |
+| **容器环境** | ❌ 拦截（`installer-forge-v46`） | ❌ 拦截（v44 诚实版） |
+
+补上缺的那一格就能定案：**在真实环境里把官方 APK 侧载安装**（installer 变 null，环境仍是真的），登录一次：
+
+- 若**通过** → installer 完全不参与判定，判据锁在 **C 平面**（C1/C2）。容器不可达，且与我们是否答对来源无关。
+- 若**同样拦截** → 判据锁在**「无商店分发记录」**这一事实（E/A 平面），与容器无关；说明「官方 APK 侧载」对任何人都走不通。
+
+两种结果都改变结论的**措辞**（锁 C 还是锁 E），都不改变「容器内不可达」。
+
+两种跑法，按侵入性排序：
+
+1. **零侵入（推荐先试）**：装进 MIUI 第二空间 `user 999`（`pm list users` 已确认存在，`pm get-max-users=4`）。真实 uid 分配、真实 `/proc`、真实 data 目录，且不动 user 0 的商店归因。
+   ```
+   adb -s d861a4fa pull /data/app/~~UZI_96LXkcEkgzLC-cIoDw==/com.ss.android.ugc.aweme-I_ukds9p9gswwSKtruHn2g==/base.apk /tmp/aweme-400701.apk
+   adb -s d861a4fa install --user 999 --no-incremental /tmp/aweme-400701.apk
+   adb -s d861a4fa shell dumpsys package com.ss.android.ugc.aweme --user 999 | grep -E "installerPackageName|versionCode"
+   ```
+   局限：登录要在第二空间里操作，可能需你手动切换/解锁。
+
+2. **低侵入**：覆盖安装到 user 0（`adb install -r --no-incremental`），数据保留、版本相同、无降级。
+   代价：user 0 的 `installer` 从 `com.xiaomi.market` 变成 `null`，且**只能靠重装自小米商店恢复**。
+
+前置条件（已核）：`base.apk` 可被 shell 读取（`head -c 4` 得到 `50 4b 03 04`，359,908,938 B），版本 `400701`。
+
 ## 5. 这条结论的边界（防止过度外推）
 
 1. 只在抖音 `400701` + `d861a4fa` 上实测成立；抖音升级后协议字段与判据可能变化。
