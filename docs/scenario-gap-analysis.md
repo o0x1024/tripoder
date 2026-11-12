@@ -129,7 +129,7 @@
 4. **缺少测试环境 Mock 与故障注入（Fault Injection）能力** **[已关闭：Phase 3.1 `persona_control` & Phase 3.5 `env_mock_control`]**
    - **已落地**：[`RuntimeEnvMock`](../android/runtime/src/dev/tripoder/runtime/RuntimeEnvMock.java) 支持按 URL 前缀拦截 HTTP 返回自定义状态码/头部/正文/延迟，以及切换 `offline`/`wifi`/`cellular`/`passthrough` 网络状态并派发 `NetworkCallback`；[`RuntimeSandboxPersona`](../android/runtime/src/dev/tripoder/runtime/RuntimeSandboxPersona.java) 支持虚拟 GPS、电量、SIM、语言/时区注入。
 5. **缺少沙箱数据快速快照与回滚（State Checkpoint & Rollback）** **[已关闭：Phase 3.4 `state_checkpoint_control` & `state_checkpoint_query`]**
-   - **已落地**：[`RuntimeStateCheckpoints`](../android/engine/src/dev/tripoder/runtime/RuntimeStateCheckpoints.java) 支持对 `(space, package)` 创建带 SHA-256 完整性校验的本地快照与原子回滚。
+   - **已落地**：[`RuntimeStateCheckpoints`](../android/runtime/src/dev/tripoder/runtime/RuntimeStateCheckpoints.java) 支持对 `(space, package)` 创建带 SHA-256 完整性校验的本地快照与原子回滚。
 6. **缺少完整的进程级日志（Logcat）、Native 崩溃栈与性能指标采集**
    - **缺失**：按进程读取 `Logcat` 缓冲区的 MCP 接口；Native 崩溃时的寄存器与回溯栈（Unwind Backtrace）；以及 Java Heap / Native PSS 内存水位与主线程 Jank 卡顿监控。
 

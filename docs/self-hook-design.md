@@ -76,7 +76,7 @@ flowchart TD
    - 符号语义兼容：在 `ctx.native.function(moduleName, name, signature)` 中，若传入 IDA 风格命名（形如 `sub_3e6c`、`sub_00003e6c`），规划器与编译器自动识别提取其后继十六进制串作为 RVA，降低反编译工程向 Hook 脚本转换的心智负担。
 2. **Bionic Linker 真实路径映射与模块基址探测**：
    - 第一性原理：客体运行时装载 `.so` 时，ART `PathClassLoader` 传给 Bionic Linker 的是物理落地路径 `engine.info.nativeLibraryDir`（例如 `/data/data/<host>/files/runtime/artifacts/<installGen>/lib/`）。
-   - Linker Notifier（[`linker_notifier.c`](../android/self-hook/native/linker_notifier.c) / [`NativeModules.java`](../android/self-hook/java/dev/tripoder/selfhook/NativeModules.java)）直接扫描 Bionic Linker 维护的 `r_debug->r_map` 双向链表，通过 `link_map->l_name` 精准匹配库物理路径，获取库加载基址（`baseAddress`）与 ELF Build ID。
+   - Linker Notifier（[`linker_notifier.c`](../android/self-hook/native/modules/linker_notifier.c) / [`NativeModules.java`](../android/self-hook/java/dev/tripoder/selfhook/NativeModules.java)）直接扫描 Bionic Linker 维护的 `r_debug->r_map` 双向链表，通过 `link_map->l_name` 精准匹配库物理路径，获取库加载基址（`baseAddress`）与 ELF Build ID。
 3. **安全对齐与指令保护**：
    - ARM64 指令固定宽度为 4 字节，编译器与 Hook 控制面严格校验 `(offset & 0x3) == 0`，对非 4 字节对齐的非法偏移予以明确拦截。
    - 同样完整经过 3.1 节的前导指令静态重定位规划、3.2 节的有界停顿与 W^X 原子页发布，保障已剥离符号模块的挂载与卸载具备同等安全稳定性。

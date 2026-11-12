@@ -1,6 +1,6 @@
 # Guest 应用兼容性分层与真机基线 (Guest Compatibility)
 
-- **更新日期**：2026-10-29
+- **更新日期**：2026-11-12（§3 第 4–5 条：来源边界与 provider 投影边界）
 - **关联文档**：[当前总体架构](current-architecture.md) · [单运行时与最小底座收敛](single-runtime.md) · [架构梳理与实施计划](implementation-plan.md)
 
 本文档从第一性原理出发，将未修改 APK 在 Tripoder 中运行所需的系统支撑拆解为 **13 个正交兼容层（L1–L13）**，明确区分**「第一层：统一最小底座（Level 1）默认闭环」**与**「第二层：按需扩展策略（Opt-in）」**，并汇总核心商业应用端到端业务闭环与 27 款主流第三方应用的真机实测大盘基线。
@@ -110,7 +110,7 @@
        - *冲突 1（易盾壳无限递归）*：网易云音乐外壳采用网易易盾加固代理 `com.netease.nis.wrapper.MyApplication`。逆向分析发现其静态字段 `strAppName` 默认初始化为自身类名（Base64 XOR 字符串解密后为 `"com.netease.nis.wrapper.MyApplication"`）。当沙箱或非预期环境导致 `libnesec.so` Native 动态解包未覆写 `strAppName` 时，`MyApplication.a(Context)` 通过反射使用 `strAppName` 实例化真实应用，产生了一个新的 `MyApplication` 实例作为 `newApp`。在 `onCreate()` 中，`MyApplication` 调用 `newApp.onCreate()`，进而形成无限递归调用链，耗尽 8188KB 栈空间抛出 `java.lang.StackOverflowError`。通过反编译云音乐完整 20 个 DEX 发现，其内部所有核心业务代码（`classes2.dex` ~ `classes20.dex`）均为标准未加密 DEX，真实应用入口为公共类 `com.netease.cloudmusic.CloudMusicApplication`（继承自 `PatchApplication` / `TinkerApplication`）。
        - *冲突 2（未附着后台服务停止触发断言崩溃）*：网易云音乐内置推送组件（如 MiPush、后台音频服务）在未完全挂载或解离的 Service 实例上调用 `Service.stopSelf` / `stopSelfResult`。根据 AOSP `android.app.Service` 规范契约，未挂载服务或已失效 Token 应当安全返回（`stopSelf` 静默返回，`stopSelfResult` 返回 `false`）。原生代码 [`service_token_access.c`](../android/self-hook/native/service_token_access.c) 原先强制断言 `!manager || !token` 抛出 `SERVICE_TOKEN_PHYSICAL_STATE_MISSING`，违反了 Android 标准生命周期规范并导致主线程 Looper 崩溃。
      - **架构解法**：
-       - 在 [`ApplicationAdapter.java`](../android/self-hook/java/dev/tripoder/selfhook/ApplicationAdapter.java) `configureGuestCompatibility` 中，通过反射将 `com.netease.nis.wrapper.MyApplication.strAppName` 准确置为真实主应用类名 `"com.netease.cloudmusic.CloudMusicApplication"`，彻底消除自身递归死锁；
+       - **2026-11-04 更新**：已删除按网易云包名覆写 `strAppName` 的历史做法。当前修复统一 Guest ClassLoader 与已准入 ApplicationInfo 的 APK/Split 代码身份，让原始壳完成初始化；没有新增包名特例或 fallback。当前验收范围与逐轮证据见 [代码身份契约修复](cloudmusic-runtime-contract.md)，下方旧截图与检查数仅为历史记录。
        - 在 [`service_token_access.c`](../android/self-hook/native/service_token_access.c) 中严格对齐 AOSP 契约，校验 `!manager || !token` 时直接返回 `JNI_FALSE`，允许未附着或已解离服务安全注销。
      - **真机实测**：Xiaomi 17 Pro（`d861a4fa`）执行 `python3 android/scripts/test_cloudmusic_target.py`，**10/10 与 9/9 项检查全绿通过**（首屏延迟 40ms，30s 持续存活无崩溃，首页 `MainActivityContainer` 正常渲染）。证据归档：[`diag-cloudmusic-01-target-stable.png`](evidence/diag-cloudmusic-01-target-stable.png)。
    5. **爱奇艺 (`com.qiyi.video`) Tinker、MSA OAID 崩溃与 ContentProvider 媒体流路由攻克**：
@@ -175,3 +175,10 @@
 3. **免 Root 单 UID 物理硬边界（不承诺支持）**：
    - 依赖外部系统进程（如 `com.google.android.gms` Chimera 模块、硬件级 KeyMint Attestation、厂商系统级特权服务）直接通过内核 Binder `getCallingUid()` 强校验系统签名或独立 UID 的应用；
    - 强依赖宿主机不存在的 OEM 私有 framework 共享库（如特定 ROM 专属 `miuix` 系统级主题库）的预装系统插件。
+4. **安装来源（Provenance）边界（P2，不承诺支持）**：安装者、`getInstallSourceInfo` 的「商店投递」来源、`/data/app` 代码路径形态、系统安装账本与 `fs-verity`、独立 Linux UID —— 这一族事实在容器内客观不存在。容器**如实回答「非商店」**（`installer=null`、`PACKAGE_SOURCE_LOCAL_FILE`），不伪造，也不转述设备上同名包的来源。因此依赖它们的校验（支付渠道风控、Play Integrity 等）按设计不支持，由产品降级承接（提示在系统环境使用原生安装）。⚠️ **抖音一键登录不属于这一类**：v46 实测表明它的判据不在这一族事实上，见下条与能力矩阵 §3.2。详见 [P2 来源能力矩阵与降级方案](guest-provenance-capability-matrix.md)，实现约束见 [身份与来源契约](identity-provenance-contract.md)。
+
+   **抖音实测基线（2026-11-12，设备 d861a4fa）**：容器内点「一键登录」不拦；点协议框「同意并登录」后 1 秒内被拒（「当前应用版本过低或经非官方渠道下载」），拒绝前后 12 次读取全部落在 `getInstallerPackageName` / `getPackagesForUid` / `getInstallSourceInfo`，且此时三处来源泄漏已闭合（`verdict=consistent`）。APK 字节、签名、版本、代码来源四条已实测与原生一致，唯一可见差异是 `installer=null` vs 原生 `com.xiaomi.market`——**但 v46 已证明该差异不是判据**（全量谎报真值后提示照旧）。**结论：该限制是设计内的 P2 边界，不随投影精度改善。** 证据：[login-window-20261112.md](evidence/douyin-onekey-a2b/login-window-20261112.md)、[installer-forge-20261112.md](evidence/douyin-onekey-a2b/installer-forge-20261112.md)。
+
+   **两条已实测关闭的错误修法（勿再投入）**：① 把 `installer`/`installSource` 全部谎报成原生真值 `com.xiaomi.market`（v46）——提示照旧，抖音的读取次数与方法分布与诚实版逐项一致；② 给宿主补 `REQUEST_INSTALL_PACKAGES`（v49，`appops=allow`）——点「立即升级」到 100% 仍无 `InstallStart`、无安装器进程。二者分别说明「本地安装归因不是判据」「安装权限不是刮起安装器的卡点」。
+
+5. **跨应用文件交付（provider 投影）边界（当前不支持，属能力缺口而非事实缺口）**：宿主 `dev.tripoder.q6` 未声明任何 `ContentProvider`（`dumpsys package … | grep -c 'authority='` → `0`），而客体交出的 `content://com.ss.android.ugc.aweme.fileprovider/…` 在外层 PMS 归属**真机抖音 uid 10327**，交付方却是容器 uid 10542 —— `FLAG_GRANT_READ_URI_PERMISSION` 的转授链在 ATMS 处断开，**静默失败**：无异常、无系统日志、无安装器进程。因此客体侧「自升级 / 安装外部 APK / 分享文件 / 交给文件选择器」这一族能力当前全部不可完成。对照组：同一 intent 由 shell(uid 2000) 发出，安装器立刻启动 ⇒ intent 形状没问题，缺的是归属与代理。**这与第 4 条正交**：补齐 provider 投影（宿主自建 FileProvider + URI 改写 + 暂存路径）可以让这类交付可用，但它换不来一键登录。契约侧登记为 R7 与不可投影清单第 6 项，实测见 [upgrade-install-boundary-20261112.md](evidence/douyin-onekey-a2b/upgrade-install-boundary-20261112.md) §9–§10。

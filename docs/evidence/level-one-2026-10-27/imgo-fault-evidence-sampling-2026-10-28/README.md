@@ -1,6 +1,6 @@
 # 芒果TV 启动期 SIGSEGV 的抽样复现（2026-10-28）
 
-承接 [native 库搜索路径修复](../../../native-library-path-fix-2026-10-28.md)。这批运行是临时的、手写的 ad hoc 脚本（不是 `diagnose-six-app-startup.py`），没有走正式证据归档格式，因此单独记录在这里，而不是一个标准的 `summary.json`。
+承接 2026-10-28 的 native 库搜索路径修复（当日那份独立修复记录未归档进仓库，机制说明以 [runtime-design](../../../runtime-design.md) 的「只读执行副本与真实 Native 库搜索路径」一节为准）。这批运行是临时的、手写的 ad hoc 脚本（不是 `diagnose-six-app-startup.py`），没有走正式证据归档格式，因此单独记录在这里，而不是一个标准的 `summary.json`。
 
 ## 背景
 

@@ -39,15 +39,15 @@ Furthermore, naive hook installation strategies that iteratively compile Dex met
 ### 2.2 First-Principles Resolution
 
 1. **System Settings Shielding**:
-   - In [`SettingsReadProvider.java`](file:///Users/like/code/tripoder/android/runtime/src/dev/tripoder/runtime/SettingsReadProvider.java#L31-L34), intercepted `Settings.Global.adb_enabled` and `development_settings_enabled` to return `Bundle[{value="0"}]`.
+   - In [`SettingsReadProvider.java`](../../../android/runtime/src/dev/tripoder/runtime/SettingsReadProvider.java#L31-L34), intercepted `Settings.Global.adb_enabled` and `development_settings_enabled` to return `Bundle[{value="0"}]`.
    - Prevented ACE from detecting developer / debugging modes.
 
 2. **AOSP `ActivityThread` Alignment**:
-   - In [`RuntimeEngine.java`](file:///Users/like/code/tripoder/android/runtime/src/dev/tripoder/runtime/RuntimeEngine.java#L288), invoked `updateActivityThreadApplication(application)` prior to `RuntimeBridge.attachApplication`.
+   - In [`RuntimeEngine.java`](../../../android/runtime/src/dev/tripoder/runtime/RuntimeEngine.java#L288), invoked `updateActivityThreadApplication(application)` prior to `RuntimeBridge.attachApplication`.
    - Guaranteed that `ActivityThread.mInitialApplication` points directly to the guest `Application` object when `attachBaseContext` executes, and updated `mAllApplications` list insertion at index 0.
 
 3. **High-Performance Single-Batch Managed Hooks**:
-   - In [`ApplicationAdapter.java`](file:///Users/like/code/tripoder/android/self-hook/java/dev/tripoder/selfhook/ApplicationAdapter.java#L929-L985), configured single-batch compilation:
+   - In [`ApplicationAdapter.java`](../../../android/self-hook/java/dev/tripoder/selfhook/ApplicationAdapter.java#L929-L985), configured single-batch compilation:
      - Gathered target reflection methods: `com.ace.gshell.AceApplication` (`initialize`, `ioctl`), `com.tencent.tersafe2.TP2Sdk` (`init`, `initEx`, `ioctl`), `com.tencent.tp.TssSdk` (`init`, `initEx`).
      - Executed a single `ManagedHook.prepareBatch` call and a single `ManagedHook.enableBatch` call.
      - Reduced hook setup latency from 22,000ms to under 50ms, eliminating startup timeouts.
@@ -74,7 +74,7 @@ WeChat 8.0.53 leverages proprietary compressed shared libraries (`.cso`) using Z
 ### 3.2 First-Principles Resolution
 
 1. **Native Zstd CSO Decompression Engine**:
-   - In [`application_adapter.c`](file:///Users/like/code/tripoder/android/self-hook/native/application_adapter.c), implemented `decompressCsoNative` utilizing dynamically resolved `libzstd.so` decompression (`ZSTD_decompress`, `ZSTD_isError`).
+   - In [`application_adapter.c`](../../../android/self-hook/native/application_adapter.c), implemented `decompressCsoNative` utilizing dynamically resolved `libzstd.so` decompression (`ZSTD_decompress`, `ZSTD_isError`).
    - Performed decompression into staging buffers, atomic rename with `0755` permissions, and validation against header sizes.
 2. **Bionic Namespace and Split-Brain DSO Unification**:
    - Mapped `libwechatlv.so` and core library paths into the container's native library search paths before JNI activation.
@@ -103,6 +103,6 @@ WeChat 8.0.53 leverages proprietary compressed shared libraries (`.cso`) using Z
 
 | Application | Package | Checks | Stability | Result Evidence File |
 | :--- | :--- | :---: | :---: | :--- |
-| **Honor of Kings** | `com.tencent.tmgp.sgame` | **9 / 9 PASS** | **30s (30 samples)** | [`sgame-result.json`](file:///Users/like/code/tripoder/docs/evidence/commercial-compatibility-2026-10-29/sgame-result.json) |
-| **WeChat** | `com.tencent.mm` | **9 / 9 PASS** | **30s (30 samples)** | [`wechat-result.json`](file:///Users/like/code/tripoder/docs/evidence/commercial-compatibility-2026-10-29/wechat-result.json) |
-| **Ctrip** | `ctrip.android.view` | **10 / 10 PASS** | **30s (30 samples)** | [`ctrip-result.json`](file:///Users/like/code/tripoder/docs/evidence/commercial-compatibility-2026-10-29/ctrip-result.json) |
+| **Honor of Kings** | `com.tencent.tmgp.sgame` | **9 / 9 PASS** | **30s (30 samples)** | [`sgame-result.json`](sgame-result.json) |
+| **WeChat** | `com.tencent.mm` | **9 / 9 PASS** | **30s (30 samples)** | [`wechat-result.json`](wechat-result.json) |
+| **Ctrip** | `ctrip.android.view` | **10 / 10 PASS** | **30s (30 samples)** | [`ctrip-result.json`](ctrip-result.json) |

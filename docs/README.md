@@ -33,7 +33,17 @@
 
 ---
 
-## 3. 证据与构建产物说明
+## 3. 身份与来源契约 (Identity & Provenance)
+
+| 文档 | 内容概述 |
+| --- | --- |
+| **[identity-provenance-contract.md](identity-provenance-contract.md)** | **【契约】Self / Attribution / Provenance 三平面**：每个 PackageManager 事实的平面归属、六条禁止项（R1 门面不得出现宿主包名 … R6 默认即登记）、缺陷登记（D1–D5）、不可投影清单与 logcat 契约快照格式。 |
+| [guest-provenance-capability-matrix.md](guest-provenance-capability-matrix.md) | **P2 来源能力矩阵与产品降级**：P0/P1/P2 三级判定、需官方来源的能力（一键登录/支付/Play Integrity）明确不支持、登录路径降级文案、直通模式的可行性结论（不可行）与对外承诺清单。 |
+| [evidence/douyin-onekey-a2b/README.md](evidence/douyin-onekey-a2b/README.md) | **原生 vs 容器 A/B 举证表**：真机原生安装七事实实测（installer=`com.xiaomi.market`）、容器门面改造前/后逐列对照、复现命令。 |
+
+---
+
+## 4. 证据与构建产物说明
 
 | 目录 | 内容概述 |
 | --- | --- |
