@@ -128,13 +128,16 @@
 
 两种跑法，按侵入性排序：
 
-1. **零侵入（推荐先试）**：装进 MIUI 第二空间 `user 999`（`pm list users` 已确认存在，`pm get-max-users=4`）。真实 uid 分配、真实 `/proc`、真实 data 目录，且不动 user 0 的商店归因。
+1. **（原以为零侵入，已作废）装进 MIUI 第二空间 `user 999`**（`pm list users` 已确认存在，`pm get-max-users=4`）：真实 uid 分配（`99910327`）、真实 `/proc`、真实 data 目录。
+
+   > ⚠️ 2026-11-12 实测推翻了「不动 user 0 商店归因」：APK 按包共享，`--user 999` 的替换安装把整包的 `installerPackageName` 一并改成 `null`（user 0 的数据与会话保留）。缺格**已造出**但代价落在 user 0，详见 [`evidence/douyin-onekey-a2b/c-e-discriminator-stage1-20261112.md`](evidence/douyin-onekey-a2b/c-e-discriminator-stage1-20261112.md)。
+
    ```
    adb -s d861a4fa pull /data/app/~~UZI_96LXkcEkgzLC-cIoDw==/com.ss.android.ugc.aweme-I_ukds9p9gswwSKtruHn2g==/base.apk /tmp/aweme-400701.apk
    adb -s d861a4fa install --user 999 --no-incremental /tmp/aweme-400701.apk
    adb -s d861a4fa shell dumpsys package com.ss.android.ugc.aweme --user 999 | grep -E "installerPackageName|versionCode"
    ```
-   局限：登录要在第二空间里操作，可能需你手动切换/解锁。
+   局限（已实测）：**adb 切不过去**——`am switch-user 999` 返回 `Error: Failed to switch to user 999`（MIUI 第二空间由 `com.xiaomi.subscreencenter` 自管）。登录提交必须由人在第二空间里完成。
 
 2. **低侵入**：覆盖安装到 user 0（`adb install -r --no-incremental`），数据保留、版本相同、无降级。
    代价：user 0 的 `installer` 从 `com.xiaomi.market` 变成 `null`，且**只能靠重装自小米商店恢复**。
@@ -173,5 +176,6 @@
 | native-login-entry-control | 同上「有效实测」节 | 断言 4 |
 | container-uid-forensics / single-instance-container-login | 同上 | 断言 5（C 平面实测） |
 | upgrade-install-boundary / v49-install-permission-e2e | [`evidence/douyin-onekey-a2b/upgrade-install-boundary-20261112.md`](evidence/douyin-onekey-a2b/upgrade-install-boundary-20261112.md) | §3 旁证 |
+| c-vs-e-discriminator-stage1 | [`evidence/douyin-onekey-a2b/c-e-discriminator-stage1-20261112.md`](evidence/douyin-onekey-a2b/c-e-discriminator-stage1-20261112.md) | §4.6 缺格**已造出**（第二空间装成、uid `99910327`、`installer=null`）；登录提交待人在第二空间执行 |
 
 > 反向阅读顺序：先看本文 §4 拿到结论，需要复核时按上表回到证据文档；证据文档里的原始测量一律保留，被推翻的结论已就地标注「已作废」。
