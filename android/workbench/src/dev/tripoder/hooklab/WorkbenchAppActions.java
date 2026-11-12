@@ -47,7 +47,7 @@ final class WorkbenchAppActions {
     /** Only COMMITTED bindings to this installation count; a stale binding (its installation was removed or updated) never takes over the tap. */
     private void launchIn(WorkbenchCatalog catalog,JSONObject install){
         // Launch the requested installation; project ownership never adds a second choice.
-        launch(install);
+        launch(install,catalog);
     }
     private void launchProject(JSONObject project){
         if(!ready())return;String id=project.optString("id");
@@ -135,13 +135,38 @@ final class WorkbenchAppActions {
         ProductUi.notice(page,"暂时不能操作","运行引擎还没有连接，请稍后再试。");return false;
     }
     private Bundle request(String command,JSONObject install){return ControlWire.request(command,"operation",UUID.randomUUID().toString(),"space",install.optString("space"),"package",install.optString("package"),"generation",install.optString("generation"));}
-    private void launch(JSONObject install){
+    private void launch(JSONObject install){launch(install,null);}
+    /** A launch that finds every process slot taken offers to stop a running application instead of failing on an internal code. */
+    private void launch(JSONObject install,WorkbenchCatalog catalog){
         if(!ready())return;
         try{app.operations.submit(request("prepareApplicationLaunch",install),"启动应用",null,(prepared,error)->{
-            if(error!=null){launchFailed(page,app,null,error);return;}
+            if(error!=null){if(catalog!=null&&capacity(error)){offerSlot(catalog,install);return;}launchFailed(page,app,null,error);return;}
             if(prepared.getBoolean("woken",false))return;
             enter(page,app,prepared,!page.isDestroyed()&&!page.isFinishing()&&visible(),"应用已准备好，但 Tripoder 不在前台，没有打开界面。请回到 Tripoder 后重新启动。");
         });}catch(Exception error){launchFailed(page,app,null,error);}
+    }
+    /** The process pool is a real budget (RuntimeSlot.CAPACITY, shared by every process an app declares): a full pool must
+     *  offer a way forward instead of handing the user an internal code. Nothing is stopped without the user choosing it. */
+    private static final String PROCESS_CAPACITY="PROCESS_CAPACITY_EXHAUSTED";
+    private static boolean capacity(Exception error){String message=error==null?null:error.getMessage();return message!=null&&message.contains(PROCESS_CAPACITY);}
+    private void offerSlot(WorkbenchCatalog catalog,JSONObject install){
+        String target=install.optString("package");
+        List<JSONObject> live=new ArrayList<>();
+        for(JSONObject row:catalog.running){String pkg=row.optString("package");if(pkg.isEmpty()||pkg.equals(target)||"DEAD".equals(row.optString("state")))continue;live.add(row);}
+        String name=WorkbenchCatalog.name(app,install);
+        if(live.isEmpty()){ProductUi.notice(page,"运行槽位已满","容器同时运行的应用进程已经达到上限，「"+name+"」需要其中一个。现在没有可以停止的应用，请稍后再试。");return;}
+        String[] labels=live.stream().map(row->catalog.appName(app,row.optString("package"))+" · "+app.spaces.name(row.optString("space"))).toArray(String[]::new);
+        new AlertDialog.Builder(page).setTitle("运行槽位已满")
+            .setMessage("容器同时运行的应用进程已经达到上限，「"+name+"」需要其中一个。停止一个正在运行的应用后再启动它：停止不会删除任何数据。")
+            .setItems(labels,(dialog,index)->stopThenLaunch(live.get(index),install))
+            .setNegativeButton("取消",null).show();
+    }
+    private void stopThenLaunch(JSONObject victim,JSONObject install){
+        if(!ready())return;
+        try{app.operations.submit(request("stopApplication",victim),"停止正在运行的应用",null,(value,failure)->{
+            if(failure!=null){ProductUi.notice(page,"没有停止成功",UiText.error(failure));return;}
+            launch(install);
+        });}catch(Exception error){ProductUi.notice(page,"没有停止成功",UiText.error(error));}
     }
     /** 强行停止就是这个应用在所有空间中的运行一起停止：一次确认，逐空间停止，结束时只报一次结果。 */
     void stopEverywhere(WorkbenchCatalog catalog,String pkg,String name){
