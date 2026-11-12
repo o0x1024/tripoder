@@ -1,0 +1,123 @@
+# 抖音风控策略全维度分析与最终结论
+
+- 设备 / 客体：`d861a4fa` · 抖音 `400701`（versionCode）· 容器 `dev.tripoder.q6`（v42–v49 构建）
+- 触发场景：容器内「我 → 一键登录 → 同意并登录」→ 1 秒内弹「当前应用版本过低或经非官方渠道下载」
+- 分析日期：2026-11-12
+- 关联：`guest-provenance-capability-matrix.md`（§3 候选排除 / §3.2 已证伪方向）、`identity-provenance-contract.md`（三平面与禁止项）、`guest-alternative-login-paths-20261112.md`（结论的出路）
+
+本文按「检测平面」逐条给判据、实测方法、结论与证据强度，最后收敛成一句可引用的最终结论。证据强度分三档：
+
+- ✅ **已实测**：仓内证据可复核，可复跑
+- ◐ **逆向观察**：本会话反编译所得，原始 smali/产物未归档，**不可独立复核**
+- ○ **不可验证**：在容器边界外，需要抖音侧数据或开放平台资质
+
+---
+
+## 1. 判定发生在哪：三段式协议（这决定了整份分析的性质）
+
+抖音的拦截不是客户端的本地 `if`，而是「上报 → 下发 → 回执」：
+
+1. **上行查询**：客户端把当前场景与上下文组参上报（◐ 字段：`operate_type` / `ui_click` / `auth` / `verify` / `schema` / `click_type` / `task_id` / `panel_type` / `block_type`）
+2. **下行判定**：服务端返回 `block_mode` / `force_update` / `copywriting{title, subtitle, …}`
+3. **客户端只做两件事**：按 `copywriting` 渲染弹窗 + 上报 UI 打开/点击结果
+
+管道形状（◐）：`LX/0uuC;` 五段式 —— `LIZJ` 组参查询 → `LIZ` 主线程派发 → `LIZIZ` 判定处理与文案兜底（1131 insns，含目标文案）→ `LIZLLL` UI 结果上报 → `LJ` 解析 `copywriting` 渲染；网络层 `LX/0uqB;`。
+
+文案 id（◐）：`string_id 47007` 对应「当前应用版本过低或经非官方渠道下载」。
+
+> **性质判定**：判据在服务端，客户端任何本地返回值都不可能「说服」它。能改变结果的只有两种方式——改变它看到的上报内容，或改变承载环境。这解释了为什么第 2 节里所有本地平面修正全部无效。
+
+---
+
+## 2. 五个检测平面逐条判决
+
+抖音对「渠道是否官方」的判定只可能落在下面 5 个平面。这是穷举式的分解（客户端可读事实 / 包本体 / 运行环境 / 设备账号 / 服务端数据），不存在第 6 个平面。
+
+| # | 平面 | 抖音可能的判据 | 我们的实测 | 判决 | 强度 |
+|---|---|---|---|---|---|
+| A | 安装来源事实 | `installerPackageName`、`installSourceInfo`、`getPackagesForUid`、`sourceDir` | v44 三处泄漏全闭合（installer=null、installSource 三字段全 null、uidPackages=客体自身），提示仍在；v46 把三者**全部谎报**为 `com.xiaomi.market`，提示仍在，且读取次数 8/2/2 与诚实版完全一致 | **不是判据** | ✅ |
+| B | 安装包本体 | APK 字节、签名、versionCode、渠道字段 | 门面 `sourceDir` 就是真机 `/data/app/~~UZI_96…/base.apk`；sha256 `86ee4316…80c0`、签名 `5182ae3b…512e`、versionCode `400701` 与原生逐项一致；客体自述 `sourceDir` 与门面同值 | **排除** | ✅ |
+| C | 运行环境与进程身份 | 包名↔运行 uid 自洽、`/proc` 归属、data 属主 | 容器客体 `uid=10542`（= 宿主），原生 `10327`；单实例实验（先 force-stop 原生）仍弹 | **结构上必然暴露，且无法消除**（见 §3） | ✅ |
+| D | 设备 / 账号画像 | 设备风险标记、账号风控、网络/IP | 同机、同账号、同网络下原生登录页正常渲染，无任何拦截 | **排除设备级与账号级** | ✅ |
+| E | 服务端渠道分发记录 | 渠道号、商店归因、下架/白名单状态 | **无法从客户端观测**（需要抖音后台数据） | **未分离，但与 C 对结论等价**（见 §4） | ○ |
+
+### 2.1 A 平面为什么被三次实验锁死
+
+- **诚实版（v44）**：`installer=null` / `installSource` 全 null，语义是「非商店来源」——**这正是被怀疑的答案**，但提示照旧。
+- **修正版（v44 前）**：修掉门面自相矛盾（一处答容器包名、一处转述真机商店真值），结果一致。
+- **谎报版（v46）**：`experimentStoreAttribution=true`，installer 与 installSource 全部答成 `com.xiaomi.market`，即「看起来就是小米商店装的」。提示照旧，读取次数不变（8 次 installer + 2 次 installSource + 2 次 uidPackages）。
+
+**谎报版是关键**：它把「本地可归属性」这个假设直接证伪。抖音确实读了这些事实（12 次读取全部发生在点「同意并登录」之后），但读了并不等于据此判定——它把值作为上报字段，判定在服务端。
+
+### 2.2 C 平面为什么不可消除
+
+`uid` 是**安装期属性**（PMS 分配），不是运行期属性。容器能让 Java 层返回任何数字，但改不了：`getuid()` syscall、`/proc/self/status`、Binder `callingUid`（内核盖章）、`/data/data` 属主。同进程虚拟化意味着客体只能以宿主 uid 运行——这是结构事实，不是投影缺陷。任何「包归属与运行 uid 一致性」的完整性检测都会命中。
+
+---
+
+## 3. 旁证：升级链路同样断在结构上（与风控无关）
+
+点「立即升级」的完整链路已实测（✅）：
+
+```
+下载通知 → PackageParser 解析 external/install_dmt.apk
+        → TripoderActivities EXTERNAL start handed off (VIEW)
+        → system_server AppStartScenario 收到
+          content://com.ss.android.ugc.aweme.fileprovider/... callerUid=10542
+        → 无 InstallStart、无 packageinstaller 进程
+```
+
+断点是 **provider 投影缺失**：宿主 `dumpsys` 里 `authority=` 计数为 0（容器零 provider），该 content URI 在外层 PMS 归真机抖音（uid `10327`），而调用方是容器 `10542`，ATMS 无法向安装器转授读权限。v49 给宿主补 `REQUEST_INSTALL_PACKAGES` + `queries` 后依旧无进展（✅ 权限不是卡点）。
+
+> 结论：这条路径即使修好 provider 投影，也只是让「升级」能跑通，而升级后的新包仍在 C 平面暴露——换不来登录。
+
+---
+
+## 4. 最终结论
+
+> **抖音「当前应用版本过低或经非官方渠道下载」的判定发生在服务端（三段式 block 协议），触发它的是客户端无法投影的**运行环境事实**（客体以宿主 uid 运行、包名与运行 uid 不自洽、`/proc` 与 data 归属宿主），或**抖音自己的渠道分发记录**（客户端不可见）。本地安装来源事实经诚实版、修正版、谎报版三次实测均不是判据。因此容器内抖音客户端登录不可达，且不会随投影精度提高而改变。**
+
+分解为 5 条可独立引用的断言：
+
+1. 拦截文案由服务端下发（`block_mode` / `force_update` / `copywriting`），客户端只渲染 + 回执。◐
+2. 客户端本地来源事实（A 平面）不是判据：全部谎报成商店归因后行为完全不变。✅
+3. 安装包本体（B 平面）与原生逐项一致，可排除。✅
+4. 设备与账号画像（D 平面）可排除：同机同账号原生登录无拦截。✅
+5. 剩余唯一可能与 C（运行环境结构）或 E（服务端分发记录）；两者**都不可由容器改变**，故结论与二者如何分配无关。✅（C 实测）/ ○（E 不可验证）
+
+---
+
+## 5. 这条结论的边界（防止过度外推）
+
+1. 只在抖音 `400701` + `d861a4fa` 上实测成立；抖音升级后协议字段与判据可能变化。
+2. **不推广到其它 app**：只看 `installer` 的风控实现大量存在（矩阵 §2 的 P1 族），那些是容器**能**满足的。
+3. **C 与 E 未分离**：我们没有抖音后台数据，不能断言判据只在 C。但二者对「能不能登录」的影响完全相同，所以分离与否不改变结论，只改变解释措辞。
+4. **未验证**：抖音 Web 端（`www.douyin.com`）是否走不同判据——这是替代路径 B 的唯一放行条件，见 `guest-alternative-login-paths-20261112.md` §5。
+5. **未验证**：容器内 WebView 的内核指纹是否触发 Web 端风控。
+
+---
+
+## 6. 可行动项（按性价比排序）
+
+| 优先级 | 动作 | 理由 |
+|---|---|---|
+| 1 | 停止一切「让副本更像官方」的投影投入 | A/B 平面已被三次实验排除，继续投入是纯损耗（矩阵 §3.2） |
+| 2 | 产品侧改文案 + 去掉「立即升级」死路 | 该按钮 100% 无法交付安装（§3），留着只损伤体验 |
+| 3 | 提供「官方 Web 版」入口（替代路径 B） | 唯一「不离开 Tripoder 又能登录」的路径，零资质成本 |
+| 4 | 若目标是「用抖音身份登录 Tripoder」→ 走开放平台 OAuth | 正规通道，与容器无关 |
+| — | 不建议：继续深挖 C 平面 | 需改造 `/proc`、uid 归属、内核 Binder 凭证，属契约红线与工程不可为 |
+
+---
+
+## 7. 证据索引
+
+| 实验 | 文件 | 支撑的断言 |
+|---|---|---|
+| onekey-login-window-v45d | [`evidence/douyin-onekey-a2b/login-window-20261112.md`](evidence/douyin-onekey-a2b/login-window-20261112.md) | 断言 1、2；12 次读取的时序 |
+| installer-forge-v46 | [`evidence/douyin-onekey-a2b/installer-forge-20261112.md`](evidence/douyin-onekey-a2b/installer-forge-20261112.md) | 断言 2（谎报版证伪） |
+| candidate-elimination-v45d / ab-native-baseline | [`evidence/douyin-onekey-identity-fix/README.md`](evidence/douyin-onekey-identity-fix/README.md) | 断言 3 |
+| native-login-entry-control | 同上「有效实测」节 | 断言 4 |
+| container-uid-forensics / single-instance-container-login | 同上 | 断言 5（C 平面实测） |
+| upgrade-install-boundary / v49-install-permission-e2e | [`evidence/douyin-onekey-a2b/upgrade-install-boundary-20261112.md`](evidence/douyin-onekey-a2b/upgrade-install-boundary-20261112.md) | §3 旁证 |
+
+> 反向阅读顺序：先看本文 §4 拿到结论，需要复核时按上表回到证据文档；证据文档里的原始测量一律保留，被推翻的结论已就地标注「已作废」。
