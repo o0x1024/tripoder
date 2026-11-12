@@ -61,7 +61,7 @@
 | **淘宝** | `com.taobao.taobao` / 862 | **PASS** | **5/5 PASS** | **5/5 PASS** (含 `22/22` 复测) | 放行客体私有数据区动态/unlinked DEX，真机 22/22 检查全绿通过（0 次路径拒绝）；**已完成中国移动网关一键免密秒级登录进入首页**。 |
 | **支付宝** | `com.eg.android.AlipayGphone` / 10.6.80 | **PASS** | **PASS** | **PASS** | 补齐 `__fchmodat` 与解耦 `GuestStorageContext` 后，`facex` 人脸插件与 UC WebView 零报错加载；**已突破金融风控下发真实短信验证码，打通淘宝 SSO 联合授权与首页/收付款码渲染**。 |
 | **新浪微博** | `com.sina.weibo` | **PASS** | **PASS** | **PASS** | `/proc/self/maps` 虚拟化攻克梆梆加固壳，10 项契约全过；**已完成真实手机号获取短信验证码、端到端登录及个人中心完整渲染**。 |
-| **京东** | `com.jingdong.app.mall` | **PASS** | **PASS** | **PASS** | Workbench 独立导入启动，Aura 插件框架、首页商品流、购物车与搜索流畅运行。 |
+| **京东** | `com.jingdong.app.mall` / 16.1.50 (102918) | **PASS** | **PASS** | **PASS** | Workbench 独立导入启动，Aura 插件框架、首页商品流、购物车与搜索流畅运行。**2026-11-13 完成本机号码一键登录闭环**：登录页正常渲染（天翼数字生活号码认证，掩码 `153****8553`），勾选协议后登录成功并进入个人中心（账号 `轻风游子-安定x8162`），全程无任何安装来源 / 渠道类提示 ⇒ 京东的 installer / 来源类校验在容器内**可满足**，不属抖音那样的 P2 来源判据族。证据：[`jd-container-login-20261113/README.md`](evidence/jd-container-login-20261113/README.md)。 |
 | **美团** | `com.sankuai.meituan` | **PASS** | **PASS** | **PASS** | 多进程架构、Dynoparts 动态 DEX、QuickJS/MSC 容器、定位切城与本机号码一键登录弹窗完整跑通。 |
 | **美团外卖** | `com.sankuai.meituan.takeoutnew` | **PASS** | **PASS** | **PASS** | 3D 闪屏、定位授权、附近商家列表信息流、登录抽屉及密码自动填充全部正常。 |
 | **抖音** | `com.ss.android.ugc.aweme` / 32.0.0 | **PASS** | **5/5 PASS** | **5/5 PASS** (9/9 验收全绿) | 攻克 `APPLICATION_FACTORY_ORDER`，类加载器状态保护与属主对齐，真机 9/9 项全绿通过。证据：[`diag-aweme-01-target-stable.png`](evidence/diag-aweme-01-target-stable.png)。 |
@@ -175,7 +175,7 @@
 3. **免 Root 单 UID 物理硬边界（不承诺支持）**：
    - 依赖外部系统进程（如 `com.google.android.gms` Chimera 模块、硬件级 KeyMint Attestation、厂商系统级特权服务）直接通过内核 Binder `getCallingUid()` 强校验系统签名或独立 UID 的应用；
    - 强依赖宿主机不存在的 OEM 私有 framework 共享库（如特定 ROM 专属 `miuix` 系统级主题库）的预装系统插件。
-4. **安装来源（Provenance）边界（P2，不承诺支持）**：安装者、`getInstallSourceInfo` 的「商店投递」来源、`/data/app` 代码路径形态、系统安装账本与 `fs-verity`、独立 Linux UID —— 这一族事实在容器内客观不存在。容器**如实回答「非商店」**（`installer=null`、`PACKAGE_SOURCE_LOCAL_FILE`），不伪造，也不转述设备上同名包的来源。因此依赖它们的校验（支付渠道风控、Play Integrity 等）按设计不支持，由产品降级承接（提示在系统环境使用原生安装）。⚠️ **抖音一键登录不属于这一类**：v46 实测表明它的判据不在这一族事实上，见下条与能力矩阵 §3.2。详见 [P2 来源能力矩阵与降级方案](guest-provenance-capability-matrix.md)，实现约束见 [身份与来源契约](identity-provenance-contract.md)。
+4. **安装来源（Provenance）边界（P2，不承诺支持）**：安装者、`getInstallSourceInfo` 的「商店投递」来源、`/data/app` 代码路径形态、系统安装账本与 `fs-verity`、独立 Linux UID —— 这一族事实在容器内客观不存在。容器**如实回答「非商店」**（`installer=null`、`PACKAGE_SOURCE_LOCAL_FILE`），不伪造，也不转述设备上同名包的来源。因此依赖它们的校验（支付渠道风控、Play Integrity 等）按设计不支持，由产品降级承接（提示在系统环境使用原生安装）。⚠️ **抖音一键登录不属于这一类**：v46 实测表明它的判据不在这一族事实上，见下条与能力矩阵 §3.2。详见 [P2 来源能力矩阵与降级方案](guest-provenance-capability-matrix.md)，实现约束见 [身份与来源契约](identity-provenance-contract.md)。**反过来也要记住：这一族事实不是登录门槛的普遍判据**——京东在完全相同的来源回答下（`installer=null`、uid 与包名同样不自洽）一键登录实测**成功**（2026-11-13，[证据](evidence/jd-container-login-20261113/README.md)），因此「某应用能否在容器内登录」必须逐应用实测，不能按抖音个案外推。
 
    **抖音实测基线（2026-11-12，设备 d861a4fa）**：容器内点「一键登录」不拦；点协议框「同意并登录」后 1 秒内被拒（「当前应用版本过低或经非官方渠道下载」），拒绝前后 12 次读取全部落在 `getInstallerPackageName` / `getPackagesForUid` / `getInstallSourceInfo`，且此时三处来源泄漏已闭合（`verdict=consistent`）。APK 字节、签名、版本、代码来源四条已实测与原生一致，唯一可见差异是 `installer=null` vs 原生 `com.xiaomi.market`——**但 v46 已证明该差异不是判据**（全量谎报真值后提示照旧）。**结论：该限制是设计内的 P2 边界，不随投影精度改善。** 证据：[login-window-20261112.md](evidence/douyin-onekey-a2b/login-window-20261112.md)、[installer-forge-20261112.md](evidence/douyin-onekey-a2b/installer-forge-20261112.md)。
 

@@ -43,6 +43,7 @@
 | [guest-alternative-login-paths-20261112.md](guest-alternative-login-paths-20261112.md) | **替代登录路径评估**：T1（容器内用抖音客户端）/ T2（拿抖音用户身份）两目标拆分；原生引导（A，可行）、官方 Web 版（B，可行待实测）、开放平台 OAuth（C，需资质）、会话注入（D，不做）的判定、成本与推荐顺序。 |
 | [code-snapshot-scope-20261112.md](code-snapshot-scope-20261112.md) | **代码快照提交范围清点**：三种范围的精确文件清单（推荐 9 文件）、工作树实况、凭据/敏感数据扫描结果与「绝不能进历史」的路径清单、`reportMaps()` 探针的常量开关取舍。 |
 | [evidence/douyin-onekey-a2b/README.md](evidence/douyin-onekey-a2b/README.md) | **原生 vs 容器 A/B 举证表**：真机原生安装七事实实测（installer=`com.xiaomi.market`）、容器门面改造前/后逐列对照、复现命令。 |
+| [evidence/jd-container-login-20261113/README.md](evidence/jd-container-login-20261113/README.md) | **京东容器内一键登录闭环实测**：同样 `installer=null`、同样 uid 不自洽，京东本机号码一键登录**成功**并进入个人中心（无任何渠道类提示）⇒ 京东的来源类校验在容器内可满足，与抖音 P2 边界形成对照。含步骤、UI dump 观测、`FLAG_SECURE` 与未测支付链路的边界声明。 |
 
 ---
 
