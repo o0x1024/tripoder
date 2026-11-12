@@ -94,7 +94,7 @@
 | # | 参数 | 抖音怎么读到它 | 原生真值 | 容器内值 | 可投影？ | 判决 |
 |---|---|---|---|---|---|---|
 | C1 | 运行 uid 与包名归属不自洽 | `getuid()` / Binder `callingUid` 对比 `getPackageUid("com.ss.android.ugc.aweme")` | `10327` / `10327` | `10542` / `10327` | 否（uid 是安装期属性） | **最强嫌疑 ✅实测差异** |
-| C2 | 宿主 runtime 的可读痕迹 | 扫 `/proc/self/maps`：出现 `/data/app/~~…/dev.tripoder.q6…/lib*/libruntime.so`、`libselfhook*.so`、宿主 dex | 无 | 必有 | 否（去掉即去掉容器） | **并列最强 △外部不可取证** |
+| C2 | 宿主 runtime 的可读痕迹 | 扫 `/proc/self/maps`：出现 `/data/app/~~…/dev.tripoder.q6…/lib*/libruntime.so`、`libselfhook*.so`、宿主 dex | 无 | 必有 | 否（去掉即去掉容器） | **已排除 ❌路径级** |
 | C3 | 私有目录语义 | `stat("/data/user/0/<pkg>")`、属主、可写性 | 属主 `10327` | 客体跑在 `10542`，路径与属主自相矛盾 | 否 | 高 |
 | C4 | 代码来源一致性 | `getSourceDir()` / `ApplicationInfo.sourceDir` vs 进程实际加载的 APK/DexFile 路径 | 一致 | 门面答真机路径，进程实际加载宿主 APK + hook | 部分 | 中高 |
 | C5 | 包可见性完整性 | `getInstalledPackages` 条数、`queries` 解析结果 | 完整 | 被容器裁剪 | 可改善、不可完备 | 中 |
@@ -104,11 +104,11 @@
 | D1 | 设备 / 账号画像 | 设备指纹、账号风控 | — | 同机同账号原生通过 | — | **已排除 ✅** |
 | E1 | 渠道分发记录 | 服务端：该设备/账号是否曾从官方渠道获得此包 | 有 | 无（容器内不发生分发） | 否（客户端不可见） | **并列最强 ○不可验证** |
 
-> C2 的取证状态（2026-11-12 补测）：`adb shell cat /proc/1872/maps` → `Permission denied`（客体 pid `1872` / uid `10542` 在线，另见 `:sandboxed_process0` pid `3198`）。这恰好证明该文件受 uid 隔离保护——而**同一进程读自己的 `/proc/self/maps` 是自由的**，所以 C2 对抖音是「活」的候选，只是无法从 adb 外部取证。要坐实需在 runtime 内加一行 maps 落盘（native 侧 grep `tripoder`），成本 1 次构建 + 1 次安装。
+> C2 的判决（2026-11-12 实测，证据 `evidence/douyin-onekey-a2b/c2-maps-in-guest-20261112.md`）：由**客体进程自己**读 `/proc/self/maps` 并落盘（`build-maps-v51`，tag `TripoderMaps`，pid 12010 / uid 10542）。原始结果 `total=6021 tripoderAny=0 hostPathLines=0 otherAppPathLines=121`：6021 条映射里 `tripoder` 一次都没出现，所有被映射的应用代码都是客体自己的真实包路径（`/data/app/~~z_ij0…/com.ss.android.ugc.aweme-…/base.apk`、webview APK）。⇒ **C2 在路径层面不成立**：容器不以文件映射路径的形式暴露给客体。边界：只测路径字符串，未覆盖 memfd/匿名映射、线程指纹、`smaps` 私有段与 native hook 库形状。
 
-**如果必须只指一个参数：C1**。理由：它是唯一「纯 Java 层就能读到、且我们已拿到硬差异」的（`10542` vs `10327`，`container-uid-forensics`）；C2 需要 native 扫描、E1 需要抖音后台数据，取证成本都更高。
+**如果必须只指一个参数：C1**。理由：C2 已被上一条实测排除，A/B/D/C6 早已排除，E1 在抖音后台不可观测——C1 是**唯一剩下的、可在客体内部自证、且我们已拿到硬差异**的事实（`10542` vs `10327`，`container-uid-forensics`）。它不在任何 Java 返回值里：`getuid()` 系统调用、`/proc/self/status` 的 `Uid:` 行、Binder `callingUid` 都由内核盖章，可投影面为零。
 
-但要诚实——**C1 / C2 / E1 不是互斥选项，而是同一次判定里同时成立的事实**：客体确实以宿主 uid 运行（C1）、`/proc/self/maps` 里确实有宿主 runtime（C2）、服务端确实看不到这次安装的分发记录（E1）。抖音的判据很可能吃的是这三者的**组合**，而不是其中任何一个单独值。这也解释了为什么「只把某一个字段答对」永远不会改变结果。
+但要诚实——**C1 与 E1 不是互斥选项，而是同一次判定里可能同时成立的事实**：客体确实以宿主 uid 运行（C1）、服务端确实看不到这次安装的分发记录（E1）。~~`/proc/self/maps` 里确实有宿主 runtime（C2）~~ 已由 `c2-maps-in-guest` 推翻。所以真正的分岔只剩两条：判据吃客户端可自证的 **C1**，还是吃服务端才知道的 **E1**——这正是 §4.6 那次登录请求要分辨的。
 
 ## 4.6 判别实验：唯一能把 C 与 E 分开的设计
 
@@ -177,5 +177,6 @@
 | container-uid-forensics / single-instance-container-login | 同上 | 断言 5（C 平面实测） |
 | upgrade-install-boundary / v49-install-permission-e2e | [`evidence/douyin-onekey-a2b/upgrade-install-boundary-20261112.md`](evidence/douyin-onekey-a2b/upgrade-install-boundary-20261112.md) | §3 旁证 |
 | c-vs-e-discriminator-stage1 | [`evidence/douyin-onekey-a2b/c-e-discriminator-stage1-20261112.md`](evidence/douyin-onekey-a2b/c-e-discriminator-stage1-20261112.md) | §4.6 缺格**已造出**（第二空间装成、uid `99910327`、`installer=null`）；登录提交待人在第二空间执行 |
+| c2-maps-in-guest | [`evidence/douyin-onekey-a2b/c2-maps-in-guest-20261112.md`](evidence/douyin-onekey-a2b/c2-maps-in-guest-20261112.md) | 断言 5（C2 判决 ❌：6021 条映射中 `tripoder` 0 次） |
 
 > 反向阅读顺序：先看本文 §4 拿到结论，需要复核时按上表回到证据文档；证据文档里的原始测量一律保留，被推翻的结论已就地标注「已作废」。
