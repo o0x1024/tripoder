@@ -50,6 +50,11 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
         broadcasts=new BroadcastLedger(store);broadcastBroker=new RuntimeBroadcastBroker(this);
         try{applicationStarts=new ApplicationStartLedger(store,context);BOOT_MARK=android.os.SystemClock.elapsedRealtime();store.recoverSessions(context);bootStep("store.recoverSessions(context)");BOOT_MARK=android.os.SystemClock.elapsedRealtime();contract.onRecover();synchronized(this){RuntimeComponentRestart.reconcile(this);}bootStep("contract.onRecover()");BOOT_MARK=android.os.SystemClock.elapsedRealtime();jobs.recovered();bootStep("jobs.recovered()");BOOT_MARK=android.os.SystemClock.elapsedRealtime();JobAttemptLedger.recover(store.getWritableDatabase());bootStep("JobAttemptLedger.recover(store.getWritab");BOOT_MARK=android.os.SystemClock.elapsedRealtime();jobBroker.reconcileSchedules();bootStep("jobBroker.reconcileSchedules()");BOOT_MARK=android.os.SystemClock.elapsedRealtime();pendingIntentBroker.retireDirectTransports();bootStep("retireDirectTransports()");BOOT_MARK=android.os.SystemClock.elapsedRealtime();providers.recover(contract);bootStep("providers.recover(contract)");BOOT_MARK=android.os.SystemClock.elapsedRealtime();broadcasts.recover(contract);bootStep("broadcasts.recover(contract)");BOOT_MARK=android.os.SystemClock.elapsedRealtime();activities.recover(context);bootStep("activities.recover(context)");BOOT_MARK=android.os.SystemClock.elapsedRealtime();services.reconcile(context);bootStep("services.reconcile(context)");BOOT_MARK=android.os.SystemClock.elapsedRealtime();apks.recover();bootStep("apks.recover()");BOOT_MARK=android.os.SystemClock.elapsedRealtime();projects.recover();bootStep("projects.recover()");}
         catch(Exception error){store.close();throw new IllegalStateException("AUTHORITY_RECOVERY_FAILED",error);}
+        // Recovery just marked every abandoned session DEAD. That is the one moment where a process
+        // that died while nobody was watching can still be accounted for from the platform record, and
+        // it is off the broker lock, which forbids system queries. Without this a controller restart
+        // would leave those exits permanently undecided and the start gate conservative forever.
+        RuntimeDataHealing.observeRecoveredExits(store);
         activityStarts=new ActivityStartReceipts(store,context,activities,this);processes=new ProcessSupervisor(this);
     }
     public static final class Slot {
@@ -79,6 +84,7 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
             if(old.activityStub.equals(stub))throw new IllegalStateException("PROCESS_SLOT_IN_USE");
             if(old.install.space.equals(install.space)&&old.install.info.packageName.equals(install.info.packageName)&&old.allocation.session.identity.processName.equals(processName))throw new IllegalStateException("PROCESS_ALREADY_ALLOCATED");
         }
+        RuntimeLaunchPermissions.require(host,install.info);
         ExecutionContract.Allocation a=contract.allocate(install.space,install.info.packageName,install.generation,processName,android.os.Process.myUid());
         Slot slot=new Slot(install,a,stub,origin);slot.probeConfiguration=probePlans.forProcess(this,install.space,install.info.packageName,install.generation,processName);var db=store.getWritableDatabase();db.beginTransaction();try{store.reserve(a.session,stub);providers.reserve(slot);db.setTransactionSuccessful();}finally{db.endTransaction();}
         slots.put(a.session.processGeneration,slot);return slot;
@@ -117,7 +123,18 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
         // ProcessSupervisor owns the sole death observation and its drain ACK.
         // A second listener here can write after that ACK let authority close.
         slot.peer=peer;
-        Bundle input=slot.install.wire();if(slot.probeConfiguration!=null)input.putString("codeProbeConfiguration",slot.probeConfiguration);input.putLong("startupDeadlineElapsed",slot.startupDeadlineElapsed);input.putBundle("providers",providers.publications(generation));input.putString("generation",generation);input.putString("processName",slot.allocation.session.identity.processName);input.putString("bootstrap",slot.allocation.bootstrapToken);input.putBinder("broker",this);return input;
+        Bundle input=slot.install.wire();
+        if(!slot.install.artifacts.nativeFiles.isEmpty()){
+            try{
+                var nativeCode=RuntimePublishedNativeCode.capture(host,slot.install);
+                if(nativeCode!=null)input.putBundle("nativeCode",RuntimePublishedNativeCode.publish(nativeCode,slot.install));
+            }catch(UnsupportedOperationException absent){
+                // A file-only install has no system publication. Select the existing verified
+                // artifact mode before admission; never fall back after a guest load failure.
+                if(!"ISOLATED_NATIVE_SYSTEM_PUBLICATION_REQUIRED".equals(absent.getMessage()))throw absent;
+            }
+        }
+        RuntimeDeviceProfileSettings.attach(this,input);if(slot.probeConfiguration!=null)input.putString("codeProbeConfiguration",slot.probeConfiguration);input.putLong("startupDeadlineElapsed",slot.startupDeadlineElapsed);input.putBundle("providers",providers.publications(generation));input.putString("generation",generation);input.putString("processName",slot.allocation.session.identity.processName);input.putString("bootstrap",slot.allocation.bootstrapToken);input.putBinder("broker",this);return input;
     }
     String retainedStub(ApkStore.BundleInstall install,String process){
         String retained=null;
@@ -131,7 +148,7 @@ public final class RuntimeBroker extends RuntimeWire.Endpoint {
     synchronized Bundle processEvidence(Slot slot){var s=contract.getSession(slot.allocation.session.processGeneration);Bundle b=new Bundle();b.putString("generation",s.processGeneration);b.putString("installGeneration",s.identity.installGeneration);b.putString("processName",s.identity.processName);b.putString("state",s.state.name());b.putInt("pid",s.pid);b.putInt("uid",s.uid);return b;}
     public synchronized void dead(String generation){dead(generation,true);}
     synchronized void isolatedDead(String generation,boolean unexpected){if(contract.getSession(generation).kind!=ExecutionContract.ProcessKind.ISOLATED_SERVICE)throw new SecurityException("ISOLATED_ROLE_REQUIRED");dead(generation,unexpected);}
-    private void dead(String generation,boolean pause){if(pause&&!RuntimeComponentRestart.target(this,generation))store.pause(generation);jobAttempts.dead(generation);hookClaims.dead(generation);contract.markDead(generation);store.deadSession(generation);activities.launches.dead(generation);providers.dead(generation,contract);providerBroker.dead(generation);broadcasts.dead(generation,contract);slots.remove(generation);for(var e:deliveries.entrySet())if(e.getValue().source.equals(generation)||e.getValue().target.equals(generation)){var operation=contract.query(e.getKey());if(operation.state==ExecutionContract.OperationState.RUNNING){contract.markUnknown(e.getKey(),"PROCESS_DIED_BEFORE_DELIVERY_ACK");trace("delivery-unknown",e.getKey());}}RuntimeComponentRestart.reconcile(this);}
+    private void dead(String generation,boolean pause){if(pause&&!RuntimeComponentRestart.target(this,generation))store.pause(generation);jobAttempts.dead(generation);hookClaims.dead(generation);contract.markDead(generation);store.deadSession(generation);activities.launches.dead(generation);providers.dead(generation,contract);providerBroker.dead(generation);broadcasts.dead(generation,contract);slots.remove(generation);for(var e:deliveries.entrySet())if(e.getValue().source.equals(generation)||e.getValue().target.equals(generation)){var operation=contract.query(e.getKey());if(operation.state==ExecutionContract.OperationState.RUNNING){if(broadcasts.claimed(e.getKey())){contract.markUnknown(e.getKey(),"PROCESS_DIED_BEFORE_DELIVERY_ACK");trace("delivery-unknown",e.getKey());}else{contract.fail(e.getKey(),"BROADCAST_NEVER_DELIVERED");trace("delivery-not-delivered",e.getKey());}}}RuntimeComponentRestart.reconcile(this);RuntimeExitDossiers.observe(this,generation);}
     private void trace(String stage,String op){try{synchronized(events){events.put(new JSONObject().put("stage",stage).put("operation",op).put("operationState",contract.query(op).state.name()).put("time",System.currentTimeMillis()));}}catch(JSONException e){throw new IllegalStateException(e);}}
     public synchronized void remove(String space,String pkg){for(Slot s:slots.values())if(s.install.space.equals(space)&&s.install.info.packageName.equals(pkg))throw new IllegalStateException("INSTALL_IN_USE");apks.removeRecord(space,pkg);}
     public synchronized String generation(String space,String pkg){for(var e:slots.entrySet())if(e.getValue().install.space.equals(space)&&e.getValue().install.info.packageName.equals(pkg))return e.getKey();throw new IllegalStateException("PROCESS_NOT_REGISTERED");}

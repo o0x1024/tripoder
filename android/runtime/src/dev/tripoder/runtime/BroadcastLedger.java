@@ -11,6 +11,7 @@ final class BroadcastLedger {
     private final RuntimeStore store;
     BroadcastLedger(RuntimeStore store){this.store=store;}
     static void create(SQLiteDatabase db){
+        createOrderedResults(db);
         db.execSQL("CREATE TABLE broadcast_registrations(id TEXT PRIMARY KEY,generation TEXT NOT NULL,space TEXT NOT NULL,package TEXT NOT NULL,action TEXT NOT NULL,filter BLOB NOT NULL,exported INTEGER NOT NULL,state TEXT NOT NULL,volumeRoots TEXT NOT NULL,permission TEXT NOT NULL)");
         db.execSQL("CREATE TABLE broadcast_deliveries(ticket TEXT PRIMARY KEY,operation TEXT UNIQUE NOT NULL,source TEXT NOT NULL,sourceIdentity TEXT NOT NULL,target TEXT NOT NULL,component TEXT NOT NULL,registration TEXT NOT NULL,payload BLOB NOT NULL,digest TEXT NOT NULL,ordered INTEGER NOT NULL,state TEXT NOT NULL,instance TEXT NOT NULL,returned INTEGER NOT NULL,finished INTEGER NOT NULL,asynchronous INTEGER NOT NULL,systemDone INTEGER NOT NULL,resourceRetired INTEGER NOT NULL DEFAULT 0,resourceProof TEXT,externalOrigin INTEGER NOT NULL DEFAULT 0)");
     }
@@ -36,7 +37,12 @@ final class BroadcastLedger {
     }
     void closePending(String registration,String generation,ExecutionContract contract){
         try(Cursor c=store.getReadableDatabase().rawQuery("SELECT ticket,operation FROM broadcast_deliveries WHERE registration=? AND target=? AND state='PREPARED'",new String[]{registration,generation})){
-            while(c.moveToNext()){ContentValues v=new ContentValues();v.put("state","UNKNOWN");update(c.getString(0),v);contract.markUnknown(c.getString(1),"BROADCAST_REGISTRATION_CLOSED_BEFORE_CLAIM");}
+            while(c.moveToNext()){
+                // A registration closing before its delivery was claimed means the receiver never ran: the
+                // effect is a terminal "not delivered", not an unknown effect that may fence the package.
+                ContentValues v=new ContentValues();v.put("state","REJECTED");update(c.getString(0),v);
+                settle(contract,c.getString(1),"BROADCAST_REGISTRATION_CLOSED_BEFORE_CLAIM",false);
+            }
         }
     }
     byte[] activeFilter(String registration,String generation){
@@ -102,6 +108,29 @@ final class BroadcastLedger {
     Bundle get(String ticket){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT operation,source,sourceIdentity,target,component,registration,payload,digest,ordered,state,instance,returned,finished,asynchronous,systemDone,externalOrigin FROM broadcast_deliveries WHERE ticket=?",new String[]{ticket})){
         if(!c.moveToFirst())throw new SecurityException("BROADCAST_TICKET_UNKNOWN");Bundle b=new Bundle();b.putString("ticket",ticket);String[] names={"operation","source","sourceIdentity","target","component","registration"};for(int i=0;i<names.length;i++)b.putString(names[i],c.getString(i));b.putByteArray("payload",c.getBlob(6));b.putString("digest",c.getString(7));b.putBoolean("ordered",c.getInt(8)!=0);b.putString("state",c.getString(9));b.putString("instance",c.getString(10));for(int i=0;i<4;i++)b.putBoolean(new String[]{"returned","finished","asynchronous","systemDone"}[i],c.getInt(11+i)!=0);b.putBoolean("externalOrigin",c.getInt(15)!=0);return b;
     }}
+    static void createOrderedResults(SQLiteDatabase db){
+        db.execSQL("CREATE TABLE IF NOT EXISTS broadcast_ordered_results(ticket TEXT PRIMARY KEY,aborted INTEGER NOT NULL)");
+    }
+    void orderedResult(String ticket,String generation,String instance,boolean aborted){
+        Bundle row=get(ticket);
+        if(!generation.equals(row.getString("target"))||!instance.equals(row.getString("instance"))||!row.getBoolean("ordered")||!"RUNNING".equals(row.getString("state")))throw new SecurityException("BROADCAST_RESULT_OWNER");
+        ContentValues values=new ContentValues();values.put("ticket",ticket);values.put("aborted",aborted?1:0);
+        store.getWritableDatabase().insertOrThrow("broadcast_ordered_results",null,values);
+    }
+    Bundle orderedStatus(String ticket,String source){
+        Bundle row=get(ticket);
+        if(!source.equals(row.getString("source"))||row.getBoolean("externalOrigin"))throw new SecurityException("BROADCAST_RESULT_SOURCE");
+        try(Cursor c=store.getReadableDatabase().rawQuery("SELECT aborted FROM broadcast_ordered_results WHERE ticket=?",new String[]{ticket})){
+            row.putBoolean("resultObserved",c.moveToFirst());if(row.getBoolean("resultObserved"))row.putBoolean("aborted",c.getInt(0)!=0);
+        }
+        return row;
+    }
+    void skipOrdered(String ticket,String source,ExecutionContract contract){
+        Bundle row=get(ticket);
+        if(!source.equals(row.getString("source"))||row.getBoolean("externalOrigin")||!"PREPARED".equals(row.getString("state")))throw new SecurityException("BROADCAST_SKIP_NOT_PREPARED");
+        ContentValues values=new ContentValues();values.put("state","REJECTED");values.put("resourceRetired",1);values.put("resourceProof","ORDERED_ABORT_BEFORE_DISPATCH");update(ticket,values);
+        contract.fail(row.getString("operation"),"ORDERED_ABORT_BEFORE_DISPATCH");
+    }
     Bundle claim(String ticket,String generation,String component,String registration,String instance)throws Exception{
         Bundle b=get(ticket);if(!b.getString("target").equals(generation)||!b.getString("component").equals(component)||!b.getString("registration").equals(registration))throw new SecurityException("BROADCAST_TICKET_NOT_CLAIMABLE");
         if(!RuntimeBroadcastIntent.digest(b.getByteArray("payload")).equals(b.getString("digest")))throw new SecurityException("BROADCAST_PAYLOAD_CORRUPT");
@@ -132,10 +161,27 @@ final class BroadcastLedger {
         update(ticket,v);
     }
     void dead(String generation,ExecutionContract contract){
+        // A dead sender cannot continue its ordered chain. Fence unclaimed
+        // tickets before retiring them; a queued physical delivery must fail claim.
+        try(Cursor c=store.getReadableDatabase().rawQuery("SELECT ticket,operation FROM broadcast_deliveries WHERE source=? AND ordered=1 AND state='PREPARED'",new String[]{generation})){
+            while(c.moveToNext()){
+                ContentValues values=new ContentValues();values.put("state","UNKNOWN");values.put("resourceRetired",1);values.put("resourceProof","SOURCE_DEAD_AND_UNCLAIMED_DELIVERY_FENCED");update(c.getString(0),values);
+                if(contract.query(c.getString(1)).state==ExecutionContract.OperationState.RUNNING)contract.markUnknown(c.getString(1),"ORDERED_SOURCE_DIED_BEFORE_CLAIM");
+            }
+        }
         preparedRegistrations.values().removeIf(r->r.generation.equals(generation));
         activeRegistrations.values().removeIf(r->r.generation.equals(generation));
         ContentValues closed=new ContentValues();closed.put("state","CLOSED");store.getWritableDatabase().update("broadcast_registrations",closed,"generation=?",new String[]{generation});
-        try(Cursor c=store.getReadableDatabase().rawQuery("SELECT ticket,operation FROM broadcast_deliveries WHERE target=? AND state NOT IN ('COMPLETED','UNKNOWN')",new String[]{generation})){while(c.moveToNext()){ContentValues v=new ContentValues();v.put("state","UNKNOWN");update(c.getString(0),v);contract.markUnknown(c.getString(1),"BROADCAST_TARGET_DIED_DELIVERY_UNCONFIRMED");}}
+        try(Cursor c=store.getReadableDatabase().rawQuery("SELECT ticket,operation,instance FROM broadcast_deliveries WHERE target=? AND state NOT IN ('COMPLETED','UNKNOWN','REJECTED')",new String[]{generation})){
+            while(c.moveToNext()){
+                // A delivery the target never claimed cannot have run guest code, so its outcome is a terminal
+                // fact ("not delivered") rather than an unknown effect. Leaving it UNKNOWN fenced the whole
+                // package scope: every later alarm, startActivity and provider call of that package was refused.
+                boolean claimed=c.getString(2)!=null&&!c.getString(2).isEmpty();
+                ContentValues v=new ContentValues();v.put("state",claimed?"UNKNOWN":"REJECTED");update(c.getString(0),v);
+                settle(contract,c.getString(1),claimed?"BROADCAST_TARGET_DIED_DELIVERY_UNCONFIRMED":"BROADCAST_NEVER_DELIVERED",claimed);
+            }
+        }
         store.getWritableDatabase().execSQL("UPDATE broadcast_deliveries SET resourceRetired=1,resourceProof='TARGET_DEAD_AND_INGRESS_FENCED' WHERE target=? AND state IN ('UNKNOWN','COMPLETED') AND EXISTS(SELECT 1 FROM sessions s WHERE s.generation=target AND s.state='DEAD') AND (registration='' OR EXISTS(SELECT 1 FROM broadcast_registrations r WHERE r.id=registration AND r.generation=target AND r.state='CLOSED'))",new Object[]{generation});
     }
     /** Every generation recorded before this authority started is dead, so recovery is the same fencing as dead() applied to all rows at once. Doing it per target
@@ -146,9 +192,49 @@ final class BroadcastLedger {
         var db=store.getWritableDatabase();
         db.execSQL("UPDATE broadcast_registrations SET state='CLOSED' WHERE state!='CLOSED'");
         List<String[]> open=new ArrayList<>();
-        try(Cursor c=store.getReadableDatabase().rawQuery("SELECT ticket,operation FROM broadcast_deliveries WHERE state NOT IN ('COMPLETED','UNKNOWN')",null)){while(c.moveToNext())open.add(new String[]{c.getString(0),c.getString(1)});}
-        for(String[] row:open){ContentValues v=new ContentValues();v.put("state","UNKNOWN");update(row[0],v);contract.markUnknown(row[1],"BROADCAST_TARGET_DIED_DELIVERY_UNCONFIRMED");}
+        try(Cursor c=store.getReadableDatabase().rawQuery("SELECT ticket,operation,instance FROM broadcast_deliveries WHERE state NOT IN ('COMPLETED','UNKNOWN','REJECTED')",null)){while(c.moveToNext())open.add(new String[]{c.getString(0),c.getString(1),c.getString(2)});}
+        for(String[] row:open){
+            boolean claimed=row[2]!=null&&!row[2].isEmpty();
+            ContentValues v=new ContentValues();v.put("state",claimed?"UNKNOWN":"REJECTED");update(row[0],v);
+            settle(contract,row[1],claimed?"BROADCAST_TARGET_DIED_DELIVERY_UNCONFIRMED":"BROADCAST_NEVER_DELIVERED",claimed);
+        }
+        // Rows written before the split above carry UNKNOWN for deliveries that were never claimed. Their evidence
+        // is still in the row (instance='' means no guest ingress ever attached), so the fence they hold can be
+        // closed instead of permanently refusing every later call of that package. Only that provable class is
+        // reconciled; a claimed delivery keeps its UNKNOWN and still needs an explicit decision.
+        try(Cursor c=store.getReadableDatabase().rawQuery("SELECT ticket,operation FROM broadcast_deliveries WHERE state='UNKNOWN' AND instance=''",null)){
+            while(c.moveToNext()){
+                String operation=c.getString(1);
+                try{
+                    if(contract.query(operation)!=null&&contract.query(operation).state==ExecutionContract.OperationState.UNKNOWN){
+                        contract.reconcile(operation,ExecutionContract.OperationState.FAILED,"BROADCAST_NEVER_DELIVERED","unclaimed-delivery-no-guest-ingress");
+                        ContentValues v=new ContentValues();v.put("state","REJECTED");update(c.getString(0),v);
+                        android.util.Log.i("TripoderRecovery","never-delivered-repaired operation="+operation+";ticket="+c.getString(0));
+                    }
+                }catch(RuntimeException notReconcilable){android.util.Log.w("TripoderRecovery","never-delivered-repair-skipped operation="+operation+";cause="+notReconcilable.getClass().getSimpleName()+":"+notReconcilable.getMessage());}
+            }
+        }
+        // The same provable class recorded under this code before the split: a delivery closed with its
+        // registration was never claimed, so nothing of it can still be delivered.
+        try(Cursor c=store.getReadableDatabase().rawQuery("SELECT id FROM operations WHERE state='UNKNOWN' AND detail='BROADCAST_REGISTRATION_CLOSED_BEFORE_CLAIM'",null)){
+            while(c.moveToNext()){
+                String operation=c.getString(0);
+                try{
+                    contract.reconcile(operation,ExecutionContract.OperationState.FAILED,"BROADCAST_NEVER_DELIVERED","registration-closed-before-claim");
+                    android.util.Log.i("TripoderRecovery","registration-never-claimed-repaired operation="+operation);
+                }catch(RuntimeException notReconcilable){android.util.Log.w("TripoderRecovery","registration-repair-skipped operation="+operation+";cause="+notReconcilable.getClass().getSimpleName());}
+            }
+        }
         db.execSQL("UPDATE broadcast_deliveries SET resourceRetired=1,resourceProof='TARGET_DEAD_AND_INGRESS_FENCED' WHERE resourceRetired=0 AND state IN ('UNKNOWN','COMPLETED') AND EXISTS(SELECT 1 FROM sessions s WHERE s.generation=target AND s.state='DEAD') AND (registration='' OR EXISTS(SELECT 1 FROM broadcast_registrations r WHERE r.id=registration AND r.generation=target AND r.state='CLOSED'))");
+    }
+    /** Only a running operation may be settled; a terminal one keeps the outcome already recorded for it. */
+    private static void settle(ExecutionContract contract,String operation,String code,boolean unknown){
+        if(contract.query(operation).state!=ExecutionContract.OperationState.RUNNING)return;
+        if(unknown)contract.markUnknown(operation,code);else contract.fail(operation,code);
+    }
+    /** A claim is the only way a delivery reaches guest code, so its absence proves the effect never happened. */
+    boolean claimed(String operation){
+        try(Cursor c=store.getReadableDatabase().rawQuery("SELECT 1 FROM broadcast_deliveries WHERE operation=? AND instance!='' LIMIT 1",new String[]{operation})){return c.moveToFirst();}
     }
     boolean occupied(String stub){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT 1 FROM broadcast_deliveries b JOIN sessions s ON b.target=s.generation WHERE s.activityStub=? AND b.state!='COMPLETED' AND b.resourceRetired=0 LIMIT 1",new String[]{stub})){return c.moveToFirst();}}
     boolean retired(String ticket){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT resourceRetired FROM broadcast_deliveries WHERE ticket=?",new String[]{ticket})){if(!c.moveToFirst())throw new SecurityException("BROADCAST_TICKET_UNKNOWN");return c.getInt(0)!=0;}}
