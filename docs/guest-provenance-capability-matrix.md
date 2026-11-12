@@ -49,7 +49,7 @@
 
 剩下的唯一差异是**安装归因**（⚠️ 这一差异随后被 v46 实测证明**不是判据**，见 §3.2 ①）：容器答 `installer=null`、`installSource` 三字段全 null，原生答 `com.xiaomi.market`。与读取时机吻合：点「一键登录」后 14 秒内 0 次读取，点「同意并登录」后 1 秒内被拒，拒绝前后读了 12 次（`getInstallerPackageName` ×8、`getPackagesForUid` ×2、`getInstallSourceInfo` ×2）。证据：[login-window-20261112.md](evidence/douyin-onekey-a2b/login-window-20261112.md)。
 
-**推论**：本问题在「不伪造来源」边界内**不可解**，而且原因不止「缺一段历史」——v46 已证明即使把「商店投递」谎报出来，判定与读取分布都不变。真正的判据在服务端拦截框架与容器运行痕迹（见 §3.2），因此不要再投入「让投影更像官方」（既无效、也越界），只走降级。
+**推论**：本问题在「不伪造来源」边界内**不可解**，而且原因不止「缺一段历史」——v46 已证明即使把「商店投递」谎报出来，判定与读取分布都不变。判据已定为**容器运行期身份不自洽（C1）**（见 §3.2 末段，2026-11-12 实测闭合），因此不要再投入「让投影更像官方」（既无效、也越界），只走降级。
 
 ### 3.2 已证伪的方向（无效方向登记，不要再投入）
 
@@ -60,6 +60,8 @@
 | **① 修好安装归因（installer / installSource）** | ❌ 无效 | v44 三处泄漏全部闭合（`verdict=consistent`、`hostLeak=none`）后提示照旧；v46 更激进地把 `installer` 与 `installSource` 三字段**全部答成 `com.xiaomi.market`**（原生真值），提示**照旧**，且抖音的读取次数与方法分布（8/2/2）与诚实版**逐项一致**。⇒ 本地安装归因平面不是判据。[login-window-20261112.md](evidence/douyin-onekey-a2b/login-window-20261112.md) |
 | **② 补安装权限（`REQUEST_INSTALL_PACKAGES`）** | ❌ 无效 | v49 声明该权限 + `queries(VIEW/package-archive)`，`dumpsys` 计数 1、`appops=allow`；重跑「弹窗→立即升级→100%」仍**无** `InstallStart`、**无** packageinstaller 进程、**无** installd。⇒ 权限不是卡点。[upgrade-install-boundary-20261112.md](evidence/douyin-onekey-a2b/upgrade-install-boundary-20261112.md) §9 |
 | **③ 用「升级到官方版本」自举通过校验** | ❌ 无效（结构性） | 同一次 v49 实测：`PackageParser` 解析完 `install_dmt.apk` → `TripoderActivities: EXTERNAL start handed off (VIEW)` → `AppStartScenario` 收到 `content://com.ss.android.ugc.aweme.fileprovider/… callerUid=10542`，随后**什么也没发生**。原因见 §3.3：content URI 的 authority 在外层 PMS 归属真机抖音（uid 10327），发起方是容器 uid 10542，且宿主零 provider，转授链在 ATMS 断开。 |
+
+**判据已定（2026-11-12，`c-vs-e-discriminator-clone-profile`）**：同一份 APK（`installerPackageName=null`、`versionName=40.7.0`）在**真实用户环境**（`user 999`，`Type=android.os.usertype.profile.CLONE`，uid `99910327`）里一键登录**成功**（可可儿 / 抖音号 85191533219），无拦截弹窗、logcat 0 命中。保持 `installer=null` 不变、只更换承载方式就不再被拦 ⇒ **判据是容器运行期身份不自洽（C1：客体以宿主 uid 10542 运行，与其自称的包名不一致），不是「服务端无商店分发记录」（E1）**。C1 是同进程虚拟化的结构属性，不能在容器内修；这条线到此为止。证据：[c-e-discriminator-clone-profile-20261112.md](evidence/douyin-onekey-a2b/c-e-discriminator-clone-profile-20261112.md)。
 
 ### 3.3 升级/安装自举的断点：provider 投影缺失
 
@@ -114,7 +116,7 @@
 6. 以此为前提的任何「一键登录」类免密流程；
 7. 宿主代客体向系统外组件交付 `content://` 文件（安装器、分享目标、文件选择器）——provider 投影平面未补齐前**静默失败**，见 §3.3。
 
-> 第 7 条与 1–6 条性质不同：1–6 是「事实不可投影」，第 7 条是「能力还没做」。补齐 provider 投影后第 7 条可以变成支持，但**它换不来一键登录**（判据在服务端，见 §3.2 ①）。
+> 第 7 条与 1–6 条性质不同：1–6 是「事实不可投影」，第 7 条是「能力还没做」。补齐 provider 投影后第 7 条可以变成支持，但**它换不来一键登录**（判据是容器运行期身份不自洽 C1，见 §3.2 末段）。
 
 ## 5. 判定与回归
 

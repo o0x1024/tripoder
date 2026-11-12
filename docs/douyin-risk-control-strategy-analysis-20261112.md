@@ -137,7 +137,7 @@
    adb -s d861a4fa install --user 999 --no-incremental /tmp/aweme-400701.apk
    adb -s d861a4fa shell dumpsys package com.ss.android.ugc.aweme --user 999 | grep -E "installerPackageName|versionCode"
    ```
-   局限（已实测）：**adb 切不过去**——`am switch-user 999` 返回 `Error: Failed to switch to user 999`（MIUI 第二空间由 `com.xiaomi.subscreencenter` 自管）。登录提交必须由人在第二空间里完成。
+   局限（2026-11-12 已澄清并已完成）：`user 999` 不是能分身前台的「第二空间」——`dumpsys user` 显示其 `Type: android.os.usertype.profile.CLONE`（`parentId=0`、`PROFILE`），是**应用双开**的 clone profile，所以 `am switch-user 999` 必然失败，设置里也没有分身入口（`com.xiaomi.subscreencenter` 是「妙享背屏」副屏，与分身无关）。但 clone profile 的应用与主空间**同屏运行**，`am start --user 999` 即可把它的界面拉到前台（当前用户仍是 0）。实验已于同日完成：一键登录成功为「可可儿」（抖音号 85191533219），全程无拦截弹窗 ⇒ **判据锁 C1，E1 排除**，详见 [`evidence/douyin-onekey-a2b/c-e-discriminator-clone-profile-20261112.md`](evidence/douyin-onekey-a2b/c-e-discriminator-clone-profile-20261112.md)。
 
 2. **低侵入**：覆盖安装到 user 0（`adb install -r --no-incremental`），数据保留、版本相同、无降级。
    代价：user 0 的 `installer` 从 `com.xiaomi.market` 变成 `null`，且**只能靠重装自小米商店恢复**。
@@ -199,7 +199,8 @@
 | native-login-entry-control | 同上「有效实测」节 | 断言 4 |
 | container-uid-forensics / single-instance-container-login | 同上 | 断言 5（C 平面实测） |
 | upgrade-install-boundary / v49-install-permission-e2e | [`evidence/douyin-onekey-a2b/upgrade-install-boundary-20261112.md`](evidence/douyin-onekey-a2b/upgrade-install-boundary-20261112.md) | §3 旁证 |
-| c-vs-e-discriminator-stage1 | [`evidence/douyin-onekey-a2b/c-e-discriminator-stage1-20261112.md`](evidence/douyin-onekey-a2b/c-e-discriminator-stage1-20261112.md) | §4.6 缺格**已造出**（第二空间装成、uid `99910327`、`installer=null`）；登录提交待人在第二空间执行 |
+| c-vs-e-discriminator-stage1 | [`evidence/douyin-onekey-a2b/c-e-discriminator-stage1-20261112.md`](evidence/douyin-onekey-a2b/c-e-discriminator-stage1-20261112.md) | §4.6 缺格**已造出**（uid `99910327`、`installer=null`） |
+| c-vs-e-discriminator-clone-profile | [`evidence/douyin-onekey-a2b/c-e-discriminator-clone-profile-20261112.md`](evidence/douyin-onekey-a2b/c-e-discriminator-clone-profile-20261112.md) | §4.6 判决**已完成**：同一 APK（`installer=null`）在真实用户环境一键登录成功、无弹窗 ⇒ 判据锁 C1，E1 排除 |
 | c2-maps-in-guest | [`evidence/douyin-onekey-a2b/c2-maps-in-guest-20261112.md`](evidence/douyin-onekey-a2b/c2-maps-in-guest-20261112.md) | 断言 5（C2 判决 ❌：6021 条映射中 `tripoder` 0 次） |
 
 > 反向阅读顺序：先看本文 §4 拿到结论，需要复核时按上表回到证据文档；证据文档里的原始测量一律保留，被推翻的结论已就地标注「已作废」。
