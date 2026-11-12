@@ -41,6 +41,7 @@
 | [guest-provenance-capability-matrix.md](guest-provenance-capability-matrix.md) | **P2 来源能力矩阵与产品降级**：P0/P1/P2 三级判定、需官方来源的能力（一键登录/支付/Play Integrity）明确不支持、登录路径降级文案、直通模式的可行性结论（不可行）与对外承诺清单。 |
 | [douyin-risk-control-strategy-analysis-20261112.md](douyin-risk-control-strategy-analysis-20261112.md) | **抖音风控全维度分析与最终结论**：三段式 block 协议（上行组参→下行 `block_mode`/`copywriting`→客户端渲染回执）、五个检测平面（来源事实/包本体/运行环境/设备账号/服务端分发记录）逐条判决与证据强度分档、可引用的 5 条断言与结论边界。 |
 | [guest-alternative-login-paths-20261112.md](guest-alternative-login-paths-20261112.md) | **替代登录路径评估**：T1（容器内用抖音客户端）/ T2（拿抖音用户身份）两目标拆分；原生引导（A，可行）、官方 Web 版（B，可行待实测）、开放平台 OAuth（C，需资质）、会话注入（D，不做）的判定、成本与推荐顺序。 |
+| [code-snapshot-scope-20261112.md](code-snapshot-scope-20261112.md) | **代码快照提交范围清点**：三种范围的精确文件清单（推荐 9 文件）、工作树实况、凭据/敏感数据扫描结果与「绝不能进历史」的路径清单、`reportMaps()` 探针的常量开关取舍。 |
 | [evidence/douyin-onekey-a2b/README.md](evidence/douyin-onekey-a2b/README.md) | **原生 vs 容器 A/B 举证表**：真机原生安装七事实实测（installer=`com.xiaomi.market`）、容器门面改造前/后逐列对照、复现命令。 |
 
 ---
