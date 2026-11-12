@@ -31,10 +31,13 @@ final class RuntimeReceiverProxy extends BroadcastReceiver {
             success=true;
         }catch(RuntimeException|Error error){failure=error;throw error;
         }finally{
-            // goAsync clears the guest's token. Propagate that exact state so
-            // Android never finishes an asynchronous delivery prematurely.
+            // The platform leaves a finished PendingResult installed on the receiver: measured on this device
+            // (control-b8c6edfb45981cd5, platform-accepts-set-result-data-after-delivery=accepted), a receiver
+            // reference the guest kept still answers setResultData 250ms after the delivery returned. Clearing it
+            // here created a state the platform never creates, and 微博's PushService died in its own pool thread
+            // on exactly that (BroadcastReceiver.checkSynchronousHint, 2026-11-13). A goAsync hand-off is the only
+            // state that clears it, and the guest does that itself.
             ComponentFrameworkAccess.pendingResult(this,ComponentFrameworkAccess.pendingResult(guest));
-            ComponentFrameworkAccess.pendingResult(guest,null);
             if(entered)try{delivery.after(guest,success);}catch(RuntimeException|Error acknowledgement){
                 if(failure==null)throw acknowledgement;
                 if(failure!=acknowledgement)failure.addSuppressed(acknowledgement);

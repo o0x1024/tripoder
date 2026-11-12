@@ -28,6 +28,48 @@ public final class BroadcastResolutionIntegration extends ControlTestBase {
         IntentFilter actionless=new IntentFilter();actionless.addDataType("text/plain");
         compare("actionless-mime-filter",actionless,new Intent().setType("text/plain"),true);
         facadeContract();
+        pendingResultLifetime();
+    }
+    /** Platform-parity judgement for the ordered-broadcast wall (微博 PushService: setResultData on a pool thread after
+     *  onReceive returned → IllegalStateException "Call while result is not pending"). A guest only survives that if the
+     *  platform leaves the receiver's pending result in place after the delivery returns. Measure the real platform here
+     *  before claiming the runtime dropped a platform fact. */
+    private void pendingResultLifetime()throws Exception{
+        Object[] plain=probeResultData("plain",false);
+        Object[] ordered=probeResultData("ordered",true);
+        check("set-result-data-accepted-during-delivery","accepted".equals(plain[0]),plain[0]);
+        check("platform-accepts-set-result-data-after-delivery","accepted".equals(plain[1]),plain[1]);
+        check("ordered-set-result-data-accepted-during-delivery","accepted".equals(ordered[0]),ordered[0]);
+        check("platform-accepts-ordered-set-result-data-after-delivery","accepted".equals(ordered[1]),ordered[1]);
+    }
+    /** Returns {answer inside onReceive, answer 250ms after the delivery returned}. A guest that keeps the receiver
+     *  reference and sets result data later (微博 PushService) only survives when the second answer is "accepted". */
+    private Object[] probeResultData(String name,boolean ordered)throws Exception{
+        Context context=getTargetContext();
+        String action=enginePackage()+".TEST_RESULTDATA_"+name.toUpperCase(java.util.Locale.ROOT)+"."+run;
+        CountDownLatch delivered=new CountDownLatch(1);
+        String[] inside=new String[1];
+        BroadcastReceiver receiver=new BroadcastReceiver(){
+            @Override public void onReceive(Context c,Intent intent){
+                inside[0]=answer(this,"inside");
+                delivered.countDown();
+            }
+        };
+        String after;
+        context.registerReceiver(receiver,new IntentFilter(action),Context.RECEIVER_NOT_EXPORTED);
+        try{
+            Intent intent=new Intent(action).setPackage(context.getPackageName());
+            if(ordered)context.sendOrderedBroadcast(intent,null,null,null,0,null,null);
+            else context.sendBroadcast(intent);
+            delivered.await(5,TimeUnit.SECONDS);
+            Thread.sleep(250);
+            after=answer(receiver,"after");
+        }finally{context.unregisterReceiver(receiver);}
+        return new Object[]{inside[0],after};
+    }
+    private static String answer(BroadcastReceiver receiver,String probe){
+        try{receiver.setResultData(probe);return "accepted";}
+        catch(RuntimeException error){return error.getClass().getSimpleName()+":"+error.getMessage();}
     }
     /** The facade exception contract: only an answer the platform itself gives may reach a guest caller, so every internal
      *  limitation is reduced instead of raised. A guest process that dies here is a runtime defect reported as an

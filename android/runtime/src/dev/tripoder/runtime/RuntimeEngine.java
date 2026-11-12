@@ -13,6 +13,18 @@ import org.json.JSONObject;
 
 /** One immutable application identity per process. Not a hostile-code security sandbox. */
 public final class RuntimeEngine {
+    /** The only answers the platform gives a caller whose activity cannot be started: ActivityNotFoundException (the
+     *  target does not exist for this guest) or SecurityException. Every internal refusal - an admission fence such as
+     *  RECOVERY_SCOPE_UNKNOWN, capacity, an unconfirmed delivery - must be reduced to the former instead of escaping as
+     *  the runtime's own invariant: 微博's 同意并登录 died in the main process on exactly that
+     *  (RuntimeSelfHookActivities.routing -> RuntimeEngine.route -> RuntimeWire.call, 2026-11-13). */
+    private static RuntimeException routeRefusal(Intent intent,IllegalStateException refusal){
+        String message=String.valueOf(refusal.getMessage());
+        if(message.contains("PACKAGE_NOT_IN_SPACE"))return new ActivityNotFoundException("PACKAGE_NOT_IN_SPACE:"+intent.getComponent().getPackageName());
+        if(RuntimeFacadeContract.platformAnswer(refusal))return refusal;
+        RuntimeFacadeContract.drop("ACTIVITY_ROUTE_REFUSED",refusal);
+        return new ActivityNotFoundException("ACTIVITY_ROUTE_REFUSED:"+message);
+    }
     public static volatile RuntimeEngine current;
     public static volatile boolean adapterReady;
     public final Context host;
@@ -23,6 +35,7 @@ public final class RuntimeEngine {
     final String artifactCanonicalDirectory;
     final String dataCanonicalDirectory;
     final RuntimeExecutionCode executionCode;
+    final RuntimePublishedNativeCode.Verified publishedNativeCode;
     final RuntimeSharedLibraries sharedLibraries;
     final RuntimeStorage storage;
     final RuntimeHookBridge hooks;
@@ -54,6 +67,7 @@ public final class RuntimeEngine {
     final RuntimeJobScheduler jobScheduler=new RuntimeJobScheduler(this);
     final RuntimeJobs jobs=new RuntimeJobs(this);
     final RuntimePendingIntents pendingIntents=new RuntimePendingIntents(this);
+    final RuntimeExternalServices externalServices=new RuntimeExternalServices(this);
     final RuntimeAlarms alarms=new RuntimeAlarms(this);
     final RuntimeServices services=new RuntimeServices(this);
     final RuntimeProviders providers;
@@ -77,6 +91,7 @@ public final class RuntimeEngine {
     final RuntimeWebView webView=new RuntimeWebView(this);
     final RuntimePackageContexts packageContexts=new RuntimePackageContexts(this);
     final Set<String> requestedPermissions;
+    final RuntimePackageVisibility packageVisibility;
     final RuntimeReceivers receivers=new RuntimeReceivers(this);
     private final Map<Activity,String[]> callbacks=new java.util.IdentityHashMap<>();
     private final Map<Activity,Intent> visibleIntents=new java.util.IdentityHashMap<>();
@@ -126,12 +141,17 @@ public final class RuntimeEngine {
     public RuntimeEngine(Context host,Bundle input)throws Exception {
         if(current!=null)throw new IllegalStateException("PROCESS_IDENTITY_IMMUTABLE");
         RuntimePlatform.requireValidated();
+        RuntimeDeviceIdentity.apply(input.getString(RuntimeDeviceProfileSettings.WIRE_KEY));
         startupDeadlineElapsed=input.getLong("startupDeadlineElapsed");
         if(RuntimeStartupDeadline.remaining(startupDeadlineElapsed,SystemClock.elapsedRealtime())==0)throw new IllegalStateException("PROCESS_START_TIMEOUT_UNKNOWN");
         this.host=host;installGeneration=RuntimeWire.required(input,"installGeneration");generation=RuntimeWire.required(input,"generation");packageName=RuntimeWire.required(input,"package");processName=RuntimeWire.required(input,"processName");
+        RuntimeExitHistory.stamp(host,generation,RuntimeWire.required(input,"dataId"));
         android.os.Bundle diagnostics=host.getPackageManager().getApplicationInfo(host.getPackageName(),PackageManager.GET_META_DATA).metaData;
+        if(diagnostics==null||diagnostics.getBoolean("tripoder.diagnostics.exitDossier",true)){
+            dev.tripoder.selfhook.ApplicationAdapter.setJavaCrashStream(RuntimeExitDossiers.openGuestJavaCrashStream(host,generation));
+        }
         traceStartup=diagnostics!=null&&diagnostics.getBoolean("tripoder.diagnostics.startup",false);
-        traceExit=traceStartup;
+        traceExit=diagnostics!=null&&diagnostics.getBoolean("tripoder.diagnostics.faults",false);
         exitTracePath=traceExit?new File(host.getExternalFilesDir(null),"native-exit-"+generation).toString():null;
         android.util.Log.i("TripoderBoot","exitTracePath="+exitTracePath);
         firstInstallTime=input.getLong("firstInstallTime");lastUpdateTime=input.getLong("lastUpdateTime");
@@ -157,40 +177,68 @@ public final class RuntimeEngine {
             if(!signers.equals(artifacts.signerDigests))throw new SecurityException("PACKAGE_SIGNING_METADATA_MISMATCH");
         }
         packageArchive=pkg;
+        Bundle nativeCodeWire=input.getBundle("nativeCode");
+        publishedNativeCode=nativeCodeWire==null?null:RuntimePublishedNativeCode.verify(RuntimePublishedNativeCode.resolve(nativeCodeWire,artifacts),RuntimeWire.required(input,"space"),packageName,installGeneration,RuntimeWire.required(input,"descriptorSha"));
         requestedPermissions=pkg.requestedPermissions==null?Set.of():Set.copyOf(Arrays.asList(pkg.requestedPermissions));
+        packageVisibility=RuntimePackageVisibility.from(artifacts,requestedPermissions);
         // ApplicationInfo's copy constructor copies its own fields but not PackageItemInfo.metaData. The archive
         // metadata is part of the verified manifest an installed application receives from PackageManager, so carry it
         // explicitly; otherwise every guest reading its own <meta-data> sees null (Alipay's logging key, for example).
-        info=new ApplicationInfo(pkg.applicationInfo);info.metaData=pkg.applicationInfo.metaData==null?null:new android.os.Bundle(pkg.applicationInfo.metaData);info.sourceDir=apk.getCanonicalPath();info.publicSourceDir=info.sourceDir;info.dataDir=data.toString();info.deviceProtectedDataDir=new File(data,"device-protected").toString();        File libDir=new File(apk.getParentFile(),"lib");
+        // The guest must only ever see its own namespace. Android defines
+        // getDataDir() == getApplicationInfo().dataDir and getFilesDir() == new File(getDataDir(),"files"),
+        // and applications size path buffers from that contract. Handing over
+        // /data/user/0/<host>/runtime/data/<space>/<pkg>/<uuid> breaks the contract (three times longer
+        // than the real path) and leaks the container's package, space and instance id.
+        // path_policy.c already resolves data_paths[3] = /data/user/0/<pkg>, so the logical
+        // name is openable by native and Java callers alike; the physical path stays host-internal.
+        String logicalDataDir="/data/user/0/"+packageName;
+        // Device-protected storage is a SECOND STORAGE DOMAIN of the same application, not a
+        // subdirectory of the credential-protected one. Android names it /data/user_de/0/<pkg>;
+        // inventing "<dataDir>/device-protected" told the guest about a layout that does not exist
+        // on any real device, so anything that sized a buffer or built a cache path from it landed
+        // on a directory nothing ever created. GuestPackageManager reports the real layout, and the
+        // two must agree: one field, one answer.
+        //
+        // It stays inside the logical namespace for the same reason dataDir does - the guest must
+        // never see the host instance path - so path_policy.c resolves this prefix to a directory
+        // inside the instance root, keeping one tree that healing can move atomically.
+        String logicalDeviceProtectedDir="/data/user_de/0/"+packageName;
+        info=new ApplicationInfo(pkg.applicationInfo);info.metaData=pkg.applicationInfo.metaData==null?null:new android.os.Bundle(pkg.applicationInfo.metaData);info.sourceDir=apk.getCanonicalPath();info.publicSourceDir=info.sourceDir;info.dataDir=logicalDataDir;info.deviceProtectedDataDir=logicalDeviceProtectedDir;        File libDir=new File(apk.getParentFile(),"lib");
         File nativeDir=new File(libDir,"arm64");
         if(!nativeDir.isDirectory())nativeDir=new File(libDir,"arm64-v8a");
         if(!nativeDir.isDirectory())nativeDir=new File(libDir,"arm");
         if(!nativeDir.isDirectory())nativeDir=new File(libDir,"armeabi-v7a");
         if(!nativeDir.isDirectory())nativeDir=libDir;
         info.nativeLibraryDir=nativeDir.getCanonicalPath();info.uid=android.os.Process.myUid();GuestPackageManager.setPrimaryCpuAbi(info,"arm64-v8a");
+        // The loader and the guest-visible identity must name the same verified system publication.
+        if(publishedNativeCode!=null)publishedNativeCode.metadata(info);
         current=this;
         executionCode=RuntimeExecutionCode.prepare(artifacts,data,installGeneration);
         boot("executionCode",bootStart);
         applicationInfo=GuestPackageManager.copyApplicationInfo(info,true);
+        // Snapshot the same projection after its engine and execution-code dependencies exist.
+        IdentitySnapshot.log(this);
         // Establish the code namespace before ART/linker see the first guest path.
-        System.loadLibrary("tripoderselfhook");boot("loadLibrary",bootStart);RuntimeSelfHookStorage.install();boot("nativeStorage",bootStart);
+        System.loadLibrary("tripoderselfhook");boot("loadLibrary",bootStart);RuntimeSelfHookStorage.install();RuntimeSelfHookStorage.setProcessNameNative(processName);boot("nativeStorage",bootStart);
         for(ActivityInfo activity:RuntimeActivityIndex.create(artifacts,pkg).values())if(processName.equals(activity.processName))activityInfos.put(activity.name,activity);
         boot("activityIndex",bootStart);
         ClassLoader parent=host.getClassLoader().getParent()!=null?host.getClassLoader().getParent():ClassLoader.getSystemClassLoader().getParent();
         // Declared platform dependencies use the same pinned boot-member registry
         // as the later managed hooks; resolve it before reconstructing their loader.
         RuntimeFixedPreparation.framework();boot("fixedFramework",bootStart);
-        // info.nativeLibraryDir is the real, physically-populated execution copy (see
-        // RuntimeExecutionCode/ArtifactSet extraction); applicationInfo.nativeLibraryDir is the
-        // cosmetic, guest-visible synthetic path the guest sees when it inspects its own
-        // ApplicationInfo and never exists on disk. RuntimeDexLoader.createForGuest() takes this
-        // exact value as the real linker namespace search path (via sharedLibraries.nativeSearch),
-        // so passing the synthetic one here made every guest native library unresolvable.
-        sharedLibraries=new RuntimeSharedLibraries(host.getPackageManager(),artifacts,parent,info,info.nativeLibraryDir);
+        // Prefer the authority-published system files. File-only installs retain the verified
+        // artifact directory selected before admission; neither mode changes after a load failure.
+        String nativeSearch=publishedNativeCode!=null?publishedNativeCode.search:info.nativeLibraryDir;
+        // Linker search and permission must describe the same verified publication. Apps may also
+        // extract JNI libraries through either the physical guest root or its logical Android alias.
+        var permittedPaths=new LinkedHashSet<String>();if(publishedNativeCode!=null)permittedPaths.add(publishedNativeCode.permitted);
+        permittedPaths.add(info.dataDir);permittedPaths.add(dataCanonicalDirectory);permittedPaths.add("/data/user/0/"+packageName);permittedPaths.add("/data/data/"+packageName);
+        String nativePermitted=String.join(File.pathSeparator,permittedPaths);
+        sharedLibraries=new RuntimeSharedLibraries(host.getPackageManager(),artifacts,parent,info,nativeSearch,nativePermitted);
         info.sharedLibraryFiles=sharedLibraries.files.clone();applicationInfo.sharedLibraryFiles=sharedLibraries.files.clone();
         dev.tripoder.selfhook.SharedLibraryFrameworkAccess.project(info,sharedLibraries.metadata);dev.tripoder.selfhook.SharedLibraryFrameworkAccess.project(applicationInfo,sharedLibraries.metadata);
         boot("sharedLibraries",bootStart);
-        ClassLoader defining=RuntimeDexLoader.createForGuest(artifacts,info.nativeLibraryDir,sharedLibraries.parent);
+        ClassLoader defining=RuntimeDexLoader.createForGuest(artifacts,nativeSearch,nativePermitted,sharedLibraries.parent);
         artifactLoader=defining;loader=defining;
         boot("dexLoader",bootStart);
         resources=dev.tripoder.selfhook.ResourceFrameworkAccess.forLoader(host.getPackageManager().getResourcesForApplication(applicationInfo),defining);
@@ -203,7 +251,7 @@ public final class RuntimeEngine {
         boot("infrastructure",bootStart);
         broker=input.getBinder("broker");if(broker==null)throw new SecurityException("BROKER_MISSING");hooks=new RuntimeHookBridge(this,input,artifacts);current=this;
         // An old controller cannot be replaced under a still-executing guest identity.
-        broker.linkToDeath(()->android.os.Process.killProcess(android.os.Process.myPid()),0);
+        broker.linkToDeath(()->{android.util.Log.i("TripoderTrace","WORKER_KILL reason=broker-died pid="+android.os.Process.myPid());android.os.Process.killProcess(android.os.Process.myPid());},0);
         Bundle registration=auth();registration.putString("bootstrap",RuntimeWire.required(input,"bootstrap"));RuntimeWire.call(broker,RuntimeWire.REGISTER,registration);
         RuntimeExitHistory.stamp(host,generation,data.getName());
         boot("register",bootStart);
@@ -213,20 +261,26 @@ public final class RuntimeEngine {
         boot("hooks",bootStart);
         if(!adapterReady)throw new IllegalStateException("SELF_HOOK_READY_PUBLICATION_MISSING");
         installWindowSessionProxy();
-        if (Boolean.getBoolean("tripoder.debug.mainSampler")) {
+        if (traceStartup && Boolean.getBoolean("tripoder.debug.mainSampler")) {
             Thread sampler = new Thread(() -> {
                 Thread main = Looper.getMainLooper().getThread();
+                int ticks = 0;
                 while (true) {
                     try {
-                        Thread.sleep(1000);
+                        Thread.sleep(2000);
+                        ticks++;
                         StackTraceElement[] stack = main.getStackTrace();
                         if (stack != null && stack.length > 0) {
-                            StringBuilder sb = new StringBuilder();
-                            for (int i = 0; i < Math.min(stack.length, 15); i++) {
+                            StringBuilder sb = new StringBuilder(" State=" + main.getState());
+                            for (int i = 0; i < Math.min(stack.length, 25); i++) {
                                 sb.append("\n  at ").append(stack[i]);
                             }
                             android.util.Log.i("TripoderSampler", "MainThread[" + processName + "]:" + sb);
                         }
+                        int mainTid = android.os.Process.myPid();
+                        try (java.io.BufferedReader br = new java.io.BufferedReader(new java.io.FileReader("/proc/self/task/" + mainTid + "/wchan"))) {
+                            android.util.Log.i("TripoderSampler", "MainThread WCHAN: " + br.readLine());
+                        } catch (Throwable ignored) {}
                     } catch (Throwable ignored) {}
                 }
             }, "Tripoder-MainSampler");
@@ -239,7 +293,11 @@ public final class RuntimeEngine {
             Thread startupEvidence=traceStartup?RuntimeStartupDiagnostics.watchStartup(()->application==null?"APPLICATION_CONSTRUCTION_OR_INITIALIZATION":applicationAttached?"ON_CREATE_OR_PUBLICATION":"APPLICATION_ATTACH"):null;
             try{
             RuntimeProcessIdentity.establish(processName);
+            updateActivityThreadBoundApplication(processName, applicationInfo);
             android.util.Log.i("TripoderBoot","PROCESS_IDENTITY_READY");
+            IdentitySnapshot.scheduleMapsAudit();
+            IdentitySnapshot.scheduleSyscallAudit(this);
+            IdentitySnapshot.scheduleBadgerSurface(this, loader);
             Thread.currentThread().setContextClassLoader(loader);
             activityManager.facade();
             // Explicit startup tools run after real process identity is established,
@@ -269,6 +327,9 @@ public final class RuntimeEngine {
             logMyAppDiag("STEP2_AFTER_CREATE_APP_CTX", application);
             Context guestContext=GuestContext.application(logical,this);
             logMyAppDiag("STEP3_BOUND_PACKAGE", application);
+            // Second half of the identity record: the same install facts read through the object the guest now
+            // holds, next to what the platform holds for the name. The first half runs before any facade exists.
+            IdentitySnapshot.logFacade(this,guestContext);
             if (Boolean.getBoolean("tripoder.debug.startupDetails")) try {
                 String src = guestContext.getApplicationInfo().sourceDir;
                 File f = new File(src);
@@ -286,9 +347,11 @@ public final class RuntimeEngine {
             }
             RuntimeSelfHookStorage.faultStageNative(2); // Application.attach.
             updateActivityThreadApplication(application);
+            android.util.Log.i("TripoderBoot","STARTING attachApplication: "+application.getClass().getName());
             try{RuntimeBridge.attachApplication(application,guestContext);}
             catch(RuntimeException|Error failure){android.util.Log.e("TripoderLoader","attach-failed published="+RuntimeSelfHookApplication.loaderChain(RuntimeSelfHookApplication.publishedLoader()));RuntimeStartupDiagnostics.failure("application-attach",failure);throw failure;}
             finally{RuntimeBridge.observeApplicationOwnership("after-attach",host,application);packages.traceEndpoints("AFTER_APPLICATION_ATTACH");if(codeProbes!=null)codeProbes.stage("APPLICATION_ATTACHED");}
+            android.util.Log.i("TripoderBoot","FINISHED attachApplication: "+application.getClass().getName());
             applicationAttached=true;
             RuntimeSelfHookStorage.faultStageNative(3); // Providers and publication before onCreate.
             updateActivityThreadApplication(application);
@@ -339,6 +402,7 @@ public final class RuntimeEngine {
                 published.registerActivityLifecycleCallbacks((RuntimeApplication)host);
             }
             RuntimeBridge.checkApplicationOwnership(host,application);
+            dev.tripoder.selfhook.ApplicationAdapter.ensureUncaughtHandler();
             recordStart("READY");ready=true;event("application-ready");return null;
             }catch(Exception|Error error){try{recordStart("FAILED");}catch(Exception receipt){error.addSuppressed(receipt);}throw error;}
             finally{if(startupEvidence!=null)startupEvidence.interrupt();}
@@ -369,10 +433,25 @@ public final class RuntimeEngine {
 
     /** Component preparation never waits for Application.onCreate to finish on another process. */
     public void startApplication()throws Exception{
+        android.util.Log.i("TripoderBoot","startApplication ENTER");
         awaitConstructed();
+        android.util.Log.i("TripoderBoot","startApplication awaitConstructed done");
         if(Looper.myLooper()==Looper.getMainLooper())applicationStart.run();else new Handler(Looper.getMainLooper()).post(applicationStart);
-        try{applicationStart.get(RuntimeStartupDeadline.remaining(startupDeadlineElapsed,SystemClock.elapsedRealtime()),java.util.concurrent.TimeUnit.MILLISECONDS);}
-        catch(java.util.concurrent.TimeoutException timeout){RuntimeStartupDiagnostics.timeout();throw timeout;}
+        try{
+            long remaining=RuntimeStartupDeadline.remaining(startupDeadlineElapsed,SystemClock.elapsedRealtime());
+            android.util.Log.i("TripoderBoot","startApplication waiting for applicationStart, remaining="+remaining);
+            applicationStart.get(remaining,java.util.concurrent.TimeUnit.MILLISECONDS);
+            android.util.Log.i("TripoderBoot","startApplication applicationStart.get SUCCEEDED");
+        }
+        catch(java.util.concurrent.TimeoutException timeout){
+            android.util.Log.e("TripoderBoot","startApplication TIMEOUT",timeout);
+            RuntimeStartupDiagnostics.timeout();
+            throw timeout;
+        }
+        catch(Throwable t){
+            android.util.Log.e("TripoderBoot","startApplication FAILED",t);
+            throw t;
+        }
     }
     static void awaitConstructed()throws Exception{
         long deadline=RuntimeStartupDeadline.after(SystemClock.elapsedRealtime());RuntimeEngine engine;
@@ -412,7 +491,6 @@ public final class RuntimeEngine {
      * physical component this process owns. Returns null when the record carries no lease of this generation.
      */
     private final Map<String,String> thinTicketStubs=new java.util.concurrent.ConcurrentHashMap<>();
-    private final Set<Activity> thinControllerRoots=Collections.newSetFromMap(new java.util.IdentityHashMap<>());
     public Intent leasedRecord(Intent intent)throws Exception{
         if(intent==null)return null;String ticket=intent.getStringExtra("tripoder.ticket");if(ticket==null)return null;
         {
@@ -488,86 +566,93 @@ public final class RuntimeEngine {
         Intent intent=permit.physical,visible=permit.visible;String activityName=RuntimeWire.required(intent.getExtras(),"tripoder.component");
         String callback=intent.getStringExtra("tripoder.callback"),op=intent.getStringExtra("tripoder.operation");
         if(callback!=null)callbacks.put(activity,new String[]{callback,op});
-        if(!intent.getBooleanExtra("tripoder.thinRoute",false))thinControllerRoots.add(activity);
         activityInstances.put(activity,new ActivityInstance(permit.ticket,permit.instance,permit.physical.getComponent()));
         activityCallers.initial(activity,permit.caller);
         ActivityInfo admittedInfo=new ActivityInfo(activityInfos.get(activityName));admittedInfo.enabled=true; // The creation permit admitted this exact enabled component.
         activityMetadata.put(activity,admittedInfo);visibleIntents.put(activity,visible);
     }
-    public void activityAttached(Activity activity){taskPresentation.attached(activity);if(!thinControllerRoots.contains(activity))return;try{Bundle b=activityAuth(activity);b.putInt("taskId",activity.getTaskId());RuntimeWire.call(broker,RuntimeWire.ACTIVITY_ATTACHED,b);}catch(Exception error){throw new IllegalStateException("ACTIVITY_ATTACH_ACK_FAILED",error);}}
+    public void activityAttached(Activity activity){dev.tripoder.selfhook.ApplicationAdapter.ensureUncaughtHandler();taskPresentation.attached(activity);try{Bundle b=activityAuth(activity);b.putInt("taskId",activity.getTaskId());RuntimeWire.call(broker,RuntimeWire.ACTIVITY_ATTACHED,b);}catch(Exception error){throw new IllegalStateException("ACTIVITY_ATTACH_ACK_FAILED",error);}}
     private final java.util.Set<Activity> createdActivities=java.util.Collections.synchronizedSet(java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>()));
     public void activityCreated(Activity activity){
         if(!createdActivities.add(activity))return;
+        // Every owned Activity, including an in-process start with NEW_TASK,
+        // reports the task Android actually attached. A source task is no proof
+        // of the destination's task identity.
+        try{RuntimeWire.call(broker,RuntimeWire.ACTIVITY_CREATED,activityAuth(activity));}
+        catch(Exception error){throw new IllegalStateException("ACTIVITY_CREATE_ACK_FAILED",error);}
         applyGuestWindowInsetsIfNeeded(activity);
-        prewarmGameLibrariesIfNeeded(activity);
-        return;
+        applyGuestRequestedOrientation(activity);
     }
-    private void prewarmGameLibrariesIfNeeded(Activity activity){
-        if(activity==null)return;
-        String pkg=activity.getPackageName();
-        if(!"com.tencent.tmgp.sgame".equals(pkg))return;
-        android.content.pm.ApplicationInfo appInfo=activity.getApplicationInfo();
-        if(appInfo==null||appInfo.nativeLibraryDir==null)return;
-        final String libDir=appInfo.nativeLibraryDir;
-        final Class<?> guestCaller=activity.getClass();
-        Thread prewarm=new Thread(()->{
-            try{
-                long t0=android.os.SystemClock.uptimeMillis();
-                android.util.Log.i("TripoderSGame","Background pre-warming Unity libraries for "+guestCaller+" from "+libDir);
-                java.lang.reflect.Method load0=Runtime.class.getDeclaredMethod("load0",Class.class,String.class);
-                load0.setAccessible(true);
-                String[] libs={"libLightProfiler.so","libunity.so","libil2cpp.so"};
-                for(String lib:libs){
-                    java.io.File f=new java.io.File(libDir,lib);
-                    if(f.exists()){
-                        long tLib=android.os.SystemClock.uptimeMillis();
-                        try{
-                            load0.invoke(Runtime.getRuntime(),guestCaller,f.getAbsolutePath());
-                            android.util.Log.i("TripoderSGame","Pre-warmed "+lib+" in "+(android.os.SystemClock.uptimeMillis()-tLib)+"ms");
-                        }catch(Throwable t){
-                            android.util.Log.w("TripoderSGame","Pre-warm of "+lib+" skipped: "+t.getMessage());
-                        }
-                    }
-                }
-                android.util.Log.i("TripoderSGame","Completed background pre-warm in "+(android.os.SystemClock.uptimeMillis()-t0)+"ms");
-            }catch(Throwable t){
-                android.util.Log.w("TripoderSGame","Pre-warm worker exception: "+t.getMessage());
-            }
-        },"Tripoder-UnityPrewarm");
-        prewarm.setPriority(Thread.NORM_PRIORITY);
-        prewarm.start();
-    }
+    /* A legacy guest (targetSdk < 35) is laid out by the platform inside the system bars it does not ask
+     * to draw behind: a window that requests only LAYOUT_FULLSCREEN keeps the navigation bar excluded
+     * (appBounds 0,144-1208,2564; configuration h807dp on this 1208x2624 device), so its bottom bar ends
+     * up above the 60px gesture inset. This shell package targets 36, so the platform forces
+     * EDGE_TO_EDGE_ENFORCED on every guest window, stops insetting the decor and hands the guest a
+     * full-height (h875dp) configuration. A legacy guest then measures its own bottom bar against the
+     * physical screen edge - Douyin's tab bar landed 55px too low, inside the gesture area. Restore the
+     * legacy content rect edge by edge: keep an edge the guest explicitly asked to draw behind, and
+     * exclude every edge it did not. */
     private void applyGuestWindowInsetsIfNeeded(Activity activity){
         if(info==null||info.targetSdkVersion<=0||info.targetSdkVersion>=35)return;
         android.view.Window window=activity.getWindow();if(window==null)return;
-        // Legacy apps can already draw behind the system bars and handle their
-        // own insets without hiding either bar. Do not install a second listener
-        // on their content root (or replace one supplied by the application).
-        if(guestOwnsWindowInsets(window))return;
         android.view.View content=window.findViewById(android.R.id.content);if(content==null)return;
         int left=content.getPaddingLeft(),top=content.getPaddingTop(),right=content.getPaddingRight(),bottom=content.getPaddingBottom();
         content.setOnApplyWindowInsetsListener((view,windowInsets)->{
             android.view.Window win=activity.getWindow();
-            // A window can switch to immersive layout after onCreate. Undo only
-            // our compatibility padding, retaining the application's own padding.
-            if(win!=null&&guestOwnsWindowInsets(win))view.setPadding(left,top,right,bottom);
-            else{
-                android.graphics.Insets bars=windowInsets.getInsets(android.view.WindowInsets.Type.systemBars()|android.view.WindowInsets.Type.displayCutout());
-                view.setPadding(left+bars.left,top+bars.top,right+bars.right,bottom+bars.bottom);
-            }
+            // A window can switch to immersive layout after onCreate. Re-decide every edge on each
+            // dispatch and undo only our compatibility padding, retaining the application's own.
+            if(win==null){view.setPadding(left,top,right,bottom);return windowInsets;}
+            boolean statusBar=drawsBehindStatusBar(win),navigationBar=drawsBehindNavigationBar(win);
+            if(statusBar&&navigationBar){view.setPadding(left,top,right,bottom);return windowInsets;}
+            android.graphics.Insets bars=windowInsets.getInsets(android.view.WindowInsets.Type.systemBars());
+            android.graphics.Insets cutout=windowInsets.getInsets(android.view.WindowInsets.Type.displayCutout());
+            view.setPadding(left+Math.max(bars.left,cutout.left),
+                statusBar?top:top+Math.max(bars.top,cutout.top),
+                right+Math.max(bars.right,cutout.right),
+                navigationBar?bottom:bottom+Math.max(bars.bottom,cutout.bottom));
             return windowInsets;
         });
         content.requestApplyInsets();
     }
-    private static boolean guestOwnsWindowInsets(android.view.Window window){
+    /**
+     * The platform resolves the window direction from the Activity record it attached, and that record is our shell:
+     * every slot is declared without a screenOrientation, so a guest that asks for landscape - a game's
+     * sensorLandscape, say - is laid out in whichever direction the device already had and its declaration is silently
+     * lost. Report the guest's declaration on the record the platform actually attached. The shell lists orientation
+     * and screenSize as configuration changes, so the platform delivers the change as onConfigurationChanged instead
+     * of a destroy/recreate cycle, which for a Unity guest would kill its process. ATMS keeps the last request, so
+     * the comparison keeps this idempotent and the resume re-assert free once the platform took the request.
+     */
+    private void applyGuestRequestedOrientation(Activity activity){
+        ActivityInfo declared=activityMetadata.get(activity);
+        if(declared==null||declared.screenOrientation==ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)return;
+        if(activity.getRequestedOrientation()==declared.screenOrientation)return;
+        activity.setRequestedOrientation(declared.screenOrientation);
+    }
+    /** The guest asked the platform to lay it out under the status bar (its own content then positions
+     * itself with the top inset). Natively that is LAYOUT_FULLSCREEN/FLAG_FULLSCREEN; the navigation bar
+     * is a separate edge and stays excluded unless the guest asks for that one too. */
+    private static boolean drawsBehindStatusBar(android.view.Window window){
         android.view.WindowManager.LayoutParams attrs=window.getAttributes();
         int visibility=attrs.systemUiVisibility|window.getDecorView().getSystemUiVisibility();
         return (attrs.flags&android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN)!=0
-            ||(visibility&(android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN|android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION))!=0;
+            ||(visibility&android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN)!=0;
     }
-    public void activityResumed(Activity activity){return;}
+    /** Immersive windows (games, players) ask for the navigation bar edge as well and apply their own
+     * insets; only those keep an unpadded content root. */
+    private static boolean drawsBehindNavigationBar(android.view.Window window){
+        android.view.WindowManager.LayoutParams attrs=window.getAttributes();
+        int visibility=attrs.systemUiVisibility|window.getDecorView().getSystemUiVisibility();
+        return (attrs.flags&android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)!=0
+            ||(visibility&android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION)!=0;
+    }
+    public void activityResumed(Activity activity){
+        try{RuntimeWire.call(broker,RuntimeWire.ACTIVITY_RESUMED,activityAuth(activity));}
+        catch(Exception error){throw new IllegalStateException("ACTIVITY_RESUME_ACK_FAILED",error);}
+        applyGuestRequestedOrientation(activity);
+    }
     public void activityDestroying(Activity activity){destructionTasks.put(activity,activity.getTaskId());}
-    public void activityDestroyed(Activity activity){try{Integer task=destructionTasks.remove(activity);if(task==null)throw new IllegalStateException("ACTIVITY_PRE_DESTROY_MISSING");Bundle b=activityAuth(activity);boolean reportDestroy=thinControllerRoots.remove(activity)||callbacks.containsKey(activity);if(reportDestroy){b.putBoolean("finishing",activity.isFinishing());b.putInt("taskId",task);RuntimeWire.call(broker,RuntimeWire.ACTIVITY_DESTROYED,b);}if(activity.isFinishing())pendingResults.remove(b.getString("ticket"));callbacks.remove(activity);visibleIntents.remove(activity);activityInstances.remove(activity);activityMetadata.remove(activity);activityCallers.remove(activity);returned.remove(activity);createdActivities.remove(activity);}catch(Exception error){throw new IllegalStateException("ACTIVITY_DESTROY_ACK_FAILED",error);}}
+    public void activityDestroyed(Activity activity){try{Integer task=destructionTasks.remove(activity);if(task==null)throw new IllegalStateException("ACTIVITY_PRE_DESTROY_MISSING");Bundle b=activityAuth(activity);b.putBoolean("finishing",activity.isFinishing());b.putInt("taskId",task);RuntimeWire.call(broker,RuntimeWire.ACTIVITY_DESTROYED,b);if(activity.isFinishing())pendingResults.remove(b.getString("ticket"));callbacks.remove(activity);visibleIntents.remove(activity);activityInstances.remove(activity);activityMetadata.remove(activity);activityCallers.remove(activity);returned.remove(activity);createdActivities.remove(activity);}catch(Exception error){throw new IllegalStateException("ACTIVITY_DESTROY_ACK_FAILED",error);}}
     private Bundle activityAuth(Activity activity){ActivityInstance identity=activityInstances.get(activity);if(identity==null)throw new SecurityException("ACTIVITY_INSTANCE_MISSING");Bundle b=auth();b.putString("ticket",identity.ticket());b.putString("instance",identity.instance());b.putInt("taskId",activity.getTaskId());return b;}
     public ActivityInfo activityInfo(Activity activity){ActivityInfo declared=activityMetadata.get(activity);if(declared==null)throw new SecurityException("ACTIVITY_NOT_DECLARED_IN_PROCESS");return new ActivityInfo(declared);}
     public int theme(Activity activity){return activityInfo(activity).getThemeResource();}
@@ -593,9 +678,10 @@ public final class RuntimeEngine {
         {intent=new Intent(intent);digest="thin";}
         Bundle request=activityAuth(caller);request.putString("package",intent.getComponent().getPackageName());request.putString("component",intent.getComponent().getClassName());request.putString("operation",UUID.randomUUID().toString());request.putString("requestDigest",digest);request.putBoolean("wantsResult",requestCode>=0);request.putInt("flags",intent.getFlags());
         Bundle response;
-        try{response=RuntimeWire.call(broker,RuntimeWire.ROUTE,request);}catch(IllegalStateException e){if(String.valueOf(e.getMessage()).contains("PACKAGE_NOT_IN_SPACE"))throw new ActivityNotFoundException("PACKAGE_NOT_IN_SPACE:"+intent.getComponent().getPackageName());throw e;}
+        try{response=RuntimeWire.call(broker,RuntimeWire.ROUTE,request);}catch(IllegalStateException e){throw routeRefusal(intent,e);}
         if(requestCode>=0)pending.put(requestCode,RuntimeWire.required(response,"operation"));
         String stub=RuntimeWire.required(response,"stub"),ticket=RuntimeWire.required(response,"ticket");
+        synchronized(handoffs){if(deliveryIntents.size()>64)deliveryIntents.clear();deliveryIntents.put(ticket,new Intent(intent));}
         android.util.Log.i("TripoderActivities", "ROUTING activity: caller=" + caller.getClass().getName() + " target=" + intent.getComponent().getClassName() + " stub=" + stub + " flags=0x" + Integer.toHexString(intent.getFlags()));
         thinTicketStubs.put(ticket,stub);
         Intent routed=new Intent(intent).setComponent(new ComponentName(host,stub));
@@ -615,8 +701,9 @@ public final class RuntimeEngine {
         if((intent.getFlags()&Intent.FLAG_ACTIVITY_NEW_TASK)==0)throw new android.util.AndroidRuntimeException("Calling startActivity() from outside of an Activity context requires the FLAG_ACTIVITY_NEW_TASK flag. Is this really what you want?");
         Bundle request=auth();request.putBoolean("fromContext",true);request.putString("package",intent.getComponent().getPackageName());request.putString("component",intent.getComponent().getClassName());request.putString("operation",UUID.randomUUID().toString());request.putString("requestDigest",digest);request.putBoolean("wantsResult",false);request.putInt("flags",intent.getFlags());
         Bundle response;
-        try{response=RuntimeWire.call(broker,RuntimeWire.ROUTE,request);}catch(IllegalStateException e){if(String.valueOf(e.getMessage()).contains("PACKAGE_NOT_IN_SPACE"))throw new ActivityNotFoundException("PACKAGE_NOT_IN_SPACE:"+intent.getComponent().getPackageName());throw e;}
+        try{response=RuntimeWire.call(broker,RuntimeWire.ROUTE,request);}catch(IllegalStateException e){throw routeRefusal(intent,e);}
         String stub=RuntimeWire.required(response,"stub"),ticket=RuntimeWire.required(response,"ticket");
+        synchronized(handoffs){if(deliveryIntents.size()>64)deliveryIntents.clear();deliveryIntents.put(ticket,new Intent(intent));}
         android.util.Log.i("TripoderActivities", "ROUTING context activity: target=" + intent.getComponent().getClassName() + " stub=" + stub + " flags=0x" + Integer.toHexString(intent.getFlags()));
         thinTicketStubs.put(ticket,stub);
         Intent routed=new Intent(intent).setComponent(new ComponentName(host,stub));
@@ -632,19 +719,62 @@ public final class RuntimeEngine {
         if(intent==null)return false;ComponentName component=intent.getComponent();String pkg=component!=null?component.getPackageName():intent.getPackage();
         return pkg!=null&&host.getPackageName().equals(pkg);
     }
+    /** The package that owns this process's uid: the only identity a system service accepts on a binder boundary.
+     *  It must come from the container, never from the guest application, whose own package name is projected. */
+    public String platformPackage(){
+        return host.getPackageName();
+    }
     public void activityStartResult(Object value,int result)throws Exception{
+        // The platform's verdict on a routed start, recorded so a guest Activity that never opens is a
+        // diagnosable line instead of a silent no-op.
+        if(result<0)android.util.Log.w("TripoderActivities","START_REJECTED result="+result+" target="+(value instanceof Intent?String.valueOf(((Intent)value).getComponent()):"?"));
         return;
 
     }
     public void returning(Activity activity,int resultCode,Intent result)throws Exception {
         if(returned.contains(activity))return;
         RuntimeActivityResult.require(result,activityCallers.samePackageResult(activity,packageName));
-        String[] callback=callbacks.get(activity);if(callback==null){returned.add(activity);return;} // The controller receives the same checked result shape.
+        String ticket=null;try{ticket=activityAuth(activity).getString("ticket");}catch(Throwable unregistered){}
+        String[] callback=callbacks.get(activity);if(callback==null){returned.add(activity);continueHandoff(ticket);return;} // The controller receives the same checked result shape.
         try{
             Bundle request=auth();request.putString("callback",callback[0]);request.putString("operation",callback[1]);RuntimeWire.call(broker,RuntimeWire.RESULT,request);
         }finally{
-            returned.add(activity);callbacks.remove(activity);
+            returned.add(activity);callbacks.remove(activity);continueHandoff(ticket);
         }
+    }
+    // A delivery that handed a start to the platform is continued once when the guest ends its own
+    // activity before the platform returns: the platform resumes a caller that is still in its task,
+    // so the container resumes the guest's launch instead of leaving a live process with no window.
+    private final Map<String,Intent> deliveryIntents=new HashMap<>();
+    private final Map<String,Long> handoffs=new HashMap<>();
+    private final Set<String> continuedHandoffs=new HashSet<>();
+    void noteHandoff(Activity activity){
+        String ticket;
+        try{ticket=activityAuth(activity).getString("ticket");}catch(Throwable unregistered){return;}
+        if(ticket==null)return;
+        synchronized(handoffs){if(!deliveryIntents.containsKey(ticket))return;handoffs.putIfAbsent(ticket,System.currentTimeMillis());}
+    }
+    /** An ordinary app keeps its own task while another application's activity runs and is resumed when it
+     *  finishes. A guest's delivery task belongs to the container, so a guest that ends its activity right
+     *  after the hand-off (a system declaration or consent flow that returns by relaunching the caller) would
+     *  leave the process alive with no window. Resume the launch once, as the platform would resume the caller. */
+    private void continueHandoff(String ticket){
+        if(ticket==null)return;
+        long handed;
+        synchronized(handoffs){Long at=handoffs.remove(ticket);if(at==null||!continuedHandoffs.add(ticket))return;handed=at;}
+        if(System.currentTimeMillis()-handed>20_000L)return;
+        Intent original;
+        synchronized(handoffs){original=deliveryIntents.remove(ticket);}
+        if(original==null||original.getComponent()==null)return;
+        Intent again=new Intent(original).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        new Handler(Looper.getMainLooper()).postDelayed(()->{
+            Application app=application;if(app==null)return;
+            try{
+                Intent routed=routeFromContext(again);
+                android.util.Log.i("TripoderActivities","handoff-continuation component="+again.getComponent().flattenToShortString());
+                app.startActivity(routed);
+            }catch(Throwable error){android.util.Log.w("TripoderActivities","handoff-continuation skipped: "+error);}
+        },900);
     }
     public Bundle check(Bundle input)throws Exception {Bundle b=auth();b.putString("callback",RuntimeWire.required(input,"callback"));b.putString("operation",RuntimeWire.required(input,"operation"));if(input.containsKey("overrideGeneration"))b.putString("generation",input.getString("overrideGeneration"));return RuntimeWire.call(broker,RuntimeWire.RESULT,b);}
     private final Map<String,Set<Integer>> systemResults=new HashMap<>();
@@ -676,6 +806,45 @@ public final class RuntimeEngine {
         finally{activityCallers.leave(caller);}
     }
 
+
+    static void updateActivityThreadBoundApplication(String processName, ApplicationInfo info) {
+        try {
+            Class<?> atCls = Class.forName("android.app.ActivityThread");
+            java.lang.reflect.Method cat = atCls.getDeclaredMethod("currentActivityThread");
+            cat.setAccessible(true);
+            Object at = cat.invoke(null);
+            if (at != null) {
+                java.lang.reflect.Field mBoundAppField = atCls.getDeclaredField("mBoundApplication");
+                mBoundAppField.setAccessible(true);
+                Object boundApp = mBoundAppField.get(at);
+                if (boundApp != null) {
+                    Class<?> bindDataCls = boundApp.getClass();
+                    if (processName != null) {
+                        try {
+                            java.lang.reflect.Field procNameField = bindDataCls.getDeclaredField("processName");
+                            procNameField.setAccessible(true);
+                            procNameField.set(boundApp, processName);
+                        } catch (Throwable ignored) {}
+                        try {
+                            java.lang.reflect.Field atProcField = atCls.getDeclaredField("mProcessName");
+                            atProcField.setAccessible(true);
+                            atProcField.set(at, processName);
+                        } catch (Throwable ignored) {}
+                    }
+                    if (info != null) {
+                        try {
+                            java.lang.reflect.Field appInfoField = bindDataCls.getDeclaredField("appInfo");
+                            appInfoField.setAccessible(true);
+                            appInfoField.set(boundApp, info);
+                        } catch (Throwable ignored) {}
+                    }
+                    android.util.Log.i("TripoderHardened", "Updated ActivityThread mBoundApplication (processName=" + processName + ", pkg=" + (info != null ? info.packageName : "null") + ")");
+                }
+            }
+        } catch (Throwable t) {
+            android.util.Log.w("TripoderHardened", "Failed to update mBoundApplication", t);
+        }
+    }
 
     static void updateActivityThreadApplication(Application app) {
         if (app == null) return;
@@ -711,6 +880,11 @@ public final class RuntimeEngine {
                 } catch (Throwable ignored) {}
 
                 try {
+                    RuntimeEngine engine = RuntimeEngine.current;
+                    String procName = engine != null ? engine.processName : null;
+                    ApplicationInfo appInfo = engine != null ? engine.applicationInfo : null;
+                    updateActivityThreadBoundApplication(procName, appInfo);
+
                     Object pkgInfo = dev.tripoder.selfhook.ApplicationAdapter.packageInfo();
                     if (pkgInfo != null) {
                         java.lang.reflect.Field mBoundAppField = atCls.getDeclaredField("mBoundApplication");
