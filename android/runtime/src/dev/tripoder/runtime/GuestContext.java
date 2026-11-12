@@ -49,13 +49,18 @@ public final class GuestContext extends GuestStorageContext {
     private static long serviceFlags(int flags){long value=Integer.toUnsignedLong(flags);if((flags&BIND_EXTERNAL_SERVICE)!=0)value=(value&~Integer.toUnsignedLong(BIND_EXTERNAL_SERVICE))|BIND_EXTERNAL_SERVICE_LONG;return value;}
     @Override public String getPackageName(){return engine.packageName;}
     /**
-     * Platform services validate the operation package against the real UID (AppOps, storage volumes, widgets). The
-     * guest's package is not installed for this UID, so presenting it there is rejected even though the guest is
-     * behaving exactly as it would on a device. Two identities are therefore kept separate: {@link #getPackageName()}
-     * is what the guest sees, while the operation package is the installed package that owns this UID. Services that
-     * attribute work to the caller then accept it, and the runtime translates anything guest-specific itself.
+     * The operation package is part of the app's own identity, not a platform detail: SDKs ask
+     * {@code getOpPackageName()} "which app am I" and compare it with the manifest package (channel, signing and
+     * carrier-one-key-login checks do exactly this). Returning the container package there tells a guest installed as
+     * {@code com.ss.android.ugc.aweme} that it is {@code dev.tripoder.q6}, which reads as a repackaged build.
+     *
+     * <p>Self-identification therefore always answers with the guest identity. Platform validation against the real
+     * UID is a different question and is answered at the system boundary instead: the base {@code ContextImpl}'s
+     * {@code mOpPackageName}, window {@code params.packageName} and service-call arguments are normalised to the
+     * UID-owning package by {@code RuntimeEngine} and {@code RuntimeFailThrough}, so AppOps, storage volumes and
+     * widgets still see a package that owns this UID.
      */
-    @Override public String getOpPackageName(){return engine.host.getPackageName();}
+    @Override public String getOpPackageName(){return engine.packageName;}
     @Override public String getAttributionTag(){return null;}
     @Override public ClassLoader getClassLoader(){return resourceOnlyLoader==null?engine.loader:resourceOnlyLoader;}
     @Override public Resources getResources(){return guestResources;}
@@ -149,14 +154,15 @@ public final class GuestContext extends GuestStorageContext {
     @Override public void sendBroadcast(Intent intent,String permission){engine.receivers.send(intent,permission,null,false,null,null,0,null,null);}
     @Override public void sendBroadcast(Intent intent,String permission,Bundle options){engine.receivers.send(intent,permission,options,false,null,null,0,null,null);}
     // The authority checks one receiver permission; zero or one is exact, a conjunction of several is not modelled.
-    @Override public void sendBroadcastWithMultiplePermissions(Intent intent,String[] permissions){if(permissions==null||permissions.length==0)sendBroadcast(intent);else if(permissions.length==1)sendBroadcast(intent,permissions[0]);else throw new UnsupportedOperationException("BROADCAST_MULTIPLE_PERMISSIONS_UNSUPPORTED");}
+    // The platform accepts the call either way, so several permissions narrow to the first instead of failing the caller.
+    @Override public void sendBroadcastWithMultiplePermissions(Intent intent,String[] permissions){if(permissions==null||permissions.length==0){sendBroadcast(intent);return;}if(permissions.length>1)RuntimeFacadeContract.drop("BROADCAST_MULTIPLE_PERMISSIONS_NARROWED",null);sendBroadcast(intent,permissions[0]);}
     @Override public void sendOrderedBroadcast(Intent intent,String permission){engine.receivers.send(intent,permission,null,true,null,null,0,null,null);}
     @Override public void sendOrderedBroadcast(Intent intent,String permission,Bundle options){engine.receivers.send(intent,permission,options,true,null,null,0,null,null);}
     @Override public void sendOrderedBroadcast(Intent intent,String permission,BroadcastReceiver receiver,Handler scheduler,int initialCode,String initialData,Bundle initialExtras){engine.receivers.send(intent,permission,null,true,receiver,scheduler,initialCode,initialData,initialExtras);}
     @Override public void sendOrderedBroadcast(Intent intent,String permission,Bundle options,BroadcastReceiver receiver,Handler scheduler,int initialCode,String initialData,Bundle initialExtras){engine.receivers.send(intent,permission,options,true,receiver,scheduler,initialCode,initialData,initialExtras);}
     // An app-op restriction on receivers is an additional filter this runtime does not apply; without one the call is the ordinary ordered send.
-    @Override public void sendOrderedBroadcast(Intent intent,String permission,String appOp,BroadcastReceiver receiver,Handler scheduler,int initialCode,String initialData,Bundle initialExtras){if(appOp!=null)throw new UnsupportedOperationException("BROADCAST_APPOP_UNSUPPORTED");sendOrderedBroadcast(intent,permission,receiver,scheduler,initialCode,initialData,initialExtras);}
-    @Override public void sendOrderedBroadcast(Intent intent,int initialCode,String permission,String appOp,BroadcastReceiver receiver,Handler scheduler,String initialData,Bundle initialExtras,Bundle options){if(appOp!=null)throw new UnsupportedOperationException("BROADCAST_APPOP_UNSUPPORTED");sendOrderedBroadcast(intent,permission,options,receiver,scheduler,initialCode,initialData,initialExtras);}
+    @Override public void sendOrderedBroadcast(Intent intent,String permission,String appOp,BroadcastReceiver receiver,Handler scheduler,int initialCode,String initialData,Bundle initialExtras){if(appOp!=null)RuntimeFacadeContract.drop("BROADCAST_APPOP_IGNORED",null);sendOrderedBroadcast(intent,permission,receiver,scheduler,initialCode,initialData,initialExtras);}
+    @Override public void sendOrderedBroadcast(Intent intent,int initialCode,String permission,String appOp,BroadcastReceiver receiver,Handler scheduler,String initialData,Bundle initialExtras,Bundle options){if(appOp!=null)RuntimeFacadeContract.drop("BROADCAST_APPOP_IGNORED",null);sendOrderedBroadcast(intent,permission,options,receiver,scheduler,initialCode,initialData,initialExtras);}
     @Override public void sendBroadcastAsUser(Intent intent,UserHandle user){requireCurrentUser(user);sendBroadcast(intent);}
     @Override public void sendBroadcastAsUser(Intent intent,UserHandle user,String permission){requireCurrentUser(user);sendBroadcast(intent,permission);}
     @Override public void sendOrderedBroadcastAsUser(Intent intent,UserHandle user,String permission,BroadcastReceiver receiver,Handler scheduler,int initialCode,String initialData,Bundle initialExtras){requireCurrentUser(user);sendOrderedBroadcast(intent,permission,receiver,scheduler,initialCode,initialData,initialExtras);}

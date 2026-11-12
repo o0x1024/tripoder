@@ -101,7 +101,7 @@ static byte[] encode(Intent original){
 }
 ```
 
-系统广播 action 的策略拒绝（`SYSTEM_BROADCAST_POLICY_UNSUPPORTED`）**未改动**，仍按原设计抛出。
+系统广播 action 的策略拒绝保留，但异常类型已改为平台形状的 `SecurityException`（平台对受保护广播正是这么拒绝的）；同族残余风险的全局处置见 [`../facade-exception-contract-20261113/README.md`](../facade-exception-contract-20261113/README.md)（`build-facade-v55`）。
 
 ### 3.5 回归（v54）
 

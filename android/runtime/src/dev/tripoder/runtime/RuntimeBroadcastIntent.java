@@ -23,8 +23,23 @@ final class RuntimeBroadcastIntent {
     static void envelope(Intent original){
         if(original==null||original.getClipData()!=null||original.getSelector()!=null||original.getSourceBounds()!=null||original.getIdentifier()!=null||(original.getFlags()&~BROADCAST_FLAGS)!=0)throw new IllegalArgumentException("BROADCAST_INTENT_UNSUPPORTED");
         if(RuntimeEngine.current!=null)RuntimeSystemBroadcasts.discover(original.getAction());
-        if(original.getAction()!=null&&(original.getAction().length()>512||RuntimeSystemBroadcasts.action(original.getAction())))throw new UnsupportedOperationException("SYSTEM_BROADCAST_POLICY_UNSUPPORTED");
+        // A protected system broadcast is the one refusal the platform itself phrases as a SecurityException,
+        // so the policy keeps that shape; every other internal limit is reduced by encodeReduced instead.
+        if(original.getAction()!=null&&(original.getAction().length()>512||RuntimeSystemBroadcasts.action(original.getAction())))throw new SecurityException("SYSTEM_BROADCAST_POLICY_UNSUPPORTED");
         if(original.getDataString()!=null&&original.getDataString().length()>4096)throw new IllegalArgumentException("BROADCAST_URI_TOO_LONG");
+    }
+    /** The nearest delivery the authority can carry. Null means even the reduced intent is not encodable, already recorded. */
+    static byte[] encodeReduced(Intent original){
+        try{return encode(original);}
+        catch(BinderPayload binder){return reduce(original,"BROADCAST_BINDER_EXTRA_DROPPED",binder,false);}
+        catch(IllegalArgumentException oversized){return reduce(original,"BROADCAST_PAYLOAD_REDUCED",oversized,true);}
+    }
+    private static byte[] reduce(Intent original,String code,Throwable error,boolean dropData){
+        RuntimeFacadeContract.drop(code,error);
+        Intent reduced=sanitize(original);reduced.replaceExtras((Bundle)null);
+        if(dropData)reduced.setData(null).setType(null);
+        try{return encode(reduced);}
+        catch(RuntimeException again){RuntimeFacadeContract.drop(code+"_FAILED",again);return null;}
     }
     static byte[] encode(Intent original){
         Intent reduced=sanitize(original);envelope(reduced);
