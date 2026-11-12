@@ -94,7 +94,7 @@ final class RuntimeSelfHookApplication {
     static void preparePackage(ApplicationInfo info,ClassLoader loader,Resources resources,String process,java.util.List<android.content.pm.ProviderInfo> providers){
         mainThread();RuntimeSelfHookApplication value=require();
         if(info!=value.engine.applicationInfo||loader!=value.engine.loader||resources!=value.engine.resources||!process.equals(value.engine.processName))throw new SecurityException("SELF_APPLICATION_PACKAGE_IDENTITY_MISMATCH");
-        ApplicationAdapter.preparePackage(value.host,info,loader,value.engine.artifactLoader(),resources,process,providers);
+        ApplicationAdapter.preparePackage(value.host,info,loader,value.engine.artifactLoader(),resources,process,providers,value.engine.dataCanonicalDirectory);
     }
     static Context create(Context physical,Application guest,ApplicationInfo info,ClassLoader loader,
                           AppComponentFactory factory,Resources resources) {
@@ -144,6 +144,7 @@ final class RuntimeSelfHookApplication {
         if(!(context instanceof Application))throw new SecurityException("APPLICATION_CONTEXT_OWNER_REQUIRED");
         Application application=(Application)context;
         ApplicationAdapter.publishApplication(application);
+        if(MAPS_PROBE)reportMaps();
         return application;
     }
 
@@ -206,6 +207,44 @@ final class RuntimeSelfHookApplication {
             try{android.util.Log.i("TripoderIdentity","attached package="+guest.getPackageName()
                 +" opPackage="+guest.getOpPackageName()+" uid="+android.os.Process.myUid());}catch(Throwable ignored){}
         }
+    }
+
+    private static boolean mapsReported;
+    /**
+     * C2 evidence: a guest is only as real as the mappings its process inherits. This is the same view the guest reads
+     * when it opens /proc/self/maps for itself, so recording it from the runtime answers "can the guest see the host's
+     * runtime footprint?" with a file instead of an inference. Bounded: counts plus at most five sample lines.
+     */
+    /** Provenance forensics kept behind a constant: flip to true to have every guest print a summary of its own
+     *  /proc/self/maps (method used in docs/evidence/douyin-onekey-a2b/c2-maps-in-guest-20261112.md). Off by default
+     *  so normal runs pay no extra read and no log noise; javac drops the branch at the call site. */
+    private static final boolean MAPS_PROBE=false;
+
+    private static void reportMaps(){
+        if(mapsReported)return;mapsReported=true;
+        java.io.BufferedReader in=null;
+        try{
+            in=new java.io.BufferedReader(new java.io.FileReader("/proc/self/maps"));
+            int total=0,hostPathLines=0,otherAppPath=0,tripoderAny=0,apkLines=0;
+            StringBuilder samples=new StringBuilder();
+            String line;
+            while((line=in.readLine())!=null){
+                total++;
+                String lower=line.toLowerCase(java.util.Locale.ROOT);
+                boolean tripoder=lower.contains("tripoder");
+                if(tripoder){
+                    tripoderAny++;
+                    if(hostPathLines++<4)samples.append("\n  tripoder: ").append(line);
+                }else if(line.contains("/data/app/"))otherAppPath++;
+                if(lower.contains(".apk")||lower.contains(".zip")){
+                    if(apkLines++<4)samples.append("\n  archive: ").append(line);
+                }
+            }
+            android.util.Log.i("TripoderMaps","stage=after-onCreate total="+total+" hostPathLines="+hostPathLines
+                +" otherAppPathLines="+otherAppPath+" tripoderAny="+tripoderAny+" apkLines="+apkLines+samples);
+        }catch(Throwable unavailable){
+            android.util.Log.w("TripoderMaps","unavailable "+unavailable);
+        }finally{try{if(in!=null)in.close();}catch(Throwable ignored){}}
     }
 
     static void addFinisher(Runnable finisher) {

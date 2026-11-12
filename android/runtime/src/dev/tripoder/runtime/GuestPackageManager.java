@@ -23,6 +23,12 @@ final class GuestPackageManager extends DeniedPackageManager {
     @Override public boolean hasSystemFeature(String name) { return platform.hasSystemFeature(name); }
     @Override public boolean hasSystemFeature(String name, int version) { return platform.hasSystemFeature(name, version); }
     @Override public String[] getSystemSharedLibraryNames(){return RuntimePackageBridge.physicalSystemSharedLibraryNames();}
+    /** Which store delivered this package, and is it signed like the package the platform installed. */
+    @Override public String getInstallerPackageName(String packageName){return GuestIdentity.installerPackageName(engine,packageName);}
+    @Override public android.content.pm.InstallSourceInfo getInstallSourceInfo(String packageName)throws NameNotFoundException{return GuestIdentity.installSourceInfo(engine,packageName);}
+    @Override public int checkSignatures(String first,String second){return GuestIdentity.checkSignatures(engine,first,second);}
+    @Override public int checkSignatures(int first,int second){return GuestIdentity.checkSignatures(engine,first,second);}
+    @Override public int getPackageUid(String packageName,int flags)throws NameNotFoundException{return GuestIdentity.packageUid(engine,packageName);}
     @Override public boolean isInstantApp() { return false; }
     @Override public boolean isPackageSuspended(){return (engine.info.flags&ApplicationInfo.FLAG_SUSPENDED)!=0;}
     @Override public boolean isPackageSuspended(String packageName)throws NameNotFoundException{requireSelf(packageName);return isPackageSuspended();}
@@ -84,18 +90,41 @@ final class GuestPackageManager extends DeniedPackageManager {
         if (source.splitPublicSourceDirs != null) copy.splitPublicSourceDirs = source.splitPublicSourceDirs.clone();
         copy.metaData = includeMetadata && source.metaData != null ? source.metaData.deepCopy() : null;
         if (source.packageName != null) {
-            // APK, splits and native libraries name this verified installation. Never borrow paths from a
-            // separately installed system copy, which may be updated or removed independently.
             copy.dataDir = "/data/user/0/" + source.packageName;
             copy.deviceProtectedDataDir = "/data/user_de/0/" + source.packageName;
-            RuntimeExecutionCode code=RuntimeEngine.current.executionCode;
-            copy.sourceDir=code.part("base.apk");copy.publicSourceDir=copy.sourceDir;
-            if(copy.splitSourceDirs!=null)for(int i=0;i<copy.splitSourceDirs.length;i++)if(copy.splitSourceDirs[i]!=null)copy.splitSourceDirs[i]=code.part(new java.io.File(copy.splitSourceDirs[i]).getName());
-            if(copy.splitPublicSourceDirs!=null)for(int i=0;i<copy.splitPublicSourceDirs.length;i++)if(copy.splitPublicSourceDirs[i]!=null)copy.splitPublicSourceDirs[i]=code.part(new java.io.File(copy.splitPublicSourceDirs[i]).getName());
-            copy.nativeLibraryDir=new java.io.File(code.directory,"lib/arm64").getAbsolutePath();
+            // The manifest parser has no install-state record. A running logical installation is
+            // installed and is not force-stopped; do not inherit the native instance's stopped bit.
+            copy.flags = (copy.flags | ApplicationInfo.FLAG_INSTALLED) & ~ApplicationInfo.FLAG_STOPPED;
+            // The kernel cannot run a guest under the installed package's appId, so the only uid
+            // that is true for this process - and that also owns the instance data dir - is myUid().
+            // Reporting the installed appId here would make getApplicationInfo().uid disagree with
+            // both getuid() and stat(dataDir).st_uid, which is a one-line tamper check.
+            copy.uid = android.os.Process.myUid();
+            // Keep metadata, absolute JNI loads and the ClassLoader on one verified code identity.
+            RuntimeEngine engine=RuntimeEngine.current;
+            if(engine.publishedNativeCode!=null){
+                engine.publishedNativeCode.metadata(copy);
+            }else{
+                RuntimeExecutionCode code=engine.executionCode;
+                copy.sourceDir=code.part("base.apk");copy.publicSourceDir=copy.sourceDir;
+                if(copy.splitSourceDirs!=null)for(int i=0;i<copy.splitSourceDirs.length;i++)if(copy.splitSourceDirs[i]!=null)copy.splitSourceDirs[i]=code.part(new java.io.File(copy.splitSourceDirs[i]).getName());
+                if(copy.splitPublicSourceDirs!=null)for(int i=0;i<copy.splitPublicSourceDirs.length;i++)if(copy.splitPublicSourceDirs[i]!=null)copy.splitPublicSourceDirs[i]=code.part(new java.io.File(copy.splitPublicSourceDirs[i]).getName());
+                copy.nativeLibraryDir=new java.io.File(code.directory,"lib/arm64").getAbsolutePath();
+            }
+            setNativeLibraryRootDir(copy, new java.io.File(copy.nativeLibraryDir).getParent());
             setPrimaryCpuAbi(copy, "arm64-v8a");
         }
         return copy;
+    }
+
+    private static void setNativeLibraryRootDir(ApplicationInfo info, String path) {
+        try {
+            java.lang.reflect.Field field = ApplicationInfo.class.getDeclaredField("nativeLibraryRootDir");
+            field.setAccessible(true);
+            field.set(info, path);
+        } catch (Throwable unavailable) {
+            android.util.Log.w("TripoderGuestPM", "nativeLibraryRootDir projection unavailable", unavailable);
+        }
     }
 
     private static volatile java.lang.reflect.Field primaryCpuAbiField;

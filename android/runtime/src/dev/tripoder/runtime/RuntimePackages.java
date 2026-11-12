@@ -123,19 +123,24 @@ final class RuntimePackages implements InvocationHandler {
      * own identity cannot depend on which applications happen to be installed on the device, and shadowing it makes
      * the guest read null for its own manifest metadata.
      */
+    private boolean externalMetadata(String pkg){return !Objects.equals(pkg,infrastructurePackage)&&!engine.webView.owns(pkg)&&engine.packageVisibility.admits(pkg);}
     private boolean infrastructure(String pkg){
         if(engine.host.getPackageName().equals(pkg))return true;
         if(!engine.packageName.equals(pkg))throw new PackageAbsent(pkg);
         return false;
     }
     private void user(Object value){if(!(value instanceof Integer)||((Integer)value)!=RuntimePackageBridge.userId())throw new SecurityException("PACKAGE_USER_UNSUPPORTED");}
-    String installer(String pkg){
-        if(pkg==null)return null;
-        if(engine.packageName.equals(pkg))return engine.host.getPackageName();
-        if(engine.host.getPackageName().equals(pkg)||engine.webView.owns(pkg)){
-            try{return engine.host.getPackageManager().getInstallerPackageName(pkg);}catch(Throwable ignored){return null;}
-        }
-        return null;
+    /** One implementation for both package paths: see GuestIdentity.installerPackageName for the plane rule. */
+    String installer(String pkg){return GuestIdentity.installerPackageName(engine,pkg);}
+    /**
+     * Self plane: a guest asking which packages own this uid is asking who it is. The kernel uid belongs to the
+     * container, so the platform's answer names the container - the one answer that contradicts getPackageName and
+     * getNameForUid. Attribution (AppOps, storage, media provider) asks the same question of {@link #dispatch} at the
+     * system boundary and is answered there with the uid owner; the two answers differ because the askers differ.
+     */
+    String[] packagesForUid(int uid){
+        if(uid!=android.os.Process.myUid())return null;
+        return new String[]{engine.packageName};
     }
     int componentEnabled(ComponentName component,int user){
         if(component==null)throw new IllegalArgumentException("COMPONENT_REQUIRED");
@@ -178,16 +183,18 @@ final class RuntimePackages implements InvocationHandler {
             case "getPackageInfo[class java.lang.String, long, int]":{
                 user(a[2]);String pkg=(String)a[0];long flags=(Long)a[1];
                 if(engine.webView.owns(pkg))return engine.webView.packageInfo(pkg,flags,(Integer)a[2]);
+                if(externalMetadata(pkg))return dev.tripoder.selfhook.PackageFrameworkAccess.physical("package",pkg,flags,(Integer)a[2]);
                 if(infrastructure(pkg))return RuntimePackageBridge.physicalPackageInfo(pkg,flags,(Integer)a[2]);
                 return metadata.getPackageInfo(pkg,PackageManager.PackageInfoFlags.of(flags));
             }
             case "getPackageInfoVersioned[class android.content.pm.VersionedPackage, long, int]":{
                 user(a[2]);VersionedPackage selected=(VersionedPackage)a[0];if(selected==null)throw new IllegalArgumentException("VERSIONED_PACKAGE_REQUIRED");
+                if(externalMetadata(selected.getPackageName()))return dev.tripoder.selfhook.PackageFrameworkAccess.physical("package",selected.getPackageName(),(Long)a[1],(Integer)a[2]);
                 if(infrastructure(selected.getPackageName()))return RuntimePackageBridge.physicalPackageInfo(selected.getPackageName(),(Long)a[1],(Integer)a[2]);
                 return metadata.getPackageInfo(selected,PackageManager.PackageInfoFlags.of((Long)a[1]));
             }
             case "getApplicationInfo[class java.lang.String, long, int]":{
-                user(a[2]);String pkg=(String)a[0];if(engine.webView.owns(pkg))return engine.webView.applicationInfo(pkg,(Long)a[1],(Integer)a[2]);if(infrastructure(pkg))return RuntimePackageBridge.physicalApplicationInfo(pkg,(Long)a[1],(Integer)a[2]);
+                user(a[2]);String pkg=(String)a[0];if(engine.webView.owns(pkg))return engine.webView.applicationInfo(pkg,(Long)a[1],(Integer)a[2]);if(externalMetadata(pkg))return dev.tripoder.selfhook.PackageFrameworkAccess.physical("application",pkg,(Long)a[1],(Integer)a[2]);if(infrastructure(pkg))return RuntimePackageBridge.physicalApplicationInfo(pkg,(Long)a[1],(Integer)a[2]);
                 try {
                     ApplicationInfo ai = metadata.getApplicationInfo(pkg,PackageManager.ApplicationInfoFlags.of((Long)a[1]));
                     return ai;
@@ -201,6 +208,7 @@ final class RuntimePackages implements InvocationHandler {
             case "getActivityInfo[class android.content.ComponentName, long, int]":{
                 user(a[2]);ComponentName component=(ComponentName)a[0];if(component==null)throw new IllegalArgumentException("COMPONENT_REQUIRED");
                 if(method.getName().equals("getServiceInfo")&&engine.webView.owns(component.getPackageName()))return engine.webView.serviceInfo(component,(Long)a[1],(Integer)a[2]);
+                if(externalMetadata(component.getPackageName()))return dev.tripoder.selfhook.PackageFrameworkAccess.physical(method.getName(),component,(Long)a[1],(Integer)a[2]);
                 if(infrastructure(component.getPackageName()))return RuntimePackageBridge.physicalComponent(method.getName(),component,(Long)a[1],(Integer)a[2]);
                 try{
                     if(method.getName().equals("getServiceInfo"))return metadata.getServiceInfo(component,PackageManager.ComponentInfoFlags.of((Long)a[1]));
@@ -236,18 +244,52 @@ final class RuntimePackages implements InvocationHandler {
             case "getPropertyAsUser[class java.lang.String, class java.lang.String, class java.lang.String, int]":user(a[3]);return null;
             case "queryProperty[class java.lang.String, int]":return null;
             case "getPackagesForUid[int]":
+                android.util.Log.w("TripoderProvenance","getPackagesForUid "+a[0]);
                 if(((Integer)a[0])!=android.os.Process.myUid()){RuntimeFailThrough.note("package-endpoint","getPackagesForUid:other");return dev.tripoder.selfhook.PackageFrameworkAccess.physicalCall(method,a);}
-                // This endpoint is the platform's IPackageManager, and its callers use the answer as the UID owner
-                // (StorageManager.getVolumeList -> AppOpsManager.checkPackage). A guest name here is a package the
-                // platform has never installed for this UID, so the platform rejects the call. Guest identity belongs
-                // to the guest-visible PackageManager facade; the platform world only ever sees the installed host.
-                return new String[]{engine.host.getPackageName()};
+                // Self plane: this endpoint is only reachable from inside this process, so the asker is the guest
+                // asking about the uid it shares with the container. Answering the container's package name is the
+                // leak measured on 2026-11-12 (uidPackages=[dev.tripoder.q6]): the answer contradicted getPackageName
+                // in the same snapshot. Attribution questions (AppOps, storage, media provider) are resolved by the
+                // system server from its own records and never reach this in-process endpoint.
+                return new String[]{engine.packageName};
+            // Provenance planes, answered here because the SDK facade reaches this endpoint: falling through to the
+            // platform would report the real device's store attribution for the guest's own package, which is the
+            // second leak measured on 2026-11-12 (installSource.initiating=com.android.shell).
+            case "getInstallSourceInfo[class java.lang.String, int]":android.util.Log.w("TripoderProvenance","getInstallSourceInfo "+a[0]);user(a[1]);return GuestIdentity.installSourceInfo(engine,(String)a[0]);
+            case "getInstallerPackageName[class java.lang.String]":android.util.Log.w("TripoderProvenance","getInstallerPackageName "+a[0]);return installer((String)a[0]);
             // Not translated yet: the platform's endpoint answers for the host package and enforces what an ordinary app may do.
             default:{
+                Object selfAnswer=selfUidAnswer(key,a);
+                if(selfAnswer!=null)return selfAnswer;
                 RuntimeFailThrough.note("package-endpoint",key);
                 return dev.tripoder.selfhook.PackageFrameworkAccess.physicalCall(method,RuntimeFailThrough.hostIdentity(a));
             }
         }
+    }
+    /**
+     * uid <-> package for the guest's own archive must answer {@link android.os.Process#myUid()}, the same value the
+     * kernel reports for this process. Falling through to the platform gives one process two identities for one
+     * package name: getPackageUid(guest) would report the real device's uid for that archive, and getNameForUid(shared
+     * uid) would report the container's package name. Both directions are "who am I" questions from the guest's side,
+     * so they belong to the Self plane (identity-provenance-contract.md §3). Matched by prefix rather than by exact
+     * key because the endpoint key embeds the parameter types and the platform ships several shapes of the same ask.
+     *
+     * @return the Self answer, or null when the question is about another package and the platform must answer.
+     */
+    private Object selfUidAnswer(String key,Object[] a){
+        if(key.startsWith("getNameForUid[")){
+            if(!(a[0] instanceof Integer))return null;
+            int uid=(Integer)a[0];
+            if(uid!=android.os.Process.myUid())return null;
+            android.util.Log.w("TripoderProvenance","getNameForUid self uid="+uid);
+            return engine.packageName;
+        }
+        if(!key.startsWith("getPackageUid["))return null;
+        if(!(a[0] instanceof String))return null;
+        String pkg=(String)a[0];
+        if(!engine.packageName.equals(pkg)&&!engine.host.getPackageName().equals(pkg))return null;
+        android.util.Log.w("TripoderProvenance","getPackageUid self pkg="+pkg+" uid="+android.os.Process.myUid());
+        return android.os.Process.myUid();
     }
     synchronized Resources resources(PackageManager manager,String pkg,ApplicationInfo supplied){
         if(supplied!=null&&!Objects.equals(pkg,supplied.packageName))throw new SecurityException("XML_APPLICATION_IDENTITY_MISMATCH");
@@ -275,11 +317,49 @@ final class RuntimePackages implements InvocationHandler {
     XmlResourceParser xml(PackageManager manager,String pkg,int id,ApplicationInfo info){try{return resources(manager,pkg,info).getXml(id);}catch(Resources.NotFoundException absent){return null;}}
     CharSequence text(PackageManager manager,String pkg,int id,ApplicationInfo info){try{return resources(manager,pkg,info).getText(id);}catch(Resources.NotFoundException absent){return null;}}
     android.graphics.drawable.Drawable drawable(PackageManager manager,String pkg,int id,ApplicationInfo info){try{return resources(manager,pkg,info).getDrawable(id,null);}catch(Resources.NotFoundException absent){return null;}}
-    private static final class Endpoint extends Binder {
+    private static int rawTransactionCode(String name,int fallback){
+        try{return Class.forName("android.content.pm.IPackageManager$Stub").getDeclaredField(name).getInt(null);}
+        catch(Throwable unavailable){return fallback;}
+    }
+    private final class Endpoint extends Binder {
+        private final int rawGetPackageInfo=rawTransactionCode("TRANSACTION_getPackageInfo",1);
+        private final int rawGetApplicationInfo=rawTransactionCode("TRANSACTION_getApplicationInfo",3);
         Endpoint(IInterface root){attachInterface(root,"android.content.pm.IPackageManager");}
         @Override protected boolean onTransact(int code,Parcel data,Parcel reply,int flags)throws RemoteException{
             if(code==INTERFACE_TRANSACTION){if(reply!=null)reply.writeString("android.content.pm.IPackageManager");return true;}
-            // A raw parcel cannot be translated; the platform's endpoint answers it for the host package.
+            if(code==rawGetPackageInfo){
+                data.enforceInterface("android.content.pm.IPackageManager");
+                String pkg=data.readString();long packageFlags=data.readLong();int userId=data.readInt();user(userId);
+                PackageInfo result=null;
+                try{
+                    if(engine.webView.owns(pkg))result=engine.webView.packageInfo(pkg,packageFlags,userId);
+                    else if(externalMetadata(pkg))result=(PackageInfo)dev.tripoder.selfhook.PackageFrameworkAccess.physical("package",pkg,packageFlags,userId);
+                    else if(infrastructure(pkg))result=RuntimePackageBridge.physicalPackageInfo(pkg,packageFlags,userId);
+                    else result=metadata.getPackageInfo(pkg,PackageManager.PackageInfoFlags.of(packageFlags));
+                }catch(PackageManager.NameNotFoundException absent){}
+                reply.writeNoException();
+                if(result==null)reply.writeInt(0);
+                else{reply.writeInt(1);result.writeToParcel(reply,0);}
+                if(result!=null&&result.applicationInfo!=null)android.util.Log.i("TripoderPackages","RAW getPackageInfo pkg="+pkg+" uid="+result.applicationInfo.uid);
+                return true;
+            }
+            if(code==rawGetApplicationInfo){
+                data.enforceInterface("android.content.pm.IPackageManager");
+                String pkg=data.readString();long applicationFlags=data.readLong();int userId=data.readInt();user(userId);
+                ApplicationInfo result=null;
+                try{
+                    if(engine.webView.owns(pkg))result=engine.webView.applicationInfo(pkg,applicationFlags,userId);
+                    else if(externalMetadata(pkg))result=(ApplicationInfo)dev.tripoder.selfhook.PackageFrameworkAccess.physical("application",pkg,applicationFlags,userId);
+                    else if(infrastructure(pkg))result=RuntimePackageBridge.physicalApplicationInfo(pkg,applicationFlags,userId);
+                    else result=metadata.getApplicationInfo(pkg,PackageManager.ApplicationInfoFlags.of(applicationFlags));
+                }catch(PackageManager.NameNotFoundException absent){}
+                reply.writeNoException();
+                if(result==null)reply.writeInt(0);
+                else{reply.writeInt(1);result.writeToParcel(reply,0);}
+                if(result!=null)android.util.Log.i("TripoderPackages","RAW getApplicationInfo pkg="+pkg+" uid="+result.uid+" procUid="+android.os.Process.myUid()+" sourceDir="+result.sourceDir+" dataDir="+result.dataDir);
+                return true;
+            }
+            // Unknown raw parcels retain the platform's own capability checks.
             RuntimeFailThrough.note("package-raw-transaction",Integer.toString(code));
             return dev.tripoder.selfhook.PackageFrameworkAccess.physicalBinder().transact(code,data,reply,flags);
         }

@@ -16,6 +16,14 @@ android/.gradle/
 android/**/build/
 # Isolated baseline/ingress experiments use separate build roots.
 android/product/build-*/
+# build-workbench.py --build-dir given as a bare name lands at the repo root.
+/build-*/
+# Ops and third-party research artifacts that must never enter history:
+# production-host ssh helper, split-APK fragments, host inventory notes, scraped raw pages (contain PII).
+.tmp-ssh/
+/aw*.bin
+/119.29.111.31-*.md
+/research_xiangyin_psbc/raw/
 android/**/.cxx/
 android/local.properties
 android/app/src/main/jniLibs/arm64-v8a/libgadget.so

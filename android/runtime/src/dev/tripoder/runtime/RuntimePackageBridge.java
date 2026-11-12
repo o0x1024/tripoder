@@ -47,6 +47,7 @@ public final class RuntimePackageBridge {
     public static void registerInfrastructureFacade(PackageManager pm){world().registerInfrastructureFacade(pm);}
     public static String packageName(){return RuntimeEngine.current.packageName;}
     public static String installer(String pkg){return world().installer(pkg);}
+    public static String[] packagesForUid(int uid){return world().packagesForUid(uid);}
     public static boolean suspended(String pkg)throws PackageManager.NameNotFoundException{return world().suspended(pkg);}
     /** Android's own recipe: the first enabled activity answering MAIN with the INFO category, else with LAUNCHER; absent for any package that is not this guest. */
     public static android.content.Intent launchIntent(String pkg,boolean leanback){
