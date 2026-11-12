@@ -46,6 +46,7 @@
 | [evidence/jd-container-login-20261113/README.md](evidence/jd-container-login-20261113/README.md) | **京东容器内一键登录闭环实测**：同样 `installer=null`、同样 uid 不自洽，京东本机号码一键登录**成功**并进入个人中心（无任何渠道类提示）⇒ 京东的来源类校验在容器内可满足，与抖音 P2 边界形成对照。含步骤、UI dump 观测、`FLAG_SECURE` 与未测支付链路的边界声明。 |
 | [evidence/bosszhipin-container-login-20261113/README.md](evidence/bosszhipin-container-login-20261113/README.md) | **BOSS直聘一键登录：崩溃根因与修复**：一键登录其实已成功，随后被运行时的广播形状校验（`BROADCAST_INTENT_UNSUPPORTED`）打死主进程；修复为「先降级再投递」（`build-bcast-v54`）后回归通过。给出「先看 crash 缓冲里有没有 `dev.tripoder.runtime.*` 帧」这条排障判据，并登记同族残余风险。 |
 | [evidence/facade-exception-contract-20261113/README.md](evidence/facade-exception-contract-20261113/README.md) | **门面异常契约不变量（`build-facade-v55`）**：只有平台自己会给出的异常（`SecurityException`）允许逸出到客体线程，其余内部失败一律降级为「记录 + 丢弃」或「降级到最近可投递形状」。含旧→新行为映射表（11 处抛出点）、`RuntimeFacadeContract` 记录点、control-test 29 项断言（`resultSha256 620a64eb…`）与 v55 端到端回归（pid 未重启、crash 0）。 |
+| [evidence/facade-exception-contract-nonbroadcast-20261113/README.md](evidence/facade-exception-contract-nonbroadcast-20261113/README.md) | **同一不变量推进到非广播门面（`build-facade-v56`）**：Context 组件（`startService`/`bindService`/`unbindService`/`startInstrumentation`/`sendStickyOrderedBroadcast`）、PM 标志字窄化、`ActivityManager` 观察类 API、`ContentResolver` 路线（query→null、write→空 Bundle、openFile→`FileNotFoundException`、authority 不可达→AOSP 原话 `Unknown URL`）共 24 处降级。真机证据：京东冷启动命中 3 次降级（`PACKAGE_NOT_IN_SPACE:com.xiaomi.xmsf`×2 + `APPLICATION_INFO_FLAGS_REDUCED`）、首页正常、crash 0；control-test 32 项全过（`resultSha256 09bfa9fa…`）。 |
 
 ---
 

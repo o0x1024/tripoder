@@ -130,30 +130,31 @@ public final class RuntimeProviderFacade extends RuntimeProviderBase implements 
             return result;
         }finally{Binder.restoreCallingIdentity(identity);}
     }
-    @Override public Cursor query(Uri uri,String[] projection,Bundle args,CancellationSignal signal){if(signal!=null)throw unsupported();Bundle payload=primitive(args);String[] columns=projection==null?null:projection.clone();if(columns!=null){if(columns.length>128)throw new IllegalArgumentException("PROVIDER_PROJECTION_TOO_LARGE");for(String column:columns)if(column==null||column.length()>512)throw new IllegalArgumentException("PROVIDER_PROJECTION_INVALID");}try{return (Cursor)invoke("query",uri,payload,columns);}catch(RuntimeException e){throw e;}catch(Exception e){throw new IllegalStateException("PROVIDER_QUERY_FAILED",e);}}
-    @Override public String getType(Uri uri){try{return (String)invoke("getType",uri,new Bundle(),null);}catch(RuntimeException e){throw e;}catch(Exception e){throw new IllegalStateException("PROVIDER_TYPE_FAILED",e);}}
-    private Bundle write(String kind,Uri uri,Bundle payload){try{return (Bundle)invoke(kind,uri,payload,null);}catch(RuntimeException e){throw e;}catch(Exception e){throw new IllegalStateException("PROVIDER_WRITE_FAILED:"+kind,e);}}
+    @Override public Cursor query(Uri uri,String[] projection,Bundle args,CancellationSignal signal){if(signal!=null)RuntimeFacadeContract.drop("PROVIDER_CANCELLATION_IGNORED",null);Bundle payload=primitive(args);String[] columns=projection==null?null:projection.clone();if(columns!=null){if(columns.length>128)throw new IllegalArgumentException("PROVIDER_PROJECTION_TOO_LARGE");for(String column:columns)if(column==null||column.length()>512)throw new IllegalArgumentException("PROVIDER_PROJECTION_INVALID");}try{return (Cursor)invoke("query",uri,payload,columns);}catch(RuntimeException error){if(RuntimeFacadeContract.platformAnswer(error))throw error;return RuntimeFacadeContract.nothing("PROVIDER_QUERY_FAILED",error,null);}catch(Exception error){return RuntimeFacadeContract.nothing("PROVIDER_QUERY_FAILED",error,null);}}
+    @Override public String getType(Uri uri){try{return (String)invoke("getType",uri,new Bundle(),null);}catch(RuntimeException error){if(RuntimeFacadeContract.platformAnswer(error))throw error;return RuntimeFacadeContract.nothing("PROVIDER_TYPE_FAILED",error,null);}catch(Exception error){return RuntimeFacadeContract.nothing("PROVIDER_TYPE_FAILED",error,null);}}
+    // A failed write answers as the platform answers a write that changed nothing: an empty result (no Uri, count 0).
+    private Bundle write(String kind,Uri uri,Bundle payload){try{return (Bundle)invoke(kind,uri,payload,null);}catch(RuntimeException error){if(RuntimeFacadeContract.platformAnswer(error))throw error;return RuntimeFacadeContract.nothing("PROVIDER_WRITE_FAILED:"+kind,error,new Bundle());}catch(Exception error){return RuntimeFacadeContract.nothing("PROVIDER_WRITE_FAILED:"+kind,error,new Bundle());}}
     @Override public Uri insert(Uri uri,ContentValues values,Bundle extras){String inserted=write("insert",uri,RuntimeProviderValues.single(values,extras)).getString("uri");return inserted==null?null:Uri.parse(inserted);}
     @Override public int update(Uri uri,ContentValues values,Bundle extras){return write("update",uri,RuntimeProviderValues.single(values,extras)).getInt("count");}
     @Override public int delete(Uri uri,Bundle extras){return write("delete",uri,RuntimeProviderValues.single(null,extras)).getInt("count");}
     @Override public int bulkInsert(Uri uri,ContentValues[] values){return write("bulkInsert",uri,RuntimeProviderValues.bulk(values)).getInt("count");}
     @Override public ContentProviderResult[] applyBatch(String authority,ArrayList<ContentProviderOperation> operations){if(!reference.getString("authority").equals(authority))throw new SecurityException("PROVIDER_AUTHORITY_MISMATCH");return write("applyBatch",Uri.parse("content://"+authority),RuntimeProviderBatch.snapshot(operations,authority)).getParcelableArray("results",ContentProviderResult.class);}
     @Override public ContentProviderResult[] applyBatch(ArrayList<ContentProviderOperation> operations){return applyBatch(reference.getString("authority"),operations);}
-    @Override public Bundle call(String authority,String method,String arg,Bundle extras){if(!reference.getString("authority").equals(authority))throw new SecurityException("PROVIDER_AUTHORITY_MISMATCH");if(method==null||method.isEmpty()||method.length()>200||arg!=null&&arg.length()>8192)throw new IllegalArgumentException("PROVIDER_CALL_INVALID");Bundle payload=new Bundle();payload.putString("method",method);payload.putString("arg",arg);payload.putBundle("extras",primitive(extras));try{return (Bundle)invoke("call",Uri.parse("content://"+authority),payload,null);}catch(RuntimeException e){throw e;}catch(Exception e){throw new IllegalStateException("PROVIDER_CALL_FAILED",e);}}
+    @Override public Bundle call(String authority,String method,String arg,Bundle extras){if(!reference.getString("authority").equals(authority))throw new SecurityException("PROVIDER_AUTHORITY_MISMATCH");if(method==null||method.isEmpty()||method.length()>200||arg!=null&&arg.length()>8192)throw new IllegalArgumentException("PROVIDER_CALL_INVALID");Bundle payload=new Bundle();payload.putString("method",method);payload.putString("arg",arg);payload.putBundle("extras",primitive(extras));try{return (Bundle)invoke("call",Uri.parse("content://"+authority),payload,null);}catch(RuntimeException error){if(RuntimeFacadeContract.platformAnswer(error))throw error;return RuntimeFacadeContract.nothing("PROVIDER_CALL_FAILED",error,null);}catch(Exception error){return RuntimeFacadeContract.nothing("PROVIDER_CALL_FAILED",error,null);}}
     @Override public Bundle call(String method,String arg,Bundle extras){return call(reference.getString("authority"),method,arg,extras);}
     @Override public ParcelFileDescriptor openFile(Uri uri,String mode,CancellationSignal signal)throws FileNotFoundException{
         try{return client.openFile(uri,mode,signal);}
-        catch(RemoteException e){throw new IllegalStateException("PROVIDER_OPEN_FILE_FAILED",e);}
+        catch(RemoteException error){throw RuntimeFacadeContract.<FileNotFoundException>nothing("PROVIDER_OPEN_FILE_FAILED",error,new FileNotFoundException("provider unavailable: "+uri));}
     }
     @Override public ParcelFileDescriptor openFile(Uri uri,String mode)throws FileNotFoundException{return openFile(uri,mode,null);}
     @Override public AssetFileDescriptor openAssetFile(Uri uri,String mode,CancellationSignal signal)throws FileNotFoundException{
         try{return client.openAssetFile(uri,mode,signal);}
-        catch(RemoteException e){throw new IllegalStateException("PROVIDER_OPEN_ASSET_FILE_FAILED",e);}
+        catch(RemoteException error){throw RuntimeFacadeContract.<FileNotFoundException>nothing("PROVIDER_OPEN_ASSET_FILE_FAILED",error,new FileNotFoundException("provider unavailable: "+uri));}
     }
     @Override public AssetFileDescriptor openAssetFile(Uri uri,String mode)throws FileNotFoundException{return openAssetFile(uri,mode,null);}
     @Override public AssetFileDescriptor openTypedAssetFile(Uri uri,String type,Bundle opts,CancellationSignal signal)throws FileNotFoundException{
         try{return client.openTypedAssetFileDescriptor(uri,type,opts,signal);}
-        catch(RemoteException e){throw new IllegalStateException("PROVIDER_OPEN_TYPED_ASSET_FILE_FAILED",e);}
+        catch(RemoteException error){throw RuntimeFacadeContract.<FileNotFoundException>nothing("PROVIDER_OPEN_TYPED_ASSET_FILE_FAILED",error,new FileNotFoundException("provider unavailable: "+uri));}
     }
     @Override public AssetFileDescriptor openTypedAssetFile(Uri uri,String type,Bundle opts)throws FileNotFoundException{return openTypedAssetFile(uri,type,opts,null);}
     private Cursor retain(Cursor cursor){
@@ -162,7 +163,7 @@ public final class RuntimeProviderFacade extends RuntimeProviderBase implements 
             @Override public void close(){if(!closing.compareAndSet(false,true))return;try{super.close();}finally{endUse();}}
         };
     }
-    private void endUse(){synchronized(this){if(uses<=0)throw new IllegalStateException("PROVIDER_USE_UNBALANCED");uses--;}releaseIfIdle();}
+    private void endUse(){synchronized(this){if(uses<=0){RuntimeFacadeContract.drop("PROVIDER_USE_UNBALANCED",null);return;}uses--;}releaseIfIdle();}
     private static final java.util.concurrent.ExecutorService RELEASE_EXECUTOR=java.util.concurrent.Executors.newSingleThreadExecutor(r->{Thread t=new Thread(r,"Tripoder-ProviderRelease");t.setDaemon(true);return t;});
     private void releaseIfIdle(){
         synchronized(this){if(!closed||uses!=0||released)return;released=true;}

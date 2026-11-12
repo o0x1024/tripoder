@@ -57,6 +57,13 @@ public final class BroadcastResolutionIntegration extends ControlTestBase {
         check("security-refusal-reaches-the-caller",(Boolean)platformAnswer.invoke(null,new SecurityException("probe")),true);
         check("internal-failure-is-reduced",!(Boolean)platformAnswer.invoke(null,new IllegalStateException("probe")),false);
         check("unsupported-shape-is-reduced",!(Boolean)platformAnswer.invoke(null,new UnsupportedOperationException("probe")),false);
+        // Non-broadcast facades use the same contract: an unknown flag word is narrowed (as an older platform ignores
+        // newer flags) and a reduced call answers instead of throwing.
+        Method flagBits=contract.getDeclaredMethod("flagBits",String.class,long.class);flagBits.setAccessible(true);
+        check("unknown-flag-bits-are-narrowed",((Integer)flagBits.invoke(null,"PROBE_FLAGS",0x1_0000_0001L))==1,flagBits.invoke(null,"PROBE_FLAGS",0x1_0000_0001L));
+        check("known-flag-bits-pass-unchanged",((Integer)flagBits.invoke(null,"PROBE_FLAGS",0x10L))==0x10,flagBits.invoke(null,"PROBE_FLAGS",0x10L));
+        Method nothing=contract.getDeclaredMethod("nothing",String.class,Throwable.class,Object.class);nothing.setAccessible(true);
+        check("reduced-call-answers-the-platform-way",Boolean.FALSE.equals(nothing.invoke(null,"PROBE_NOTHING",new IllegalStateException("probe"),Boolean.FALSE)),false);
         // Baseline fact this contract must respect: the platform already refuses a selector broadcast, so that shape is
         // never a parity target - the runtime's job is to keep the caller alive for the shapes the platform does accept.
         String selectorAnswer;

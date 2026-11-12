@@ -38,5 +38,22 @@ final class RuntimeFacadeContract {
     static boolean platformAnswer(Throwable error){
         return error instanceof SecurityException;
     }
+    /**
+     * Records a limitation and answers the way the platform answers a call that did nothing
+     * ({@code null}, {@code false}, an empty list). Use this instead of throwing from a facade.
+     */
+    static <T> T nothing(String code,Throwable error,T answer){
+        drop(code,error);
+        return answer;
+    }
+    /**
+     * Narrows a flag word to the bits this facade implements. A newer caller on an older platform gets its
+     * unknown bits ignored rather than an exception — that is how the platform treats flags it does not know.
+     */
+    static int flagBits(String code,long flags){
+        if((flags&~0xFFFFFFFFL)==0)return (int)flags;
+        drop(code,null);
+        return (int)(flags&0xFFFFFFFFL);
+    }
     private RuntimeFacadeContract(){}
 }

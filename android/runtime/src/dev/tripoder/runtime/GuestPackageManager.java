@@ -74,8 +74,7 @@ final class GuestPackageManager extends DeniedPackageManager {
     private ApplicationInfo applicationInfo(String packageName, long flags) throws NameNotFoundException {
         try {
             requireSelf(packageName);
-            if ((flags & ~0xFFFFFFFFL) != 0)
-                throw new UnsupportedOperationException("APPLICATION_INFO_FLAGS_UNSUPPORTED:0x" + Long.toHexString(flags));
+            flags = Integer.toUnsignedLong(RuntimeFacadeContract.flagBits("APPLICATION_INFO_FLAGS_REDUCED", flags));
             return copyApplicationInfo(engine.info, (flags & GET_META_DATA) != 0);
         } catch (Throwable t) {
             android.util.Log.w("TripoderGuestPM", "applicationInfo pkg=" + packageName + " flags=" + flags + " FAILED", t);
@@ -170,7 +169,7 @@ final class GuestPackageManager extends DeniedPackageManager {
     @Override public android.content.pm.ActivityInfo getActivityInfo(ComponentName component,ComponentInfoFlags flags)throws NameNotFoundException{if(flags==null)throw new IllegalArgumentException("ACTIVITY_INFO_FLAGS_REQUIRED");return GuestActivityInfo.get(engine,component,flags.getValue());}
     @Override public ServiceInfo getServiceInfo(ComponentName component,ComponentInfoFlags flags)throws NameNotFoundException{
         if(component==null||flags==null)throw new IllegalArgumentException("SERVICE_COMPONENT_REQUIRED");requireSelf(component.getPackageName());
-        long value=flags.getValue();if((value&~0xFFFFFFFFL)!=0)throw new UnsupportedOperationException("SERVICE_INFO_FLAGS_UNSUPPORTED:0x"+Long.toHexString(value));
+        long value=Integer.toUnsignedLong(RuntimeFacadeContract.flagBits("SERVICE_INFO_FLAGS_REDUCED",flags.getValue()));
         ServiceInfo raw=engine.serviceIndex.get(component.getClassName());
         android.os.Bundle states=RuntimeComponentState.snapshot(engine);
         long directBoot=value&(MATCH_DIRECT_BOOT_AWARE|MATCH_DIRECT_BOOT_UNAWARE);
@@ -181,7 +180,7 @@ final class GuestPackageManager extends DeniedPackageManager {
     }
 
     private ProviderInfo providerInfo(ProviderInfo info,long flags){
-        if((flags&~0xFFFFFFFFL)!=0)throw new UnsupportedOperationException("PROVIDER_INFO_FLAGS_UNSUPPORTED");
+        flags=RuntimeFacadeContract.flagBits("PROVIDER_INFO_FLAGS_REDUCED",flags);
         android.os.Bundle states=RuntimeComponentState.snapshot(engine);
         if(info==null||!RuntimeComponentState.enabled(states,info)&&(flags&MATCH_DISABLED_COMPONENTS)==0)return null;
         ProviderInfo result=new ProviderInfo(info);result.enabled=RuntimeComponentState.enabled(states,info.name,info.enabled);result.applicationInfo=copyApplicationInfo(engine.info,(flags&GET_META_DATA)!=0);

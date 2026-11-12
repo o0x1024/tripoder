@@ -53,13 +53,16 @@ final class RuntimeProviders {
      * owner; a shell's mutable ProviderInfo does not create a second Android owner. */
     void installFromFramework(List<?> batch)throws Exception{
         List<Entry> admitted=frameworkEntries(batch);
+        android.util.Log.i("TripoderBoot", "installFromFramework batch=" + (batch != null ? batch.size() : 0) + " admitted=" + admitted.size());
         if(!admitted.isEmpty()&&(engine.application==null||engine.componentFactory==null))throw new IllegalStateException("PROVIDER_INSTALL_APPLICATION_NOT_CONSTRUCTED");
         for(Entry entry:admitted){
             // This is the caller's explicit local framework batch, including a
             // call made from a Binder thread. Keep Android's calling-thread
             // initialization rather than posting it and waiting on that thread.
+            android.util.Log.i("TripoderBoot", "installFromFramework provider: " + entry.info.name);
             if(!entry.ready.isDone()&&entry.claimed.compareAndSet(false,true))initialize(entry);
             ready(entry.lease);
+            android.util.Log.i("TripoderBoot", "installFromFramework provider done: " + entry.info.name);
         }
     }
     private List<Entry> frameworkEntries(List<?> batch){
@@ -193,19 +196,25 @@ final class RuntimeProviders {
             try{
                 if(ref.getBoolean("local"))local(ref);
                 long identity=Binder.clearCallingIdentity();try{client=stable?engine.host.getContentResolver().acquireContentProviderClient(ref.getString("physical")):engine.host.getContentResolver().acquireUnstableContentProviderClient(ref.getString("physical"));}finally{Binder.restoreCallingIdentity(identity);}
-                if(client==null)throw new IllegalStateException("PROVIDER_TRANSPORT_UNAVAILABLE");
+                // A provider that cannot be reached is the platform's "Unknown URL" answer, not a runtime crash.
+                if(client==null){RuntimeFacadeContract.drop("PROVIDER_TRANSPORT_UNAVAILABLE",null);throw new IllegalArgumentException("Unknown URL content://"+authority);}
                 facade=new RuntimeProviderFacade(engine,ref,client);
                 if(!"READY".equals(ref.getString("publication")))facade.awaitReady();
                 return facade;
             }catch(Throwable error){if(facade!=null)facade.close();else{if(client!=null)client.close();if(!ref.getBoolean("thin")){Bundle release=engine.auth();release.putString("cap",ref.getString("cap"));engine.brokerCall(RuntimeWire.PROVIDER_RELEASE,release);}}throw error;}
-        }catch(RuntimeException error){throw error;}catch(Exception error){throw new IllegalStateException("PROVIDER_ACQUIRE_FAILED:"+authority,error);}
+        }catch(RuntimeException error){if(RuntimeFacadeContract.platformAnswer(error))throw error;RuntimeFacadeContract.drop("PROVIDER_ACQUIRE_FAILED:"+authority,error);throw new IllegalArgumentException("Unknown URL content://"+authority);}catch(Exception error){RuntimeFacadeContract.drop("PROVIDER_ACQUIRE_FAILED:"+authority,error);throw new IllegalArgumentException("Unknown URL content://"+authority);}
     }
     ContentProvider router(){return new Router();}
     private final class Router extends RuntimeProviderBase {
         private final Map<String,RuntimeProviderFacade> cachedFacades=new ConcurrentHashMap<>();
         private final Set<String> externalAuthorities=Collections.newSetFromMap(new ConcurrentHashMap<>());
         private boolean settings(Uri uri){return uri!=null&&"content".equals(uri.getScheme())&&"settings".equals(uri.getAuthority());}
-        private String logical(Uri uri){if(uri==null||!"content".equals(uri.getScheme()))throw new IllegalArgumentException("PROVIDER_URI_INVALID");return RuntimeProviderBroker.authority(uri.getAuthority());}
+        // ContentResolver.wrap() sends even non-content URIs to this provider.
+        // Preserve the platform resolver front end before entering our authority broker:
+        // MIME/query return null for network/file URIs, and files use the existing
+        // filesystem namespace rather than becoming fictitious provider authorities.
+        private boolean providerUri(Uri uri){return ContentResolver.SCHEME_CONTENT.equals(Objects.requireNonNull(uri,"uri").getScheme());}
+        private String logical(Uri uri){if(!providerUri(uri))throw new IllegalArgumentException("PROVIDER_URI_INVALID");return RuntimeProviderBroker.authority(uri.getAuthority());}
         private boolean allowExternalPassthrough(String authority){
             return authority!=null&&engine.providerIndex.authority(authority)==null&&!authority.startsWith(engine.host.getPackageName())&&!authority.startsWith("dev.tripoder.");
         }
@@ -242,6 +251,7 @@ final class RuntimeProviders {
             try{facade.close();}catch(Throwable ignored){}
         }
         @Override public Cursor query(Uri uri,String[] projection,Bundle args,CancellationSignal signal){
+            if(!providerUri(uri))return engine.host.getContentResolver().query(uri,projection,args,signal);
             if(settings(uri)){if(signal!=null)throw unsupported();return engine.settingsProvider().query(uri,projection,args,signal);}
             String auth=logical(uri);
             Cursor honey=RuntimeHoneyData.query(auth,uri,projection);
@@ -265,6 +275,7 @@ final class RuntimeProviders {
             }
         }
         @Override public String getType(Uri uri){
+            if(!providerUri(uri))return engine.host.getContentResolver().getType(uri);
             if(settings(uri))return engine.settingsProvider().getType(uri);
             String auth=logical(uri);
             ContentProvider local=findLocal(auth);
@@ -286,6 +297,7 @@ final class RuntimeProviders {
             }
         }
         @Override public Uri insert(Uri uri,ContentValues values,Bundle extras){
+            if(!providerUri(uri))return engine.host.getContentResolver().insert(uri,values,extras);
             if(settings(uri))return engine.settingsProvider().insert(uri,values,extras);
             String auth=logical(uri);
             ContentProvider local=findLocal(auth);
@@ -304,6 +316,7 @@ final class RuntimeProviders {
             }
         }
         @Override public int update(Uri uri,ContentValues values,Bundle extras){
+            if(!providerUri(uri))return engine.host.getContentResolver().update(uri,values,extras);
             if(settings(uri))return engine.settingsProvider().update(uri,values,extras);
             String auth=logical(uri);
             ContentProvider local=findLocal(auth);
@@ -322,6 +335,7 @@ final class RuntimeProviders {
             }
         }
         @Override public int delete(Uri uri,Bundle extras){
+            if(!providerUri(uri))return engine.host.getContentResolver().delete(uri,extras);
             if(settings(uri))return engine.settingsProvider().delete(uri,extras);
             String auth=logical(uri);
             ContentProvider local=findLocal(auth);
@@ -340,6 +354,7 @@ final class RuntimeProviders {
             }
         }
         @Override public int bulkInsert(Uri uri,ContentValues[] values){
+            if(!providerUri(uri))return engine.host.getContentResolver().bulkInsert(uri,values);
             if(settings(uri))return engine.settingsProvider().bulkInsert(uri,values);
             String auth=logical(uri);
             ContentProvider local=findLocal(auth);
@@ -401,6 +416,13 @@ final class RuntimeProviders {
             return openFile(uri,mode,null);
         }
         @Override public ParcelFileDescriptor openFile(Uri uri,String mode,CancellationSignal signal)throws FileNotFoundException{
+            if(RuntimeResourceUri.isResource(uri)){
+                AssetFileDescriptor resource=openAssetFile(uri,mode,signal);
+                if(resource.getDeclaredLength()<0)return resource.getParcelFileDescriptor();
+                try{resource.close();}catch(java.io.IOException ignored){}
+                throw new FileNotFoundException("Not a whole file: "+uri);
+            }
+            if(!providerUri(uri))return engine.host.getContentResolver().openFileDescriptor(uri,mode,signal);
             if(settings(uri))return engine.settingsProvider().openFile(uri,mode,signal);
             String auth=logical(uri);
             ContentProvider local=findLocal(auth);
@@ -423,6 +445,9 @@ final class RuntimeProviders {
         }
         @Override public AssetFileDescriptor openAssetFile(Uri uri,String mode,CancellationSignal signal)throws FileNotFoundException{
             if(settings(uri))return engine.settingsProvider().openAssetFile(uri,mode,signal);
+            AssetFileDescriptor resource=RuntimeResourceUri.openAssetFile(engine,uri,mode,signal);
+            if(resource!=null)return resource;
+            if(!providerUri(uri))return engine.host.getContentResolver().openAssetFileDescriptor(uri,mode,signal);
             String auth=logical(uri);
             ContentProvider local=findLocal(auth);
             if(local!=null){
@@ -443,6 +468,7 @@ final class RuntimeProviders {
             return openTypedAssetFile(uri,type,opts,null);
         }
         @Override public AssetFileDescriptor openTypedAssetFile(Uri uri,String type,Bundle opts,CancellationSignal signal)throws FileNotFoundException{
+            if(!providerUri(uri))return engine.host.getContentResolver().openTypedAssetFileDescriptor(uri,type,opts,signal);
             if(settings(uri))return engine.settingsProvider().openTypedAssetFile(uri,type,opts,signal);
             String auth=logical(uri);
             ContentProvider local=findLocal(auth);
