@@ -139,11 +139,29 @@ final class WorkbenchAppActions {
     /** A launch that finds every process slot taken offers to stop a running application instead of failing on an internal code. */
     private void launch(JSONObject install,WorkbenchCatalog catalog){
         if(!ready())return;
-        try{app.operations.submit(request("prepareApplicationLaunch",install),"启动应用",null,(prepared,error)->{
-            if(error!=null){if(catalog!=null&&capacity(error)){offerSlot(catalog,install);return;}launchFailed(page,app,null,error);return;}
+        String name=WorkbenchCatalog.name(app,install);
+        try{app.operations.submit(request("prepareApplicationLaunch",install),"启动应用「"+name+"」",null,(prepared,error)->{
+            if(error!=null){
+                if(catalog!=null&&capacity(error)){offerSlot(catalog,install);return;}
+                if(catalog!=null&&startTimeout(error)){offerTimeout(catalog,install,name);return;}
+                launchFailed(page,app,null,error);return;
+            }
             if(prepared.getBoolean("woken",false))return;
             enter(page,app,prepared,!page.isDestroyed()&&!page.isFinishing()&&visible(),"应用已准备好，但 Tripoder 不在前台，没有打开界面。请回到 Tripoder 后重新启动。");
         });}catch(Exception error){launchFailed(page,app,null,error);}
+    }
+    /** The startup budget is two minutes (RuntimeStartupDeadline): a launch that runs it out says something about contention,
+     *  not about the application. Name the application and offer the two real next steps instead of an internal code. */
+    private static boolean startTimeout(Exception error){
+        String message=error==null?null:error.getMessage();
+        return message!=null&&(message.contains("PROCESS_START_TIMEOUT")||message.contains("ENGINE_CONSTRUCTION_TIMEOUT")||message.contains("WORKER_BIND_TIMEOUT"));
+    }
+    private void offerTimeout(WorkbenchCatalog catalog,JSONObject install,String name){
+        new AlertDialog.Builder(page).setTitle("应用没有启动")
+            .setMessage("「"+name+"」的启动在 2 分钟内没有完成。容器同时运行的应用越多，启动越慢；先停掉其它正在运行的应用再重试，通常就能起来。")
+            .setPositiveButton("重试",(dialog,which)->launch(install,catalog))
+            .setNeutralButton("先停掉其它应用",(dialog,which)->offerSlot(catalog,install))
+            .setNegativeButton("取消",null).show();
     }
     /** The process pool is a real budget (RuntimeSlot.CAPACITY, shared by every process an app declares): a full pool must
      *  offer a way forward instead of handing the user an internal code. Nothing is stopped without the user choosing it. */

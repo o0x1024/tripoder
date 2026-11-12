@@ -20,7 +20,7 @@
 | 微信 | `com.tencent.mm` | 启动，进程存活，首屏 | 可用（未登录） |
 | QQ | `com.tencent.mobileqq` | 启动到《服务协议/隐私政策》页 | 可用（未登录） |
 | 美团 | `com.sankuai.meituan` | 启动到「温馨提示」隐私同意页 | 可用（未登录） |
-| 微博 | `com.sina.weibo` | **首次被运行槽位上限挡住**，见 §3 | 修后待测 |
+| 微博 | `com.sina.weibo` | 空槽位下单应用启动**成功**到《用户协议和隐私条款》页；点「同意并继续」后崩溃于**我方广播门面**（§6） | 启动可用 · 登录链路被门面挡住 |
 | 快手 / 高德地图 | `com.smile.gifmaker` / `com.autonavi.minimap` | 已装入容器，未启动 | 未测 |
 | 抖音 | `com.ss.android.ugc.aweme` | 服务端按运行环境判定，入口已加提示（前一轮结论） | 不可用 |
 
@@ -84,3 +84,72 @@ if(index<0)throw new IllegalStateException("PROCESS_CAPACITY_EXHAUSTED:requiredS
 
 相关：门面异常契约见 [../facade-exception-contract-nonbroadcast-20261113/README.md](../facade-exception-contract-nonbroadcast-20261113/README.md)，
 BOSS直聘闭环见 [../bosszhipin-container-login-20261113/README.md](../bosszhipin-container-login-20261113/README.md)。
+
+## 6. 微博：启动不是兼容性问题，登录被「广播门面缺 PendingResult」挡住
+
+### 6.1 单飞对照推翻了 §3 的读法
+
+第 1 批里微博是第 5 个被启动的应用，失败于 `PROCESS_CAPACITY_EXHAUSTED`。这一轮把容器**清空**（`am force-stop dev.tripoder.q6` / `q7`）
+后只点微博一个：
+
+```
+topResumedActivity=dev.tripoder.q6/dev.tripoder.runtime.generated.TaskP0$F0M0C0
+文本：用户协议和隐私条款 / 欢迎您使用微博！… / 不同意 / 同意并继续
+```
+
+⇒ **微博本身能启动**，第 1 批的失败是并发与槽位预算造成（见 [inventory.md](inventory.md) 与 gotcha `slot-budget-is-per-process-not-per-app`），
+不是应用兼容性结论。批量推进的正确读法：**先清槽位再判定单应用**。
+
+### 6.2 点「同意并继续」后崩溃：`Call while result is not pending`
+
+```
+FATAL EXCEPTION: pool-5-thread-8
+Process: com.sina.weibo, PID: 11623
+java.lang.IllegalStateException: Call while result is not pending
+  at android.content.BroadcastReceiver.checkSynchronousHint(BroadcastReceiver.java:769)
+  at android.content.BroadcastReceiver.setResultData(BroadcastReceiver.java:537)
+  at com.sina.weibo.PushService.b(PushService.java:433)
+  at com.sina.weibo.PushService$MyBroadcastReceiver.a(PushService.java:268)
+  at com.sina.weibo.PushService$MyBroadcastReceiver$1.run(PushService.java:180)
+```
+
+`checkSynchronousHint()` 只在 `mPendingResult == null` 时抛出：微博的 push 接收器在**自己线程池里**对收到的 receiver 调用 `setResultData`，
+说明这条广播在真机上是**有序广播**（AMS 会给 receiver 装上 PendingResult），而容器这次**没有把有序语义带过去**。
+
+这与 BOSS直聘那轮的判据完全同源（[../facade-exception-contract-nonbroadcast-20261113/README.md](../facade-exception-contract-nonbroadcast-20261113/README.md)）：
+**运行时不得让客体撞上"平台不会发生"的状态**。区别是这次不是「抛异常」，而是「少了一个平台本会给的对象」。
+
+### 6.3 未做与下一个判别实验
+
+- 未做的判别：在**真机原生微博**上抓同一条广播（`PushService$MyBroadcastReceiver` 注册的 action）是否是 ordered。
+  若原生是 ordered，则这是容器**有序广播语义丢失**的结构缺陷，修在 `RuntimeReceivers` / `RuntimeBroadcastBroker`（单目标限制 `ORDERED_BROADCAST_SINGLE_TARGET_REQUIRED` 也要一起复核）。
+- 本轮没有改广播门面：判据未取到之前改投递语义，等于拿登录链路做赌注。
+
+## 7. 瓶颈 B 的定性修正：不是「无超时」，而是「120s 预算 + 全程无反馈」
+
+上一版把「点下去 30–50s 卡在『启动应用 · 处理中』且零日志」写成「无超时」。这次让它自己跑完，结论翻转：
+
+- `RuntimeStartupDeadline.TIMEOUT_MS = Long.getLong("tripoder.startup.timeoutMs", 120000L)`——预算存在，是 **120 秒**。
+- 约 120s 后 UI 自行给出：`应用没有启动 / 操作没有完成（PROCESS_START_TIMEOUT_UNKNOWN）`。
+- 全缓冲区唯一一条 supervisor 失败日志：`ProcessSupervisor.start failed for default/com.dianping.v1/com.dianping.v1 phase=APPLICATION`
+  + `IllegalStateException: TimeoutException`。同窗口 `dvm_lock_sample` 显示 `ProcessSupervisor.java:56` / `RuntimeBroker.java:182`
+  有 2.5–3.1s 锁等待，`binderTransact code=1` 一次 4396ms。
+- ⇒ 真实失效点是 **phase=APPLICATION**（guest 已 attach、LOAD 完成，`START_APPLICATION` 未在预算内到 READY），
+  且 **UI 不告诉用户是哪个应用、也不给取消/重试**。观测时只等 30–50s 就 dump，会把它误判成「永久卡住、零日志」。
+
+### 修法（`build-facade-v58`，仍只动 UI 层）
+
+`android/workbench/src/dev/tripoder/hooklab/WorkbenchAppActions.java`
+
+- 启动进度文案带上应用名：`启动应用「微博」 · 处理中`（此前无应用名，多应用连点时极易把失败归因到错误的应用）。
+- 启动失败若命中 `PROCESS_START_TIMEOUT` / `ENGINE_CONSTRUCTION_TIMEOUT` / `WORKER_BIND_TIMEOUT`，弹
+  「应用没有启动：『X』的启动在 2 分钟内没有完成。容器同时运行的应用越多，启动越慢…」+ **重试** / **先停掉其它应用** / 取消。
+- 与 §3 的槽位对话框同一条原则：**预算与策略是容器的，出路必须给用户**。
+
+## 8. 这一轮的边界（不要外推）
+
+- 微博只到《用户协议》页；「同意并继续」之后因 6.2 崩溃，**登录完全未验证**。
+- `phase=APPLICATION` 超时的失败样本是**大众点评**（不是微博）：说明「多应用并发时某个 guest 起不到 READY」是**通用**现象，
+  但**哪些应用在多少并发下会超时，需要逐应用实测**，不能由 1 个样本断言。
+- v58 的对话框**未在真机验证**（改的是 UI 分支，需要再等到一次真实超时才能看到它）。
+
