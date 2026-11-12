@@ -94,7 +94,7 @@
 | # | 参数 | 抖音怎么读到它 | 原生真值 | 容器内值 | 可投影？ | 判决 |
 |---|---|---|---|---|---|---|
 | C1 | 运行 uid 与包名归属不自洽 | `getuid()` / Binder `callingUid` 对比 `getPackageUid("com.ss.android.ugc.aweme")` | `10327` / `10327` | `10542` / `10327` | 否（uid 是安装期属性） | **最强嫌疑 ✅实测差异** |
-| C2 | 宿主 runtime 的可读痕迹 | 扫 `/proc/self/maps`：出现 `/data/app/~~…/dev.tripoder.q6…/lib*/libruntime.so`、`libselfhook*.so`、宿主 dex | 无 | 必有 | 否（去掉即去掉容器） | **并列最强 ○未取样本** |
+| C2 | 宿主 runtime 的可读痕迹 | 扫 `/proc/self/maps`：出现 `/data/app/~~…/dev.tripoder.q6…/lib*/libruntime.so`、`libselfhook*.so`、宿主 dex | 无 | 必有 | 否（去掉即去掉容器） | **并列最强 △外部不可取证** |
 | C3 | 私有目录语义 | `stat("/data/user/0/<pkg>")`、属主、可写性 | 属主 `10327` | 客体跑在 `10542`，路径与属主自相矛盾 | 否 | 高 |
 | C4 | 代码来源一致性 | `getSourceDir()` / `ApplicationInfo.sourceDir` vs 进程实际加载的 APK/DexFile 路径 | 一致 | 门面答真机路径，进程实际加载宿主 APK + hook | 部分 | 中高 |
 | C5 | 包可见性完整性 | `getInstalledPackages` 条数、`queries` 解析结果 | 完整 | 被容器裁剪 | 可改善、不可完备 | 中 |
@@ -103,6 +103,8 @@
 | C6 | 双实例（同包名两进程） | `ps`/包列表 | — | 单实例实测仍弹 | — | **已排除 ✅** |
 | D1 | 设备 / 账号画像 | 设备指纹、账号风控 | — | 同机同账号原生通过 | — | **已排除 ✅** |
 | E1 | 渠道分发记录 | 服务端：该设备/账号是否曾从官方渠道获得此包 | 有 | 无（容器内不发生分发） | 否（客户端不可见） | **并列最强 ○不可验证** |
+
+> C2 的取证状态（2026-11-12 补测）：`adb shell cat /proc/1872/maps` → `Permission denied`（客体 pid `1872` / uid `10542` 在线，另见 `:sandboxed_process0` pid `3198`）。这恰好证明该文件受 uid 隔离保护——而**同一进程读自己的 `/proc/self/maps` 是自由的**，所以 C2 对抖音是「活」的候选，只是无法从 adb 外部取证。要坐实需在 runtime 内加一行 maps 落盘（native 侧 grep `tripoder`），成本 1 次构建 + 1 次安装。
 
 **如果必须只指一个参数：C1**。理由：它是唯一「纯 Java 层就能读到、且我们已拿到硬差异」的（`10542` vs `10327`，`container-uid-forensics`）；C2 需要 native 扫描、E1 需要抖音后台数据，取证成本都更高。
 
