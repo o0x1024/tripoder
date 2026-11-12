@@ -44,6 +44,7 @@
 | [code-snapshot-scope-20261112.md](code-snapshot-scope-20261112.md) | **代码快照提交范围清点**：三种范围的精确文件清单（推荐 9 文件）、工作树实况、凭据/敏感数据扫描结果与「绝不能进历史」的路径清单、`reportMaps()` 探针的常量开关取舍。 |
 | [evidence/douyin-onekey-a2b/README.md](evidence/douyin-onekey-a2b/README.md) | **原生 vs 容器 A/B 举证表**：真机原生安装七事实实测（installer=`com.xiaomi.market`）、容器门面改造前/后逐列对照、复现命令。 |
 | [evidence/jd-container-login-20261113/README.md](evidence/jd-container-login-20261113/README.md) | **京东容器内一键登录闭环实测**：同样 `installer=null`、同样 uid 不自洽，京东本机号码一键登录**成功**并进入个人中心（无任何渠道类提示）⇒ 京东的来源类校验在容器内可满足，与抖音 P2 边界形成对照。含步骤、UI dump 观测、`FLAG_SECURE` 与未测支付链路的边界声明。 |
+| [evidence/bosszhipin-container-login-20261113/README.md](evidence/bosszhipin-container-login-20261113/README.md) | **BOSS直聘一键登录：崩溃根因与修复**：一键登录其实已成功，随后被运行时的广播形状校验（`BROADCAST_INTENT_UNSUPPORTED`）打死主进程；修复为「先降级再投递」（`build-bcast-v54`）后回归通过。给出「先看 crash 缓冲里有没有 `dev.tripoder.runtime.*` 帧」这条排障判据，并登记同族残余风险。 |
 
 ---
 
