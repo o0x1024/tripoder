@@ -153,3 +153,20 @@ java.lang.IllegalStateException: Call while result is not pending
   但**哪些应用在多少并发下会超时，需要逐应用实测**，不能由 1 个样本断言。
 - v58 的对话框**未在真机验证**（改的是 UI 分支，需要再等到一次真实超时才能看到它）。
 
+## 9. 第 2 批（快手 / 高德地图）与广播 extras 族
+
+第 2 批起改为「清槽位 → 单应用 → 隐私页 → 首页 → 登录入口」逐应用推进，每步只记三件套
+（`topResumedActivity` / `crash` 缓冲 / `admission-blocked`）：
+
+- **快手**：通过。到「欢迎使用快手」隐私页 → 点同意 → feed（截图有「点击登录」徽标），
+  `com.smile.gifmaker` + `:push_v3` 全程存活，crash 空、栅栏 0。
+- **高德地图**：v65 在点同意后崩于**我方**广播门面——蓝牙设备发现广播带
+  `android.bluetooth.device.extra.UUID_LE`（`Parcelable[]`），`RuntimeSystemBroadcasts.systemBundle`
+  直接 `throw IllegalArgumentException`，抛点在 `RuntimeReceiverProxy.onReceive` 派发体内 ⇒ 客体 FATAL。
+  v66 把 extras 语义从「校验即抛」改为「丢弃该键 + 记 `BROADCAST_EXTRA_DROPPED`」并补 `Parcelable[]`，
+  高德**首页可达**（`查找地点、公交、地铁` / 首页 / 探索 / 对话 / 打车 / 未登录），三进程存活、crash 空、栅栏 0。
+
+完整栈、判据、边界见 [batch2-kuai-amap-20261113.md](batch2-kuai-amap-20261113.md)。
+这条族与 §6 的广播族同源（都是「门面在平台不失败处抛异常」），但落点不同：§6 是 `PendingResult` 生命周期，
+这里是 extras 的形状表达力（h31）。
+

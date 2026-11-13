@@ -49,10 +49,32 @@ final class RuntimeSystemBroadcasts {
     static final Set<String> SELF_PACKAGE=Set.of(Intent.ACTION_MY_PACKAGE_SUSPENDED,Intent.ACTION_MY_PACKAGE_UNSUSPENDED);
     static final Set<String> ACTIONS;
     static{Set<String> actions=new HashSet<>(BASIC);actions.addAll(MEDIA);actions.addAll(STICKY);actions.addAll(PACKAGE);actions.addAll(SELF_PACKAGE);ACTIONS=Set.copyOf(actions);}
-    static boolean action(String action){return action!=null&&ACTIONS.contains(action);}
-    static boolean contains(IntentFilter filter){for(int i=0;i<filter.countActions();i++)if(ACTIONS.contains(filter.getAction(i)))return true;return false;}
-    static boolean isPlatform(String action){return action!=null&&(action.startsWith("android.")||action.startsWith("com.android.")||ACTIONS.contains(action));}
-    static boolean only(IntentFilter filter){for(int i=0;i<filter.countActions();i++)if(!isPlatform(filter.getAction(i)))return false;return filter.countActions()>0;}
+    // ROM protection is metadata, not an action-name convention. Core actions
+    // retain their payload adapters; OEM protected actions use the same observer
+    // and authority pipeline without an application/brand-specific allowlist.
+    private static final RuntimeBroadcastCatalog PROTECTION=new RuntimeBroadcastCatalog(action->{preparePlatform();return dev.tripoder.selfhook.ComponentFrameworkAccess.protectedBroadcast(action);});
+    private static boolean platformPrepared;
+    private static synchronized void preparePlatform(){
+        if(platformPrepared)return;
+        try{
+            // Metadata only in :authority: no ART entry publication, process
+            // execution policy, storage adapter or opt-in business Hook.
+            if(RuntimeEngine.current==null){System.loadLibrary("tripoderselfhook");RuntimeFixedPreparation.framework();}
+            platformPrepared=true;
+        }catch(Exception error){throw new IllegalStateException("PLATFORM_BROADCAST_POLICY_UNAVAILABLE",error);}
+    }
+    static boolean protectedAction(String action){return PROTECTION.query(action);}
+    /** Must run before taking the authority monitor. action() is then cache-only. */
+    static Set<String> discover(IntentFilter filter){
+        Set<String> observed=new HashSet<>();
+        for(int i=0;i<filter.countActions();i++){String action=filter.getAction(i);if(protectedAction(action)||ACTIONS.contains(action))observed.add(action);}
+        return Set.copyOf(observed);
+    }
+    static void discover(String action){if(action!=null)protectedAction(action);}
+    static boolean action(String action){return action!=null&&(ACTIONS.contains(action)||PROTECTION.observed(action));}
+    static boolean contains(IntentFilter filter){for(int i=0;i<filter.countActions();i++)if(action(filter.getAction(i)))return true;return false;}
+    static boolean isPlatform(String action){return action(action);}
+    static boolean only(IntentFilter filter){for(int i=0;i<filter.countActions();i++)if(!protectedAction(filter.getAction(i)))return false;return true;}
     /** PACKAGE_* events are observable only for the observing guest's own package, never other installs. */
     static boolean ownPackageEvent(Intent intent,String packageName){
         if(!PACKAGE.contains(intent.getAction()))return true;
@@ -104,29 +126,41 @@ final class RuntimeSystemBroadcasts {
         }
         return systemBundle(input,0);
     }
+    /** A shape this runtime cannot re-parcel is dropped, never refused: the platform delivers these system
+     * broadcasts, so a throw here is a crash the platform never produces (高德地图 died on
+     * android.bluetooth.device.action.FOUND / UUID_LE, 2026-11-13). Dropping an extra the guest cannot
+     * receive anyway is the smaller lie, and one code per key keeps the loss observable. */
+    private static final java.util.Set<String> DROPPED=java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private static void drop(String code){
+        if(DROPPED.size()<32&&DROPPED.add(code))android.util.Log.w("TripoderFacade","BROADCAST_EXTRA_DROPPED:"+code);
+    }
     private static Bundle systemBundle(Bundle input,int depth){
-        if(input==null)return null;if(depth>3||input.size()>64)throw new IllegalArgumentException("PROVIDER_BUNDLE_TOO_LARGE");
+        if(input==null)return null;
+        if(depth>3){drop("depth");return new Bundle();}
         Bundle copy=new Bundle();
+        int processed=0;
         for(String key:input.keySet()){
-            if(key.length()>200)throw new IllegalArgumentException("PROVIDER_KEY_TOO_LONG");
+            if(processed++>=64){drop("count");break;}
+            if(key.length()>200){drop("key:"+key.length());continue;}
             Object v=input.get(key);
             if(v==null)copy.putString(key,null);
-            else if(v instanceof String){if(((String)v).length()>8192)throw new IllegalArgumentException("PROVIDER_STRING_TOO_LONG");copy.putString(key,(String)v);}
+            else if(v instanceof String){if(((String)v).length()>8192){drop("string:"+key);continue;}copy.putString(key,(String)v);}
             else if(v instanceof Integer)copy.putInt(key,(Integer)v);else if(v instanceof Long)copy.putLong(key,(Long)v);else if(v instanceof Boolean)copy.putBoolean(key,(Boolean)v);
             else if(v instanceof Double)copy.putDouble(key,(Double)v);else if(v instanceof Float)copy.putFloat(key,(Float)v);else if(v instanceof Short)copy.putShort(key,(Short)v);else if(v instanceof Byte)copy.putByte(key,(Byte)v);else if(v instanceof Character)copy.putChar(key,(Character)v);
             else if(v instanceof Bundle)copy.putBundle(key,systemBundle((Bundle)v,depth+1));
-            else if(v instanceof byte[]){if(((byte[])v).length>16384)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");copy.putByteArray(key,((byte[])v).clone());}
-            else if(v instanceof int[]){if(((int[])v).length>4096)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");copy.putIntArray(key,((int[])v).clone());}
-            else if(v instanceof long[]){if(((long[])v).length>4096)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");copy.putLongArray(key,((long[])v).clone());}
-            else if(v instanceof boolean[]){if(((boolean[])v).length>4096)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");copy.putBooleanArray(key,((boolean[])v).clone());}
-            else if(v instanceof float[]){if(((float[])v).length>4096)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");copy.putFloatArray(key,((float[])v).clone());}
-            else if(v instanceof double[]){if(((double[])v).length>4096)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");copy.putDoubleArray(key,((double[])v).clone());}
-            else if(v instanceof String[]){String[] array=(String[])v;if(array.length>64)throw new IllegalArgumentException("PROVIDER_ARRAY_TOO_LONG");for(String value:array)if(value!=null&&value.length()>8192)throw new IllegalArgumentException("PROVIDER_STRING_TOO_LONG");copy.putStringArray(key,array.clone());}
+            else if(v instanceof byte[]){if(((byte[])v).length>16384){drop("bytes:"+key);continue;}copy.putByteArray(key,((byte[])v).clone());}
+            else if(v instanceof int[]){if(((int[])v).length>4096){drop("ints:"+key);continue;}copy.putIntArray(key,((int[])v).clone());}
+            else if(v instanceof long[]){if(((long[])v).length>4096){drop("longs:"+key);continue;}copy.putLongArray(key,((long[])v).clone());}
+            else if(v instanceof boolean[]){if(((boolean[])v).length>4096){drop("bools:"+key);continue;}copy.putBooleanArray(key,((boolean[])v).clone());}
+            else if(v instanceof float[]){if(((float[])v).length>4096){drop("floats:"+key);continue;}copy.putFloatArray(key,((float[])v).clone());}
+            else if(v instanceof double[]){if(((double[])v).length>4096){drop("doubles:"+key);continue;}copy.putDoubleArray(key,((double[])v).clone());}
+            else if(v instanceof String[]){String[] array=(String[])v;boolean wide=false;if(array.length>64)wide=true;else for(String value:array)if(value!=null&&value.length()>8192)wide=true;if(wide){drop("strings:"+key);continue;}copy.putStringArray(key,array.clone());}
+            else if(v instanceof android.os.Parcelable[]){android.os.Parcelable[] array=(android.os.Parcelable[])v;android.os.Parcelable[] kept=new android.os.Parcelable[array.length];boolean ok=array.length<=64;for(int i=0;ok&&i<array.length;i++){android.os.Parcelable item=array[i];if(item!=null&&!platformType(item.getClass()))ok=false;else kept[i]=item;}if(ok)copy.putParcelableArray(key,kept);else drop("parcelables:"+key+":"+array.getClass().getComponentType().getName());}
             else if(v instanceof android.os.Parcelable&&platformType(v.getClass()))copy.putParcelable(key,(android.os.Parcelable)v);
             else if(v instanceof java.io.Serializable&&platformType(v.getClass()))copy.putSerializable(key,(java.io.Serializable)v);
-            else throw new IllegalArgumentException("PROVIDER_EXTRA_TYPE_UNSUPPORTED:"+key+":"+v.getClass().getName());
+            else drop("type:"+key+":"+v.getClass().getName());
         }
-        Parcel p=Parcel.obtain();try{p.writeBundle(copy);if(p.hasFileDescriptors())throw new IllegalArgumentException("PROVIDER_EXTRA_DESCRIPTOR_UNSUPPORTED");if(p.dataSize()>32768)throw new IllegalArgumentException("PROVIDER_BUNDLE_TOO_LARGE");}finally{p.recycle();}
+        Parcel p=Parcel.obtain();try{p.writeBundle(copy);if(p.hasFileDescriptors()){drop("descriptor");return new Bundle();}if(p.dataSize()>32768){drop("size:"+p.dataSize());return new Bundle();}}finally{p.recycle();}
         return copy;
     }
     private static boolean platformType(Class<?> type){
