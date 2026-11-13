@@ -275,9 +275,11 @@ final class RuntimeReceivers {
         String ticket=RuntimeSystemBroadcasts.action(physical.getAction())?null:RuntimeBroadcastIntent.ticket(physical);
         FinalDelivery finalDelivery;synchronized(this){finalDelivery=ticket==null?null:finals.get(ticket);}
         if(finalDelivery!=null&&dev.tripoder.selfhook.ComponentFrameworkAccess.pendingKind(token)==2){
-            if(finalDelivery.receiver!=receiver)throw new SecurityException("BROADCAST_FINAL_RECEIVER_MISMATCH");
+            if(finalDelivery.receiver!=receiver)RuntimeFacadeContract.drop("BROADCAST_FINAL_RECEIVER_MISMATCH",null);
+            else{
             if(finalDelivery.authorityTicket)event(ticket,"","systemDone");
             synchronized(this){finals.remove(ticket);}Invocation invocation=new Invocation(receiver,ticket,"",token);invocation.finalResult=true;current.get().push(invocation);return new Intent(finalDelivery.logical);
+            }
         }
         Registration registration;synchronized(this){Registration root=receivers.get(receiver);if(root!=null&&root.closed)return null;if(root!=null&&root.dynamic&&retiredActions.contains(physical.getAction()))return null;registration=root==null?null:root.select(physical);}
         if(registration==null){RuntimeFacadeContract.drop("RECEIVER_NOT_OWNED",null);return physical;}
@@ -289,21 +291,21 @@ final class RuntimeReceivers {
             if(!RuntimeSystemBroadcasts.ownPackageEvent(physical,engine.packageName))return null;
             if(RuntimeSystemBroadcasts.SELF_PACKAGE.contains(physical.getAction())&&!engine.host.getPackageName().equals(physical.getPackage()))return null;
             String instance=UUID.randomUUID().toString();Bundle b=engine.auth();b.putString("registration",registration.id);b.putString("instance",instance);b.putByteArray("payload",RuntimeSystemBroadcasts.observation(physical));
-            synchronized(this){if(pending.containsKey(token))throw new SecurityException("PENDING_RESULT_REUSED");}
+            synchronized(this){if(pending.containsKey(token))RuntimeFacadeContract.drop("PENDING_RESULT_REUSED",null);}
             try{Bundle admitted=engine.brokerCall(RuntimeWire.BROADCAST_SYSTEM_CLAIM,b);if(admitted.getBoolean("rejectedClosedRegistration"))return null;Invocation invocation=new Invocation(receiver,RuntimeWire.required(admitted,"ticket"),instance,token);synchronized(this){pending.put(token,invocation);}current.get().push(invocation);return RuntimeBroadcastIntent.decode(admitted.getByteArray("payload"));}
             catch(Exception error){throw new IllegalStateException("SYSTEM_RECEIVER_CLAIM_FAILED",error);}
         }
-        if(ticket==null)throw new SecurityException("SYSTEM_RECEIVER_NOT_REGISTERED");
-        if(registration.dynamic?!BroadcastLedger.action(registration.id).equals(physical.getAction()):!registration.id.equals(ticket))throw new SecurityException("BROADCAST_RECEIVER_MISMATCH");
+        if(ticket==null){RuntimeFacadeContract.drop("SYSTEM_RECEIVER_NOT_REGISTERED",null);return physical;}
+        if(registration.dynamic?!BroadcastLedger.action(registration.id).equals(physical.getAction()):!registration.id.equals(ticket)){RuntimeFacadeContract.drop("BROADCAST_RECEIVER_MISMATCH",null);return physical;}
         String instance=UUID.randomUUID().toString();Bundle b=engine.auth();b.putString("ticket",ticket);b.putString("component",registration.component);b.putString("registration",registration.dynamic?registration.id:"");b.putString("instance",instance);
         b.putBoolean("observedOrdered",receiver.isOrderedBroadcast());
-        try{Bundle admitted=engine.brokerCall(RuntimeWire.BROADCAST_CLAIM,b);if(admitted.getBoolean("rejectedClosedRegistration"))return null;if(admitted.getBoolean("ordered")!=receiver.isOrderedBroadcast())throw new SecurityException("BROADCAST_ORDERED_MISMATCH");Invocation invocation=new Invocation(receiver,ticket,instance,token);invocation.ordered=admitted.getBoolean("ordered");synchronized(this){if(pending.put(token,invocation)!=null)throw new SecurityException("PENDING_RESULT_REUSED");}current.get().push(invocation);return RuntimeBroadcastIntent.attachBinders(RuntimeBroadcastIntent.decode(admitted.getByteArray("payload")),admitted);}
-        catch(Exception error){throw new IllegalStateException("RECEIVER_CLAIM_FAILED",error);}
+        try{Bundle admitted=engine.brokerCall(RuntimeWire.BROADCAST_CLAIM,b);if(admitted.getBoolean("rejectedClosedRegistration"))return null;if(admitted.getBoolean("ordered")!=receiver.isOrderedBroadcast())RuntimeFacadeContract.drop("BROADCAST_ORDERED_MISMATCH",null);Invocation invocation=new Invocation(receiver,ticket,instance,token);invocation.ordered=receiver.isOrderedBroadcast();synchronized(this){if(pending.put(token,invocation)!=null)RuntimeFacadeContract.drop("PENDING_RESULT_REUSED",null);}current.get().push(invocation);return RuntimeBroadcastIntent.attachBinders(RuntimeBroadcastIntent.decode(admitted.getByteArray("payload")),admitted);}
+        catch(Exception error){RuntimeFacadeContract.drop("RECEIVER_CLAIM_FAILED",error);return physical;}
     }
     void after(BroadcastReceiver receiver,boolean success){Invocation invocation=current.get().poll();if(invocation==null||invocation.receiver!=receiver){RuntimeFacadeContract.drop("RECEIVER_CALLBACK_STACK_MISMATCH",null);if(current.get().isEmpty())current.remove();return;}if(current.get().isEmpty())current.remove();if(invocation.finalResult)return;
         event(invocation.ticket,invocation.instance,success?"returned":"failed");synchronized(this){invocation.returned=true;cleanup(invocation);}
     }
-    void asynchronous(BroadcastReceiver receiver,Object token){Invocation invocation=current.get().peek();if(invocation==null||invocation.receiver!=receiver)throw new SecurityException("RECEIVER_ASYNC_OUTSIDE_CALLBACK");if(invocation.finalResult)return;if(invocation.pending!=token)throw new SecurityException("PENDING_RESULT_IDENTITY_MISMATCH");event(invocation.ticket,invocation.instance,"asynchronous");}
+    void asynchronous(BroadcastReceiver receiver,Object token){Invocation invocation=current.get().peek();if(invocation==null||invocation.receiver!=receiver){RuntimeFacadeContract.drop("RECEIVER_ASYNC_OUTSIDE_CALLBACK",null);return;}if(invocation.finalResult)return;if(invocation.pending!=token)RuntimeFacadeContract.drop("PENDING_RESULT_IDENTITY_MISMATCH",null);event(invocation.ticket,invocation.instance,"asynchronous");}
     void finishing(Object token){
         Invocation invocation;synchronized(this){invocation=pending.get(token);}
         if(invocation==null||invocation.finalResult||!invocation.ordered)return;
@@ -313,6 +315,6 @@ final class RuntimeReceivers {
     }
     void finished(Object token){Invocation invocation;synchronized(this){invocation=pending.get(token);}if(invocation==null)return;event(invocation.ticket,invocation.instance,"finished");synchronized(this){invocation.finished=true;pending.remove(token);cleanup(invocation);}}
     private void cleanup(Invocation invocation){Registration registration=receivers.get(invocation.receiver);if(invocation.returned&&invocation.finished&&registration!=null&&!registration.dynamic)receivers.remove(invocation.receiver);}
-    private void event(String ticket,String instance,String event){Bundle b=engine.auth();b.putString("ticket",ticket);b.putString("instance",instance);b.putString("event",event);try{engine.brokerCall(RuntimeWire.BROADCAST_EVENT,b);}catch(Exception error){throw new IllegalStateException("RECEIVER_EVENT_UNCONFIRMED:"+event,error);}}
+    private void event(String ticket,String instance,String event){Bundle b=engine.auth();b.putString("ticket",ticket);b.putString("instance",instance);b.putString("event",event);try{engine.brokerCall(RuntimeWire.BROADCAST_EVENT,b);}catch(Exception error){RuntimeFacadeContract.drop("RECEIVER_EVENT_UNCONFIRMED:"+event,error);}}
     private static String actions(IntentFilter filter){if(filter==null)return "null";StringBuilder result=new StringBuilder();for(int i=0;i<Math.min(filter.countActions(),8);i++){if(i>0)result.append(',');String action=filter.getAction(i);result.append(action.substring(0,Math.min(action.length(),256)));}return result.toString();}
 }
