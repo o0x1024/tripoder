@@ -248,3 +248,10 @@ java.lang.IllegalStateException: Call while result is not pending
 2. **dump 有两个互不相同的失败条件**：页面有 `EditText` → 剪贴板 `checkPackage` 把客体杀掉；
    页面持续动画（短视频 feed、游戏）→ 只报 `could not get idle state.`，客体存活。
    后者不要重试 dump，改截图 + 坐标驱动。
+
+## 第 8 批（小红书登录链路）
+
+- [batch8-xhs-login-20261113.md](batch8-xhs-login-20261113.md)：登录链路走到验证码页（短信码已由模型读取），
+  并把两个容器侧缺陷立案 —— ①`input.app` ANR 后窗口焦点悬空（`FocusedWindows` 为空、`input text` 全丢，灭屏/亮屏可救回 focused app）；
+  ②客体自建 `app_process` 子进程 `com.xingin.tiny.daemon.e` 在 ART 注册期 ClassNotFound 循环自杀（主进程不影响）。
+
