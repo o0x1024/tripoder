@@ -26,10 +26,10 @@
 |---|---|
 | `pm list packages -3` 全量 | 121 |
 | 扣除厂商/系统捆绑 | 78 |
-| 已进流水线（有实测记录） | 26 |
+| 已进流水线（有实测记录） | 30 |
 | 盘点表已有结论（历史批次证据，未进流水线记录） | 31 |
-| 有证据合计（两者并集） | 43 |
-| 尚未实测 | 52 |
+| 有证据合计（两者并集） | 44 |
+| 尚未实测 | 48 |
 
 ## 逐项矩阵
 
@@ -70,13 +70,13 @@
 | 45 | `com.instagram.android` |  | — | 未测 |  |  | 未测 |
 | 46 | `com.jingdong.app.mall` | 京东 | 容器内 | 盘点有结论·待补流水线记录 |  |  | 登录成功（本机号码一键登录→个人中心） |
 | 47 | `com.kingsoft.xiezuo` |  | — | 未测 |  |  | 未测 |
-| 48 | `com.larus.nova` | 豆包 | — | 未测 |  |  | 未测 |
+| 48 | `com.larus.nova` | 豆包 | — | NOT_TOP（未上顶层） | dev.tripoder.q6/dev.tripoder.hooklab.WorkbenchActivity | fatal=0 adm=0 anr=0 | 未测 |
 | 49 | `com.luna.music` |  | — | 未测 |  |  | 未测 |
 | 51 | `com.mi.health` |  | — | 未测 |  |  | 未测 |
 | 52 | `com.miHoYo.Yuanshen` |  | — | 未测 |  |  | 未测 |
 | 53 | `com.microsoft.office.officehubrow` |  | — | 未测 |  |  | 未测 |
 | 54 | `com.mihoyo.hyperion` |  | — | 未测 |  |  | 未测 |
-| 73 | `com.netease.cloudmusic` | 网易云音乐 | 不可用（结构） | 盘点有结论·待补流水线记录 |  |  | **启动即崩，卡在系统服务身份校验**：`IStorageManager.getVolumeList` → `Secur |
+| 73 | `com.netease.cloudmusic` | 网易云音乐 | 不可用（结构） | LOGIN_ENTRY（登录入口可达） | TaskP1$F1M0C2 | fatal=0 adm=0 anr=0 | **启动即崩，卡在系统服务身份校验**：`IStorageManager.getVolumeList` → `Secur |
 | 74 | `com.openai.chatgpt` | ChatGPT | — | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M1C0 | fatal=0 adm=0 anr=0 | 未测 |
 | 75 | `com.pangsheng.pshuochepiao.m` |  | — | 未测 |  |  | 未测 |
 | 76 | `com.phoenix.read` | 红果免费短剧 | — | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M2C2 | fatal=0 adm=0 anr=0 | 未测 |
@@ -89,7 +89,7 @@
 | 83 | `com.sina.weibo` | 微博 | 容器内 | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M2C2 | fatal=0 adm=0 anr=0 | 可用：短信验证码登录闭环（新号 `用户7169367851`，读机内短信取码）；登录页 `uiautomator dum |
 | 84 | `com.smile.gifmaker` | 快手 | 已装入 | LOGIN_ENTRY（登录入口可达） | TaskP1$F1M1C2 | fatal=0 adm=0 anr=0 | **可用**（v67）：同意隐私后不再崩，feed 完整可用；登录入口（左上「登录」胶囊/左下「点击登录」）点击无反应， |
 | 85 | `com.ss.android.article.lite` |  | — | 未测 |  |  | 未测 |
-| 86 | `com.ss.android.article.news` | 今日头条 | 容器内 | 盘点有结论·待补流水线记录 |  |  | 启动成功；同意隐私后首页可达，登录入口右上「登录」[1099,2378][1187,2424] |
+| 86 | `com.ss.android.article.news` | 今日头条 | 容器内 | LOGIN_ENTRY（登录入口可达） | TaskP1$F1M0C0R1 | fatal=0 adm=0 anr=0 | 启动成功；同意隐私后首页可达，登录入口右上「登录」[1099,2378][1187,2424] |
 | 87 | `com.ss.android.ugc.aweme` | 抖音 | 容器内 | 盘点有结论·待补流水线记录 |  |  | 不可用：服务端按运行环境判定，入口已加提示 |
 | 88 | `com.taobao.idlefish` | 闲鱼 | 容器内 | 盘点有结论·待补流水线记录 |  |  | 启动成功；「同意」点击命中但仍停在同意/不同意（二次确认层） |
 | 89 | `com.taobao.taobao` | 淘宝 | 容器内 | 盘点有结论·待补流水线记录 |  |  | 启动成功；「同意」点击命中但仍停在同意/不同意（二次确认层） |
@@ -100,7 +100,7 @@
 | 94 | `com.tencent.qqlive` | 腾讯视频 | 容器内 | LOGIN_ENTRY（登录入口可达） | TaskP1$F1M1C2 | fatal=0 adm=0 anr=0 | 启动成功 TaskP1$F1M1C2；首页登录入口四条：微信登录 / QQ登录 / 其他登录方式 / 底栏未登录（con |
 | 95 | `com.tencent.tmgp.WePop` |  | — | 未测 |  |  | 未测 |
 | 96 | `com.tencent.tmgp.osgame` |  | — | 未测 |  |  | 未测 |
-| 97 | `com.tencent.tmgp.sgame` | 王者荣耀 | 已装入 | 盘点有结论·待补流水线记录 |  |  | **可用**：SGameActivity + `:xg_vip_service` 双进程，渲染到开区页（已有「微信440 |
+| 97 | `com.tencent.tmgp.sgame` | 王者荣耀 | 已装入 | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M2C2 | fatal=0 adm=0 anr=0 | **可用**：SGameActivity + `:xg_vip_service` 双进程，渲染到开区页（已有「微信440 |
 | 98 | `com.tongcheng.android` |  | — | 未测 |  |  | 未测 |
 | 99 | `com.twitter.android` |  | — | 未测 |  |  | 未测 |
 | 100 | `com.x8bit.bitwarden` |  | — | 未测 |  |  | 未测 |
@@ -120,7 +120,7 @@
 
 | 档 | 数量 | 跑法 |
 |---|---|---|
-| 可立即跑（tile 已建） | 20 | `coverage_pipeline.py --no-import <pkgs>` |
+| 可立即跑（tile 已建） | 16 | `coverage_pipeline.py --no-import <pkgs>` |
 | 需先导入（无 tile） | 32 | `coverage_pipeline.py <pkgs>`（含导入） |
 
 ### 可立即跑
@@ -132,15 +132,11 @@
 - `com.booking`（Booking.com缤客）
 - `com.hpbr.bosszhipin`（BOSS直聘）
 - `com.jingdong.app.mall`（京东）
-- `com.larus.nova`（豆包）
-- `com.netease.cloudmusic`（网易云音乐）
-- `com.ss.android.article.news`（今日头条）
 - `com.ss.android.ugc.aweme`（抖音）
 - `com.taobao.idlefish`（闲鱼）
 - `com.taobao.taobao`（淘宝）
 - `com.tencent.mm`（微信）
 - `com.tencent.mobileqq`（QQ）
-- `com.tencent.tmgp.sgame`（王者荣耀）
 - `com.xingin.xhs`（小红书）
 - `com.xunmeng.pinduoduo`（拼多多）
 - `ctrip.android.view`（携程旅行）
