@@ -22,18 +22,18 @@
 | 16 | `com.android.soundrecorder` | 是 |  | 未测 |  |
 | 17 | `com.anthropic.claude` |  |  | 未测 |  |
 | 18 | `com.antutu.ABenchMark` | 容器内 | 启动成功 TaskP1$F1M0C2；首屏「欢迎您使用 安兔兔评测!」同意层 | [batch24](batch23-coverage-batch-20261113.md) |  |
-| 19 | `com.autonavi.minimap` |  | 已装入 | 未测 | 20261113 import-batch1 |
+| 19 | `com.autonavi.minimap` |  | 容器内 | 启动成功 TaskP1$F1M2C0E0；无同意层（consent_taps=0），首页底栏「未登录」为登录入口 | [batch25](batch25-coverage-pipeline-20261113.md) |
 | 20 | `com.baidu.BaiduMap` |  |  | 未测 |  |
 | 21 | `com.baidu.input_mi` | 是 |  | 未测 |  |
-| 22 | `com.baidu.netdisk` |  |  | 未测 |  |
-| 23 | `com.baidu.searchbox` |  |  | 未测 |  |
+| 22 | `com.baidu.netdisk` |  | 容器内 | 启动成功 TaskP1$F1M0C2；登录页「登录百度账号体验完整功能」+ 手机号输入框 + 验证码登录 + 其他登录方式（dump 有 EditText 但本页未触发剪贴板杀进程） | [batch25](batch25-coverage-pipeline-20261113.md) |
+| 23 | `com.baidu.searchbox` |  | 容器内 | 首次落点 TaskP1$F1M2C1，但同轮 fatal=1 且 top 已回落 Workbench：需按容器/客体栈归属复核后重跑 | [batch25](batch25-coverage-pipeline-20261113.md) |
 | 24 | `com.booking` | 容器内 | v94：五条 CheckBox 同意墙可通过（单点「全选」行右端），同意后应用自行 killProcess 重启；复启落 Cookie 设置页→接受→HomeActivity，进程健在无异常；首页内容层全黑（同 U4 族，另记） | [batch24](batch23-coverage-batch-20261113.md) |  |
 | 25 | `com.deepseek.chat` |  |  | 未测 |  |
 | 26 | `com.dianping.v1` |  | 容器内 | 登录页可达（天翼一键登录），未点 | 20261113 smoke-batch1 |
 | 27 | `com.dragon.read` |  |  | 未测 |  |
 | 28 | `com.duokan.phone.remotecontroller` | 是 |  | 未测 |  |
 | 29 | `com.duokan.reader` | 是 |  | 未测 |  |
-| 30 | `com.duolingo` |  |  | 未测 |  |
+| 30 | `com.duolingo` |  | 容器内 | 启动成功 TaskP1$F1M1C0E0；无同意层，直接落引导页（无登录入口文案） | [batch25](batch25-coverage-pipeline-20261113.md) |
 | 31 | `com.eg.android.AlipayGphone` |  | 容器内 | 启动成功；无隐私页，首屏登录页「淘宝用户快速登录」[364,1731][844,1811]、「手机号」[250,2262][418,2310] | [batch8-start](batch8-eight-apps-startup-20261113.md) [batch8-login](batch8-login-entries-20261113.md) |
 | 32 | `com.fenxiang.storyline` |  |  | 未测 |  |
 | 33 | `com.ghostlock.app` |  |  | 未测 |  |
@@ -81,8 +81,8 @@
 | 75 | `com.pangsheng.pshuochepiao.m` |  |  | 未测 |  |
 | 76 | `com.phoenix.read` |  |  | 未测 |  |
 | 77 | `com.pingan.paces.ccms` |  |  | 未测 |  |
-| 78 | `com.qiyi.video` |  |  | 未测 |  |
-| 79 | `com.quark.browser` |  |  | 未测 |  |
+| 78 | `com.qiyi.video` |  | 容器内 | **启动被 UI 拒绘**：点 tile 后 top 恒为 Workbench、客体重进程数 0、crash 空，Workbench 弹「应用没有启动 / 操作没有完成（APPLICATION_ACTIVITY_ALREADY_OPEN_OR_UNCONFIRMED）」；需 force-stop q6+q7 清未确认 Activity 记录后重试 | [batch25](batch25-coverage-pipeline-20261113.md) |
+| 79 | `com.quark.browser` |  | 容器内 | 启动成功 TaskP1$F1M2C2；同意 1 次后落首页，无登录入口文案 | [batch25](batch25-coverage-pipeline-20261113.md) |
 | 80 | `com.sankuai.meituan` |  | 容器内 | 启动到隐私同意页 | 20261113 smoke-batch1 |
 | 81 | `com.sankuai.meituan.takeoutnew` |  |  | 未测 |  |
 | 82 | `com.sdu.didi.psnger` |  | 容器内 | 启动成功；同意协议后首页可达，登录入口「立即登录」[929,2281][1131,2358] | [batch8-start](batch8-eight-apps-startup-20261113.md) [batch8-login](batch8-login-entries-20261113.md) |
@@ -97,7 +97,7 @@
 | 91 | `com.tencent.mm` |  | 已装入 | **启动可用 / 登录卡账号侧**：WelcomeActivity→MobileInputUI，手机号可输入；「用短信验证码登录」「更多」点击无响应（无门面降级日志）；新设备短信登录需好友辅助验证且密码未知 ⇒ 交回用户 | [v67](v67-async-external-service-20261113.md) §9 |
 | 92 | `com.tencent.mobileqq` |  | 已装入 | 进程存活（mobileqq + :MSF + soterserver），未测登录 | [v67](v67-async-external-service-20261113.md) §10 |
 | 93 | `com.tencent.news` |  |  | 未测 |  |
-| 94 | `com.tencent.qqlive` |  |  | 未测 |  |
+| 94 | `com.tencent.qqlive` |  | 容器内 | 启动成功 TaskP1$F1M1C2；首页登录入口四条：微信登录 / QQ登录 / 其他登录方式 / 底栏未登录（consent_taps=1，counters 全 0） | [batch25](batch25-coverage-pipeline-20261113.md) |
 | 95 | `com.tencent.tmgp.WePop` |  |  | 未测 |  |
 | 96 | `com.tencent.tmgp.osgame` |  |  | 未测 |  |
 | 97 | `com.tencent.tmgp.sgame` |  | 已装入 | **可用**：SGameActivity + `:xg_vip_service` 双进程，渲染到开区页（已有「微信440区 火鹰船长」账号，可直接「开始游戏」） | [v67](v67-async-external-service-20261113.md) §7 |
