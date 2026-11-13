@@ -9,7 +9,13 @@ final class RuntimeEffectRecoveryProof {
     static final String COMPONENT_PREPARATION_UNCONFIRMED="COMPONENT_PREPARATION_UNCONFIRMED";
     /** Every detail a launch-scope UNKNOWN may carry. A writer that records a new one must add it here, or its row
      *  can never be discharged and fences its package until the application or the space is deleted. */
-    private static final String LAUNCH_DETAILS="'LAUNCH_PREPARATION_UNCONFIRMED','"+COMPONENT_PREPARATION_UNCONFIRMED+"','BROKER_RECOVERY','ACTIVITY_DELIVERY_PROCESS_DIED','ACTIVITY_DELIVERY_RECOVERED_UNKNOWN'";
+    /** Details only the launch path can record: they describe a preparation that never delivered anything, so they are
+     *  discharged on delivery evidence alone. The recorded command is NOT consulted: an operation accepted outside a
+     *  command guard (a guest-initiated route) carries the placeholder legacy-or-internal, which no command filter
+     *  names, and consulting it would fence that package forever. */
+    private static final String LAUNCH_ONLY_DETAILS="'LAUNCH_PREPARATION_UNCONFIRMED','"+COMPONENT_PREPARATION_UNCONFIRMED+"','ACTIVITY_DELIVERY_PROCESS_DIED','ACTIVITY_DELIVERY_RECOVERED_UNKNOWN'";
+    /** Ambiguous detail: BROKER_RECOVERY can also mark an install/stop, so it stays gated on a launch command. */
+    private static final String AMBIGUOUS_DETAILS="'BROKER_RECOVERY'";
     static boolean acknowledged(SQLiteDatabase db,String dispatch,String owner){
         if(dispatch==null||!dispatch.startsWith(ACK))return false;
         String admission=dispatch.substring(ACK.length());
@@ -100,7 +106,7 @@ final class RuntimeEffectRecoveryProof {
         // DEAD/FAILED — the same proof the stale-entry retirement uses. An attached task, an entered ticket or a
         // possibly-live session keeps the fence: the business effect may have happened.
         String inertEntries=" AND NOT EXISTS(SELECT 1 FROM activity_launches l JOIN activity_tickets t ON t.ticket=l.candidate LEFT JOIN sessions s ON s.generation=t.generation WHERE l.operation=original.id AND NOT (t.entryFenceOperation IS NOT NULL OR t.taskId<0 AND t.instance IS NULL AND t.state IN ('PREPARED','CLAIMED','REVOKED','RETIRED') AND s.state IN ('DEAD','FAILED')))";
-        String prepared="SELECT 1 FROM operations original JOIN operation_scopes own ON own.operation=original.id WHERE original.id=? AND original.state='UNKNOWN' AND original.detail IN ("+LAUNCH_DETAILS+") AND own.scope=? AND own.command IN ('prepareApplicationLaunch','prepareLaunch','agentPrepareLaunch')"+inertEntries+live;
+        String prepared="SELECT 1 FROM operations original JOIN operation_scopes own ON own.operation=original.id WHERE original.id=? AND original.state='UNKNOWN' AND own.scope=? AND (original.detail IN ("+LAUNCH_ONLY_DETAILS+") OR original.detail IN ("+AMBIGUOUS_DETAILS+") AND own.command IN ('prepareApplicationLaunch','prepareLaunch','agentPrepareLaunch'))"+inertEntries+live;
         try(var rows=db.rawQuery(prepared+" AND EXISTS(SELECT 1 FROM operations stopped JOIN operation_scopes ss ON ss.operation=stopped.id WHERE stopped.state='SUCCEEDED' AND ss.scope=own.scope AND ss.command IN ('stopApplication','agentStopApplication') AND stopped.created>=original.updated) LIMIT 1",new String[]{operation,owner})){
             if(rows.moveToFirst())return true;
         }
