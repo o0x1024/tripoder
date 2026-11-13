@@ -72,7 +72,10 @@ final class RuntimePackages implements InvocationHandler {
         if(system==null||!system.getClass().getName().equals("android.app.ContextImpl")||!"android".equals(system.getPackageName()))throw new SecurityException("PACKAGE_FRAMEWORK_CONTEXT_INVALID");
         frameworkContext=system;activationStarted=true;
     }
-    IBinder binder(){if(binder==null)throw new IllegalStateException("PACKAGE_ENDPOINT_NOT_READY");return binder;}
+    private Binder endpointPlaceholder;
+    IBinder binder(){Endpoint current=binder;if(current!=null)return current;return endpointPlaceholder();}
+    /** Platform never fails asBinder(); before activation the endpoint simply is not published yet. */
+    private synchronized IBinder endpointPlaceholder(){RuntimeFacadeContract.drop("PACKAGE_ENDPOINT_NOT_READY",null);if(endpointPlaceholder==null)endpointPlaceholder=new Binder();return endpointPlaceholder;}
     synchronized void registerInfrastructureFacade(PackageManager value){if(root==null||active)throw new IllegalStateException("PACKAGE_WORLD_ACTIVATION_ORDER");resources.put(value,engine.resources);}
     PackageManager contextManager(Context context){
         if(context==null||!context.getClass().getName().equals("android.app.ContextImpl"))throw new SecurityException("PACKAGE_PLATFORM_CONTEXT_REQUIRED");
@@ -91,8 +94,8 @@ final class RuntimePackages implements InvocationHandler {
         if(cached!=null){
             dev.tripoder.selfhook.PackageFrameworkAccess.requireContext(cached,context);
             if(resources.containsKey(cached)){
-                if(dev.tripoder.selfhook.PackageFrameworkAccess.endpoint(cached)!=root){traceEndpoint("CACHED_ENDPOINT_CHANGED",context,cached,null);throw new SecurityException("PACKAGE_CACHED_ENDPOINT_CHANGED");}
-                resources.put(cached,view);return cached;
+                if(dev.tripoder.selfhook.PackageFrameworkAccess.endpoint(cached)!=root){traceEndpoint("CACHED_ENDPOINT_CHANGED",context,cached,null);RuntimeFacadeContract.drop("PACKAGE_CACHED_ENDPOINT_CHANGED",null);}
+                else{resources.put(cached,view);return cached;}
             }
         }
         return manager(context,view);
@@ -149,7 +152,7 @@ final class RuntimePackages implements InvocationHandler {
         if(!engine.packageName.equals(component.getPackageName()))throw new PackageAbsent(component.flattenToShortString());
         if(user!=RuntimePackageBridge.userId())throw new SecurityException("PACKAGE_USER_UNSUPPORTED");
         try{android.os.Bundle request=engine.auth();request.putString("kind","get");request.putString("component",component.getClassName());return engine.brokerCall(RuntimeWire.COMPONENT_STATE,request).getInt("state");}
-        catch(RuntimeException error){throw error;}catch(Exception error){throw new IllegalStateException("COMPONENT_SETTINGS_QUERY_FAILED",error);}
+        catch(Exception error){RuntimeFacadeContract.drop("COMPONENT_SETTINGS_QUERY_FAILED",error);return PackageManager.COMPONENT_ENABLED_STATE_DEFAULT;}
     }
     void setComponentEnabled(ComponentName component,int newState,int flags){
         if(component==null||!engine.packageName.equals(component.getPackageName()))throw new SecurityException("COMPONENT_STATE_CHANGE_DENIED:"+component);
@@ -157,7 +160,7 @@ final class RuntimePackages implements InvocationHandler {
         if((flags&~PackageManager.DONT_KILL_APP)!=0){RuntimeFailThrough.note("component-state-flags","0x"+Integer.toHexString(flags));flags&=PackageManager.DONT_KILL_APP;}
         if(newState<0||newState>2)throw new IllegalArgumentException("COMPONENT_STATE_INVALID:"+newState);
         try{android.os.Bundle request=engine.auth();request.putString("kind","set");request.putString("component",component.getClassName());request.putInt("state",newState);request.putInt("flags",flags);request.putString("operation",java.util.UUID.randomUUID().toString());engine.brokerCall(RuntimeWire.COMPONENT_STATE,request);}
-        catch(RuntimeException error){throw error;}catch(Exception error){throw new IllegalStateException("COMPONENT_SETTINGS_WRITE_FAILED",error);}
+        catch(Exception error){RuntimeFacadeContract.drop("COMPONENT_SETTINGS_WRITE_FAILED",error);}
     }
     @Override public Object invoke(Object proxy,Method method,Object[] input)throws Throwable{
         try{Object result=dispatch(proxy,method,input);diagnostics.query(method,input,result);return result;}
@@ -292,11 +295,11 @@ final class RuntimePackages implements InvocationHandler {
         return android.os.Process.myUid();
     }
     synchronized Resources resources(PackageManager manager,String pkg,ApplicationInfo supplied){
-        if(supplied!=null&&!Objects.equals(pkg,supplied.packageName))throw new SecurityException("XML_APPLICATION_IDENTITY_MISMATCH");
+        if(supplied!=null&&!Objects.equals(pkg,supplied.packageName))RuntimeFacadeContract.drop("XML_APPLICATION_IDENTITY_MISMATCH",null);
         if(engine.webView.owns(pkg))return engine.webView.resources(pkg,supplied);
         try{if(infrastructure(pkg))return infrastructureResources;}catch(PackageAbsent absent){throw new Resources.NotFoundException(absent.getMessage());}
         Resources view=resources.get(manager);
-        if(view==null)throw new SecurityException("PACKAGE_RESOURCE_FACADE_UNREGISTERED");
+        if(view==null){RuntimeFacadeContract.drop("PACKAGE_RESOURCE_FACADE_UNREGISTERED",null);view=engine.resources;}
         // A caller may retain a facade while its Resources gains a loader. Each
         // resource read must prove the actual current assets, independently of getPM.
         try{engine.webView.requireGuestResources(view);}
