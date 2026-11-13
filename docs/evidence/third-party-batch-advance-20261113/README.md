@@ -211,3 +211,19 @@ java.lang.IllegalStateException: Call while result is not pending
   启动「已有未确认 Activity 记录」的应用会被 UI 拒绘为
   「应用没有启动 / 操作没有完成（`APPLICATION_ACTIVITY_ALREADY_OPEN_OR_UNCONFIRMED`）」，
   强停 q6/q7 + 连点两次「重新连接」即可清台账。
+
+## 12. 第 3 批（美团 / 拼多多）
+
+- **美团**：可用（已登录）。首页 feed 完整（外卖/团购/酒店民宿/闪购/看病买药、老友回归1分购、双拼饭 ¥13.3），
+  「我的」页是**完整登录态**：`zoQ666342288` / 实名待认证 / 普通会员成长值 80/500、
+  收藏/浏览记录/红包卡券/美团币、订单（全部/待收货/待评价/退款售后）、
+  钱包（美团借钱 12.5万额度、月付、我的卡额度 9.98万、可用额度 7000元）、开发票/入驻美团/我的店铺。
+  见 `meituan-profile-logged-in-20261113.png`。**踩坑**：底部导航中间的悬浮「小团」气泡会吃掉 `我的` 的点击，
+  第一次点落到商家详情页；要打「我的」最右侧安全区（约 x=1063）或先等气泡消失。
+- **拼多多**：可用（登录闭环）。手机号 + 短信验证码，落入「个人中心」完整登录态（`153****8553`）。
+  见 [pinduoduo-login-20261113.md](pinduoduo-login-20261113.md)。
+- **剪贴板崩溃族有了第二个样本，且分界更清楚**：拼多多**登录页**（无 EditText）dump 正常，
+  一进**手机号页**（有 EditText）dump 即 FATAL
+  `SecurityException: Package com.xunmeng.pinduoduo does not belong to 10542`。
+  ⇒ 判据是「目标页有没有输入框」，不是「哪个应用」。操作口径因此定稿（见 §12 上一条文档的 §5）：
+  无输入框用 dump 驱动，有输入框只用 screencap + 坐标 + 分段输入。

@@ -115,7 +115,7 @@
 | 109 | `com.xiaomi.youpin` | 是 |  | 未测 |  |
 | 110 | `com.xingin.xhs` |  |  | 未测 |  |
 | 111 | `com.xs.fm` |  |  | 未测 |  |
-| 112 | `com.xunmeng.pinduoduo` |  |  | 未测 |  |
+| 112 | `com.xunmeng.pinduoduo` |  | 容器内 | 可用：手机号+短信验证码登录闭环（`153****8553`，个人中心/我的订单/多多钱包可达） | [pinduoduo-login-20261113.md](pinduoduo-login-20261113.md) |
 | 113 | `com.zhihu.android` |  |  | 未测 |  |
 | 114 | `ctrip.android.view` |  |  | 未测 |  |
 | 115 | `dev.tripoder.controltest` |  |  | 未测 |  |
