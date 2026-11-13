@@ -18,6 +18,7 @@
 | `ENGINE_DOWN` | 引擎未连接 |
 | `GUEST_KILLED_BY_DUMP` | dump 杀客体（旧口径，已作废：进程计数漏主进程） |
 | `DUMP_UNAVAILABLE` | 结构抓不到且进程消失（需截图判读） |
+| `TILE_MISMATCH` | 自动认领的 tile 启动出的不是该包 ⇒ 测度作废（batch34 首包踩到：被认成探针 StorageProbe） |
 | `PIPELINE_ERROR` | 流水线异常 |
 
 ## 覆盖总览

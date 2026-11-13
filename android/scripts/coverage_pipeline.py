@@ -169,9 +169,14 @@ CHROME_LABELS = {
     "取消", "完成", "已在此空间", "批量选择应用",
 }
 
+# 容器自带的两个探针应用（Broadcast contract / StorageProbe）在 Workbench 里也有 tile，
+# 但它们在 labels 里永远没有对应包，所以「新文案差集」会把它们当成刚导入的应用认领走。
+# batch34 首包 bbc.mobile.news.ww 就被认成 StorageProbe，测出来的是探针而不是 BBC。
+PROBE_LABELS = {"Broadcast contract", "StorageProbe"}
+
 
 def is_tile_label(t: str) -> bool:
-    if not t or len(t) > 12 or t in CHROME_LABELS:
+    if not t or len(t) > 12 or t in CHROME_LABELS or t in PROBE_LABELS:
         return False
     if re.search(r"个应用|已选|添加所选|轻点运行|长按管理|处理中|结果未知", t):
         return False
@@ -317,6 +322,12 @@ def run_one(pkg: str, labels: dict, do_import: bool) -> dict:
     rec = {"pkg": pkg, "ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "build": os.environ.get("BUILD", "")}
     tile = labels.get(pkg)
     if do_import:
+        # 认领 tile 不能靠「新导入的排在末尾」这个约定去猜：探针 tile 与列表重排都能让它错位。
+        # 正确判据是导入前后的**差集**（after - before - 已映射 - 探针），所以导入前先扫一遍底部。
+        baseline: set[str] = set()
+        if not tile and reconnect():
+            to_top()
+            baseline = set(tile_texts_bottom())
         rec["import"] = ensure_import([pkg])[pkg]
         # import_apps.sh 结束时仍停在「添加应用」页，那里的按钮文案（「选择要添加的应用」）会被误认成
         # tile —— 首轮 com.tencent.qqlive 就这么写错了映射。所以先回列表页，再扫底部。
@@ -324,12 +335,13 @@ def run_one(pkg: str, labels: dict, do_import: bool) -> dict:
         tiles = tile_texts_bottom()
         if not tile and tiles:
             mapped = set(labels.values())
-            fresh = [t for t in tiles if t not in mapped]
+            fresh = [t for t in tiles if t not in mapped and t not in baseline]
             if fresh:
-                tile = fresh[-1]          # 新导入的排在列表末尾
+                tile = fresh[-1]          # 差集里最后一个 = 最新导入的那一格
                 labels[pkg] = tile
                 save_labels(labels)
                 rec["tile_discovered"] = True
+                rec["tile_delta"] = fresh
     if not tile:
         rec["verdict"] = "NO_TILE_MAPPING"
         return rec
@@ -393,6 +405,16 @@ def run_one(pkg: str, labels: dict, do_import: bool) -> dict:
                             break
     rec["launch"] = launched
     rec["counters"] = counters()
+
+    # 第二道防线：自动认领的 tile 必须证明「点它启动的就是目标包」。
+    # 只看 top 有 TaskP 是不够的 —— 认领错了（探针/邻居格）照样能启动出一个客体，
+    # 于是把别人的页面记成这个应用的落点。判据用按包名的进程数：起来了却不是该包 ⇒ 测度作废。
+    if rec.get("tile_discovered") and "TaskP" in launched:
+        rec["pkg_procs"] = guest_procs(pkg)
+        if rec["pkg_procs"] == 0:
+            rec["verdict"] = "TILE_MISMATCH"
+            rec["tile_verify"] = "launched TaskP %s but no guest process named %s" % (launched, pkg)
+            return rec
 
     # 同意层：按候选优先级点，最多 4 轮；每轮都重新 dump 拿到当前轴
     taps = 0
