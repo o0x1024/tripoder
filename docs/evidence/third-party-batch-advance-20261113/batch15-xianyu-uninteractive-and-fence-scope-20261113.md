@@ -89,3 +89,40 @@ QQ 在容器内 183,784 B 正常渲染、控件可读、点「同意」（精确
 1. 给 `RuntimeEffectRecoveryProof` 的 `ACTIVITY_DELIVERY_PROCESS_DIED` 开一条放行通道（与 v86 的 launch-only 细节同思路），否则每 force-stop 一次就永久锁死一个包。
 2. 闲鱼登录闭环要么等 U4 内容层的 window 绑定修好（客体探针路线），要么改走「其它登录方式」之外的原生入口（本轮证明原生入口同样不绘制，暂不可行）。
 3. 批量推进继续，但每次启动新应用前不要 force-stop 正在运行的客体，改用 Workbench 内切换，避免自造栅栏。
+
+## 9. 追加（同日 22:23–22:24）：栅栏否决项不是 detail，而是 sessions 的 RUNNING
+
+复现时抓到了栅栏的完整行（`logcat -s TripoderRecovery:V`）：
+
+```
+admission-blocked command=prepareApplicationLaunch;
+scope=space/default/package/com.taobao.idlefish;
+prior=c718b7ad-a647-4062-be85-49525d4fde46; priorScope=space/default/package/com.taobao.idlefish;
+caller=trusted-workbench; guard=prepareApplicationLaunch;
+detail=COMPONENT_PREPARATION_UNCONFIRMED; priorCommand=legacy-or-internal;
+priorDispatch=RETIRED_EXECUTION_ACK:f6ef3bf0-589f-4981-991e-3bc87db39a8b;
+sessions=DEAD:24,RUNNING:2
+```
+
+判读：
+
+- `detail=COMPONENT_PREPARATION_UNCONFIRMED` 与 `priorCommand=legacy-or-internal` **正是 v86 已经放行的那一类**（`RuntimeEffectRecoveryProof:16` 的 `LAUNCH_ONLY_DETAILS` 已含该 detail，v86 实测闲鱼能起）⇒ 本次否决不在 detail 层。
+- 剩下唯一没被满足的是 liveness 子句：**`sessions=DEAD:24,RUNNING:2`**。该 scope 下仍有两个 RUNNING 会话，证明要求「无活会话」，于是整条证明不成立。
+
+这两个 RUNNING 会话来自 **force-stop 没清干净的客体子进程**：
+
+| pid | 进程 | uid |
+|---|---|---|
+| 14492 | com.taobao.idlefish:channel | 10542（容器） |
+| 14713 | com.taobao.idlefish:windowChannel | 10542（容器） |
+
+主进程 17053 已被 force-stop 杀掉，这两个子进程存活 ⇒ 会话仍为 RUNNING ⇒ 栅栏永远点不着放行。
+
+**操作配方（已验证）**：`am force-stop dev.tripoder.q6` 连做两次（每次间隔 3 s）可以把这批遗留子进程清掉（ps 前后对比：14492/14713 消失，原生 uid 10328 的闲鱼进程不受影响）。
+
+清除遗留子进程后再从 Workbench 点「闲鱼」：本轮**连 Tripoder 引擎日志都没有产生**（`logcat -d | grep Tripoder` 为空）、也没有新客体进程，`top` 停在 Workbench ⇒ 这次不是栅栏拒绝，而是点击没有进入引擎（与 gotcha `stuck-input-focus-blocks-text-entry` 同族的焦点/命中问题），需下一轮单独复核。
+
+### 结论修正
+
+- 第 3 节「ACTIVITY_DELIVERY_PROCESS_DIED 没有放行通道」需要更精确：真正没有放行通道的是**「scope 下还有活会话」这一条 liveness 判据**，而活会话可以由 force-stop 的遗留子进程长期维持。
+- 产品侧两条可能的修法：①force-stop/退休时把该 scope 的会话与其子进程一起收敛（而不是只看主进程）；②`EffectRecoveryProof` 在判活时区分「会话主人已死、仅子进程存活」的情形。
