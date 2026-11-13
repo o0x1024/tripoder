@@ -170,3 +170,25 @@ java.lang.IllegalStateException: Call while result is not pending
 这条族与 §6 的广播族同源（都是「门面在平台不失败处抛异常」），但落点不同：§6 是 `PendingResult` 生命周期，
 这里是 extras 的形状表达力（h31）。
 
+## 10. 第 2 批续（大众点评 / 网易云音乐）
+
+- **大众点评**：**可用**，但要重试一次。首次冷启动卡在 `phase=APPLICATION` 到 120s 预算到期
+  （UI：「应用没有启动」）；线程栈证明是**应用自己的两把锁 ABBA 死锁**
+  （main 持 `com.dianping.app.o.f` 求 `o.e`，`pool-4-thread-2` 持 `o.e` 求 `o.f`），
+  不是门面缺陷、不是槽位容量、不是风控。点「取消」**不清数据**原地重试 → `TaskP1$F0M0C2`，
+  `com.dianping.v1` + `:dppushservice` 存活，直达天翼「本机号码一键登录」（掩码 `153****8553`）；
+  协议弹窗→同意→滑块（`input swipe` 通过）→**图片字符验证码**（人机，交用户）。
+  见 [batch2-dianping-20261113.md](batch2-dianping-20261113.md)。
+- **网易云音乐**：**不可用，结构性**。启动在 `StartupTask` 线程崩于
+  `java.lang.SecurityException: callingPackage does not match UID`
+  （`IStorageManager$Stub$Proxy.getVolumeList` ← `StorageManager.getVolumeList` ←
+  `Environment.getExternalStorageDirectory` ← `FileManagerImp.register`）。
+  抛出者是 `system_server`：系统服务在核对「包名 ↔ uid」一致性，客体以宿主 uid 10542 运行、自称
+  `com.netease.cloudmusic`，必然不一致。仓库里本有 `RuntimeStorageIdentity` 在 Binder 边界重写
+  `callingPackage`，但本轮**没有生效**（`TripoderStorageIdentity` 零日志），最可能是框架自身调用点
+  未去优化（`preexistingCompiledFramesCovered:false`）。见
+  [batch2-netease-storage-identity-20261113.md](batch2-netease-storage-identity-20261113.md)。
+
+一句话差别：大众点评是**应用内部竞态**（容器只是提供了调度，重试即过）；
+网易云音乐是**平台身份校验**（C1 事实第一次由 AOSP 服务执行，必须改投影才过）。
+
