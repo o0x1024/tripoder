@@ -108,6 +108,13 @@ public final class GuestContext extends GuestStorageContext {
     @Override public Context createContext(ContextParams params){return windowDerived(platform.createContext(params));}
     @Override public Context createDeviceContext(int deviceId){return windowDerived(platform.createDeviceContext(deviceId));}
     @Override public Object getSystemService(String name){
+        try{return service(name);}
+        // The platform answer at this call point is a Manager or null and never an exception; guest main
+        // threads (Chromium's WebView policy init is one) call it with no catch, so an unverified pinned
+        // framework member must downgrade to the platform service instead of killing the guest.
+        catch(RuntimeException unavailable){RuntimeFacadeContract.drop("SYSTEM_SERVICE_UNAVAILABLE:"+name,unavailable);return platform.getSystemService(name);}
+    }
+    private Object service(String name){
         if(RuntimePlatformPolicy.platformService(name))return engine.host.getSystemService(name);
         if(ACTIVITY_SERVICE.equals(name))return engine.activityManager.facade();
         if(CONNECTIVITY_SERVICE.equals(name))return engine.connectivity.facade();
