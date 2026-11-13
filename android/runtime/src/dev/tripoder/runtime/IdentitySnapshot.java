@@ -600,6 +600,12 @@ final class IdentitySnapshot {
         } catch (Throwable ignored) { }
     }
 
+    /** Per-process observation probes from the identity investigation (badger surface, syscall
+     *  audit, maps audit). They walk the whole APK or /proc on every guest process start, which
+     *  costs real startup time and logd traffic, so they stay off unless an investigation turns
+     *  them on. Nothing in the product path reads their output. */
+    static final boolean PROBES = false;
+
     /** One-second windows keep the 1024-entry ring ahead of login syscall bursts. */
     static void scheduleSyscallAudit(RuntimeEngine engine) {
         Thread sampler = new Thread(() -> {

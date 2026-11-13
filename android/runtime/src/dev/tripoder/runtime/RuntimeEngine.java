@@ -295,9 +295,7 @@ public final class RuntimeEngine {
             RuntimeProcessIdentity.establish(processName);
             updateActivityThreadBoundApplication(processName, applicationInfo);
             android.util.Log.i("TripoderBoot","PROCESS_IDENTITY_READY");
-            IdentitySnapshot.scheduleMapsAudit();
-            IdentitySnapshot.scheduleSyscallAudit(this);
-            IdentitySnapshot.scheduleBadgerSurface(this, loader);
+            if(IdentitySnapshot.PROBES){IdentitySnapshot.scheduleMapsAudit();IdentitySnapshot.scheduleSyscallAudit(this);IdentitySnapshot.scheduleBadgerSurface(this, loader);}
             Thread.currentThread().setContextClassLoader(loader);
             activityManager.facade();
             // Explicit startup tools run after real process identity is established,
