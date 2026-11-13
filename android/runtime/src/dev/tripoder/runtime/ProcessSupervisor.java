@@ -57,10 +57,18 @@ public final class ProcessSupervisor {
             Iterator<Map.Entry<String,Launch>> iter=launches.entrySet().iterator();
             while(iter.hasNext()){
                 Launch l=iter.next().getValue();
-                if(l.dead||(l.peer!=null&&!l.peer.isBinderAlive())||broker.store.isDead(l.slot.allocation.session.processGeneration)){
+                // l.dead also means STOP was requested. Only observed Binder/session death releases the reservation.
+                if((l.peer!=null&&!l.peer.isBinderAlive())||broker.store.isDead(l.slot.allocation.session.processGeneration)){
                     iter.remove();
                     broker.dead(l.slot.allocation.session.processGeneration);
                     l.slot.stopDispatch.observedDead();
+                }
+            }
+            for(RuntimeBroker.Slot slot:broker.processSlots()){
+                String generation=slot.allocation.session.processGeneration;
+                if(broker.store.isDead(generation)||(slot.peer!=null&&!slot.peer.isBinderAlive())){
+                    broker.dead(generation);
+                    slot.stopDispatch.observedDead();
                 }
             }
         }
@@ -136,17 +144,45 @@ public final class ProcessSupervisor {
     private int availableIndex(ApkStore.BundleInstall install,String process){return availableIndex(install,process,false);}
     /** allowSpare: a launch started by this authority may take over the prewarmed worker; component-driven entries and passive reservations never do. */
     private int availableIndex(ApkStore.BundleInstall install,String process,boolean allowSpare){
-        broker.services.reconcile(broker.host);String retained=broker.retainedStub(install,process);
+        reconcile();broker.services.reconcile(broker.host);String retained=broker.retainedStub(install,process);
         int index=-1;
         if(allowSpare&&spare!=null&&fits(spare.index,install,process,retained))index=spare.index;
         for(int i=0;index<0&&i<RuntimeSlot.CAPACITY;i++)if((spare==null||spare.index!=i)&&fits(i,install,process,retained))index=i;
         if(index<0&&spare!=null){Spare idle=spare;dropSpare(idle);if(fits(idle.index,install,process,retained))index=idle.index;}
-        if(index<0)throw new IllegalStateException("PROCESS_CAPACITY_EXHAUSTED:requiredSlot="+(retained==null?"any":retained));
+        if(index<0)throw capacityExhausted(install,process,retained);
         return index;
     }
+    /**
+     * A slot is usable only when every ledger agrees it is free. When none is free the product only
+     * shows "processes at capacity", which cannot distinguish a live process from residue that a
+     * dead session left behind. Name the blocker per slot so the leak is attributable.
+     */
+    private IllegalStateException capacityExhausted(ApkStore.BundleInstall install,String process,String retained){
+        StringBuilder detail=new StringBuilder();
+        for(int i=0;i<RuntimeSlot.CAPACITY;i++){
+            String blocker=blocker(i,install,process,retained);
+            if(blocker!=null)detail.append(blocker).append(' ');
+        }
+        String blocked=detail.length()==0?"none":detail.toString().trim();
+        android.util.Log.w("TripoderSupervisor","PROCESS_CAPACITY_EXHAUSTED pkg="+install.info.packageName+" process="+process+" free=none blocked=["+blocked+"]");
+        return new IllegalStateException("PROCESS_CAPACITY_EXHAUSTED:requiredSlot="+(retained==null?"any":retained));
+    }
     private boolean fits(int i,ApkStore.BundleInstall install,String process,String retained){
+        return blocker(i,install,process,retained)==null;
+    }
+    /** null when slot i can host this process; otherwise "STUB:owner" naming the first ledger that refuses it. */
+    private String blocker(int i,ApkStore.BundleInstall install,String process,String retained){
         String stub=RuntimeSlot.activity(i).getName();
-        return !broker.stubUsed(stub)&&!occupied(i)&&!broker.providers.occupied(stub)&&!broker.broadcasts.occupied(stub)&&(retained==null||retained.equals(stub))&&!broker.activities.processPinnedByOther(stub,install,process)&&!broker.services.occupiedByOther(stub,install,process)&&!broker.jobs.components.occupiedByOther(stub,install,process);
+        String name=stub.substring(stub.lastIndexOf('.')+1);
+        if(broker.stubUsed(stub))return name+":live";
+        if(occupied(i))return name+":launch";
+        if(broker.providers.occupied(stub))return name+":provider";
+        if(broker.broadcasts.occupied(stub))return name+":broadcast";
+        if(retained!=null&&!retained.equals(stub))return name+":retained";
+        if(broker.activities.processPinnedByOther(stub,install,process))return name+":activity";
+        if(broker.services.occupiedByOther(stub,install,process))return name+":service";
+        if(broker.jobs.components.occupiedByOther(stub,install,process))return name+":job";
+        return null;
     }
     /** bind without AUTO_CREATE owns a component, not a process allocation or startup timer. */
     ServiceLedger.Lease reservePassiveService(ApkStore.BundleInstall install,String process,String component)throws Exception{
@@ -242,6 +278,7 @@ public final class ProcessSupervisor {
             }
             main.postDelayed(this::maintainSpare,SPARE_AFTER_LAUNCH_DELAY_MS);
         }catch(Exception error){
+            android.util.Log.e("TripoderSupervisor","ProcessSupervisor.start failed for "+launch.key+" phase="+launch.phase,error);
             synchronized(broker){if(launch.external)return;} // The component owns its watchdog and completion.
             drain(launch,error);
             if(launch.bindResolved&&!launch.boundToSystem){synchronized(broker){broker.dead(launch.slot.allocation.session.processGeneration);}main.post(()->release(launch));}
@@ -276,7 +313,15 @@ public final class ProcessSupervisor {
     }
     private void coldPeerDied(RuntimeBroker.Slot slot){
         synchronized(broker){broker.dead(slot.allocation.session.processGeneration);}
+        // Off the broker lock, so the platform's exit record can be read and decided now instead of
+        // being guessed from whatever the dying process managed to write about itself.
+        observeExit(slot);
         slot.stopDispatch.observedDead();
+    }
+    /** Records how this worker really ended while its record is still in the platform history. */
+    private void observeExit(RuntimeBroker.Slot slot){
+        try{RuntimeDataHealing.observeExits(broker.store,slot.install);}
+        catch(Exception error){android.util.Log.w("TripoderRuntime","EXIT_OBSERVE_FAILED",error);}
     }
     public void stop(String generation)throws Exception{terminate(generation,false);}
     /** Never wait for a caller's own death on its synchronous setting RPC. */
@@ -294,19 +339,9 @@ public final class ProcessSupervisor {
         }
     }
     public void close(String generation)throws Exception{terminate(generation,true);}
-    /** Ending an application's main process (swiped away, or crashed) ends the application: Android removes a removed task's
-     *  remaining processes too, so none of them is left running invisibly with a session that blocks the next launch. */
-    private void closeSiblings(Launch died){
-        var session=died.slot.allocation.session;
-        if(session.kind!=ExecutionContract.ProcessKind.ORDINARY||!session.identity.processName.equals(died.slot.install.info.packageName))return;
-        new Thread(()->{
-            java.util.List<String> siblings=new java.util.ArrayList<>();
-            synchronized(broker){
-                try(var c=broker.store.getReadableDatabase().rawQuery("SELECT generation FROM sessions WHERE space=? AND package=? AND installGeneration=? AND processKind='ORDINARY' AND state NOT IN ('DEAD','FAILED') AND generation!=?",new String[]{died.slot.install.space,died.slot.install.info.packageName,died.slot.install.generation,session.processGeneration})){while(c.moveToNext())siblings.add(c.getString(0));}
-            }
-            for(String generation:siblings)try{android.util.Log.i("TripoderSupervisor","CLOSE_SIBLING generation="+generation);broker.processes.close(generation);}catch(Exception error){android.util.Log.w("TripoderSupervisor","CLOSE_SIBLING_FAILED generation="+generation+" "+error);}
-        },"tripoder-close-siblings").start();
-    }
+    // Process death is not application force-stop. An already accepted Activity
+    // may legitimately run in a sibling after the caller exits. Explicit application
+    // stop/uninstall retains its own installation-wide termination path.
     private void terminate(String generation,boolean permanent)throws Exception{
         long deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(15);
         ProcessStopDispatch stop=beginTermination(generation,permanent);
@@ -362,7 +397,7 @@ public final class ProcessSupervisor {
         volatile String phase="BIND";volatile Spare spare;final long begin=SystemClock.elapsedRealtime();
         Launch(String key,int index,RuntimeBroker.Slot slot){this.key=key;this.index=index;this.slot=slot;disconnected=slot.stopDispatch.death;}
         @Override public void onServiceConnected(ComponentName name,IBinder value){boolean observe;synchronized(broker){observe=peer==null;if(!observe&&!peer.equals(value))throw new SecurityException("WORKER_PEER_CHANGED");peer=value;}if(observe)try{value.linkToDeath(()->main.post(this::peerDied),0);}catch(RemoteException error){main.post(this::peerDied);}connected.countDown();if(dead)requestStop(this);}
-        private void peerDied(){synchronized(broker){if(deathObserved)return;deathObserved=true;dead=true;broker.dead(slot.allocation.session.processGeneration);}var error=new IllegalStateException("WORKER_DIED");ready.completeExceptionally(error);prepared.completeExceptionally(error);release(this);closeSiblings(this);}
+        private void peerDied(){synchronized(broker){if(deathObserved)return;deathObserved=true;dead=true;broker.dead(slot.allocation.session.processGeneration);}observeExit(slot);var error=new IllegalStateException("WORKER_DIED");ready.completeExceptionally(error);prepared.completeExceptionally(error);release(this);}
         @Override public void onServiceDisconnected(ComponentName name){if(peer!=null&&!peer.isBinderAlive())peerDied();else drain(this,new IllegalStateException("WORKER_DISCONNECTED_DEATH_UNCONFIRMED"));}
         @Override public void onNullBinding(ComponentName name){ready.completeExceptionally(new IllegalStateException("WORKER_NULL_BINDING"));connected.countDown();}
         @Override public void onBindingDied(ComponentName name){onServiceDisconnected(name);}

@@ -78,6 +78,36 @@ def tap(wanted, scroll=False):
     return 1
 
 
+def tap_contains(wanted):
+    """Tap the first node whose text/desc CONTAINS wanted.
+
+    Dumps truncate long labels and some apps insert spacing inside labels
+    ("同 意"), so exact matching silently misses buttons. Use this when the
+    exact string is unknown.
+    """
+    for node in nodes():
+        for field in ('text', 'desc'):
+            if wanted in node[field]:
+                point = center(node['bounds'])
+                if point:
+                    print(f"tap~ [{wanted}] at {point} ({node['bounds']}) label={node[field][:40]!r}")
+                    adb('shell', 'input', 'tap', str(point[0]), str(point[1]))
+                    return 0
+        if center(node['bounds']) and wanted in node['rid']:
+            point = center(node['bounds'])
+            print(f"tap~ [{wanted}] at {point} ({node['bounds']}) rid={node['rid']}")
+            adb('shell', 'input', 'tap', str(point[0]), str(point[1]))
+            return 0
+    print(f"NOT_FOUND~ [{wanted}]")
+    return 1
+
+
+def tap_xy(x, y):
+    print(f"tapxy {x},{y}")
+    adb('shell', 'input', 'tap', str(x), str(y))
+    return 0
+
+
 def dump():
     for node in nodes():
         label = node['text'] or node['desc'] or node['rid']
@@ -107,6 +137,10 @@ def main(argv):
     command, rest = argv[0], argv[1:]
     if command == 'tap':
         return tap(rest[0], '--scroll' in rest)
+    if command == 'tap~':
+        return tap_contains(rest[0])
+    if command == 'tapxy':
+        return tap_xy(int(rest[0]), int(rest[1]))
     if command == 'dump':
         return dump()
     if command == 'top':

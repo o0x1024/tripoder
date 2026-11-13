@@ -182,7 +182,7 @@ final class BroadcastLedger {
                 settle(contract,c.getString(1),claimed?"BROADCAST_TARGET_DIED_DELIVERY_UNCONFIRMED":"BROADCAST_NEVER_DELIVERED",claimed);
             }
         }
-        store.getWritableDatabase().execSQL("UPDATE broadcast_deliveries SET resourceRetired=1,resourceProof='TARGET_DEAD_AND_INGRESS_FENCED' WHERE target=? AND state IN ('UNKNOWN','COMPLETED') AND EXISTS(SELECT 1 FROM sessions s WHERE s.generation=target AND s.state='DEAD') AND (registration='' OR EXISTS(SELECT 1 FROM broadcast_registrations r WHERE r.id=registration AND r.generation=target AND r.state='CLOSED'))",new Object[]{generation});
+        store.getWritableDatabase().execSQL("UPDATE broadcast_deliveries SET resourceRetired=1,resourceProof='TARGET_DEAD_AND_INGRESS_FENCED' WHERE target=? AND state IN ('UNKNOWN','COMPLETED','REJECTED') AND EXISTS(SELECT 1 FROM sessions s WHERE s.generation=target AND s.state='DEAD') AND (registration='' OR EXISTS(SELECT 1 FROM broadcast_registrations r WHERE r.id=registration AND r.generation=target AND r.state='CLOSED'))",new Object[]{generation});
     }
     /** Every generation recorded before this authority started is dead, so recovery is the same fencing as dead() applied to all rows at once. Doing it per target
      *  scanned the whole delivery table once per generation, which grows with every broadcast an app ever received and stalled authority start. */
@@ -225,7 +225,7 @@ final class BroadcastLedger {
                 }catch(RuntimeException notReconcilable){android.util.Log.w("TripoderRecovery","registration-repair-skipped operation="+operation+";cause="+notReconcilable.getClass().getSimpleName());}
             }
         }
-        db.execSQL("UPDATE broadcast_deliveries SET resourceRetired=1,resourceProof='TARGET_DEAD_AND_INGRESS_FENCED' WHERE resourceRetired=0 AND state IN ('UNKNOWN','COMPLETED') AND EXISTS(SELECT 1 FROM sessions s WHERE s.generation=target AND s.state='DEAD') AND (registration='' OR EXISTS(SELECT 1 FROM broadcast_registrations r WHERE r.id=registration AND r.generation=target AND r.state='CLOSED'))");
+        db.execSQL("UPDATE broadcast_deliveries SET resourceRetired=1,resourceProof='TARGET_DEAD_AND_INGRESS_FENCED' WHERE resourceRetired=0 AND state IN ('UNKNOWN','COMPLETED','REJECTED') AND EXISTS(SELECT 1 FROM sessions s WHERE s.generation=target AND s.state='DEAD') AND (registration='' OR EXISTS(SELECT 1 FROM broadcast_registrations r WHERE r.id=registration AND r.generation=target AND r.state='CLOSED'))");
     }
     /** Only a running operation may be settled; a terminal one keeps the outcome already recorded for it. */
     private static void settle(ExecutionContract contract,String operation,String code,boolean unknown){
@@ -236,7 +236,7 @@ final class BroadcastLedger {
     boolean claimed(String operation){
         try(Cursor c=store.getReadableDatabase().rawQuery("SELECT 1 FROM broadcast_deliveries WHERE operation=? AND instance!='' LIMIT 1",new String[]{operation})){return c.moveToFirst();}
     }
-    boolean occupied(String stub){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT 1 FROM broadcast_deliveries b JOIN sessions s ON b.target=s.generation WHERE s.activityStub=? AND b.state!='COMPLETED' AND b.resourceRetired=0 LIMIT 1",new String[]{stub})){return c.moveToFirst();}}
+    boolean occupied(String stub){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT 1 FROM broadcast_deliveries b JOIN sessions s ON b.target=s.generation WHERE s.activityStub=? AND b.state NOT IN ('COMPLETED','REJECTED') AND b.resourceRetired=0 LIMIT 1",new String[]{stub})){return c.moveToFirst();}}
     boolean retired(String ticket){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT resourceRetired FROM broadcast_deliveries WHERE ticket=?",new String[]{ticket})){if(!c.moveToFirst())throw new SecurityException("BROADCAST_TICKET_UNKNOWN");return c.getInt(0)!=0;}}
     /** Called on every cold or warm physical Factory ingress, before any guest code. */
     boolean rejectRetiredEntry(String ticket,int index){
