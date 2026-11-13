@@ -76,7 +76,7 @@
 | 70 | `com.miui.virtualsim` | 是 |  | 未测 |  |
 | 71 | `com.miui.voiceassistProxy` | 是 |  | 未测 |  |
 | 72 | `com.miui.weather2` | 是 |  | 未测 |  |
-| 73 | `com.netease.cloudmusic` |  | 容器内 | 未测 |  |
+| 73 | `com.netease.cloudmusic` |  | 不可用（结构） | **启动即崩，卡在系统服务身份校验**：`IStorageManager.getVolumeList` → `SecurityException: callingPackage does not match UID`（system_server 抛）。三条投影修法（Binder 重写 / 静态字段注入 / 动态代理）均因 `@hide` 接口在 targetSdk 33 下反射被剥而不可达；下一步只能走 FixedRuntimeHooks 给 `android.os.Environment` 加钩子 | [batch6](batch6-storage-identity-hidden-api-20261113.md) |
 | 74 | `com.openai.chatgpt` |  |  | 未测 |  |
 | 75 | `com.pangsheng.pshuochepiao.m` |  |  | 未测 |  |
 | 76 | `com.phoenix.read` |  |  | 未测 |  |
