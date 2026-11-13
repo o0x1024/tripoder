@@ -47,6 +47,17 @@ public final class GuestContext extends GuestStorageContext {
     void attachedApplication(android.app.Application application){mOuterContext=application;}
     /** Mirrors ContextImpl: the deprecated int BIND_EXTERNAL_SERVICE bit is the long-flag form for BindServiceFlags. */
     private static long serviceFlags(int flags){long value=Integer.toUnsignedLong(flags);if((flags&BIND_EXTERNAL_SERVICE)!=0)value=(value&~Integer.toUnsignedLong(BIND_EXTERNAL_SERVICE))|BIND_EXTERNAL_SERVICE_LONG;return value;}
+    /**
+     * Experiment (v82): answer the operation package with the package that actually owns this UID.
+     *
+     * <p>{@code RuntimeEngine} already rewrites the base {@code ContextImpl.mOpPackageName} to the host package, so
+     * the same question currently has two answers depending on which layer is asked — and {@code Toast.show()} asks
+     * the wrapper, which answered the guest name and was then refused by {@code checkCallerIsSameApp}. Turning the
+     * wrapper's answer to the UID-owning package makes both layers agree; the cost is that a guest which compares
+     * {@code getOpPackageName()} with its manifest package (channel/signature/one-key-login checks) now sees the host
+     * package. Flip this flag back to {@code false} to return to the old answer.
+     */
+    private static final boolean HOST_OP_PACKAGE = true;
     @Override public String getPackageName(){return engine.packageName;}
     /**
      * The operation package is part of the app's own identity, not a platform detail: SDKs ask
@@ -60,7 +71,7 @@ public final class GuestContext extends GuestStorageContext {
      * UID-owning package by {@code RuntimeEngine} and {@code RuntimeFailThrough}, so AppOps, storage volumes and
      * widgets still see a package that owns this UID.
      */
-    @Override public String getOpPackageName(){return engine.packageName;}
+    @Override public String getOpPackageName(){return HOST_OP_PACKAGE?engine.host.getPackageName():engine.packageName;}
     @Override public String getAttributionTag(){return null;}
     @Override public ClassLoader getClassLoader(){return resourceOnlyLoader==null?engine.loader:resourceOnlyLoader;}
     @Override public Resources getResources(){return guestResources;}

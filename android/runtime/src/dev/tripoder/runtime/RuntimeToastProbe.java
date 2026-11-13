@@ -33,9 +33,11 @@ final class RuntimeToastProbe {
             Log.w(TAG, "SKIP=NO_CONTEXT");
             return;
         }
+        // v82: the swap path is refuted (v81), so the experiment is now only about which identity the
+        // toast presents to the physical service.
+        Log.i(TAG, "IDENTITY opPackage=" + context.getOpPackageName()
+                + " package=" + context.getPackageName() + " uid=" + android.os.Process.myUid());
         attempt(context, "PHYSICAL");
-        if (!swap()) return;
-        attempt(context, "FACADE");
     }
 
     private static void attempt(Context context, String phase) {
