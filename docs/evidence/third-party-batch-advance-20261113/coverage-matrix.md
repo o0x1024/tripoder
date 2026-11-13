@@ -25,8 +25,10 @@
 |---|---|
 | `pm list packages -3` 全量 | 121 |
 | 扣除厂商/系统捆绑 | 78 |
-| 已进流水线（有实测记录） | 9 |
-| 尚未实测 | 69 |
+| 已进流水线（有实测记录） | 20 |
+| 盘点表已有结论（历史批次证据，未进流水线记录） | 31 |
+| 有证据合计（两者并集） | 38 |
+| 尚未实测 | 58 |
 
 ## 逐项矩阵
 
@@ -36,7 +38,7 @@
 | 2 | `bbc.mobile.news.ww` |  | — | 未测 |  |  | 未测 |
 | 3 | `cmb.pb` | 招商银行 | — | 未测 |  |  | 未测 |
 | 4 | `cn.cyberIdentity.certification` |  | — | 未测 |  |  | 未测 |
-| 5 | `cn.wps.moffice_eng` | WPS Office | — | 未测 |  |  | 未测 |
+| 5 | `cn.wps.moffice_eng` | WPS Office | — | LOGIN_ENTRY（登录入口可达） | TaskP1$F1M0C0E0 | fatal=0 adm=0 anr=0 | 未测 |
 | 6 | `cn.wps.moffice_eng.xiaomi.lite` |  | — | 未测 |  |  | 未测 |
 | 7 | `com.achievo.vipshop` | 唯品会 | 容器内 | 盘点有结论·待补流水线记录 |  |  | 启动成功；同意按钮 dump 文本被截断为「同」，文本匹配三候选全落空（取证手段问题） |
 | 8 | `com.alibaba.android.rimet` | 钉钉 | 启动成功 TaskP2$F1M1C2（fatal=0）；首屏原生同意层「温馨提示」同意/不同意 | 盘点有结论·待补流水线记录 |  |  | [batch24](batch23-coverage-batch-20261113.md) |
@@ -45,18 +47,18 @@
 | 17 | `com.anthropic.claude` |  | — | 未测 |  |  | 未测 |
 | 18 | `com.antutu.ABenchMark` | 安兔兔评测 | 启动成功 TaskP1$F1M0C2；首屏「欢迎您使用 安兔兔评测!」同意层 | 盘点有结论·待补流水线记录 |  |  | [batch24](batch23-coverage-batch-20261113.md) |
 | 19 | `com.autonavi.minimap` | 高德地图 | 容器内 | LOGIN_ENTRY（登录入口可达） | TaskP1$F1M2C0E0 | fatal=0 adm=0 anr=0 | 启动成功 TaskP1$F1M2C0E0；无同意层（consent_taps=0），首页底栏「未登录」为登录入口 |
-| 20 | `com.baidu.BaiduMap` | 百度地图 | — | 未测 |  |  | 未测 |
+| 20 | `com.baidu.BaiduMap` | 百度地图 | — | LOGIN_ENTRY（登录入口可达） | TaskP1$F1M2C3 | fatal=0 adm=0 anr=0 | 未测 |
 | 22 | `com.baidu.netdisk` | 百度网盘 | 容器内 | LOGIN_ENTRY（登录入口可达） | TaskP1$F1M2C2 | fatal=0 adm=0 anr=0 | 启动成功 TaskP1$F1M0C2；登录页「登录百度账号体验完整功能」+ 手机号输入框 + 验证码登录 + 其他登录方 |
 | 23 | `com.baidu.searchbox` | 百度 | 容器内 | EXITED_AFTER_LAUNCH（?） | dev.tripoder.q6/dev.tripoder.hooklab.WorkbenchActivity | fatal=1 adm=0 anr=0 | 首次落点 TaskP1$F1M2C1，但同轮 fatal=1 且 top 已回落 Workbench：需按容器/客体栈归 |
 | 24 | `com.booking` | Booking.com缤客 | v94：五条 CheckBox 同意墙可通过（单点「全选」行右端），同意后应用自行 killProcess 重启；复启落 Cookie 设置页→接受→HomeActivity，进程健在无异常；首页内容层全黑（同 U4 族，另记） | 盘点有结论·待补流水线记录 |  |  | [batch24](batch23-coverage-batch-20261113.md) |
-| 25 | `com.deepseek.chat` | DeepSeek | — | 未测 |  |  | 未测 |
-| 26 | `com.dianping.v1` | 大众点评 | 容器内 | 盘点有结论·待补流水线记录 |  |  | 登录页可达（天翼一键登录），未点 |
+| 25 | `com.deepseek.chat` | DeepSeek | — | CRASH_GUEST（?） | TaskP1$F1M0C2 | fatal=1 adm=0 anr=0 | 未测 |
+| 26 | `com.dianping.v1` | 大众点评 | 容器内 | TILE_NOT_FOUND（tile 未找到） |  |  | 登录页可达（天翼一键登录），未点 |
 | 27 | `com.dragon.read` |  | — | 未测 |  |  | 未测 |
 | 30 | `com.duolingo` | 多邻国 | 容器内 | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M1C0E0 | fatal=0 adm=0 anr=0 | 启动成功 TaskP1$F1M1C0E0；无同意层，直接落引导页（无登录入口文案） |
-| 31 | `com.eg.android.AlipayGphone` | 支付宝 | 容器内 | 盘点有结论·待补流水线记录 |  |  | 启动成功；无隐私页，首屏登录页「淘宝用户快速登录」[364,1731][844,1811]、「手机号」[250,2262 |
+| 31 | `com.eg.android.AlipayGphone` | 支付宝 | 容器内 | GUEST_KILLED_BY_DUMP（dump 杀客体（剪贴板族）） | TaskP1$F1M2C2 | fatal=0 adm=0 anr=0 | 启动成功；无隐私页，首屏登录页「淘宝用户快速登录」[364,1731][844,1811]、「手机号」[250,2262 |
 | 32 | `com.fenxiang.storyline` |  | — | 未测 |  |  | 未测 |
 | 33 | `com.ghostlock.app` |  | — | 未测 |  |  | 未测 |
-| 34 | `com.github.android` | GitHub | — | 未测 |  |  | 未测 |
+| 34 | `com.github.android` | GitHub | — | LOGIN_ENTRY（登录入口可达） | TaskP1$F1M0C2 | fatal=0 adm=0 anr=0 | 未测 |
 | 35 | `com.google.android.apps.authenticator2` |  | — | 未测 |  |  | 未测 |
 | 36 | `com.google.android.apps.bard` |  | — | 未测 |  |  | 未测 |
 | 37 | `com.google.android.gm` |  | — | 未测 |  |  | 未测 |
@@ -80,11 +82,11 @@
 | 77 | `com.pingan.paces.ccms` |  | — | 未测 |  |  | 未测 |
 | 78 | `com.qiyi.video` | 爱奇艺 | 容器内 | NOT_TOP（未上顶层） | dev.tripoder.q6/dev.tripoder.hooklab.WorkbenchActivity | fatal=0 adm=0 anr=0 | **启动被 UI 拒绘**：点 tile 后 top 恒为 Workbench、客体重进程数 0、crash 空，Wor |
 | 79 | `com.quark.browser` | 夸克 | 容器内 | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M2C2 | fatal=0 adm=0 anr=0 | 启动成功 TaskP1$F1M2C2；同意 1 次后落首页，无登录入口文案 |
-| 80 | `com.sankuai.meituan` | 美团 | 容器内 | 盘点有结论·待补流水线记录 |  |  | 启动到隐私同意页 |
+| 80 | `com.sankuai.meituan` | 美团 | 容器内 | GUEST_KILLED_BY_DUMP（dump 杀客体（剪贴板族）） | TaskP1$F1M1C2 | fatal=0 adm=0 anr=0 | 启动到隐私同意页 |
 | 81 | `com.sankuai.meituan.takeoutnew` |  | — | 未测 |  |  | 未测 |
-| 82 | `com.sdu.didi.psnger` | 滴滴 | 容器内 | 盘点有结论·待补流水线记录 |  |  | 启动成功；同意协议后首页可达，登录入口「立即登录」[929,2281][1131,2358] |
-| 83 | `com.sina.weibo` | 微博 | 容器内 | 盘点有结论·待补流水线记录 |  |  | 可用：短信验证码登录闭环（新号 `用户7169367851`，读机内短信取码）；登录页 `uiautomator dum |
-| 84 | `com.smile.gifmaker` | 快手 | 已装入 | 盘点有结论·待补流水线记录 |  |  | **可用**（v67）：同意隐私后不再崩，feed 完整可用；登录入口（左上「登录」胶囊/左下「点击登录」）点击无反应， |
+| 82 | `com.sdu.didi.psnger` | 滴滴 | 容器内 | LOGIN_ENTRY（登录入口可达） | TaskP1$F1M2C2 | fatal=0 adm=0 anr=0 | 启动成功；同意协议后首页可达，登录入口「立即登录」[929,2281][1131,2358] |
+| 83 | `com.sina.weibo` | 微博 | 容器内 | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M2C2 | fatal=0 adm=0 anr=0 | 可用：短信验证码登录闭环（新号 `用户7169367851`，读机内短信取码）；登录页 `uiautomator dum |
+| 84 | `com.smile.gifmaker` | 快手 | 已装入 | LOGIN_ENTRY（登录入口可达） | TaskP1$F1M1C2 | fatal=0 adm=0 anr=0 | **可用**（v67）：同意隐私后不再崩，feed 完整可用；登录入口（左上「登录」胶囊/左下「点击登录」）点击无反应， |
 | 85 | `com.ss.android.article.lite` |  | — | 未测 |  |  | 未测 |
 | 86 | `com.ss.android.article.news` | 今日头条 | 容器内 | 盘点有结论·待补流水线记录 |  |  | 启动成功；同意隐私后首页可达，登录入口右上「登录」[1099,2378][1187,2424] |
 | 87 | `com.ss.android.ugc.aweme` | 抖音 | 容器内 | 盘点有结论·待补流水线记录 |  |  | 不可用：服务端按运行环境判定，入口已加提示 |
@@ -104,7 +106,7 @@
 | 110 | `com.xingin.xhs` | 小红书 | 已装入 | 盘点有结论·待补流水线记录 |  |  | **可用（feed），登录未闭环**：两道隐私同意→登录页→「一键登录」无响应→「其他号码登录」→手机号 1532373 |
 | 111 | `com.xs.fm` | 番茄畅听 | — | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M2C2 | fatal=0 adm=0 anr=0 | 未测 |
 | 112 | `com.xunmeng.pinduoduo` | 拼多多 | 容器内 | 盘点有结论·待补流水线记录 |  |  | 可用：手机号+短信验证码登录闭环（`153****8553`，个人中心/我的订单/多多钱包可达） |
-| 113 | `com.zhihu.android` | 知乎 | 已装入 | 未测 |  |  | **启动可用**：知乎 TaskP3$F0M2C2，无 FATAL；到「个人信息保护指引」页，dump 正常。登录未测 |
+| 113 | `com.zhihu.android` | 知乎 | 已装入 | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M0C3 | fatal=0 adm=0 anr=0 | **启动可用**：知乎 TaskP3$F0M2C2，无 FATAL；到「个人信息保护指引」页，dump 正常。登录未测 |
 | 114 | `ctrip.android.view` | 携程旅行 | 容器内 | 盘点有结论·待补流水线记录 |  |  | 启动成功；同意后页面已变，未产出登录类文案（需再取证） |
 | 118 | `org.telegram.messenger` | Telegram | — | 未测 |  |  | 未测 |
 | 119 | `org.videolan.vlc` | VLC | — | 未测 |  |  | 未测 |

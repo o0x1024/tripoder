@@ -100,6 +100,9 @@ def build() -> tuple[list[str], dict]:
     lines.append("| 扣除厂商/系统捆绑 | %d |" % len(third))
     lines.append("| 已进流水线（有实测记录） | %d |" % len(measured))
     lines.append("| 盘点表已有结论（历史批次证据，未进流水线记录） | %d |" % len(concluded))
+    # Union, not sum of the two rows above: a package can be both in the pipeline and concluded.
+    with_evidence = {r["pkg"] for r in measured} | {r["pkg"] for r in concluded}
+    lines.append("| 有证据合计（两者并集） | %d |" % len(with_evidence))
     lines.append("| 尚未实测 | %d |" % (len(third) - len(measured)))
     lines += ["", "## 逐项矩阵", "",
               "| # | 包名 | tile | 容器内 | 实测结论 | 落点 top | 客体重启不影响计数 | 备注 |",
