@@ -227,3 +227,24 @@ java.lang.IllegalStateException: Call while result is not pending
   `SecurityException: Package com.xunmeng.pinduoduo does not belong to 10542`。
   ⇒ 判据是「目标页有没有输入框」，不是「哪个应用」。操作口径因此定稿（见 §12 上一条文档的 §5）：
   无输入框用 dump 驱动，有输入框只用 screencap + 坐标 + 分段输入。
+
+## 13. 第 4 批（v67：快手 / 平安证券 / 王者荣耀）
+
+构建从 `build-facade-v66` 走到 `build-facade-v67`。只改了一处运行时判定：
+`RuntimeExternalServices` 对 oneway（`flags!=0`）的 transact **不再抛**
+`EXTERNAL_SERVICE_REQUEST_MUST_BE_SYNCHRONOUS`，改为原样转发并记一次
+`EXTERNAL_SERVICE_REQUEST_ASYNC_PASSED` 降级码。详见 [v67](v67-async-external-service-20261113.md)。
+
+| 应用 | 结果 | 判据 |
+|---|---|---|
+| **快手** `com.smile.gifmaker` | **可用（feed）** | v66 上「同意并继续」必崩（我方断言，栈落到 `AppOpsManagerNoteOpBatching` 的 HandlerThread）；v67 后 crash=0、`TaskP3$F0M1C2` 前台、feed 完整（30.1万赞/2.5万评论/分享/全屏观看）。登录入口未定位（左上「登录」胶囊与左下「点击登录」两次坐标点击无反应） |
+| **平安证券** `com.hundsun.winner.pazq` | **未启动（客体原生崩溃）** | `SIGSEGV` 写 `0x16`，栈 `#00 art::JNI SetObjectField` + `#01 <anonymous:JIT>`，**没有一帧 `dev.tripoder.runtime.*`**；Provider 全部初始化成功后才崩 ⇒ 客体自身 JNI 用错 jobject/jfieldID，不是门面缺陷 |
+| **王者荣耀** `com.tencent.tmgp.sgame` | **可用** | `SGameActivity` + `:xg_vip_service` 双进程；渲染到开区页，账号条已是「澎湃 微信440区 火鹰船长」，可直接「开始游戏」 |
+
+两条新口径：
+
+1. **oneway 不得抛**：平台对 oneway transact 从不校验线程、从不失败；我们把「需要回写 Parcel」当成平台规则抛出去，
+   结果是平台自己的 `Handler` 线程把整个客体打死。这是 h27 那条不变量的第 N 个实例。
+2. **dump 有两个互不相同的失败条件**：页面有 `EditText` → 剪贴板 `checkPackage` 把客体杀掉；
+   页面持续动画（短视频 feed、游戏）→ 只报 `could not get idle state.`，客体存活。
+   后者不要重试 dump，改截图 + 坐标驱动。

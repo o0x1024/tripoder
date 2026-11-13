@@ -45,7 +45,7 @@
 | 39 | `com.google.android.youtube` |  |  | 未测 |  |
 | 40 | `com.hpbr.bosszhipin` |  | 容器内 | 登录闭环（一键登录→完善资料） | 20261113 bosszhipin-container-login |
 | 41 | `com.hunantv.imgo.activity` |  |  | 未测 |  |
-| 42 | `com.hundsun.winner.pazq` | 是 | 容器内 | 未测 |  |
+| 42 | `com.hundsun.winner.pazq` | 是 | 已装入 | **启动崩溃（客体原生层）**：SIGSEGV 写 0x16，栈 `art::JNI SetObjectField` + `<anonymous:JIT>`，无运行时时；Provider 全部初始化后才崩 | [v67](v67-async-external-service-20261113.md) §6 |
 | 43 | `com.hyper.gallery.plugin` | 是 |  | 未测 |  |
 | 44 | `com.iflytek.inputmethod.miui` | 是 |  | 未测 |  |
 | 45 | `com.instagram.android` |  |  | 未测 |  |
@@ -87,7 +87,7 @@
 | 81 | `com.sankuai.meituan.takeoutnew` |  |  | 未测 |  |
 | 82 | `com.sdu.didi.psnger` |  |  | 未测 |  |
 | 83 | `com.sina.weibo` |  | 容器内 | 可用：短信验证码登录闭环（新号 `用户7169367851`，读机内短信取码）；登录页 `uiautomator dump` 会崩（无障碍→剪贴板→包名/uid 校验） | [weibo-login-20261113.md](weibo-login-20261113.md) |
-| 84 | `com.smile.gifmaker` |  | 已装入 | 未测 | 20261113 import-batch1 |
+| 84 | `com.smile.gifmaker` |  | 已装入 | **可用**（v67）：同意隐私后不再崩，feed 完整可用；登录入口（左上「登录」胶囊/左下「点击登录」）点击无反应，未获登录态 | [v67](v67-async-external-service-20261113.md) §3 |
 | 85 | `com.ss.android.article.lite` |  |  | 未测 |  |
 | 86 | `com.ss.android.article.news` |  |  | 未测 |  |
 | 87 | `com.ss.android.ugc.aweme` |  | 容器内 | 不可用：服务端按运行环境判定，入口已加提示 | douyin-risk-control-analysis-20261112 |
@@ -100,7 +100,7 @@
 | 94 | `com.tencent.qqlive` |  |  | 未测 |  |
 | 95 | `com.tencent.tmgp.WePop` |  |  | 未测 |  |
 | 96 | `com.tencent.tmgp.osgame` |  |  | 未测 |  |
-| 97 | `com.tencent.tmgp.sgame` |  |  | 未测 |  |
+| 97 | `com.tencent.tmgp.sgame` |  | 已装入 | **可用**：SGameActivity + `:xg_vip_service` 双进程，渲染到开区页（已有「微信440区 火鹰船长」账号，可直接「开始游戏」） | [v67](v67-async-external-service-20261113.md) §7 |
 | 98 | `com.tongcheng.android` |  |  | 未测 |  |
 | 99 | `com.twitter.android` |  |  | 未测 |  |
 | 100 | `com.x8bit.bitwarden` |  |  | 未测 |  |
