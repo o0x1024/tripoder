@@ -90,6 +90,85 @@ public final class ApkStore {
             throw unstable;
         }catch(Exception error){invalidate(space,pkg);synchronized(authority){ContentValues v=new ContentValues();v.put("state","CORRUPT");v.put("reason",error.getClass().getSimpleName()+":"+String.valueOf(error.getMessage()));store.getWritableDatabase().update("installs",v,"space=? AND package=? AND generation=? AND dataId=? AND state='COMMITTED'",new String[]{space,pkg,row.generation,row.dataId});}throw error;}
     }
+    private final java.util.Map<String,Integer> declaredTargetSdkCache=new java.util.concurrent.ConcurrentHashMap<>();
+    /** The one manifest fact an implicit broadcast needs to decide eligibility, without verifying (digesting) the artifact tree.
+     *  get() fully digests every published file, which costs ~200ms per large install; an implicit broadcast that must ask that
+     *  question about every committed package therefore paid seconds on a caller's main thread. Reading the digest-named
+     *  descriptor and stopping at uses-sdk answers the same question from a few KB. Any uncertainty returns null and the caller
+     *  falls back to get(), so this can only remove work, never change a decision. */
+    public Integer declaredTargetSdk(String space,String pkg){
+        try{
+            Row row;synchronized(authority){row=row(space,pkg);}
+            if(row==null||!"COMMITTED".equals(row.state))return null;
+            String key=space+'|'+pkg+'|'+row.generation;Integer cached=declaredTargetSdkCache.get(key);
+            if(cached!=null)return cached;
+            File descriptor=new File(new File(root,"artifacts/"+RuntimeFiles.id(row.generation)),ArtifactSet.DESCRIPTOR);
+            Integer declared=peekTargetSdk(descriptor,pkg);
+            if(declared==null)return null;
+            declaredTargetSdkCache.put(key,declared);return declared;
+        }catch(Exception uncertain){android.util.Log.w("TripoderBoot","DECLARED_TARGET_SDK_UNAVAILABLE pkg="+pkg+" "+uncertain.getClass().getSimpleName());return null;}
+    }
+    private static Integer peekTargetSdk(File descriptor,String pkg)throws Exception{
+        if(!descriptor.isFile())return null;
+        try(var in=new java.io.FileInputStream(descriptor);var reader=new android.util.JsonReader(new java.io.InputStreamReader(in,java.nio.charset.StandardCharsets.UTF_8))){
+            reader.beginObject();String packageName=null;Integer declared=null;
+            while(reader.hasNext()){
+                String name=reader.nextName();
+                if(name.equals("packageName"))packageName=scalar(reader);
+                else if(name.equals("parts")&&declared==null){
+                    reader.beginArray();
+                    if(reader.hasNext()){
+                        reader.beginObject();
+                        while(reader.hasNext()){
+                            String part=reader.nextName();
+                            if(part.equals("manifest"))declared=peekUsesSdk(reader);else reader.skipValue();
+                        }
+                        reader.endObject();
+                    }
+                    while(reader.hasNext())reader.skipValue();
+                    reader.endArray();
+                }else reader.skipValue();
+            }
+            reader.endObject();
+            if(packageName==null||!packageName.equals(pkg)||declared==null)return null;
+            return declared;
+        }
+    }
+    private static Integer peekUsesSdk(android.util.JsonReader reader)throws Exception{
+        Integer declared=1;reader.beginObject();
+        while(reader.hasNext()){
+            if(!reader.nextName().equals("children")){reader.skipValue();continue;}
+            reader.beginArray();
+            while(reader.hasNext()){
+                reader.beginObject();String component=null;Integer value=null;
+                while(reader.hasNext()){
+                    String name=reader.nextName();
+                    if(name.equals("name"))component=scalar(reader);
+                    else if(name.equals("attributes"))value=peekSdkAttribute(reader);
+                    else reader.skipValue();
+                }
+                reader.endObject();
+                if("uses-sdk".equals(component)&&value!=null)declared=value;
+            }
+            reader.endArray();
+        }
+        reader.endObject();return declared;
+    }
+    private static Integer peekSdkAttribute(android.util.JsonReader reader)throws Exception{
+        Integer declared=null;reader.beginObject();
+        while(reader.hasNext()){
+            if(!reader.nextName().equals("android:targetSdkVersion")){reader.skipValue();continue;}
+            String value=scalar(reader);
+            if(value!=null){try{declared=Integer.valueOf(value);}catch(NumberFormatException unresolved){declared=null;}}
+        }
+        reader.endObject();return declared;
+    }
+    private static String scalar(android.util.JsonReader reader)throws Exception{
+        android.util.JsonToken token=reader.peek();
+        if(token==android.util.JsonToken.STRING)return reader.nextString();
+        if(token==android.util.JsonToken.NUMBER)return Long.toString(reader.nextLong());
+        reader.skipValue();return null;
+    }
     /** Re-runs the complete verification of one CORRUPT install. Only if every check passes is it COMMITTED again; otherwise it stays CORRUPT with its recorded reason. A verification that was wrongly rejected by an earlier build cannot otherwise be undone, because get() never reads a non-COMMITTED row. */
     public void reverify(String space,String pkg,String generation)throws Exception {
         invalidate(space,pkg);
@@ -160,6 +239,11 @@ public final class ApkStore {
         // Data from uninstalled generations is removed only after its metadata reference is gone.
         Set<String> data=new HashSet<>();try(Cursor c=store.getReadableDatabase().rawQuery("SELECT space,package,dataId FROM installs",null)){while(c.moveToNext())data.add(c.getString(0)+"/"+c.getString(1)+"/"+c.getString(2));}
         File dataRoot=new File(root,"data");for(File space:RuntimeFiles.children(dataRoot))for(File pkg:RuntimeFiles.children(space))for(File incarnation:RuntimeFiles.children(pkg))if(!data.contains(space.getName()+"/"+pkg.getName()+"/"+incarnation.getName()))RuntimeFiles.deleteTree(incarnation);
+        // External storage is a subtree of the data root now (root/external), so the sweep above
+        // already reclaims it together with its incarnation; a separate pass would double-delete.
+        // The only tree still outside the incarnation is the pre-split one, kept for cleanup.
+        File legacyAnchor=host.getExternalFilesDir(null);
+        if(legacyAnchor!=null){File legacyRoot=new File(legacyAnchor,"runtime/external");for(File space:RuntimeFiles.children(legacyRoot))for(File pkg:RuntimeFiles.children(space))for(File incarnation:RuntimeFiles.children(pkg))if(!data.contains(space.getName()+"/"+pkg.getName()+"/"+incarnation.getName()))RuntimeFiles.deleteTree(incarnation);}
         Set<String> incarnations=new HashSet<>();for(String owner:data)incarnations.add(owner.substring(owner.lastIndexOf('/')+1));RuntimeNotificationNamespace.recover(host,incarnations);
         RuntimeStateCheckpoints.recover(root,store);
     }

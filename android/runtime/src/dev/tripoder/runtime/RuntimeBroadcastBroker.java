@@ -132,6 +132,15 @@ final class RuntimeBroadcastBroker {
         }
         List<Bundle> targets=new ArrayList<>();
         for(String pkg:packages){
+            // Android O+ excludes background manifest delivery for an unrestricted custom implicit broadcast.
+            // A package-targeted broadcast remains eligible; dynamic registrations are resolved independently.
+            // The eligibility question is answered from the sealed descriptor before loading the install: loading
+            // digests the whole artifact tree (~200ms for a large app), and asking it about every committed package
+            // cost this route 10.5s on the sender's main thread while nearly every answer was "not eligible".
+            if(intent.getPackage()==null&&!pkg.equals(sender.info.packageName)){
+                Integer declared=broker.apks.declaredTargetSdk(sender.space,pkg);
+                if(declared!=null&&declared>=26)continue;
+            }
             ApkStore.BundleInstall install=pkg.equals(sender.info.packageName)?sender:broker.apks.get(sender.space,pkg);
             // Android O+ excludes background manifest delivery for an unrestricted custom implicit broadcast.
             // A package-targeted broadcast remains eligible; dynamic registrations are resolved independently.

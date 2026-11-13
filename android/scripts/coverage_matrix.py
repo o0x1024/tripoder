@@ -93,9 +93,13 @@ def build() -> tuple[list[str], dict]:
         "|---|---|",
     ]
     measured = [r for r in third if r["pkg"] in cov]
+    # Rows whose inventory note already carries a measured conclusion from an earlier batch. Reported
+    # separately, never merged into the pipeline count: these are different kinds of evidence.
+    concluded = [r for r in third if r["note"] and "未测" not in r["note"]]
     lines.append("| `pm list packages -3` 全量 | %d |" % len(inv))
     lines.append("| 扣除厂商/系统捆绑 | %d |" % len(third))
     lines.append("| 已进流水线（有实测记录） | %d |" % len(measured))
+    lines.append("| 盘点表已有结论（历史批次证据，未进流水线记录） | %d |" % len(concluded))
     lines.append("| 尚未实测 | %d |" % (len(third) - len(measured)))
     lines += ["", "## 逐项矩阵", "",
               "| # | 包名 | tile | 容器内 | 实测结论 | 落点 top | 客体重启不影响计数 | 备注 |",
@@ -119,7 +123,7 @@ def build() -> tuple[list[str], dict]:
             note = r["note"][:60]
         lines.append("| %d | `%s` | %s | %s | %s | %s | %s | %s |" % (
             r["n"], r["pkg"], tile, r["in_space"] or "—", verdict, top, cnt_s, note))
-    summary = {"third_party": len(third), "measured": len(measured),
+    summary = {"third_party": len(third), "measured": len(measured), "concluded": len(concluded),
                "pending": len(third) - len(measured), "records": len(cov)}
     return lines, summary
 
