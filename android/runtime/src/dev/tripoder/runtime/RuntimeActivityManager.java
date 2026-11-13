@@ -9,14 +9,19 @@ final class RuntimeActivityManager {
     private final RuntimeEngine engine;
     private volatile ActivityManager facade;
     RuntimeActivityManager(RuntimeEngine engine){this.engine=engine;}
+    /** Reached from GuestContext.getSystemService(), i.e. on the guest's own stack: the platform
+     * answers null or a manager there and never throws, so an identity mismatch degrades to the
+     * platform object instead of a SecurityException (batch9 audit, family getsystemservice). */
     synchronized ActivityManager facade(){
         if(facade==null){
             RuntimeSelfHookManagers.ensureInstalled(RuntimeSelfHookManagerPolicy.Family.ACTIVITY_MANAGER);
-            facade=RuntimeBridge.createActivityManager(engine.host);
-            if(facade==null||facade==platform())throw new SecurityException("ACTIVITY_MANAGER_FACADE_IDENTITY_INVALID");
+            ActivityManager built=RuntimeBridge.createActivityManager(engine.host);
+            ActivityManager physical=platformOrNull();
+            facade=(built==null||built==physical)?RuntimeFacadeContract.nothing("ACTIVITY_MANAGER_FACADE_IDENTITY_INVALID",null,physical):built;
         }
         return facade;
     }
+    private ActivityManager platformOrNull(){try{return platform();}catch(RuntimeException unavailable){return RuntimeFacadeContract.nothing("PLATFORM_ACTIVITY_MANAGER_UNAVAILABLE",unavailable,null);}}
     boolean owns(ActivityManager value){return value!=null&&value==facade;}
     ActivityManager platform(){ActivityManager value=(ActivityManager)engine.host.getSystemService(Context.ACTIVITY_SERVICE);if(value==null)throw new IllegalStateException("PLATFORM_ACTIVITY_MANAGER_UNAVAILABLE");return value;}
     int memoryClass(boolean large){try{return large?platform().getLargeMemoryClass():platform().getMemoryClass();}catch(RuntimeException error){return RuntimeFacadeContract.nothing("ACTIVITY_MANAGER_UNAVAILABLE",error,(int)(Runtime.getRuntime().maxMemory()/(1024*1024)));}}

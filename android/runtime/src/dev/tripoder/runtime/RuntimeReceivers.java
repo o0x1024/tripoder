@@ -280,9 +280,9 @@ final class RuntimeReceivers {
             synchronized(this){finals.remove(ticket);}Invocation invocation=new Invocation(receiver,ticket,"",token);invocation.finalResult=true;current.get().push(invocation);return new Intent(finalDelivery.logical);
         }
         Registration registration;synchronized(this){Registration root=receivers.get(receiver);if(root!=null&&root.closed)return null;if(root!=null&&root.dynamic&&retiredActions.contains(physical.getAction()))return null;registration=root==null?null:root.select(physical);}
-        if(registration==null)throw new SecurityException("RECEIVER_NOT_OWNED");
-        try{if(!registration.activated.await(5,java.util.concurrent.TimeUnit.SECONDS))throw new IllegalStateException("RECEIVER_ACTIVATION_UNCONFIRMED");}
-        catch(InterruptedException error){Thread.currentThread().interrupt();throw new IllegalStateException("RECEIVER_ACTIVATION_INTERRUPTED",error);}
+        if(registration==null){RuntimeFacadeContract.drop("RECEIVER_NOT_OWNED",null);return physical;}
+        try{if(!registration.activated.await(5,java.util.concurrent.TimeUnit.SECONDS)){RuntimeFacadeContract.drop("RECEIVER_ACTIVATION_UNCONFIRMED",null);return physical;}}
+        catch(InterruptedException error){Thread.currentThread().interrupt();RuntimeFacadeContract.drop("RECEIVER_ACTIVATION_INTERRUPTED",error);return physical;}
         synchronized(this){if(registration.closed)return null;}
         if(registration.dynamic&&RuntimeSystemBroadcasts.action(physical.getAction())&&registration.systems.contains(physical.getAction())){
             if(receiver.isOrderedBroadcast())throw new UnsupportedOperationException("ORDERED_SYSTEM_BROADCAST_UNSUPPORTED");
@@ -300,7 +300,7 @@ final class RuntimeReceivers {
         try{Bundle admitted=engine.brokerCall(RuntimeWire.BROADCAST_CLAIM,b);if(admitted.getBoolean("rejectedClosedRegistration"))return null;if(admitted.getBoolean("ordered")!=receiver.isOrderedBroadcast())throw new SecurityException("BROADCAST_ORDERED_MISMATCH");Invocation invocation=new Invocation(receiver,ticket,instance,token);invocation.ordered=admitted.getBoolean("ordered");synchronized(this){if(pending.put(token,invocation)!=null)throw new SecurityException("PENDING_RESULT_REUSED");}current.get().push(invocation);return RuntimeBroadcastIntent.attachBinders(RuntimeBroadcastIntent.decode(admitted.getByteArray("payload")),admitted);}
         catch(Exception error){throw new IllegalStateException("RECEIVER_CLAIM_FAILED",error);}
     }
-    void after(BroadcastReceiver receiver,boolean success){Invocation invocation=current.get().poll();if(invocation==null||invocation.receiver!=receiver)throw new SecurityException("RECEIVER_CALLBACK_STACK_MISMATCH");if(current.get().isEmpty())current.remove();if(invocation.finalResult)return;
+    void after(BroadcastReceiver receiver,boolean success){Invocation invocation=current.get().poll();if(invocation==null||invocation.receiver!=receiver){RuntimeFacadeContract.drop("RECEIVER_CALLBACK_STACK_MISMATCH",null);if(current.get().isEmpty())current.remove();return;}if(current.get().isEmpty())current.remove();if(invocation.finalResult)return;
         event(invocation.ticket,invocation.instance,success?"returned":"failed");synchronized(this){invocation.returned=true;cleanup(invocation);}
     }
     void asynchronous(BroadcastReceiver receiver,Object token){Invocation invocation=current.get().peek();if(invocation==null||invocation.receiver!=receiver)throw new SecurityException("RECEIVER_ASYNC_OUTSIDE_CALLBACK");if(invocation.finalResult)return;if(invocation.pending!=token)throw new SecurityException("PENDING_RESULT_IDENTITY_MISMATCH");event(invocation.ticket,invocation.instance,"asynchronous");}

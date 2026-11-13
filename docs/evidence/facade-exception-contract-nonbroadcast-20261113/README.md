@@ -107,6 +107,8 @@ INSTRUMENTATION_RESULT: resultSha256=09bfa9fae2f179cda5f65ce48bf9720a3c52c402974
 
 ## 5. 仍未覆盖（别过度推断）
 
+> **已复核（2026-11-13）** → [`batch9-facade-audit-20261113.md`](batch9-facade-audit-20261113.md)：第 1 条 `PACKAGE_ENDPOINT_*` 现只剩 2 处（`PACKAGE_ENDPOINT_NOT_READY` / `PACKAGE_CACHED_ENDPOINT_CHANGED`）；第 2 条的豁免理由**有一半不成立**——`RuntimeReceiverProxy.before()/after()` 跑在客体的 `onReceive` 栈上，`getSystemService` 家族的 13 处 `*_FACADE_IDENTITY_INVALID` 也在客体栈上。已改 5 处（v71），客体栈抛出点由 76 收敛到 71。
+
 1. **self-hook 拦截层**：`RuntimeSelfHook` 对 `ApplicationPackageManager` 的 `intercept()` 仍保留 `SecurityException("PACKAGE_ENDPOINT_*")` 一类断言——它们发生在 Binder 调用内部，语义上是「平台拒绝」，但**未逐条按本判据复核**。
 2. **宿主线程侧**：`RuntimeReceiverProxy.before()`、`RuntimeActivityManager.facade()` 的 `ACTIVITY_MANAGER_FACADE_IDENTITY_INVALID`、`RuntimeServices` 内部仍在抛 `IllegalStateException`——它们不在客体调用栈上（前者在广播分发线程，后者是运行时自身不变式），本轮按「不落在客体栈」保留，但这是一条**需要持续复核的边界**，不是永久豁免。
 3. **降级有损**：`startService` 返回 null 等于「没启动」；provider 空 Bundle 等于「没写」。应用不会崩，但会看到「静默没做」。
