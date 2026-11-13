@@ -34,6 +34,11 @@ final class JobComponentLedger {
             while(c.moveToNext()){if(!install.equals(c.getString(1)))throw new IllegalStateException("JOB_INSTALL_PIN_CONFLICT");if(found!=null&&!found.equals(c.getString(0)))throw new IllegalStateException("JOB_PROCESS_PIN_CONFLICT");found=c.getString(0);}
         }return found;
     }
+    boolean hasLane(String processStub){
+        Set<String> occupied=new HashSet<>();try(Cursor c=store.getReadableDatabase().rawQuery("SELECT stub FROM job_components WHERE retired=0",null)){while(c.moveToNext())occupied.add(c.getString(0));}
+        for(int lane=0;lane<RuntimeJobSlots.PER_PROCESS;lane++)if(!occupied.contains(RuntimeJobSlots.stub(RuntimeSlot.index(processStub),lane)))return true;
+        return false;
+    }
     boolean occupied(String stub){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT 1 FROM job_components WHERE processStub=? AND retired=0 LIMIT 1",new String[]{stub})){return c.moveToFirst();}}
     boolean occupiedByOther(String stub,ApkStore.BundleInstall install,String process){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT 1 FROM job_components WHERE processStub=? AND retired=0 AND NOT(space IS ? AND package IS ? AND installGeneration IS ? AND processName IS ?) LIMIT 1",new String[]{stub,install.space,install.info.packageName,install.generation,process})){return c.moveToFirst();}}
     // RuntimeJobRetirement requires permanent admission fences plus real pending,

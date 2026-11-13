@@ -2,7 +2,7 @@
 from pathlib import Path
 
 PROCESSES = 8
-PER_PROCESS = 4
+PER_PROCESS = 8
 
 
 def generate_job_slots(build: Path, manifest: Path):

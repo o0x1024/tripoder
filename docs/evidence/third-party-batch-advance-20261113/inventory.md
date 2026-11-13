@@ -11,9 +11,9 @@
 | 5 | `cn.wps.moffice_eng` |  |  | 未测 |  |
 | 6 | `cn.wps.moffice_eng.xiaomi.lite` |  |  | 未测 |  |
 | 7 | `com.achievo.vipshop` |  | 容器内 | 启动成功；同意按钮 dump 文本被截断为「同」，文本匹配三候选全落空（取证手段问题） | [batch8-start](batch8-eight-apps-startup-20261113.md) [batch8-login](batch8-login-entries-20261113.md) |
-| 8 | `com.alibaba.android.rimet` |  |  | 未测 |  |
+| 8 | `com.alibaba.android.rimet` | 容器内 | 启动成功 TaskP2$F1M1C2（fatal=0）；首屏原生同意层「温馨提示」同意/不同意 | [batch24](batch23-coverage-batch-20261113.md) |  |
 | 9 | `com.alicloud.databox` |  |  | 未测 |  |
-| 10 | `com.aliyun.tongyi` |  |  | 未测 |  |
+| 10 | `com.aliyun.tongyi` | 容器内 | 启动成功 TaskP1$F1M1C0E0；tile 文案是「千问」；首屏「欢迎使用 千问」同意层 | [batch24](batch23-coverage-batch-20261113.md) |  |
 | 11 | `com.android.calendar` | 是 |  | 未测 |  |
 | 12 | `com.android.chrome` | 是 |  | 未测 |  |
 | 13 | `com.android.deskclock` | 是 |  | 未测 |  |
@@ -21,13 +21,13 @@
 | 15 | `com.android.providers.downloads.ui` | 是 |  | 未测 |  |
 | 16 | `com.android.soundrecorder` | 是 |  | 未测 |  |
 | 17 | `com.anthropic.claude` |  |  | 未测 |  |
-| 18 | `com.antutu.ABenchMark` |  |  | 未测 |  |
+| 18 | `com.antutu.ABenchMark` | 容器内 | 启动成功 TaskP1$F1M0C2；首屏「欢迎您使用 安兔兔评测!」同意层 | [batch24](batch23-coverage-batch-20261113.md) |  |
 | 19 | `com.autonavi.minimap` |  | 已装入 | 未测 | 20261113 import-batch1 |
 | 20 | `com.baidu.BaiduMap` |  |  | 未测 |  |
 | 21 | `com.baidu.input_mi` | 是 |  | 未测 |  |
 | 22 | `com.baidu.netdisk` |  |  | 未测 |  |
 | 23 | `com.baidu.searchbox` |  |  | 未测 |  |
-| 24 | `com.booking` |  |  | 未测 |  |
+| 24 | `com.booking` | 容器内 | v94：五条 CheckBox 同意墙可通过（单点「全选」行右端），同意后应用自行 killProcess 重启；复启落 Cookie 设置页→接受→HomeActivity，进程健在无异常；首页内容层全黑（同 U4 族，另记） | [batch24](batch23-coverage-batch-20261113.md) |  |
 | 25 | `com.deepseek.chat` |  |  | 未测 |  |
 | 26 | `com.dianping.v1` |  | 容器内 | 登录页可达（天翼一键登录），未点 | 20261113 smoke-batch1 |
 | 27 | `com.dragon.read` |  |  | 未测 |  |

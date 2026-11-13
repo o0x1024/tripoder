@@ -71,7 +71,16 @@ final class RuntimeJobBroker {
         synchronized(broker){
             current(install);ServiceInfo declaration=declaration(install,logical.getService());
             if(logical.isPersisted()&&(install.info.requestedPermissions==null||!Arrays.asList(install.info.requestedPermissions).contains("android.permission.RECEIVE_BOOT_COMPLETED")))throw new SecurityException("JOB_PERSIST_PERMISSION_REQUIRED");
-            ledger.requireIdle(install.generation);
+            // A mutation left open by a process that is gone can never be observed again.
+            // Keeping it would refuse every later schedule of this install (Booking hit
+            // JOB_MUTATION_IN_PROGRESS on relaunch) — the platform never answers a job
+            // submission with an exception, so abandoned rows are closed here instead.
+            abandonUnobservable(install.generation);
+            try{ledger.requireIdle(install.generation);}
+            catch(IllegalStateException busy){
+                RuntimeFacadeContract.drop("JOB_MUTATION_IN_PROGRESS_DEGRADED",busy);
+                return JobScheduler.RESULT_FAILURE;
+            }
             String version=randomVersion();
             JobLedger.Version existing=work==null?null:ledger.current(install.generation,namespace,logical.getId());
             if(existing!=null&&!Arrays.equals(existing.logical,RuntimeJobInfo.encode(logical)))existing=null;
@@ -81,6 +90,14 @@ final class RuntimeJobBroker {
             // reconciliation observes Android and must run outside the SQLite transaction.
             RuntimeJobInfo.physical(logical,early,late,logical.getService(),version);
             String processStub=broker.processes.jobProcessStub(install,declaration.processName);
+            // The platform answers a job it cannot accept with RESULT_FAILURE and never
+            // throws. Exhausting our component pool is the same situation, so it must not
+            // escape as an exception (Booking died on JOB_COMPONENT_CAPACITY_EXHAUSTED
+            // arriving as a binder ISE). No mutation row is opened in this branch.
+            if(existing==null&&!ledger.components.hasLane(processStub)){
+                RuntimeFacadeContract.drop("JOB_COMPONENT_CAPACITY_DEGRADED",null);
+                return JobScheduler.RESULT_FAILURE;
+            }
             var db=broker.store.getWritableDatabase();db.beginTransaction();try{
                 begin(operation,install,digest,work==null?"SCHEDULE":"ENQUEUE");
                 if(existing!=null){
@@ -244,6 +261,16 @@ final class RuntimeJobBroker {
             for(var version:ledger.targets(operation))if(version.state.equals("PREPARED"))ledger.state(version.version,"UNKNOWN");
         });
     }}
+    /** Closes rows no live caller can still resolve, so a dead process cannot fence its own install. */
+    private void abandonUnobservable(String generation){
+        for(String operation:ledger.openMutations(generation)){
+            if(inFlightMutations.contains(operation))continue;
+            try{if(broker.contract.query(operation).state==ExecutionContract.OperationState.RUNNING)continue;}
+            catch(Exception unreadable){continue;}
+            ledger.abandon(operation);
+            RuntimeFacadeContract.drop("JOB_MUTATION_ABANDONED",null);
+        }
+    }
     private void atomic(Runnable action){var db=broker.store.getWritableDatabase();db.beginTransaction();try{action.run();db.setTransactionSuccessful();}finally{db.endTransaction();}}
     private void outsideLock(){if(Thread.holdsLock(broker))throw new IllegalStateException("JOB_PLATFORM_CALL_INSIDE_BROKER_LOCK");}
     private static String randomVersion(){byte[] bytes=new byte[32];new java.security.SecureRandom().nextBytes(bytes);return ArtifactSet.hex(bytes);}

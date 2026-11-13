@@ -218,3 +218,183 @@ tile 处于列表更下方，脚本从未滚到它。
 
 ⇒ 规模效应的完整表述：**上下两个方向的滚动预算都必须随 catalog 增长**，
 且 `TILE_NOT_FOUND` 在长列表上默认先怀疑编排，不要记成「这个应用不在空间里」。
+
+
+## 10. batch24：四个新包（钉钉 / 千问 / 安兔兔评测 / Booking）— 导入 4/4、启动 4/4
+
+承接 §9 的幂等流水线，batch24 是第一次**完全靠修好的脚本**跑完整批（没有任何手工补点）。
+
+### 10.1 导入（`android/scripts/import_apps.sh`）
+
+| 包 | 打印序列 | installs |
+|---|---|---|
+| `com.alibaba.android.rimet` 钉钉 | 清空后已选 0 → 已选 1 → 添加所选 1 个应用 | 50 → **51** |
+| `com.aliyun.tongyi` 千问 | 同上 | 51 → **52** |
+| `com.antutu.ABenchMark` 安兔兔评测 | 同上 | 52 → **53** |
+| `com.booking` Booking.com缤客 | 同上 | 53 → **54** |
+
+四包连续跑，`清空 → 搜索 → ESC → 已选 1 → 提交` 每一步都一次成功，无 `NO_SELECTION` / `ADD_SCREEN_NOT_FOUND`。
+⇒ §9 的两处修复（进页先清空、`已在此空间` 幂等）在连续批上稳定，导入侧不再是瓶颈。
+
+### 10.2 启动实测（`launch_tile.py`，40s 轮询）
+
+| tile | top | anr | adm | fatal | absent | 判定 |
+|---|---|---|---|---|---|---|
+| 钉钉 | `TaskP2$F1M1C2` | 0 | 0 | 0 | 0 | LAUNCHED |
+| 千问 | `TaskP1$F1M1C0E0` | 0 | 0 | 0 | 0 | LAUNCHED |
+| 安兔兔评测 | `TaskP1$F1M0C2` | 0 | 0 | 0 | 0 | LAUNCHED |
+| Booking.com缤客 | `TaskP1$F1M0C3` | 0 | 0 | 0 | 0 | LAUNCHED |
+
+### 10.3 `TILE_NOT_FOUND` 的第三种含义：tile 文案 ≠ 应用名
+
+第一次跑本批时 `通义` 与 `安兔兔` 都报 `TILE_NOT_FOUND`，但它们的包**明明刚导入成功**（installs 52/53）。
+把 Workbench 列表全量 dump 出来（`/tmp/inv2.py`，输出 `/tmp/tiles24.json`，共 50 条文案）后原因很清楚：
+
+- `com.aliyun.tongyi` 的 tile 文案是 **`千问`**，不含「通义」两字；
+- `com.antutu.ABenchMark` 的 tile 文案是 **`安兔兔评测`**，不是「安兔兔」。
+
+按正确文案重跑，两条立刻 `LAUNCHED`。所以 `TILE_NOT_FOUND` 现在有三种互不相同的含义：
+
+1. 编排问题（滚动预算不够 / 点空一次）——§9.5；
+2. 应用真的不在空间里（未导入）；
+3. **名称口径错**：tile 显示的是应用的市场名，不是包名或常识简称。
+
+⇒ 批量启动前先跑一次全量 tile 盘点建映射（gotcha `tile-label-not-app-name`），不要用「包名后半段」猜 tile 文案。
+
+### 10.4 落点页与同意层（batch24-②）
+
+四个包**全部**在首屏给出原生同意层（dump 可读，`EditText` 计数 0，无需截图判页面）：
+
+| tile | 落点文案 | 同意入口 | 拒绝入口 |
+|---|---|---|---|
+| 钉钉 | 温馨提示 | `同意` | `不同意` |
+| 千问 | 欢迎使用 千问 | `同意` | `不同意` |
+| 安兔兔评测 | 欢迎您使用 安兔兔评测! | `同意` | `不同意` |
+| Booking.com缤客 | 需您同意（含 `全选`） | `同意并继续` | `不同意并关闭` |
+
+### 10.5 同意层之后的落点（batch24-② 实测）
+
+同意层不是终点：四个应用点完同意后的页面形状差异很大，必须逐个 dump 判定（`/tmp/b24c.py`，每应用冷启 → 连点同意至消失 → dump + 截图）。
+
+| tile | 落点 Activity | 节点数 | EditText | 登录入口 | 判定 |
+|---|---|---|---|---|---|
+| 钉钉 | `TaskP1$F1M1C2` | 20 | 1 | 「请输入号码注册或登录」`[297,796][1136,1000]` + 「下一步」；备选「邮箱登录」`[652,2308][808,2432]` | 手机号登录页可达 |
+| 千问 | `TaskP1$F1M1C0E0` | 39 | 0 | 「立即登录，解锁更多功能」`[376,345][783,396]` | 已过同意层进首页，登录是**可选**项（聊天可用） |
+| 安兔兔评测 | `TaskP1$F1M0C3` | 70 | 0 | 无 | 已进「设备信息」页，无账号体系，无需登录 |
+| Booking.com缤客 | `TaskP1$F1M0C3` → 退回 Workbench | 28 | 0 | 被 5 个 CheckBox 挡住 | 未勾选即点「同意并继续」＝静默退出 |
+
+三点可直接复用的结论：
+
+1. **同意层可能要连点两次**：钉钉、安兔兔点一次「同意」后仍会再弹一层（`consent_taps` 分别为 2/2），千问只需 1 次。
+   批量脚本必须写成「循环点到文案消失为止」，不能点一次就 dump。
+2. **同意层之后的页面不一定有登录**：安兔兔评测根本没有账号体系（70 个节点全是设备/CPU/屏幕参数），
+   「登录入口」这一列对它是空集，不是「没找到」。⇒ 覆盖矩阵的口径要允许 `NO_ACCOUNT_SYSTEM`。
+3. **CheckBox 型同意墙不能用「文本点」通过**：Booking 的 5 个 `android.widget.CheckBox` 的 bounds 是整行宽
+   （如 `[96,1227][1112,1359]`），点行中心不会勾上，点「同意并继续」则直接结束 Activity 回到 Workbench
+   （没有崩溃、没有提示）。这一族（`全选` + N 条逐项同意）必须先勾选再提交，且勾选热区在行右端。
+
+## 11. Booking 为什么「点完同意就退出」：两次容器侧拒绝（batch24-③）
+
+§10.5 记录的 Booking 静默退出，实际是**两个不同的容器缺陷**先后发生。两者都属于既有判据族
+「平台在这个调用点不会失败，运行时就不能抛」。
+
+### 11.1 第一次：JobScheduler 组件池耗尽（v92→v93）
+
+现场（`logcat -b events`，进程 `dev.tripoder.q6:slot1`）：
+
+```
+02:31:30  wm_on_create_called [com.booking.startup.HomeActivity, performCreate, 9]
+02:31:30  wm_on_resume_called [com.booking.startup.HomeActivity, RESUME_ACTIVITY, 4]
+02:31:35  am_crash [17904,0,dev.tripoder.q6:slot1,949501508,
+                    java.lang.IllegalStateException, JOB_COMPONENT_CAPACITY_EXHAUSTED, Parcel.java,3422,0]
+02:31:35  am_proc_died [0,17904,dev.tripoder.q6:slot1,0,2]
+```
+
+HomeActivity 已经正常 resume 并拿到焦点，5 秒后死于我方异常。链路：
+
+- `JobComponentLedger.reserve()` 在每个进程内只找 `RuntimeJobSlots.PER_PROCESS` 条 lane，满则
+  `throw new IllegalStateException("JOB_COMPONENT_CAPACITY_EXHAUSTED")`；
+- 该异常经 `RuntimeJobBroker.submit` 的 `catch(Exception){unknown(); throw error;}` 原样返回给客体，
+  在客体线程上由 `Parcel.readException` 重抛（`Parcel.java:3422`）⇒ FATAL。
+
+平台的 `JobScheduler.schedule()` 在无法受理时只返回 `RESULT_FAILURE`，从不抛异常。
+Booking 的 `UpdateAppService` 在自己的线程池里 `safeSchedule`，没有 catch ⇒ 直接杀进程。
+
+修法（v93）：
+
+1. `RuntimeJobSlots.PER_PROCESS` 4 → 8（`android/scripts/runtime_job_slots.py` 同步），
+   manifest 生成出 `JobP{n}$J0..J7`（实测 v93 装机后 8 条 lane 全在）；
+2. `RuntimeJobBroker.submit` 在选资源**之前**先判容量，满则
+   `RuntimeFacadeContract.drop("JOB_COMPONENT_CAPACITY_DEGRADED")` + `return JobScheduler.RESULT_FAILURE`
+   —— 既不开事务、也不抛。
+
+### 11.2 第二次：遗留 `job_mutations` 行永久拒绝该应用的所有 schedule（v93→v94）
+
+v93 复测：同意层的 5 个 CheckBox 全部勾上、Activity 未被打死，「同意并继续」之后进程**仍然**被杀。
+这次栈换成了客体自己的业务代码：
+
+```
+java.lang.IllegalStateException: JOB_MUTATION_IN_PROGRESS:bb8a8b34-…
+  at Parcel.createExceptionOrNull(Parcel.java:3422)
+  at RuntimeWire.call(RuntimeWire.java:75)
+  at RuntimeEngine.brokerCall(RuntimeEngine.java:464)
+  at RuntimeJobScheduler.dispatch(RuntimeJobScheduler.java:42)
+  at RuntimeJobScheduler$Facade.schedule(RuntimeJobScheduler.java:18)
+  at com.booking.squeaks.SchedulingExtensionsKt.safeSchedule(SchedulingExtensions.kt:44)
+  at com.booking.service.UpdateAppService$Companion$$ExternalSyntheticLambda0.run
+```
+
+`TripoderExitDossier: bucket=ENGINE_DEFECT class=ENGINE_REJECTION signature=961a9ffaca99` —— 容器自认这是引擎缺陷。
+
+机制：`job_mutations` 有唯一索引 `job_mutation_owner(installGeneration) WHERE closed=0`，
+`JobLedger.requireIdle()` 见任何未关闭行就直接抛。上一轮崩溃的进程把行留在 open 状态，
+而它**永远不可能再被观测**（进程已死、`operation` 也不会有人来 close）⇒ 该安装此后**每一次**
+`schedule()` 都被同一个异常打死。这与 §12 里广播账本「UNKNOWN 行只增不减」是同一形状的问题：
+**把『我们看不清的结果』当成『客户端的过错』**。
+
+修法（v94）：
+
+1. `JobLedger.openMutations(install)` + `JobLedger.abandon(operation)`：把该 operation 的
+   `PREPARED` 版本转 `UNKNOWN`、mutation 行 `closed=1`；
+2. `RuntimeJobBroker.submit` 在 `requireIdle` 之前调 `abandonUnobservable(generation)`：
+   只放弃「不在 inFlightMutations 且 contract 状态不是 RUNNING」的行 —— 真在飞的调用不受影响；
+3. 仍然忙（有真在飞的行）时返回 `RESULT_FAILURE` 而不是抛（`JOB_MUTATION_IN_PROGRESS_DEGRADED`）。
+
+两条修复共同的口径：**`JobScheduler` 这一族门面只有「受理 / 不受理」两种答复，没有异常出口。**
+
+### 11.3 v94 实测：两道同意都过了，Booking 自己重启进程
+
+v94 复测（冷启 → 单点「全选」行右端 → 点「同意并继续」）：
+
+- 5 个 CheckBox 全部变为勾选（截图确认），点击后 **进程没有再崩**：`job_errors=[]`、`ENGINE_DEFECT=0`、`FATAL EXCEPTION=0`；
+- 104 秒后进程优雅退出，退出栈是 Booking 自己的代码：
+
+```
+TripoderStarts: #3 CALL target=com.booking/.privacy.china.ChinaConsentWallRestartActivity
+                caller=com.booking.privacy.china.ChinaConsentWallActivity flags=0x10000000
+TripoderStarts: #4 ROUTED target=…ChinaConsentWallRestartActivity
+Process : at android.os.Process.killProcess(Process.java:1635)
+Process : at com.booking.privacy.china.ChinaConsentWallRestartActivity$Companion.restartApplication(…:53)
+ActivityTaskManager: Process dev.tripoder.q6:slot1 restarted
+TripoderExitDossier: bucket=APP_REFUSAL class=SELF_KILL
+```
+
+⇒ **「点同意后应用自己消失」是 Booking 的设计**：同意落盘后它主动 `killProcess` 重启自己（Phoenix 式）。
+容器这边把重启 Activity 正常路由（`#4 ROUTED`）了，只是新进程没有把用户带回前台，于是看起来像「退出」。
+这一条不是缺陷，记入判据：`bucket=APP_REFUSAL class=SELF_KILL` 且栈里有 `restartApplication/killProcess` 时，
+不要记成崩溃。
+
+再次从 Workbench 启动（v94，`/tmp/b95.py`）证明同意已持久化：
+
+```
+t0..t13 = TaskP1$F1M0C3（Cookie 设置页，200s 内稳定）
+starts  = CALL com.booking/.identity.privacy.ui.PrivacyAppActivity → ROUTED
+texts   = 接受 / 管理设置
+```
+
+点「接受」后（`/tmp/b96.py`）落 `TaskP1$F1M0C2` = `com.booking.startup.HomeActivity`
+（`wm_on_create_called …HomeActivity → wm_on_resume_called …HomeActivity`），进程健在、无异常。
+
+**剩下的是内容层**：HomeActivity 在顶层但截图全黑（`/tmp/b96.png`，只有状态栏与底部手势条），
+`uiautomator dump` 返回空树。与闲鱼 U4 黑屏同族（窗口有、内容层不出帧），是下一个要单独攻的点，
+不是「启动失败」。本批的口径到此为：Booking **两道同意 + 隐私页全部可通过**，首页黑屏另记。

@@ -35,6 +35,12 @@ final class JobLedger {
     }
     void requireIdle(String install){try(Cursor c=store.getReadableDatabase().rawQuery("SELECT operation FROM job_mutations WHERE installGeneration=? AND closed=0",new String[]{install})){if(c.moveToFirst())throw new IllegalStateException("JOB_MUTATION_IN_PROGRESS:"+c.getString(0));}}
     void mutation(String operation,String install,String kind){ContentValues row=new ContentValues();row.put("operation",operation);row.put("installGeneration",install);row.put("kind",kind);store.getWritableDatabase().insertOrThrow("job_mutations",null,row);}
+    List<String> openMutations(String install){List<String> out=new ArrayList<>();try(Cursor c=store.getReadableDatabase().rawQuery("SELECT operation FROM job_mutations WHERE installGeneration=? AND closed=0",new String[]{install})){while(c.moveToNext())out.add(c.getString(0));}return out;}
+    /** Abandons a mutation nobody can still observe: an unknown outcome must never fence a valid retry. */
+    void abandon(String operation){
+        store.getWritableDatabase().execSQL("UPDATE job_versions SET state='UNKNOWN' WHERE operation=? AND state='PREPARED'",new Object[]{operation});
+        store.getWritableDatabase().execSQL("UPDATE job_mutations SET closed=1 WHERE operation=? AND closed=0",new Object[]{operation});
+    }
     void target(String operation,String version){ContentValues row=new ContentValues();row.put("operation",operation);row.put("version",version);store.getWritableDatabase().insertOrThrow("job_mutation_targets",null,row);}
     List<Version> targets(String operation){List<Version> out=new ArrayList<>();try(Cursor c=store.getReadableDatabase().rawQuery("SELECT v.* FROM job_versions v JOIN job_mutation_targets t ON t.version=v.version WHERE t.operation=? ORDER BY v.rowid",new String[]{operation})){while(c.moveToNext())out.add(new Version(c));}return out;}
     void prepared(String version,JobComponentLedger.Lease lease,String namespace,JobInfo logical,JobInfo physical,String operation,String hookGeneration,String hookOperation){
