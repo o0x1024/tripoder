@@ -66,12 +66,18 @@ def tap(wanted, scroll=False):
         node = find(wanted)
         if node:
             point = center(node['bounds'])
-            if point:
+            # A row clipped by the viewport reports a sliver (e.g. 6px tall) whose center
+            # sits on the gesture bar, so the tap lands on nothing. Scroll and retry.
+            height = center(node['bounds']) and (int(re.findall(r'\d+', node['bounds'])[3]) - int(re.findall(r'\d+', node['bounds'])[1]))
+            if point and (not scroll or (height or 0) >= 60):
                 print(f"tap [{wanted}] at {point} ({node['bounds']})")
                 adb('shell', 'input', 'tap', str(point[0]), str(point[1]))
                 return 0
+            if scroll:
+                print(f"[{wanted}] clipped ({height}px), scrolling the list")
         if scroll:
-            print(f"[{wanted}] not visible, scrolling the list")
+            if not node:
+                print(f"[{wanted}] not visible, scrolling the list")
             adb('shell', 'input', 'swipe', '540', '2000', '540', '1200', '300')
             time.sleep(0.8)
     print(f"NOT_FOUND: [{wanted}]")
@@ -79,25 +85,45 @@ def tap(wanted, scroll=False):
 
 
 def tap_contains(wanted):
-    """Tap the first node whose text/desc CONTAINS wanted.
+    """Tap the best node whose text/desc CONTAINS wanted.
 
-    Dumps truncate long labels and some apps insert spacing inside labels
-    ("同 意"), so exact matching silently misses buttons. Use this when the
-    exact string is unknown.
+    Taking the first hit is wrong on consent pages: the descriptive paragraph
+    also contains "同意" and precedes the button in dump order, so a naive
+    contains-match taps the paragraph. Rank button-ish classes first, then the
+    shortest label (the button says "同意"/"同 意", the paragraph is a sentence).
+    Exact matching is wrong too: dumps truncate labels and some apps space out
+    characters ("同 意").
     """
+    best = None
+    best_rank = None
+    wanted_compact = ''.join(wanted.split())
     for node in nodes():
+        point = center(node['bounds'])
+        if not point:
+            continue
+        cls = node['cls'].lower()
         for field in ('text', 'desc'):
-            if wanted in node[field]:
-                point = center(node['bounds'])
-                if point:
-                    print(f"tap~ [{wanted}] at {point} ({node['bounds']}) label={node[field][:40]!r}")
-                    adb('shell', 'input', 'tap', str(point[0]), str(point[1]))
-                    return 0
-        if center(node['bounds']) and wanted in node['rid']:
-            point = center(node['bounds'])
-            print(f"tap~ [{wanted}] at {point} ({node['bounds']}) rid={node['rid']}")
-            adb('shell', 'input', 'tap', str(point[0]), str(point[1]))
-            return 0
+            label = node[field]
+            if not label:
+                continue
+            # Some consent buttons are laid out with spacing inside the label
+            # ("同 意"), so compare without whitespace at all.
+            compact = ''.join(label.split())
+            if wanted_compact not in compact:
+                continue
+            # "同意" is a substring of "不同意": the negated control is the one
+            # that must never be tapped, so reject any label that negates the wanted word.
+            if ('不' + wanted_compact) in compact:
+                continue
+            buttonish = 0 if 'button' in cls else (1 if len(compact) <= 6 else 2)
+            rank = (buttonish, len(compact))
+            if best_rank is None or rank < best_rank:
+                best, best_rank = (node, field, label, point), rank
+    if best:
+        node, field, label, point = best
+        print(f"tap~ [{wanted}] at {point} ({node['bounds']}) cls={node['cls'].split('.')[-1]} label={label[:40]!r}")
+        adb('shell', 'input', 'tap', str(point[0]), str(point[1]))
+        return 0
     print(f"NOT_FOUND~ [{wanted}]")
     return 1
 
