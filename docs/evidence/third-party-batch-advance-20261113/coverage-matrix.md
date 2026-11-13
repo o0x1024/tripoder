@@ -26,10 +26,10 @@
 |---|---|
 | `pm list packages -3` 全量 | 121 |
 | 扣除厂商/系统捆绑 | 78 |
-| 已进流水线（有实测记录） | 21 |
+| 已进流水线（有实测记录） | 26 |
 | 盘点表已有结论（历史批次证据，未进流水线记录） | 31 |
-| 有证据合计（两者并集） | 39 |
-| 尚未实测 | 57 |
+| 有证据合计（两者并集） | 43 |
+| 尚未实测 | 52 |
 
 ## 逐项矩阵
 
@@ -41,7 +41,7 @@
 | 4 | `cn.cyberIdentity.certification` |  | — | 未测 |  |  | 未测 |
 | 5 | `cn.wps.moffice_eng` | WPS Office | — | LOGIN_ENTRY（登录入口可达） | TaskP1$F1M0C0E0 | fatal=0 adm=0 anr=0 | 未测 |
 | 6 | `cn.wps.moffice_eng.xiaomi.lite` |  | — | 未测 |  |  | 未测 |
-| 7 | `com.achievo.vipshop` | 唯品会 | 容器内 | 盘点有结论·待补流水线记录 |  |  | 启动成功；同意按钮 dump 文本被截断为「同」，文本匹配三候选全落空（取证手段问题） |
+| 7 | `com.achievo.vipshop` | 唯品会 | 容器内 | LOGIN_ENTRY（登录入口可达） | TaskP1$F1M1C2 | fatal=0 adm=0 anr=0 | 启动成功；同意按钮 dump 文本被截断为「同」，文本匹配三候选全落空（取证手段问题） |
 | 8 | `com.alibaba.android.rimet` | 钉钉 | 启动成功 TaskP2$F1M1C2（fatal=0）；首屏原生同意层「温馨提示」同意/不同意 | 盘点有结论·待补流水线记录 |  |  | [batch24](batch23-coverage-batch-20261113.md) |
 | 9 | `com.alicloud.databox` |  | — | 未测 |  |  | 未测 |
 | 10 | `com.aliyun.tongyi` | 千问 | 启动成功 TaskP1$F1M1C0E0；tile 文案是「千问」；首屏「欢迎使用 千问」同意层 | 盘点有结论·待补流水线记录 |  |  | [batch24](batch23-coverage-batch-20261113.md) |
@@ -79,7 +79,7 @@
 | 73 | `com.netease.cloudmusic` | 网易云音乐 | 不可用（结构） | 盘点有结论·待补流水线记录 |  |  | **启动即崩，卡在系统服务身份校验**：`IStorageManager.getVolumeList` → `Secur |
 | 74 | `com.openai.chatgpt` | ChatGPT | — | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M1C0 | fatal=0 adm=0 anr=0 | 未测 |
 | 75 | `com.pangsheng.pshuochepiao.m` |  | — | 未测 |  |  | 未测 |
-| 76 | `com.phoenix.read` | 红果免费短剧 | — | 未测 |  |  | 未测 |
+| 76 | `com.phoenix.read` | 红果免费短剧 | — | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M2C2 | fatal=0 adm=0 anr=0 | 未测 |
 | 77 | `com.pingan.paces.ccms` |  | — | 未测 |  |  | 未测 |
 | 78 | `com.qiyi.video` | 爱奇艺 | 容器内 | NOT_TOP（未上顶层） | dev.tripoder.q6/dev.tripoder.hooklab.WorkbenchActivity | fatal=0 adm=0 anr=0 | **启动被 UI 拒绘**：点 tile 后 top 恒为 Workbench、客体重进程数 0、crash 空，Wor |
 | 79 | `com.quark.browser` | 夸克 | 容器内 | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M2C2 | fatal=0 adm=0 anr=0 | 启动成功 TaskP1$F1M2C2；同意 1 次后落首页，无登录入口文案 |
@@ -109,9 +109,9 @@
 | 112 | `com.xunmeng.pinduoduo` | 拼多多 | 容器内 | 盘点有结论·待补流水线记录 |  |  | 可用：手机号+短信验证码登录闭环（`153****8553`，个人中心/我的订单/多多钱包可达） |
 | 113 | `com.zhihu.android` | 知乎 | 已装入 | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M0C3 | fatal=0 adm=0 anr=0 | **启动可用**：知乎 TaskP3$F0M2C2，无 FATAL；到「个人信息保护指引」页，dump 正常。登录未测 |
 | 114 | `ctrip.android.view` | 携程旅行 | 容器内 | 盘点有结论·待补流水线记录 |  |  | 启动成功；同意后页面已变，未产出登录类文案（需再取证） |
-| 118 | `org.telegram.messenger` | Telegram | — | 未测 |  |  | 未测 |
-| 119 | `org.videolan.vlc` | VLC | — | 未测 |  |  | 未测 |
-| 120 | `org.wikipedia` | 维基百科 | — | 未测 |  |  | 未测 |
+| 118 | `org.telegram.messenger` | Telegram | — | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M2C0E0 | fatal=0 adm=0 anr=0 | 未测 |
+| 119 | `org.videolan.vlc` | VLC | — | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M2C2 | fatal=0 adm=0 anr=0 | 未测 |
+| 120 | `org.wikipedia` | 维基百科 | — | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M0C2 | fatal=0 adm=0 anr=0 | 未测 |
 | 121 | `tv.danmaku.bili` | 哔哩哔哩 | 容器内 | 盘点有结论·待补流水线记录 |  |  | 启动成功；点「同意并继续」后客体 FATAL（tv.danmaku.bili PID 28536），top 回落 Wor |
 
 ## 待推进队列（按处置分档）
@@ -120,13 +120,12 @@
 
 | 档 | 数量 | 跑法 |
 |---|---|---|
-| 可立即跑（tile 已建） | 25 | `coverage_pipeline.py --no-import <pkgs>` |
+| 可立即跑（tile 已建） | 20 | `coverage_pipeline.py --no-import <pkgs>` |
 | 需先导入（无 tile） | 32 | `coverage_pipeline.py <pkgs>`（含导入） |
 
 ### 可立即跑
 
 - `cmb.pb`（招商银行）
-- `com.achievo.vipshop`（唯品会）
 - `com.alibaba.android.rimet`（钉钉）
 - `com.aliyun.tongyi`（千问）
 - `com.antutu.ABenchMark`（安兔兔评测）
@@ -135,7 +134,6 @@
 - `com.jingdong.app.mall`（京东）
 - `com.larus.nova`（豆包）
 - `com.netease.cloudmusic`（网易云音乐）
-- `com.phoenix.read`（红果免费短剧）
 - `com.ss.android.article.news`（今日头条）
 - `com.ss.android.ugc.aweme`（抖音）
 - `com.taobao.idlefish`（闲鱼）
@@ -146,9 +144,6 @@
 - `com.xingin.xhs`（小红书）
 - `com.xunmeng.pinduoduo`（拼多多）
 - `ctrip.android.view`（携程旅行）
-- `org.telegram.messenger`（Telegram）
-- `org.videolan.vlc`（VLC）
-- `org.wikipedia`（维基百科）
 - `tv.danmaku.bili`（哔哩哔哩）
 
 ### 需先导入
