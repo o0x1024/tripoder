@@ -62,7 +62,10 @@ final class RuntimeSelfHookActivities {
                             if(restored!=null)ActivityFrameworkAccess.recordState(args[0],RuntimeGuestPayload.copy(restored,permit.loader()));
                         }
                         RuntimeEngine engine=RuntimeEngine.current;if(engine!=null)engine.packages.traceEndpoints("BEFORE_FRAMEWORK_ACTIVITY_CREATE");
+                        dev.tripoder.selfhook.ApplicationAdapter.wrapActivityClientController();
+                        android.util.Log.i("TripoderActivities", "CALLING original.call(args) in performLaunchActivity");
                         Object result=original.call(args);
+                        android.util.Log.i("TripoderActivities", "RETURNED from original.call(args) in performLaunchActivity, result=" + result);
                         if(result instanceof Activity&&RuntimeBridge.owns((Activity)result))RuntimeEngine.current.activityCreated((Activity)result);
                         return result;
                     }finally{permit.end();}
@@ -73,6 +76,7 @@ final class RuntimeSelfHookActivities {
                     }
                     RuntimeActivityCreation.attaching(activity,(Intent)args[6],(ActivityInfo)args[7],(android.os.IBinder)args[3]);Object[] logical=args.clone();
                     logical[0]=RuntimeBridge.context((Context)args[0]);logical[5]=RuntimeBridge.application();logical[6]=RuntimeBridge.intent(activity);logical[7]=RuntimeBridge.activityInfo(activity);
+                    dev.tripoder.selfhook.ApplicationAdapter.wrapActivityClientController();
                     Object result=original.call(logical);attach(activity);RuntimeBridge.attachedActivity(activity);return result;
                 });break;
                 case "getThemeResource":callbacks.put(target,(receiver,args,original)->{Integer mapped=RuntimeActivityCreation.theme((ActivityInfo)receiver);return mapped==null?original.call(args):mapped;});break;
@@ -188,8 +192,26 @@ final class RuntimeSelfHookActivities {
                 if(!supported)throw new UnsupportedOperationException("ACTIVITY_START_SIGNATURE_UNSUPPORTED:"+name+":"+target);
                 Activity activity=args[3] instanceof Activity?(Activity)args[3]:args[0] instanceof Activity?(Activity)args[0]:null;
                 Intent intent=(Intent)args[4];
-                // A null Activity is a start through an Application or Service Context.
-                if(activity!=null&&!RuntimeBridge.owns(activity))throw new SecurityException("ACTIVITY_START_CALLER_UNOWNED");
+                // Every start this process performs becomes a request to ActivityManager, which authorises it by checking
+                // that the calling package belongs to the calling uid. The guest's projected identity does not belong to
+                // this uid (the uid belongs to the container), so the framework is handed the owner's context here, while
+                // application code keeps the guest identity for its own channel/signing self-checks.
+                if(args[0] instanceof android.content.Context){
+                    android.content.Context boundary=RuntimePlatformContext.of((android.content.Context)args[0]);
+                    if(boundary!=args[0]){args=args.clone();args[0]=boundary;android.util.Log.i("TripoderActivities","BOUNDARY caller="+boundary.getOpPackageName());}
+                }
+                // A null Activity is a start through an Application or Service Context. An Activity this engine has
+                // already acknowledged as destroyed is the same case: applications keep references to finished
+                // activities and call startActivity on them, and the platform honours it (the token only ties a result
+                // to a dead task). Refusing it invents a failure the platform never produces, so a retired caller
+                // continues as a plain context start instead of killing the guest.
+                if(activity!=null&&!RuntimeBridge.owns(activity)){
+                    android.util.Log.i("TripoderActivities","start from retired activity: class="+activity.getClass().getName()+";finishing="+activity.isFinishing()+";destroyed="+activity.isDestroyed());
+                    activity=null;
+                    // Re-homed onto the context path, the start has no task: the platform's own rule for a token-less
+                    // start is exactly this flag, so carrying it keeps the request honour-able instead of rejected.
+                    if(intent!=null&&(intent.getFlags()&Intent.FLAG_ACTIVITY_NEW_TASK)==0){intent=new Intent(intent).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);args=args.clone();args[4]=intent;}
+                }
                 if(intent==null||RuntimeBridge.startsHost(intent))throw new SecurityException("ACTIVITY_START_HOST_COMPONENT_DENIED");
                 RuntimeMalwareProbeState.checkAndRecordIntent("execStartActivity", intent);
                 // A component of a guest in this space is routed through the ledger. Anything else (an implicit action, a real installed app, the system) is the platform's to resolve, as it is for any app.
@@ -197,11 +219,31 @@ final class RuntimeSelfHookActivities {
                 if(intent.getComponent()==null){android.content.ComponentName own=RuntimeBridge.resolveOwnActivity(intent);if(own!=null){intent=new Intent(intent).setComponent(own);args=args.clone();args[4]=intent;}}
                 if(intent.getComponent()!=null){
                     try{Object[] routed=args.clone();routed[4]=activity!=null?RuntimeBridge.route(activity,intent,(Integer)args[5]):RuntimeBridge.routeFromContext(intent);return original.call(routed);}
-                    catch(android.content.ActivityNotFoundException absent){if(!String.valueOf(absent.getMessage()).startsWith("PACKAGE_NOT_IN_SPACE"))throw absent;}
+                    catch(android.content.ActivityNotFoundException absent){
+                        if(!String.valueOf(absent.getMessage()).startsWith("PACKAGE_NOT_IN_SPACE"))throw absent;
+                        // The component is installed on the device but absent in this space. "Not installed" is the only answer a
+                        // device without that application gives, and it is the answer this guest's own package manager already
+                        // gave; handing the start to the platform would open the physical application behind that answer.
+                        String crossPackage=intent.getComponent().getPackageName();
+                        if(!RuntimeEngine.current.packageVisibility.admits(crossPackage)){android.util.Log.i("TripoderActivities","EXTERNAL start denied: target="+crossPackage+";action="+intent.getAction()+";fromActivity="+(activity!=null));throw absent;}
+                    }
                 }
-                // A result requested from the platform (permission dialog, picker) comes back without an authority operation; remember it so the return is accepted.
+                // An implicit intent addressed to a package outside the space is the same hand-off with the component spelled in
+                // the package field. The guest's own package resolved through its own filters above and never reaches this test.
+                if(intent.getComponent()==null&&intent.getPackage()!=null&&!RuntimeEngine.current.packageName.equals(intent.getPackage())&&!RuntimeEngine.current.packageVisibility.admits(intent.getPackage())){
+                    android.util.Log.i("TripoderActivities","EXTERNAL start denied: target="+intent.getPackage()+";action="+intent.getAction()+";implicit=true");
+                    throw new android.content.ActivityNotFoundException("PACKAGE_NOT_IN_SPACE:"+intent.getPackage());
+                }
+                // The platform resolves this start: the component belongs to another application, whose activity
+                // must not live in this delivery's task (that task is the container's per-delivery artifact and
+                // ends with the guest's own activity). The start is also a hand-off: the platform returns to the
+                // caller when the handed-off activity finishes, so the delivery is recorded as continuable.
+                Intent external=new Intent(intent).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                android.util.Log.i("TripoderActivities","EXTERNAL start handed off: target="+(intent.getComponent()==null?intent.getPackage():intent.getComponent().getPackageName())+";action="+intent.getAction());
+                Object[] externalArgs=args.clone();externalArgs[4]=external;
+                if(activity!=null)RuntimeBridge.noteHandoff(activity);
                 if(activity!=null&&args[5] instanceof Integer&&(Integer)args[5]>=0)RuntimeBridge.noteSystemResult(activity,(Integer)args[5]);
-                return original.call(args);
+                return original.call(externalArgs);
             }
             Activity activity=(Activity)receiver;
             if(name.equals("finish")){if(activity.getClass()==RuntimeRejectedActivity.class)return original.call(args);if(!RuntimeBridge.owns(activity)){if(activity.isDestroyed())return original.call(args);throw new SecurityException("RESULT_CALLER_UNSUPPORTED");}try{RuntimeBridge.returning(activity,ActivityFrameworkAccess.resultCode(activity),ActivityFrameworkAccess.resultData(activity));}catch(Throwable error){android.util.Log.w("TripoderActivity","Activity finish result delivery skipped: "+error.getMessage());}return original.call(args);}
