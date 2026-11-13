@@ -55,9 +55,16 @@ facade=(built==null||built==physical)?RuntimeFacadeContract.nothing("ACTIVITY_MA
 ## 4. 度量
 
 ```
-改前（v73）: total=1873  guest_facing=56  must_degrade=19  needs_review=36  metric=55
-改后（v74）: total=1858  guest_facing=41  must_degrade=6   needs_review=34  metric=40
+改前（v73）: guest_facing=56  metric=55   ← 其中 must-degrade 13 处（本族全部）
+改后（v74）: guest_facing=41  metric=40   ← must-degrade 0 处；剩下 40 全是 needs-review
+
+剩余 40 的分布：getsystemservice 10 / package-endpoint 19 / receiver-pointer-stack 11（含 1 处 keep）
 ```
+
+**口径提醒（会看错数字的地方）**：脚本尾部那行 `must_degrade=6 needs_review=1849` 是对**全部 rows**
+（含 `host-internal`）统计的，不是客体栈口径；只有 `metric`（= `guest_facing` 里的 must-degrade + needs-review）
+才是门禁数。本批之前 `metric=55 = 13 must-degrade + 42 needs-review`（old 口径下 needs-review 42 里含 package-endpoint 19 与 receiver 11 等），
+本批之后 **客体栈上已无 must-degrade**，剩下的每一条都需要逐点判定平台行为。
 
 复现：`python3 android/scripts/facade_throw_audit.py`（末尾 JSON 的 `metric` 即待处理数；F9 门禁只降不升）。
 
