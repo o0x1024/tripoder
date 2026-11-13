@@ -18,7 +18,8 @@ final class RuntimeTelephony {
     TelephonyManager platform(){TelephonyManager manager=engine.host.getSystemService(TelephonyManager.class);if(manager==null)return RuntimeFacadeContract.nothing("PLATFORM_TELEPHONY_UNAVAILABLE",null,null);return manager;}
     synchronized void register(Executor executor,TelephonyCallback callback){
         Objects.requireNonNull(executor,"TELEPHONY_EXECUTOR_REQUIRED");
-        if(callback==null||!engine.ownsReceiverLoader(callback.getClass().getClassLoader()))throw new SecurityException("TELEPHONY_CALLBACK_OWNER_INVALID");
+        Objects.requireNonNull(callback,"TELEPHONY_CALLBACK_REQUIRED");
+        if(!engine.ownsReceiverLoader(callback.getClass().getClassLoader()))RuntimeFacadeContract.drop("TELEPHONY_CALLBACK_OWNER_INVALID",null);
         Set<String> interfaces=new TreeSet<>();for(Class<?> type=callback.getClass();type!=null&&type!=TelephonyCallback.class;type=type.getSuperclass())for(Class<?> implemented:type.getInterfaces())interfaces(implemented,interfaces);
         if(!interfaces.equals(Set.of(TelephonyCallback.SignalStrengthsListener.class.getName())))throw new UnsupportedOperationException("TELEPHONY_CALLBACK_INTERFACES_UNSUPPORTED:"+String.join(",",interfaces));
         if(callbacks.containsKey(callback))throw new IllegalStateException("TELEPHONY_CALLBACK_ALREADY_REGISTERED");

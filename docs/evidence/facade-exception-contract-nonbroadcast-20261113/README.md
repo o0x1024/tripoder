@@ -4,10 +4,11 @@
 > 上一轮：[`../facade-exception-contract-20261113/README.md`](../facade-exception-contract-20261113/README.md)（`build-facade-v55`，广播族闭合）
 > 本轮回答一个问题：**同一条不变量在 Activity/Service、PackageManager、ActivityManager、ContentProvider 上会遇到什么。**
 >
-> 后续四轮（同一目录）：[`batch9-facade-audit-20261113.md`](batch9-facade-audit-20261113.md)（按「跑在谁的栈上」普查，metric 75→70）、
+> 后续五轮（同一目录）：[`batch9-facade-audit-20261113.md`](batch9-facade-audit-20261113.md)（按「跑在谁的栈上」普查，metric 75→70）、
 > [`batch10-receiver-pointer-stack-20261113.md`](batch10-receiver-pointer-stack-20261113.md)（v72，receiver-pointer-stack 收口，metric 70→61）、
-> [`batch11-package-endpoint-20261113.md`](batch11-package-endpoint-20261113.md)（v73，package-endpoint 收口 6 处，metric 61→55）
-> 与 [`batch12-getsystemservice-20261113.md`](batch12-getsystemservice-20261113.md)（v74，getSystemService 收口 16 处，metric 55→40）。
+> [`batch11-package-endpoint-20261113.md`](batch11-package-endpoint-20261113.md)（v73，package-endpoint 收口 6 处，metric 61→55）、
+> [`batch12-getsystemservice-20261113.md`](batch12-getsystemservice-20261113.md)（v74，getSystemService 收口 16 处，metric 55→40）
+> 与 [`batch13-needs-review-triage-20261113.md`](batch13-needs-review-triage-20261113.md)（v75，剩余 40 处逐点判定，metric 40→31，getSystemService 家族剩下 1 处待调用链取证）。
 
 ## 1. 判据（先定判据，再改代码）
 

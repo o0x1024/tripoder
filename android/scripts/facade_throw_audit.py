@@ -42,6 +42,13 @@ PLATFORM_THROW = {
     # 平台参数通道：null / 形状不对，平台自己是 IAE/NPE
     "MEMORY_INFO_REQUIRED",
     "PROCESS_MEMORY_PIDS_REQUIRED",
+    # ConnectivityManager.registerNetworkCallback / requestNetwork 对 null callback
+    # 抛 IllegalArgumentException（"networkCallback must not be null"）：同一点，保留。
+    # 注意「callback 的类加载器不是我们的」不是平台会失败的条件，那一半已降级。
+    "NETWORK_CALLBACK_REQUIRED",
+    # WifiP2pManager.close(channel) 对不认识的 channel 抛
+    # IllegalArgumentException("Unknown channel: ...")：同一点，保留（类型已对齐 IAE）。
+    "WIFI_P2P_CHANNEL_OWNER_INVALID",
 }
 
 MUST_DEGRADE = {

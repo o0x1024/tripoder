@@ -24,7 +24,8 @@ final class RuntimeConnectivity {
     }
     synchronized void register(NetworkRequest request,ConnectivityManager.NetworkCallback callback,Handler handler,boolean defaults){
         ConnectivityManager platform=platform();
-        if(callback==null||!engine.ownsReceiverLoader(callback.getClass().getClassLoader()))throw new SecurityException("NETWORK_CALLBACK_OWNER_INVALID");
+        if(callback==null)throw new IllegalArgumentException("NETWORK_CALLBACK_REQUIRED");
+        if(!engine.ownsReceiverLoader(callback.getClass().getClassLoader()))RuntimeFacadeContract.drop("NETWORK_CALLBACK_OWNER_INVALID",null);
         if(callbacks.containsKey(callback))throw new IllegalStateException("NETWORK_CALLBACK_ALREADY_REGISTERED");
         if(!defaults&&request==null)throw new IllegalArgumentException("NETWORK_REQUEST_REQUIRED");
         Registration registration=new Registration(callback);registration.active=true;callbacks.put(callback,registration);
@@ -43,7 +44,8 @@ final class RuntimeConnectivity {
         if(!engine.requestedPermissions.contains(Manifest.permission.CHANGE_NETWORK_STATE)
                 &&!(engine.requestedPermissions.contains(Manifest.permission.WRITE_SETTINGS)&&android.provider.Settings.System.canWrite(engine.host)))throw new SecurityException("GUEST_NETWORK_REQUEST_PERMISSION_NOT_GRANTED");
         Objects.requireNonNull(request,"NETWORK_REQUEST_REQUIRED");
-        if(callback==null||!engine.ownsReceiverLoader(callback.getClass().getClassLoader()))throw new SecurityException("NETWORK_CALLBACK_OWNER_INVALID");
+        if(callback==null)throw new IllegalArgumentException("NETWORK_CALLBACK_REQUIRED");
+        if(!engine.ownsReceiverLoader(callback.getClass().getClassLoader()))RuntimeFacadeContract.drop("NETWORK_CALLBACK_OWNER_INVALID",null);
         if(callbacks.containsKey(callback))throw new IllegalStateException("NETWORK_CALLBACK_ALREADY_REGISTERED");
         Registration registration=new Registration(callback);registration.active=true;callbacks.put(callback,registration);
         try{

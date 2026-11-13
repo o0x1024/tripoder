@@ -113,7 +113,7 @@ final class RuntimeSystemBroadcasts {
         return requested;
     }
     static Set<String> roots(Context host){
-        android.os.storage.StorageManager manager=host.getSystemService(android.os.storage.StorageManager.class);if(manager==null)throw new IllegalStateException("PLATFORM_STORAGE_OBSERVATION_UNAVAILABLE");
+        android.os.storage.StorageManager manager=host.getSystemService(android.os.storage.StorageManager.class);if(manager==null){RuntimeFacadeContract.drop("PLATFORM_STORAGE_OBSERVATION_UNAVAILABLE",null);return Set.of();}
         Set<String> roots=new HashSet<>();for(var item:manager.getStorageVolumes()){java.io.File directory=item.getDirectory();if(directory!=null)roots.add(directory.getAbsolutePath());}
         if(roots.size()>64)throw new IllegalStateException("PLATFORM_VOLUME_LIMIT");return Set.copyOf(roots);
     }
