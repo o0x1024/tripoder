@@ -11,11 +11,11 @@ final class RuntimeTelephony {
     private final Map<TelephonyCallback,SignalRegistration> callbacks=new IdentityHashMap<>();
     RuntimeTelephony(RuntimeEngine engine){this.engine=engine;}
     synchronized TelephonyManager facade(){
-        if(facade==null){facade=RuntimeBridge.createTelephonyManager(engine.host);if(facade==null||facade==platform())throw new SecurityException("TELEPHONY_FACADE_IDENTITY_INVALID");}
+        if(facade==null){facade=RuntimeBridge.createTelephonyManager(engine.host);if(facade==null||facade==platform())facade=RuntimeFacadeContract.nothing("TELEPHONY_FACADE_IDENTITY_INVALID",null,platform());}
         return facade;
     }
     boolean owns(TelephonyManager manager){return manager!=null&&manager==facade;}
-    TelephonyManager platform(){TelephonyManager manager=engine.host.getSystemService(TelephonyManager.class);if(manager==null)throw new IllegalStateException("PLATFORM_TELEPHONY_UNAVAILABLE");return manager;}
+    TelephonyManager platform(){TelephonyManager manager=engine.host.getSystemService(TelephonyManager.class);if(manager==null)return RuntimeFacadeContract.nothing("PLATFORM_TELEPHONY_UNAVAILABLE",null,null);return manager;}
     synchronized void register(Executor executor,TelephonyCallback callback){
         Objects.requireNonNull(executor,"TELEPHONY_EXECUTOR_REQUIRED");
         if(callback==null||!engine.ownsReceiverLoader(callback.getClass().getClassLoader()))throw new SecurityException("TELEPHONY_CALLBACK_OWNER_INVALID");

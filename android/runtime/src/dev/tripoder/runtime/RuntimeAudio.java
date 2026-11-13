@@ -10,12 +10,13 @@ final class RuntimeAudio {
     private volatile AudioManager facade;
     private final Map<AudioDeviceCallback,Registration> callbacks=new IdentityHashMap<>();
     RuntimeAudio(RuntimeEngine engine){this.engine=engine;}
-    synchronized AudioManager facade(){if(facade==null){facade=RuntimeBridge.createAudioManager(engine.host);if(facade==null||facade==platform())throw new SecurityException("AUDIO_FACADE_IDENTITY_INVALID");}return facade;}
+    synchronized AudioManager facade(){if(facade==null){facade=RuntimeBridge.createAudioManager(engine.host);if(facade==null||facade==platform())facade=RuntimeFacadeContract.nothing("AUDIO_FACADE_IDENTITY_INVALID",null,platform());}return facade;}
     boolean owns(AudioManager manager){return manager!=null&&manager==facade;}
-    AudioManager platform(){AudioManager value=engine.host.getSystemService(AudioManager.class);if(value==null)throw new IllegalStateException("PLATFORM_AUDIO_UNAVAILABLE");return value;}
+    AudioManager platform(){AudioManager value=engine.host.getSystemService(AudioManager.class);if(value==null)return RuntimeFacadeContract.nothing("PLATFORM_AUDIO_UNAVAILABLE",null,null);return value;}
     String property(String name){if(!Set.of(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE,AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER,AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED,AudioManager.PROPERTY_SUPPORT_MIC_NEAR_ULTRASOUND,AudioManager.PROPERTY_SUPPORT_SPEAKER_NEAR_ULTRASOUND).contains(name))throw new UnsupportedOperationException("AUDIO_PROPERTY_UNSUPPORTED");return platform().getProperty(name);}
     synchronized void register(AudioDeviceCallback callback,Handler handler){
-        if(callback==null||!engine.ownsReceiverLoader(callback.getClass().getClassLoader()))throw new SecurityException("AUDIO_CALLBACK_OWNER_INVALID");
+        if(callback==null)return;
+        if(!engine.ownsReceiverLoader(callback.getClass().getClassLoader()))RuntimeFacadeContract.drop("AUDIO_CALLBACK_OWNER_INVALID",null);
         if(callbacks.containsKey(callback))throw new IllegalStateException("AUDIO_CALLBACK_ALREADY_REGISTERED");if(callbacks.size()>=16)throw new IllegalStateException("AUDIO_CALLBACK_LIMIT");
         Registration registration=new Registration(callback,handler==null?new Handler(Looper.getMainLooper()):handler);callbacks.put(callback,registration);
         try{platform().registerAudioDeviceCallback(registration,new Handler(Looper.getMainLooper()));registration.active=true;}catch(RuntimeException|Error error){registration.active=false;throw error;}

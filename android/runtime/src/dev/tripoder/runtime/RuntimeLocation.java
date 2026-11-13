@@ -27,7 +27,7 @@ final class RuntimeLocation {
     private boolean ticking;
     RuntimeLocation(RuntimeEngine engine){this.engine=engine;}
     synchronized LocationManager facade(){
-        if(facade==null){facade=RuntimeBridge.createLocationManager(engine.host);if(facade==null||facade==platform())throw new SecurityException("LOCATION_FACADE_IDENTITY_INVALID");}
+        if(facade==null){facade=RuntimeBridge.createLocationManager(engine.host);if(facade==null||facade==platform())facade=RuntimeFacadeContract.nothing("LOCATION_FACADE_IDENTITY_INVALID",null,platform());}
         return facade;
     }
     boolean owns(LocationManager value){return value!=null&&value==facade;}

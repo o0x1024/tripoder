@@ -13,7 +13,7 @@ final class RuntimeWifiP2p {
     private final Map<WifiP2pManager.Channel,Registration> channels=new IdentityHashMap<>();
     private int pending;
     RuntimeWifiP2p(RuntimeEngine engine){this.engine=engine;}
-    synchronized WifiP2pManager facade(){if(facade==null){facade=RuntimeBridge.createWifiP2pManager(null);if(facade==null)throw new IllegalStateException("WIFI_P2P_FACADE_REQUIRED");}return facade;}
+    synchronized WifiP2pManager facade(){if(facade==null){facade=RuntimeBridge.createWifiP2pManager(null);if(facade==null)return RuntimeFacadeContract.nothing("WIFI_P2P_FACADE_REQUIRED",null,null);}return facade;}
     boolean owns(WifiP2pManager value){return value!=null&&value==facade;}
     synchronized boolean owns(WifiP2pManager.Channel value){return value!=null&&channels.containsKey(value);}
     synchronized WifiP2pManager platform(){if(physical==null){physical=RuntimeBridge.createWifiP2pManager(engine.host);if(physical==null||physical==facade)throw new IllegalStateException("PLATFORM_WIFI_P2P_REQUIRED");}return physical;}
@@ -23,7 +23,7 @@ final class RuntimeWifiP2p {
             if(candidate==engine.application||candidate instanceof GuestContext&&((GuestContext)candidate).engine==engine)return;
             candidate=candidate instanceof ContextWrapper?((ContextWrapper)candidate).getBaseContext():null;
         }
-        throw new SecurityException("WIFI_P2P_CONTEXT_OWNER_INVALID");
+        RuntimeFacadeContract.drop("WIFI_P2P_CONTEXT_OWNER_INVALID",null);
     }
     private void permissions(){for(String permission:List.of(Manifest.permission.ACCESS_WIFI_STATE,Manifest.permission.CHANGE_WIFI_STATE))if(!engine.requestedPermissions.contains(permission))throw new SecurityException("GUEST_PERMISSION_NOT_DECLARED:"+permission);}
     WifiP2pManager.Channel initialize(Context context,Looper looper,WifiP2pManager.ChannelListener listener){

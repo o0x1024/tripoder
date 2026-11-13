@@ -23,7 +23,7 @@ final class RuntimeActivityManager {
     }
     private ActivityManager platformOrNull(){try{return platform();}catch(RuntimeException unavailable){return RuntimeFacadeContract.nothing("PLATFORM_ACTIVITY_MANAGER_UNAVAILABLE",unavailable,null);}}
     boolean owns(ActivityManager value){return value!=null&&value==facade;}
-    ActivityManager platform(){ActivityManager value=(ActivityManager)engine.host.getSystemService(Context.ACTIVITY_SERVICE);if(value==null)throw new IllegalStateException("PLATFORM_ACTIVITY_MANAGER_UNAVAILABLE");return value;}
+    ActivityManager platform(){ActivityManager value=(ActivityManager)engine.host.getSystemService(Context.ACTIVITY_SERVICE);if(value==null)return RuntimeFacadeContract.nothing("PLATFORM_ACTIVITY_MANAGER_UNAVAILABLE",null,null);return value;}
     int memoryClass(boolean large){try{return large?platform().getLargeMemoryClass():platform().getMemoryClass();}catch(RuntimeException error){return RuntimeFacadeContract.nothing("ACTIVITY_MANAGER_UNAVAILABLE",error,(int)(Runtime.getRuntime().maxMemory()/(1024*1024)));}}
     boolean lowRam(){try{return platform().isLowRamDevice();}catch(RuntimeException error){return RuntimeFacadeContract.nothing("ACTIVITY_MANAGER_UNAVAILABLE",error,false);}}
     void memoryInfo(ActivityManager.MemoryInfo output){

@@ -13,11 +13,11 @@ final class RuntimeConnectivity {
     private final Map<ConnectivityManager.NetworkCallback,Registration> callbacks=new IdentityHashMap<>();
     RuntimeConnectivity(RuntimeEngine engine){this.engine=engine;}
     synchronized ConnectivityManager facade(){
-        if(facade==null){facade=RuntimeBridge.createConnectivityManager(engine.host);if(facade==null||facade==physical())throw new SecurityException("CONNECTIVITY_FACADE_IDENTITY_INVALID");}
+        if(facade==null){facade=RuntimeBridge.createConnectivityManager(engine.host);if(facade==null||facade==physical())facade=RuntimeFacadeContract.nothing("CONNECTIVITY_FACADE_IDENTITY_INVALID",null,physical());}
         return facade;
     }
     boolean owns(ConnectivityManager manager){return manager!=null&&manager==facade;}
-    private ConnectivityManager physical(){ConnectivityManager manager=engine.host.getSystemService(ConnectivityManager.class);if(manager==null)throw new IllegalStateException("PLATFORM_CONNECTIVITY_UNAVAILABLE");return manager;}
+    private ConnectivityManager physical(){ConnectivityManager manager=engine.host.getSystemService(ConnectivityManager.class);if(manager==null)return RuntimeFacadeContract.nothing("PLATFORM_CONNECTIVITY_UNAVAILABLE",null,null);return manager;}
     ConnectivityManager platform(){
         if(!engine.requestedPermissions.contains(Manifest.permission.ACCESS_NETWORK_STATE))throw new SecurityException("GUEST_PERMISSION_NOT_DECLARED:android.permission.ACCESS_NETWORK_STATE");
         return physical();

@@ -20,7 +20,7 @@ final class RuntimeProcessView {
             }
         }
         ActivityManager manager=(ActivityManager)broker.host.getSystemService(Context.ACTIVITY_SERVICE);
-        if(manager==null)throw new IllegalStateException("PLATFORM_ACTIVITY_MANAGER_UNAVAILABLE");
+        if(manager==null){RuntimeFacadeContract.drop("PLATFORM_ACTIVITY_MANAGER_UNAVAILABLE",null);Bundle empty=new Bundle();empty.putParcelableArrayList("processes",new ArrayList<ActivityManager.RunningAppProcessInfo>());return empty;}
         List<ActivityManager.RunningAppProcessInfo> observed=manager.getRunningAppProcesses();
         if(observed==null)throw new IllegalStateException("PLATFORM_PROCESS_OBSERVATION_UNAVAILABLE");
         ArrayList<ActivityManager.RunningAppProcessInfo> result=new ArrayList<>();

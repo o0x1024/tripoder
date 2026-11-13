@@ -10,7 +10,7 @@ final class RuntimePower {
     private volatile PowerManager facade;
     private final Map<Object,Registration> status=new IdentityHashMap<>(),headroom=new IdentityHashMap<>();
     RuntimePower(RuntimeEngine engine){this.engine=engine;}
-    synchronized PowerManager facade(){if(facade==null){facade=RuntimeBridge.createPowerManager(engine.host);if(facade==null||facade==platform())throw new SecurityException("POWER_FACADE_IDENTITY_INVALID");}return facade;}
+    synchronized PowerManager facade(){if(facade==null){facade=RuntimeBridge.createPowerManager(engine.host);if(facade==null||facade==platform())facade=RuntimeFacadeContract.nothing("POWER_FACADE_IDENTITY_INVALID",null,platform());}return facade;}
     boolean owns(PowerManager value){return value!=null&&value==facade;}
     PowerManager platform(){return Objects.requireNonNull(engine.host.getSystemService(PowerManager.class),"PLATFORM_POWER_UNAVAILABLE");}
     boolean ignoring(String packageName){if(!engine.packageName.equals(packageName))throw new SecurityException("POWER_PACKAGE_NOT_GRANTED");return platform().isIgnoringBatteryOptimizations(engine.host.getPackageName());}
