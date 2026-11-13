@@ -16,6 +16,7 @@ final class RuntimeBroadcastBroker {
         Set<String> observedRoots=Set.of();
         if(code==RuntimeWire.BROADCAST_REGISTER){
             IntentFilter declared=RuntimeBroadcastIntent.filter(input.getByteArray("filter"));
+            RuntimeSystemBroadcasts.discover(declared);
             if(input.getBoolean("stickyQuery")){
                 if(declared.countActions()!=1||!RuntimeSystemBroadcasts.STICKY.contains(declared.getAction(0))||input.getString("permission")!=null)throw new UnsupportedOperationException("STICKY_QUERY_SHAPE_UNSUPPORTED");
                 synchronized(broker){broker.requiredSlot(generation);}
@@ -23,8 +24,9 @@ final class RuntimeBroadcastBroker {
                 synchronized(broker){broker.requiredSlot(generation);Bundle out=new Bundle();if(sticky!=null){if(!RuntimeBroadcastIntent.matches(declared,sticky))throw new SecurityException("STICKY_QUERY_FILTER_MISMATCH");out.putByteArray("payload",RuntimeSystemBroadcasts.encode(sticky,Set.of()));}return out;}
             }
             for(int i=0;i<declared.countActions();i++)if(RuntimeSystemBroadcasts.MEDIA.contains(declared.getAction(i))){observedRoots=RuntimeSystemBroadcasts.roots(broker.host);break;}
-        }else if(code==RuntimeWire.BROADCAST_SYSTEM_CLAIM){
+        }else if(code==RuntimeWire.BROADCAST_SYSTEM_CLAIM||code==RuntimeWire.BROADCAST_STICKY_VIEW){
             Intent observed=RuntimeBroadcastIntent.decode(input.getByteArray("payload"));
+            RuntimeSystemBroadcasts.discover(observed.getAction());
             if(observed.getAction()!=null&&RuntimeSystemBroadcasts.MEDIA.contains(observed.getAction()))observedRoots=RuntimeSystemBroadcasts.roots(broker.host);
         }
         synchronized(broker){
@@ -46,7 +48,7 @@ final class RuntimeBroadcastBroker {
         }
         if(code==RuntimeWire.BROADCAST_STICKY_VIEW){
             String registration=RuntimeWire.required(input,"registration");Intent sticky=RuntimeBroadcastIntent.decode(input.getByteArray("payload"));
-            if(!RuntimeSystemBroadcasts.STICKY.contains(sticky.getAction())||!RuntimeBroadcastIntent.matches(ledger.activeParsedFilter(registration,generation),sticky))throw new SecurityException("STICKY_RETURN_FILTER_MISMATCH");
+            if(!RuntimeSystemBroadcasts.action(sticky.getAction())||!RuntimeBroadcastIntent.matches(ledger.activeParsedFilter(registration,generation),sticky))throw new SecurityException("STICKY_RETURN_FILTER_MISMATCH");
             out.putByteArray("payload",RuntimeSystemBroadcasts.encode(sticky,ledger.activeRoots(registration,generation)));return out;
         }
         if(code==RuntimeWire.BROADCAST_SYSTEM_CLAIM){
@@ -79,7 +81,14 @@ final class RuntimeBroadcastBroker {
             }else if(input.containsKey("observedOrdered")&&b.getBoolean("ordered")!=input.getBoolean("observedOrdered"))throw new SecurityException("BROADCAST_ORDER_MISMATCH");
             return withBinders(ledger.claim(ticket,generation,input.getString("component",""),input.getString("registration",""),RuntimeWire.required(input,"instance")),ticket);
         }
-        if(code==RuntimeWire.BROADCAST_EVENT){ledger.event(ticket,generation,input.getString("instance",""),RuntimeWire.required(input,"event"),broker.contract);return out;}
+        if(code==RuntimeWire.BROADCAST_EVENT){
+            String event=RuntimeWire.required(input,"event");
+            if(event.equals("orderedStatus"))return ledger.orderedStatus(ticket,generation);
+            if(event.equals("orderedUnknown")){Bundle row=ledger.orderedStatus(ticket,generation);String state=row.getString("state");if(!Set.of("COMPLETED","REJECTED","UNKNOWN").contains(state))broker.contract.markUnknown(row.getString("operation"),"ORDERED_CHAIN_RESULT_UNCONFIRMED");return out;}
+            if(event.equals("orderedResult")){ledger.orderedResult(ticket,generation,input.getString("instance",""),input.getBoolean("aborted"));return out;}
+            if(event.equals("orderedSkip")){ledger.skipOrdered(ticket,generation,broker.contract);return out;}
+            ledger.event(ticket,generation,input.getString("instance",""),event,broker.contract);return out;
+        }
         throw new IllegalArgumentException("BROADCAST_PROTOCOL_UNSUPPORTED");
     }
     /** Binder extras live only in the authority's memory, by delivery ticket, and are handed to the one target that claims it. */
@@ -95,10 +104,12 @@ final class RuntimeBroadcastBroker {
         }else{
             targets.addAll(manifestTargets(sender,intent,receiverPermission));
             Set<String> receivers=new HashSet<>();
-            for(BroadcastLedger.ActiveRegistration registration:broker.broadcasts.activeRegistrationsForSpace(sender.space)){
+            var registrations=new ArrayList<>(broker.broadcasts.activeRegistrationsForSpace(sender.space));
+            registrations.sort(Comparator.comparingInt((BroadcastLedger.ActiveRegistration r)->r.parsedFilter.getPriority()).reversed());
+            for(BroadcastLedger.ActiveRegistration registration:registrations){
                 if(intent.getPackage()!=null&&!intent.getPackage().equals(registration.pkg))continue;
                 if(!registration.exported&&!sender.info.packageName.equals(registration.pkg))continue;
-                if(!RuntimeBroadcastIntent.matches(registration.parsedFilter,intent))continue;
+                if(!RuntimeBroadcastIntent.matchesRegistered(registration.parsedFilter,intent))continue;
                 String permission=registration.permission;
                 if(receiverPermission!=null||!permission.isEmpty()){
                     var owner=broker.apks.get(sender.space,registration.pkg);
@@ -106,7 +117,7 @@ final class RuntimeBroadcastBroker {
                     if(!permission.isEmpty()&&!RuntimeSystemBroadcasts.holds(sender,owner,permission))continue;
                 }
                 if(!receivers.add(registration.generation+":"+registration.receiverKey))continue;
-                broker.requiredSlot(registration.generation);Bundle target=new Bundle();target.putString("target",registration.generation);target.putString("component","");target.putString("registration",registration.id);target.putString("action",BroadcastLedger.action(registration.id));targets.add(target);
+                broker.requiredSlot(registration.generation);Bundle target=new Bundle();target.putString("target",registration.generation);target.putString("component","");target.putString("registration",registration.id);target.putString("action",BroadcastLedger.action(registration.id));target.putInt("priority",registration.parsedFilter.getPriority());targets.add(target);
             }
         }
         if(targets.size()>128)throw new IllegalArgumentException("BROADCAST_FANOUT_LIMIT");return targets;
@@ -129,12 +140,12 @@ final class RuntimeBroadcastBroker {
                 if(!component.enabled||!component.type.equals("receiver"))continue;
                 if(!pkg.equals(sender.info.packageName)&&(!component.exported||!component.permission.isEmpty()&&!RuntimeSystemBroadcasts.holds(sender,install,component.permission)))continue;
                 if(receiverPermission!=null&&!RuntimeSystemBroadcasts.holds(install,sender,receiverPermission))continue;
-                boolean matches=false;
-                for(IntentFilter filter:GuestIntentResolver.build(install.artifacts.filters(component)))if(RuntimeBroadcastIntent.matches(filter,intent)){matches=true;break;}
+                boolean matches=false;int priority=Integer.MIN_VALUE;
+                for(IntentFilter filter:GuestIntentResolver.build(install.artifacts.filters(component)))if(RuntimeBroadcastIntent.matches(filter,intent)){matches=true;priority=Math.max(priority,filter.getPriority());}
                 if(!matches)continue;
                 if(targets.size()>=128)throw new IllegalArgumentException("BROADCAST_FANOUT_LIMIT");
                 var to=broker.processes.reserveComponent(install,component.process);
-                Bundle target=new Bundle();target.putString("target",to.allocation.session.processGeneration);target.putString("component",component.name);target.putString("registration","");target.putString("stub",RuntimeReceiverSlots.type(RuntimeSlot.index(to.activityStub)).getName());targets.add(target);
+                Bundle target=new Bundle();target.putString("target",to.allocation.session.processGeneration);target.putString("component",component.name);target.putInt("priority",priority);target.putString("registration","");target.putString("stub",RuntimeReceiverSlots.type(RuntimeSlot.index(to.activityStub)).getName());targets.add(target);
             }
         }
         return targets;
@@ -173,26 +184,43 @@ final class RuntimeBroadcastBroker {
         return deliveries;
     }
     Bundle route(Bundle input,ExecutionContract.Session source)throws Exception{
-        byte[] payload=input.getByteArray("payload");Intent intent=RuntimeBroadcastIntent.decode(payload);RuntimeBroadcastIntent.envelope(intent);
+        long stageStart=android.os.SystemClock.elapsedRealtime();
+        byte[] payload=input.getByteArray("payload");Intent intent=RuntimeBroadcastIntent.decode(payload);
+        RuntimeSystemBroadcasts.discover(intent.getAction());RuntimeBroadcastIntent.envelope(intent);
         boolean ordered=input.getBoolean("ordered");List<Bundle> targets=new ArrayList<>();
         String receiverPermission=input.getString("receiverPermission");var sender=broker.apks.get(source.identity.spaceId,source.identity.packageName);
         targets=resolve(sender,intent,receiverPermission);
+        // 分阶段界标：这条路径是「平台不阻塞处阻塞」的唯一入口，慢会被客体主线程放大成
+        // InputDispatchingTimedOut → am_kill。只在总耗时 >=200ms 时打一行，常规广播不受影响。
+        long resolvedAt=android.os.SystemClock.elapsedRealtime();
         if(targets.size()>128)throw new IllegalArgumentException("BROADCAST_FANOUT_LIMIT");
-        if(ordered&&targets.size()!=1)throw new UnsupportedOperationException("ORDERED_BROADCAST_SINGLE_TARGET_REQUIRED");
-        if(targets.isEmpty()){Bundle out=new Bundle();out.putParcelableArrayList("deliveries",new ArrayList<>());return out;}
+        if(ordered)targets.sort(Comparator.comparingInt((Bundle target)->target.getInt("priority")).reversed());
+        if(targets.isEmpty()){
+            // 空目标是最常见的慢路径形状：它在这里就返回，不会走到函数末尾的分阶段日志，
+            // 于是「SLOW BROADCAST_ROUTE 有、ROUTE_STAGES 没有」看起来像函数体没执行——
+            // 实测 v96/v97 就是这样把 10.3s 藏起来的。空路径必须自己留一行。
+            long emptyAt=android.os.SystemClock.elapsedRealtime();
+            android.util.Log.w("TripoderWire","ROUTE_EMPTY decode="+(0)+"ms resolve="+(resolvedAt-stageStart)+"ms total="+(emptyAt-stageStart)+"ms ordered="+ordered+" action="+intent.getAction());
+            Bundle out=new Bundle();out.putParcelableArrayList("deliveries",new ArrayList<>());return out;}
         String operation=RuntimeWire.required(input,"operation");ArrayList<Bundle> deliveries=new ArrayList<>();
         synchronized(broker){
         broker.requiredSlot(source.processGeneration);
         for(Bundle target:targets)broker.requiredSlot(target.getString("target"));
-        int admittedCount=0;
+        int admittedCount=0;long admitMs=0,prepareMs=0,startMs=0;
+        long loopStart=android.os.SystemClock.elapsedRealtime();
         try{
             for(int i=0;i<targets.size();i++){
                 Bundle target=targets.get(i);String op=operation+"-"+i;
                 String digest=ApkStore.textDigest(RuntimeBroadcastIntent.digest(payload)+"/"+target.getString("target")+"/"+target.getString("component")+"/"+target.getString("registration")+"/"+ordered+"/receiverPermission="+receiverPermission);
+                long t0=android.os.SystemClock.elapsedRealtime();
                 if(!broker.contract.accept(op,source.identity.key(),digest).created)throw new SecurityException("BROADCAST_ALREADY_ADMITTED_QUERY_REQUIRED");
+                long t1=android.os.SystemClock.elapsedRealtime();
                 admittedCount=i+1;
                 String ticket=broker.broadcasts.prepare(op,source,target.getString("target"),target.getString("component"),target.getString("registration"),payload,ordered);
+                long t2=android.os.SystemClock.elapsedRealtime();
                 broker.contract.start(op);
+                long t3=android.os.SystemClock.elapsedRealtime();
+                admitMs+=t1-t0;prepareMs+=t2-t1;startMs+=t3-t2;
                 target.putString("ticket",ticket);deliveries.add(target);
                 if(input.getBundle("binders")!=null)broker.broadcastBinders.put(ticket,input.getBundle("binders"));
             }
@@ -210,6 +238,9 @@ final class RuntimeBroadcastBroker {
             if(error instanceof Error er)throw er;
             throw new RuntimeException(error);
         }
+        long loopEnd=android.os.SystemClock.elapsedRealtime();
+        long total=loopEnd-stageStart;
+        android.util.Log.w("TripoderWire","ROUTE_STAGES total="+total+"ms resolve="+(resolvedAt-stageStart)+"ms slots="+(loopStart-resolvedAt)+"ms loop="+(loopEnd-loopStart)+"ms admit="+admitMs+"ms prepare="+prepareMs+"ms start="+startMs+"ms targets="+targets.size()+" ordered="+ordered+" action="+intent.getAction());
         Bundle out=new Bundle();out.putParcelableArrayList("deliveries",deliveries);return out;
         }
     }

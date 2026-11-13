@@ -157,7 +157,11 @@ public final class ExecutionContract {
     private final Store store;
     private final LongSupplier clock;
     private final SecureRandom random = new SecureRandom();
-    private final Map<String, Session> sessions = new HashMap<>();
+    // Reads (getSession) are on every wire call and must never queue behind a writer:
+    // the monitor was observed holding guests for >10s, which surfaced as
+    // InputDispatchingTimedOut in the guest's onCreate. Writes stay synchronized;
+    // the map itself is concurrent so lock-free reads are safe.
+    private final Map<String, Session> sessions = new java.util.concurrent.ConcurrentHashMap<>();
     private final Map<String, String> bootstraps = new HashMap<>();
     private final Map<String, Owner> owners = new HashMap<>();
     private final Map<String, Callback> callbacks = new HashMap<>();
@@ -258,7 +262,12 @@ public final class ExecutionContract {
         sessions.put(generation, running); return running;
     }
 
-    public synchronized Session getSession(String generation) { return session(generation); }
+    public Session getSession(String generation) {
+        long started=android.os.SystemClock.elapsedRealtime();
+        try{ return session(generation); }
+        finally{ long took=android.os.SystemClock.elapsedRealtime()-started;
+            if(took>=200L)android.util.Log.w("TripoderWire","SLOW getSession "+took+"ms generation="+generation); }
+    }
     public synchronized Session markDead(String generation) {
         writable(); Session session = session(generation);
         return session.state==ProcessState.DEAD||session.kind==ProcessKind.ORDINARY&&session.state==ProcessState.FAILED ? session : end(session, ProcessState.DEAD, "");
