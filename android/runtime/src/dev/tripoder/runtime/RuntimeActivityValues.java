@@ -77,7 +77,8 @@ final class RuntimeActivityValues {
         try{
             if(intent.getComponent()==null||intent.getData()!=null||intent.getType()!=null||intent.getClipData()!=null||intent.getSelector()!=null||intent.getIdentifier()!=null||intent.getSourceBounds()!=null||intent.getPackage()!=null&&!intent.getPackage().equals(intent.getComponent().getPackageName()))throw new IllegalArgumentException("ACTIVITY_NESTED_INTENT_SHAPE_UNSUPPORTED");
             // A nested Intent is data, not permission to launch. Actual dispatch is admitted again.
-            int flags=intent.getFlags();if((flags&~(RuntimeActivityIntent.FLAGS|Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT|Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY))!=0)throw new IllegalArgumentException("ACTIVITY_NESTED_INTENT_FLAGS_UNSUPPORTED");
+            // Same criterion as a real start (batch20): a nested Intent is data, and the platform accepts every task hint; only flags whose meaning needs the caller's identity or a result channel are refused, and a nested Intent carries neither.
+            int flags=intent.getFlags();if((flags&RuntimeActivityIntent.EXCLUDED)!=0)throw new IllegalArgumentException("ACTIVITY_NESTED_INTENT_FLAGS_UNSUPPORTED:0x"+Integer.toHexString(flags));
             text(out,intent.getComponent().flattenToString());out.writeInt(flags);text(out,intent.getAction());text(out,intent.getPackage());
             Set<String> categories=intent.getCategories();if(categories!=null&&categories.size()>16)throw new IllegalArgumentException("INTENT_CATEGORIES_TOO_LARGE");out.writeInt(categories==null?0:categories.size());if(categories!=null)for(String category:new TreeSet<>(categories))text(out,category);
             bundle(out,intent.getExtras(),depth,count,path);
