@@ -192,6 +192,7 @@ final class RuntimeSelfHookActivities {
                 if(!supported)throw new UnsupportedOperationException("ACTIVITY_START_SIGNATURE_UNSUPPORTED:"+name+":"+target);
                 Activity activity=args[3] instanceof Activity?(Activity)args[3]:args[0] instanceof Activity?(Activity)args[0]:null;
                 Intent intent=(Intent)args[4];
+                RuntimeStartTrace.call(intent,activity);
                 // Every start this process performs becomes a request to ActivityManager, which authorises it by checking
                 // that the calling package belongs to the calling uid. The guest's projected identity does not belong to
                 // this uid (the uid belongs to the container), so the framework is handed the owner's context here, while
@@ -218,7 +219,7 @@ final class RuntimeSelfHookActivities {
                 // An implicit intent that one of the guest's own filters matches is a start of that component, exactly as Android would resolve it.
                 if(intent.getComponent()==null){android.content.ComponentName own=RuntimeBridge.resolveOwnActivity(intent);if(own!=null){intent=new Intent(intent).setComponent(own);args=args.clone();args[4]=intent;}}
                 if(intent.getComponent()!=null){
-                    try{Object[] routed=args.clone();routed[4]=activity!=null?RuntimeBridge.route(activity,intent,(Integer)args[5]):RuntimeBridge.routeFromContext(intent);return original.call(routed);}
+                    try{Object[] routed=args.clone();routed[4]=activity!=null?RuntimeBridge.route(activity,intent,(Integer)args[5]):RuntimeBridge.routeFromContext(intent);RuntimeStartTrace.handed("ROUTED",intent);return original.call(routed);}
                     catch(android.content.ActivityNotFoundException absent){
                         if(!String.valueOf(absent.getMessage()).startsWith("PACKAGE_NOT_IN_SPACE"))throw absent;
                         // The component is installed on the device but absent in this space. "Not installed" is the only answer a

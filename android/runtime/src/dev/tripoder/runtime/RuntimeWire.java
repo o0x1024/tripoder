@@ -36,6 +36,11 @@ public final class RuntimeWire {
     public static final int PROVIDER_THIN_ACCESS=56;
     /** Per-instance isolated endpoint, never the general authority Binder. */
     public static final int ISOLATED_BOOTSTRAP=57,ISOLATED_EVENT=58,ISOLATED_REGISTER=59;
+    /** Transaction names, indexed by code, so a slow transaction reports what it was instead of a bare integer. */
+    private static final String[] NAMES=new String[]{null,"LOAD","REGISTER","ROUTE","RESULT","EVENT","STOP","CHECK","RECEIVED","CONTROL","ACTIVITY_CLAIM","ACTIVITY_CREATED","ACTIVITY_DESTROYED","START_APPLICATION","SERVICE_ROUTE","SERVICE_ACK","SERVICE_CLAIM","SERVICE_EVENT","PROVIDER_ACQUIRE","PROVIDER_PUBLICATION","PROVIDER_RELEASE","PROVIDER_BEGIN","PROVIDER_DISPATCH","PROVIDER_FINISH","PROVIDER_WAIT","BROADCAST_REGISTER","BROADCAST_REGISTRATION","BROADCAST_ROUTE","BROADCAST_CLAIM","BROADCAST_EVENT","PROVIDER_CURSOR_ACCESS","PROVIDER_RECEIVED","ACTIVITY_NEW_INTENT","ACTIVITY_NEW_INTENT_ACK","ACTIVITY_ATTACHED","ACTIVITY_RESULT_ENTER","ACTIVITY_RESUMED","ACTIVITY_START_RESULT","HOOK","PROCESS_VIEW","APPLICATION_START_EVENT","APPLICATION_START_HISTORY","BROADCAST_SYSTEM_CLAIM","ACTIVITY_ENTRY_STATUS","BROADCAST_STICKY_VIEW","JOB_ROUTE","JOB_BEGIN","JOB_EVENT","PENDING_INTENT","EXIT_HISTORY","ABORT_CONFIGURE","PERMISSION_CONTROLLER","DISPATCH_PENDING","ACTIVITY_RECORD","CODE_ARTIFACT_DIRECTORY","COMPONENT_STATE","PROVIDER_THIN_ACCESS","ISOLATED_BOOTSTRAP","ISOLATED_EVENT","ISOLATED_REGISTER"};
+    public static String name(int code){return code>=0&&code<NAMES.length&&NAMES[code]!=null?NAMES[code]:"#"+code;}
+    /** Reporting threshold for the authority-side transaction timing. */
+    static final long SLOW_MS=Long.getLong("tripoder.wire.slowMs",500L);
     public abstract static class Endpoint extends Binder {
         @Override protected final boolean onTransact(int code, Parcel data, Parcel reply, int flags) throws RemoteException {
             if(code==INTERFACE_TRANSACTION){reply.writeString(DESCRIPTOR);return true;}
@@ -46,9 +51,10 @@ public final class RuntimeWire {
             boolean descriptors=data.hasFileDescriptors();if(descriptors&&!acceptsFileDescriptors(code,pid,uid))throw new SecurityException("CONTROL_FILE_DESCRIPTOR_UNSUPPORTED");
             Bundle input=data.readBundle(RuntimeWire.class.getClassLoader());data.enforceNoDataAvail();
             Bundle output=null;
+            final long started=SystemClock.elapsedRealtime();
             try {if(descriptors)validateFileDescriptors(input);output=handle(code,input,pid,uid);reply.writeNoException();reply.writeBundle(output);}
             catch(Exception error){reply.writeException(wireException(error));}
-            finally{if(descriptors)closeFileDescriptors(input);if(code==ISOLATED_BOOTSTRAP&&output!=null)RuntimeIsolatedCode.closeDescriptors(output);if(code==CODE_ARTIFACT_DIRECTORY&&output!=null){ParcelFileDescriptor directory=output.getParcelable("directory",ParcelFileDescriptor.class);if(directory!=null)try{directory.close();}catch(java.io.IOException failure){android.util.Log.w("TripoderCode","Directory descriptor close failed",failure);}}}
+            finally{long elapsed=SystemClock.elapsedRealtime()-started;if(elapsed>=SLOW_MS)android.util.Log.w("TripoderWire","SLOW "+name(code)+" "+elapsed+"ms pid="+pid+" uid="+uid);if(descriptors)closeFileDescriptors(input);if(code==ISOLATED_BOOTSTRAP&&output!=null)RuntimeIsolatedCode.closeDescriptors(output);if(code==CODE_ARTIFACT_DIRECTORY&&output!=null){ParcelFileDescriptor directory=output.getParcelable("directory",ParcelFileDescriptor.class);if(directory!=null)try{directory.close();}catch(java.io.IOException failure){android.util.Log.w("TripoderCode","Directory descriptor close failed",failure);}}}
             return true;
         }
         protected abstract Bundle handle(int code,Bundle input,int pid,int uid) throws Exception;
@@ -70,5 +76,13 @@ public final class RuntimeWire {
             if(code==CODE_ARTIFACT_DIRECTORY&&(output==null||output.size()!=1||output.getParcelable("directory",ParcelFileDescriptor.class)==null))throw new SecurityException("ARTIFACT_DIRECTORY_RESPONSE_INVALID");return output;
         } finally {data.recycle();reply.recycle();}
     }
-    public static String required(Bundle b,String key){String value=b.getString(key);if(value==null||value.isEmpty()||value.length()>4096)throw new IllegalArgumentException("INVALID_"+key);return value;}
+    /**
+     * Reads a mandatory carrier extra, reporting its absence as the contract error rather than as a
+     * crash. {@code Bundle} is nullable on this surface - {@code Intent.getExtras()} returns null for
+     * any Intent that carries no extras at all - so a null bundle means exactly the same thing as a
+     * missing key. Dereferencing it first turned that ordinary condition into a NullPointerException,
+     * which the launch path cannot classify: {@link IllegalArgumentException} is a rejected delivery,
+     * an NPE is "the runtime is broken" and takes the whole guest process down with it.
+     */
+    public static String required(Bundle b,String key){String value=b==null?null:b.getString(key);if(value==null||value.isEmpty()||value.length()>4096)throw new IllegalArgumentException("INVALID_"+key);return value;}
 }
