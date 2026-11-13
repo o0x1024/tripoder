@@ -84,3 +84,56 @@ tap 我的 → tap 头像/昵称区 → top = com.taobao.idlefish/.webview.WebHy
 - 「原生不打印 `window=null`」的判定范围是 `logcat -t 4000/6000` 窗口，该窗口内已包含原生 U4 初始化与首个 H5 页面加载；更早的日志已滚出。
 - 只覆盖 U4 内核 H5 一条路径；系统 WebView（`com.google.android.webview`，pid 17758 也在容器内跑着小红书/其它）本轮未做同类 A/B。
 - 未验证「修复 WindowAndroid 绑定后页面是否可直接登录」（还可能有账号/风控层）。
+
+## 7. 追加（21:00–21:03）：登录入口有原生版本，U4 黑屏页可以绕过
+
+沿原生 A/B 的同一条路径在**容器内**重走一遍：
+
+```
+容器内闲鱼 → 首页 feed（TaskP0$F0M2C2）→ tap 我的 → com.taobao.idlefish.custom.FishUserLoginActivity
+```
+
+该页 uiautomator dump **全可读**（原生视图，不是 H5）：
+
+| 控件 | bounds |
+|---|---|
+| 请输入手机号码（EditText） | (72,894)-(1136,959) |
+| 输入验证码（EditText） | (72,1062)-(1136,1127) |
+| 获取验证码 | (872,1053)-(1136,1137) |
+| 登录 | (72,1251)-(1136,1395) |
+| 其他登录方式 | (496,1820)-(712,1880) |
+
+文案：`欢迎来到闲鱼 / +86 / 请输入手机号码 / 输入验证码 / 获取验证码 / 登录 / 您已阅读并同意《闲鱼社区用户服务协议》《隐私权政策》《软件许可使用协议》/ 其他登录方式`。
+
+⇒ **U4「欢迎使用快捷登录」黑屏不构成登录阻塞**：闲鱼在容器内有可用的、原生渲染的手机号+验证码登录入口。gap 的阻塞点从「渲染」变成「输入」，而输入当前卡在焦点/锁屏（见下）。
+
+### 7.1 静态定位 window 来源：走不通（负结果）
+
+对 `com.taobao.idlefish` base.apk（120,770,766 B）解出的 10 个 dex 检索：
+
+```
+u4java                → 0 命中（10 个 dex 全部）
+mDisplayAndroid       → 0 命中
+WindowAndroid         → 仅 classes4.dex 1 处（非 U4 运行时类）
+SetPreferredRefreshRateAsStartRefreshRate → 0 命中
+lib/arm64-v8a/libfakedexuc.so → 3,125 B
+```
+
+⇒ U4 的 Java 运行时（`org.chromium.*` / `u4java_*`）**不在可读的 dex 里**，是运行期动态加载/加密的模块；在 shell 权限下拿不到它的字节码，静态分析路线作废，只剩「客体进程内探针」或「按已知 API 面逐个试」两条路。
+
+### 7.2 子进程附着也排除了
+
+容器日志里渲染/GPU 子进程的握手是完整的：
+
+```
+Render0.Monitor.event PROCESS_READY <- PROC_LAUNCHED
+child_proc_manager.cc RenderProcessReady … [Render0]desire/real/why: 1/-1/0(app), pid: 18938/0, attached: 1
+child_proc_manager.cc GetSettingForCreateProc … [Render0]desire/real/why: 1/1/0(app)
+u4proc: AwContents onAttachedToProc ×12（Render0/GPU3）
+```
+
+⇒ 不是「AwContents 附不上渲染/GPU 进程」。
+
+### 7.3 设备状态（本轮结束时的现场）
+
+为尝试恢复输入焦点执行了灭屏/亮屏（`input keyevent 26` ×2），设备因此上锁：`isKeyguardShowing=true`、`mCurrentFocus` 落在 `NotificationShade`、`wm dismiss-keyguard` 无效。**登录输入需要用户先解锁**。
