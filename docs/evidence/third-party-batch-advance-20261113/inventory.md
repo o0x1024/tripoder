@@ -94,8 +94,8 @@
 | 88 | `com.taobao.idlefish` |  |  | 未测 |  |
 | 89 | `com.taobao.taobao` |  |  | 未测 |  |
 | 90 | `com.taou.maimai` |  |  | 未测 |  |
-| 91 | `com.tencent.mm` |  | 容器内 | 启动到首屏（进程存活） | 20261113 smoke-batch1 |
-| 92 | `com.tencent.mobileqq` |  | 容器内 | 启动到隐私协议页 | 20261113 smoke-batch1 |
+| 91 | `com.tencent.mm` |  | 已装入 | **启动可用 / 登录卡账号侧**：WelcomeActivity→MobileInputUI，手机号可输入；「用短信验证码登录」「更多」点击无响应（无门面降级日志）；新设备短信登录需好友辅助验证且密码未知 ⇒ 交回用户 | [v67](v67-async-external-service-20261113.md) §9 |
+| 92 | `com.tencent.mobileqq` |  | 已装入 | 进程存活（mobileqq + :MSF + soterserver），未测登录 | [v67](v67-async-external-service-20261113.md) §10 |
 | 93 | `com.tencent.news` |  |  | 未测 |  |
 | 94 | `com.tencent.qqlive` |  |  | 未测 |  |
 | 95 | `com.tencent.tmgp.WePop` |  |  | 未测 |  |
