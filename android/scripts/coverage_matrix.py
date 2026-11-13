@@ -127,8 +127,24 @@ def build() -> tuple[list[str], dict]:
             note = r["note"][:60]
         lines.append("| %d | `%s` | %s | %s | %s | %s | %s | %s |" % (
             r["n"], r["pkg"], tile, r["in_space"] or "—", verdict, top, cnt_s, note))
+    # 待推进队列：把「还没实测的 N 个」拆成可执行的两档，避免每次都要人工重算哪些能直接跑。
+    # 分档判据只有数据：tile-labels.json 里有映射 = Workbench 里已有格子 = 流水线能直接点；
+    # 没有映射 = 还没导入该空间 = 必须先走 import_apps.sh。不按应用名/类别猜。
+    pending_rows = [r for r in third if r["pkg"] not in cov]
+    runnable = [r for r in pending_rows if r["pkg"] in labels]
+    needs_import = [r for r in pending_rows if r["pkg"] not in labels]
+    lines += ["", "## 待推进队列（按处置分档）", "",
+              "分档只按数据判：有 tile 映射的直接可跑，没有映射的要先 import_apps.sh。", "",
+              "| 档 | 数量 | 跑法 |", "|---|---|---|",
+              "| 可立即跑（tile 已建） | %d | `coverage_pipeline.py --no-import <pkgs>` |" % len(runnable),
+              "| 需先导入（无 tile） | %d | `coverage_pipeline.py <pkgs>`（含导入） |" % len(needs_import),
+              "", "### 可立即跑", ""]
+    lines += ["- `%s`（%s）" % (r["pkg"], labels.get(r["pkg"], "")) for r in runnable] or ["- （无）"]
+    lines += ["", "### 需先导入", ""]
+    lines += ["- `%s`（%s）" % (r["pkg"], r["in_space"] or "未在容器内") for r in needs_import] or ["- （无）"]
     summary = {"third_party": len(third), "measured": len(measured), "concluded": len(concluded),
-               "pending": len(third) - len(measured), "records": len(cov)}
+               "pending": len(third) - len(measured), "records": len(cov),
+               "runnable": len(runnable), "needs_import": len(needs_import)}
     return lines, summary
 
 

@@ -26,10 +26,10 @@
 |---|---|
 | `pm list packages -3` 全量 | 121 |
 | 扣除厂商/系统捆绑 | 78 |
-| 已进流水线（有实测记录） | 20 |
+| 已进流水线（有实测记录） | 21 |
 | 盘点表已有结论（历史批次证据，未进流水线记录） | 31 |
-| 有证据合计（两者并集） | 38 |
-| 尚未实测 | 58 |
+| 有证据合计（两者并集） | 39 |
+| 尚未实测 | 57 |
 
 ## 逐项矩阵
 
@@ -77,7 +77,7 @@
 | 53 | `com.microsoft.office.officehubrow` |  | — | 未测 |  |  | 未测 |
 | 54 | `com.mihoyo.hyperion` |  | — | 未测 |  |  | 未测 |
 | 73 | `com.netease.cloudmusic` | 网易云音乐 | 不可用（结构） | 盘点有结论·待补流水线记录 |  |  | **启动即崩，卡在系统服务身份校验**：`IStorageManager.getVolumeList` → `Secur |
-| 74 | `com.openai.chatgpt` | ChatGPT | — | 未测 |  |  | 未测 |
+| 74 | `com.openai.chatgpt` | ChatGPT | — | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M1C0 | fatal=0 adm=0 anr=0 | 未测 |
 | 75 | `com.pangsheng.pshuochepiao.m` |  | — | 未测 |  |  | 未测 |
 | 76 | `com.phoenix.read` | 红果免费短剧 | — | 未测 |  |  | 未测 |
 | 77 | `com.pingan.paces.ccms` |  | — | 未测 |  |  | 未测 |
@@ -113,3 +113,75 @@
 | 119 | `org.videolan.vlc` | VLC | — | 未测 |  |  | 未测 |
 | 120 | `org.wikipedia` | 维基百科 | — | 未测 |  |  | 未测 |
 | 121 | `tv.danmaku.bili` | 哔哩哔哩 | 容器内 | 盘点有结论·待补流水线记录 |  |  | 启动成功；点「同意并继续」后客体 FATAL（tv.danmaku.bili PID 28536），top 回落 Wor |
+
+## 待推进队列（按处置分档）
+
+分档只按数据判：有 tile 映射的直接可跑，没有映射的要先 import_apps.sh。
+
+| 档 | 数量 | 跑法 |
+|---|---|---|
+| 可立即跑（tile 已建） | 25 | `coverage_pipeline.py --no-import <pkgs>` |
+| 需先导入（无 tile） | 32 | `coverage_pipeline.py <pkgs>`（含导入） |
+
+### 可立即跑
+
+- `cmb.pb`（招商银行）
+- `com.achievo.vipshop`（唯品会）
+- `com.alibaba.android.rimet`（钉钉）
+- `com.aliyun.tongyi`（千问）
+- `com.antutu.ABenchMark`（安兔兔评测）
+- `com.booking`（Booking.com缤客）
+- `com.hpbr.bosszhipin`（BOSS直聘）
+- `com.jingdong.app.mall`（京东）
+- `com.larus.nova`（豆包）
+- `com.netease.cloudmusic`（网易云音乐）
+- `com.phoenix.read`（红果免费短剧）
+- `com.ss.android.article.news`（今日头条）
+- `com.ss.android.ugc.aweme`（抖音）
+- `com.taobao.idlefish`（闲鱼）
+- `com.taobao.taobao`（淘宝）
+- `com.tencent.mm`（微信）
+- `com.tencent.mobileqq`（QQ）
+- `com.tencent.tmgp.sgame`（王者荣耀）
+- `com.xingin.xhs`（小红书）
+- `com.xunmeng.pinduoduo`（拼多多）
+- `ctrip.android.view`（携程旅行）
+- `org.telegram.messenger`（Telegram）
+- `org.videolan.vlc`（VLC）
+- `org.wikipedia`（维基百科）
+- `tv.danmaku.bili`（哔哩哔哩）
+
+### 需先导入
+
+- `app.personal.linktools`（未在容器内）
+- `bbc.mobile.news.ww`（未在容器内）
+- `cn.cyberIdentity.certification`（未在容器内）
+- `cn.wps.moffice_eng.xiaomi.lite`（未在容器内）
+- `com.alicloud.databox`（未在容器内）
+- `com.anthropic.claude`（未在容器内）
+- `com.dragon.read`（未在容器内）
+- `com.fenxiang.storyline`（未在容器内）
+- `com.ghostlock.app`（未在容器内）
+- `com.google.android.apps.authenticator2`（未在容器内）
+- `com.google.android.apps.bard`（未在容器内）
+- `com.google.android.gm`（未在容器内）
+- `com.google.android.googlequicksearchbox`（未在容器内）
+- `com.google.android.youtube`（未在容器内）
+- `com.hunantv.imgo.activity`（未在容器内）
+- `com.instagram.android`（未在容器内）
+- `com.kingsoft.xiezuo`（未在容器内）
+- `com.luna.music`（未在容器内）
+- `com.mi.health`（未在容器内）
+- `com.miHoYo.Yuanshen`（未在容器内）
+- `com.microsoft.office.officehubrow`（未在容器内）
+- `com.mihoyo.hyperion`（未在容器内）
+- `com.pangsheng.pshuochepiao.m`（未在容器内）
+- `com.pingan.paces.ccms`（未在容器内）
+- `com.sankuai.meituan.takeoutnew`（未在容器内）
+- `com.ss.android.article.lite`（未在容器内）
+- `com.taou.maimai`（未在容器内）
+- `com.tencent.tmgp.WePop`（未在容器内）
+- `com.tencent.tmgp.osgame`（未在容器内）
+- `com.tongcheng.android`（未在容器内）
+- `com.twitter.android`（未在容器内）
+- `com.x8bit.bitwarden`（未在容器内）
