@@ -54,10 +54,52 @@ I TripoderToastProbe: PHYSICAL=OK
 
 - 客体自报 `opPackageName ≠ getPackageName()` 成为常态（此前是相等）。任何把两者对比当作完整性自检的应用，看到的是「我自称宿主包」。
 - 本轮**未覆盖**抖音：它在容器内的入口有守卫（「容器环境不支持抖音平台风控校验」），且 h2/h4 已证明它的判据不在本地来源族；但「opPackage 变化会不会触发它另一条本地自检」没有实测。
-- 剪贴板（`clipboard-identity`）与存储（`storage-identity`）两族是同一根因的不同面：本轮只证了 Toast 面能被这一改收口，**没有**回头重测那两族；按机制推断它们也应随之改善（`callingPackage does not match UID` 与 `Package … is not owned by uid` 是同一判据），但「推断」不算证据。
+- 剪贴板（`clipboard-identity`）与存储（`storage-identity`）两族本是同一判据的不同面：**已在 v82/v83 复核，两族都被这一改收口**（见 §7、§8）。
 
 ## 6. 复现方式
 
 - 打开探针：`RuntimeToastProbe.PROBE=true`，冷启任一客体，读 `logcat -d -s TripoderToastProbe:*`；
 - 关掉身份分层：`GuestContext.HOST_OP_PACKAGE=false`，冷启同一客体，日志回到 `PHYSICAL=THREW …`；
 - 构建必须显式 `--package dev.tripoder.q6`（默认包名是 `dev.tripoder.engine`，装错包 adb 仍报 Success）；本机 MIUI 的 `AdbInstallActivity` 确认页要点「继续安装」(355,2381)，否则 12s 后 `INSTALL_FAILED_USER_RESTRICTED`。
+
+## 7. 存储族复核：网易云音乐不再崩（v82）
+
+h33 钉死的崩溃是：客体冷启时框架取 mount 服务 → `IStorageManager.getVolumeList` 校验 `callingPackage` 与调用 uid 是否一致 → `SecurityException: callingPackage does not match UID` → 进程死。
+
+同一应用、同一冷启路径，在 v82（`HOST_OP_PACKAGE=true`）下：
+
+| 读数 | 结果 |
+|---|---|
+| `topResumedActivity` | `TaskP0$F0M1C0E0`（客体自己的 Activity 已 resume） |
+| `ps` | `25492 com.netease.cloudmusic` 存活 |
+| `logcat -b crash -d` | **空**（同轮已先 `logcat -b crash -c`） |
+
+即：**同一族判据的第二个面也被这一改收口**，不需要在 `StorageManager` 上再做接口替换（v70 的 proxy 方向已被 h35 判定为无效）。
+
+## 8. 剪贴板族复核：`hasPrimaryClip` 由 THREW 转 OK（v83）
+
+剪贴板面原本靠「含 EditText 的页面能不能 dump」间接观测（dump 的无障碍预取 → `TextView.canPaste` → `ClipboardManager.hasPrimaryClip` → `system_server AppOpsManager.checkPackage` → 客户进程被杀）。这条路要导航到具体页面，代价高且不稳定。
+
+v83 把这条调用搬进已有的进程内探针（`RuntimeToastProbe.clipboard()`，与 Toast 探针同一个 `PROBE` 开关），在 `publishApplication` 点直接调用 `getPrimaryClipDescription()`/`hasPrimaryClip()`：
+
+```
+I TripoderToastProbe: IDENTITY opPackage=dev.tripoder.q6 package=com.achievo.vipshop uid=10542
+I TripoderToastProbe: PHYSICAL=OK
+I TripoderToastProbe: CLIPBOARD=OK hasPrimaryClip=false description=null
+```
+
+三个独立客体进程（pid 658 / 1982 / 2917，同一次唯品会冷启）三行一致。同一调用点在身份分层之前会抛 `SecurityException: Package com.achievo.vipshop does not belong to uid 10542`（uiautomator-kills-guest-via-clipboard 那族的成因）。
+
+**结论**：`hasPrimaryClip` 这一面不再需要「容器内私有剪贴板」的独立门面来回避，根因（opPackage 自报）被拿掉即可。`gap-clipboard-identity` 的修法从「做一个私有剪贴板」降级为「身份分层已覆盖」；私有剪贴板若仍要做，理由只剩语义正确性（客体的剪贴板内容不该与真机互见），不再是崩溃修复。
+
+## 9. 三族合起来的一句话
+
+`Package X is not owned by uid N` / `callingPackage does not match UID` / `Package X does not belong to uid N` 是**同一条管辖规则**在三处服务端的不同措辞。客体跑宿主 uid 却自称客体包名，把这条规则同时踩了三遍。改一处自报（`getOpPackageName()`）后：
+
+| 面 | 改前（v80/v81 及更早） | 改后（v82/v83） |
+|---|---|---|
+| Toast | `THREW SecurityException`（必然 FATAL） | `OK` |
+| 存储 | `callingPackage does not match UID`（进程死） | 网易云音乐冷启成功 |
+| 剪贴板 | `hasPrimaryClip` 抛 → 含 EditText 的页面 dump 杀客体 | `OK`（3/3 进程） |
+
+因此这一改不是「给 bili 打补丁」，而是关掉了一条**横跨三个系统服务、在客体栈上必然升级为崩溃**的整族缺陷。

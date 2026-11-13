@@ -38,6 +38,33 @@ final class RuntimeToastProbe {
         Log.i(TAG, "IDENTITY opPackage=" + context.getOpPackageName()
                 + " package=" + context.getPackageName() + " uid=" + android.os.Process.myUid());
         attempt(context, "PHYSICAL");
+        // Same judge, different surface: the clipboard's hasPrimaryClip is what the accessibility
+        // prefetch calls when a page holds an EditText, and it used to kill the guest.
+        clipboard(context);
+    }
+
+    /**
+     * Asks the physical clipboard service for the primary clip.
+     *
+     * <p>This is the exact call the accessibility prefetch makes on an editable TextView
+     * ({@code canPaste} → {@code hasPrimaryClip}), and the call that used to kill the guest with
+     * {@code SecurityException: Package X does not belong to uid N}.
+     */
+    private static void clipboard(Context context) {
+        try {
+            Object manager = context.getSystemService(Context.CLIPBOARD_SERVICE);
+            if (manager == null) {
+                Log.w(TAG, "CLIPBOARD=NO_SERVICE");
+                return;
+            }
+            Object answer = manager.getClass().getMethod("hasPrimaryClip").invoke(manager);
+            Object label = manager.getClass().getMethod("getPrimaryClipDescription").invoke(manager);
+            Log.i(TAG, "CLIPBOARD=OK hasPrimaryClip=" + answer + " description=" + label);
+        } catch (Throwable error) {
+            Throwable cause = error instanceof InvocationTargetException
+                    ? ((InvocationTargetException) error).getTargetException() : error;
+            Log.w(TAG, "CLIPBOARD=THREW " + cause);
+        }
     }
 
     private static void attempt(Context context, String phase) {
