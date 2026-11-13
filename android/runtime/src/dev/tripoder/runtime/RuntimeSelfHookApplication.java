@@ -144,6 +144,7 @@ final class RuntimeSelfHookApplication {
         if(!(context instanceof Application))throw new SecurityException("APPLICATION_CONTEXT_OWNER_REQUIRED");
         Application application=(Application)context;
         ApplicationAdapter.publishApplication(application);
+        RuntimeToastProbe.run(context);
         if(MAPS_PROBE)reportMaps();
         return application;
     }
