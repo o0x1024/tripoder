@@ -192,3 +192,22 @@ java.lang.IllegalStateException: Call while result is not pending
 一句话差别：大众点评是**应用内部竞态**（容器只是提供了调度，重试即过）；
 网易云音乐是**平台身份校验**（C1 事实第一次由 AOSP 服务执行，必须改投影才过）。
 
+
+## 11. 第 3 批起（微博登录闭环 + 新失效族）
+
+- **微博**：从「登录链路被门面挡住」推进到**可用（登录闭环）**。入口不在首页/「我」页（未登录时「我」页显示的是
+  游客名 `用户7169367851`，很容易被误读成已登录），而在 我 → 齿轮 → 账号管理 → 添加账号 → `fl_login_root`。
+  短信验证码由运行时侧直接读机内短信取得（`content://sms/inbox`），登录后落地一个**新注册账号**
+  （该号未注册过微博，页面提示「未注册手机号验证通过后将自动注册」）。见 [weibo-login-20261113.md](weibo-login-20261113.md)。
+- **顺带定位到一个新失效族（比登录本身更重要）**：对容器内**带 EditText 的页面**执行 `uiautomator dump` 会把客体打崩。
+  链是 平台无障碍预取 → `TextView.onInitializeAccessibilityNodeInfoInternal` → `canPaste()` →
+  `ClipboardManager.hasPrimaryClip()` → `system_server` 的 `ClipboardService.clipboardAccessAllowed` →
+  `AppOpsManager.checkPackage(10542, "com.sina.weibo")` → `SecurityException: Package com.sina.weibo does not belong to 10542`
+  → 客体主线程 FATAL（微博登录页 4 次复现）。
+  这既是**驱动方式问题**（以后这类页面只能 `screencap` + 坐标 tap），也是**结构性缺陷**：
+  任何读屏/无障碍服务打开这个应用都会把它打崩。修法候选是「剪贴板门面化」（每 space 私有剪贴板），
+  判据写在证据文档 §4 末。
+- 两个交互事实顺带确认：`input text` 写长数字串会截断（要 3–4 位分段并校验）；
+  启动「已有未确认 Activity 记录」的应用会被 UI 拒绘为
+  「应用没有启动 / 操作没有完成（`APPLICATION_ACTIVITY_ALREADY_OPEN_OR_UNCONFIRMED`）」，
+  强停 q6/q7 + 连点两次「重新连接」即可清台账。

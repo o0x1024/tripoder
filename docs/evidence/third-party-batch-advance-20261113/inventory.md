@@ -86,7 +86,7 @@
 | 80 | `com.sankuai.meituan` |  | 容器内 | 启动到隐私同意页 | 20261113 smoke-batch1 |
 | 81 | `com.sankuai.meituan.takeoutnew` |  |  | 未测 |  |
 | 82 | `com.sdu.didi.psnger` |  |  | 未测 |  |
-| 83 | `com.sina.weibo` |  | 容器内 | 被运行槽位上限挡住（v56），v57 起提供停止并重试 | 20261113 smoke-batch1 |
+| 83 | `com.sina.weibo` |  | 容器内 | 可用：短信验证码登录闭环（新号 `用户7169367851`，读机内短信取码）；登录页 `uiautomator dump` 会崩（无障碍→剪贴板→包名/uid 校验） | [weibo-login-20261113.md](weibo-login-20261113.md) |
 | 84 | `com.smile.gifmaker` |  | 已装入 | 未测 | 20261113 import-batch1 |
 | 85 | `com.ss.android.article.lite` |  |  | 未测 |  |
 | 86 | `com.ss.android.article.news` |  |  | 未测 |  |
