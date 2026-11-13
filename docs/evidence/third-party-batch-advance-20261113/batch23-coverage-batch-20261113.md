@@ -100,7 +100,47 @@ SUPERVISOR_INTERRUPTED
 ⇒ 判据修正：`NO_SELECTION` 不等于「这个包不在选择列表里」。必须先确认 `topResumedActivity` 仍是
 `dev.tripoder.q6/…WorkbenchActivity` 或 `…WorkbenchAddActivity`，否则那是编排失败（页面丢了），不是应用不存在。
 
-## 7. 第三条编排约束：tile 查找要覆盖整个列表
+## 7. 第四条：豆包的启动被 **provider authority 归属** 挡住（类级缺陷，不是应用问题）
+
+豆包 `com.larus.nova` 导入成功（installs 45）、tile 可定位可点击，但启动失败，Workbench 弹：
+
+```
+应用没有启动
+java.util.concurrent.ExecutionException:androidx.startup.StartupException:
+java.lang.SecurityException: Permission Denial: opening provider
+com.ss.android.lark.appcontext.applifecycle.AppLifecycle$LifecycleContentProvider
+from ProcessRecord{3534f82 7091:dev.tripoder.q6:slot1/u0a542} (pid=7091, uid=10542)
+that is not exported from UID 10320
+```
+
+三个数字把这件事说清楚了：
+
+| 数字 | 含义 |
+|---|---|
+| `uid=10542` | 发起方 = 容器宿主 uid（客体就这个 uid 跑） |
+| `UID 10320` | 该 authority 在**外层 PMS** 的属主 = 本机真实安装的 `com.larus.nova`（`cmd package list packages -U` 实测 `com.larus.nova uid:10320`） |
+| `not exported` | 该 provider 在豆包 manifest 里 `android:exported="false"` |
+
+于是语义变成：**豆包想打开"自己的"非导出 provider，系统认为是一个 uid 10542 的陌生进程来访问 uid 10320 的私有 provider，合法地拒绝。**
+容器宿主 manifest 里 provider 数为 0（gotcha `host-has-no-provider`），所以没有任何东西能在宿主的 uid 下代理这个 authority。
+
+⇒ 这是**类级**缺陷：凡是启动路径上触碰自身非导出 provider 的应用都会这样死（`androidx.startup`、`FirebaseInitProvider`、
+`WorkManager`、`FileProvider` 都是这一族），失败形态固定为「应用没有启动 + SecurityException/provider」。
+与本轮前面的 `NO_SELECTION` / `NOT_TOP` 不同，这一条**不是编排问题**，是运行时缺能力（provider 投影）。
+
+修法方向（架构级，尚未实施）：
+
+1. **authority 重写 + 宿主代理 provider**：导入时为每个客体的每个 provider 生成宿主侧代理条目
+   `tripoder.proxy.<hash>.<原authority>`，客体侧把 `ContentResolver` 的 authority 参数重写成代理名；
+   宿主侧 proxy 用 `android:exported="true"` + `grantUriPermissions`，转发给客体自己实现。
+   代价：要在宿主 manifest 静态声明（条目数随应用增长），且 provider 是 Binder 契约，跨进程转发要处理 Cursor 跨进程窗口。
+2. **PMS 面投影**（轻量但只治一半）：让客体看到的 `ProviderInfo` 把 `exported` 报成 true 并让 authority 解析到宿主；
+   但真正的拒绝发生在 system_server 的 `AppOpsManager`/`ActivityManagerService` 侧（本次栈在 `androidx.startup` 里、
+   抛出点是 system_server 的 `ContentProviderHelper`），本地投影改不到，所以**单靠 PM 投影不能解决**。
+3. 短期绕过：对这类应用先判「manifest 里有非导出 provider 且启动期会 open」→ 直接标记 `PROVIDER_UNSUPPORTED`，
+   不再花时间逐个试，等 provider 投影能力落地。
+
+## 8. 第三条编排约束：tile 查找要覆盖整个列表
 
 `launch_tile.py` 用「先滚到顶 → 再向下滚 6 屏找 tile」的方式定位。catalog 从 30 涨到 45 之后，
 6 屏不足以覆盖整表，于是 `豆包` 明明已经导入（`添加应用 · 已完成`、`installs 45`），两次启动都返回 `NOT_TOP`——
@@ -116,3 +156,65 @@ tile 处于列表更下方，脚本从未滚到它。
   `CATALOG_READY installs=N` 是安装条目数，三者不相等（gotcha `workbench-shows-24-not-all`）。
 - 剩余队列继续按 5–6 个一批推进；下一批之前先把「导入后前台归属」加进流水线断言，避免把编排失败记成应用缺失。
 
+
+## 9. 导入侧的两个真断点（已定位并修好）——跨越三轮的 `NO_SELECTION` 假阳
+
+前面 §6 把国产批的 1/6 归因为「导入不稳定」。继续往下挖，`NO_SELECTION` 其实是**两个不同的真断点**各自伪装成同一句话：
+
+### 9.1 断点一：`已在此空间` —— 包早就在里面了
+
+「添加应用」页对**已导入**的应用行会标注 `已在此空间`。这类行不被「全选」选中，所以提交文案`添加所选 N 个应用`
+永远不会出现，旧判据就报 `NO_SELECTION (列表里没有这个包)`。
+
+实测反证（`/tmp/probe_inspace.py`）：`com.phoenix.read` 番茄免费小说搜索结果行的文案是 `已在此空间`，
+而**同一时刻** Workbench 列表里已经有它、`installs` 也已经包含它。也就是说：
+
+> `NO_SELECTION` 至少有两种含义：①搜索真的没结果；②**这个包已经在空间里**（幂等成功）。
+> 旧口径把 ② 记成 ①，于是「已推进」被当成「推进失败」。
+
+### 9.2 断点二：选择状态跨屏留存 —— 不清空会导错包
+
+同一轮里四个包**都**读到 `已选 4 个` 与 `添加所选 4 个应用`，即使刚进页面、搜索框是空的。
+这是前面几轮「选了但没提交」的残留：选择集合是页面级状态，不随搜索/返回清掉。
+
+后果比 ① 更严重：`全选` 是 toggle，一旦已有选中它就变成 `取消全选`，此时按文案点 `全选` 是**空操作**；
+而 `添加所选 4 个应用` 一直存在 ⇒ 只要按这个按钮点下去，**进去的是那 4 个残留应用，不是本次搜索的包**。
+
+`清空`（[1002,1043][1160,1187]）可以把它归零：实测 `已选 4 个 → 已选 0 个`，按钮文案回到 `全选` / `选择要添加的应用`。
+
+### 9.3 修法（`android/scripts/import_apps.sh`）
+
+1. 进添加页后先点 `清空`，并打印「清空后 已选 N 个」——保证后续判据在一个干净状态上。
+2. 搜索 + ESC 之后先看结果行有没有 `已在此空间`：有就输出 `ALREADY_IN_SPACE`（幂等成功，不提交）。
+3. 轮询 `已选 N 个`：`N=0` 才点 `全选`，`N>0` 只等提交文案（因为 toggle 语义）。
+4. 兜底：**只允许提交 `添加所选 1 个应用`**；文案是 `添加所选 N 个应用`（N>1）时输出
+   `SELECTION_NOT_UNIQUE` 并清空跳过——宁可跳过也不能导错包。
+5. 前置：`wait_list()` 以列表页独有的 `N 个应用 · 轻点运行，长按管理` 为「引擎+数据就绪」判据，
+   再点 `重新连接` 重试至 8 次；`添加应用` 点击后的归属判据改判 **`WorkbenchAddActivity`**
+   （只判 `dev.tripoder.q6/` 会误把列表页当成功）。
+
+### 9.4 效果（实测）
+
+| 包 | 修前 | 修后 | installs |
+|---|---|---|---|
+| `cn.wps.moffice_eng` WPS Office | `NO_SELECTION` | `清空后已选 0 → 已选 1 → 添加所选 1 个应用` | 47 → **48** |
+| `com.baidu.BaiduMap` 百度地图 | `ADD_SCREEN_NOT_FOUND` / `NO_SELECTION` | 同上 | 48 → **49** |
+| `com.tencent.news` 腾讯新闻 | `NO_SELECTION`（三次） | 同上 | 49 → **50** |
+| `com.phoenix.read` 番茄免费小说 | `NO_SELECTION`（假阳） | `ALREADY_IN_SPACE` | 不变（早已在其中） |
+
+随后按同一配方做启动实测（`launch_tile.py`，40s 轮询）：
+
+| tile | top | anr | adm | fatal | absent |
+|---|---|---|---|---|---|
+| WPS Office | `TaskP1$F1M0C0E0` | 0 | 0 | 0 | 0 |
+| 腾讯新闻 | `TaskP1$F1M1C4` | 0 | 0 | 0 | 0 |
+| 百度地图 | `TaskP1$F1M2C2` | 0 | 0 | 0 | 0 |
+
+### 9.5 §8 的补充：回顶也要随列表增长
+
+`launch_tile.py` 原来「先 4 次上滑回顶」在 44 个 tile（约 11 屏）时已经回不到顶，
+于是**位于列表上方**的 `腾讯新闻` 被报成 `TILE_NOT_FOUND`（它的 tile 明明在）。
+改成 12 次上滑回顶 + 找不到时从底再扫一遍（共两遍），同一条命令重跑即 `LAUNCHED`。
+
+⇒ 规模效应的完整表述：**上下两个方向的滚动预算都必须随 catalog 增长**，
+且 `TILE_NOT_FOUND` 在长列表上默认先怀疑编排，不要记成「这个应用不在空间里」。

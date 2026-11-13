@@ -27,15 +27,37 @@ def adb(*argv, check=False, timeout=40):
     return result
 
 
-def nodes():
-    remote = '/data/local/tmp/guest_ui.xml'
-    adb('shell', 'uiautomator', 'dump', remote)
-    xml = adb('shell', 'cat', remote).stdout
-    body = xml[xml.find('<?xml'):] if '<?xml' in xml else ''
+def nodes(attempts=3):
+    """Dump the current screen and return its nodes.
+
+    A dump can transiently fail ("ERROR: null root node" / an emtpy hierarchy), and when it
+    does uiautomator leaves the previous file behind — an empty tree that looks exactly like
+    "this screen has no controls". That is how the import screen's 「已选 N 个」 read back
+    empty while the same screen was dumpable by hand milliseconds later, which then
+    cascaded into a false NO_SELECTION for that package. So retry, and only trust a body
+    that actually carries a `bounds=` attribute (also lowercase — `Bounds` never matches).
+
+    The path is /sdcard/w.xml rather than /data/local/tmp because that is the path the
+    hand-driven probes use; keeping one path makes the two comparable.
+    """
+    remote = '/sdcard/w.xml'
+    body = ''
+    for _ in range(attempts):
+        adb('shell', 'uiautomator', 'dump', remote)
+        xml = adb('shell', 'cat', remote).stdout
+        body = xml[xml.find('<?xml'):] if '<?xml' in xml else ''
+        if 'bounds=' in body:
+            break
+        body = ''
+        time.sleep(1.5)
     if not body:
         return []
+    try:
+        root = ET.fromstring(body)
+    except ET.ParseError:
+        return []
     found = []
-    for node in ET.fromstring(body).iter('node'):
+    for node in root.iter('node'):
         found.append({
             'text': node.get('text') or '',
             'desc': node.get('content-desc') or '',
@@ -62,7 +84,7 @@ def find(wanted):
 
 
 def tap(wanted, scroll=False):
-    for attempt in range(3 if scroll else 1):
+    for attempt in range(16 if scroll else 1):
         node = find(wanted)
         if node:
             point = center(node['bounds'])
@@ -156,6 +178,40 @@ def crash():
     return 0
 
 
+def settext(text):
+    """Replace the contents of the first EditText on screen with `text`.
+
+    Needed because the import screen remembers the previous query: reopening it shows the
+    last package typed, so a blind `input text` appends to it ("com.tencent.news com.larus.nova")
+    and the search finds nothing. Clear first — MOVE_END then enough DEL key events — then type.
+    `input text` is a per-character injection, so long package names are written in pieces with
+    a short pause, the same reason the SMS-code writer segments its digits.
+    """
+    field = None
+    for node in nodes():
+        if 'edittext' in node['cls'].lower():
+            field = node
+            break
+    if not field:
+        print('NOT_FOUND: EditText')
+        return 1
+    point = center(field['bounds'])
+    if not point:
+        print(f"NOT_FOUND: EditText bounds {field['bounds']!r}")
+        return 1
+    print(f"edit [{field['text']!r}] at {point} ({field['bounds']})")
+    adb('shell', 'input', 'tap', str(point[0]), str(point[1]))
+    time.sleep(1.0)
+    adb('shell', 'input', 'keyevent', 'KEYCODE_MOVE_END')
+    for _ in range(len(field['text']) + 8):
+        adb('shell', 'input', 'keyevent', 'KEYCODE_DEL')
+    time.sleep(0.6)
+    for start in range(0, len(text), 12):
+        adb('shell', 'input', 'text', text[start:start + 12])
+        time.sleep(0.5)
+    return 0
+
+
 def main(argv):
     if not argv:
         print(__doc__)
@@ -167,6 +223,8 @@ def main(argv):
         return tap_contains(rest[0])
     if command == 'tapxy':
         return tap_xy(int(rest[0]), int(rest[1]))
+    if command == 'settext':
+        return settext(rest[0])
     if command == 'dump':
         return dump()
     if command == 'top':
