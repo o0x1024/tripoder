@@ -381,6 +381,11 @@ public final class RuntimeEngine {
             // admitted publications through installContentProviders.
             providers.initialize();
             recordStart("ON_CREATE");
+            // Framework callers reach platform services through caches built inside boot-image code, where the
+            // ServiceManager self-hook is not guaranteed to run. Project them before any guest factory, initializer or
+            // Application runs: a guest whose Application.onCreate waits on a startup task that asks a service "who is
+            // calling" dies inside that wait, so projections installed after onCreate are projections installed too late.
+            RuntimeStorageIdentity.prime();
             RuntimeSelfHookStorage.faultStageNative(4);
             try{new Instrumentation().callApplicationOnCreate(application);}
             catch(RuntimeException|Error failure){RuntimeStartupDiagnostics.failure("application-onCreate",failure);throw failure;}

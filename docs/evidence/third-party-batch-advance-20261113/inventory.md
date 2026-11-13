@@ -10,7 +10,7 @@
 | 4 | `cn.cyberIdentity.certification` |  |  | 未测 |  |
 | 5 | `cn.wps.moffice_eng` |  |  | 未测 |  |
 | 6 | `cn.wps.moffice_eng.xiaomi.lite` |  |  | 未测 |  |
-| 7 | `com.achievo.vipshop` |  |  | 未测 |  |
+| 7 | `com.achievo.vipshop` |  | 已装入 | 已导入容器（v70，`CATALOG_READY installs` 21→31），启动/登录未测 | [batch7](batch7-app-import-pipeline-20261113.md) |
 | 8 | `com.alibaba.android.rimet` |  |  | 未测 |  |
 | 9 | `com.alicloud.databox` |  |  | 未测 |  |
 | 10 | `com.aliyun.tongyi` |  |  | 未测 |  |
@@ -34,7 +34,7 @@
 | 28 | `com.duokan.phone.remotecontroller` | 是 |  | 未测 |  |
 | 29 | `com.duokan.reader` | 是 |  | 未测 |  |
 | 30 | `com.duolingo` |  |  | 未测 |  |
-| 31 | `com.eg.android.AlipayGphone` |  |  | 未测 |  |
+| 31 | `com.eg.android.AlipayGphone` |  | 已装入 | 已导入容器（v70，`CATALOG_READY installs` 21→31），启动/登录未测 | [batch7](batch7-app-import-pipeline-20261113.md) |
 | 32 | `com.fenxiang.storyline` |  |  | 未测 |  |
 | 33 | `com.ghostlock.app` |  |  | 未测 |  |
 | 34 | `com.github.android` |  |  | 未测 |  |
@@ -85,14 +85,14 @@
 | 79 | `com.quark.browser` |  |  | 未测 |  |
 | 80 | `com.sankuai.meituan` |  | 容器内 | 启动到隐私同意页 | 20261113 smoke-batch1 |
 | 81 | `com.sankuai.meituan.takeoutnew` |  |  | 未测 |  |
-| 82 | `com.sdu.didi.psnger` |  |  | 未测 |  |
+| 82 | `com.sdu.didi.psnger` |  | 已装入 | 已导入容器（v70，`CATALOG_READY installs` 21→31），启动/登录未测 | [batch7](batch7-app-import-pipeline-20261113.md) |
 | 83 | `com.sina.weibo` |  | 容器内 | 可用：短信验证码登录闭环（新号 `用户7169367851`，读机内短信取码）；登录页 `uiautomator dump` 会崩（无障碍→剪贴板→包名/uid 校验） | [weibo-login-20261113.md](weibo-login-20261113.md) |
 | 84 | `com.smile.gifmaker` |  | 已装入 | **可用**（v67）：同意隐私后不再崩，feed 完整可用；登录入口（左上「登录」胶囊/左下「点击登录」）点击无反应，未获登录态 | [v67](v67-async-external-service-20261113.md) §3 |
 | 85 | `com.ss.android.article.lite` |  |  | 未测 |  |
-| 86 | `com.ss.android.article.news` |  |  | 未测 |  |
+| 86 | `com.ss.android.article.news` |  | 已装入 | 已导入容器（v70，`CATALOG_READY installs` 21→31），启动/登录未测 | [batch7](batch7-app-import-pipeline-20261113.md) |
 | 87 | `com.ss.android.ugc.aweme` |  | 容器内 | 不可用：服务端按运行环境判定，入口已加提示 | douyin-risk-control-analysis-20261112 |
-| 88 | `com.taobao.idlefish` |  |  | 未测 |  |
-| 89 | `com.taobao.taobao` |  |  | 未测 |  |
+| 88 | `com.taobao.idlefish` |  | 已装入 | 已导入容器（v70，`CATALOG_READY installs` 21→31），启动/登录未测 | [batch7](batch7-app-import-pipeline-20261113.md) |
+| 89 | `com.taobao.taobao` |  | 已装入 | 已导入容器（v70，`CATALOG_READY installs` 21→31），启动/登录未测 | [batch7](batch7-app-import-pipeline-20261113.md) |
 | 90 | `com.taou.maimai` |  |  | 未测 |  |
 | 91 | `com.tencent.mm` |  | 已装入 | **启动可用 / 登录卡账号侧**：WelcomeActivity→MobileInputUI，手机号可输入；「用短信验证码登录」「更多」点击无响应（无门面降级日志）；新设备短信登录需好友辅助验证且密码未知 ⇒ 交回用户 | [v67](v67-async-external-service-20261113.md) §9 |
 | 92 | `com.tencent.mobileqq` |  | 已装入 | 进程存活（mobileqq + :MSF + soterserver），未测登录 | [v67](v67-async-external-service-20261113.md) §10 |
@@ -113,19 +113,18 @@
 | 107 | `com.xiaomi.tinygame` | 是 |  | 未测 |  |
 | 108 | `com.xiaomi.vipaccount` | 是 |  | 未测 |  |
 | 109 | `com.xiaomi.youpin` | 是 |  | 未测 |  |
-| 110 | `com.xingin.xhs` |  |  | 未测 |  |
+| 110 | `com.xingin.xhs` |  | 已装入 | 已导入容器（v70，`CATALOG_READY installs` 21→31），启动/登录未测 | [batch7](batch7-app-import-pipeline-20261113.md) |
 | 111 | `com.xs.fm` |  |  | 未测 |  |
 | 112 | `com.xunmeng.pinduoduo` |  | 容器内 | 可用：手机号+短信验证码登录闭环（`153****8553`，个人中心/我的订单/多多钱包可达） | [pinduoduo-login-20261113.md](pinduoduo-login-20261113.md) |
-| 113 | `com.zhihu.android` |  |  | 未测 |  |
-| 114 | `ctrip.android.view` |  |  | 未测 |  |
+| 113 | `com.zhihu.android` |  | 已装入 | 已导入容器（v70，`CATALOG_READY installs` 21→31），启动/登录未测 | [batch7](batch7-app-import-pipeline-20261113.md) |
+| 114 | `ctrip.android.view` |  | 已装入 | 已导入容器（v70，`CATALOG_READY installs` 21→31），启动/登录未测 | [batch7](batch7-app-import-pipeline-20261113.md) |
 | 115 | `dev.tripoder.controltest` |  |  | 未测 |  |
 | 116 | `dev.tripoder.q6` |  |  | 未测 |  |
 | 117 | `dev.tripoder.q7` |  |  | 未测 |  |
 | 118 | `org.telegram.messenger` |  |  | 未测 |  |
 | 119 | `org.videolan.vlc` |  |  | 未测 |  |
 | 120 | `org.wikipedia` |  |  | 未测 |  |
-| 121 | `tv.danmaku.bili` |  |  | 未测 |  |
-
+| 121 | `tv.danmaku.bili` |  | 已装入 | 已导入容器（v70，`CATALOG_READY installs` 21→31），启动/登录未测 | [batch7](batch7-app-import-pipeline-20261113.md) |
 ## 口径
 
 - 容器状态：`容器内` = 已装入 Tripoder 并在应用列表可见；空 = 未装入。
