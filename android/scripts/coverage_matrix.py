@@ -33,7 +33,8 @@ VERDICT_CN = {
     "TILE_NOT_FOUND": "tile 未找到",
     "NO_TILE_MAPPING": "未建立 tile 映射",
     "ENGINE_DOWN": "引擎未连接",
-    "GUEST_KILLED_BY_DUMP": "dump 杀客体（剪贴板族）",
+    "GUEST_KILLED_BY_DUMP": "dump 杀客体（旧口径，已作废：进程计数漏主进程）",
+    "DUMP_UNAVAILABLE": "结构抓不到且进程消失（需截图判读）",
     "PIPELINE_ERROR": "流水线异常",
 }
 

@@ -16,7 +16,8 @@
 | `TILE_NOT_FOUND` | tile 未找到 |
 | `NO_TILE_MAPPING` | 未建立 tile 映射 |
 | `ENGINE_DOWN` | 引擎未连接 |
-| `GUEST_KILLED_BY_DUMP` | dump 杀客体（剪贴板族） |
+| `GUEST_KILLED_BY_DUMP` | dump 杀客体（旧口径，已作废：进程计数漏主进程） |
+| `DUMP_UNAVAILABLE` | 结构抓不到且进程消失（需截图判读） |
 | `PIPELINE_ERROR` | 流水线异常 |
 
 ## 覆盖总览
@@ -55,7 +56,7 @@
 | 26 | `com.dianping.v1` | 大众点评 | 容器内 | TILE_NOT_FOUND（tile 未找到） |  |  | 登录页可达（天翼一键登录），未点 |
 | 27 | `com.dragon.read` |  | — | 未测 |  |  | 未测 |
 | 30 | `com.duolingo` | 多邻国 | 容器内 | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M1C0E0 | fatal=0 adm=0 anr=0 | 启动成功 TaskP1$F1M1C0E0；无同意层，直接落引导页（无登录入口文案） |
-| 31 | `com.eg.android.AlipayGphone` | 支付宝 | 容器内 | GUEST_KILLED_BY_DUMP（dump 杀客体（剪贴板族）） | TaskP1$F1M2C2 | fatal=0 adm=0 anr=0 | 启动成功；无隐私页，首屏登录页「淘宝用户快速登录」[364,1731][844,1811]、「手机号」[250,2262 |
+| 31 | `com.eg.android.AlipayGphone` | 支付宝 | 容器内 | LOGIN_ENTRY（登录入口可达） | TaskP1$F1M2C2 | fatal=0 adm=0 anr=0 | 启动成功；无隐私页，首屏登录页「淘宝用户快速登录」[364,1731][844,1811]、「手机号」[250,2262 |
 | 32 | `com.fenxiang.storyline` |  | — | 未测 |  |  | 未测 |
 | 33 | `com.ghostlock.app` |  | — | 未测 |  |  | 未测 |
 | 34 | `com.github.android` | GitHub | — | LOGIN_ENTRY（登录入口可达） | TaskP1$F1M0C2 | fatal=0 adm=0 anr=0 | 未测 |
@@ -82,7 +83,7 @@
 | 77 | `com.pingan.paces.ccms` |  | — | 未测 |  |  | 未测 |
 | 78 | `com.qiyi.video` | 爱奇艺 | 容器内 | NOT_TOP（未上顶层） | dev.tripoder.q6/dev.tripoder.hooklab.WorkbenchActivity | fatal=0 adm=0 anr=0 | **启动被 UI 拒绘**：点 tile 后 top 恒为 Workbench、客体重进程数 0、crash 空，Wor |
 | 79 | `com.quark.browser` | 夸克 | 容器内 | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M2C2 | fatal=0 adm=0 anr=0 | 启动成功 TaskP1$F1M2C2；同意 1 次后落首页，无登录入口文案 |
-| 80 | `com.sankuai.meituan` | 美团 | 容器内 | GUEST_KILLED_BY_DUMP（dump 杀客体（剪贴板族）） | TaskP1$F1M1C2 | fatal=0 adm=0 anr=0 | 启动到隐私同意页 |
+| 80 | `com.sankuai.meituan` | 美团 | 容器内 | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M1C2 | fatal=0 adm=0 anr=0 | 启动到隐私同意页 |
 | 81 | `com.sankuai.meituan.takeoutnew` |  | — | 未测 |  |  | 未测 |
 | 82 | `com.sdu.didi.psnger` | 滴滴 | 容器内 | LOGIN_ENTRY（登录入口可达） | TaskP1$F1M2C2 | fatal=0 adm=0 anr=0 | 启动成功；同意协议后首页可达，登录入口「立即登录」[929,2281][1131,2358] |
 | 83 | `com.sina.weibo` | 微博 | 容器内 | HOME_NO_ACCOUNT_UI（已到页面，无账号 UI） | TaskP1$F1M2C2 | fatal=0 adm=0 anr=0 | 可用：短信验证码登录闭环（新号 `用户7169367851`，读机内短信取码）；登录页 `uiautomator dum |

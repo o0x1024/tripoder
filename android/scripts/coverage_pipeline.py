@@ -9,8 +9,9 @@
   * 新导入的包排在列表末尾，因此未知包可以用「列表里尚未映射的那个 tile」自动认领；
   * 「重新连接」按钮是 SUPERVISOR_INTERRUPTED 的唯一恢复手段，且批量循环里不能 force-stop q7；
   * 列表要 12 屏回顶再往下找，否则明明在上面的 tile 会报 TILE_NOT_FOUND；
-  * uiautomator dump 在有 EditText 的页面会通过无障碍→剪贴板→包名/uid 校验杀死客体，
-    所以 dump 前后都要数客体进程，死了就把原因记进记录，而不是把「进程没了」当成应用不兼容。
+  * uiautomator dump 在少数含 EditText 的页面会通过无障碍→剪贴板→包名/uid 校验杀死客体，
+    所以 dump 前后都按包名数客体进程；但「被杀」的判定必须同时满足「dump 抓不到结构」与
+    「进程确实消失」——只凭进程数变化会误报（旧口径只数 :slot，多进程应用的主进程叫包名本身）。
 
 用法：
   python3 android/scripts/coverage_pipeline.py com.autonavi.minimap com.instagram.android ...
@@ -85,8 +86,19 @@ def top_activity() -> str:
     return t[0] if t else "NONE"
 
 
-def guest_procs() -> int:
+def guest_procs(pkg: str | None = None) -> int:
+    """数客体进程；给了 pkg 就按该包名数。
+
+    为什么必须能按包名数：容器里客体进程名有两种形状——应用包名本身（实测 com.sankuai.meituan、
+    com.sankuai.meituan:PinProcess、com.sankuai.meituan:dppushservice）与槽位名
+    dev.tripoder.q6:slotN。只数 :slot 会把「多进程应用的真正宿主进程」漏掉，于是 dump 前后两个数
+    （前 = 上一包残留的 slot，后 = 0）会被误读成「dump 把客体打死了」——美团/支付宝两条
+    GUEST_KILLED_BY_DUMP 假阴性正是这个测量口径错误，与 dump 无关（两者的 top 仍是 TaskP*、
+    dump 也真的拿到了页面文本）。
+    """
     out = adb("ps -A")
+    if pkg:
+        return len([l for l in out.splitlines() if pkg in l])
     return len([l for l in out.splitlines() if PKG + ":slot" in l])
 
 
@@ -205,13 +217,18 @@ def ensure_import(pkgs: list[str]) -> dict:
     return out
 
 
-def snapshot(label: str) -> dict:
-    """截图 + 结构。dump 会杀带 EditText 的客体，所以先数进程、dump 后再数。"""
-    before = guest_procs()
+def snapshot(label: str, pkg: str = "") -> dict:
+    """截图 + 结构。dump 在少数含 EditText 的页面确实会杀客体，所以 dump 前后都按包名数进程。
+
+    判据修正（batch30）：「被杀」必须同时满足「dump 抓不到结构」与「进程确实消失」两个条件。
+    只凭进程数变化判会误报——旧口径数的是 dev.tripoder.q6:slot，而多进程应用的主进程叫包名本身，
+    于是上一包残留的 slot 归零就被记成「本包被 dump 打死」（美团/支付宝各一条假阴性）。
+    """
+    before = guest_procs(pkg or None)
     adb("screencap -p /sdcard/%s.png" % label, 1)
     pull("/sdcard/%s.png" % label, "/tmp/%s.png" % label)
     x = dump()
-    after = guest_procs()
+    after = guest_procs(pkg or None)
     ns = nodes(x)
     texts, entries = [], []
     for a in ns:
@@ -232,7 +249,9 @@ def snapshot(label: str) -> dict:
         "texts": texts[:40],
         "entries": entries[:10],
         "guest_procs": [before, after],
-        "dump_killed_guest": before > 0 and after == 0,
+        # 只有「结构没抓到」+「进程没了」同时成立，才有资格说 dump 把客体打死了。
+        "dump_unavailable": (not x) and before > 0 and after == 0,
+        "dump_empty": not x,
     }
 
 
@@ -277,8 +296,8 @@ def classify(rec: dict) -> str:
     # 这类记录早期会被写成 HOME_NO_ACCOUNT_UI（腾讯新闻 TaskP1$F1M1C4 → 取证时 Workbench 就是）。
     if "TaskP" in str(rec.get("launch", "")) and "TaskP" not in str(s.get("top", "")):
         return "EXITED_AFTER_LAUNCH"
-    if s.get("dump_killed_guest"):
-        return "GUEST_KILLED_BY_DUMP"
+    if s.get("dump_unavailable"):
+        return "DUMP_UNAVAILABLE"
     if not str(s.get("top", "")).startswith("TaskP") and "TaskP" not in str(rec.get("launch", "")):
         return "NOT_TOP"
     texts = s.get("texts") or []
@@ -393,7 +412,7 @@ def run_one(pkg: str, labels: dict, do_import: bool) -> dict:
     rec["consent_taps"] = taps
 
     label = re.sub(r"[^0-9A-Za-z\u4e00-\u9fa5]", "_", pkg) + "_" + time.strftime("%H%M%S")
-    rec["page"] = snapshot(label)
+    rec["page"] = snapshot(label, pkg)
     rec["counters_after"] = counters()
     rec["crash"] = crash_attribution()
     rec["verdict"] = classify(rec)
