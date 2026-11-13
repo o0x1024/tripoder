@@ -92,6 +92,29 @@ ipoder.q6:slot4: No implementation found for void org.chromium.base.memory.Dlmal
 
 **未定论**：是「U4 的 GPU 子进程在我们的多进程模型下拿不到正确的 binder/共享内存」还是「U4 内核依赖的 native 库在容器里没被完整映射」，本轮没有证据区分。这决定了修法在门面层还是在库加载层。
 
+### 5.1 追加排查：不是「还在加载」，而是「渲染出来了但不合成」
+
+再等 25s 后的第三帧仍是 23288 B（三帧 23272 → 23287 → 23288），且 U4 的子进程全部健在：
+
+```
+17053 com.taobao.idlefish
+18086 com.taobao.idlefish:channel
+18642 com.taobao.idlefish:windowChannel
+18938 com.taobao.idlefish:normal_render_proc0
+19003 com.taobao.idlefish:gpu_process
+```
+
+`uc.proc` 相关 24 行日志里**没有** fail/denied/exception/died（绑定成功），全量 logcat 也没有该客体的 `net::ERR_*`。唯一异常是三条 `DlmallocBlackBerryRepairor.nativeSetEnabledMremap` 缺失（Chromium 的堆修复钩子，属软错误）。
+
+因此「库没加载」与「网络失败」都被排除，指向**窗口/合成面**：日志里两次出现
+
+```
+E u4java_WindowAndroid: SetPreferredRefreshRateAsStartRefreshRate failed,
+  mDisplayAndroid=org.chromium.ui.display.e, window=null, context=…embedder_support.application.a
+```
+
+`window=null` 说明 U4 的 `WindowAndroid` 没拿到任何窗口句柄 ⇒ 有 surface 容器（顶部栏与加载条是原生 View）但 H5 无法附着合成面 ⇒ 只剩黑底。下一步要查的是：我们交给客体的 `Window`/`WindowManager`/`Display` 投影是否让 U4 的 `WindowAndroid` 建不出窗口（这是第四条可复用的候选：**H5 内核类应用的黑屏先看 `window=null`**）。
+
 ## 6. 边界
 
 - 宽回归只覆盖 4 个应用、各 1 次冷启；闲鱼只覆 1 次同意路径。
