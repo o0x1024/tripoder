@@ -113,10 +113,10 @@
 | 107 | `com.xiaomi.tinygame` | 是 |  | 未测 |  |
 | 108 | `com.xiaomi.vipaccount` | 是 |  | 未测 |  |
 | 109 | `com.xiaomi.youpin` | 是 |  | 未测 |  |
-| 110 | `com.xingin.xhs` |  | 已装入 | 已导入容器（v70，`CATALOG_READY installs` 21→31），启动/登录未测 | [batch7](batch7-app-import-pipeline-20261113.md) |
+| 110 | `com.xingin.xhs` |  | 已装入 | **启动可用**：小红书 TaskP3$F0M1C2，无 FATAL；到「个人信息保护提示」页（同意按钮可点），dump 正常。登录未测 | [batch7](batch7-app-import-pipeline-20261113.md) |
 | 111 | `com.xs.fm` |  |  | 未测 |  |
 | 112 | `com.xunmeng.pinduoduo` |  | 容器内 | 可用：手机号+短信验证码登录闭环（`153****8553`，个人中心/我的订单/多多钱包可达） | [pinduoduo-login-20261113.md](pinduoduo-login-20261113.md) |
-| 113 | `com.zhihu.android` |  | 已装入 | 已导入容器（v70，`CATALOG_READY installs` 21→31），启动/登录未测 | [batch7](batch7-app-import-pipeline-20261113.md) |
+| 113 | `com.zhihu.android` |  | 已装入 | **启动可用**：知乎 TaskP3$F0M2C2，无 FATAL；到「个人信息保护指引」页，dump 正常。登录未测 | [batch7](batch7-app-import-pipeline-20261113.md) |
 | 114 | `ctrip.android.view` |  | 已装入 | 已导入容器（v70，`CATALOG_READY installs` 21→31），启动/登录未测 | [batch7](batch7-app-import-pipeline-20261113.md) |
 | 115 | `dev.tripoder.controltest` |  |  | 未测 |  |
 | 116 | `dev.tripoder.q6` |  |  | 未测 |  |
