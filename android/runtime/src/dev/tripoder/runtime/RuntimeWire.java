@@ -54,7 +54,7 @@ public final class RuntimeWire {
             final long started=SystemClock.elapsedRealtime();
             try {if(descriptors)validateFileDescriptors(input);output=handle(code,input,pid,uid);reply.writeNoException();reply.writeBundle(output);}
             catch(Exception error){reply.writeException(wireException(error));}
-            finally{long elapsed=SystemClock.elapsedRealtime()-started;if(elapsed>=SLOW_MS)android.util.Log.w("TripoderWire","SLOW "+name(code)+" "+elapsed+"ms pid="+pid+" uid="+uid);if(descriptors)closeFileDescriptors(input);if(code==ISOLATED_BOOTSTRAP&&output!=null)RuntimeIsolatedCode.closeDescriptors(output);if(code==CODE_ARTIFACT_DIRECTORY&&output!=null){ParcelFileDescriptor directory=output.getParcelable("directory",ParcelFileDescriptor.class);if(directory!=null)try{directory.close();}catch(java.io.IOException failure){android.util.Log.w("TripoderCode","Directory descriptor close failed",failure);}}}
+            finally{long elapsed=SystemClock.elapsedRealtime()-started;if(elapsed>=SLOW_MS)android.util.Log.w("TripoderWire","SLOW "+name(code)+" "+elapsed+"ms pid="+pid+" uid="+uid+" keys="+(input==null?"null":input.keySet()));if(descriptors)closeFileDescriptors(input);if(code==ISOLATED_BOOTSTRAP&&output!=null)RuntimeIsolatedCode.closeDescriptors(output);if(code==CODE_ARTIFACT_DIRECTORY&&output!=null){ParcelFileDescriptor directory=output.getParcelable("directory",ParcelFileDescriptor.class);if(directory!=null)try{directory.close();}catch(java.io.IOException failure){android.util.Log.w("TripoderCode","Directory descriptor close failed",failure);}}}
             return true;
         }
         protected abstract Bundle handle(int code,Bundle input,int pid,int uid) throws Exception;

@@ -213,15 +213,15 @@ final class RuntimeSelfHookActivities {
                     // start is exactly this flag, so carrying it keeps the request honour-able instead of rejected.
                     if(intent!=null&&(intent.getFlags()&Intent.FLAG_ACTIVITY_NEW_TASK)==0){intent=new Intent(intent).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);args=args.clone();args[4]=intent;}
                 }
-                if(intent==null||RuntimeBridge.startsHost(intent))throw new SecurityException("ACTIVITY_START_HOST_COMPONENT_DENIED");
+                if(intent==null||RuntimeBridge.startsHost(intent)){RuntimeStartTrace.absent("HOST_COMPONENT_DENIED",intent);throw new SecurityException("ACTIVITY_START_HOST_COMPONENT_DENIED");}
                 RuntimeMalwareProbeState.checkAndRecordIntent("execStartActivity", intent);
                 // A component of a guest in this space is routed through the ledger. Anything else (an implicit action, a real installed app, the system) is the platform's to resolve, as it is for any app.
                 // An implicit intent that one of the guest's own filters matches is a start of that component, exactly as Android would resolve it.
                 if(intent.getComponent()==null){android.content.ComponentName own=RuntimeBridge.resolveOwnActivity(intent);if(own!=null){intent=new Intent(intent).setComponent(own);args=args.clone();args[4]=intent;}}
                 if(intent.getComponent()!=null){
-                    try{Object[] routed=args.clone();routed[4]=activity!=null?RuntimeBridge.route(activity,intent,(Integer)args[5]):RuntimeBridge.routeFromContext(intent);RuntimeStartTrace.handed("ROUTED",intent);return original.call(routed);}
+                    try{Object[] routed=args.clone();try{routed[4]=activity!=null?RuntimeBridge.route(activity,intent,(Integer)args[5]):RuntimeBridge.routeFromContext(intent);}catch(android.content.ActivityNotFoundException absent){throw absent;}catch(Exception refused){RuntimeStartTrace.absent(refused,intent);throw refused;}RuntimeStartTrace.handed("ROUTED",intent);return original.call(routed);}
                     catch(android.content.ActivityNotFoundException absent){
-                        if(!String.valueOf(absent.getMessage()).startsWith("PACKAGE_NOT_IN_SPACE"))throw absent;
+                        RuntimeStartTrace.absent("PACKAGE_NOT_IN_SPACE",intent);if(!String.valueOf(absent.getMessage()).startsWith("PACKAGE_NOT_IN_SPACE"))throw absent;
                         // The component is installed on the device but absent in this space. "Not installed" is the only answer a
                         // device without that application gives, and it is the answer this guest's own package manager already
                         // gave; handing the start to the platform would open the physical application behind that answer.

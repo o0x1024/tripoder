@@ -31,6 +31,14 @@ final class RuntimeStartTrace {
         if(n>MAX)return;
         android.util.Log.i("TripoderStarts","#"+n+" "+outcome+" target="+target(intent));
     }
+    static void absent(Throwable cause,Intent intent){
+        if(!ON)return;
+        int n=USED.incrementAndGet();
+        if(n>MAX)return;
+        String message=cause==null?"null":cause.getClass().getName()+": "+cause.getMessage();
+        if(message.length()>160)message=message.substring(0,160);
+        android.util.Log.w("TripoderStarts","#"+n+" ABSENT "+message+" target="+target(intent));
+    }
     static void absent(String reason,Intent intent){
         if(!ON)return;
         int n=USED.incrementAndGet();

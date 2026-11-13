@@ -17,7 +17,12 @@ final class RuntimeActivityIntent {
     static final int FLAGS=Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED|Intent.FLAG_ACTIVITY_SINGLE_TOP
         |Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_CLEAR_TASK|Intent.FLAG_ACTIVITY_NO_ANIMATION|Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
         |Intent.FLAG_ACTIVITY_NO_HISTORY|Intent.FLAG_ACTIVITY_REORDER_TO_FRONT|Intent.FLAG_ACTIVITY_MULTIPLE_TASK;
-    static void requireFlags(int flags){if((flags&~FLAGS)!=0)throw new IllegalArgumentException("INTENT_FLAGS_UNSUPPORTED:0x"+Integer.toHexString(flags));}
+    // Flags whose meaning depends on the caller's identity or on a result channel that a routed start does not carry.
+    // Everything else is a task-engine hint the platform applies to the stub Activity of a real start: the platform
+    // ignores bits it does not know, so refusing them would invent a failure the platform never produces (batch20:
+    // QQ's LoginActivity start died on FLAG_ACTIVITY_NO_USER_ACTION, a hint the platform accepts everywhere).
+    static final int EXCLUDED=Intent.FLAG_ACTIVITY_FORWARD_RESULT|Intent.FLAG_ACTIVITY_NEW_DOCUMENT|Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET;
+    static void requireFlags(int flags){if((flags&EXCLUDED)!=0)throw new IllegalArgumentException("INTENT_FLAGS_UNSUPPORTED:0x"+Integer.toHexString(flags));}
     static Intent snapshot(Intent input)throws Exception{
         ClassLoader guest=RuntimeEngine.current==null?null:RuntimeEngine.current.guestLoader();if(guest!=null)input.setExtrasClassLoader(guest);
         String before=digest(input);Intent snapshot;Parcel parcel=Parcel.obtain();
