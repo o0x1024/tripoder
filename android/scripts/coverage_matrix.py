@@ -19,9 +19,21 @@ EVID = os.path.join(ROOT, "docs/evidence/third-party-batch-advance-20261113")
 INV = os.path.join(EVID, "inventory.md")
 COV = os.path.join(EVID, "coverage.jsonl")
 LABELS = os.path.join(EVID, "tile-labels.json")
+SCOPE = os.path.join(EVID, "scope-targets.json")
 OUT = os.path.join(EVID, "coverage-matrix.md")
 
 SELF_PACKAGES = {"dev.tripoder.q6", "dev.tripoder.q7", "dev.tripoder.controltest"}
+
+# 「没测到」的码：进了流水线但没有判决。它们不能计入分子，否则矩阵会比验收探针乐观。
+# 判据与验收探针一致（probe 里同一组码），两边必须同源，否则报告和验收会给出两个数。
+NON_MEASURED = {
+    "TILE_NOT_FOUND",
+    "NO_TILE_MAPPING",
+    "TILE_NOT_CLAIMABLE",
+    "TILE_MISMATCH",
+    "ENGINE_DOWN",
+    "PIPELINE_ERROR",
+}
 
 VERDICT_CN = {
     "LOGIN_ENTRY": "登录入口可达",
@@ -74,7 +86,14 @@ def build() -> tuple[list[str], dict]:
     inv = inventory_rows()
     cov = coverage_rows()
     labels = json.load(open(LABELS, encoding="utf-8")) if os.path.exists(LABELS) else {}
-    third = [r for r in inv if not r["bundled"] and r["pkg"] not in SELF_PACKAGES]
+    # 分母只有一个来源：scope-targets.json。它由扫描产生（pm list packages -3 -f + 判据），
+    # 不能用 inventory.md 的「捆绑」列代替——那一列是名字判断，与路径/厂商判据会给出不同数字。
+    if not os.path.exists(SCOPE):
+        raise SystemExit("缺少 %s：分母必须来自扫描产物，不允许回退到 inventory 的捆绑列" % SCOPE)
+    scope = json.load(open(SCOPE, encoding="utf-8"))
+    scope_third = set(scope["third_party"]) - SELF_PACKAGES
+    third = [r for r in inv if r["pkg"] in scope_third]
+    absent_from_inventory = sorted(scope_third - {r["pkg"] for r in inv})
     lines = [
         "# 覆盖矩阵（由 inventory.md + coverage.jsonl 生成）",
         "",
@@ -95,29 +114,41 @@ def build() -> tuple[list[str], dict]:
         "| 口径 | 数量 |",
         "|---|---|",
     ]
-    measured = [r for r in third if r["pkg"] in cov]
+    def verdict_of(pkg: str) -> str:
+        row = cov.get(pkg)
+        return row.get("verdict", "") if row else ""
+
+    # 分子口径与验收探针同源：有记录 且 判决不是「没测到」的码。
+    measured = [r for r in third if verdict_of(r["pkg"]) and verdict_of(r["pkg"]) not in NON_MEASURED]
+    unmeasured_attempted = [r for r in third if r["pkg"] in cov and r["pkg"] not in {m["pkg"] for m in measured}]
     # Rows whose inventory note already carries a measured conclusion from an earlier batch. Reported
     # separately, never merged into the pipeline count: these are different kinds of evidence.
     concluded = [r for r in third if r["note"] and "未测" not in r["note"]]
-    lines.append("| `pm list packages -3` 全量 | %d |" % len(inv))
-    lines.append("| 扣除厂商/系统捆绑 | %d |" % len(third))
-    lines.append("| 已进流水线（有实测记录） | %d |" % len(measured))
+    lines.append("| 分母来源 | `scope-targets.json`（%s） |" % scope.get("generated_by", "scan"))
+    lines.append("| 分母：真第三方 | %d |" % len(third))
+    lines.append("| 已进流水线（有记录） | %d |" % len([r for r in third if r["pkg"] in cov]))
+    lines.append("| 有判决（分子，排除「没测到」码） | %d |" % len(measured))
+    lines.append("| 进了流水线但没测到 | %d |" % len(unmeasured_attempted))
     lines.append("| 盘点表已有结论（历史批次证据，未进流水线记录） | %d |" % len(concluded))
     # Union, not sum of the two rows above: a package can be both in the pipeline and concluded.
     with_evidence = {r["pkg"] for r in measured} | {r["pkg"] for r in concluded}
     lines.append("| 有证据合计（两者并集） | %d |" % len(with_evidence))
     lines.append("| 尚未实测 | %d |" % (len(third) - len(measured)))
+    lines.append("| 完成度（分子/分母） | %.0f%% |" % (100.0 * len(measured) / len(third) if third else 0.0))
     lines += ["", "## 逐项矩阵", "",
               "| # | 包名 | tile | 容器内 | 实测结论 | 落点 top | 客体重启不影响计数 | 备注 |",
               "|---|---|---|---|---|---|---|---|"]
     for r in inv:
-        if r["bundled"] or r["pkg"] in SELF_PACKAGES:
+        if r["pkg"] not in scope_third:
             continue
         c = cov.get(r["pkg"])
         tile = labels.get(r["pkg"], "")
         if c:
             page = c.get("page") or {}
-            verdict = "%s（%s）" % (c.get("verdict", ""), VERDICT_CN.get(c.get("verdict", ""), "?"))
+            code = c.get("verdict", "")
+            label = "%s（%s）" % (code, VERDICT_CN.get(code, "?"))
+            # 没测到的码不能当作「已实测」呈现：否则逐项表会比总览乐观，读表的人会被误导。
+            verdict = ("未测 · " + label) if code in NON_MEASURED else label
             top = (page.get("top") or c.get("launch") or "").replace("dev.tripoder.q6/dev.tripoder.runtime.generated.", "")
             cnt = c.get("counters_after") or {}
             cnt_s = "fatal=%s adm=%s anr=%s" % (cnt.get("fatal"), cnt.get("admission"), cnt.get("anr")) if cnt else ""
@@ -132,21 +163,29 @@ def build() -> tuple[list[str], dict]:
     # 待推进队列：把「还没实测的 N 个」拆成可执行的两档，避免每次都要人工重算哪些能直接跑。
     # 分档判据只有数据：tile-labels.json 里有映射 = Workbench 里已有格子 = 流水线能直接点；
     # 没有映射 = 还没导入该空间 = 必须先走 import_apps.sh。不按应用名/类别猜。
-    pending_rows = [r for r in third if r["pkg"] not in cov]
+    measured_pkgs = {m["pkg"] for m in measured}
+    pending_rows = [r for r in third if r["pkg"] not in measured_pkgs]
     runnable = [r for r in pending_rows if r["pkg"] in labels]
-    needs_import = [r for r in pending_rows if r["pkg"] not in labels]
+    # 导入面已到 117/118，所以「没有 tile 映射」现在意味着「还没认领出这个包对应哪个格子」，
+    # 不是「还没导入」。分档文案必须跟着实际前置条件走，否则会把人送去重跑导入。
+    needs_claim = [r for r in pending_rows if r["pkg"] not in labels]
     lines += ["", "## 待推进队列（按处置分档）", "",
-              "分档只按数据判：有 tile 映射的直接可跑，没有映射的要先 import_apps.sh。", "",
+              "分档只按数据判：有 tile 映射的直接可跑，没有映射的先做认领（导入面已达 117/118）。", "",
               "| 档 | 数量 | 跑法 |", "|---|---|---|",
               "| 可立即跑（tile 已建） | %d | `coverage_pipeline.py --no-import <pkgs>` |" % len(runnable),
-              "| 需先导入（无 tile） | %d | `coverage_pipeline.py <pkgs>`（含导入） |" % len(needs_import),
+              "| 需先认领 tile（无映射） | %d | 先跑认领，再 `--no-import` |" % len(needs_claim),
               "", "### 可立即跑", ""]
     lines += ["- `%s`（%s）" % (r["pkg"], labels.get(r["pkg"], "")) for r in runnable] or ["- （无）"]
-    lines += ["", "### 需先导入", ""]
-    lines += ["- `%s`（%s）" % (r["pkg"], r["in_space"] or "未在容器内") for r in needs_import] or ["- （无）"]
+    lines += ["", "### 需先认领 tile", ""]
+    lines += ["- `%s`（%s）" % (r["pkg"], r["in_space"] or "未在容器内") for r in needs_claim] or ["- （无）"]
+    if absent_from_inventory:
+        lines += ["", "### 分母里有、盘点表里没有（需补盘点行）", ""]
+        lines += ["- `%s`" % p for p in absent_from_inventory]
     summary = {"third_party": len(third), "measured": len(measured), "concluded": len(concluded),
                "pending": len(third) - len(measured), "records": len(cov),
-               "runnable": len(runnable), "needs_import": len(needs_import)}
+               "unmeasured_attempted": len(unmeasured_attempted),
+               "runnable": len(runnable), "needs_claim": len(needs_claim),
+               "absent_from_inventory": len(absent_from_inventory)}
     return lines, summary
 
 
