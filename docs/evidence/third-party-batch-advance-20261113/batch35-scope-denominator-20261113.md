@@ -105,3 +105,57 @@ records=41  third_party=73  measured=33  pending=40  unmeasured_attempted=3
 仍未解决、也不打算用代码替人决定的：分母的**数值**要等 §6 的 `firstInstallTime` 聚类产出。
 在聚类定案前，`measured=33` 只是「33 个已测到」，不是一个可以对外宣布的完成度。
 
+## 8. 分母定案（2026-11-16，用户裁定语义 a）
+
+用户裁定：「非系统自带第三方」= **用户自己装的**。判据随之确定为 `firstInstallTime` 聚类，
+并向设备取了两份只读事实做交叉验证：
+
+- `/tmp/install_times.txt`：120 个 `-3` 包各一次 `dumpsys package` 的 `firstInstallTime`
+- `/tmp/pkg_paths.txt`：`pm list packages -f -3`，即每个包的 APK 所在分区
+
+生成器已入库：`python3 android/scripts/scope_denominator.py --write`（缺输入即报错，不猜）。
+
+### 8.1 聚类结果
+
+| 判据 | 包数 | 说明 |
+|---|---|---|
+| 出厂窗口 `1970-01-17 16:09:4x` | **39** | 连续 7 秒批量落盘；其中 20 个路径在系统映像、19 个已被商店更新搬到 `/data/app` |
+| 路径在系统映像 | 21 | 含 1 个时间戳很晚者 |
+| 两判据交集（最硬） | 20 | 交集之外的 19 个全是 `com.miui.gallery/player/video/notes/themestore`、`com.xiaomi.shop/gamecenter`、`com.mipay.wallet` 这类被更新过的一方应用 |
+| OTA 加装的预装 | 1 | `com.xiaomi.bestphotos`（路径在映像，`firstInstallTime`=2026-09-24 13:33:58） |
+
+### 8.2 一个反直觉的簇：`2000-01-01 00:00:00`（24 包）
+
+这是**时间未记录**的哨兵值，不是预装。成员是 `cn.wps.moffice_eng`、`com.aliyun.tongyi`、
+`com.autonavi.minimap`、`com.dianping.v1` 等，语义上明确属于用户自装。
+
+它同时是「不能拿最大簇当预装」的实例：最大簇是这 24 个哨兵包，而真正的出厂窗口只有 13 个
+（`1970-01-17 16:09:42`）。`/tmp/cluster_inst.py` 的占优性自检（最大簇需 ≥2×次大簇）在这里
+如实报警，避免了「24 个用户应用被当成预装剔除」的错判。
+
+### 8.3 定案数字
+
+```
+pm list packages -3           = 120
+预装（出厂 39 + OTA 1）        =  40
+用户自装                       =  80
+扣除容器自身包（q6/q7）        =  78   ← 分母
+```
+
+矩阵重算（`coverage_matrix.py --write`）：
+
+```
+third_party=78  measured=48  pending=30  unmeasured_attempted=3
+可立即跑 2      需先认领 28
+完成度 = 48/78 = 62%
+```
+
+### 8.4 这份数字的边界
+
+- 62% 只覆盖「启动 + 登录入口测度」，不含登录闭环（`LOGIN_ENTRY` 不等于能登录成功）。
+- 30 个待推进里 28 个卡在 tile 未认领，不是设备能力问题：Workbench 单批导入上限 64、
+  添加页点格子不切换选中，导致只能「搜索子串 + 全选」，认领必须逐格点击确认。
+- `com.xiaomi.bestphotos` 是唯一一个判据边界样本（路径在映像、时间很晚）。若将来把 OTA
+  加装算作「用户获得」，分母变 79；本文件采用 78，并把该包单列在 `scope-targets.json`
+  的 `ota_preload` 里，改口径只需改一处。
+
