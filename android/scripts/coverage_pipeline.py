@@ -200,6 +200,113 @@ def tile_texts_bottom() -> list[str]:
     return seen
 
 
+# 试认领的候选上限：每试一个要 ~30s（reconnect + 回顶 + 滚到 tile + 等落点），
+# 正常情况第一个候选就中（差集最后一个就是刚导入的），上限只为「文案判断全错」时兜底。
+PROBE_LIMIT = 6
+
+
+def _find_tile(tile: str) -> tuple[bool, dict | None]:
+    """reconnect → 回顶 → 逐屏找 tile。返回 (引擎可用, 命中节点)。"""
+    if not reconnect():
+        return False, None
+    to_top()
+    for _ in range(24):
+        x = dump()
+        if x and "运行引擎没有连接" in x:
+            reconnect()
+            to_top()
+            continue
+        hit = find(nodes(x), lambda t, d: t == tile)
+        if hit:
+            return True, hit
+        adb("input swipe 540 2000 540 1200 400", 1.0)
+    return True, None
+
+
+def _launch_tile(tile: str) -> str:
+    """点已认领的 tile 并等到落点。返回 topActivity，或 ENGINE_DOWN / TILE_NOT_FOUND。"""
+    ok, hit = _find_tile(tile)
+    if not ok:
+        return "ENGINE_DOWN"
+    if not hit:
+        return "TILE_NOT_FOUND"
+    adb("logcat -c")
+    tap(hit, 2)
+    launched = "NONE"
+    for _ in range(12):
+        time.sleep(4)
+        launched = top_activity()
+        if "TaskP" in launched:
+            break
+    return launched
+
+
+def _guest_identity_hits(pkg: str) -> tuple[int, int]:
+    """这个包在这次启动里留下了多少痕：按包名数的进程数、以及 logcat 里命中包名的行数。
+
+    为什么需要两个判据：客体进程名有两种形状——应用包名本身（com.dianping.v1）与槽位名
+    （dev.tripoder.q6:slotN）。只按包名数进程，会把「进程叫 slot0 但确实是这个应用」误判成没起来。
+    副判据用 logcat 命中数：真启动会打出自己的组件/包名（ActivityThread、进程监督器、应用自身日志），
+    而认错 tile 拉起的是别的应用，不会打出这个包名。
+    """
+    procs = guest_procs(pkg)
+    log = adb("logcat -d")
+    hits = len([l for l in log.splitlines() if pkg in l])
+    return procs, hits
+
+
+def _probe_tile(pkg: str, tile: str) -> str | None:
+    """试认领：点这个候选 tile，只有「启动出来的确实是 pkg」才认。
+
+    这是把认领从「猜文案」换成「验对象」——tile 文案与应用包名之间没有可推断的映射，
+    唯一硬判据是「点它之后起来的是谁」。_find_tile 里的 reconnect() 会 force-stop 宿主，
+    所以探查之前该空间没有任何客体进程，判据不会被上一轮残留污染。
+    """
+    ok, hit = _find_tile(tile)
+    if not ok or not hit:
+        return None
+    adb("logcat -c")
+    tap(hit, 2)
+    top = "NONE"
+    for _ in range(6):
+        time.sleep(4)
+        top = top_activity()
+        if "TaskP" not in top:
+            continue
+        procs, hits = _guest_identity_hits(pkg)
+        if procs > 0 or hits > 0:
+            return top
+    # 认错了：这一格拉起的是别的应用。收掉可能的拒绝弹框，避免它长期占槽位/挡住下一格。
+    x = dump()
+    if x and "应用没有启动" in x:
+        dlg = find(nodes(x), lambda t, d: t == "知道了")
+        if dlg:
+            tap(dlg, 2)
+    return None
+
+
+def _unmapped_candidates(labels: dict, baseline: set[str] | None = None) -> list[str]:
+    """候选 tile 文案排序：导入期新增的（差集）优先，其次底部未映射，最后才全表。
+
+    差集只用于**排序**不用于**定罪**：已导入过的包其 tile 早就在 baseline 里，只用差集
+    会让它永远认领不到（batch34 的 BBC 就是这样被判 NO_TILE_MAPPING 的）。
+    """
+    mapped = set(labels.values())
+    cands: list[str] = []
+    bottom = tile_texts_bottom()
+    for t in reversed(bottom):
+        if t not in mapped and t not in cands and (baseline is None or t not in baseline):
+            cands.append(t)
+    for t in reversed(bottom):
+        if t not in mapped and t not in cands:
+            cands.append(t)
+    if not cands:
+        for t in reversed(tile_texts()):
+            if t not in mapped and t not in cands:
+                cands.append(t)
+    return cands
+
+
 def load_labels() -> dict:
     if os.path.exists(LABELS):
         with open(LABELS, encoding="utf-8") as f:
@@ -321,9 +428,9 @@ def classify(rec: dict) -> str:
 def run_one(pkg: str, labels: dict, do_import: bool) -> dict:
     rec = {"pkg": pkg, "ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "build": os.environ.get("BUILD", "")}
     tile = labels.get(pkg)
+    launched: str | None = None
     if do_import:
-        # 认领 tile 不能靠「新导入的排在末尾」这个约定去猜：探针 tile 与列表重排都能让它错位。
-        # 正确判据是导入前后的**差集**（after - before - 已映射 - 探针），所以导入前先扫一遍底部。
+        # 导入前先扫一遍底部，只用于给候选**排序**（新出现的优先试），不作为认领依据。
         baseline: set[str] = set()
         if not tile and reconnect():
             to_top()
@@ -332,48 +439,35 @@ def run_one(pkg: str, labels: dict, do_import: bool) -> dict:
         # import_apps.sh 结束时仍停在「添加应用」页，那里的按钮文案（「选择要添加的应用」）会被误认成
         # tile —— 首轮 com.tencent.qqlive 就这么写错了映射。所以先回列表页，再扫底部。
         reconnect()
-        tiles = tile_texts_bottom()
-        if not tile and tiles:
-            mapped = set(labels.values())
-            fresh = [t for t in tiles if t not in mapped and t not in baseline]
-            if fresh:
-                tile = fresh[-1]          # 差集里最后一个 = 最新导入的那一格
+
+    if not tile:
+        # 试认领：文案不能定案，唯一硬判据是「点它之后起来的是谁」。
+        # batch34 已实测文案启发式的两种失效（探针被当成新应用 / 已导入的包差集为空），
+        # 这里改为逐个候选点击 + 核对客体身份，认到即停，不中则记 TILE_NOT_CLAIMABLE。
+        cands = _unmapped_candidates(labels, baseline if do_import else None)
+        rec["tile_candidates"] = cands[:PROBE_LIMIT]
+        rec["tile_probes"] = 0
+        for c in cands[:PROBE_LIMIT]:
+            rec["tile_probes"] += 1
+            top = _probe_tile(pkg, c)
+            if top:
+                tile = c
+                launched = top          # 试认领时已经落地，不必二次启动
                 labels[pkg] = tile
                 save_labels(labels)
                 rec["tile_discovered"] = True
-                rec["tile_delta"] = fresh
+                rec["tile_verified"] = "tapped %r -> guest identity for %s" % (c, pkg)
+                break
     if not tile:
-        rec["verdict"] = "NO_TILE_MAPPING"
+        rec["verdict"] = "TILE_NOT_CLAIMABLE"
         return rec
     rec["tile"] = tile
 
-    if not reconnect():
-        rec["verdict"] = "ENGINE_DOWN"
+    if launched is None:
+        launched = _launch_tile(tile)
+    if launched in ("ENGINE_DOWN", "TILE_NOT_FOUND"):
+        rec["verdict"] = launched
         return rec
-    to_top()
-    hit = None
-    for _ in range(24):
-        x = dump()
-        if x and "运行引擎没有连接" in x:
-            reconnect()
-            to_top()
-            continue
-        hit = find(nodes(x), lambda t, d: t == tile)
-        if hit:
-            break
-        adb("input swipe 540 2000 540 1200 400", 1.0)
-    if not hit:
-        rec["verdict"] = "TILE_NOT_FOUND"
-        return rec
-
-    adb("logcat -c")
-    tap(hit, 2)
-    launched = "NONE"
-    for _ in range(12):
-        time.sleep(4)
-        launched = top_activity()
-        if "TaskP" in launched:
-            break
     # 「应用没有启动 / 操作没有完成（APPLICATION_ACTIVITY_ALREADY_OPEN_OR_UNCONFIRMED）」是 UI 拒绘：
     # 该包还挂着一条未确认的 Activity 记录。恢复配方是同时 force-stop 两个宿主进程再重连两次，
     # 否则这个包会被永久拦住（爱奇艺连跑两次 NOT_TOP 就是这么来的）。
@@ -386,34 +480,19 @@ def run_one(pkg: str, labels: dict, do_import: bool) -> dict:
             rec["recovered_from"] = "ACTIVITY_ALREADY_OPEN_OR_UNCONFIRMED"
             adb("am force-stop " + PKG, 3)
             adb("am force-stop dev.tripoder.q7", 3)
-            if reconnect():
-                to_top()
-                hit = None
-                for _ in range(24):
-                    x2 = dump()
-                    hit = find(nodes(x2), lambda t, d: t == tile)
-                    if hit:
-                        break
-                    adb("input swipe 540 2000 540 1200 400", 1.0)
-                if hit:
-                    adb("logcat -c")
-                    tap(hit, 2)
-                    for _ in range(12):
-                        time.sleep(4)
-                        launched = top_activity()
-                        if "TaskP" in launched:
-                            break
+            launched = _launch_tile(tile)
     rec["launch"] = launched
     rec["counters"] = counters()
 
-    # 第二道防线：自动认领的 tile 必须证明「点它启动的就是目标包」。
+    # 第二道防线：点这个 tile 必须证明「起来的就是目标包」。
     # 只看 top 有 TaskP 是不够的 —— 认领错了（探针/邻居格）照样能启动出一个客体，
-    # 于是把别人的页面记成这个应用的落点。判据用按包名的进程数：起来了却不是该包 ⇒ 测度作废。
+    # 于是把别人的页面记成这个应用的落点。判据与试认领同源：按包名数的进程 + logcat 命中。
     if rec.get("tile_discovered") and "TaskP" in launched:
-        rec["pkg_procs"] = guest_procs(pkg)
-        if rec["pkg_procs"] == 0:
+        procs, hits = _guest_identity_hits(pkg)
+        rec["pkg_procs"], rec["pkg_log_hits"] = procs, hits
+        if procs == 0 and hits == 0:
             rec["verdict"] = "TILE_MISMATCH"
-            rec["tile_verify"] = "launched TaskP %s but no guest process named %s" % (launched, pkg)
+            rec["tile_verify"] = "launched TaskP %s but no process/log evidence for %s" % (launched, pkg)
             return rec
 
     # 同意层：按候选优先级点，最多 4 轮；每轮都重新 dump 拿到当前轴

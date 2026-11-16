@@ -31,11 +31,12 @@ VERDICT_CN = {
     "PAGE_EMPTY_USE_SHOT": "dump 空树，需截图判读",
     "NOT_TOP": "未上顶层",
     "TILE_NOT_FOUND": "tile 未找到",
-    "NO_TILE_MAPPING": "未建立 tile 映射",
+    "NO_TILE_MAPPING": "未建立 tile 映射（旧码；batch35 起改为试认领 TILE_NOT_CLAIMABLE）",
     "ENGINE_DOWN": "引擎未连接",
     "GUEST_KILLED_BY_DUMP": "dump 杀客体（旧口径，已作废：进程计数漏主进程）",
     "DUMP_UNAVAILABLE": "结构抓不到且进程消失（需截图判读）",
     "TILE_MISMATCH": "自动认领的 tile 启动出的不是该包 ⇒ 测度作废（batch34 首包踩到：被认成探针 StorageProbe）",
+    "TILE_NOT_CLAIMABLE": "试认领全部候选都不中 ⇒ 该包在 Workbench 里没有可核对的 tile（batch35 起代替 NO_TILE_MAPPING）",
     "PIPELINE_ERROR": "流水线异常",
 }
 
